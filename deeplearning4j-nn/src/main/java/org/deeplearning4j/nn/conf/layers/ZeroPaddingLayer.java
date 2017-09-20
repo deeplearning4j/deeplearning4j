@@ -55,17 +55,17 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         int inH;
         int inW;
         int inDepth;
-        if (inputType instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+        if (inputType[0] instanceof InputType.InputTypeConvolutional) {
+            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType[0];
             inH = conv.getHeight();
             inW = conv.getWidth();
             inDepth = conv.getDepth();
-        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
-            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
+        } else if (inputType[0] instanceof InputType.InputTypeConvolutionalFlat) {
+            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType[0];
             inH = conv.getHeight();
             inW = conv.getWidth();
             inDepth = conv.getDepth();
@@ -78,7 +78,7 @@ public class ZeroPaddingLayer extends Layer {
         int outH = inH + padding[0] + padding[1];
         int outW = inW + padding[2] + padding[3];
 
-        return InputType.convolutional(outH, outW, inDepth);
+        return new InputType[]{InputType.convolutional(outH, outW, inDepth)};
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ZeroPaddingLayer extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
                         .standardMemory(0, 0) //No params

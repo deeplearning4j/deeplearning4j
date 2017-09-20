@@ -95,18 +95,19 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
-        if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
-            throw new IllegalStateException("Invalid input: expected input of type FeedForward, got " + inputType);
+    public InputType[] getOutputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || (inputType[0].getType() != InputType.Type.FF
+                        && inputType[0].getType() != InputType.Type.CNNFlat)) {
+            throw new IllegalStateException("Invalid input: expected input of type FeedForward, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        if (inputType.getType() == InputType.Type.FF) {
-            InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) inputType;
-            return InputType.recurrent(ff.getSize());
+        if (inputType[0].getType() == InputType.Type.FF) {
+            InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) inputType[0];
+            return new InputType[]{InputType.recurrent(ff.getSize())};
         } else {
-            InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat) inputType;
-            return InputType.recurrent(cf.getFlattenedSize());
+            InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat) inputType[0];
+            return new InputType[]{InputType.recurrent(cf.getFlattenedSize())};
         }
     }
 

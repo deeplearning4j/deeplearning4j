@@ -56,7 +56,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //Basically a dense layer...
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int numParams = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);

@@ -51,9 +51,12 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         if (inputType == null)
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
         return inputType;
     }
 

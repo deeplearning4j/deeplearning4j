@@ -83,13 +83,13 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        return InputType.feedForward(1);
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+        return new InputType[]{InputType.feedForward(1)};
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
 
         //Inference: only calculation is for output activations; no working memory
         //Working memory for training:

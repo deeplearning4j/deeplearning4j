@@ -112,7 +112,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //For training: we'll assume unsupervised pretraining, as this has higher memory requirements
 
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);

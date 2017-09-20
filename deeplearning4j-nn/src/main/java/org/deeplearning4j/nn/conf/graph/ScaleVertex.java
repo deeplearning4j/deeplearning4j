@@ -84,18 +84,18 @@ public class ScaleVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
-            return vertexInputs[0];
+            return vertexInputs;
         InputType first = vertexInputs[0];
 
-        return first; //Same output shape/size as
+        return new InputType[]{first}; //Same output shape/size as
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //Do one dup on the forward pass (output activations). Accounted for in output activations.
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ScaleVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

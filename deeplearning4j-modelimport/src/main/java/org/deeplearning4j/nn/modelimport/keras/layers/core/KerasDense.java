@@ -116,7 +116,7 @@ public class KerasDense extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         /* Check whether layer requires a preprocessor for this InputType. */
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
         if (preprocessor != null) {

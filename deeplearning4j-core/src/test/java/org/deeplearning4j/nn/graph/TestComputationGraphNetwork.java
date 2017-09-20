@@ -335,9 +335,9 @@ public class TestComputationGraphNetwork {
                 .getNIn());
 
         LayerVertex lv1 = (LayerVertex) conf1.getVertices().get("rnn");
-        assertTrue(lv1.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(lv1.getLayerConf().getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
         LayerVertex lv2 = (LayerVertex) conf1.getVertices().get("out");
-        assertNull(lv2.getPreProcessor());
+        assertNull(lv2.getLayerConf().getLayer().getPreProcessor());
 
         //Check RNN -> FF -> RNN
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
@@ -351,9 +351,9 @@ public class TestComputationGraphNetwork {
                 .getNIn());
 
         lv1 = (LayerVertex) conf2.getVertices().get("ff");
-        assertTrue(lv1.getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
+        assertTrue(lv1.getLayerConf().getLayer().getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
         lv2 = (LayerVertex) conf2.getVertices().get("out");
-        assertTrue(lv2.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(lv2.getLayerConf().getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
         //CNN -> Dense
         ComputationGraphConfiguration conf3 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
@@ -369,18 +369,18 @@ public class TestComputationGraphNetwork {
                 .build();
         //Check preprocessors:
         lv1 = (LayerVertex) conf3.getVertices().get("cnn");
-        assertNull(lv1.getPreProcessor()); //Shouldn't be adding preprocessor here
+        assertNull(lv1.getLayerConf().getLayer().getPreProcessor()); //Shouldn't be adding preprocessor here
 
         lv2 = (LayerVertex) conf3.getVertices().get("pool");
-        assertNull(lv2.getPreProcessor());
+        assertNull(lv2.getLayerConf().getLayer().getPreProcessor());
         LayerVertex lv3 = (LayerVertex) conf3.getVertices().get("dense");
-        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) lv3.getPreProcessor();
+        assertTrue(lv3.getLayerConf().getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) lv3.getLayerConf().getLayer().getPreProcessor();
         assertEquals(3, proc.getNumChannels());
         assertEquals(7, proc.getInputHeight());
         assertEquals(7, proc.getInputWidth());
         LayerVertex lv4 = (LayerVertex) conf3.getVertices().get("out");
-        assertNull(lv4.getPreProcessor());
+        assertNull(lv4.getLayerConf().getLayer().getPreProcessor());
         //Check nIns:
         assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3.getLayerConf().getLayer()).getNIn());
 
@@ -402,20 +402,20 @@ public class TestComputationGraphNetwork {
 
         //Check preprocessors:
         lv1 = (LayerVertex) conf4.getVertices().get("cnn");
-        assertNull(lv1.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
+        assertNull(lv1.getLayerConf().getLayer().getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
         lv2 = (LayerVertex) conf4.getVertices().get("pool");
-        assertNull(lv2.getPreProcessor());
+        assertNull(lv2.getLayerConf().getLayer().getPreProcessor());
         lv3 = (LayerVertex) conf4.getVertices().get("dense");
-        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        proc = (CnnToFeedForwardPreProcessor) lv3.getPreProcessor();
+        assertTrue(lv3.getLayerConf().getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        proc = (CnnToFeedForwardPreProcessor) lv3.getLayerConf().getLayer().getPreProcessor();
         assertEquals(3, proc.getNumChannels());
         assertEquals(7, proc.getInputHeight());
         assertEquals(7, proc.getInputWidth());
         lv4 = (LayerVertex) conf4.getVertices().get("dense2");
-        assertTrue(lv4.getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
+        assertTrue(lv4.getLayerConf().getLayer().getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
         LayerVertex lv5 = (LayerVertex) conf4.getVertices().get("out");
-        assertTrue(lv5.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(lv5.getLayerConf().getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
         //Check nIns:
         assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3.getLayerConf().getLayer()).getNIn());
         assertEquals(5, ((FeedForwardLayer) lv4.getLayerConf().getLayer()).getNIn());
@@ -443,16 +443,16 @@ public class TestComputationGraphNetwork {
                         .addLayer("output", new OutputLayer.Builder().nOut(10).build(), "max_1") //.nIn(7 * 7 * 6)
                         .setOutputs("output").pretrain(false).backprop(true).build();
         lv1 = (LayerVertex) conf5.getVertices().get("cnn_1");
-        assertNull(lv1.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
+        assertNull(lv1.getLayerConf().getLayer().getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
         lv2 = (LayerVertex) conf5.getVertices().get("cnn_2");
-        assertNull(lv2.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
+        assertNull(lv2.getLayerConf().getLayer().getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
-        assertNull(((LayerVertex) conf5.getVertices().get("max_1")).getPreProcessor());
+        assertNull(((LayerVertex) conf5.getVertices().get("max_1")).getLayerConf().getLayer().getPreProcessor());
 
         lv3 = (LayerVertex) conf5.getVertices().get("output");
-        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) lv3.getPreProcessor();
+        assertTrue(lv3.getLayerConf().getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) lv3.getLayerConf().getLayer().getPreProcessor();
         assertEquals(6, cnnff.getNumChannels());
         assertEquals(7, cnnff.getInputHeight());
         assertEquals(7, cnnff.getInputWidth());
@@ -726,7 +726,7 @@ public class TestComputationGraphNetwork {
         LayerVertex lv = (LayerVertex) conf.getVertices().get("layer");
         FeedForwardLayer l = ((FeedForwardLayer) (lv).getLayerConf().getLayer());
         assertEquals(3, l.getNIn());
-        assertNull(lv.getPreProcessor());
+        assertNull(lv.getLayerConf().getLayer().getPreProcessor());
 
         //Check the equivalent config, but with flat conv data input instead
         //In this case, the only difference should be the addition of a preprocessor
@@ -743,8 +743,8 @@ public class TestComputationGraphNetwork {
         lv = (LayerVertex) conf.getVertices().get("layer");
         l = ((FeedForwardLayer) (lv).getLayerConf().getLayer());
         assertEquals(3, l.getNIn());
-        assertNotNull(lv.getPreProcessor());
-        InputPreProcessor preProcessor = lv.getPreProcessor();
+        assertNotNull(lv.getLayerConf().getLayer().getPreProcessor());
+        InputPreProcessor preProcessor = lv.getLayerConf().getLayer().getPreProcessor();
         assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
         FeedForwardToCnnPreProcessor preproc = (FeedForwardToCnnPreProcessor) preProcessor;
         assertEquals(10, preproc.getInputHeight());
@@ -767,8 +767,8 @@ public class TestComputationGraphNetwork {
         //Check subsampling layer:
         lv = (LayerVertex) conf.getVertices().get("l0");
         SubsamplingLayer sl = ((SubsamplingLayer) (lv).getLayerConf().getLayer());
-        assertNotNull(lv.getPreProcessor());
-        preProcessor = lv.getPreProcessor();
+        assertNotNull(lv.getLayerConf().getLayer().getPreProcessor());
+        preProcessor = lv.getLayerConf().getLayer().getPreProcessor();
         assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
         preproc = (FeedForwardToCnnPreProcessor) preProcessor;
         assertEquals(10, preproc.getInputHeight());
@@ -778,7 +778,7 @@ public class TestComputationGraphNetwork {
         lv = (LayerVertex) conf.getVertices().get("layer");
         l = ((FeedForwardLayer) (lv).getLayerConf().getLayer());
         assertEquals(3, l.getNIn());
-        assertNull(lv.getPreProcessor());
+        assertNull(lv.getLayerConf().getLayer().getPreProcessor());
 
     }
 
@@ -1055,7 +1055,7 @@ public class TestComputationGraphNetwork {
 
         NeuralNetConfiguration nnc = new NeuralNetConfiguration();
         nnc.setLayer(new DenseLayer.Builder().build());
-        GraphVertex[] singleInputVertices = new GraphVertex[]{new L2NormalizeVertex(), new LayerVertex(nnc, null),
+        GraphVertex[] singleInputVertices = new GraphVertex[]{new L2NormalizeVertex(), new LayerVertex(nnc),
                 new PoolHelperVertex(), new PreprocessorVertex(), new ReshapeVertex(new int[]{1, 1}),
                 new ScaleVertex(1.0), new ShiftVertex(1.0), new SubsetVertex(1, 1), new UnstackVertex(0, 2),
                 new DuplicateToTimeSeriesVertex("in1"), new LastTimeStepVertex("in1")};

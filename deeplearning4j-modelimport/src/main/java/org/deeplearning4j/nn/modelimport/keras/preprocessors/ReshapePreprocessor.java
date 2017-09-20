@@ -115,19 +115,24 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) throws InvalidInputTypeException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidInputTypeException {
 
         int[] shape = hasMiniBatchDimension ? targetShape : prependMiniBatchSize(targetShape, 0);
+        InputType ret;
         switch (shape.length) {
             case 2:
-                return InputType.feedForward(shape[1]);
+                ret = InputType.feedForward(shape[1]);
+                break;
             case 3:
-                return InputType.recurrent(shape[1]);
+                ret = InputType.recurrent(shape[1]);
+                break;
             case 4:
-                return InputType.convolutional(shape[2], shape[3], shape[1]);
+                ret = InputType.convolutional(shape[2], shape[3], shape[1]);
+                break;
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));
         }
+        return new InputType[]{ret};
     }
 }

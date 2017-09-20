@@ -66,8 +66,8 @@ public class CustomLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        return InputType.feedForward(10);
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        return new InputType[]{InputType.feedForward(10)};
     }
 
     @Override

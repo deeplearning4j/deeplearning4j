@@ -95,7 +95,7 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1)
             throw new InvalidInputTypeException("Invalid input type: cannot get last time step of more than 1 input");
         if (vertexInputs[0].getType() != InputType.Type.RNN) {
@@ -103,14 +103,17 @@ public class LastTimeStepVertex extends GraphVertex {
                             "Invalid input type: cannot get subset of non RNN input (got: " + vertexInputs[0] + ")");
         }
 
-        return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
+        return new InputType[]{InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize())};
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //No additional working memory (beyond activations/epsilons)
         return new LayerMemoryReport.Builder(null, LastTimeStepVertex.class, inputTypes[0],
-                        getOutputType(-1, inputTypes)).standardMemory(0, 0).workingMemory(0, 0, 0, 0).cacheMemory(0, 0)
+                        getOutputType(-1, inputTypes)[0])
+                .standardMemory(0, 0)
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)
                                         .build();
     }
 

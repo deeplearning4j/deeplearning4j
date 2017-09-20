@@ -43,25 +43,19 @@ import java.util.Arrays;
 public class LayerVertex extends GraphVertex {
 
     private NeuralNetConfiguration layerConf;
-    private InputPreProcessor preProcessor;
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
     // passed in externally
     private boolean outputVertex;
 
 
-    public LayerVertex(NeuralNetConfiguration layerConf, InputPreProcessor preProcessor) {
+    public LayerVertex(NeuralNetConfiguration layerConf) {
         this.layerConf = layerConf;
-        this.preProcessor = preProcessor;
-    }
-
-    public InputPreProcessor getPreProcessor() {
-        return this.preProcessor;
     }
 
     @Override
     public GraphVertex clone() {
-        return new LayerVertex(layerConf.clone(), (preProcessor != null ? preProcessor.clone() : null));
+        return new LayerVertex(layerConf.clone());
     }
 
     @Override
@@ -74,14 +68,12 @@ public class LayerVertex extends GraphVertex {
         }
         if (layerConf != null && !layerConf.equals(lv.layerConf))
             return false;
-        if (preProcessor == null && lv.preProcessor != null || preProcessor != null && lv.preProcessor == null)
-            return false;
-        return preProcessor == null || preProcessor.equals(lv.preProcessor);
+        return true;
     }
 
     @Override
     public int hashCode() {
-        return layerConf.hashCode() ^ (preProcessor != null ? preProcessor.hashCode() : 0);
+        return layerConf.hashCode();
     }
 
     @Override
@@ -108,25 +100,12 @@ public class LayerVertex extends GraphVertex {
         org.deeplearning4j.nn.api.Layer layer =
                         layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
 
-//        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, numInputs, layer, preProcessor, isOutput);
         return layer;
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if (vertexInputs.length != 1) {
-            throw new InvalidInputTypeException(
-                            "LayerVertex expects exactly one input. Got: " + Arrays.toString(vertexInputs));
-        }
-
-        //Assume any necessary preprocessors have already been added
-        InputType afterPreprocessor;
-        if (preProcessor == null)
-            afterPreprocessor = vertexInputs[0];
-        else
-            afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
-
-        return layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+        return layerConf.getLayer().getOutputType(layerIndex, vertexInputs);
     }
 
     @Override

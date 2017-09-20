@@ -16,6 +16,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -112,15 +113,17 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        ((InputType.InputTypeConvolutional) inputType).getDepth(), layerIndex, getLayerName(),
+        InputType ret = InputTypeUtil.getOutputTypeCnnLayers(inputType[0], kernelSize, stride, padding, dilation, convolutionMode,
+                        ((InputType.InputTypeConvolutional) inputType[0]).getDepth(), layerIndex, getLayerName(),
                         SubsamplingLayer.class);
+        return new InputType[]{ret};
     }
 
     @Override
@@ -158,7 +161,7 @@ public class SubsamplingLayer extends Layer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
         int actElementsPerEx = outputType.arrayElementsPerExample();
 
         //TODO Subsampling helper memory use... (CuDNN etc)

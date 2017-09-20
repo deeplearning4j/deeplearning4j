@@ -44,6 +44,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Getter(AccessLevel.PROTECTED)
     protected Activations input;
+    protected int inputMinibatchSize;   //TODO eventially this field should be removed somehow...
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
@@ -284,14 +285,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected void applyPreprocessorIfNecessary(boolean training){
         if(!preprocessorApplied && layerConf().getPreProcessor() != null){
-            input = layerConf().getPreProcessor().preProcess(input, input.get(0).size(0), training);        //TODO MINIBATCH SIZE
+            input = layerConf().getPreProcessor().preProcess(input, getInputMiniBatchSize(), training);        //TODO MINIBATCH SIZE
             preprocessorApplied = true;
         }
     }
 
     protected Gradients backpropPreprocessor(Gradients gradients){
         if(layerConf().getPreProcessor() != null){
-            return layerConf().getPreProcessor().backprop(gradients, input.get(0).size(0));       //TODO MINIBATCH SIZE
+            return layerConf().getPreProcessor().backprop(gradients, getInputMiniBatchSize());       //TODO MINIBATCH SIZE
         }
         return gradients;
     }
@@ -320,13 +321,13 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void setInputMiniBatchSize(int size) {}
+    public void setInputMiniBatchSize(int size) {
+        this.inputMinibatchSize = size;
+    }
 
     @Override
     public int getInputMiniBatchSize() {
-        if(input == null || input.get(0) == null)
-            return -1;
-        return input.get(0).size(0);
+        return inputMinibatchSize;
     }
 
     @Override

@@ -72,17 +72,20 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
         }
-        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        if (inputType == null || inputType[0].getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
+                            + "\"): Expected CNN input, got " + (inputType == null ? null : inputType[0]));
+        }
+        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType[0];
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
         int inDepth = i.getDepth();
 
-        return InputType.convolutional(size * inHeight, size * inWidth, inDepth);
+        return new InputType[]{InputType.convolutional(size * inHeight, size * inWidth, inDepth)};
     }
 
     @Override
@@ -97,7 +100,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * size;

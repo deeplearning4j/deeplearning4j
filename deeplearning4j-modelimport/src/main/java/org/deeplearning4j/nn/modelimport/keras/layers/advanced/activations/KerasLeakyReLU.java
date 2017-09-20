@@ -77,7 +77,7 @@ public class KerasLeakyReLU extends KerasLayer {
      * @return output type as InputType
      * @throws InvalidKerasConfigurationException
      */
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Activation layer accepts only one input (received " + inputType.length + ")");

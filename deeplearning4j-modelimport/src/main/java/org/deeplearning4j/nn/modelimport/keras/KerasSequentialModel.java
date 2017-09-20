@@ -189,7 +189,7 @@ public class KerasSequentialModel extends KerasModel {
             prevLayer = layer;
         }
 
-        InputType inputType = this.layersOrdered.get(0).getOutputType();
+        InputType inputType = this.layersOrdered.get(0).getOutputType()[0];
         if (inputType != null)
             listBuilder.setInputType(inputType);
 

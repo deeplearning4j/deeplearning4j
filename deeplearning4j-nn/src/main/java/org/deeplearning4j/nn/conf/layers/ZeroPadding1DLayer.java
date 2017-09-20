@@ -71,15 +71,15 @@ public class ZeroPadding1DLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
                     + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                     + inputType);
         }
-        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        return InputType.recurrent(recurrent.getSize(),
-                recurrent.getTimeSeriesLength() + padding[0] + padding[1]);
+        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType[0];
+        return new InputType[]{InputType.recurrent(recurrent.getSize(),
+                recurrent.getTimeSeriesLength() + padding[0] + padding[1])};
     }
 
     @Override
@@ -114,7 +114,7 @@ public class ZeroPadding1DLayer extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
                 .standardMemory(0, 0) //No params

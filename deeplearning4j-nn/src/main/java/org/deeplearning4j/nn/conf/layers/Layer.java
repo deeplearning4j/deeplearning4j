@@ -77,13 +77,14 @@ import java.util.*;
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
     protected IDropout iDropout;
-    protected InputPreProcessor preProcessor;
     protected List<LayerConstraint> constraints;
+    protected InputPreProcessor preProcessor;
 
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.iDropout = builder.iDropout;
+        this.preProcessor = builder.preProcessor;
     }
 
     /**
@@ -154,14 +155,14 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract ParamInitializer initializer();
 
     /**
-     * For a given type of input to this layer, what is the type of the output?
+     * For a given type of input to this layer, what is the type of the output(s)?
      *
      * @param layerIndex Index of the layer
-     * @param inputType Type of input for the layer
+     * @param inputTypes Types of input for the layer
      * @return Type of output from the layer
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract InputType getOutputType(int layerIndex, InputType inputType);
+    public abstract InputType[] getOutputType(int layerIndex, InputType... inputTypes);
 
     /**
      * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
@@ -243,6 +244,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
         protected IDropout iDropout;
+        protected InputPreProcessor preProcessor;
 
         /**
          * Layer name assigns layer string name.
@@ -324,6 +326,17 @@ public abstract class Layer implements Serializable, Cloneable {
          */
         public T constrainWeights(LayerConstraint... constraints) {
             this.weightConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
+
+        /**
+         * Set the input preprocessor for this layer. Note that the input preprocessor is applied before performing
+         * forward pass (and, after performing backward pass)
+         *
+         * @param preProcessor Preprocessor to use for this layer
+         */
+        public T preProcessor(InputPreProcessor preProcessor){
+            this.preProcessor = preProcessor;
             return (T) this;
         }
 

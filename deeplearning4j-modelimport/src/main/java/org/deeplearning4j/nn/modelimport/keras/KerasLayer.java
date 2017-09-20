@@ -366,7 +366,7 @@ public class KerasLayer {
      * @return output type as InputType
      * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
-    public InputType getOutputType(InputType... inputType)
+    public InputType[] getOutputType(InputType... inputType)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         throw new UnsupportedOperationException(
                 "Cannot determine output type for Keras layer of type " + this.className);

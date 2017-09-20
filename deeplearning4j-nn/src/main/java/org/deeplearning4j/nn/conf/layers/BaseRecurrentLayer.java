@@ -22,16 +22,19 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType[] inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for RNN layer (layer index = " + layerIndex
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                             + inputType);
         }
 
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType[0];
 
-        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
+        return new InputType[]{InputType.recurrent(nOut, itr.getTimeSeriesLength())};
     }
 
     @Override

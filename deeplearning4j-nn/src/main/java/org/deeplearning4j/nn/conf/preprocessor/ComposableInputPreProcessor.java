@@ -72,7 +72,7 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         for (InputPreProcessor p : inputPreProcessors) {
             inputType = p.getOutputType(inputType);
         }

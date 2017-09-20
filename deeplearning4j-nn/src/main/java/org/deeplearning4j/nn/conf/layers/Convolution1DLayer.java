@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -58,14 +59,14 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                            + inputType);
+                            + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        return InputType.recurrent(nOut);
+        return new InputType[]{InputType.recurrent(nOut)};
     }
 
     @Override

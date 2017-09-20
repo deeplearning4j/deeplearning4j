@@ -55,7 +55,6 @@ import java.util.*;
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
-//    protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean pretrain = false;
     protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
@@ -337,7 +336,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             LayerMemoryReport report = confs.get(i).getLayer().getMemoryReport(inputType);
             memoryReportMap.put(layerName, report);
 
-            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+            inputType = confs.get(i).getLayer().getOutputType(i, inputType)[0];
         }
 
         return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
@@ -366,7 +365,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * shaping of input.
          * @param processor what to use to preProcess the data.
          * @return builder pattern
+         * @deprecated Now: set input preprocessors on layers configurations/builders - {@link Layer.Builder#preProcessor(InputPreProcessor)}
          */
+        @Deprecated
         public Builder inputPreProcessor(Integer layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer, processor);
             return this;
@@ -539,11 +540,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                     InputPreProcessor inputPreProcessor = inputPreProcessors.get(i);
                     if (inputPreProcessor != null) {
-                        currentInputType = inputPreProcessor.getOutputType(currentInputType);
+                        currentInputType = inputPreProcessor.getOutputType(currentInputType)[0];
                     }
                     l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
 
-                    currentInputType = l.getOutputType(i, currentInputType);
+                    currentInputType = l.getOutputType(i, currentInputType)[0];
                 }
 
             }

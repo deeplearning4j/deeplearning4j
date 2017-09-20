@@ -76,7 +76,7 @@ public class AutoEncoder extends BasePretrainNetwork {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //Because of supervised + unsupervised modes: we'll assume unsupervised, which has the larger memory requirements
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int actElementsPerEx = outputType.arrayElementsPerExample() + inputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);

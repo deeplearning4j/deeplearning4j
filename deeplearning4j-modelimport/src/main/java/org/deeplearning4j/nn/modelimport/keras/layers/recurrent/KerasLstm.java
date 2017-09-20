@@ -172,7 +172,7 @@ public class KerasLstm extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
@@ -180,7 +180,7 @@ public class KerasLstm extends KerasLayer {
         if (preProcessor != null)
             return  preProcessor.getOutputType(inputType[0]);
         else
-            return this.getLSTMLayer().getOutputType(-1, inputType[0]);
+            return this.getLSTMLayer().getOutputType(-1, inputType);
     }
 
     /**

@@ -67,7 +67,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         if (inputType == null)
             throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;

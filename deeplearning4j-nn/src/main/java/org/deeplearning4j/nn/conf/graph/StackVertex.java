@@ -80,9 +80,9 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
-            return vertexInputs[0];
+            return vertexInputs;
         InputType first = vertexInputs[0];
         if (first.getType() == InputType.Type.CNNFlat) {
             //TODO
@@ -124,19 +124,21 @@ public class StackVertex extends GraphVertex {
                 }
             }
 
+            InputType ret;
             if (size > 0) {
                 //Size is specified
                 if (type == InputType.Type.FF)
-                    return InputType.feedForward(size);
+                    ret = InputType.feedForward(size);
                 else
-                    return InputType.recurrent(size, tsLength);
+                    ret = InputType.recurrent(size, tsLength);
             } else {
                 //size is unknown
                 if (type == InputType.Type.FF)
-                    return InputType.feedForward(-1);
+                    ret = InputType.feedForward(-1);
                 else
-                    return InputType.recurrent(-1, tsLength);
+                    ret = InputType.recurrent(-1, tsLength);
             }
+            return new InputType[]{ret};
         } else {
             //CNN inputs... also check that the depth, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
@@ -170,14 +172,14 @@ public class StackVertex extends GraphVertex {
                 depthSum += od;
             }
 
-            return InputType.convolutional(fh, fw, depthSum);
+            return new InputType[]{InputType.convolutional(fh, fw, depthSum)};
         }
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //No working memory, just output activations
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
 
         return new LayerMemoryReport.Builder(null, StackVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching

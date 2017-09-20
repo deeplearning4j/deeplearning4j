@@ -95,17 +95,17 @@ public class L2NormalizeVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
-            return vertexInputs[0];
+            return vertexInputs;
         InputType first = vertexInputs[0];
 
-        return first; //Same output shape/size as
+        return new InputType[]{first}; //Same output shape/size as
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         //norm2 value (inference working mem): 1 per example during forward pass
 
         //Training working mem: 2 per example + 2x input size + 1 per example (in addition to epsilons)

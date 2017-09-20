@@ -100,13 +100,14 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input: expected input of type RNN, got " + inputType);
+    public InputType[] getOutputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input: expected input of type RNN, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
-        return InputType.feedForward(rnn.getSize());
+        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType[0];
+        return new InputType[]{InputType.feedForward(rnn.getSize())};
     }
 
 

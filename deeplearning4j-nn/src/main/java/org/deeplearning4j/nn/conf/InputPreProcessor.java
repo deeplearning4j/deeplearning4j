@@ -70,10 +70,10 @@ public interface InputPreProcessor extends Serializable, Cloneable {
     /**
      * For a given type of input to this preprocessor, what is the type of the output?
      *
-     * @param inputType    Type of input for the preprocessor
+     * @param inputTypes    Type of input for the preprocessor
      * @return             Type of input after applying the preprocessor
      */
-    InputType getOutputType(InputType inputType);
+    InputType[] getOutputType(InputType... inputTypes);
 
 
 //    Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);

@@ -97,7 +97,7 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @return The type of output for this vertex
      * @throws InvalidInputTypeException If the input type is invalid for this type of GraphVertex
      */
-    public abstract InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException;
+    public abstract InputType[] getOutputType(int layerIndex, InputType... inputTypes);
 
     /**
      * This is a report of the estimated memory consumption for the given vertex

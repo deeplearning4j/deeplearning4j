@@ -187,7 +187,8 @@ public class ComputationGraphTestRNN {
         //4 layer network: 2 GravesLSTM + DenseLayer + RnnOutputLayer. Hence also tests preprocessors.
         //Network architecture: lstm0 -> Dense -> RnnOutputLayer0
         // and lstm1 -> Dense -> RnnOutputLayer1
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                .graphBuilder()
                         .addInputs("in0", "in1")
                         .addLayer("lstm0",
                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(5).nOut(6)

@@ -133,10 +133,12 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Activations activate(boolean training) {
+        applyPreprocessorIfNecessary(training);
         INDArray input = this.input.get(0);
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
-                            "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
+                            "Input must be rank 3. Got input with rank " + input.rank() + ", shape "
+                                    + Arrays.toString(input.shape()) + " - " + layerId());
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
 

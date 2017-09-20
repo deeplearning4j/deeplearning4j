@@ -143,8 +143,14 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputTypes) {
 
+        if (inputTypes == null || inputTypes.length != 1 ) {
+            throw new IllegalStateException("Invalid input type: " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+
+        InputType inputType = inputTypes[0];
+        InputType ret;
         switch (inputType.getType()) {
             case FF:
                 InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
@@ -154,7 +160,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                                     + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "
                                     + inputType);
                 }
-                return InputType.convolutional(inputHeight, inputWidth, numChannels);
+                ret = InputType.convolutional(inputHeight, inputWidth, numChannels);
+                break;
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
@@ -163,7 +170,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                                     + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
                                     + "," + inputHeight + "," + inputWidth + ")");
                 }
-                return c2;
+                ret = c2;
+                break;
             case CNNFlat:
                 InputType.InputTypeConvolutionalFlat c3 = (InputType.InputTypeConvolutionalFlat) inputType;
                 if (c3.getDepth() != numChannels || c3.getHeight() != inputHeight || c3.getWidth() != inputWidth) {
@@ -171,10 +179,12 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                                     + "," + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels
                                     + "," + inputHeight + "," + inputWidth + ")");
                 }
-                return c3.getUnflattenedType();
+                ret = c3;
+                break;
             default:
                 throw new IllegalStateException("Invalid input type: got " + inputType);
         }
+        return new InputType[]{ret};
     }
 
 

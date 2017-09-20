@@ -1,14 +1,13 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+
+import java.util.Arrays;
 
 /**
  * Created by jeffreytang on 7/21/15.
@@ -29,14 +28,17 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+    public InputType[] getOutputType(int layerIndex, @NonNull InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType.length != 1 || (inputType[0].getType() != InputType.Type.FF
+                        && inputType[0].getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type (layer index = " + layerIndex + ", layer name=\""
-                            + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
+                            + getLayerName() + "\"): expected FeedForward input type. Got: " + Arrays.toString(inputType));
         }
 
-        return InputType.feedForward(nOut);
+        return new InputType[]{InputType.feedForward(nOut)};
     }
 
     @Override

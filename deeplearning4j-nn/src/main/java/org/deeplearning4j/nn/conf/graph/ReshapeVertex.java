@@ -96,25 +96,30 @@ public class ReshapeVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         //Infer output shape from specified shape:
+        InputType ret;
         switch (newShape.length) {
             case 2:
-                return InputType.feedForward(newShape[1]);
+                ret = InputType.feedForward(newShape[1]);
+                break;
             case 3:
-                return InputType.recurrent(newShape[1]);
+                ret = InputType.recurrent(newShape[1]);
+                break;
             case 4:
-                return InputType.convolutional(newShape[2], newShape[3], newShape[1]); //[mb,d,h,w] for activations
+                ret = InputType.convolutional(newShape[2], newShape[3], newShape[1]); //[mb,d,h,w] for activations
+                break;
             default:
                 throw new UnsupportedOperationException(
                                 "Cannot infer input type for reshape array " + Arrays.toString(newShape));
         }
+        return new InputType[]{ret};
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //Assume it's a reshape-with-copy op. In this case: memory use is accounted for in activations
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ReshapeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

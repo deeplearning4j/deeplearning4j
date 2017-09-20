@@ -83,7 +83,7 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         return layer.getOutputType(layerIndex, inputType);
     }
 

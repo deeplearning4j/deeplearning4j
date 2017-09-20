@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -54,9 +55,7 @@ public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
-        if (inputType == null)
-            throw new IllegalStateException("Invalid input type: cannot be null");
+    public InputType[] getOutputType(@NonNull InputType... inputType) {
         return inputType;
     }
 }

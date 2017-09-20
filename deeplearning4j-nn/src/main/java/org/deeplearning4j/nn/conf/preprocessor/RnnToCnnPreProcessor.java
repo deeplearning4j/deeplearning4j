@@ -108,19 +108,20 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input type: Expected input of type RNN, got " + inputType);
+    public InputType[] getOutputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input type: Expected input of type RNN, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+        InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType[0];
         int expSize = inputHeight * inputWidth * numChannels;
         if (c.getSize() != expSize) {
             throw new IllegalStateException("Invalid input: expected RNN input of size " + expSize + " = (d="
                             + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got " + inputType);
         }
 
-        return InputType.convolutional(inputHeight, inputWidth, numChannels);
+        return new InputType[]{InputType.convolutional(inputHeight, inputWidth, numChannels)};
     }
 
 

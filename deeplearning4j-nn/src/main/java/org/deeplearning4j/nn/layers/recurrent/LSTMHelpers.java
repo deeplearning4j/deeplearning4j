@@ -731,7 +731,7 @@ public class LSTMHelpers {
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
         int tsLength = itr.getTimeSeriesLength();
 
-        InputType outputType = lstmLayer.getOutputType(-1, inputType);
+        InputType outputType = lstmLayer.getOutputType(-1, inputType)[0];
 
         int numParams = lstmLayer.initializer().numParams(lstmLayer);
         int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);

@@ -352,18 +352,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 Layer l = lv.getLayerConf().getLayer();
 
                 //Preprocessors - add if necessary
-                if (lv.getPreProcessor() == null) {
+                if (lv.getLayerConf().getLayer().getPreProcessor() == null) {
                     //But don't override preprocessors that are manually defined; if none has been defined,
                     //add the appropriate preprocessor for this input type/layer combination
                     InputPreProcessor preproc = l.getPreProcessorForInputType(layerInput);
-                    lv.setPreProcessor(preproc);
+                    lv.getLayerConf().getLayer().setPreProcessor(preproc);
                 }
 
                 //Set nIn value for layer (if not already set)
                 InputType afterPreproc = layerInput;
-                if (lv.getPreProcessor() != null) {
-                    InputPreProcessor ip = lv.getPreProcessor();
-                    afterPreproc = ip.getOutputType(layerInput);
+                if (lv.getLayerConf().getLayer().getPreProcessor() != null) {
+                    InputPreProcessor ip = lv.getLayerConf().getLayer().getPreProcessor();
+                    afterPreproc = ip.getOutputType(layerInput)[0];
                 }
                 l.setNIn(afterPreproc, false);
 
@@ -378,7 +378,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             InputType outputFromVertex =
-                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];  //TODO mulitple outputs
             vertexOutputs.put(s, outputFromVertex);
         }
     }
@@ -492,7 +492,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             InputType outputFromVertex =
-                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];  //TODO multiple outputs
             vertexOutputs.put(s, outputFromVertex);
 
             MemoryReport mr = gv.getMemoryReport(inputTypeList.toArray(new InputType[inputTypeList.size()]));
@@ -524,6 +524,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
 
+        @Deprecated
         protected Map<String, InputPreProcessor> inputPreProcessors = new LinkedHashMap<>();
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
@@ -558,7 +559,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layer     the name of the layer that this preprocessor will be used with
          * @param processor the preprocessor to use for the specified layer
+         * @deprecated Now: set input preprocessors on layers configurations/builders - {@link Layer.Builder#preProcessor(InputPreProcessor)}
          */
+        @Deprecated
         public GraphBuilder inputPreProcessor(String layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer, processor);
             return this;
@@ -668,7 +671,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 //            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             NeuralNetConfiguration nnc = builder.build();
             nnc.getLayer().setPreProcessor(preProcessor);
-            addVertex(layerName, new LayerVertex(builder.build(), null), layerInputs);
+            addVertex(layerName, new LayerVertex(builder.build()), layerInputs);
             layer.setLayerName(layerName);
             return this;
         }
@@ -830,11 +833,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.getDefaultConfiguration().setPretrain(pretrain);
 
             //Add preprocessors that were defined separately to the Layers to which they belong
+            //This "set separately" is now deprecated, and preprocessors should be set on the layers directly
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {
                 GraphVertex gv = vertices.get(entry.getKey());
                 if (gv instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv;
-                    lv.setPreProcessor(entry.getValue());
+//                    lv.setPreProcessor(entry.getValue());
+                    lv.getLayerConf().getLayer().setPreProcessor(entry.getValue());
                 } else {
                     throw new IllegalStateException(
                                     "Invalid configuration: InputPreProcessor defined for GraphVertex \""

@@ -95,17 +95,20 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) {
             throw new InvalidInputTypeException(
                             "SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
         }
 
+        InputType ret;
         switch (vertexInputs[0].getType()) {
             case FF:
-                return InputType.feedForward(to - from + 1);
+                ret = InputType.feedForward(to - from + 1);
+                break;
             case RNN:
-                return InputType.recurrent(to - from + 1);
+                ret = InputType.recurrent(to - from + 1);
+                break;
             case CNN:
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) vertexInputs[0];
                 int depth = conv.getDepth();
@@ -114,7 +117,8 @@ public class SubsetVertex extends GraphVertex {
                                     + "] inclusive from CNN activations with " + " [depth,width,height] = [" + depth
                                     + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
-                return InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);
+                ret = InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);
+                break;
             case CNNFlat:
                 //TODO work out how to do this - could be difficult...
                 throw new UnsupportedOperationException(
@@ -122,12 +126,13 @@ public class SubsetVertex extends GraphVertex {
             default:
                 throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }
+        return new InputType[]{ret};
     }
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //Get op without dup - no additional memory use
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

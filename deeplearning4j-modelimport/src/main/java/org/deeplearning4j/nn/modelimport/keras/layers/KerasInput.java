@@ -93,7 +93,7 @@ public class KerasInput extends KerasLayer {
      * @throws UnsupportedKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType)
+    public InputType[] getOutputType(InputType... inputType)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         if (inputType.length > 0)
             log.warn("Keras Input layer does not accept inputs (received " + inputType.length + "). Ignoring.");
@@ -127,7 +127,7 @@ public class KerasInput extends KerasLayer {
                 throw new UnsupportedKerasConfigurationException(
                                 "Inputs with " + this.inputShape.length + " dimensions not supported");
         }
-        return myInputType;
+        return new InputType[]{myInputType};
     }
 
     /**

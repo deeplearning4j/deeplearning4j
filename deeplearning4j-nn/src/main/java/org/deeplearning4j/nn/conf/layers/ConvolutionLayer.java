@@ -147,14 +147,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+        return new InputType[]{InputTypeUtil.getOutputTypeCnnLayers(inputType[0], kernelSize, stride, padding, dilation,
+                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class)};
     }
 
     @Override
@@ -210,7 +213,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         int updaterStateSize = (int) getIUpdater().stateSize(paramSize);
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
 
         //TODO convolution helper memory use... (CuDNN etc)
 

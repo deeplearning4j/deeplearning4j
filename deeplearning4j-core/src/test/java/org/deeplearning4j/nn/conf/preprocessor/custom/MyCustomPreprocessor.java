@@ -32,7 +32,7 @@ public class MyCustomPreprocessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         return inputType;
     }
 

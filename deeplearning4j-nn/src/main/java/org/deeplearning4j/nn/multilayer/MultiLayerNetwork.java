@@ -734,6 +734,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     public List<Activations> feedForwardToLayer(Activations input, int layerNum, boolean train){
+        //TODO this next call should eventually be removed (after redesign etc)
+        for(Layer l : layers){
+            l.setInputMiniBatchSize(input.get(0).size(0));
+        }
+
         // TODO: maybe remove that?
         Activations currInput = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? input : input.migrate();
         List<Activations> activations = new ArrayList<>();
@@ -2114,7 +2119,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     @Override
     public Activations activate(boolean training) {
-        return null;
+        INDArray output = output(input, training);
+        return ActivationsFactory.getInstance().create(output);
     }
 
     @Override
@@ -2563,10 +2569,10 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 preProcessor = currentLayer.getPreProcessor();
                 inShape = inputType.toString();
                 if (preProcessor != null) {
-                    inputType = preProcessor.getOutputType(inputType);
+                    inputType = preProcessor.getOutputType(inputType)[0];
                     inShape += "--> "+ inputType.toString();
                 }
-                outType = currentLayer.conf().getLayer().getOutputType(currentLayer.getIndex(), inputType);
+                outType = currentLayer.conf().getLayer().getOutputType(currentLayer.getIndex(), inputType)[0];
                 outShape = outType.toString();
                 inputType = outType;
             }

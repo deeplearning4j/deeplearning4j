@@ -1462,6 +1462,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
+        //TODO this next call should eventually be removed (after redesign etc)
+        for(Layer l : layers){
+            l.setInputMiniBatchSize(input.get(0).size(0));
+        }
+
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
                 ? new DummyWorkspace()
                 : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
@@ -1810,16 +1815,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
         cg.listeners = this.listeners;
-//        for (int i = 0; i < topologicalOrder.length; i++) {
-//            if (!vertices[topologicalOrder[i]].hasLayer())
-//                continue;
-//            String layerName = vertices[topologicalOrder[i]].getName();
-//            if (getLayer(layerName) instanceof FrozenLayer) {
-//                cg.getVertex(layerName).setLayerAsFrozen();
-//            }
-//        }
-//        return cg;
-        throw new UnsupportedOperationException("not yet implemented");
+        return cg;
     }
 
     @Override
@@ -3367,7 +3363,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
                 currLayerIdx++;
                 if (inputTypes != null) {
-                    InputType currentVertexOutputType = configuration.getVertices().get(currentVertexName).getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+                    InputType currentVertexOutputType = configuration.getVertices().get(currentVertexName).getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];
                     outShape = currentVertexOutputType.toString();
                     vertexOutputs.put(currentVertexName, currentVertexOutputType);
                 }

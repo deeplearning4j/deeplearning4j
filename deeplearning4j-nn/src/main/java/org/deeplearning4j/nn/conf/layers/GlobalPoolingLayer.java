@@ -77,39 +77,47 @@ public class GlobalPoolingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
 
-        switch (inputType.getType()) {
+        InputType ret;
+        switch (inputType[0].getType()) {
             case FF:
                 throw new UnsupportedOperationException(
                                 "Global max pooling cannot be applied to feed-forward input type. Got input type = "
                                                 + inputType);
             case RNN:
-                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType[0];
                 if (collapseDimensions) {
                     //Return 2d (feed-forward) activations
-                    return InputType.feedForward(recurrent.getSize());
+                    ret = InputType.feedForward(recurrent.getSize());
                 } else {
                     //Return 3d activations, with shape [minibatch, timeStepSize, 1]
-                    return recurrent;
+                    ret = recurrent;
                 }
+                break;
             case CNN:
-                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType[0];
                 if (collapseDimensions) {
-                    return InputType.feedForward(conv.getDepth());
+                    ret = InputType.feedForward(conv.getDepth());
                 } else {
-                    return InputType.convolutional(1, 1, conv.getDepth());
+                    ret = InputType.convolutional(1, 1, conv.getDepth());
                 }
+                break;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType[0];
                 if (collapseDimensions) {
-                    return InputType.feedForward(convFlat.getDepth());
+                    ret = InputType.feedForward(convFlat.getDepth());
                 } else {
-                    return InputType.convolutional(1, 1, convFlat.getDepth());
+                    ret = InputType.convolutional(1, 1, convFlat.getDepth());
                 }
+                break;
             default:
-                throw new UnsupportedOperationException("Unknown or not supported input type: " + inputType);
+                throw new UnsupportedOperationException("Unknown or not supported input type: " + inputType[0]);
         }
+        return new InputType[]{ret};
     }
 
     @Override
@@ -156,7 +164,7 @@ public class GlobalPoolingLayer extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int fwdTrainInferenceWorkingPerEx = 0;
         //Here: we'll assume we are doing 'full array' global pooling.

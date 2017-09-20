@@ -75,15 +75,18 @@ public class BatchNormalization extends FeedForwardLayer {
 
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         if (inputType == null) {
             throw new IllegalStateException(
                             "Invalid input type: Batch norm layer expected input of type CNN, got null for layer \""
                                             + getLayerName() + "\"");
         }
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
 
         //Can handle CNN, flat CNN or FF input formats only
-        switch (inputType.getType()) {
+        switch (inputType[0].getType()) {
             case FF:
             case CNN:
             case CNNFlat:
@@ -91,7 +94,7 @@ public class BatchNormalization extends FeedForwardLayer {
             default:
                 throw new IllegalStateException(
                                 "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
-                                                + inputType + " for layer index " + layerIndex + ", layer name = "
+                                                + inputType[0] + " for layer index " + layerIndex + ", layer name = "
                                                 + getLayerName());
         }
     }
@@ -155,7 +158,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         //TODO CuDNN helper etc
 

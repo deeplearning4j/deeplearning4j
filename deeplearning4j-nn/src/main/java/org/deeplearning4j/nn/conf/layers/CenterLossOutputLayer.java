@@ -141,7 +141,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //Basically a dense layer, with some extra params...
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int nParamsW = nIn * nOut;
         int nParamsB = nOut;

@@ -115,7 +115,7 @@ public class KerasMerge extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         return this.vertex.getOutputType(-1, inputType);
     }
 }

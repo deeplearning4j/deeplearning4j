@@ -463,7 +463,7 @@ public class TransferLearning {
                     LayerVertex lv = (LayerVertex) gv.getValue();
                     NeuralNetConfiguration nnc = lv.getLayerConf().clone();
                     fineTuneConfiguration.applyToNeuralNetConfiguration(nnc);
-                    vertices.put(gv.getKey(), new LayerVertex(nnc, lv.getPreProcessor()));
+                    vertices.put(gv.getKey(), new LayerVertex(nnc));
                     nnc.getLayer().setLayerName(gv.getKey());
                 }
             }
@@ -558,7 +558,7 @@ public class TransferLearning {
             editedConfigBuilder.removeVertex(layerName, false);
             LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
             String[] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
-            editedConfigBuilder.addLayer(layerName, layerImpl, lv.getPreProcessor(), lvInputs);
+            editedConfigBuilder.addLayer(layerName, layerImpl, null, lvInputs);
             editedVertices.add(layerName);
 
             //collect other vertices that have this vertex as inputs
@@ -584,7 +584,7 @@ public class TransferLearning {
                 editedConfigBuilder.removeVertex(fanoutVertexName, false);
                 lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);
                 lvInputs = origConfig.getVertexInputs().get(fanoutVertexName).toArray(new String[0]);
-                editedConfigBuilder.addLayer(fanoutVertexName, layerImpl, lv.getPreProcessor(), lvInputs);
+                editedConfigBuilder.addLayer(fanoutVertexName, layerImpl, null, lvInputs);
                 editedVertices.add(fanoutVertexName);
             }
             return this;

@@ -250,7 +250,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         //Input validation:
         if (input.get(0).rank() != 2 || input.get(0).columns() != W.rows()) {
             if (input.get(0).rank() != 2) {
-                throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
+                throw new DL4JInvalidInputException("Input is not a matrix; expected matrix (rank 2), got rank "
                                 + input.get(0).rank() + " array with shape " + Arrays.toString(input.get(0).shape())
                                 + ". Missing preprocessor or wrong input type? " + layerId());
             }
