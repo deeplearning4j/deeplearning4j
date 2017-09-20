@@ -41,7 +41,7 @@ public class ScalarGreaterThan extends AbstractScalarFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         return null;
     }
 }

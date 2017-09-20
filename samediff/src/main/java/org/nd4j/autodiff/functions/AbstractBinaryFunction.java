@@ -18,7 +18,10 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
     public AbstractBinaryFunction(SameDiff sameDiff,
                                   DifferentialFunction i_v1,
                                   DifferentialFunction i_v2) {
-        this(sameDiff,i_v1,i_v2, OpState.OpType.TRANSFORM);
+        this(sameDiff,
+                i_v1,
+                i_v2,
+                OpState.OpType.TRANSFORM);
     }
 
     public AbstractBinaryFunction(SameDiff sameDiff,
@@ -42,7 +45,7 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
             validateFunctionReference(i_v1);
             validateFunctionReference(i_v2);
             this.sameDiff = sameDiff;
-
+            this.inPlace = inPlace;
             addEdges(sameDiff,
                     i_v1,
                     i_v2,
@@ -72,7 +75,13 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
 
             this.sameDiff = sameDiff;
 
-            addEdges(sameDiff,i_v1,i_v2,functionName(),opType,i_v1.getResultShape(),null);
+            addEdges(sameDiff,
+                    i_v1,
+                    i_v2,
+                    functionName(),
+                    opType,
+                    i_v1.getResultShape(),
+                    null);
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }

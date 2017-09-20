@@ -36,7 +36,7 @@ public class Variance extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         int inputs = f().getInputLength(i_v1.get(0));
         DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
@@ -45,7 +45,7 @@ public class Variance extends AbstractReduceUnaryFunction {
         ret = f().sub(ret,f().mean(arg(),dimensions));
         ret = f().div(ret,f().one(getResultShape()));
         ret = f().mul(ret,inputs);
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

@@ -27,9 +27,9 @@ public class Square extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().mul(arg(),f().val(a().one(getResultShape()).mul(2L)));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

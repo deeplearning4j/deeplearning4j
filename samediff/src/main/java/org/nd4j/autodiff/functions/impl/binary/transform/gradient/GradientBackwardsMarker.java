@@ -6,38 +6,38 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-import java.util.Arrays;
 import java.util.List;
 
-public class SELUDerivative extends AbstractBinaryFunction {
+public class GradientBackwardsMarker extends AbstractBinaryFunction {
 
-    public SELUDerivative() {
+    public GradientBackwardsMarker() {
     }
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+    public GradientBackwardsMarker(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
-    public SELUDerivative(SameDiff sameDiff) {
+    public GradientBackwardsMarker(SameDiff sameDiff) {
         super(sameDiff);
     }
 
+
+
     @Override
     public ArrayField doGetValue() {
-        return a().seluDerivative(larg().getValue(true),rarg().getValue(true));
+        return a().gradientBackwardsMarker(larg().getValue(true),rarg().getValue(true));
     }
+
 
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
-
-        return Arrays.asList(ret);
+        throw new UnsupportedOperationException();
     }
 
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.transforms.SELUDerivative().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker().name();
     }
 }

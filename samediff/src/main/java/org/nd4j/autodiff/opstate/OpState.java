@@ -78,23 +78,30 @@ public class OpState implements Serializable {
      * the given op
      */
     public static OpType opTypeFromOp(Op op) {
-       if(op instanceof ScalarOp)
-           return OpType.SCALAR_TRANSFORM;
-       else if(op instanceof Accumulation)
-           return OpType.ACCUMULATION;
-       else if(op instanceof IndexAccumulation)
-           return OpType.INDEX_ACCUMULATION;
-       else if(op instanceof GridOp)
-           return OpType.AGGREGATE;
-       else if(op instanceof TransformOp)
-           return OpType.TRANSFORM;
-       else if(op instanceof ShapeOp)
-           return OpType.SHAPE;
-       else if(op instanceof BroadcastOp)
-           return OpType.BROADCAST;
-       else if (op instanceof CustomOp)
-           return OpType.CUSTOM;
-       throw new IllegalStateException("Illegal op type " + op.getClass().getName());
+        if(op instanceof ScalarOp)
+            return OpType.SCALAR_TRANSFORM;
+        else if(op instanceof Accumulation)
+            return OpType.ACCUMULATION;
+        else if(op instanceof IndexAccumulation)
+            return OpType.INDEX_ACCUMULATION;
+        else if(op instanceof GridOp)
+            return OpType.AGGREGATE;
+        else if(op instanceof TransformOp)
+            return OpType.TRANSFORM;
+        else if(op instanceof ShapeOp)
+            return OpType.SHAPE;
+        else if(op instanceof BroadcastOp)
+            return OpType.BROADCAST;
+        else if (op instanceof CustomOp)
+            return OpType.CUSTOM;
+        throw new IllegalStateException("Illegal op type " + op.getClass().getName());
+    }
+
+
+    public DifferentialFunction getDifferentialFunction() {
+        if(differentialFunction != null)
+            return differentialFunction.getSameDiff().setupFunction(differentialFunction);
+        return null;
     }
 
     /**

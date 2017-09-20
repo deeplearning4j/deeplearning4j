@@ -16,8 +16,11 @@ import org.nd4j.autodiff.samediff.SameDiff;
 public class NDArrayVertex extends Vertex<NDArrayInformation>  {
     private OpState opState;
     private SameDiff sameDiff;
-    public NDArrayVertex(SameDiff sameDiff,int idx, int[] shape) {
-        this(sameDiff,idx,
+
+
+
+    public NDArrayVertex(SameDiff sameDiff, int idx, int depth, int[] shape) {
+        this(sameDiff,idx,depth,
                 NDArrayInformation.builder().shape(shape)
                         .id(String.valueOf(idx))
                         .build());
@@ -27,10 +30,15 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
      *
      * @param sameDiff
      * @param idx
+     * @param depth the depth of the vertex
      * @param value
      */
-    public NDArrayVertex(SameDiff sameDiff,int idx, NDArrayInformation value) {
-        super(idx, value);
+    public NDArrayVertex(
+            SameDiff sameDiff,
+            int idx,
+            int depth,
+            NDArrayInformation value) {
+        super(idx, depth,value);
         this.sameDiff = sameDiff;
         if(value.getOwner() != null) {
             if (value.getOwner().getArrayField() != null) {
@@ -44,16 +52,18 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         NDArrayVertex vertex = (NDArrayVertex) o;
-
+        if(vertex.depth != this.depth)
+            return false;
         return opState != null ? opState.equals(vertex.opState) : vertex.opState == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+        result *= 31 * depth;
+        result *= 31 * idx;
         result = 31 * result + (opState != null ? opState.hashCode() : 0);
         return result;
     }
@@ -62,6 +72,7 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
     public String toString() {
         return "NDArrayVertex{" +
                 "idx=" + idx +
+                ", depth=" + depth +
                 ", value=" + value +
                 '}';
     }

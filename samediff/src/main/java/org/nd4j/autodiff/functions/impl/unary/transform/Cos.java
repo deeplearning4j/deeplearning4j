@@ -23,10 +23,10 @@ public class Cos extends AbstractUnaryFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         DifferentialFunction ret = f().neg(f().sin(arg()));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

@@ -26,7 +26,7 @@ public class Neq extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         return Collections.singletonList(f().neg(i_v.get(0)));
     }
 

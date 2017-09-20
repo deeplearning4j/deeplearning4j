@@ -116,7 +116,7 @@ public class TensorMmul extends AbstractBinaryReduceFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         List<DifferentialFunction> ret = new ArrayList<>();
         int[] bAxes = range(0, rarg().getResultShape().length);
         int[] aAxes = range(0, larg().getResultShape().length);
@@ -145,14 +145,12 @@ public class TensorMmul extends AbstractBinaryReduceFunction {
         DifferentialFunction firstResult = doTensorMmul(i_v1.get(0), rarg(), firstAxes);
         DifferentialFunction permuted = f().permute(firstResult,firstPerm);
         ret.add(permuted);
-        larg().setGradient(permuted);
 
         //tensor matrix multiply gradient wrt first variable
         int[] secondPerm = argsort(combine(keep(argsort(sumAxes[0]),sumAxes[1]),deletedAxes[1]));
         DifferentialFunction secondResult = doTensorMmul(i_v1.get(0), larg(), secondAxes);
         DifferentialFunction secondPermuted = f().permute(secondResult,secondPerm);
         ret.add(secondPermuted);
-        rarg().setGradient(secondPermuted);
         return ret;
     }
 

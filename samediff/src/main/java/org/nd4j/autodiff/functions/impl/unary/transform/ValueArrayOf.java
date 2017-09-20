@@ -22,9 +22,8 @@ public class ValueArrayOf extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction grad = sameDiff.setupFunction(new One(sameDiff,i_v.get(0).getResultShape()));
-        arg().setGradient(grad);
         return Collections.singletonList(grad);
     }
 

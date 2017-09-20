@@ -220,7 +220,11 @@ public class ArrayFactory implements AbstractFactory {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(0.0)
                 .id("zero-" + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return sameDiff().setupArrayField(new ArrayField(new NDArrayVertex(sameDiff(),sameDiff().getGraph().nextVertexId(), information), sameDiff()));
+        return sameDiff().setupArrayField(new ArrayField(new NDArrayVertex(
+                sameDiff(),
+                sameDiff().getGraph().nextVertexId(),
+                0,
+                information), sameDiff()));
     }
 
     @Override
@@ -228,7 +232,7 @@ public class ArrayFactory implements AbstractFactory {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(1.0)
                 .id("one-"  + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return sameDiff().setupArrayField(new ArrayField(new NDArrayVertex(sameDiff(),sameDiff().getGraph().nextVertexId(), information), sameDiff()));
+        return sameDiff().setupArrayField(new ArrayField(new NDArrayVertex(sameDiff(),sameDiff().getGraph().nextVertexId(),0, information), sameDiff()));
     }
 
     /**
@@ -242,7 +246,7 @@ public class ArrayFactory implements AbstractFactory {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(value)
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
-        return sameDiff().setupArrayField(new ArrayField(new NDArrayVertex(sameDiff(),sameDiff().getGraph().nextVertexId(), information), sameDiff()));
+        return sameDiff().setupArrayField(new ArrayField(new NDArrayVertex(sameDiff(),sameDiff().getGraph().nextVertexId(),0, information), sameDiff()));
     }
 
     @Override
@@ -315,6 +319,11 @@ public class ArrayFactory implements AbstractFactory {
     @Override
     public ArrayField logSoftmax(ArrayField value) {
         return sameDiff().setupArrayField(value.logSoftmax());
+    }
+
+    @Override
+    public ArrayField gradientBackwardsMarker(ArrayField value, ArrayField value1) {
+        return sameDiff().setupArrayField(value.gradientBackwardsMarker(value,value1));
     }
 
     @Override

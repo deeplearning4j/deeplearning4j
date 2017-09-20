@@ -26,10 +26,10 @@ public class ATanh extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(f().one(getResultShape()),f().sub(f()
                 .one(getResultShape()),f().pow(arg(),2)));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

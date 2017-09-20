@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -107,7 +108,7 @@ public class TensorFlowImport {
                         .arrId(tfNode.getName())
                         .build();
 
-                Vertex<NDArrayInformation> vertex = new Vertex<>(++nodesCnt, varInformation);
+                NDArrayVertex vertex = new NDArrayVertex(diff,++nodesCnt,0, varInformation);
 
                 reverseVertexMap.put(tfNode.getName(), nodesCnt);
 
@@ -161,7 +162,7 @@ public class TensorFlowImport {
                         .id(tfNode.getName())
                         .build();
 
-                Vertex<NDArrayInformation> vertex = new Vertex<>(++nodesCnt, varInformation);
+                NDArrayVertex vertex = new NDArrayVertex(diff,++nodesCnt, 0,varInformation);
                 graph.addVertex(vertex);
 
                 OpState opState = getOpStateFromNodeDef(tfNode, tfNode.getInputCount());

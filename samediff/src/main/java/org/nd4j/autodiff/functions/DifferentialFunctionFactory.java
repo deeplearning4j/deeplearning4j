@@ -205,7 +205,10 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         return result;
     }
 
-
+    @Override
+    public DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX) {
+        return sameDiff().setupFunction(new GradientBackwardsMarker(sameDiff(),iX,iX));
+    }
 
     @Override
     public DifferentialFunction expandDims(DifferentialFunction iX,int axis) {
@@ -525,7 +528,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -552,7 +555,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -579,7 +582,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -606,7 +609,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -633,7 +636,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -660,7 +663,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -688,7 +691,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -716,7 +719,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -743,7 +746,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -771,7 +774,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -798,7 +801,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -824,7 +827,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });
@@ -851,7 +854,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
             @Override
-            public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+            public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
                 return null;
             }
         });

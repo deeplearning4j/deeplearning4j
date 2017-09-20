@@ -27,12 +27,12 @@ public class Mean extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         DifferentialFunction ret = f().div(f().doRepeat(this,i_v1.get(0),dimensions),
                  f().mul(f().one(i_v1.get(0).getResultShape()),
                         f().getInputLength(i_v1.get(0))));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

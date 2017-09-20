@@ -36,13 +36,13 @@ public class StandardDeviation  extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         int inputs = f().getInputLength(i_v1.get(0));
         DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
         DifferentialFunction ret = f().div(f().sub(f().mul(g,arg()),f().mean(arg(),dimensions)),f().mul(f()
                 .one(g.getResultShape()),inputs));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

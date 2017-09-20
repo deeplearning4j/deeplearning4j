@@ -30,14 +30,12 @@ public class Sub extends AbstractBinaryFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction gradWrtX = i_v.get(0);
         DifferentialFunction gradWrtY = f().neg(i_v.get(0));
         List<DifferentialFunction> ret = new ArrayList<>();
         ret.add(gradWrtX);
         ret.add(gradWrtY);
-        larg().setGradient(gradWrtX);
-        rarg().setGradient(gradWrtY);
         return ret;
     }
 

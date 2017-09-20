@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Sigmoid extends AbstractUnaryFunction {
+
     public Sigmoid(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
         validateFunctionReference(i_v);
@@ -27,9 +28,9 @@ public class Sigmoid extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().sigmoidDerivative(arg(), i_v.get(0));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

@@ -3,6 +3,8 @@ package org.nd4j.autodiff.samediff.impl;
 import com.google.common.base.Preconditions;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
@@ -34,11 +36,15 @@ import java.util.Map;
 public class SDVariable  implements Serializable {
     private INDArray arr;
     private Variable arrayField;
+    @Getter
+    @Setter
     private String varName;
     private SameDiff sameDiff;
     private int[] shape;
     private SDVariable gradient;
+    private SDVariable forwardVariable;
     private int vertexId;
+    private int depth;
     protected DifferentialFunction differentialFunction;
 
     @Builder
@@ -56,10 +62,16 @@ public class SDVariable  implements Serializable {
         this.vertexId = vertexId;
         this.arrayField = arrayField;
         this.sameDiff = sameDiff;
-        if(differentialFunction != null)
+        if(differentialFunction != null) {
             this.vertexId = differentialFunction.getVertexId();
-        else if(arrayField != null)
+            this.depth = differentialFunction.getVertex().depth();
+        }
+        else if(arrayField != null) {
             this.vertexId = arrayField.getVertexId();
+            this.depth = arrayField.getVertex().depth();
+        }
+
+
 
     }
 
@@ -94,6 +106,10 @@ public class SDVariable  implements Serializable {
                     .arr(sameDiff.getNDArray(differentialFunction.getGradient().getOpState().getResult()))
                     .shape(differentialFunction.getGradient() != null ? differentialFunction.getGradient().getResultShape() : null)
                     .build() : null;
+
+            if(sameDiff.isDebugMode() && this.gradient != null) {
+                sameDiff.addVariable(this.gradient);
+            }
         }
 
         else if(gradient == null && arrayField != null && arrayField.getGradient() != null) {
@@ -103,15 +119,32 @@ public class SDVariable  implements Serializable {
                     .varName(varName + "-grad").arr(sameDiff.getNDArray(arrayField.getGradient().getOpState().getResult()))
                     .shape(arrayField.getGradient() != null ? arrayField.getGradient().getResultShape() : null)
                     .build() : null;
+
+            if(sameDiff.isDebugMode() && this.gradient != null) {
+                sameDiff.addVariable(this.gradient);
+            }
         }
 
 
+        if(this.gradient != null) {
+            this.gradient.setForwardVariable(this);
+        }
+
+        if(this.gradient != null && this.gradient.getArr() == null) {
+            if(arrayField != null)
+                this.gradient.setArr(sameDiff.getNDArray(arrayField.getGradient().getOpState().getResult()));
+            else {
+                this.gradient.setArr(sameDiff.getNDArray(differentialFunction.getGradient().getOpState().getResult()));
+
+            }
+        }
 
         return gradient;
     }
 
     public void setGradient(SDVariable gradient) {
         this.gradient = gradient;
+        this.gradient.setForwardVariable(this);
     }
 
     /**

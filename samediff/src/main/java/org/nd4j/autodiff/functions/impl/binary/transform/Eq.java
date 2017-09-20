@@ -26,12 +26,12 @@ public class Eq extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         Constant ym1 = f()
                 .val(rarg().getValue(true).sub(a().one(getResultShape())));
         DifferentialFunction ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
-        larg().setGradient(ret);
-        rarg().setGradient(ret);
+
+
         return Collections.singletonList(ret);
     }
 

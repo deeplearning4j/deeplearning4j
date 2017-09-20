@@ -3,6 +3,7 @@ package org.nd4j.autodiff;
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.impl.binary.transform.gradient.GradientBackwardsMarker;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
@@ -49,6 +50,13 @@ public class ArrayField implements Field {
         this.ops = ops;
     }
 
+    public NDArrayInformation getInput() {
+        return input;
+    }
+
+    public void setInput(NDArrayInformation input) {
+        this.input = input;
+    }
 
     @Override
     public ArrayField negate() {
@@ -504,7 +512,7 @@ public class ArrayField implements Field {
 
     @Override
     public ArrayField sigmoidDerivative(ArrayField wrt) {
-        return addTransformOp(new SigmoidDerivative().name());
+        return addTransformOp(new  org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative().name());
     }
 
     @Override
@@ -866,13 +874,15 @@ public class ArrayField implements Field {
         Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
-                .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
+                .id(name + "(" + input.getId() + ")")
+                .scalarValue(this.getInput().getScalarValue())
                 .arrId(UUID.randomUUID().toString())
                 .shape(getInput().getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
                 this.ops,
                 this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
                 ndArrayInformation);
 
         //add the result vertex to the graph
@@ -881,7 +891,7 @@ public class ArrayField implements Field {
         OpState owner =    OpState.builder()
                 .n(ArrayUtil.prod(getInput().getShape()))
                 .opName(name).extraArgs(extraArgs)
-                .scalarValue(getInput().scalar())
+                .scalarValue(ArrayUtil.prod(getInput().getShape()) == 1 ? getInput().scalar() : null)
                 .arrayField(this)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
@@ -910,12 +920,6 @@ public class ArrayField implements Field {
         //non scalar
 
 
-        if(this.getInput() != input) {
-            setInput(input);
-            getVertex().setValue(input);
-        }
-
-
         NDArrayInformation result =  NDArrayInformation.builder()
                 .scalarValue(scalarValue)
                 .id(name + "(" + input.getId() + ")")
@@ -925,6 +929,7 @@ public class ArrayField implements Field {
         NDArrayVertex newVertex = new NDArrayVertex(
                 this.ops,
                 this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
                 result);
 
         //add the result vertex to the graph
@@ -977,7 +982,11 @@ public class ArrayField implements Field {
                 .arrId(UUID.randomUUID().toString())
                 .shape(resultShape).build();
 
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
+                this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
+                information);
 
         //add the result vertex to the graph
         this.ops.getGraph().addVertex(newVertex);
@@ -1030,7 +1039,11 @@ public class ArrayField implements Field {
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
+                this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
+                resultInfo);
 
         Preconditions.checkArgument(Arrays.equals(input.getShape(),i_v.getInput().getShape()),"X and y not equal shapes.");
 
@@ -1116,7 +1129,9 @@ public class ArrayField implements Field {
 
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId() ,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,
+                this.ops.getGraph().nextVertexId() ,
+                this.vertex.depth() + 1,
                 NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                         .scalarValue(getInput().getScalarValue())
                         .id(name + "(" + input.getId() + ")")
@@ -1289,5 +1304,9 @@ public class ArrayField implements Field {
         result = 31 * result + (input != null ? input.hashCode() : 0);
         result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
         return result;
+    }
+
+    public ArrayField gradientBackwardsMarker(ArrayField value, ArrayField value1) {
+        return addGradientOp(new GradientBackwardsMarker().functionName(),value,new Object[]{value1});
     }
 }

@@ -29,7 +29,7 @@ public class Negative extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         return Arrays.asList(f().neg(arg().diff(i_v).get(0)));
     }
 

@@ -25,10 +25,10 @@ public class ASinh extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(f().one(getResultShape()),f().sqrt(f().add(f().pow(arg(),2),
                 f().one(getResultShape()))));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.Getter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.ArrayList;
@@ -37,11 +38,10 @@ public class Variable extends DifferentialFunction {
             throw new IllegalArgumentException("Input not null value.");
         }
 
-        if(i_v instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v;
-            validateDifferentialFunctionsameDiff(arrayField);
-            this.vertexId = arrayField.getVertex().vertexID();
-        }
+        ArrayField arrayField = i_v;
+        validateDifferentialFunctionsameDiff(arrayField);
+        this.vertexId = arrayField.getVertex().vertexID();
+
 
     }
 
@@ -109,19 +109,23 @@ public class Variable extends DifferentialFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         //default value is 1.0 (constant)
         List<DifferentialFunction> ret = new ArrayList<>();
-       if(i_v == this)
-           ret.add(sameDiff.setupFunction(f().one(i_v.get(0)
-                   .getResultShape())));
-           else
-               ret.add(sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
+        if(i_v == this)
+            ret.add(sameDiff.setupFunction(f().one(i_v.get(0)
+                    .getResultShape())));
+        else
+            ret.add(sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
         return ret;
 
 
     }
 
+    @Override
+    public NDArrayInformation getResult() {
+        return m_x.getInput();
+    }
 
     /**
      * Get the result shape for this function

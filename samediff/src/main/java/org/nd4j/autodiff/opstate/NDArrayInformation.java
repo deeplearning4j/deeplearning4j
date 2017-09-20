@@ -64,7 +64,7 @@ public class NDArrayInformation implements Serializable {
             return scalarValue;
 
         if(owner == null)
-            throw new IllegalStateException("No owner set.");
+            return null;
         return owner.getScalarValue();
     }
 

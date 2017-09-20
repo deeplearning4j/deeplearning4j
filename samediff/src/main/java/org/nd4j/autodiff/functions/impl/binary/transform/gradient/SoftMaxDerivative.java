@@ -31,13 +31,13 @@ public class SoftMaxDerivative extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative().name();
     }
 
 

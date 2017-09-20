@@ -18,7 +18,7 @@ public class Sum extends AbstractReduceUnaryFunction {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().sum(arg().doGetValue(),dimensions);
+        return a().sum(arg().doGetValue(),dimensions);
     }
 
     @Override
@@ -29,13 +29,12 @@ public class Sum extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         validateFunctionReference(i_v1);
-        DifferentialFunction repeat =  sameDiff.getFunctionFactory().doRepeat(
+        DifferentialFunction repeat =  f().doRepeat(
                 i_v1.get(0),
                 arg(),dimensions);
-        arg().setGradient(repeat);
         return Collections.singletonList(repeat);
     }
 }

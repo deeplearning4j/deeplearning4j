@@ -99,13 +99,17 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
         validateFunctionReference(i_v1);
         ArrayField v1 = i_v1.getValue(true);
         validateDifferentialFunctionsameDiff(v1);
-        NDArrayInformation information =    NDArrayInformation.builder()
+        NDArrayInformation information =   inPlace ? i_v1.getResult() :  NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
                 .id(opName + "(" + v1.getInput().getId() + " -> " +
                         v1.getInput().getId() + ")")
                 .shape(shape).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.graph().nextVertexId(),information);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.graph().nextVertexId(),
+                i_v1.getVertex().depth() + 1,
+                information);
         this.vertexId = newVertex.vertexID();
         sameDiff.graph().addVertex(newVertex);
         Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");

@@ -1,22 +1,18 @@
 package org.nd4j.autodiff.functions;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.functions.impl.binary.transform.Add;
-import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.List;
+import java.util.UUID;
 
 
 @AllArgsConstructor
@@ -32,15 +28,30 @@ public abstract class DifferentialFunction implements Differential {
     @Getter
     @Setter
     protected int vertexId;
+    @Setter
+    protected NDArrayVertex vertex;
     @Getter
     @Setter
     protected DifferentialFunction gradient;
     @Getter
     @Setter
     protected boolean inPlace;
+    @Getter
+    @Setter
+    protected boolean gradFunction;
+
+    @Getter
+    @Setter
+    protected DifferentialFunction forwardFunction;
+
 
     protected Object[] extraArgs;
 
+    public NDArrayVertex getVertex() {
+        if(vertex == null)
+            return (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
+        return vertex;
+    }
 
     /**
      *
@@ -76,6 +87,10 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    public DifferentialFunction getGradient() {
+        return gradient;
+    }
+
     public  boolean isVariable() {
         return false;
     }
@@ -86,6 +101,14 @@ public abstract class DifferentialFunction implements Differential {
      */
     public abstract ArrayField doGetValue();
 
+
+    /**
+     * The actual implementation for automatic differentiation.
+     *
+     * @param f1
+     * @return
+     */
+    public abstract List<DifferentialFunction> doDiff(List<DifferentialFunction> f1);
 
     /**
      * Shortcut for the {@link DifferentialFunctionFactory}
@@ -174,7 +197,21 @@ public abstract class DifferentialFunction implements Differential {
 
 
     @Override
-    public abstract List<DifferentialFunction> diff(List<DifferentialFunction> i_v1);
+    public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+        List<DifferentialFunction> vals = doDiff(i_v1);
+        for(int i = 0; i < vals.size(); i++) {
+            DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
+            DifferentialFunction arg = sameDiff.setupFunction(args()[i]);
+            DifferentialFunction grad = arg.getGradient() != null ? sameDiff.setupFunction(arg.getGradient()) : null;
+            if(grad != null)
+                f().addi(differentialFunction,grad);
+            else
+                arg.setGradient(differentialFunction);
+            differentialFunction.setGradFunction(true);
+        }
+
+        return vals;
+    }
 
     private void validateDifferentialFunctionGraph(DifferentialFunction function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
@@ -200,6 +237,13 @@ public abstract class DifferentialFunction implements Differential {
 
     }
 
+    /**
+     * Get the result
+     * @return
+     */
+    public NDArrayInformation getResult() {
+        return opState.getResult();
+    }
 
     protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction i_v1,
@@ -233,12 +277,20 @@ public abstract class DifferentialFunction implements Differential {
         validateDifferentialFunctionsameDiff(v1);
         validateDifferentialFunctionsameDiff(v2);
 
-        NDArrayInformation arrInfo = NDArrayInformation.builder()
+        NDArrayInformation arrInfo = inPlace ?  i_v1.getResult() : NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
                 .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                 .shape(shape).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), arrInfo);
+        if(vertex == null) {
+            vertex = (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
+        }
+
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.getGraph().nextVertexId(),
+                Math.max(i_v1   .getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
+                arrInfo);
         if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
             throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
                     " Perhaps a mismatched graph call? Another likely cause is applyGraph");
@@ -251,9 +303,8 @@ public abstract class DifferentialFunction implements Differential {
         //ensure there's 2 vertices for when the 2 inputs are the same
         if(i_v1.equals(i_v2)) {
             NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
-                    NDArrayInformation.builder().arrId(v1.getInput().getArrId())
-                            .shape(v1.getInput().getShape())
-                            .id(v1.getInput().getId()).build());
+                    Math.max(i_v1.getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
+                    arrInfo);
             //update vertex id
             v2VertexId = dupVertex.vertexID();
             sameDiff.getGraph().addVertex(dupVertex);
@@ -396,12 +447,18 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-
+    /**
+     * Set a forward function reference
+     * and a gradient reference
+     * for this function
+     * @param gradient
+     */
     public void setGradient(DifferentialFunction gradient) {
         DifferentialFunction functionRef = sameDiff.getFunctionInstances().get(vertexId);
         if(functionRef != this)
             functionRef.setGradient(gradient);
         this.gradient = sameDiff.setupFunction(gradient);
+        this.gradient.setForwardFunction(this);
     }
 
     @Override
@@ -413,7 +470,7 @@ public abstract class DifferentialFunction implements Differential {
 
         if (vertexId != that.vertexId) return false;
         if (opState != null ? !opState.equals(that.opState) : that.opState != null) return false;
-        if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
+        //if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
         return true;
     }
 
@@ -422,7 +479,6 @@ public abstract class DifferentialFunction implements Differential {
         int result = super.hashCode();
         result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + vertexId;
-        result = 31 * result + (gradient != null ? gradient.hashCode() : 0);
         return result;
     }
 
@@ -432,6 +488,8 @@ public abstract class DifferentialFunction implements Differential {
         for(DifferentialFunction differentialFunction : function)
             validateDifferentialFunctionsameDiff(differentialFunction);
     }
+
+
 
     protected void validateDifferentialFunctionsameDiff(
             DifferentialFunction function) {
