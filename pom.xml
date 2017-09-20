@@ -102,16 +102,16 @@
                     <id>local-nexus</id>
                     <name>local-nexus</name>
                     <url>
-                        http://master-jenkins.skymind.io:8088/nexus/content/repositories/snapshots
+                        http://master-jenkins.skymind.io:8088/repository/snapshots
                     </url>
                 </snapshotRepository>
-                <repository>
-                    <id>local-nexus</id>
-                    <name>local-nexus</name>
-                    <url>
-                        http://master-jenkins.skymind.io:8088/nexus/service/local/staging/deploy/maven2
-                    </url>
-                </repository>
+                <!-- <repository> -->
+                <!--     <id>local-nexus</id> -->
+                <!--     <name>local-nexus</name> -->
+                <!--     <url> -->
+                <!--         http://master-jenkins.skymind.io:8088/service/local/staging/deploy/maven2 -->
+                <!--     </url> -->
+                <!-- </repository> -->
             </distributionManagement>
             <build>
                 <plugins>
@@ -138,7 +138,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>local-nexus</serverId>
-                            <nexusUrl>http://master-jenkins.skymind.io:8088/nexus/</nexusUrl>
+                            <nexusUrl>http://master-jenkins.skymind.io:8088/</nexusUrl>
                             <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                         </configuration>
                     </plugin>
