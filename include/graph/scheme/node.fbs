@@ -16,7 +16,7 @@ enum OpType:byte {
 }
 
 enum OpClass:byte {
-    TRANFSFORM = 0,
+    TRANSFORM = 0,
     REDUCTION = 1,
     MULTIPLICATOR = 2,
 }

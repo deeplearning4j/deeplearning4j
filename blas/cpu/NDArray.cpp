@@ -33,6 +33,19 @@ namespace nd4j {
         }
     }
 
+    template <typename T>
+    NDArray<T>* NDArray<T>::getView() {
+        auto view = new NDArray<T>();
+        view->_isView = true;
+        view->_shapeInfo = _shapeInfo;
+        view->_buffer = _buffer;
+        view->_workspace = _workspace;
+        view->_isShapeAlloc = false;
+        view->_isBuffAlloc = false;
+
+        return view;
+    }
+
 ////////////////////////////////////////////////////////////////////////
 // default constructor, do not allocate memory, memory for array is passed from outside 
 template <typename T> NDArray<T>::NDArray(T *buffer, int *shapeInfo, nd4j::memory::Workspace* workspace) {
@@ -574,8 +587,6 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        nd4j_verbose("Applying offset [%i] for index [%i]\n", tad->tadOffsets[index], index);
-
         T* buffer = this->_buffer + tad->tadOffsets[index];
 
         int* shapeInfo;
@@ -590,7 +601,6 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         array->_isBuffAlloc = false;
         array->_isShapeAlloc = true;
         array->_isView = true;
-
 
         return array;
     }
@@ -1711,10 +1721,10 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     // default destructor
     template<typename T>
     NDArray<T>::~NDArray() {
-        if (_isBuffAlloc && _workspace == nullptr)
+        if (_isBuffAlloc && _workspace == nullptr && !_isView && _buffer != nullptr)
             delete[] _buffer;
 
-        if (_isShapeAlloc  && _workspace == nullptr)
+        if (_isShapeAlloc  && _workspace == nullptr && _shapeInfo != nullptr)
             delete[] _shapeInfo;
     }
 }

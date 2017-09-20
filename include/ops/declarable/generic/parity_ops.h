@@ -334,7 +334,7 @@ namespace nd4j {
 
         // test op, non-divergent
         DECLARE_OP(testop2i2o, 2, 2, true) {
-            nd4j_printf("CPU op used!","");
+            nd4j_printf("CPU op used!\n","");
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 

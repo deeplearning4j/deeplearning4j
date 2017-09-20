@@ -16,7 +16,7 @@ namespace nd4j {
         class Variable {
         protected:
             int32_t _id;
-            nd4j::NDArray<T> * _ndarray;
+            nd4j::NDArray<T> * _ndarray = nullptr;
             std::string _name;
 
             bool _external;

@@ -20,7 +20,7 @@ namespace nd4j {
         protected:
             DataType _dataType;
             OpType _opType;
-            Block<T>* _block;
+            Block<T>* _block = nullptr;
             int _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
@@ -322,6 +322,8 @@ nd4j::graph::Node<T>::Node(OpType opType, int opNum, int id, std::initializer_li
     this->_opType = opType;
     this->_id = id;
     this->_opNum = opNum;
+    this->_extraParams = nullptr;
+    this->_dim = nullptr;
 
     _hasExternalInputs = false;
     _hasExternalOutputs = false;
@@ -350,7 +352,7 @@ nd4j::graph::Node<T>::Node(OpType opType, int opNum, int id, std::initializer_li
         if (_output.size() <= 1) {
             _isInplace = true;
         }
-        _opClass = OpClass_TRANFSFORM;
+        _opClass = OpClass_TRANSFORM;
     } else if (opType == OpType_ACCUMULATION || opType == OpType_SUMMARYSTATS) {
         _opClass = OpClass_REDUCTION;
     }
@@ -362,6 +364,8 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
     _hasExternalOutputs = false;
     _hasInternalInputs = false;
     _hasInternalOutputs = false;
+    _extraParams = nullptr;
+    _dim = nullptr;
 
     _scalar = node->scalar();
 
@@ -374,7 +378,7 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
         if (node->name() != nullptr && node->name()->c_str() != nullptr)
             this->_name = node->name()->str();
 
-        nd4j_printf("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
+        nd4j_verbose("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
 
         if (node->input() != nullptr)
             for (int e = 0; e < (int) node->input()->size(); e++)
@@ -408,7 +412,7 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
             if (_output.size() <= 1) {
                 _isInplace = true;
             }
-            _opClass = OpClass_TRANFSFORM;
+            _opClass = OpClass_TRANSFORM;
         } else if (this->_opType == OpType_ACCUMULATION || this->_opType == OpType_SUMMARYSTATS) {
             _opClass = OpClass_REDUCTION;
         }

@@ -1283,7 +1283,7 @@ TEST_F(DeclarableOpsTests, TestScatterUpdate1) {
     NDArray<float> updates(2, 2, 'c');
     updates.assign(1.0);
 
-    updates.printBuffer("Updates");
+    //updates.printBuffer("Updates");
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &matrix);
@@ -1307,7 +1307,7 @@ TEST_F(DeclarableOpsTests, TestScatterUpdate1) {
     Nd4jStatus result = op.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    matrix.printBuffer("Result");
+    //matrix.printBuffer("Result");
 }
 
 
@@ -1499,7 +1499,7 @@ TEST_F(DeclarableOpsTests, Conv3D_ff_Test1) {
     Nd4jStatus result = conv3d.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    output.printBuffer("Result");
+    //output.printBuffer("Result");
 
     ASSERT_NEAR(451.0f, output.template reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
@@ -1566,7 +1566,7 @@ TEST_F(DeclarableOpsTests, TestCustomShape1) {
 
     auto shapes = test.calculateOutputShape(new ShapeList(input.getShapeInfo()), *block);
 
-    input.printShapeInfo("input");
+    //input.printShapeInfo("input");
     //shape::printShapeInfoLinear(shape);
 
     ASSERT_EQ(input.getShapeInfo()[0]    , shapes->at(0)[0]);
@@ -1628,7 +1628,7 @@ TEST_F(DeclarableOpsTests, DilatedMaxPool3D_ff_Test1) {
     Nd4jStatus result = maxpool3d.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    output.printBuffer("Result");
+    //output.printBuffer("Result");
 
     ASSERT_NEAR(451.0f, output.template reduceNumber<simdOps::Mean<float>>(), 1e-5);
 

@@ -58,6 +58,15 @@ if(!CUDA_BLAS)
 endif()
 
 
+if (APPLE)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        if ("${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER 6.0 OR "${CMAKE_C_COMPILER_VERSION}" VERSION_EQUAL 6.0)
+            SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wa,-mavx512f ")
+        endif()
+    endif()
+endif()
+
+
 if(CUDA_BLAS)
     message("Build cublas")
     find_package(CUDA)

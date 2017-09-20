@@ -178,7 +178,7 @@ Nd4jIndex nd4j::graph::Graph<T>::estimateRequiredMemory() {
                 }
 
                 delete outSha;
-            } else if (node->getOpClass() == OpClass_TRANFSFORM) {
+            } else if (node->getOpClass() == OpClass_TRANSFORM) {
                 auto vec = node->input();
 
                 auto in = node->input()->at(0);
@@ -338,10 +338,22 @@ nd4j::graph::VariableSpace<T> * nd4j::graph::Graph<T>::getVariableSpace() {
 
 template <typename T>
 nd4j::graph::Graph<T>::~Graph() {
+    for (auto v: *_mapped)
+        delete v.second;
+
+    for (auto v: _unmapped)
+        delete v.second;
+
+    for (auto v: *_onion) {
+        delete v.second;
+    }
+
     delete _mapped;
     delete _nodes;
     delete _variableSpace;
     delete _onion;
+    delete _configuration;
+
 
     // delete _onion content here
 }
@@ -389,22 +401,31 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
 
     // if outputs are undefined, we have to auto-create variable
     if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0) == 0)){
-        nd4j_verbose("Adding auto output variable; Output size: %i\n", node->output()->size());
-        auto var = new Variable<T>();
-        var->setId(node->id());
-        var->setName(node->getName());
-        _variableSpace->putOutputVariable(var);
-        node->pickExternalOutput(var->id());
+            Variable<T>* var;
+            if (!_variableSpace->hasVariable(node->id())) {
+                var = new Variable<T>();
+            } else {
+                var = _variableSpace->getVariable(node->id());
+            }
+            nd4j_logger("Adding auto output variable; Output size: %i\n", node->output()->size());
 
-        // we're pushing this variable to output
-        if (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT || _configuration->_outputMode == OutputMode_VARIABLE_SPACE)
-            pushToOutputOnce(var->id());
+            var->setId(node->id());
+            var->setName(node->getName());
+            _variableSpace->putOutputVariable(var);
+            node->pickExternalOutput(var->id());
 
-        this->_autos.push_back(var->id());
-        assert(node->hasExternalOutputs());
+            // we're pushing this variable to output
+            if (_configuration->_outputMode == OutputMode_IMPLICIT ||
+                _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT ||
+                _configuration->_outputMode == OutputMode_VARIABLE_SPACE)
+                pushToOutputOnce(var->id());
+
+            this->_autos.push_back(var->id());
+            assert(node->hasExternalOutputs());
+//        }
     } else if (node->hasExternalOutputs()) {
         // TODO: we might want this behavior configurable!
-        nd4j_verbose("Adding specific output variable: Outputs: %i; HasInternal: %i;\n", node->output()->size(), node->hasInternalOutputs())
+        nd4j_logger("Adding specific output variable: Outputs: %i; HasInternal: %i;\n", node->output()->size(), node->hasInternalOutputs());
 
         // we're pushing this node to output only
         if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)) ) {
@@ -413,7 +434,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
                     pushToOutputOnce(node->output()->at(e));
             }
 
-            nd4j_printf("Loop finished: %i outputs now\n", this->_output.size());
+            nd4j_logger("Loop finished: %i outputs now\n", this->_output.size());
         }
     }
 
@@ -425,7 +446,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         _onion->at(0)->push_back(node);
         _mapped->insert(pair);
 
-        nd4j_verbose("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+        nd4j_logger("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
     } else {
         // in some cases we're able to put stuff immediately
         if (node->hasInternalInputs() && !node->hasExternalInputs() && node->input()->size() == 1) {
@@ -442,7 +463,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
                 _onion->at(nLayer)->push_back(node);
                 _mapped->insert(pair);
 
-                nd4j_verbose("B Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+                nd4j_logger("B Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
 
                 return;
             }
@@ -465,7 +486,7 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
             // single-input node
             if (node->input()->size() == 1) {
 
-                nd4j_verbose("Trying SI Node_%i\n", node->id());
+                nd4j_logger("Trying SI Node_%i\n", node->id());
 
 
                 int iNode = node->input()->at(0).first;
@@ -494,7 +515,7 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 _unmapped.erase(node->id());
             } else {
                 // multi-input node
-                nd4j_verbose("Trying MI Node_%i\n", node->id());
+                nd4j_logger("Trying MI Node_%i\n", node->id());
 
                 int maxLayer = 0;
                 for (unsigned int e = 0; e < node->input()->size(); e++) {
@@ -603,7 +624,7 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
             auto node = flatGraph->nodes()->Get(e);
 
             if (node->output() == nullptr || node->output()->size() == 0) {
-                nd4j_printf("Orphan node detected: %i; AutoOutput to be considered\n", node->id());
+                nd4j_verbose("Orphan node detected: %i; AutoOutput to be considered\n", node->id());
             }
 
             this->addNode(new Node<T>(node));

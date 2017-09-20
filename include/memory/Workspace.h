@@ -29,6 +29,9 @@ namespace nd4j {
             char* _ptrHost;
             char* _ptrDevice;
 
+            bool _allocatedHost;
+            bool _allocatedDevice;
+
             std::atomic<Nd4jIndex> _offset;
 
             Nd4jIndex _initialSize;
@@ -45,8 +48,7 @@ namespace nd4j {
             void init(Nd4jIndex bytes);
             void freeSpills();
         public:
-            Workspace();
-            Workspace(Nd4jIndex initialSize);
+            Workspace(Nd4jIndex initialSize = 0);
             ~Workspace();
 
             Nd4jIndex getCurrentSize();

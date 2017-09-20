@@ -253,3 +253,50 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
     //ASSERT_EQ(-1, results->at(0)->id());
     //ASSERT_EQ(-2, results->at(1)->id());
 }
+
+
+TEST_F(FlatBuffersTest, ReadFile1) {
+
+    uint8_t* data = nd4j::graph::readFlatBuffers("../../../tests/resources/adam_sum.fb");
+
+    auto fg = GetFlatGraph(data);
+    auto restoredGraph = new Graph<float>(fg);
+
+    ASSERT_EQ(1, restoredGraph->rootNodes());
+    ASSERT_EQ(2, restoredGraph->totalNodes());
+
+    auto ones = restoredGraph->getVariableSpace()->getVariable(-1)->getNDArray();
+
+    ASSERT_EQ(4, ones->lengthOf());
+    ASSERT_NEAR(4.0f, ones->template reduceNumber<simdOps::Sum<float>>(), 1e-5);
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(restoredGraph);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto result = restoredGraph->getVariableSpace()->getVariable(2)->getNDArray();
+    ASSERT_EQ(1, result->lengthOf());
+    ASSERT_EQ(8, result->getScalar(0));
+}
+
+TEST_F(FlatBuffersTest, ReadFile2) {
+    uint8_t* data = nd4j::graph::readFlatBuffers("../../../tests/resources/adam_sum.fb");
+    Nd4jPointer result = GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) data);
+
+    ArrayList<float> arrays(GetFlatResult(result));
+
+    ASSERT_EQ(1, arrays.size());
+    ASSERT_EQ(1, arrays.at(0)->lengthOf());
+    ASSERT_EQ(8, arrays.at(0)->getScalar(0));
+}
+
+TEST_F(FlatBuffersTest, ReadFile3) {
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests/resources/adam_sum.fb");
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto z = graph->getVariableSpace()->getVariable(2)->getNDArray();
+
+    ASSERT_EQ(1, z->lengthOf());
+    ASSERT_EQ(8, z->getScalar(0));
+}

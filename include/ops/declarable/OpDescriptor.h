@@ -47,7 +47,7 @@ namespace nd4j {
                 _divergent = false;
 
                 // just default value
-                _opClass = nd4j::graph::OpClass_TRANFSFORM;
+                _opClass = nd4j::graph::OpClass_TRANSFORM;
             }
 
             // constructor for configurable op

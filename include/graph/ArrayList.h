@@ -7,6 +7,7 @@
 
 #include <NDArray.h>
 #include <vector>
+#include <generated/result_generated.h>
 
 namespace  nd4j {
     template<typename T>
@@ -19,6 +20,32 @@ namespace  nd4j {
         ArrayList() {
             //
         }
+
+        ArrayList(const FlatResult* result) {
+            for (int e = 0; e < result->variables()->size(); e++) {
+                auto var = result->variables()->Get(e);
+
+                std::vector<int> shapeInfo;
+                for (int i = 0; i < var->shape()->size(); i++) {
+                    shapeInfo.push_back(var->shape()->Get(i));
+                }
+
+                std::vector<int> shape;
+                for (int i = 0; i < shapeInfo.at(0); i++) {
+                    shape.push_back(shapeInfo.at(i+1));
+                }
+
+                auto array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+
+                for (int i = 0; i < var->values()->size(); i++) {
+                    array->putScalar(i, var->values()->Get(i));
+                }
+
+                _content.push_back(array);
+            }
+        }
+
+
 
         // default destructor
         ~ArrayList() {

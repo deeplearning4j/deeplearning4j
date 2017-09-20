@@ -13,20 +13,20 @@ namespace nd4j {
     template<typename T>
     class NDArray {
     protected:
-        bool _isView;
+        bool _isView = false;
 
-        T    *_buffer;                          // pointer on flattened data array in memory
-        int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+        T    *_buffer = nullptr;                          // pointer on flattened data array in memory
+        int  *_shapeInfo = nullptr;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
 
-        nd4j::memory::Workspace* _workspace;
+        nd4j::memory::Workspace* _workspace = nullptr;
 
 #ifdef __CUDACC__
-        T* _bufferD;
-        int* _shapeInfoD;
+        T* _bufferD = nullptr;
+        int* _shapeInfoD = nullptr;
 #endif
 
-        bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside
-        bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside
+        bool _isShapeAlloc = false;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside
+        bool _isBuffAlloc = false; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside
 
 
     public:
@@ -69,6 +69,8 @@ namespace nd4j {
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
  
         NDArray<T>* repeat(int dimension, const std::vector<int>& reps);
+
+        NDArray<T>* getView();
 
         T* getBuffer();
 

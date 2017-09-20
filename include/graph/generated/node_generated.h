@@ -45,16 +45,16 @@ inline OpType (&EnumValuesOpType())[10] {
 }
 
 enum OpClass {
-  OpClass_TRANFSFORM = 0,
+  OpClass_TRANSFORM = 0,
   OpClass_REDUCTION = 1,
   OpClass_MULTIPLICATOR = 2,
-  OpClass_MIN = OpClass_TRANFSFORM,
+  OpClass_MIN = OpClass_TRANSFORM,
   OpClass_MAX = OpClass_MULTIPLICATOR
 };
 
 inline OpClass (&EnumValuesOpClass())[3] {
   static OpClass values[] = {
-    OpClass_TRANFSFORM,
+    OpClass_TRANSFORM,
     OpClass_REDUCTION,
     OpClass_MULTIPLICATOR
   };
@@ -63,7 +63,7 @@ inline OpClass (&EnumValuesOpClass())[3] {
 
 inline const char **EnumNamesOpClass() {
   static const char *names[] = {
-    "TRANFSFORM",
+    "TRANSFORM",
     "REDUCTION",
     "MULTIPLICATOR",
     nullptr

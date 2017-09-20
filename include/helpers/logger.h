@@ -9,6 +9,7 @@
 
 #ifndef __CUDACC__
 
+#define nd4j_debug(FORMAT, ...) if (debug && verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_logger(FORMAT, ...) if (debug && verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_verbose(FORMAT, ...) if (verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_printf(FORMAT, ...) nd4j::Logger::info(FORMAT, __VA_ARGS__);
