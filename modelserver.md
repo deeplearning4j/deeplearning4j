@@ -14,3 +14,10 @@ What a Web server is to the Internet, [a model server is to AI](https://docs.goo
 ![Alt text](./img/AI_modelserver.png)
 
 The SKIL model server is able to import models from Python frameworks such as Tensorflow, Keras, Theano and CNTK, overcoming a major barrier in deploying deep learning models to production environments.
+
+Production-grade model servers have a few important features. They should be:
+
+* Secure. They may process sensitive data. 
+* Scalable. That data traffic may surge, and predictions should be made with low latency.
+* Stable and debuggable. SKIL is based on the enterprise-hardened JVM.
+* Certified. Deeplearning4j works with CDH and HDP.
