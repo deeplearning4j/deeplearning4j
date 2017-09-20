@@ -179,7 +179,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                                     + "," + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels
                                     + "," + inputHeight + "," + inputWidth + ")");
                 }
-                ret = c3;
+                ret = c3.getUnflattenedType();
                 break;
             default:
                 throw new IllegalStateException("Invalid input type: got " + inputType);

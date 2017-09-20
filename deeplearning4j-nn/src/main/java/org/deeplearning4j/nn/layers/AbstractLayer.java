@@ -123,6 +123,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected void setInput(Activations input){
         this.input = input;
+        this.dropoutApplied = false;
+        this.preprocessorApplied = false;
     }
 
     @Override

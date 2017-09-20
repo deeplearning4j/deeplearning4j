@@ -39,8 +39,8 @@ public class ActivationLayerTest {
         InputType in1 = InputType.feedForward(20);
         InputType in2 = InputType.convolutional(28, 28, 1);
 
-        assertEquals(in1, l.getOutputType(0, in1));
-        assertEquals(in2, l.getOutputType(0, in2));
+        assertEquals(in1, l.getOutputType(0, in1)[0]);
+        assertEquals(in2, l.getOutputType(0, in2)[0]);
         assertNull(l.getPreProcessorForInputType(in1));
         assertNull(l.getPreProcessorForInputType(in2));
     }
@@ -190,7 +190,7 @@ public class ActivationLayerTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();

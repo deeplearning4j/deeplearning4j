@@ -316,7 +316,7 @@ public class TestGraphNodes {
     @Test
     public void testStackUnstackNodeVariableLength() {
         Nd4j.getRandom().setSeed(12345);
-        Layer stack = new StackVertex(null, "", -1, 1);
+        Layer stack = new StackVertex(null, "", -1, 3);
 
         //Test stack with variable length + mask arrays
         INDArray in0 = Nd4j.rand(new int[] {5, 2, 5});
