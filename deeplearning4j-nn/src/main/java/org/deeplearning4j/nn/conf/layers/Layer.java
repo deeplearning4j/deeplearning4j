@@ -172,7 +172,7 @@ public abstract class Layer implements Serializable, Cloneable {
      *                  already set or not.
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract void setNIn(InputType inputType, boolean override);
+    public abstract void setNIn(InputType[] inputType, boolean override);
 
 
     /**

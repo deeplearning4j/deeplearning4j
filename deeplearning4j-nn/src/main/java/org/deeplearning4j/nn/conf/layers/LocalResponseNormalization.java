@@ -78,7 +78,7 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 

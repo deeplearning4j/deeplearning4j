@@ -91,7 +91,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 

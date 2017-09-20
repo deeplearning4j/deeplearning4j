@@ -365,7 +365,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     InputPreProcessor ip = lv.getLayerConf().getLayer().getPreProcessor();
                     afterPreproc = ip.getOutputType(layerInput)[0];
                 }
-                l.setNIn(afterPreproc, false);
+                l.setNIn(new InputType[]{afterPreproc}, false);
 
                 currLayerIdx++;
             } else {

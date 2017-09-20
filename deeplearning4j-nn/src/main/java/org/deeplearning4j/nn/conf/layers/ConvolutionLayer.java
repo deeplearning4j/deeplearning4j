@@ -19,6 +19,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -161,14 +162,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType[0];
             this.nIn = c.getDepth();
         }
     }

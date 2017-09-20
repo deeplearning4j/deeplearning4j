@@ -39,8 +39,8 @@ public class DropoutLayerTest {
         InputType in1 = InputType.feedForward(20);
         InputType in2 = InputType.convolutional(28, 28, 1);
 
-        assertEquals(in1, config.getOutputType(0, in1));
-        assertEquals(in2, config.getOutputType(0, in2));
+        assertEquals(in1, config.getOutputType(0, in1)[0]);
+        assertEquals(in2, config.getOutputType(0, in2)[0]);
         assertNull(config.getPreProcessorForInputType(in1));
         assertNull(config.getPreProcessorForInputType(in2));
     }

@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -100,21 +101,25 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (inputType == null || inputType.length != 1 ) {
+            throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName()
+                    + "\"): Got: " + (inputType == null ? null : Arrays.toString(inputType)));
+        }
         if (nIn <= 0 || override) {
-            switch (inputType.getType()) {
+            switch (inputType[0].getType()) {
                 case FF:
-                    nIn = ((InputType.InputTypeFeedForward) inputType).getSize();
+                    nIn = ((InputType.InputTypeFeedForward) inputType[0]).getSize();
                     break;
                 case CNN:
-                    nIn = ((InputType.InputTypeConvolutional) inputType).getDepth();
+                    nIn = ((InputType.InputTypeConvolutional) inputType[0]).getDepth();
                     break;
                 case CNNFlat:
-                    nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
+                    nIn = ((InputType.InputTypeConvolutionalFlat) inputType[0]).getDepth();
                 default:
                     throw new IllegalStateException(
                                     "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
-                                                    + inputType + " for layer " + getLayerName() + "\"");
+                                                    + inputType[0] + " for layer " + getLayerName() + "\"");
             }
             nOut = nIn;
         }

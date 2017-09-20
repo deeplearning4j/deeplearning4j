@@ -88,7 +88,7 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         layer.setNIn(inputType, override);
     }
 

@@ -64,7 +64,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
     }
 

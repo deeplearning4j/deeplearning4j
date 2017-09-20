@@ -61,7 +61,7 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op: dropout layer doesn't have a fixed nIn value
     }
 

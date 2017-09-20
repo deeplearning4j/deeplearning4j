@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -63,14 +64,15 @@ public class RnnOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName()
-                            + "\"): Expected RNN input, got " + inputType);
+                            + "\"): Expected RNN input, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType[0];
             this.nIn = r.getSize();
         }
     }

@@ -83,7 +83,7 @@ public class ZeroPadding1DLayer extends Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 

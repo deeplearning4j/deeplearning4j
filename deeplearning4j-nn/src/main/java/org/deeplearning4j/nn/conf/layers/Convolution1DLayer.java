@@ -70,14 +70,18 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
-                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                            + "\"): expect RNN input type with size > 0. Got: "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType[0];
             this.nIn = r.getSize();
         }
     }
