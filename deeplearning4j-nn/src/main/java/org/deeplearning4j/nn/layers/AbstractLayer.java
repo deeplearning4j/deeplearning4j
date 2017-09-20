@@ -232,7 +232,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public Activations activate(Activations input, boolean training) {
-        setInput(0, input.get(0));
+        setInput(input);
         return activate(training);
     }
 

@@ -418,7 +418,7 @@ public class GradientCheckTestsComputationGraph {
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
                         .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
                                         "input")
-                        .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
+                        .addVertex("lastTS", new LastTimeStepVertex(), "lstm1")
                         .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lastTS")
                         .pretrain(false).backprop(true).build();
@@ -477,7 +477,7 @@ public class GradientCheckTestsComputationGraph {
                                                         new GravesLSTM.Builder().nIn(4).nOut(5)
                                                                         .activation(Activation.SOFTSIGN).build(),
                                                         "input2")
-                                        .addVertex("lastTS", new LastTimeStepVertex("input2"), "lstm2")
+                                        .addVertex("lastTS", new LastTimeStepVertex(), "lstm2")
                                         .addVertex("duplicate", new DuplicateToTimeSeriesVertex("input2"), "lastTS")
                                         .addLayer("out", new RnnOutputLayer.Builder().nIn(5 + 4).nOut(3)
                                                         .activation(Activation.SOFTMAX)

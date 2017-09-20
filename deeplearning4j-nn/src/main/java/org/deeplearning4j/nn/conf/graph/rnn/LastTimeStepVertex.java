@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph.rnn;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -38,39 +39,12 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
+@NoArgsConstructor
 public class LastTimeStepVertex extends GraphVertex {
-
-    private String maskArrayInputName;
-
-    /**
-     *
-     * @param maskArrayInputName The name of the input to look at when determining the last time step. Specifically, the
-     *                           mask array of this time series input is used when determining which time step to extract
-     *                           and return.
-     */
-    public LastTimeStepVertex(@JsonProperty("maskArrayInputName") String maskArrayInputName) {
-        this.maskArrayInputName = maskArrayInputName;
-    }
 
     @Override
     public GraphVertex clone() {
-        return new LastTimeStepVertex(maskArrayInputName);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof LastTimeStepVertex))
-            return false;
-        LastTimeStepVertex ltsv = (LastTimeStepVertex) o;
-        if (maskArrayInputName == null && ltsv.maskArrayInputName != null
-                        || maskArrayInputName != null && ltsv.maskArrayInputName == null)
-            return false;
-        return maskArrayInputName == null || maskArrayInputName.equals(ltsv.maskArrayInputName);
-    }
-
-    @Override
-    public int hashCode() {
-        return (maskArrayInputName == null ? 452766971 : maskArrayInputName.hashCode());
+        return new LastTimeStepVertex();
     }
 
     @Override
@@ -91,7 +65,7 @@ public class LastTimeStepVertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph,
                                                                                       String name, int idx, int numInputs, INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph, name, idx, numInputs, maskArrayInputName);
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(name, idx, numInputs);
     }
 
     @Override
@@ -119,6 +93,6 @@ public class LastTimeStepVertex extends GraphVertex {
 
     @Override
     public String toString() {
-        return "LastTimeStepVertex(inputName=" + maskArrayInputName + ")";
+        return "LastTimeStepVertex()";
     }
 }

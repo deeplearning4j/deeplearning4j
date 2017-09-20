@@ -70,7 +70,7 @@ public class TestMemoryReports {
 
         out.add(new Pair<>(new DuplicateToTimeSeriesVertex("0"),
                         new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
-        out.add(new Pair<>(new LastTimeStepVertex("0"), new InputType[] {InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new LastTimeStepVertex(), new InputType[] {InputType.recurrent(10, 10)}));
 
         return out;
     }

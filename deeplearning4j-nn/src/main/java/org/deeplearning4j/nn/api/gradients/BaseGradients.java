@@ -43,7 +43,6 @@ public abstract class BaseGradients implements Gradients {
             if(a == null){
                 continue;
             }
-
             set(i, a.leverageTo(workspace));
         }
     }

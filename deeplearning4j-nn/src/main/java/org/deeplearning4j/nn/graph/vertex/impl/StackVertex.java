@@ -109,7 +109,7 @@ public class StackVertex extends BaseGraphVertex {
         if (epsilon == null) {
             //Edge case for stack vertex: stack -> embedding
             //If the null epsilons are a problem in practice, this should be picked up by other layers
-            return gradient;
+            return GradientsFactory.getInstance().create(gradient.getParameterGradients(), new INDArray[input.size()]);
         }
 
         int nStack = input.size();

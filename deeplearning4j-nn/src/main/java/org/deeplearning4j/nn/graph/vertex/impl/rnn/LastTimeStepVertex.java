@@ -18,16 +18,13 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -38,34 +35,27 @@ import org.nd4j.linalg.primitives.Pair;
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
  * This can be used for example in sequence to sequence architectures, and potentially for sequence classification.
  * <b>NOTE</b>: Because RNNs may have masking arrays (to allow for examples/time series of different lengths in the same
- * minibatch), it is necessary to provide the same of the network input that has the corresponding mask array. If this
- * input does not have a mask array, the last time step of the input will be used for all examples; otherwise, the time
- * step of the last non-zero entry in the mask array (for each example separately) will be used.
+ * minibatch), the last time step will take this into account. If the input to this layer does not have a mask array,
+ * the last time step of the input will be used for all examples; otherwise, the time step of the last non-zero entry
+ * in the mask array (for each example separately) will be used.
+ *
  * @author Alex Black
  */
 public class LastTimeStepVertex extends BaseGraphVertex {
 
-    private String inputName;
-    private int inputIdx;
     /** Shape of the forward pass activations */
     private int[] fwdPassShape;
     /** Indexes of the time steps that were extracted, for each example */
     private int[] fwdPassTimeSteps;
 
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, String inputName) {
-        super(graph, name, vertexIndex, numInputs);
-        this.inputName = inputName;
-        this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if (inputIdx == -1)
-            throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-                            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
+    public LastTimeStepVertex(String name, int vertexIndex, int numInputs) {
+        super(null, name, vertexIndex, numInputs);
     }
 
     @Override
     public Activations activate(boolean training) {
         //First: get the mask arrays for the given input, if any
-        INDArray[] inputMaskArrays = graph.getInputMaskArrays();
-        INDArray mask = (inputMaskArrays != null ? inputMaskArrays[inputIdx] : null);
+        INDArray mask = input.getMask(0);
 
         //Then: work out, from the mask array, which time step of activations we want, extract activations
         //Also: record where they came from (so we can do errors later)
@@ -138,6 +128,6 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "LastTimeStepVertex(inputName=" + inputName + ")";
+        return "LastTimeStepVertex()";
     }
 }

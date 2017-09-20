@@ -175,7 +175,7 @@ public class TestGraphNodes {
     public void testLastTimeStepVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addVertex("lastTS", new LastTimeStepVertex("in"), "in")
+                        .addVertex("lastTS", new LastTimeStepVertex(), "in")
                         .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "lastTS").setOutputs("out")
                         .build();
 
@@ -515,7 +515,7 @@ public class TestGraphNodes {
                                                         new CnnToFeedForwardPreProcessor(1, 2, 1)), "in")
                                         .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0, 1), "in")
                                         .addVertex("v5", new DuplicateToTimeSeriesVertex("in"), "in")
-                                        .addVertex("v6", new LastTimeStepVertex("in"), "in")
+                                        .addVertex("v6", new LastTimeStepVertex(), "in")
                                         .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
                                         .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
                                         .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
@@ -554,7 +554,7 @@ public class TestGraphNodes {
         net.init();
 
         ComputationGraph updatedModel = new TransferLearning.GraphBuilder(net)
-                .addVertex("laststepoutput", new LastTimeStepVertex("rr"), "2")
+                .addVertex("laststepoutput", new LastTimeStepVertex(), "2")
                 .setOutputs("laststepoutput")
                 .build();
 
