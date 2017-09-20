@@ -7,7 +7,7 @@
 
 #include <NDArray.h>
 #include <vector>
-#include <generated/result_generated.h>
+#include <graph/generated/result_generated.h>
 
 namespace  nd4j {
     template<typename T>
@@ -21,7 +21,7 @@ namespace  nd4j {
             //
         }
 
-        ArrayList(const FlatResult* result) {
+        ArrayList(const nd4j::graph::FlatResult* result) {
             for (int e = 0; e < result->variables()->size(); e++) {
                 auto var = result->variables()->Get(e);
 
