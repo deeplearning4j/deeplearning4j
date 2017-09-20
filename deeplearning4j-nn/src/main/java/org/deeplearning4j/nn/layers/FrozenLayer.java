@@ -298,12 +298,6 @@ public class FrozenLayer implements Layer {
         return insideLayer.getPreProcessor();
     }
 
-//    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-//                    int minibatchSize) {
-//        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-//    }
-
     public void logTestMode(boolean training) {
         if (!training)
             return;

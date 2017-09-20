@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.activations.Activations;
@@ -57,15 +59,14 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     //current input and label matrices
     protected INDArray labels;
+    @Setter @Getter
+    protected INDArray labelMask;
 
     private transient Solver solver;
 
     private double fullNetworkL1;
     private double fullNetworkL2;
     protected double score;
-
-    protected INDArray inputMaskArray;
-    protected MaskState inputMaskArrayState;
 
     public BaseOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -74,6 +75,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public double score(){
         return score;
+    }
+
+    @Override
+    public void setMaskArray(int idx, INDArray mask){
+        setLabelMask(mask);
     }
 
     /** Compute score after labels and input have been set.
@@ -94,7 +100,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
 
         //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), input.getMask(0),
+        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), getLabelsMask2d(),
                         false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
@@ -118,7 +124,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), input.getMask(0));
+                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), getLabelsMask2d());
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
@@ -172,7 +178,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
-        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), input.getMask(0));
+        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), getLabelsMask2d());
 
         Gradient gradient = new DefaultGradient();
 
@@ -309,7 +315,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     protected void applyMask(INDArray to) {
-        INDArray maskArray = input.getMask(0);
+        INDArray maskArray = getLabelsMask2d();
         //For output layers: can be either per-example masking, or per-
         if (maskArray.isColumnVector()) {
             to.muliColumnVector(maskArray);
@@ -330,6 +336,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
         return labels;
     }
+
+    //Issue: labels mask may need to be reshaped
+    protected abstract INDArray getLabelsMask2d();
 
     @Override
     public boolean isPretrainLayer() {

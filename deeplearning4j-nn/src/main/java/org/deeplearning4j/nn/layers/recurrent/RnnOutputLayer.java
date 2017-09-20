@@ -27,6 +27,7 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
@@ -91,6 +92,22 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    protected INDArray getLabelsMask2d() {
+        if(labelMask == null)
+            return null;
+        if(labelMask.isColumnVector()){
+            return labelMask;
+        }
+
+        //Two possibilites: per time step (2d) or per output (3d) label mask
+        if(labelMask.rank() == 3){
+            return TimeSeriesUtils.reshape3dTo2d(labelMask);
+        } else {
+            return TimeSeriesUtils.reshapeTimeSeriesMaskToVector(labelMask);
+        }
+    }
+
+    @Override
     public Activations output(INDArray input) {
         if (input.rank() != 3)
             throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
@@ -112,8 +129,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         //if(conf.getLayer().getActivationFunction().equals("softmax")) {
         if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
             INDArray out2d = Nd4j.getExecutioner().execAndReturn(new SoftMax(preOutput2d));
-            if (this.input.getMask(0) != null) {
-                out2d.muliColumnVector(this.input.getMask(0));
+            if (labelMask != null) {
+                applyMask(out2d);
             }
             INDArray ret = TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
             return ActivationsFactory.getInstance().create(ret, null, null);    //TODO masks
@@ -124,10 +141,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input.set(0, TimeSeriesUtils.reshape3dTo2d(input));
         Activations out = super.activate(true);
         this.input.set(0, origInput);
-        if (this.input.getMask(0) != null) {
-            out.get(0).muliColumnVector(this.input.getMask(0));
-        }
         out.set(0, TimeSeriesUtils.reshape2dTo3d(out.get(0), input.size(0)));
+        if (labelMask != null) {
+            applyMask(out.get(0));
+        }
         return out;
     }
 
@@ -157,6 +174,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     public void setMaskArray(int idx, INDArray maskArray) {
         if (maskArray != null) {
+            if(input == null)
+                input = ActivationsFactory.getInstance().create(1);
             //Two possible cases:
             //(a) per time step masking - rank 2 mask array -> reshape to rank 1 (column vector)
             //(b) per output masking - rank 3 mask array  -> reshape to rank 2 (
@@ -174,22 +193,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
     }
 
-//    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-//                    int minibatchSize) {
-//
-//        //If the *input* mask array is present and active, we should use it to mask the output
-//        if (maskArray != null && currentMaskState == MaskState.Active) {
-//            this.inputMaskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
-//            this.inputMaskArrayState = currentMaskState;
-//        } else {
-//            this.inputMaskArray = null;
-//            this.inputMaskArrayState = null;
-//        }
-//
-//        return null; //Last layer in network
-//    }
-
     /**Compute the score for each example individually, after labels and input have been set.
      *
      * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
@@ -205,8 +208,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
+        INDArray labels2d = getLabels2d();
+        INDArray mask2d = getLabelsMask2d();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), input.getMask(0));
+                        lossFunction.computeScoreArray(labels2d, preOut, layerConf().getActivationFn(), mask2d);
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 
@@ -219,5 +224,21 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
 
         return summedScores;
+    }
+
+    @Override
+    protected void applyMask(INDArray to) {
+        if(to.rank() == 2){
+            super.applyMask(to);
+            return;
+        }
+
+        if(labelMask.rank() == 2){
+            //Per time step masking
+            Broadcast.mul(to, labelMask, to, 0, 2);
+        } else {
+            //Per output masking
+            to.muli(labelMask);
+        }
     }
 }

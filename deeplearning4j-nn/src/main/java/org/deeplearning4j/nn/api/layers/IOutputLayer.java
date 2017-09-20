@@ -32,6 +32,10 @@ public interface IOutputLayer extends Model {
      */
     void setLabels(INDArray labels);
 
+    void setLabelMask(INDArray labelMask);
+
+    INDArray getLabelMask();
+
     /**
      * Get the labels array previously set with {@link #setLabels(INDArray)}
      *

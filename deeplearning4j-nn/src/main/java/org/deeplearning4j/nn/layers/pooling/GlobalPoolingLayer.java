@@ -327,15 +327,4 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 throw new RuntimeException("Unknown or not supported pooling type: " + poolingType + " " + layerId());
         }
     }
-
-//    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-//                    int minibatchSize) {
-//        //Global pooling layer: no masking is possible after this point... i.e., masks have been taken into account
-//        // as part of the pooling
-//        this.maskArray = maskArray;
-//        this.maskState = null; //Not used in global pooling - always applied
-//
-//        return null;
-//    }
 }

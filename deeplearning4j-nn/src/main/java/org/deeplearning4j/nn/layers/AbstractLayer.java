@@ -355,18 +355,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
 
-//    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-//                    int minibatchSize) {
-//        //Most layers: CNN, dense, activation, etc - set mask array, mask state and then leave the mask unmodified
-//
-//        this.maskArray = maskArray;
-//        this.maskState = currentMaskState;
-//
-//        return new Pair<>(maskArray, currentMaskState);
-//    }
-
-
     @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException(

@@ -329,8 +329,6 @@ public class TestGraphNodes {
 
 
         stack.setInputs(in0, in1, in2);
-//        Pair<INDArray, MaskState> p =
-//                        stack.feedForwardMaskArrays(new INDArray[] {mask0, mask1, mask2}, MaskState.Active, 5);
 
         Activations a = af.createTriple(in0, in1, in2, mask0, mask1, mask2,
                 MaskState.Active, MaskState.Active, MaskState.Active);

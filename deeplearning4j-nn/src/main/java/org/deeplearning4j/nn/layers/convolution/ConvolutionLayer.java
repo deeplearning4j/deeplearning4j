@@ -403,12 +403,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
             INDArray ret = helper.activate(z, layerConf().getActivationFn());
             if (ret != null) {
-                return ActivationsFactory.getInstance().create(ret);
+                return ActivationsFactory.getInstance().create(ret, input.getMask(0), input.getMaskState(0));
             }
         }
 
         INDArray activation = afn.getActivation(z, training);
-        return ActivationsFactory.getInstance().create(activation);
+        return ActivationsFactory.getInstance().create(activation, input.getMask(0), input.getMaskState(0));
     }
 
     @Override

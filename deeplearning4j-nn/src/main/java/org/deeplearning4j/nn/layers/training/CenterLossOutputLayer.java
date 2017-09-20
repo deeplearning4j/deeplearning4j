@@ -235,4 +235,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         return GradientsFactory.getInstance().create(delta, gradient);
     }
+
+    @Override
+    protected INDArray getLabelsMask2d() {
+        return labelMask;
+    }
 }

@@ -30,6 +30,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class GlobalPoolingMaskingTests {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testMaskingRnn() {
 
@@ -128,10 +130,7 @@ public class GlobalPoolingMaskingTests {
             // as would be the case in practice...
             Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 3));
 
-
-            net.setLayerMaskArrays(maskArray, null);
-
-            INDArray outMasked = net.output(inToBeMasked);
+            INDArray outMasked = net.output(af.create(inToBeMasked, maskArray));
             net.clear();
 
             int numSteps = width - 1;
@@ -145,8 +144,7 @@ public class GlobalPoolingMaskingTests {
             assertEquals(outSubset, outMaskedSubset);
 
             //Finally: check gradient calc for exceptions
-            net.setLayerMaskArrays(maskArray, null);
-            net.setInput(inToBeMasked);
+            net.setInput(af.create(inToBeMasked, maskArray));
             INDArray labels = Nd4j.create(new double[] {0, 1});
             net.setLabels(labels);
 
@@ -191,10 +189,7 @@ public class GlobalPoolingMaskingTests {
             // as would be the case in practice...
             Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
 
-
-            net.setLayerMaskArrays(maskArray, null);
-
-            INDArray outMasked = net.output(inToBeMasked);
+            INDArray outMasked = net.output(af.create(inToBeMasked, maskArray));
             net.clear();
 
             int numSteps = height - 1;
@@ -208,8 +203,7 @@ public class GlobalPoolingMaskingTests {
             assertEquals(outSubset, outMaskedSubset);
 
             //Finally: check gradient calc for exceptions
-            net.setLayerMaskArrays(maskArray, null);
-            net.setInput(inToBeMasked);
+            net.setInput(ActivationsFactory.getInstance().create(inToBeMasked, maskArray));
             INDArray labels = Nd4j.create(new double[] {0, 1});
             net.setLabels(labels);
 
@@ -256,14 +250,11 @@ public class GlobalPoolingMaskingTests {
             // as would be the case in practice...
             Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 3));
 
-
-            net.setLayerMaskArrays(maskArray, null);
-
-            INDArray outMasked = net.output(inToBeMasked);
+            INDArray outMasked = net.output(af.create(inToBeMasked, maskArray));
             net.clear();
 
             for (int i = 0; i < minibatch; i++) {
-                System.out.println(i);
+//                System.out.println(i);
                 int numSteps = width - i;
                 INDArray subset = inToBeMasked.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
                                 NDArrayIndex.all(), NDArrayIndex.interval(0, numSteps));
@@ -315,10 +306,7 @@ public class GlobalPoolingMaskingTests {
             // as would be the case in practice...
             Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
 
-
-            net.setLayerMaskArrays(maskArray, null);
-
-            INDArray outMasked = net.output(inToBeMasked);
+            INDArray outMasked = net.output(af.create(inToBeMasked, maskArray));
             net.clear();
 
             for (int i = 0; i < minibatch; i++) {

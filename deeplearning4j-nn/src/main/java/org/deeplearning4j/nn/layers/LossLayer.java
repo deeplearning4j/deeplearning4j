@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.layers;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.Activations;
@@ -58,6 +60,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     //current input and label matrices
     protected INDArray labels;
+    @Setter @Getter
+    protected INDArray labelMask;
 
     private transient Solver solver;
 

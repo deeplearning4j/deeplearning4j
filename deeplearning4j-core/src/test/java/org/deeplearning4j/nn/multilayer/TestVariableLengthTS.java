@@ -430,7 +430,7 @@ public class TestVariableLengthTS {
         INDArray labelsMask = featuresMask.dup();
 
         net.setLayerMaskArrays(featuresMask, labelsMask);
-        INDArray outMasked = net.output(input);
+        INDArray outMasked = net.output(ActivationsFactory.getInstance().create(input, featuresMask));
 
         net.clear();
 

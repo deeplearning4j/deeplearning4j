@@ -47,7 +47,6 @@ public class EmbeddingLayer extends FeedForwardLayer {
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret =
                         new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
-//        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

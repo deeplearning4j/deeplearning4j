@@ -304,8 +304,9 @@ public class EmbeddingLayerTest {
             List<Activations> actEmbedding = net.feedForward(aEmbedding, false);
             List<Activations> actDense = net2.feedForward(aDense, false);
             for (int i = 1; i < actEmbedding.size(); i++) {
-                assertArrayEquals(actDense.get(i).getAsArray(), actEmbedding.get(i).getAsArray());
-                assertArrayEquals(actDense.get(i).getMaskAsArray(), actEmbedding.get(i).getMaskAsArray());
+                String s = String.valueOf(i);
+                assertArrayEquals(s, actDense.get(i).getAsArray(), actEmbedding.get(i).getAsArray());
+                assertArrayEquals(s, actDense.get(i).getMaskAsArray(), actEmbedding.get(i).getMaskAsArray());
             }
 
             net.setInput(aEmbedding);

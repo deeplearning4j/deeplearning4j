@@ -423,6 +423,16 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    public void setLabelMask(INDArray labelMask) {
+        throw new UnsupportedOperationException("Yolo2OutputLayer: Does not (yet) support label mask arrays");
+    }
+
+    @Override
+    public INDArray getLabelMask() {
+        return null;
+    }
+
+    @Override
     public double score(){
         return score;
     }

@@ -133,7 +133,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
                         new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
-//        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -102,13 +103,20 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     public Activations activate(Activations input, boolean training) {
         setInput(input.get(0));
         INDArray ret = activateHelper(training, null, null, false).fwdPassOutput;
-        return ActivationsFactory.getInstance().create(ret);
+        return ActivationsFactory.getInstance().create(ret, input.getMask(0), MaskState.Passthrough);
     }
 
     @Override
     public Activations activate(boolean training) {
         INDArray ret = activateHelper(training, null, null, false).fwdPassOutput;
-        return ActivationsFactory.getInstance().create(ret);
+
+        //LSTM (standard, not bi-directional) don't make any changes to the data OR the mask arrays
+        //Any relevant masking occurs during backprop
+        //They also set the current mask array as inactive: this is for situations like the following:
+        // in -> dense -> lstm -> dense -> lstm
+        // The first dense should be masked using the input array, but the second shouldn't. If necessary, the second
+        // dense will be masked via the output layer mask
+        return ActivationsFactory.getInstance().create(ret, input.getMask(0), MaskState.Passthrough);
     }
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
@@ -145,19 +153,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     public boolean isPretrainLayer() {
         return false;
     }
-
-//    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray this.input.getMask(0), MaskState currentMaskState,
-//                    int minibatchSize) {
-//        //LSTM (standard, not bi-directional) don't make any changes to the data OR the mask arrays
-//        //Any relevant masking occurs during backprop
-//        //They also set the current mask array as inactive: this is for situations like the following:
-//        // in -> dense -> lstm -> dense -> lstm
-//        // The first dense should be masked using the input array, but the second shouldn't. If necessary, the second
-//        // dense will be masked via the output layer mask
-//
-//        return new Pair<>(this.input.getMask(0), MaskState.Passthrough);
-//    }
 
     @Override
     public Activations rnnTimeStep(Activations input) {

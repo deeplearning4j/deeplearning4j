@@ -1590,6 +1590,10 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         return output(ActivationsFactory.getInstance().create(input), train);
     }
 
+    public INDArray output(Activations input){
+        return output(input, false);
+    }
+
     public INDArray output(Activations input, boolean train){
         WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
         layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
@@ -1793,6 +1797,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         Activations a = ActivationsFactory.getInstance().create(data.getFeatures(), data.getFeaturesMaskArray());
         feedForward(a, false);
         setLabels(data.getLabels());
+        setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
         INDArray out;
         if (getOutputLayer() instanceof IOutputLayer) {
@@ -2333,14 +2338,19 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @param featuresMaskArray Mask array for features (input)
      * @param labelsMaskArray Mask array for labels (output)
      */
+    @Deprecated
     public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if (featuresMaskArray != null) {
-            input.setMask(0, featuresMaskArray);
+            if(input == null){
+                input = ActivationsFactory.getInstance().create(null, featuresMaskArray, MaskState.Active);
+            } else {
+                input.setMask(0, featuresMaskArray);
+            }
         }
         if (labelsMaskArray != null) {
             if (!(getOutputLayer() instanceof IOutputLayer))
                 return;
-            layers[layers.length - 1].setMaskArray(0, labelsMaskArray);
+            ((IOutputLayer)layers[layers.length - 1]).setLabelMask(labelsMaskArray);
         }
     }
 

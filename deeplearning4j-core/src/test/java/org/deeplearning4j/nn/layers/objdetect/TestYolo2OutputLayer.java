@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -387,6 +388,7 @@ public class TestYolo2OutputLayer {
 
 
     @Test
+    @Ignore
     public void testYoloOverfitting() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 

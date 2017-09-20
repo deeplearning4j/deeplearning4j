@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.custom.testclasses;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Created by Alex on 28/08/2016.
@@ -25,5 +26,10 @@ import org.deeplearning4j.nn.layers.BaseOutputLayer;
 public class CustomOutputLayerImpl extends BaseOutputLayer<CustomOutputLayer> {
     public CustomOutputLayerImpl(NeuralNetConfiguration conf) {
         super(conf);
+    }
+
+    @Override
+    protected INDArray getLabelsMask2d() {
+        return labelMask;
     }
 }

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -147,7 +148,7 @@ public class GravesBidirectionalLSTM
 
     @Override
     public Activations activate(Activations input, boolean training) {
-        setInput(input.get(0));
+        setInput(input);
         return activateOutput(training, false);
     }
 
@@ -198,7 +199,13 @@ public class GravesBidirectionalLSTM
         final INDArray totalOutput = training && cacheMode != CacheMode.NONE && !forBackprop ? fwdOutput.add(backOutput)
                         : fwdOutput.addi(backOutput);
 
-        return ActivationsFactory.getInstance().create(totalOutput);
+        //Bidirectional RNNs operate differently to standard RNNs from a masking perspective
+        //Specifically, the masks are applied regardless of the mask state
+        //For example, input -> RNN -> Bidirectional-RNN: we should still mask the activations and errors in the bi-RNN
+        // even though the normal RNN has marked the current mask state as 'passthrough'
+        //Consequently, the mask is marked as active again
+
+        return ActivationsFactory.getInstance().create(totalOutput, input.getMask(0), (input.getMask(0) == null ? null : MaskState.Active));
     }
 
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
@@ -253,20 +260,4 @@ public class GravesBidirectionalLSTM
         throw new UnsupportedOperationException(
                         "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
     }
-
-
-//    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray this.input.getMask(0), MaskState currentMaskState,
-//                    int minibatchSize) {
-//        //Bidirectional RNNs operate differently to standard RNNs from a masking perspective
-//        //Specifically, the masks are applied regardless of the mask state
-//        //For example, input -> RNN -> Bidirectional-RNN: we should still mask the activations and errors in the bi-RNN
-//        // even though the normal RNN has marked the current mask state as 'passthrough'
-//        //Consequently, the mask is marked as active again
-//
-//        this.this.input.getMask(0) = this.input.getMask(0);
-//        this.maskState = currentMaskState;
-//
-//        return new Pair<>(this.input.getMask(0), MaskState.Active);
-//    }
 }
