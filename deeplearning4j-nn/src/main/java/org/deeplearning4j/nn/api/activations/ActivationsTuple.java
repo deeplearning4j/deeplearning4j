@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
+
 @AllArgsConstructor
 public class ActivationsTuple extends BaseActivations {
 
@@ -69,5 +71,13 @@ public class ActivationsTuple extends BaseActivations {
     @Override
     public MaskState[] getMaskStateAsArray(){
         return maskStates;
+    }
+
+    @Override
+    public Activations cloneShallow() {
+        INDArray[] a = Arrays.copyOf(activations, activations.length);
+        INDArray[] m = (masks == null ? null : Arrays.copyOf(masks, masks.length));
+        MaskState[] ms = (maskStates == null ? null : Arrays.copyOf(maskStates, maskStates.length));
+        return new ActivationsTuple(a, m, ms);
     }
 }

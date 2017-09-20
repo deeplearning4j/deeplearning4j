@@ -32,6 +32,8 @@ public interface Activations {
 
     void setMaskFromArray(INDArray[] mask, MaskState[] maskStates);
 
+    Activations cloneShallow();
+
     /**
      *
      * @param workspaceId

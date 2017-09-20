@@ -316,7 +316,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                             "Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
         }
 
-        int inputMinibatchSize = input.get(0).size(0);
         Activations layerInput = networkInput;
 
         Layer layer = layers[layerIdx];
@@ -743,6 +742,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         Activations currInput = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? input : input.migrate();
         List<Activations> activations = new ArrayList<>();
         activations.add(currInput);
+
+        currInput = currInput.cloneShallow();   //To avoid layers modifying the original activations (dropout, etc)
 
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
                         ? new DummyWorkspace()
@@ -2132,6 +2133,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     public void update(Gradient gradient) {
         if (gradient.gradient().length() != numParams(true))
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
+        Map<Integer,Gradient> temp = new HashMap<>();
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
             INDArray val = entry.getValue();
@@ -2140,15 +2142,20 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             Integer layerId = Integer.parseInt(key.substring(0, idx));
             String paramType = key.substring(idx + 1);
-            // Update MLN gradient
-            this.gradient.gradientForVariable().put(key, val);
-            // Update layer params
-//            layers[layerId].update(val, paramType);
-            throw new UnsupportedOperationException("Not yet implemented");
-        }
-        // Update layerwise gradient view
-        setBackpropGradientsViewArray(gradient.gradient());
 
+            Gradient g = temp.get(layerId);
+            if(g == null){
+                g = new DefaultGradient();
+                temp.put(layerId, g);
+            }
+            g.gradientForVariable().put(paramType, val);
+        }
+
+        for(Map.Entry<Integer,Gradient> e : temp.entrySet()){
+            layers[e.getKey()].update(e.getValue());
+        }
+
+        this.flattenedGradients.assign(gradient.gradient());
     }
 
     @Override
@@ -2579,8 +2586,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 preProcessor = currentLayer.getPreProcessor();
                 inShape = inputType.toString();
                 if (preProcessor != null) {
-                    inputType = preProcessor.getOutputType(inputType)[0];
-                    inShape += "--> "+ inputType.toString();
+                    inShape += "--> " + preProcessor.getOutputType(inputType)[0].toString();
                 }
                 outType = currentLayer.conf().getLayer().getOutputType(currentLayer.getIndex(), inputType)[0];
                 outShape = outType.toString();

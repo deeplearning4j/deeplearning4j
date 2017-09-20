@@ -111,4 +111,9 @@ public class ActivationsTriple extends BaseActivations {
                 maskState3 = maskState;
         }
     }
+
+    @Override
+    public Activations cloneShallow() {
+        return new ActivationsTriple(activations1, activations2, activations3, mask1, mask2, mask3, maskState1, maskState2, maskState3);
+    }
 }

@@ -59,4 +59,9 @@ public class ActivationsSingle extends BaseActivations {
         mask = null;
         maskState = null;
     }
+
+    @Override
+    public Activations cloneShallow() {
+        return new ActivationsSingle(activations, mask, maskState);
+    }
 }

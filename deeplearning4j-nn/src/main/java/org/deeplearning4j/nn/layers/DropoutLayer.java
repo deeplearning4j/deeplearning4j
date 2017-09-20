@@ -49,7 +49,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     @Override
     public Activations activate(boolean training) {
         INDArray z = preOutput(training);
-        return ActivationsFactory.getInstance().create(z);
+        return ActivationsFactory.getInstance().create(z, input.getMask(0), input.getMaskState(0));
     }
 
     @Override

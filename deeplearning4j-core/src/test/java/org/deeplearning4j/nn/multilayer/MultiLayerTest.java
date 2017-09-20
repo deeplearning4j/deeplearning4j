@@ -729,7 +729,7 @@ public class MultiLayerTest {
 
         net.update(expectedGradient);
         actualParams = net.params();
-        assertEquals(Nd4j.ones(1, 43).addi(1), actualParams);
+        assertEquals(Nd4j.zeros(1, 43), actualParams);      //Parameters were 1s, gradients were 1s -> subtract (gradient descent)
     }
 
 
@@ -798,7 +798,7 @@ public class MultiLayerTest {
         int nOut = 10;
 
         MultiLayerNetwork rbmPre = getRBMModel(true, nIn, nOut);
-        rbmPre.fit(input);
+        rbmPre.pretrainLayer(0, input);
         assertTrue(rbmPre.conf().isPretrain()); // check on the network
         assertFalse(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
         assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
@@ -928,6 +928,10 @@ public class MultiLayerTest {
         }
 
         net2.setParams(net1.params().dup());
+        net1.setInput(features);
+        net2.setInput(features);
+        net1.setLabels(labels);
+        net2.setLabels(labels);
         net1.computeGradientAndScore();
         net2.computeGradientAndScore();
 

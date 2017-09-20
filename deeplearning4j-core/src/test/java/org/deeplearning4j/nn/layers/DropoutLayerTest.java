@@ -48,14 +48,14 @@ public class DropoutLayerTest {
     @Test
     public void testDropoutLayerWithoutTraining() throws Exception {
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(3648)
-                        .list().layer(0,
-                                        new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25)
-                                                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
-                                                        .build())
-                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY).dropOut(0.25)
-                                        .nOut(4).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
+                .list().layer(0,
+                        new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25)
+                                .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
+                                .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY).dropOut(0.25)
+                        .nOut(4).build())
+                .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
 
         MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
         netIntegrated.init();
@@ -65,21 +65,19 @@ public class DropoutLayerTest {
         netIntegrated.getLayer(1).setParam("b", Nd4j.zeros(4, 1));
 
         MultiLayerConfiguration confSeparate =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(3648)
-                                        .list().layer(0,
-                                                        new DropoutLayer.Builder(0.25)
-                                                                        .build())
-                                        .layer(1, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
-                                                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
-                                                        .build())
-                                        .layer(2, new DropoutLayer.Builder(0.25).build())
-                                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY)
-                                                        .nOut(4).build())
-                                        .backprop(true).pretrain(false)
-                                        .setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
+                new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .iterations(1).seed(3648)
+                        .list().layer(0, new DropoutLayer.Builder(0.25).build())
+                        .layer(1, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
+                                .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
+                                .build())
+                        .layer(2, new DropoutLayer.Builder(0.25).build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY)
+                                .nOut(4).build())
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
 
         MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
         netSeparate.init();

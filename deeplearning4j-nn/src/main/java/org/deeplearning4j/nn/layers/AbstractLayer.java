@@ -269,7 +269,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
         if(training && !dropoutApplied && layerConf().getIDropout() != null ){
-            //TODO: Epoch + iteration counters...
+            input = input.cloneShallow();   //Reason: some layers/vertices will pass through their activations objects without modification. Changes to this activations object should not impact other layers
+
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)

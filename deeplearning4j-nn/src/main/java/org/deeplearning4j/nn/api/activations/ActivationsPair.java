@@ -66,4 +66,9 @@ public class ActivationsPair extends BaseActivations {
             maskState2 = maskState;
         }
     }
+
+    @Override
+    public Activations cloneShallow() {
+        return new ActivationsPair(activations1, activations2, mask1, mask2, maskState1, maskState2);
+    }
 }
