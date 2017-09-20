@@ -289,7 +289,7 @@ public abstract class DifferentialFunction implements Differential {
         NDArrayVertex newVertex = new NDArrayVertex(
                 sameDiff,
                 sameDiff.getGraph().nextVertexId(),
-                Math.max(i_v1.getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
+                Math.max(i_v1   .getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
                 arrInfo);
         if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
             throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
