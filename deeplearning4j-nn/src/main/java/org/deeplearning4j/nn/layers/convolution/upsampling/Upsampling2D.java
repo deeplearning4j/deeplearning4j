@@ -79,7 +79,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        int size = ((BaseUpsamplingLayer) layerConf()).getSize();   //Required to avoid casting issue in subclasses
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);

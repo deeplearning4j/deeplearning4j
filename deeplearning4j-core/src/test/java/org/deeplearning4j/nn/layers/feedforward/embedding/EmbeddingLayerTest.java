@@ -171,7 +171,7 @@ public class EmbeddingLayerTest {
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                                         .activation(Activation.SOFTMAX).build())
                         .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor(1, new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                        .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                         .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER).list()
@@ -180,7 +180,7 @@ public class EmbeddingLayerTest {
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                                         .activation(Activation.SOFTMAX).build())
                         .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor(1, new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                        .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -304,9 +304,12 @@ public class EmbeddingLayerTest {
             List<Activations> actEmbedding = net.feedForward(aEmbedding, false);
             List<Activations> actDense = net2.feedForward(aDense, false);
             for (int i = 1; i < actEmbedding.size(); i++) {
-                assertEquals(actDense.get(i), actEmbedding.get(i));
+                assertArrayEquals(actDense.get(i).getAsArray(), actEmbedding.get(i).getAsArray());
+                assertArrayEquals(actDense.get(i).getMaskAsArray(), actEmbedding.get(i).getMaskAsArray());
             }
 
+            net.setInput(aEmbedding);
+            net2.setInput(aDense);
             net.setLabels(labels);
             net2.setLabels(labels);
             net.computeGradientAndScore();

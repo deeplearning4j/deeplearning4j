@@ -90,6 +90,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
     @Override
     public INDArray preOutput(boolean training) {
+        applyPreprocessorIfNecessary(training);
         if (input.get(0).columns() != 1) {
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
@@ -123,7 +124,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         if (input.getMask(0) != null) {
             ret.muliColumnVector(input.getMask(0));
         }
-        return ActivationsFactory.getInstance().create(ret);
+        return ActivationsFactory.getInstance().create(ret, input.getMask(0), input.getMaskState(0));
     }
 
     @Override

@@ -76,7 +76,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         INDArray output = gradients.get(0);
         if (output == null)
-            return null; //In a few cases: output may be null, and this is valid. Like time series data -> embedding layer
+            return gradients; //In a few cases: output may be null, and this is valid. Like time series data -> embedding layer
         //Need to reshape FeedForward layer epsilons (2d) to 3d (for use in RNN layer backprop calculations)
         if (output.rank() != 2)
             throw new IllegalArgumentException(
