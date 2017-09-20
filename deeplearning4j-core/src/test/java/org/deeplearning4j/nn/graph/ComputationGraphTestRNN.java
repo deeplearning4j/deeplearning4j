@@ -31,6 +31,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Collections;
 import java.util.Map;
 
+import static org.deeplearning4j.TestUtils.assertAllNull;
 import static org.junit.Assert.*;
 
 public class ComputationGraphTestRNN {
@@ -531,44 +532,29 @@ public class ComputationGraphTestRNN {
                             new INDArray[] {Nd4j.ones(10)});
 
             net.fit(data);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray(0));
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0),
                             data.getLabelsMaskArray(0));
             net.fit(ds);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray(0));
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray(0));
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             MultiDataSetIterator iter = new IteratorMultiDataSetIterator(
                             Collections.singletonList((org.nd4j.linalg.dataset.api.MultiDataSet) data).iterator(), 1);
             net.fit(iter);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray(0));
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             DataSetIterator iter2 = new IteratorDataSetIterator(Collections.singletonList(ds).iterator(), 1);
             net.fit(iter2);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray(0));
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
         }
     }
 

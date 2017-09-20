@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TestUtils {
 
@@ -58,6 +59,15 @@ public class TestUtils {
         } catch (IOException e){
             //Should never happen
             throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> void assertAllNull(T[] array){
+        if(array == null){
+            return;
+        }
+        for( int i=0; i<array.length; i++ ){
+            assertNull("Found non-null value at " + i, array[i]);
         }
     }
 

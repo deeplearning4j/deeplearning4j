@@ -76,6 +76,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.Serializable;
 import java.util.*;
@@ -382,7 +383,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Invalid output array: network has " + numOutputArrays
                     + " outputs, but array is of length " + labels.length);
         }
-        this.labels = labels;
+        //For safety - copy the input INDArray values... otherwise methods like clear() might have unexpected
+        // consequences to, for example, a MultiDataSet that also holds the INDArray[]
+        if(labels == null){
+            this.labels = null;
+        } else if(this.labels == null){
+            this.labels = Arrays.copyOf(labels, labels.length);
+        } else {
+            for( int i=0; i<numOutputArrays; i++ ){
+                this.labels[i] = labels[i];
+            }
+        }
     }
 
     /**
@@ -1347,7 +1358,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             calcBackpropGradients(true);
         } else {
-            Map<String, INDArray> activations = feedForward(true, true, false, false);
+            Map<String, INDArray> activations = feedForward(true, true, false);
             if (trainingListeners.size() > 0) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
@@ -1441,35 +1452,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(boolean train) {
-        return feedForward(train, false, false, true);
+        return feedForward(train, false, true);
     }
 
     public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
-        return feedForward(train, excludeOutputLayers, false, true);
+        return feedForward(train, excludeOutputLayers, true);
     }
 
-    /**
-     * @param train                            True: training time. False: test time
-     * @param excludeOutputLayers              Should we exclude the output layers during forward pass? (usually: false)
-     * @param includeNonLayerVertexActivations Include non-layer vertices in the output may?
-     * @return Map of activations. Key: vertex name. Value: activations.
-     */
-    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
-                                             boolean includeNonLayerVertexActivations) {
-        return feedForward(train, excludeOutputLayers, includeNonLayerVertexActivations, true);
-    }
-
-    /**
-     * PLEASE NEVER USE THIS METHOD IF YOU"RE NOT SURE WHAT YOU'll GET
-     *
-     * @param train
-     * @param excludeOutputLayers
-     * @param includeNonLayerVertexActivations
-     * @param publicApi
-     * @return
-     */
-    protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
-                                                boolean includeNonLayerVertexActivations, boolean publicApi) {
+    protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
@@ -1615,7 +1605,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
         setInputs(input);
-        Map<String, INDArray> activations = feedForward(false, false, false, false);
+        Map<String, INDArray> activations = feedForward(false, false, false);
         INDArray[] outputs = new INDArray[numOutputArrays];
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
@@ -1729,7 +1719,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-//                Gradients pair = current.doBackward(truncatedBPTT);
                 Gradients gradIn = GradientsFactory.getInstance().create(null, tempEpsilons.get(cName) );
                 Gradients pair = current.backpropGradient(gradIn);
                 INDArray[] epsilons = pair.getActivationGradAsArray();
@@ -1753,10 +1742,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         String n = gv.getName();
                         if (setVertexEpsilon[gv.getIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
-//                            INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
                             INDArray currentEps = getTempEpsilonsArray(n)[0].leverageTo(workspaceExternal);
                             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
-//                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                                 getTempEpsilonsArray(n)[0] = currentEps.add(epsilons[j++]); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
@@ -2467,8 +2454,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void clear() {
         input.clear();
-        labels = null;
-        labelMaskArrays = null;
+        if (labels != null) {
+            for( int i=0; i<labels.length; i++ ){
+                labels[i] = null;
+            }
+        }
+        if(labelMaskArrays != null){
+            for( int i=0; i<labelMaskArrays.length; i++ ){
+                labelMaskArrays[i] = null;
+            }
+        }
     }
 
     @Override

@@ -950,7 +950,7 @@ public class TestComputationGraphNetwork {
     }
 
     @Test
-    public void testFeedForwardIncludeNonLayerVertices() {
+    public void testFeedForward() {
 
         ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
@@ -964,14 +964,10 @@ public class TestComputationGraphNetwork {
 
         cg.setInputs(Nd4j.ones(5));
 
-        Map<String, INDArray> layersOnly = cg.feedForward(true, false, false);
-        Map<String, INDArray> alsoVertices = cg.feedForward(true, false, true);
+        Map<String, INDArray> ff = cg.feedForward(true, false, true);
 
-        assertEquals(4, layersOnly.size()); //3 layers + 1 input
-        assertEquals(5, alsoVertices.size()); //3 layers + 1 input + merge vertex
-
-        assertFalse(layersOnly.containsKey("merge"));
-        assertTrue(alsoVertices.containsKey("merge"));
+        assertEquals(5, ff.size()); //3 layers + 1 input + merge vertex
+        assertTrue(ff.containsKey("merge"));
     }
 
 
