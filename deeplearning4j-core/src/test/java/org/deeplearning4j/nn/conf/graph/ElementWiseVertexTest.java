@@ -177,29 +177,22 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(new Sgd())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
-                        .addInputs("input1", "input2", "input3")
-                        .addLayer("dense1",
-                                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
-                                                        .activation(new ActivationTanH()).build(),
-                                        "input1")
-                        .addLayer("dense2",
-                                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
-                                                        .activation(new ActivationTanH()).build(),
-                                        "input2")
-                        .addLayer("dense3",
-                                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
-                                                        .activation(new ActivationTanH()).build(),
-                                        "input3")
-                        .addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
-                                        "dense2", "dense3")
-                        .addLayer("output",
-                                        new OutputLayer.Builder().nIn(midsz).nOut(outputsz)
-                                                        .activation(new ActivationSigmoid())
-                                                        .lossFunction(LossFunction.MSE).build(),
-                                        "elementwiseAdd")
-                        .setOutputs("output").backprop(true).build();
+                .biasInit(0.0).updater(new Sgd())
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
+                .addInputs("input1", "input2", "input3")
+                .addLayer("dense1",
+                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),
+                        "input1")
+                .addLayer("dense2",
+                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),"input2")
+                .addLayer("dense3",new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),"input3")
+                .addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2", "dense3")
+                .addLayer("output",
+                        new OutputLayer.Builder().nIn(midsz).nOut(outputsz)
+                                .activation(new ActivationSigmoid())
+                                .lossFunction(LossFunction.MSE).build(),
+                        "elementwiseAdd")
+                .setOutputs("output").backprop(true).build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -225,13 +218,13 @@ public class ElementWiseVertexTest {
 
         // Now, let's calculate what we expect the output to be.
 
-        INDArray mh = input1.mmul(dense1_W).addi(dense1_b.repmat(batchsz, 1));
+        INDArray mh = input1.mmul(dense1_W).addiRowVector(dense1_b);
         INDArray m = (Transforms.tanh(mh));
 
-        INDArray nh = input2.mmul(dense2_W).addi(dense2_b.repmat(batchsz, 1));
+        INDArray nh = input2.mmul(dense2_W).addiRowVector(dense2_b);
         INDArray n = (Transforms.tanh(nh));
 
-        INDArray oh = input3.mmul(dense3_W).addi(dense3_b.repmat(batchsz, 1));
+        INDArray oh = input3.mmul(dense3_W).addiRowVector(dense3_b);
         INDArray o = (Transforms.tanh(oh));
 
         INDArray middle = Nd4j.zeros(batchsz, midsz);
@@ -239,7 +232,7 @@ public class ElementWiseVertexTest {
 
 
         INDArray expect = Nd4j.zeros(batchsz, outputsz);
-        expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
+        expect.addi(Transforms.sigmoid(middle.mmul(output_W).addiRowVector(output_b)));
 
 
         INDArray output = nullsafe(cg.output(input1, input2, input3).get(0));

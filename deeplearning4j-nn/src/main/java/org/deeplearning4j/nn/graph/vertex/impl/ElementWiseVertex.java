@@ -74,6 +74,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     sum.addi(input.get(i));
                 }
                 ret = sum;
+                break;
             case Average:
                 INDArray average = input.get(0).dup(input.get(0).ordering());
                 for (int i = 1; i < input.size(); i++) {
@@ -92,6 +93,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     product.muli(input.get(i));
                 }
                 ret = product;
+                break;
             case Max:
                 INDArray max =  Nd4j.createUninitialized(input.get(0).shape(), input.get(0).ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")

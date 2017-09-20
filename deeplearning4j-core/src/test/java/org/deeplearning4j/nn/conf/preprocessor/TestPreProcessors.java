@@ -385,7 +385,9 @@ public class TestPreProcessors {
                                         .layer(1, new GravesLSTM.Builder().nIn(6).nOut(7).build())
                                         .layer(2, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(7)
                                                         .nOut(8).build())
-                                        .layer(3, new RnnOutputLayer.Builder().nIn(8).nOut(9).build()).build();
+                                        .layer(3, new RnnOutputLayer.Builder().nIn(8).nOut(9).build())
+                                        .setInputType(InputType.recurrent(5))
+                                    .build();
         //Expect preprocessors: layer1: FF->RNN; 2: RNN->FF; 3: FF->RNN
 //        assertEquals(3, conf1.getConf().getInputPreProcessors().size());
         assertTrue(conf1.getConf(1).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
@@ -401,9 +403,9 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN; 1: CNN->FF; 2: FF->RNN
-        assertTrue(conf2.getConf(1).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf2.getConf(2).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        assertTrue(conf2.getConf(3).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf2.getConf(0).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf2.getConf(1).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2.getConf(2).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
         //CNN-> FF, FF->RNN - InputType.convolutional instead of convolutionalFlat
         MultiLayerConfiguration conf2a = new NeuralNetConfiguration.Builder().list()

@@ -39,6 +39,9 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     @Override
     public void setNIn(InputType[] inputType, boolean override) {
+        if(preProcessor != null){
+            inputType = preProcessor.getOutputType(inputType);
+        }
         if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName()
                             + "\"): expect RNN input type with size > 0. Got: "
