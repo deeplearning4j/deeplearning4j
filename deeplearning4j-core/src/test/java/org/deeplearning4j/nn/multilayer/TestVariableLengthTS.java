@@ -84,8 +84,7 @@ public class TestVariableLengthTS {
             Gradient g1 = net.gradient();
 
             net.setInput(in2);
-            net.setLabels(labels2);
-            net.setLayerMaskArrays(null, labelMask);
+            net.setLabels(labels2, labelMask);
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
@@ -178,9 +177,8 @@ public class TestVariableLengthTS {
                 map1.put(s, map1.get(s).dup()); //Note: gradients are a view normally -> second computeGradientAndScore would have modified the original gradient map values...
             }
 
-            net.setInput(in2);
+            net.setInput(af.create(in2, inputMask));
             net.setLabels(labels2);
-            net.setLayerMaskArrays(inputMask, null);
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
@@ -292,9 +290,8 @@ public class TestVariableLengthTS {
                         //MSE loss function: 1/n * sum(squaredErrors)... but sum(squaredErrors) = n * (1-0) here -> sum(squaredErrors)
                         double expScore = (tsLength - nToMask); //Sum over minibatches, then divide by minibatch size
 
-                        mln.setLayerMaskArrays(null, labelMaskArray);
                         mln.setInput(input);
-                        mln.setLabels(labels);
+                        mln.setLabels(labels, labelMaskArray);
 
                         mln.computeGradientAndScore();
                         double score = mln.score();
@@ -368,9 +365,8 @@ public class TestVariableLengthTS {
                         MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
                         mln2.init();
 
-                        mln.setLayerMaskArrays(null, labelMaskArray);
-                        mln2.setLayerMaskArrays(null, labelMaskArray);
-
+                        mln.setLabels(null, labelMaskArray);
+                        mln2.setLabels(null, labelMaskArray);
 
                         INDArray out = mln.output(input);
                         INDArray out2 = mln2.output(input);
@@ -429,7 +425,7 @@ public class TestVariableLengthTS {
 
         INDArray labelsMask = featuresMask.dup();
 
-        net.setLayerMaskArrays(featuresMask, labelsMask);
+        net.setLabels(null, labelsMask);
         INDArray outMasked = net.output(ActivationsFactory.getInstance().create(input, featuresMask));
 
         net.clear();
@@ -509,9 +505,7 @@ public class TestVariableLengthTS {
                 INDArray labels = Nd4j.rand(new int[] {minibatch, nOut});
                 INDArray featuresMask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}});
 
-
-                net.setLayerMaskArrays(featuresMask, null);
-                INDArray outMasked = net.output(input);
+                INDArray outMasked = net.output(af.create(input, featuresMask));
                 net.clear();
 
                 for (int i = 0; i < minibatch; i++) {

@@ -127,6 +127,8 @@ public class TestMasking {
                 ILossFunction lf = lossFunctions[i];
                 Activation a = act[i];
 
+                System.out.println(i + "\t" + lf + "\t" + a);
+
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
@@ -140,13 +142,12 @@ public class TestMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
 
                 net.setInput(features);
-                net.setLabels(labels);
+                net.setLabels(labels, labelMask);
 
                 net.computeGradientAndScore();
                 double score1 = net.score();

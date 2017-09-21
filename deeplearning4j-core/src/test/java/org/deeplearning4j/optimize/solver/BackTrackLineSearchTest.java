@@ -61,7 +61,7 @@ public class BackTrackLineSearchTest {
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(af.create(irisData.getFeatures()));
-        layer.setLabels(irisData.getLabels());
+        layer.setLabels(irisData.getLabels(), null);
         layer.computeGradientAndScore();
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
@@ -79,7 +79,7 @@ public class BackTrackLineSearchTest {
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(af.create(irisData.getFeatures()));
-        layer.setLabels(irisData.getLabels());
+        layer.setLabels(irisData.getLabels(), null);
         layer.computeGradientAndScore();
         score1 = layer.score();
 
@@ -100,7 +100,7 @@ public class BackTrackLineSearchTest {
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(af.create(irisData.getFeatures()));
-        layer.setLabels(irisData.getLabels());
+        layer.setLabels(irisData.getLabels(), null);
         layer.computeGradientAndScore();
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
@@ -128,7 +128,7 @@ public class BackTrackLineSearchTest {
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(af.create(irisData.getFeatures()));
-        layer.setLabels(irisData.getLabels());
+        layer.setLabels(irisData.getLabels(), null);
         layer.computeGradientAndScore();
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();

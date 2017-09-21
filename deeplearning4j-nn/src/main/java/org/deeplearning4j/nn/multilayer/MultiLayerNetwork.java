@@ -100,6 +100,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     protected Activations input = new ActivationsSingle(null, null, null);        //Input activations, and mask
 
     protected INDArray labels;
+    protected INDArray labelsMask;
 
     protected boolean initCalled = false;
     private Collection<IterationListener> listeners = new ArrayList<>();
@@ -1121,7 +1122,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
             if (labels == null)
                 throw new IllegalStateException("No labels found");
-            outputLayer.setLabels(labels);
+            outputLayer.setLabels(labels, labelsMask);
             currGrad = outputLayer.backpropGradient(null);
 
             for (Map.Entry<String, INDArray> entry : currGrad.getParameterGradients().gradientForVariable().entrySet()) {
@@ -1251,9 +1252,10 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                         this.input.setMask(0, featuresMaskSubset);
                         this.input.setMaskState(0, MaskState.Active);
                     }
-                    if (labelsMaskSubset != null ){
-                        throw new UnsupportedOperationException("Not yet implemented");
-                    }
+
+                    IOutputLayer outputLayer = (IOutputLayer)getOutputLayer();
+                    outputLayer.setLabels(labelSubset, labelsMaskSubset);
+
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -1312,7 +1314,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
         }
 
-        outputLayer.setLabels(labels);
+        outputLayer.setLabels(labels, labelsMask);
 
         //calculate and apply the backward gradient for every layer
         int numLayers = getnLayers();
@@ -1454,8 +1456,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         setInput(features);
         setLabels(labels);
         if (featuresMask != null || labelsMask != null) {
-//            this.setLayerMaskArrays(featuresMask, labelsMask);
-            throw new UnsupportedOperationException();
+            this.input = ActivationsFactory.getInstance().create(features, featuresMask);
+            this.labels = labels;
+            this.labelsMask = labelsMask;
         }
         update(TaskUtils.buildTask(features, labels));
 
@@ -1631,7 +1634,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @return the score (value of the loss function)
      */
     public double score(DataSet data, boolean training) {
-        boolean hasMaskArray = data.hasMaskArrays();
 
         MemoryWorkspace workspace =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
@@ -1648,7 +1650,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 IOutputLayer ol = (IOutputLayer) getOutputLayer();
                 Activations olInput = activations.get(n - 1);
                 ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
-                ol.setLabels(data.getLabels());
+                ol.setLabels(data.getLabels(), data.getLabelsMaskArray());
                 ol.computeScore(calcL1(true), calcL2(true), training);
                 this.score = ol.score();
             } else {
@@ -1684,12 +1686,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         Activations a = ActivationsFactory.getInstance().create(data.getFeatures(), data.getFeaturesMaskArray());
         feedForward(a, false);
         setLabels(data.getLabels());
-        setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
         INDArray out;
         if (getOutputLayer() instanceof IOutputLayer) {
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
-            ol.setLabels(data.getLabels());
+            ol.setLabels(data.getLabels(), data.getLabelsMaskArray());
             double l1 = (addRegularizationTerms ? calcL1(true) : 0.0);
             double l2 = (addRegularizationTerms ? calcL2(true) : 0.0);
             out = ol.computeScoreForExamples(l1, l2);
@@ -1749,6 +1750,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             }
             Activations actSecondLastLayer = activations.get(activations.size() - 1);
             getOutputLayer().setInput(actSecondLastLayer);
+            ((IOutputLayer)getOutputLayer()).setLabels(labels, labelsMask);
             //Then: compute gradients
             backprop();
         }
@@ -1862,7 +1864,12 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @param labels
      */
     public void setLabels(INDArray labels) {
+        setLabels(labels, null);
+    }
+
+    public void setLabels(INDArray labels, INDArray labelsMask){
         this.labels = labels;
+        this.labelsMask = labelsMask;
     }
 
     /**
@@ -2201,34 +2208,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
         }
         solver.getOptimizer().setUpdater(updater);
-    }
-
-    /**Set the mask arrays for features and labels. Mask arrays are typically used in situations such as one-to-many
-     * and many-to-one learning with recurrent neural networks, as well as for supporting time series of varying lengths
-     * within the same minibatch.<br>
-     * For example, with RNN data sets with input of shape [miniBatchSize,nIn,timeSeriesLength] and outputs of shape
-     * [miniBatchSize,nOut,timeSeriesLength], the features and mask arrays will have shape [miniBatchSize,timeSeriesLength]
-     * and contain values 0 or 1 at each element (to specify whether a given input/example is present - or merely padding -
-     * at a given time step).<br>
-     * <b>NOTE</b>: This method is not usually used directly. Instead, methods such as {@link #feedForward(INDArray, INDArray, INDArray)}
-     * and {@link #output(INDArray, boolean, INDArray, INDArray)} handle setting of masking internally.
-     * @param featuresMaskArray Mask array for features (input)
-     * @param labelsMaskArray Mask array for labels (output)
-     */
-    @Deprecated
-    public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray) {
-        if (featuresMaskArray != null) {
-            if(input == null){
-                input = ActivationsFactory.getInstance().create(null, featuresMaskArray, MaskState.Active);
-            } else {
-                input.setMask(0, featuresMaskArray);
-            }
-        }
-        if (labelsMaskArray != null) {
-            if (!(getOutputLayer() instanceof IOutputLayer))
-                return;
-            ((IOutputLayer)layers[layers.length - 1]).setLabelMask(labelsMaskArray);
-        }
     }
 
     /**

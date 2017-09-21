@@ -75,7 +75,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer> implements Serializable, IOutputLayer {
     private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
 
-    @Setter @Getter
+    @Getter
     protected INDArray labels;
 
     private double fullNetworkL1;
@@ -422,8 +422,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public void setLabelMask(INDArray labelMask) {
-        throw new UnsupportedOperationException("Yolo2OutputLayer: Does not (yet) support label mask arrays");
+    public void setLabels(INDArray labels, INDArray labelMask) {
+        if(labelMask != null){
+            throw new IllegalStateException("Label masks are not yet supported by Yolo2OutputLayer");
+        }
+        this.labels = labels;
     }
 
     @Override

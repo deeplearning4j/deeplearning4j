@@ -324,8 +324,10 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return labels;
     }
 
-    public void setLabels(INDArray labels) {
+    @Override
+    public void setLabels(INDArray labels, INDArray labelMask) {
         this.labels = labels;
+        this.labelMask = labelMask;
     }
 
     protected INDArray getLabels2d() {

@@ -30,18 +30,17 @@ public interface IOutputLayer extends Model {
      *
      * @param labels Labels array to set
      */
-    void setLabels(INDArray labels);
-
-    void setLabelMask(INDArray labelMask);
-
-    INDArray getLabelMask();
+    void setLabels(INDArray labels, INDArray labelMask);
 
     /**
-     * Get the labels array previously set with {@link #setLabels(INDArray)}
+     * Get the labels array previously set with {@link #setLabels(INDArray, INDArray)}
      *
      * @return Labels array, or null if it has not been set
      */
     INDArray getLabels();
+
+
+    INDArray getLabelMask();
 
     double score();
 

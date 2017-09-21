@@ -1789,12 +1789,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         IOutputLayer outputLayer = (IOutputLayer) current;
 
                         INDArray currLabels = labels[thisOutputNumber];
-                        outputLayer.setLabels(currLabels);
+                        INDArray currLabelsMask = (labelMaskArrays == null ? null : labelMaskArrays[thisOutputNumber]);
+                        outputLayer.setLabels(currLabels, currLabelsMask);
                     } else if(current instanceof LayerVertex && ((LayerVertex) current).getLayer() instanceof IOutputLayer){
                         IOutputLayer outputLayer = (IOutputLayer) ((LayerVertex) current).getLayer();
 
                         INDArray currLabels = labels[thisOutputNumber];
-                        outputLayer.setLabels(currLabels);
+                        INDArray currLabelsMask = (labelMaskArrays == null ? null : labelMaskArrays[thisOutputNumber]);
+                        outputLayer.setLabels(currLabels, currLabelsMask);
                     } else {
                         if ((externalEpsilons == null || externalEpsilons.length == 0) && labels[thisOutputNumber] != null) {
                             throw new DL4JException("Layer \"" + cName + "\" of type "
@@ -2172,6 +2174,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             feedForward(dataSet.getFeatures(), training);
             INDArray[] labels = dataSet.getLabels();
+            INDArray[] labelsMasks = dataSet.getLabelsMaskArrays();
             setLabels(labels);
 
             //Score: sum of the scores for the various output layers...
@@ -2187,7 +2190,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 IOutputLayer ol = (IOutputLayer) outLayer;
-                ol.setLabels(labels[i++]);
+                INDArray currLabels = labels[i];
+                INDArray currLabelMasks = (labelsMasks == null ? null : labelsMasks[i]);
+                i++;
+                ol.setLabels(currLabels, currLabelMasks);
 
                 score += ol.computeScore(l1, l2, training);
 
@@ -2237,6 +2243,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         feedForward(data.getFeatures(), false);
         setLabels(data.getLabels());
+        INDArray[] labelsMasks = data.getLabelsMaskArrays();
 
         INDArray out = null;
 
@@ -2251,7 +2258,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             IOutputLayer ol = (IOutputLayer) outLayer;
-            ol.setLabels(labels[i++]);
+            INDArray currLabels = labels[i];
+            INDArray currLabelMasks = (labelsMasks == null ? null : labelsMasks[i]);
+            i++;
+            ol.setLabels(currLabels, currLabelMasks);
 
             INDArray scoreCurrLayer = ol.computeScoreForExamples(l1, l2);
             if (out == null)

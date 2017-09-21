@@ -248,8 +248,8 @@ public class MultiLayerTest {
         //Set inputs/outputs so gradient can be calculated:
         net1.feedForward(x1.getFeatureMatrix());
         net2.feedForward(x2.getFeatureMatrix());
-        ((BaseOutputLayer) net1.getLayer(1)).setLabels(x1.getLabels());
-        ((BaseOutputLayer) net2.getLayer(1)).setLabels(x2.getLabels());
+        ((BaseOutputLayer) net1.getLayer(1)).setLabels(x1.getLabels(), null);
+        ((BaseOutputLayer) net2.getLayer(1)).setLabels(x2.getLabels(), null);
 
         net1.gradient();
         net2.gradient();

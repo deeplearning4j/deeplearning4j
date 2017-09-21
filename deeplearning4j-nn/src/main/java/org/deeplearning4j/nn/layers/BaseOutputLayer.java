@@ -59,7 +59,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     //current input and label matrices
     protected INDArray labels;
-    @Setter @Getter
+    @Getter
     protected INDArray labelMask;
 
     private transient Solver solver;
@@ -266,8 +266,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return labels;
     }
 
-    public void setLabels(INDArray labels) {
+    @Override
+    public void setLabels(INDArray labels, INDArray labelsMask) {
         this.labels = labels;
+        this.labelMask = labelsMask;
     }
 
     protected INDArray preOutput2d(boolean training) {

@@ -74,7 +74,6 @@ public class GlobalPoolingMaskingTests {
                 labels.putScalar(i, idx, 1.0);
             }
 
-            net.setLayerMaskArrays(mask, null);
             INDArray outputMasked = net.output(ActivationsFactory.getInstance().create(input, mask), true);
 
             net.clear();
