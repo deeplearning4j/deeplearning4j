@@ -69,7 +69,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(biasAdd, 2, 1, true) {
+        DECLARE_OP(biasadd, 2, 1, true) {
             REQUIRE_OK(this->validateInput2D(block));
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -88,7 +88,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(matMul, 2, 1, false) {
+        DECLARE_OP(matmul, 2, 1, false) {
             // FIXME: we might want to have gemv/dot fallback here
             REQUIRE_OK(this->validateInput2D(block));
 
@@ -766,7 +766,7 @@ namespace nd4j {
         DECLARE_SYN(Div, divide);
 
 //////////////////////////////////////////////////////////////////////////				
-		DECLARE_OP(reverseDivide, 2, 1, true) {
+		DECLARE_OP(reversedivide, 2, 1, true) {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -791,7 +791,7 @@ namespace nd4j {
 
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(RDiv, reverseDivide);
+        DECLARE_SYN(RDiv, reversedivide);
 
 //////////////////////////////////////////////////////////////////////////
 		DECLARE_OP(reshapeas, 2, 1, true) {
