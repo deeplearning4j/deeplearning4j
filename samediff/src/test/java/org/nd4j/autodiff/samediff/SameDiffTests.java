@@ -2,6 +2,9 @@ package org.nd4j.autodiff.samediff;
 
 import org.junit.Test;
 import org.nd4j.autodiff.gradcheck.GradCheckUtil;
+import org.nd4j.autodiff.graph.Graph;
+import org.nd4j.autodiff.graph.api.Edge;
+import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -419,6 +422,26 @@ public class SameDiffTests {
         INDArray arr = toAdd.getArr();
         INDArray assertion = Nd4j.ones(2,2).addi(Nd4j.valueArrayOf(2,2,2.0));
         assertEquals(arr,assertion);
+    }
+
+
+    @Test
+    public void multiInputOutputTest() {
+        Graph<Integer,Integer> ints = new Graph<>();
+        ints.addVertex(new Vertex<>(1,0,1));
+        ints.addVertex(new Vertex<>(2,0,2));
+        ints.addVertex(new Vertex<>(3,1,3));
+        ints.addVertex(new Vertex<>(4,0,2));
+        ints.addVertex(new Vertex<>(5,1,3));
+        //multiple edge outputs
+        ints.addEdge(new Edge<>(new int[]{1},new int[]{2},0,true));
+        ints.addEdge(new Edge<>(new int[]{1},new int[]{3},0,true));
+
+        ints.addEdge(new Edge<>(new int[]{2},new int[]{3},0,true));
+        ints.addEdge(new Edge<>(new int[]{3},new int[]{2},0,true));
+
+        assertEquals(2,ints.getEdgesOut(1).size());
+        assertEquals(2,ints.getIncomingEdges().get(3).size());
     }
 
 

@@ -192,17 +192,17 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
 
 
-        if(!frozen && edge.getFrom() == edge.getTo())
+        if(!frozen && edge.getFrom()[0] == edge.getTo()[0])
             throw new IllegalArgumentException("No cycles allowed");
 
-        if (edge.getFrom() < 0)
+        if (edge.getFrom()[0] < 0)
             throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
 
-        List<Edge<E>> fromList =  edges.get(edge.getFrom());
+        List<Edge<E>> fromList =  edges.get(edge.getFrom()[0]);
 
         if(fromList == null) {
             fromList = new ArrayList<>();
-            edges.put(edge.getFrom(),fromList);
+            edges.put(edge.getFrom()[0],fromList);
         }
 
         addEdgeHelper(edge, fromList);
@@ -214,10 +214,10 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         lastEdgeAdded = edge;
 
-        List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
+        List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo()[0]);
         if(incomingList == null) {
             incomingList = new ArrayList<>();
-            incomingEdges.put(edge.getTo(),incomingList);
+            incomingEdges.put(edge.getTo()[0],incomingList);
         }
 
         addEdgeHelper(edge, incomingList);
@@ -227,10 +227,10 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
 
         //Add other way too (to allow easy lookup for undirected edges)
-        List<Edge<E>> toList = edges.get(edge.getTo());
+        List<Edge<E>> toList = edges.get(edge.getTo()[0]);
         if(toList == null) {
             toList = new ArrayList<>();
-            edges.put(edge.getTo(),toList);
+            edges.put(edge.getTo()[0],toList);
         }
 
         addEdgeHelper(edge, toList);
@@ -260,7 +260,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(!incomingEdges.containsKey(vertex))
             return 0;
         for(Edge<E> edge : incomingEdges.get(vertex)) {
-            if(edge.getTo() == vertex)
+            if(edge.getTo()[0] == vertex)
                 ret++;
         }
 
@@ -278,7 +278,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
                     + " has no outgoing/undirected edges");
         int connectedVertexNum = rng.nextInt(edges.get(vertex).size());
         Edge<E> edge = edges.get(vertex).get(connectedVertexNum);
-        if (edge.getFrom() == vertex)
+        if (edge.getFrom()[0] == vertex)
             return vertices.get(edge.getTo()); //directed or undirected, vertex -> x
         else
             return vertices.get(edge.getFrom()); //Undirected edge, x -> vertex
@@ -305,7 +305,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             return out;
         for (int i = 0; i < out.length; i++) {
             Edge<E> e = edges.get(vertex).get(i);
-            out[i] = (e.getFrom() == vertex ? e.getTo() : e.getFrom());
+            out[i] = (e.getFrom()[0] == vertex ? e.getTo()[0] : e.getFrom()[0]);
         }
         return out;
     }
@@ -325,7 +325,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             } else {
                 for (Edge<E> e : list) {
                     if ((e.getFrom() == edge.getFrom() && e.getTo() == edge.getTo())
-                            || (e.getTo() == edge.getFrom() && e.getFrom() == edge.getTo())) {
+                            || (e.getTo()[0] == edge.getFrom()[0] && e.getFrom()[0] == edge.getTo()[0])) {
                         duplicate = true;
                         break;
                     }
@@ -390,9 +390,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         guru.nidi.graphviz.model.Graph g = graph("example5").directed();
         for(List<Edge<E>> edgeList : getEdges().values())
             for(Edge<E> edge : edgeList) {
-                if(getVertex(edge.getFrom()) instanceof NDArrayVertex) {
-                    NDArrayVertex vertex = (NDArrayVertex) getVertex(edge.getFrom());
-                    NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo());
+                if(getVertex(edge.getFrom()[0]) instanceof NDArrayVertex) {
+                    NDArrayVertex vertex = (NDArrayVertex) getVertex(edge.getFrom()[0]);
+                    NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo()[0]);
                     OpState opState = (OpState) edge.getValue();
                     g = g.with(node(String.valueOf(vertex.vertexID()))
                             .with(Label.of(String.valueOf(vertex.getValue().getId())))

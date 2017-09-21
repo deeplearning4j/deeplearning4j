@@ -43,7 +43,7 @@ public interface IGraph<V, E> {
     void addEdge(Edge<E> edge);
 
     /** Convenience method for adding an edge (directed or undirected) to graph */
-    void addEdge(int from, int to, E value, boolean directed);
+    void addEdge(int[] from, int[] to, E value, boolean directed);
 
     /** Returns a list of edges for a vertex with a given index
      * For undirected graphs, returns all edges incident on the vertex

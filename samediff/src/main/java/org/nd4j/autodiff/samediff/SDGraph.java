@@ -191,9 +191,9 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
                 //get the inputs for this this output array
                 for (Edge<OpState> edge : inputOpStates) {
-                    inputIds[inputsCount] = edge.getFrom();
-                    Preconditions.checkNotNull(getInformationFor(edge.getFrom()));
-                    inputs[inputsCount] = getInformationFor(edge.getFrom());
+                    inputIds[inputsCount] = edge.getFrom()[0];
+                    Preconditions.checkNotNull(getInformationFor(edge.getFrom()[0]));
+                    inputs[inputsCount] = getInformationFor(edge.getFrom()[0]);
                     inputsCount++;
                 }
 
@@ -314,19 +314,19 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 Set<Integer> outVertices = new TreeSet<>();
                 Set<Integer> currInputs = new TreeSet<>();
                 for (Edge<OpState> edge : edges) {
-                    outVertices.add(edge.getTo());
+                    outVertices.add(edge.getTo()[0]);
                     Set<Integer> outputSetForInputIdx = outputEdges.get(i);
                     if (outputSetForInputIdx == null) {
                         outputSetForInputIdx = new TreeSet<>();
                         outputEdges.put(i, outputSetForInputIdx);
                     }
 
-                    outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
+                    outputSetForInputIdx.add(edge.getTo()[0]); //input vertex outputs to the current vertex
                 }
 
                 if( getIncomingEdges().get(i) != null) {
                     for (Edge<OpState> edge : getIncomingEdges().get(i)) {
-                        currInputs.add(edge.getFrom());
+                        currInputs.add(edge.getFrom()[0]);
 
                     }
 
