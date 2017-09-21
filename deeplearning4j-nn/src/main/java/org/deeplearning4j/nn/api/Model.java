@@ -67,11 +67,6 @@ public interface Model extends Layer {
      */
     Collection<IterationListener> getListeners();
 
-    /**
-     * All models have a fit method
-     */
-    void fit();
-
 
     /**
      * The score for the model

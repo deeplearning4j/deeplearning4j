@@ -231,100 +231,104 @@ public class EmbeddingLayerTest {
 
     @Test
     public void testEmbeddingLayerWithMasking() {
-        //Idea: have masking on the input with an embedding and dense layers on input
-        //Ensure that the parameter gradients for the inputs don't depend on the inputs when inputs are masked
+        for( int x=0; x<100; x++ ) {
+            System.out.println("X = " + x);
+            //Idea: have masking on the input with an embedding and dense layers on input
+            //Ensure that the parameter gradients for the inputs don't depend on the inputs when inputs are masked
 
-        int[] miniBatchSizes = {1, 2, 5};
-        int nIn = 2;
-        Random r = new Random(12345);
+            int[] miniBatchSizes = {1, 2, 5};
+            int nIn = 2;
+            Random r = new Random(12345);
 
-        int numInputClasses = 10;
-        int timeSeriesLength = 5;
+            int numInputClasses = 10;
+            int timeSeriesLength = 5;
 
-        for (int nExamples : miniBatchSizes) {
-            Nd4j.getRandom().setSeed(12345);
+            for (int nExamples : miniBatchSizes) {
+                Nd4j.getRandom().setSeed(12345);
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(new Sgd(0.1)).seed(12345).list()
-                            .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
-                                            .nOut(5).build())
-                            .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                            .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
-                            .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
-                                            .nOut(4).build())
-                            .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                            .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(new Sgd(0.1)).seed(12345).list()
+                        .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
+                                .nOut(5).build())
+                        .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
+                        .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                        .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
+                                .nOut(4).build())
+                        .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
+                        .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
-            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(new Sgd(0.1)).seed(12345).list()
-                            .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
-                                            .build())
-                            .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                            .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
-                            .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
-                                            .nOut(4).build())
-                            .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                            .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
+                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(new Sgd(0.1)).seed(12345).list()
+                        .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
+                                .build())
+                        .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
+                        .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                        .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
+                                .nOut(4).build())
+                        .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
+                        .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
 
-            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-            net2.init();
+                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                net2.init();
 
-            net2.setParams(net.params().dup());
+                net2.setParams(net.params().dup());
 
-            INDArray inEmbedding = Nd4j.zeros(nExamples, 1, timeSeriesLength);
-            INDArray inDense = Nd4j.zeros(nExamples, numInputClasses, timeSeriesLength);
+                INDArray inEmbedding = Nd4j.zeros(nExamples, 1, timeSeriesLength);
+                INDArray inDense = Nd4j.zeros(nExamples, numInputClasses, timeSeriesLength);
 
-            INDArray labels = Nd4j.zeros(nExamples, 4, timeSeriesLength);
+                INDArray labels = Nd4j.zeros(nExamples, 4, timeSeriesLength);
 
-            for (int i = 0; i < nExamples; i++) {
-                for (int j = 0; j < timeSeriesLength; j++) {
-                    int inIdx = r.nextInt(numInputClasses);
-                    inEmbedding.putScalar(new int[] {i, 0, j}, inIdx);
-                    inDense.putScalar(new int[] {i, inIdx, j}, 1.0);
+                for (int i = 0; i < nExamples; i++) {
+                    for (int j = 0; j < timeSeriesLength; j++) {
+                        int inIdx = r.nextInt(numInputClasses);
+                        inEmbedding.putScalar(new int[]{i, 0, j}, inIdx);
+                        inDense.putScalar(new int[]{i, inIdx, j}, 1.0);
 
-                    int outIdx = r.nextInt(4);
-                    labels.putScalar(new int[] {i, outIdx, j}, 1.0);
+                        int outIdx = r.nextInt(4);
+                        labels.putScalar(new int[]{i, outIdx, j}, 1.0);
+                    }
+                }
+
+                INDArray inputMask = Nd4j.zeros(nExamples, timeSeriesLength);
+                for (int i = 0; i < nExamples; i++) {
+                    for (int j = 0; j < timeSeriesLength; j++) {
+                        inputMask.putScalar(new int[]{i, j}, (r.nextBoolean() ? 1.0 : 0.0));
+                    }
+                }
+
+                Activations aEmbedding = ActivationsFactory.getInstance().create(inEmbedding, inputMask);
+                Activations aDense = ActivationsFactory.getInstance().create(inDense, inputMask);
+                List<Activations> actEmbedding = net.feedForward(aEmbedding, false);
+                List<Activations> actDense = net2.feedForward(aDense, false);
+                for (int i = 1; i < actEmbedding.size(); i++) {
+                    String s = String.valueOf(i);
+                    assertArrayEquals(s, actDense.get(i).getAsArray(), actEmbedding.get(i).getAsArray());
+                    assertArrayEquals(s, actDense.get(i).getMaskAsArray(), actEmbedding.get(i).getMaskAsArray());
+                }
+
+                net.setInput(aEmbedding);
+                net2.setInput(aDense);
+                net.setLabels(labels);
+                net2.setLabels(labels);
+                net.computeGradientAndScore();
+                net2.computeGradientAndScore();
+
+                System.out.println(net.score() + "\t" + net2.score());
+                assertEquals(net2.score(), net.score(), 1e-5);
+
+                Map<String, INDArray> gradients = net.gradient().gradientForVariable();
+                Map<String, INDArray> gradients2 = net2.gradient().gradientForVariable();
+                assertEquals(gradients.keySet(), gradients2.keySet());
+                for (String s : gradients.keySet()) {
+                    assertEquals(gradients2.get(s), gradients.get(s));
                 }
             }
 
-            INDArray inputMask = Nd4j.zeros(nExamples, timeSeriesLength);
-            for (int i = 0; i < nExamples; i++) {
-                for (int j = 0; j < timeSeriesLength; j++) {
-                    inputMask.putScalar(new int[] {i, j}, (r.nextBoolean() ? 1.0 : 0.0));
-                }
-            }
-
-            Activations aEmbedding = ActivationsFactory.getInstance().create(inEmbedding, inputMask);
-            Activations aDense = ActivationsFactory.getInstance().create(inDense, inputMask);
-            List<Activations> actEmbedding = net.feedForward(aEmbedding, false);
-            List<Activations> actDense = net2.feedForward(aDense, false);
-            for (int i = 1; i < actEmbedding.size(); i++) {
-                String s = String.valueOf(i);
-                assertArrayEquals(s, actDense.get(i).getAsArray(), actEmbedding.get(i).getAsArray());
-                assertArrayEquals(s, actDense.get(i).getMaskAsArray(), actEmbedding.get(i).getMaskAsArray());
-            }
-
-            net.setInput(aEmbedding);
-            net2.setInput(aDense);
-            net.setLabels(labels);
-            net2.setLabels(labels);
-            net.computeGradientAndScore();
-            net2.computeGradientAndScore();
-
-            System.out.println(net.score() + "\t" + net2.score());
-            assertEquals(net2.score(), net.score(), 1e-5);
-
-            Map<String, INDArray> gradients = net.gradient().gradientForVariable();
-            Map<String, INDArray> gradients2 = net2.gradient().gradientForVariable();
-            assertEquals(gradients.keySet(), gradients2.keySet());
-            for (String s : gradients.keySet()) {
-                assertEquals(gradients2.get(s), gradients.get(s));
-            }
         }
     }
 

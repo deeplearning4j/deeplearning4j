@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -32,6 +34,8 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestCompGraphCNN {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     protected ComputationGraphConfiguration conf;
     protected ComputationGraph graph;
@@ -123,9 +127,7 @@ public class TestCompGraphCNN {
 
     @Test
     public void testForwardBasic() {
-
-        graph.setInput(0, ds.getFeatureMatrix());
-        Map<String, INDArray> activations = graph.feedForward(true);
+        Map<String, Activations> activations = graph.feedForward(af.create(ds.getFeatures()), true);
         assertEquals(6, activations.size()); //1 input, 2 CNN layers, 1 subsampling, 1 dense, 1 output -> 6
         assertTrue(activations.containsKey("input"));
         assertTrue(activations.containsKey("cnn1"));

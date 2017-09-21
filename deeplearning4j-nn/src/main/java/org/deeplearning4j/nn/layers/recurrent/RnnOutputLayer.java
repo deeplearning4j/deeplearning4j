@@ -153,13 +153,11 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
 
-        //INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
-        //        input2d.mmul(W).addiRowVector(b)));
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
-        if (this.input.getMask(0) != null) {
-            act2d.muliColumnVector(this.input.getMask(0));
-        }
         INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
+        if (labelMask != null) {
+            applyLabelMask(ret);
+        }
         return ActivationsFactory.getInstance().create(ret);    //TODO masks
     }
 
@@ -196,13 +194,25 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         return summedScores;
     }
 
-    @Override
-    protected void applyMask(INDArray to) {
-        if(to.rank() == 2){
-            super.applyMask(to);
+//    @Override
+//    protected void applyMask(INDArray to) {
+//        if (labelMask == null) {
+//            return;
+//        }
+//        if(labelMask.rank() == 2){
+//            //Per time step masking
+//            Broadcast.mul(to, labelMask, to, 0, 2);
+//        } else {
+//            //Per output masking
+//            to.muli(labelMask);
+//        }
+//    }
+
+    protected void applyLabelMask(INDArray to){
+        if(labelMask == null){
             return;
         }
-
+        //Assumption: 3d input
         if(labelMask.rank() == 2){
             //Per time step masking
             Broadcast.mul(to, labelMask, to, 0, 2);

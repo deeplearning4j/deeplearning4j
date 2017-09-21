@@ -122,15 +122,6 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public void fit(Activations data) {
-        if(data.getMask(0) != null){
-            throw new IllegalArgumentException("Cannot fit with mask array present (not yet implemneted)");
-        }
-        setInput(data);
-        fit();
-    }
-
-    @Override
     public void fit(DataSetIterator iter) {
         while(iter.hasNext()){
             fit(iter.next());

@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.Data;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -262,7 +263,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     @Override
-    public  void fit(){
+//    public  void fit(){
+    public void fit(Activations data) {
+        setInput(data);
         applyPreprocessorIfNecessary(true);
         applyDropOutIfNecessary(true);
         if (solver == null) {

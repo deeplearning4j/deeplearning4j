@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -187,13 +188,14 @@ public class TestVariableLengthTSCG {
             }
 
             //Compute score and gradients *with* input mask
-            net.setInput(ActivationsFactory.getInstance().create(in2, inputMask));
+            Activations a = ActivationsFactory.getInstance().create(in2, inputMask);
+            net.setInput(a);
             net.setLabel(0, labels2);
 //            net.setLayerMaskArrays(new INDArray[] {inputMask}, null);
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
-            Map<String, INDArray> activations2 = net.feedForward();
+            Map<String, Activations> activations2 = net.feedForward(a);
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
             assertNotEquals(score1, score2, 0.01);
@@ -213,7 +215,8 @@ public class TestVariableLengthTSCG {
                 for (int k = 0; k < nIn; k++) {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
-                net.setInput(ActivationsFactory.getInstance().create(in2, inputMask));
+                Activations a = ActivationsFactory.getInstance().create(in2, inputMask);
+                net.setInput(a);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();
@@ -222,7 +225,7 @@ public class TestVariableLengthTSCG {
                     assertEquals(g2.getGradientFor(s), g2a.getGradientFor(s));
                 }
 
-                Map<String, INDArray> activations2a = net.feedForward();
+                Map<String, Activations> activations2a = net.feedForward(a);
                 for (String s : activations2.keySet()) {
                     assertEquals(activations2.get(s), activations2a.get(s));
                 }
@@ -230,8 +233,8 @@ public class TestVariableLengthTSCG {
 
             //Finally: check that the activations for the first two (dense) layers are zero at the appropriate time step
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
-            INDArray l0Before = activations2.get("0");
-            INDArray l1Before = activations2.get("1");
+            INDArray l0Before = activations2.get("0").get(0);
+            INDArray l1Before = activations2.get("1").get(0);
             INDArray l0After = temp.preProcess(af.create(l0Before), nExamples, true).get(0);
             INDArray l1After = temp.preProcess(af.create(l1Before), nExamples, true).get(0);
 

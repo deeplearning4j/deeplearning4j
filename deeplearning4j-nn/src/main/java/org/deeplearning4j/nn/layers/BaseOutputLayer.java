@@ -346,11 +346,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     @Override
-    public void fit() {
-        //No op
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }

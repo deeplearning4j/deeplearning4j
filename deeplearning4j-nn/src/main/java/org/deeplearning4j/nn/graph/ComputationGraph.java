@@ -91,7 +91,7 @@ import java.util.*;
 @Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
-    protected static enum FFType {Standard, RnnActivateStoredState, RnnTimeStep};
+    protected enum FFType {Standard, RnnActivateStoredState, RnnTimeStep};
 
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
@@ -1199,6 +1199,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         setInputs(inputs);
         setLabels(labels);
+        this.labelMaskArrays = labelMaskArrays;
 //        setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
         update(TaskUtils.buildTask(inputs, labels));
 
@@ -1429,8 +1430,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (numInputArrays != 1)
             throw new UnsupportedOperationException("Cannot feedForward with single input for graph network with "
                     + numInputArrays + " expected inputs");
-        setInput(0, input);
-        return feedForward(train);
+        Activations a = ActivationsFactory.getInstance().create(input);
+        Map<String,Activations> m = feedForward(a, train, FFType.Standard, false, true, false);
+        Map<String,INDArray> ret = ActivationsFactory.getActivationINDArrays(m);
+        ActivationsFactory.getInstance().release(m);
+        clear();
+        return ret;
     }
 
     /**
@@ -1441,36 +1446,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train) {
-        if (numInputArrays != input.length)
-            throw new UnsupportedOperationException("Cannot feedForward with " + input.length
-                    + " inputs for graph network with " + numInputArrays + " expected inputs");
-        for (int i = 0; i < input.length; i++)
-            setInput(i, input[i]);
-        return feedForward(train);
+        Map<String,Activations> m = feedForward(ActivationsFactory.getInstance().create(input, null, null), train);
+        Map<String,INDArray> ret = ActivationsFactory.getActivationINDArrays(m);
+        ActivationsFactory.getInstance().release(m);
+        return ret;
     }
 
-    /**
-     * Conduct forward pass using the stored inputs, at test time
-     *
-     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
-     */
-    public Map<String, INDArray> feedForward() {
-        return feedForward(false);
+    public Map<String,Activations> feedForward(Activations input){
+        return feedForward(input, false);
     }
 
-    /**
-     * Conduct forward pass using the stored inputs
-     *
-     * @param train If true: do forward pass at training time; false: do forward pass at test time
-     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
-     */
-    public Map<String, INDArray> feedForward(boolean train) {
-        return feedForward(train, false);
-    }
-
-    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
-        Map<String, Activations> map = feedForward(input, train, FFType.Standard, excludeOutputLayers, true, false);
-        return ActivationsFactory.getActivationINDArrays(map);
+    public Map<String,Activations> feedForward(Activations input, boolean train){
+        Map<String,Activations> m = feedForward(input, train, FFType.Standard, false, true, false);
+        clear();
+        return m;
     }
 
     protected Map<String, Activations> feedForward(Activations input, boolean train, FFType ffType,
@@ -2200,30 +2189,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     //Model methods:
 
     @Override
-    public void fit() {
-        fit(input.getAsArray(), labels, input.getMaskAsArray(), labelMaskArrays);
-    }
-
-    @Override
     public void update(Gradient gradient) {
         if (gradient.gradient().length() != numParams(true))
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
-//        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
-//            String key = entry.getKey();
-//            INDArray val = entry.getValue();
-//            int idx = key.indexOf('_');
-//            if (idx == -1)
-//                throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
-//            String layerName = key.substring(0, idx);
-//            String paramType = key.split("_")[1];
-//            // Update graph gradient
-//            this.gradient.gradientForVariable().put(key, val);
-//            // Update layer params
-////            getLayer(layerName).update(val, paramType);
-//            throw new UnsupportedOperationException("Not yet implemented");
-//        }
-//        // Update layerwise gradient view
-//        setBackpropGradientsViewArray(gradient.gradient());
 
         Map<String,Gradient> temp = new HashMap<>();
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
@@ -2519,6 +2487,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         this.input.clear();
         this.input.setFromArray(inputs);
 
+        //Idea: if 2d in, want 2d out
+        boolean inputIs2d = true;
+        for (INDArray i : inputs) {
+            if (i.rank() != 2) {
+                inputIs2d = false;
+                break;
+            }
+        }
+
+
         Map<String,Activations> ff = feedForward(input, false, FFType.RnnTimeStep, false, true, false);
         INDArray[] out = new INDArray[numOutputArrays];
         List<String> outputs = configuration.getNetworkOutputs();
@@ -2529,85 +2507,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 out[pos++] = a.get(j);
             }
         }
-        return out;
-
-        /*
-        //Idea: if 2d in, want 2d out
-        boolean inputIs2d = true;
-        for (INDArray i : inputs) {
-            if (i.rank() != 2) {
-                inputIs2d = false;
-                break;
-            }
-        }
-
-        INDArray[] outputs = new INDArray[this.numOutputArrays];
-
-        //Based on: feedForward()
-        for (int currVertexIdx : topologicalOrder) {
-            Layer current = vertices[currVertexIdx];
-            if (gvInputVertex.contains(current.getName())) {
-                VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
-                INDArray input = inputs[current.getIndex()];
-
-                for (VertexIndices v : inputsTo) {
-                    int vIdx = v.getVertexIndex();
-                    int vIdxInputNum = v.getVertexEdgeNumber();
-                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-//                    vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
-                    throw new UnsupportedOperationException();
-                }
-
-            } else {
-                Activations out;
-                //Layer
-                Layer l = current;
-                Activations a = ActivationsFactory.getInstance().create(current.getInput(0));
-                if (l instanceof RecurrentLayer) {
-                    out = ((RecurrentLayer) l).rnnTimeStep(a);
-
-                } else if (l instanceof MultiLayerNetwork) {
-                    out = ActivationsFactory.getInstance().create(((MultiLayerNetwork) l).rnnTimeStep(a));
-                } else {
-                    //non-recurrent layer
-                    out = current.activate(false);
-                }
-                ActivationsFactory.getInstance().release(a);
-
-                if (gvOutputVertex.contains(current.getName())) {
-                    //Get the index of this output vertex...
-                    int idx = configuration.getNetworkOutputs().indexOf(current.getName());
-                    outputs[idx] = out.get(0);
-                }
-
-                //Now, set the inputs for the next vertices:
-                VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());    //gvOutputVertices.get(current.getName());
-                if (outputsTo != null) {
-                    for (VertexIndices v : outputsTo) {
-                        int vIdx = v.getVertexIndex();
-                        int inputNum = v.getVertexEdgeNumber();
-                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-//                        vertices[vIdx].setInput(inputNum, out.get(0));
-                        throw new UnsupportedOperationException();
-                    }
-                }
-            }
-        }
 
         //As per MultiLayerNetwork.rnnTimeStep(): if inputs are all 2d, then outputs are all 2d
         if (inputIs2d) {
-            for (int i = 0; i < outputs.length; i++) {
-                if (outputs[i].rank() == 3 && outputs[i].size(2) == 1) {
+            for (int i = 0; i < out.length; i++) {
+                if (out[i].rank() == 3 && out[i].size(2) == 1) {
                     //Return 2d output with shape [miniBatchSize,nOut]
                     // instead of 3d output with shape [miniBatchSize,nOut,1]
-                    outputs[i] = outputs[i].tensorAlongDimension(0, 1, 0);
+                    out[i] = out[i].tensorAlongDimension(0, 1, 0);
                 }
             }
         }
 
-        this.input.clear();
-        return outputs;
-        */
+        clear();
+        return out;
     }
 
     /**
@@ -2848,60 +2761,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return out;
     }
 
-    public Map<String,Activations> rnnActivateUsingStoredState(Activations inputs, boolean training, boolean storeLastForTBPTT){
-        Map<String, INDArray> layerActivations = new HashMap<>();
+    public Map<String,Activations> rnnActivateUsingStoredState(Activations input, boolean training, boolean storeLastForTBPTT){
         Map<String,Activations> ff = feedForward(input, training, FFType.RnnActivateStoredState, false, true, storeLastForTBPTT);
-
         return ff;
-
-//        //Do forward pass according to the topological ordering of the network
-//        for (int currVertexIdx : topologicalOrder) {
-//            Layer current = vertices[currVertexIdx];
-//            if (gvInputVertex.contains(current.getName())) {
-//                VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
-//                INDArray input = inputs[current.getIndex()];
-//
-//                layerActivations.put(current.getName(), input);
-//
-//                for (VertexIndices v : inputsTo) {
-//                    int vIdx = v.getVertexIndex();
-//                    int vIdxInputNum = v.getVertexEdgeNumber();
-//                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-////                    vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
-//                    throw new UnsupportedOperationException();
-//                }
-//
-//            } else {
-//                INDArray out;
-//                Layer l = current;
-//                if (l instanceof RecurrentLayer) {
-//                    out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInput(0), training,
-//                            storeLastForTBPTT);
-//                } else if (l instanceof MultiLayerNetwork) {
-//                    List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
-//                            current.getInput(0), training, storeLastForTBPTT);
-//                    out = temp.get(temp.size() - 1);
-//                } else {
-//                    //non-recurrent layer
-//                    out = current.activate(training).get(0);    //TODO
-//                }
-//                layerActivations.put(current.getName(), out);
-//
-//                //Now, set the inputs for the next vertices:
-//                VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
-//                if (outputsTo != null) {
-//                    for (VertexIndices v : outputsTo) {
-//                        int vIdx = v.getVertexIndex();
-//                        int inputNum = v.getVertexEdgeNumber();
-//                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-////                        vertices[vIdx].setInput(inputNum, out);
-//                        throw new UnsupportedOperationException();
-//                    }
-//                }
-//            }
-//        }
-//
-//        return layerActivations;
     }
 
     /**

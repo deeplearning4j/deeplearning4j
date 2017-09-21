@@ -186,7 +186,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected void applyMask(INDArray to) {
-        to.muliColumnVector(input.getMask(0));
+        if(input.getMaskState(0) == MaskState.Active){
+            //See MaskState javadoc - Masks shouldn't always be applied, even if present
+            to.muliColumnVector(input.getMask(0));
+        }
     }
 
     @Override

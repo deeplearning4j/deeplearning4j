@@ -100,11 +100,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void fit() {
-        //No op
-    }
-
-    @Override
     public double score(){
         return score;
     }

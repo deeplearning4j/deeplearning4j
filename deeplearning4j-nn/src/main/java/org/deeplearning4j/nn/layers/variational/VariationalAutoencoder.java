@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.layers.variational;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
@@ -524,12 +521,20 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public void fit(Activations data) {
+    public void fit(@NonNull Activations data) {
         if(data.getMask(0) != null){
             throw new UnsupportedOperationException("Cannot fit VAE layer in unsupervised way with mask arrays (not yet implemented)");
         }
         setInput(data);
-        fit();
+        setInputMiniBatchSize(input.get(0).size(0));
+
+        if (solver == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
+            }
+        }
+        this.optimizer = solver.getOptimizer();
+        solver.optimize();
     }
 
     @Override
@@ -542,7 +547,7 @@ public class VariationalAutoencoder implements Model {
     @Override
     public void fit(INDArray examples, INDArray labels) {
         setInput(ActivationsFactory.getInstance().create(examples));
-        fit();
+        fit(ActivationsFactory.getInstance().create(examples));
     }
 
     @Override
@@ -899,22 +904,6 @@ public class VariationalAutoencoder implements Model {
         return layerConf().getPreProcessor();
     }
 
-
-    @Override
-    public void fit() {
-        if (input == null) {
-            throw new IllegalStateException("Cannot fit layer: layer input is null (not set) " + layerId());
-        }
-        setInputMiniBatchSize(input.get(0).size(0));
-
-        if (solver == null) {
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
-            }
-        }
-        this.optimizer = solver.getOptimizer();
-        solver.optimize();
-    }
 
     /**
      * Calculate the reconstruction probability, as described in An & Cho, 2015 - "Variational Autoencoder based

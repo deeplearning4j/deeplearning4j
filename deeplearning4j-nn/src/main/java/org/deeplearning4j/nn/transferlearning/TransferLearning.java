@@ -761,7 +761,8 @@ public class TransferLearning {
                     if (allFrozen.contains(gv.getName())) {
                         //Need to freeze this layer - both the layer implementation, and the layer configuration
                         org.deeplearning4j.nn.api.Layer l = gv;
-//                        gv.setLayerAsFrozen();    //TODO
+                        gv = new FrozenLayer(gv);
+                        vertices[topologicalOrder[i]] = gv;
 
                         String layerName = gv.getName();
                         LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);

@@ -1707,13 +1707,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         return out;
     }
 
-
-    @Override
-    public void fit() {
-        fit(input.get(0), labels);
-    }
-
-
     /**
      * Score of the model (relative to the objective function)
      *

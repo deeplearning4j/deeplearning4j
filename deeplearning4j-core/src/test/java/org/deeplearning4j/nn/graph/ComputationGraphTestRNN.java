@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -215,9 +216,8 @@ public class ComputationGraphTestRNN {
                                         .weightInit(WeightInit.DISTRIBUTION).nIn(9).nOut(4)
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "dense")
-                        .setOutputs("out0", "out1").inputPreProcessor("dense", new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor("out0", new FeedForwardToRnnPreProcessor())
-                        .inputPreProcessor("out1", new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                        .setOutputs("out0", "out1")
+                        .setInputTypes(InputType.recurrent(5), InputType.recurrent(4))
                         .build();
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();

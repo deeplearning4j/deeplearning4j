@@ -922,11 +922,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void fit() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public void setListeners(IterationListener... listeners) {
 
         }
