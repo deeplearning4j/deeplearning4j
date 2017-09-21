@@ -84,6 +84,8 @@ public class CNNGradientCheckTest {
                         double scoreBefore = mln.score();
                         for (int j = 0; j < 10; j++)
                             mln.fit(ds);
+                        mln.setInput(ds.getFeatures());
+                        mln.setLabels(ds.getLabels());
                         mln.computeGradientAndScore();
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning

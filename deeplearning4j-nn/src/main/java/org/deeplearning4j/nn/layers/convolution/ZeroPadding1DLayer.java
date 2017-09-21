@@ -69,6 +69,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Activations activate(boolean training) {
+        applyPreprocessorIfNecessary(training);
         INDArray input = this.input.get(0);
         int[] inShape = input.shape();
         int paddedOut = inShape[2] + padding[0] + padding[1];
@@ -78,7 +79,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2])}, input);
 
-        return ActivationsFactory.getInstance().create(out);
+        return ActivationsFactory.getInstance().create(out, this.input.getMask(0), this.input.getMaskState(0));
     }
 
     @Override

@@ -720,6 +720,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     public List<Activations> feedForwardToLayer(Activations input, int layerNum, boolean train){
         //TODO this next call should eventually be removed (after redesign etc)
+        if(input == null || input.get(0) == null){
+            throw new RuntimeException();
+        }
         for(Layer l : layers){
             l.setInputMiniBatchSize(input.get(0).size(0));
         }
@@ -1159,11 +1162,13 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 currGrad.leverageActGradsToWorkspace(workspaceExternal);
 
                 LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
-                for (Map.Entry<String, INDArray> entry : currGrad.getParameterGradients().gradientForVariable().entrySet()) {
-                    String origName = entry.getKey();
-                    multiGradientKey = String.valueOf(j) + "_" + origName;
-                    tempList.addFirst(new Triple<>(multiGradientKey, entry.getValue(),
-                                    currGrad.getParameterGradients().flatteningOrderForVariable(origName)));
+                if(currGrad.getParameterGradients() != null) {
+                    for (Map.Entry<String, INDArray> entry : currGrad.getParameterGradients().gradientForVariable().entrySet()) {
+                        String origName = entry.getKey();
+                        multiGradientKey = String.valueOf(j) + "_" + origName;
+                        tempList.addFirst(new Triple<>(multiGradientKey, entry.getValue(),
+                                currGrad.getParameterGradients().flatteningOrderForVariable(origName)));
+                    }
                 }
                 for (Triple<String, INDArray, Character> triple : tempList)
                     gradientList.addFirst(triple);

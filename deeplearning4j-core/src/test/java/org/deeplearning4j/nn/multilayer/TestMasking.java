@@ -160,7 +160,7 @@ public class TestMasking {
 
                 INDArray newLabels = labels.add(rand.muli(maskZeroLocations)); //Only the masked values are changed
 
-                net.setLabels(newLabels);
+                net.setLabels(newLabels, labelMask);
                 net.computeGradientAndScore();
 
                 assertNotEquals(labels, newLabels);

@@ -41,7 +41,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         // add singleton fourth dimension to input and next layer's epsilon
         INDArray input = this.input.get(0);
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
@@ -50,7 +50,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         INDArray epsNext = gradientEpsNext.get(0);
 
         // remove singleton fourth dimension from input and current epsilon
-        input = origInput;
+        this.input.set(0, origInput);
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
         gradientEpsNext.set(0, epsNext);
 
@@ -67,13 +67,13 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
         // add singleton fourth dimension to input
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         // call 2D SubsamplingLayer's activate method
         Activations acts = super.activate(training);
 
         // remove singleton fourth dimension from input and output activations
-        input = origInput;
+        this.input.set(0, origInput);
         INDArray a = acts.get(0);
         acts.set(0, acts.get(0).reshape(a.size(0), a.size(1), a.size(2)));
 
