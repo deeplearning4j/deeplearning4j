@@ -905,6 +905,7 @@ public class VariationalAutoencoder implements Model {
         if (input == null) {
             throw new IllegalStateException("Cannot fit layer: layer input is null (not set) " + layerId());
         }
+        setInputMiniBatchSize(input.get(0).size(0));
 
         if (solver == null) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {

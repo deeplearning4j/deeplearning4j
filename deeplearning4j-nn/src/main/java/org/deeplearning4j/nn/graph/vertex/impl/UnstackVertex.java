@@ -86,7 +86,10 @@ public class UnstackVertex extends BaseGraphVertex {
                 throw new UnsupportedOperationException(
                                 "Cannot get subset for activations of rank " + input.get(0).rank());
         }
-        return ActivationsFactory.getInstance().create(ret);
+
+        Pair<INDArray,MaskState> p = feedForwardMaskArrays(input.getMaskAsArray(), input.getMaskState(0), getInputMiniBatchSize());
+
+        return ActivationsFactory.getInstance().create(ret, p.getFirst(), p.getSecond());
     }
 
     @Override
@@ -142,8 +145,9 @@ public class UnstackVertex extends BaseGraphVertex {
         }
 
         //Mask arrays are either 1d (column vector) or 2d...
-        int start = from * minibatchSize;
-        int end = (from + 1) * minibatchSize;
+        int mb = maskArrays[0].size(0) / stackSize;
+        int start = from * mb;
+        int end = (from + 1) * mb;
         INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
         return new Pair<>(outMask, currentMaskState);
     }

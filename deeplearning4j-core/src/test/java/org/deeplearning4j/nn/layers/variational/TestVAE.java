@@ -369,8 +369,8 @@ public class TestVAE {
                 for (int j = 0; j < minibatch; j++) {
                     double p = reconstructionProb.getDouble(j);
                     double logp = reconstructionLogProb.getDouble(j);
-                    assertTrue(p >= 0.0 && p <= 1.0);
-                    assertTrue(logp <= 0.0);
+                    assertTrue(String.valueOf(p), p >= 0.0 && p <= 1.0);
+                    assertTrue(String.valueOf(logp), logp <= 0.0);
 
                     double pFromLogP = Math.exp(logp);
                     assertEquals(p, pFromLogP, 1e-6);

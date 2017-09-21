@@ -93,7 +93,8 @@ public class StackVertex extends BaseGraphVertex {
                 lastInputShapes[i] = input.get(i).shape();
             }
 
-            return ActivationsFactory.getInstance().create(out);
+            Pair<INDArray, MaskState> p = feedForwardMaskArrays(input.getMaskAsArray(), input.getMaskState(0), getInputMiniBatchSize());
+            return ActivationsFactory.getInstance().create(out, p.getFirst(), p.getSecond());
         } else {
             return ActivationsFactory.getInstance().create(Nd4j.concat(0, input.getAsArray()));
         }

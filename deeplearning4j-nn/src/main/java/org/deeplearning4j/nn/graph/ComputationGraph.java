@@ -1551,90 +1551,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        /*
-        for (int i = 0; i < topologicalOrder.length; i++) {
-            Layer current = vertices[topologicalOrder[i]];
-            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-
-                if (gvInputVertex.contains(current.getName())) {
-                    VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
-                    // pushing out copy to parent workspace
-                    this.input.leverageTo(workspaceExternal);
-                    Activations inputSubset = this.input.getSubset(current.getIndex());
-                    int inputNum = configuration.getNetworkInputs().indexOf(current.getName());
-
-                    layerActivations.put(current.getName(), this.input.getSubset(inputNum));
-
-                    for (VertexIndices v : inputsTo) {
-                        int vIdx = v.getVertexIndex();
-                        int vIdxInputNum = v.getVertexEdgeNumber();
-                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                        // we're pushing input copies to outer workspace
-                        // FIXME: do we REALLY need this dup()?
-                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
-                                && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
-                                .getWorkspaceForCurrentThread(
-                                        ComputationGraph.workspaceExternal)) {
-                            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                    .getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                                // FIXME: we don't really want detach here
-                                vertices[vIdx].setInput(vIdxInputNum, inputSubset.get(0));
-                                vertices[vIdx].setMaskArray(vIdxInputNum, inputSubset.getMask(0), inputSubset.getMaskState(0));
-                            }
-                        } else {
-                            vertices[vIdx].setInput(vIdxInputNum, inputSubset.get(0));
-                            vertices[vIdx].setMaskArray(vIdxInputNum, inputSubset.getMask(0), inputSubset.getMaskState(0));
-                        }
-                    }
-
-                } else {
-                    //Do forward pass:
-                    if (excludeOutputLayers && gvOutputVertex.contains(current.getName()) && current instanceof IOutputLayer) {
-                        //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
-                        // we only need to ensure the input to the output layers is set properly
-                        continue;
-                    }
-                    // once again, pushing stuff out of this workspace
-                    Activations out;
-                    if (publicApi) {
-                        out = current.activate(train).detach();      //TODO MULTIPLE OUTPUTS
-                    } else {
-                        out = current.activate(train).leverageTo(workspaceExternal); //TODO MULTIPLE OUTPUTS
-                    }
-
-                    layerActivations.put(current.getName(), out);
-
-                    //Now, set the inputs for the next vertices:
-                    VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
-                    if (outputsTo != null) {
-                        for (VertexIndices v : outputsTo) {
-                            int vIdx = v.getVertexIndex();
-                            int inputNum = v.getVertexEdgeNumber();
-                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
-                                    && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j
-                                    .getWorkspaceManager().getWorkspaceForCurrentThread(
-                                            ComputationGraph.workspaceExternal)) {
-                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                        .getWorkspaceForCurrentThread(workspaceExternal)
-                                        .notifyScopeBorrowed()) {
-                                    // FIXME: we don't really want detach here.
-                                    vertices[vIdx].setInput(inputNum, out.get(0));      //TODO multiple outputs
-                                    vertices[vIdx].setMaskArray(inputNum, out.getMask(0), out.getMaskState(0));
-                                }
-                            } else {
-                                vertices[vIdx].setInput(inputNum, out.get(0));          //TODO multiple outputs
-                                vertices[vIdx].setMaskArray(inputNum, out.getMask(0), out.getMaskState(0));
-                            }
-                        }
-                    }
-                }
-
-            }
-
-        }
-        */
-
         if (!train)
             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
@@ -1687,6 +1603,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 tmp[x] = tmp[x].detach();
 
             configuration.setTrainingWorkspaceMode(cMode);
+            clear();
             return ActivationsFactory.getInstance().create(tmp, null, null);
         }
     }
@@ -2563,6 +2480,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for( int i=0; i<labelMaskArrays.length; i++ ){
                 labelMaskArrays[i] = null;
             }
+        }
+
+        for(Layer l : layers){
+            l.clear();
         }
     }
 

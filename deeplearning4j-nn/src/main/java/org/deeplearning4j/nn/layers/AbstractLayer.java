@@ -247,14 +247,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected void applyPreprocessorIfNecessary(boolean training){
         if(!preprocessorApplied && layerConf().getPreProcessor() != null){
-            input = layerConf().getPreProcessor().preProcess(input, getInputMiniBatchSize(), training);        //TODO MINIBATCH SIZE
+            input = layerConf().getPreProcessor().preProcess(input, getInputMiniBatchSize(), training);
             preprocessorApplied = true;
         }
     }
 
     protected Gradients backpropPreprocessor(Gradients gradients){
         if(layerConf().getPreProcessor() != null){
-            return layerConf().getPreProcessor().backprop(gradients, getInputMiniBatchSize());       //TODO MINIBATCH SIZE
+            return layerConf().getPreProcessor().backprop(gradients, getInputMiniBatchSize());
         }
         return gradients;
     }
