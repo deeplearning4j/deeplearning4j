@@ -4,7 +4,7 @@ import lombok.Data;
 
 /** Edge in a graph. 
  * May be a directed or undirected edge.<br>
- * Parameterized, 
+ * Parametrized,
  * and may store a 
  * value/object associated with the edge
  */
@@ -12,11 +12,12 @@ import lombok.Data;
 public class Edge<T> {
 
     private  int from;
-    private  int to;
+    private  int[] to;
     private  T value;
     private  boolean directed;
 
-    public Edge(int from, int to, T value, boolean directed) {
+
+    public Edge(int from, int[] to, T value, boolean directed) {
         this.from = from;
         this.to = to;
         this.value = value;

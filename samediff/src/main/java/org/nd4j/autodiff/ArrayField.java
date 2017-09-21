@@ -900,7 +900,7 @@ public class ArrayField implements Field {
 
         //map x -> z
         this.ops.getGraph().addEdge(vertex.vertexID(),
-                newVertex.vertexID(),owner
+                new int[]{newVertex.vertexID()},owner
                 ,true);
 
         ndArrayInformation.setOwner(owner);
@@ -948,7 +948,7 @@ public class ArrayField implements Field {
                 .build();
         //map x -> z
         this.ops.getGraph().addEdge(vertex.vertexID(),
-                newVertex.vertexID(), owner,true);
+                new int[]{newVertex.vertexID()}, owner,true);
         result.setOwner(owner);
         if(owner.isInPlace()) {
             result.setArrId(input.getArrId());
@@ -1001,7 +1001,7 @@ public class ArrayField implements Field {
                 .opType(OpState.OpType.ACCUMULATION).build();
         xToz.setResult(information);
         this.ops.getGraph().addEdge(vertex.vertexID(),
-                newVertex.vertexID(),xToz,true);
+                new int[]{newVertex.vertexID()},xToz,true);
         //map y -> z
         OpState yToZ = OpState.builder()
                 .n(ArrayUtil.prod(resultShape))
@@ -1016,7 +1016,7 @@ public class ArrayField implements Field {
         }
 
         this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
-                newVertex.vertexID(),yToZ,true);
+                new int[]{newVertex.vertexID()},yToZ,true);
 
         return new ArrayField(newVertex,ops);
     }
@@ -1063,7 +1063,7 @@ public class ArrayField implements Field {
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
 
         this.ops.getGraph().addEdge(vertex.vertexID(),
-                newVertex.vertexID(),xToZ,true);
+                new int[]{newVertex.vertexID()},xToZ,true);
         //map y -> z
         OpState yToZ = OpState.builder()
                 .n(ArrayUtil.prod(input.getShape()))
@@ -1076,7 +1076,7 @@ public class ArrayField implements Field {
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
         this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
-                newVertex.vertexID(),yToZ,true);
+                new int[]{newVertex.vertexID()},yToZ,true);
         resultInfo.setOwner(yToZ);
 
         if(xToZ.isInPlace()) {
@@ -1174,7 +1174,7 @@ public class ArrayField implements Field {
         }
         //map x -> z
         this.ops.getGraph().addEdge(vertex.vertexID(),
-                newVertex.vertexID(),opState,true);
+                new int[]{newVertex.vertexID()},opState,true);
 
         return new ArrayField(newVertex,ops);
     }

@@ -10,10 +10,7 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.*;
 import org.nd4j.autodiff.graph.api.Edge;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpExecAction;
-import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.opstate.*;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -170,9 +167,9 @@ public class SameDiff {
                     Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getFrom()),"Edge missing from vertex id for copy " + edge.getFrom());
                     Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getTo()),"Edge missing to vertex id for copy " + edge.getTo());
 
-                    Edge<OpState> newEdge = new Edge<>(
+                    OpStateEdge newEdge = new OpStateEdge(
                             thisVertexIdToNew.get(edge.getFrom()),
-                            thisVertexIdToNew.get(edge.getTo()),
+                            new int[]{thisVertexIdToNew.get(edge.getTo())},
                             cloner.deepClone(edge.getValue()), true);
                     newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
                     edgesForNewVertex.add(newEdge);
@@ -184,9 +181,9 @@ public class SameDiff {
                 List<Edge<OpState>> newIncomingEdges = new ArrayList<>();
                 sameDiff.graph().getIncomingEdges().put(newVertexMap,newIncomingEdges);
                 for(Edge<OpState> edge : incomingEdgesForVertex) {
-                    Edge<OpState> newEdge = new Edge<>(
+                    OpStateEdge newEdge = new OpStateEdge(
                             thisVertexIdToNew.get(edge.getFrom()),
-                            thisVertexIdToNew.get(edge.getTo()),
+                            new int[]{thisVertexIdToNew.get(edge.getTo())},
                             cloner.deepCloneDontCloneInstances(edge.getValue()),true);
                     newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
 

@@ -76,7 +76,7 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
 
         sameDiff.getGraph().addEdge(
                 arg().resultVertexId(),
-                newVertex.vertexID(),
+                new int[]{newVertex.vertexID()},
                 owner,
                 true);
 

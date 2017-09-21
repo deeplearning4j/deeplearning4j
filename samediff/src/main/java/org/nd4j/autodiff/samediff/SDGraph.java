@@ -314,14 +314,14 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 Set<Integer> outVertices = new TreeSet<>();
                 Set<Integer> currInputs = new TreeSet<>();
                 for (Edge<OpState> edge : edges) {
-                    outVertices.add(edge.getTo());
+                    outVertices.add(edge.getTo()[0]);
                     Set<Integer> outputSetForInputIdx = outputEdges.get(i);
                     if (outputSetForInputIdx == null) {
                         outputSetForInputIdx = new TreeSet<>();
                         outputEdges.put(i, outputSetForInputIdx);
                     }
 
-                    outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
+                    outputSetForInputIdx.add(edge.getTo()[0]); //input vertex outputs to the current vertex
                 }
 
                 if( getIncomingEdges().get(i) != null) {

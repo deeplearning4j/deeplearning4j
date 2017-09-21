@@ -347,13 +347,14 @@ public abstract class DifferentialFunction implements Differential {
 
 
         //add the first vertex no matter what as normal
-        sameDiff.getGraph().addEdge(
+        sameDiff.graph().addEdge(
                 v1VertexId,
-                newVertex.vertexID(),
+                new int[]{newVertex.vertexID()},
                 opState2,true);
 
-        sameDiff.getGraph().addEdge(v2VertexId,
-                newVertex.vertexID(),
+        sameDiff.graph().addEdge(
+                v2VertexId,
+                new int[]{newVertex.vertexID()},
                 opState
                 ,true);
         newVertex.setOpState(opState2);

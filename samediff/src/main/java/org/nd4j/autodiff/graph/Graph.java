@@ -192,7 +192,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
 
 
-        if(!frozen && edge.getFrom() == edge.getTo())
+        if(!frozen && edge.getFrom() == edge.getTo()[0])
             throw new IllegalArgumentException("No cycles allowed");
 
         if (edge.getFrom() < 0)
@@ -214,10 +214,10 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         lastEdgeAdded = edge;
 
-        List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
+        List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo()[0]);
         if(incomingList == null) {
             incomingList = new ArrayList<>();
-            incomingEdges.put(edge.getTo(),incomingList);
+            incomingEdges.put(edge.getTo()[0],incomingList);
         }
 
         addEdgeHelper(edge, incomingList);
@@ -227,10 +227,10 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
 
         //Add other way too (to allow easy lookup for undirected edges)
-        List<Edge<E>> toList = edges.get(edge.getTo());
+        List<Edge<E>> toList = edges.get(edge.getTo()[0]);
         if(toList == null) {
             toList = new ArrayList<>();
-            edges.put(edge.getTo(),toList);
+            edges.put(edge.getTo()[0],toList);
         }
 
         addEdgeHelper(edge, toList);
@@ -260,7 +260,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(!incomingEdges.containsKey(vertex))
             return 0;
         for(Edge<E> edge : incomingEdges.get(vertex)) {
-            if(edge.getTo() == vertex)
+            if(edge.getTo()[0] == vertex)
                 ret++;
         }
 
@@ -305,7 +305,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             return out;
         for (int i = 0; i < out.length; i++) {
             Edge<E> e = edges.get(vertex).get(i);
-            out[i] = (e.getFrom() == vertex ? e.getTo() : e.getFrom());
+            out[i] = (e.getFrom() == vertex ? e.getTo()[0] : e.getFrom());
         }
         return out;
     }
@@ -325,7 +325,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             } else {
                 for (Edge<E> e : list) {
                     if ((e.getFrom() == edge.getFrom() && e.getTo() == edge.getTo())
-                            || (e.getTo() == edge.getFrom() && e.getFrom() == edge.getTo())) {
+                            || (e.getTo()[0] == edge.getFrom() && e.getFrom() == edge.getTo()[0])) {
                         duplicate = true;
                         break;
                     }
@@ -392,7 +392,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             for(Edge<E> edge : edgeList) {
                 if(getVertex(edge.getFrom()) instanceof NDArrayVertex) {
                     NDArrayVertex vertex = (NDArrayVertex) getVertex(edge.getFrom());
-                    NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo());
+                    NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo()[0]);
                     OpState opState = (OpState) edge.getValue();
                     g = g.with(node(String.valueOf(vertex.vertexID()))
                             .with(Label.of(String.valueOf(vertex.getValue().getId())))

@@ -179,7 +179,7 @@ public class TensorFlowImport {
                     if (id == null)
                         throw new ND4JIllegalStateException("Unknown input: [" + input + "]");
 
-                    graph.addEdge(id, nodesCnt, opState, true);
+                    graph.addEdge(id, new int[]{nodesCnt}, opState, true);
                 }
             }
         }
