@@ -5,8 +5,25 @@ layout: cn-default
 <p><h1>神经网络定型问题排查</h1></p>
 <p>神经网络的调试可能比较困难。如果网络超参数设定不当，那么学习速度可能会偏慢，甚至完全没有进展。本页旨在介绍网络调试中应当使用的一些基本步骤。</p>
 <p>以下的建议大多已在学术论文中讨论过。我们希望将这些建议汇集到同一个网页中，并且用尽可能清晰的方式加以表述。</p><br>
-
-<p><h2>数据标准化</h2></p>
+<p><h2>目录</h2></p>
+<ul>
+  <li><a href="#normalization">数据标准化</a></li>
+  <li><a href="#weight">权重初始化</a></li>
+  <li><a href="#epochs">Epoch数量和迭代次数</a></li>
+  <li><a href="#lrate">学习速率</a></li>
+  <li><a href="#activation">激活函数</a></li>
+  <li><a href="#loss">损失函数</a></li>
+  <li><a href="#regularization">正则化</a></li>
+  <li><a href="#minibatch">微批次大小</a></li>
+  <li><a href="#updater">更新器和优化算法</a></li>
+  <li><a href="#normalization">梯度标准化</a></li>
+  <li><a href="#rnn">循环神经网络</a></li>
+  <li><a href="#dbn">深度置信网络</a></li>
+  <li><a href="#rbm">受限玻尔兹曼机</a></li>
+  <li><a href="#NaN">NaN（Not a Number）非数字错误</a></li>
+</ul>
+<br>
+<p><h2><a name="normalization">数据标准化</a></h2></p>
 <p>数据的分布情况如何？数据是否经过适当的缩放？总体上的规则是：</p>
 <ul>
   <li>如果数据是连续值：范围应当在-1到1、0到1，或者呈平均值为0、标准差为1的正态分布。实际的范围不用如此精确，但确保输入数据大致处于上述区间内会有助于定型。缩小过大的输入，放大过小的输入。</li>
@@ -14,30 +31,30 @@ layout: cn-default
 </ul>
 <p>请注意：定型数据和测试数据的标准化方法必须完全相同，这非常重要。</p>
 <br>
-<p><h2>权重初始化</h2></p>
+<p><h2><a name="weight">权重初始化</a></h2></p>
 <p>Deeplearning4j的weightInit参数支持几种不同的权重初始化方式，可以在配置中用.weightInit(WeightInit)方法来设置。</p>
 <p>您需要确保权重不会过大，也不会过小。Xavier权重初始化方法通常是比较好的选择。对于使用修正线性（relu）或带泄露的修正线性（leaky relu）激活函数的网络而言，RELU权重初始化方法比较合适。</p>
 <br> 
-<p><h2>Epoch数量和迭代次数</h2></p>
+<p><h2><a name="epochs">Epoch数量和迭代次数</a></h2></p>
 <p>一个epoch周期的定义是完整地遍历数据集一次。DL4J将迭代次数定义为每个微批次中的参数更新次数。</p>
 <p>在定型中，一般应让定型持续多个epoch，而将迭代次数设为一次（.iterations(1)选项）；一般仅在对非常小的数据集进行完整批次的定型时才会采用大于1的迭代次数。</p>
 <p>如果epoch数量太少，网络就没有足够的时间学会合适的参数；epoch数量太多则有可能导致网络对定型数据过拟合。选择epoch数量的方式之一是早停法。<a href="earlystopping">早停法</a>还可以避免神经网络发生过拟合（即可以帮助网络更好地适应未曾见过的数据）。</p>
 <br>
-<p><h2>学习速率</h2></p>
+<p><h2><a name="lrate">学习速率</a></h2></p>
 <p>学习速率是最重要的超参数之一。如果学习速率过高或过低，网络可能学习效果非常差、学习速度非常慢，甚至完全没有进展。学习速率的取值范围一般在0.1到1e-6之间，最理想的速率通常取决于具体的数据（以及网络架构）。一种简单的建议是，一开始可以尝试三种不同的学习速率：1e-1、1e-3、1e-6，先大致了解一下应该设为怎样的值，然后再进一步微调。理想状态下，可以同时以不同的学习速率运行模型，以便节省时间。</p>
 <p>选择合适的学习速率的常用方法是借助<a href="visualization">DL4J的可视化界面</a>来将定型进程可视化。您需要关注损失随时间变化的情况以及更新值与参数的绝对值之比（通常可以先考虑1:1000左右的比例）。有关学习速率调试的更多信息请参见<a href="https://cs231n.github.io/neural-networks-3/#baby" target="_blank">此处</a>。</p>
 <p>在对同样的神经网络进行分布式定型时，需要的学习速率可能与单机定型不同（通常需要更高的速率）。</p>
 <br>
-<p><h2>激活函数</h2></p>
+<p><h2><a name="activation">激活函数</a></h2></p>
 <p>在激活函数的选择上需要注意两个方面。</p>
 <p>首先是隐藏（非输出）层的激活函数。&ldquo;relu&rdquo;或&ldquo;leakyrelu&rdquo;激活函数一般是比较好的选择。其他一些激活函数（tanh、sigmoid等）更容易出现梯度消失问题，进而大幅增加深度神经网络学习的难度。但是，LSTM层仍然普遍使用tanh激活函数。</p>
 <p>其次是输出层的激活函数：这通常取决于具体的应用。对分类问题而言，通常需要使用softmax激活函数，与负对数似然函数/MCXENT（多类叉熵）相结合。softmax激活函数给出的是各个类别的概率分布（即输出和为1.0）。对回归问题而言，&ldquo;恒等&rdquo;激活函数通常是比较好的选择，可以结合MSE（均方差）损失函数使用。</p>
 <br>
-<p><h2>损失函数</h2></p>
+<p><h2><a name="loss">损失函数</a></h2></p>
 <p>神经网络不同层中的损失函数的作用包括预定型、学习改善权重，以及在分类问题中得出结果（位于输出层上）。（在上述例子中，分类发生在重写段中。）</p>
 <p>网络目的决定了所用的损失函数类型。预定型可选择重构熵函数。分类可选择多类叉熵函数。</p>
 <br>
-<p><h2>正则化</h2></p>
+<p><h2><a name="regularization">正则化</a></h2></p>
 <p>正则化方法有助于避免在定型时发生过拟合。过拟合指网络对定型数据集的预测效果非常好，但对于从未见过的数据无法给出很好的预测。可以把过拟合理解成网络在&ldquo;死记&rdquo;定型数据（而非学习其中存在的一般关联）。</p>
 <p>常见的正则化方法包括：</p>
 <ul>
@@ -49,26 +66,29 @@ layout: cn-default
 </ul>
 <p>如要使用L1/L2/丢弃法正则化，可先设置.regularization(true)，随后分别指定.l1(x)、.l2(y)或.dropout(z)。注意dropout(z)中的z是保留一项激活值的概率。</p>
 <br>
-<p><h2>微批次大小</h2></p>
+<p><h2><a name="minibatch">微批次大小</a></h2></p>
 <p>微批次大小指计算梯度和参数更新值时一次使用的样例数量。在实践中（除了最小的数据集之外）通常都要将数据集切分成一定数量的微批次。</p>
 <p>理想的微批次大小并非唯一。例如，如果微批次大小为10，对GPU而言一般太小，但可以用于CPU。微批次大小为1的网络可以定型，但无法获得并行计算的种种益处。通常可以从32开始尝试，常见的微批次大小范围在16～128之间（有时也可能更大或更小，取决于具体的应用和网络类型）。</p>
 <br>
-<p><h2>更新器和优化算法</h2></p>
+<p><h2><a name="updater">更新器和优化算法</a></h2></p>
 <p>在DL4J中，&ldquo;更新器&rdquo;一词指动量、RMSProp、adagrad等定型机制。相比于&ldquo;普通&rdquo;的随机梯度下降，使用这些方法可以大大提高网络定型速度。您可以用.updater(Updater)配置选项设置更新器。</p>
 <p>优化算法是对给定梯度进行更新的方法。最简单（也最常用）的方法是随机梯度下降（SGD），但DL4J也提供带线搜索的SGD、共轭梯度和LBFGS优化算法。这些算法比SGD更强大，但由于包含线搜索组件，每次参数更新的成本也大幅增加，实践中的使用频率不如SGD。原则上，任意一种更新器都可以和任意一种优化算法组合起来。</p>
 <p>多数情况下比较好的默认选择是使用随机梯度下降优化算法，与动量/rmsprop/adagrad更新器中的一种相结合，实践中常常使用动量更新器。注意动量更新器称为NESTEROVS（指Nesterov提出的动量），可以用.momentum(double)选项来设置动量。</p>
 <br>
-<p><h2>梯度标准化</h2></p>
+<p><h2><a name="normalization">梯度标准化</a></h2></p>
 <p>梯度标准化有时可以帮助避免梯度在神经网络定型过程中变得过大（即所谓的梯度膨胀问题，在循环神经网络中较常见）或过小。应用梯度标准化的方法是.gradientNormalization(GradientNormalization)和.gradientNormalizationThreshould(double)。梯度标准化的示例参见<a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/GradientNormalization.java" target="_blank">GradientNormalization.java</a>。该示例的测试代码见<a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/nn/updater/TestGradientNormalization.java" target="_blank">此处</a>。</p>
 <br>
-<p><h2>循环神经网络：截断式沿时间反向传播</h2></p>
+<p><h2><a name="rnn">循环神经网络：截断式沿时间反向传播</a></h2></p>
 <p>在定型有较长时间序列的循环网络时，通常建议采用截断式沿时间反向传播算法。&ldquo;标准的&rdquo;沿时间反向传播算法（DL4J的默认选项）可能会使每次参数更新的成本变得极高。详情参见<a href="usingrnns">此页</a>以及<a href="glossary.html#backprop">术语表中的说明</a>。</p>
 <br>
-<p><h2>可见/隐藏单元</h2></p>
+<p>
+<h2><a name="dbn">深度置信网络: 可见/隐藏单元</a></h2></p>
 <p>使用深度置信网络（DBN）时请特别注意以下问题。受限玻尔兹曼机（DBN用于提取特征的组成部分）是随机的网络，它会从指定的可见或隐藏单元相对应的不同概率分布中采样。</p>
 <p>Geoff Hinton的权威著作<a href="https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf" target="_blank">《受限玻尔兹曼机定型实用指南》</a>中列出了所有不同的概率分布。</p>
 <br>
-<p><h2>受限玻尔兹曼机（RBM）</h2></p>
+<p><h2><a name="rbm">受限玻尔兹曼机（RBM）</a></h2></p>
 <p>为用于压缩数据的自动编码器创建隐藏层时，神经元的数量应少于输入数据。如果隐藏层节点数与输入节点数太接近，就会有重构恒等函数的风险。隐藏层节点数过多会增加噪声和过拟合的可能性。如果输入层节点数为784，第一个隐藏层的节点数可设为500，第二个隐藏层则设为250。任何隐藏层的节点数均不应少于输入层的四分之一。输出层的节点数应等于标签数。</p>
 <p>较大的数据集需要更多隐藏层。Facebook的Deep Face使用9个隐藏层，它所处理的数据量想必是极其庞大的。许多较小的数据集可能只需要三到四个隐藏层，再加大深度会导致准确率下降。一般的规则是：数据集越大，差异也越多，网络需要更多的特征/神经元才能获得准确的结果。当然，普通的机器学习只有一个隐藏层，这类浅层网络称为感知器。</p>
 <p>处理大型数据集时，您需要对RBM进行多次预定型。只有进行多次预定型后，算法才能学会如何在该数据集的语境中准确地判定特征权重。您可以依靠数据并行或者集群来加快预定型的速度。</p>
+<br>
+<p><h2><a name="NaN">NaN（Not a Number）非数字错误</a></h2></p>
