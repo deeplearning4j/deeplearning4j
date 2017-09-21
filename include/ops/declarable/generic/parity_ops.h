@@ -126,11 +126,11 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(mMul, matMul);
-        DECLARE_SYN(mmul, matMul);
-        DECLARE_SYN(gemm, matMul);
-        DECLARE_SYN(gemv, matMul);
-        DECLARE_SYN(dot, matMul);
+        DECLARE_SYN(mMul, matmul);
+        DECLARE_SYN(mmul, matmul);
+        DECLARE_SYN(gemm, matmul);
+        DECLARE_SYN(gemv, matmul);
+        DECLARE_SYN(dot, matmul);
 
 
 
@@ -684,7 +684,7 @@ namespace nd4j {
         DECLARE_SYN(sub, subtract);
 
 //////////////////////////////////////////////////////////////////////////		
-		DECLARE_OP(reverseSubtract, 2, 1, true) {
+		DECLARE_OP(reversesubtract, 2, 1, true) {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -708,7 +708,7 @@ namespace nd4j {
 
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(RSub, reverseSubtract);
+        DECLARE_SYN(RSub, reversesubtract);
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(multiply, 2, 1, true) {
