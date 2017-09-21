@@ -191,9 +191,9 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
                 //get the inputs for this this output array
                 for (Edge<OpState> edge : inputOpStates) {
-                    inputIds[inputsCount] = edge.getFrom();
-                    Preconditions.checkNotNull(getInformationFor(edge.getFrom()));
-                    inputs[inputsCount] = getInformationFor(edge.getFrom());
+                    inputIds[inputsCount] = edge.getFrom()[0];
+                    Preconditions.checkNotNull(getInformationFor(edge.getFrom()[0]));
+                    inputs[inputsCount] = getInformationFor(edge.getFrom()[0]);
                     inputsCount++;
                 }
 
@@ -326,7 +326,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
 
                 if( getIncomingEdges().get(i) != null) {
                     for (Edge<OpState> edge : getIncomingEdges().get(i)) {
-                        currInputs.add(edge.getFrom());
+                        currInputs.add(edge.getFrom()[0]);
 
                     }
 

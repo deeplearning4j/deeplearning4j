@@ -168,7 +168,7 @@ public class SameDiff {
                     Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getTo()),"Edge missing to vertex id for copy " + edge.getTo());
 
                     OpStateEdge newEdge = new OpStateEdge(
-                            thisVertexIdToNew.get(edge.getFrom()),
+                            new int[]{thisVertexIdToNew.get(edge.getFrom())},
                             new int[]{thisVertexIdToNew.get(edge.getTo())},
                             cloner.deepClone(edge.getValue()), true);
                     newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
@@ -182,7 +182,7 @@ public class SameDiff {
                 sameDiff.graph().getIncomingEdges().put(newVertexMap,newIncomingEdges);
                 for(Edge<OpState> edge : incomingEdgesForVertex) {
                     OpStateEdge newEdge = new OpStateEdge(
-                            thisVertexIdToNew.get(edge.getFrom()),
+                             new int[]{thisVertexIdToNew.get(edge.getFrom())},
                             new int[]{thisVertexIdToNew.get(edge.getTo())},
                             cloner.deepCloneDontCloneInstances(edge.getValue()),true);
                     newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});

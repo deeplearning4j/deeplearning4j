@@ -11,13 +11,13 @@ import lombok.Data;
 @Data
 public class Edge<T> {
 
-    private  int from;
+    private  int[] from;
     private  int[] to;
     private  T value;
     private  boolean directed;
 
 
-    public Edge(int from, int[] to, T value, boolean directed) {
+    public Edge(int[] from, int[] to, T value, boolean directed) {
         this.from = from;
         this.to = to;
         this.value = value;

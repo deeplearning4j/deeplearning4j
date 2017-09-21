@@ -899,7 +899,8 @@ public class ArrayField implements Field {
                 .build();
 
         //map x -> z
-        this.ops.getGraph().addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[]{vertex.vertexID()},
                 new int[]{newVertex.vertexID()},owner
                 ,true);
 
@@ -947,7 +948,8 @@ public class ArrayField implements Field {
                         String.valueOf(newVertex.vertexID())})
                 .build();
         //map x -> z
-        this.ops.getGraph().addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[]{vertex.vertexID()},
                 new int[]{newVertex.vertexID()}, owner,true);
         result.setOwner(owner);
         if(owner.isInPlace()) {
@@ -1000,7 +1002,8 @@ public class ArrayField implements Field {
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
         xToz.setResult(information);
-        this.ops.getGraph().addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[] {vertex.vertexID()},
                 new int[]{newVertex.vertexID()},xToz,true);
         //map y -> z
         OpState yToZ = OpState.builder()
@@ -1015,7 +1018,8 @@ public class ArrayField implements Field {
             information.setArrId(input.getArrId());
         }
 
-        this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[]{i_v.getVertex().vertexID()},
                 new int[]{newVertex.vertexID()},yToZ,true);
 
         return new ArrayField(newVertex,ops);
@@ -1062,7 +1066,8 @@ public class ArrayField implements Field {
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
 
-        this.ops.getGraph().addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[]{vertex.vertexID()},
                 new int[]{newVertex.vertexID()},xToZ,true);
         //map y -> z
         OpState yToZ = OpState.builder()
@@ -1075,7 +1080,8 @@ public class ArrayField implements Field {
         if(!ops.graph().isFrozen() && i_v.getVertex().vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
-        this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[]{i_v.getVertex().vertexID()},
                 new int[]{newVertex.vertexID()},yToZ,true);
         resultInfo.setOwner(yToZ);
 
@@ -1173,7 +1179,8 @@ public class ArrayField implements Field {
             newVertex.getValue().setArrId(input.getArrId());
         }
         //map x -> z
-        this.ops.getGraph().addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(
+                new int[]{vertex.vertexID()},
                 new int[]{newVertex.vertexID()},opState,true);
 
         return new ArrayField(newVertex,ops);

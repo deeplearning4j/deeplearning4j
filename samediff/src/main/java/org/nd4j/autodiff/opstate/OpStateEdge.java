@@ -8,7 +8,7 @@ public class OpStateEdge extends Edge<OpState> {
     @Getter
     private SameDiff sameDiff;
 
-    public OpStateEdge(int from, int[] to, OpState value, boolean directed) {
+    public OpStateEdge(int[] from, int[] to, OpState value, boolean directed) {
         super(from, to, value, directed);
         this.sameDiff = value.getDifferentialFunction().getSameDiff();
 

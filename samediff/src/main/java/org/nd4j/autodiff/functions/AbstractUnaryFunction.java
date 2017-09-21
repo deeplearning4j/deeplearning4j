@@ -124,7 +124,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
 
 
         sameDiff.getGraph().addEdge(
-                arg().resultVertexId(),
+                new int[]{arg().resultVertexId()},
                 new int[]{newVertex.vertexID()},
                 owner,
                 true);

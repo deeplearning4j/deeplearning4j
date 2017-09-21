@@ -83,7 +83,9 @@ public abstract class AbstractReduceUnaryFunction extends DifferentialFunction {
                 .differentialFunction(this)
                 .build();
         newVertex.setOpState(opState);
-        sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),new int[]{newVertex.vertexID()},opState
+        sameDiff.getGraph().addEdge(
+                new int[]{v1.getVertex().vertexID()}
+        ,new int[]{newVertex.vertexID()},opState
                 ,true);
         this.opState = opState;
         information.setOwner(opState);

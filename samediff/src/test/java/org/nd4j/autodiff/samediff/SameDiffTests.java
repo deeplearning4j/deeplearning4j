@@ -434,11 +434,11 @@ public class SameDiffTests {
         ints.addVertex(new Vertex<>(4,0,2));
         ints.addVertex(new Vertex<>(5,1,3));
         //multiple edge outputs
-        ints.addEdge(new Edge<>(1,new int[]{2},0,true));
-        ints.addEdge(new Edge<>(1,new int[]{3},0,true));
+        ints.addEdge(new Edge<>(new int[]{1},new int[]{2},0,true));
+        ints.addEdge(new Edge<>(new int[]{1},new int[]{3},0,true));
 
-        ints.addEdge(new Edge<>(2,new int[]{3},0,true));
-        ints.addEdge(new Edge<>(3,new int[]{2},0,true));
+        ints.addEdge(new Edge<>(new int[]{2},new int[]{3},0,true));
+        ints.addEdge(new Edge<>(new int[]{3},new int[]{2},0,true));
 
         assertEquals(2,ints.getEdgesOut(1).size());
         assertEquals(2,ints.getIncomingEdges().get(3).size());

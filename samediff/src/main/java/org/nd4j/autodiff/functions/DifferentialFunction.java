@@ -348,12 +348,12 @@ public abstract class DifferentialFunction implements Differential {
 
         //add the first vertex no matter what as normal
         sameDiff.graph().addEdge(
-                v1VertexId,
+                new int[]{v1VertexId},
                 new int[]{newVertex.vertexID()},
                 opState2,true);
 
         sameDiff.graph().addEdge(
-                v2VertexId,
+                new int[]{v2VertexId},
                 new int[]{newVertex.vertexID()},
                 opState
                 ,true);
