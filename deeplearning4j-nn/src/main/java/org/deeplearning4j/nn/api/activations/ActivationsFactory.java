@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.api.activations;
 import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collection;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ActivationsFactory {
@@ -65,6 +65,12 @@ public class ActivationsFactory {
         }
     }
 
+    public void release(Map<?,Activations> map){
+        for(Activations a : map.values()){
+            release(a);
+        }
+    }
+
     public Activations create(int size){
         switch (size){
             case 1:
@@ -97,6 +103,10 @@ public class ActivationsFactory {
         return new ActivationsSingle(activations, mask, maskState);
     }
 
+    public Activations createPair(INDArray activations1, INDArray activations2){
+        return createPair(activations1, activations2, null, null, null, null);
+    }
+
     public Activations createPair(INDArray activations1, INDArray activations2, INDArray mask1, INDArray mask2,
                                   MaskState maskState1, MaskState maskState2) {
         //First: determine if any cached value is available
@@ -106,6 +116,11 @@ public class ActivationsFactory {
             return setValues(pair, 1, activations2, mask2, maskState2);
         }
         return new ActivationsPair(activations1, activations2, mask1, mask2, maskState1, maskState2);
+    }
+
+    public Activations createTriple(INDArray activations1, INDArray activations2, INDArray activations3){
+        return createTriple(activations1, activations2, activations3,
+                null, null, null, null, null, null);
     }
 
     public Activations createTriple(INDArray activations1, INDArray activations2, INDArray activations3,
@@ -174,4 +189,34 @@ public class ActivationsFactory {
         //Failed (other thread used available slots first)
     }
 
+
+    public static List<INDArray> getActivationINDArrays(List<Activations> activations){
+        List<INDArray> out = new ArrayList<>(activations.size());
+        for(Activations a : activations){
+            if(a.size() > 1){
+                throw new IllegalStateException("Cannot convert to flat list: activations have more than 1 array");
+            }
+            out.add(a.get(0));
+        }
+        return out;
+    }
+
+    public static Map<String,INDArray> getActivationINDArrays(Map<String,Activations> activations){
+        Map<String,INDArray> out = new HashMap<>();
+        for(Map.Entry<String,Activations> e : activations.entrySet()){
+            if(e.getValue().size() > 1){
+                throw new IllegalStateException("Cannot convert to map: activations have more than 1 array");
+            }
+            out.put(e.getKey(), e.getValue().get(0));
+        }
+        return out;
+    }
+
+    public static Map<String,Activations> toActivations(Map<String,INDArray> map){
+        Map<String,Activations> out = new HashMap<>();
+        for(Map.Entry<String,INDArray> e : map.entrySet()){
+            out.put(e.getKey(), ActivationsFactory.getInstance().create(e.getValue()));
+        }
+        return out;
+    }
 }

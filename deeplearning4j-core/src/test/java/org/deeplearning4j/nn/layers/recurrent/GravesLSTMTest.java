@@ -100,7 +100,8 @@ public class GravesLSTMTest {
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
         //Set input, do a forward pass:
         lstm.activate(af.create(inputData)).get(0);
-        assertNotNull(lstm.input());
+        assertNotNull(lstm.getInput());
+        assertNotNull(lstm.getInput().get(0));
 
         INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
@@ -147,7 +148,7 @@ public class GravesLSTMTest {
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
-        lstm.setInput(input);
+        lstm.setInput(af.create(input));
 
         Method actHelper = GravesLSTM.class.getDeclaredMethod("activateHelper", boolean.class, INDArray.class,
                         INDArray.class, boolean.class);

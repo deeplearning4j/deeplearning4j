@@ -127,7 +127,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public Activations activate(Activations input, boolean training) {
-        setInput(input.get(0));
+        setInput(input);
         INDArray ret = activateHelper(training, null, null, false).fwdPassOutput;
         return ActivationsFactory.getInstance().create(ret, input.getMask(0), input.getMaskState(0));
     }
@@ -182,7 +182,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public Activations rnnTimeStep(Activations input) {
-        setInput(input.get(0));
+        setInput(input);
         FwdPassReturn fwdPass = activateHelper(false, stateMap.get(STATE_KEY_PREV_ACTIVATION),
                         stateMap.get(STATE_KEY_PREV_MEMCELL), false);
         INDArray outAct = fwdPass.fwdPassOutput;
@@ -196,7 +196,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public Activations rnnActivateUsingStoredState(Activations input, boolean training, boolean storeLastForTBPTT) {
         setInput(input);
         FwdPassReturn fwdPass = activateHelper(training, stateMap.get(STATE_KEY_PREV_ACTIVATION),
                         stateMap.get(STATE_KEY_PREV_MEMCELL), false);
@@ -207,6 +207,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
             tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.workspaceTBPTT));
         }
 
-        return outAct;
+        return ActivationsFactory.getInstance().create(outAct, input.getMask(0), input.getMaskState(0));
     }
 }

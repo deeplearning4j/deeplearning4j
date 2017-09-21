@@ -92,7 +92,7 @@ public class OutputLayerTest {
         DataSet test = trainTest.getTest();
         test.normalizeZeroMeanZeroUnitVariance();
         Evaluation eval = new Evaluation();
-        INDArray output = l.output(test.getFeatureMatrix()).get(0);
+        INDArray output = l.output(af.create(test.getFeatures()), true).get(0);
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
 
@@ -157,7 +157,7 @@ public class OutputLayerTest {
         o.fit(t.getTrain());
         log.info("Evaluate model....");
         Evaluation eval = new Evaluation(3);
-        eval.eval(t.getTest().getLabels(), o.output(t.getTest().getFeatureMatrix(), true).get(0));
+        eval.eval(t.getTest().getLabels(), o.output(af.create(t.getTest().getFeatures()), true).get(0));
         log.info(eval.stats());
 
     }
@@ -223,7 +223,7 @@ public class OutputLayerTest {
         DataSet test = trainTest.getTest();
         test.normalizeZeroMeanZeroUnitVariance();
         Evaluation eval = new Evaluation();
-        INDArray output = l.output(test.getFeatureMatrix()).get(0);
+        INDArray output = l.output(af.create(test.getFeatures()), true).get(0);
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
 

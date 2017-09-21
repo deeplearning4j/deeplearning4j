@@ -73,12 +73,7 @@ public abstract class BaseGraphVertex extends AbstractLayer {
                                                                               int minibatchSize);
 
     public boolean canDoForward(){
-        for( int i=0; i<numInputs(); i++ ){
-            if(getInput(i) == null){
-                return false;
-            }
-        }
-        return true;
+        return input != null && !input.anyActivationsNull();
     }
 
     public boolean canDoBackward(){

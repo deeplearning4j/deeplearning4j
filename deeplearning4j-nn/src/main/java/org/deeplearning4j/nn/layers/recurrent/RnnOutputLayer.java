@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -108,15 +109,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Activations output(INDArray input) {
-        if (input.rank() != 3)
-            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
-        //Returns 3d activations from 3d input
-        setInput(input);
-        return output(false);
-    }
-
-    @Override
     public Activations output(boolean training) {
         applyPreprocessorIfNecessary(training);
         INDArray input = this.input.get(0);
@@ -169,28 +161,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
         INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
         return ActivationsFactory.getInstance().create(ret);    //TODO masks
-    }
-
-    @Override
-    public void setMaskArray(int idx, INDArray maskArray) {
-        if (maskArray != null) {
-            if(input == null)
-                input = ActivationsFactory.getInstance().create(1);
-            //Two possible cases:
-            //(a) per time step masking - rank 2 mask array -> reshape to rank 1 (column vector)
-            //(b) per output masking - rank 3 mask array  -> reshape to rank 2 (
-            if (maskArray.rank() == 2) {
-                this.input.setMask(idx, TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray));
-            } else if (maskArray.rank() == 3) {
-                this.input.setMask(idx, TimeSeriesUtils.reshape3dTo2d(maskArray));
-            } else {
-                throw new UnsupportedOperationException(
-                                "Invalid mask array: must be rank 2 or 3 (got: rank " + maskArray.rank() + ", shape = "
-                                                + Arrays.toString(maskArray.shape()) + ") " + layerId());
-            }
-        } else {
-            this.input.setMask(idx, null);
-        }
     }
 
     /**Compute the score for each example individually, after labels and input have been set.

@@ -118,11 +118,11 @@ public class ConvolutionalIterationListener implements IterationListener {
             if (model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
                 for (Layer layer : l.getLayers()) {
-                    if (!(layer instanceof FrozenLayer) && layer.input().rank() == 4) {
-                        INDArray output = layer.activate(ActivationsFactory.getInstance().create(layer.input())).get(0);
+                    if (!(layer instanceof FrozenLayer) && layer.getInput().get(0).rank() == 4) {
+                        INDArray output = layer.activate(ActivationsFactory.getInstance().create(layer.getInput().get(0))).get(0);
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = ((ConvolutionLayer) layer).input();
+                            INDArray inputs = ((ConvolutionLayer) layer).getInput().get(0);
 
                             try {
                                 sourceImage = restoreRGBImage(
@@ -143,11 +143,11 @@ public class ConvolutionalIterationListener implements IterationListener {
             } else if (model instanceof ComputationGraph) {
                 ComputationGraph l = (ComputationGraph) model;
                 for (Layer layer : l.getLayers()) {
-                    if (!(layer instanceof FrozenLayer) && layer.input().rank() == 4) {
-                        INDArray output = layer.activate(ActivationsFactory.getInstance().create(layer.input())).get(0);
+                    if (!(layer instanceof FrozenLayer) && layer.getInput().get(0).rank() == 4) {
+                        INDArray output = layer.activate(ActivationsFactory.getInstance().create(layer.getInput().get(0))).get(0);
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = ((ConvolutionLayer) layer).input();
+                            INDArray inputs = ((ConvolutionLayer) layer).getInput().get(0);
 
                             try {
                                 sourceImage = restoreRGBImage(

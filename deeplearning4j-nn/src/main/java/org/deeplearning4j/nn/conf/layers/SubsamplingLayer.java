@@ -114,6 +114,9 @@ public class SubsamplingLayer extends Layer {
 
     @Override
     public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if(preProcessor != null){
+            inputType = preProcessor.getOutputType(inputType);
+        }
         if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN input, got "

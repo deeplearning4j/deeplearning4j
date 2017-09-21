@@ -75,7 +75,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer> implements Serializable, IOutputLayer {
     private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
 
-    //current input and label matrices
     @Setter @Getter
     protected INDArray labels;
 
@@ -582,11 +581,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //TODO
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void fit(INDArray data) {
-        throw new UnsupportedOperationException("Cannot fit Yolo2OutputLayer from activations only (without labels)");
     }
 
     @Override

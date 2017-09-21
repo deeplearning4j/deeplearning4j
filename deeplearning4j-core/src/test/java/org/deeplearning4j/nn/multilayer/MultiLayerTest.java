@@ -661,34 +661,6 @@ public class MultiLayerTest {
     }
 
     @Test
-    public void testOutput() throws Exception {
-        Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .weightInit(WeightInit.XAVIER).seed(12345L).list()
-                        .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation(Activation.RELU).build())
-                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .pretrain(false).backprop(true).setInputType(InputType.convolutional(28, 28, 1)).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        DataSetIterator fullData = new MnistDataSetIterator(1, 2);
-        net.fit(fullData);
-
-
-        fullData.reset();
-        DataSet expectedSet = fullData.next(2);
-        INDArray expectedOut = net.output(expectedSet.getFeatureMatrix(), false);
-
-        fullData.reset();
-
-        INDArray actualOut = net.output(fullData);
-
-        assertEquals(expectedOut, actualOut);
-    }
-
-    @Test
     public void testGradientUpdate() throws Exception {
         DataSetIterator iter = new IrisDataSetIterator(1, 1);
 

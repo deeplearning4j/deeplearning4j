@@ -23,6 +23,7 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -66,7 +67,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
  * @Author agibsoncc & nyghtowl
  */
 public class RBMTests {
-    private static final Logger log = LoggerFactory.getLogger(RBMTests.class);
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testGradientFlattening() {
@@ -78,7 +79,7 @@ public class RBMTests {
                         LossFunctions.LossFunction.SQUARED_LOSS, 1);
         //        INDArray expectedStepParams = Nd4j.create(new double[] {-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-        rbm.fit(features);
+        rbm.fit(ActivationsFactory.getInstance().create(features));
         Gradient g = rbm.gradient();
 
         List<INDArray> grList = new ArrayList();
@@ -104,7 +105,7 @@ public class RBMTests {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
-        rbm.fit(d.getFeatureMatrix());
+        rbm.fit(af.create(d.getFeatureMatrix()));
     }
 
     @Test
@@ -121,7 +122,7 @@ public class RBMTests {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
-        rbm.fit(d.getFeatureMatrix());
+        rbm.fit(af.create(d.getFeatureMatrix()));
 
     }
 
@@ -152,7 +153,7 @@ public class RBMTests {
         INDArray params = Nd4j.create(1, numParams);
         RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
         rbm.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
-        rbm.fit(input);
+        rbm.fit(af.create(input));
 
     }
 
@@ -164,7 +165,7 @@ public class RBMTests {
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         INDArray rand2 = Nd4j.rand(new int[] {1, rbm.numParams()});
         rbm.setParams(rand2);
-        rbm.setInput(0, Nd4j.zeros(6));
+        rbm.setInput(af.create(Nd4j.zeros(6)));
         rbm.computeGradientAndScore();
         INDArray getParams = rbm.params();
         assertEquals(rand2, getParams);
@@ -183,7 +184,7 @@ public class RBMTests {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
-        rbm.fit(input);
+        rbm.fit(af.create(input));
         double value = rbm.score();
         Gradient grad2 = rbm.gradient();
         assertEquals(24, grad2.getGradientFor("W").length());
@@ -223,7 +224,7 @@ public class RBMTests {
 
         RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
                         LossFunctions.LossFunction.MSE);
-        rbm.setInput(0, input);
+        rbm.setInput(af.create(input));
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         rbm.computeGradientAndScore();
         Pair<Gradient, Double> pair = rbm.gradientAndScore();
@@ -292,7 +293,7 @@ public class RBMTests {
         //        RBM rbm = getRBMLayer(6, 2, HiddenUnit.SOFTMAX, VisibleUnit.SOFTMAX, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setListeners(new ScoreIterationListener(10));
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-        rbm.fit(features);
+        rbm.fit(af.create(features));
     }
 
     // Use to verify the model decreases in value
@@ -305,7 +306,7 @@ public class RBMTests {
         System.out.println("Training RBM network, initialized with Xavier");
         MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 10, 10, WeightInit.XAVIER);
         rbm.setListeners(new ScoreIterationListener(1));
-        rbm.fit(features);
+        rbm.fit(af.create(features));
 
         System.out.println("Training RBM network, initialized with correct solution");
         MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 10, 10, WeightInit.UNIFORM);

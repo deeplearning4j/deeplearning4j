@@ -41,6 +41,8 @@ import static org.junit.Assert.assertEquals;
 
 public class AutoEncoderTest {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testAutoEncoderBiasInit() {
         org.deeplearning4j.nn.conf.layers.AutoEncoder build =
@@ -81,7 +83,7 @@ public class AutoEncoderTest {
         assertEquals(471784, da.params().length());
         da.setParams(da.params());
         da.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-        da.fit(input);
+        da.fit(af.create(input));
     }
 
 

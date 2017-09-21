@@ -367,9 +367,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+
     public INDArray input() {
-        return getInput(0);
+        return input == null ? null : input.get(0);
     }
 
     @Override
@@ -621,21 +621,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      */
     public INDArray activate(int layer, INDArray input, boolean training) {
         return getLayer(layer).activate(ActivationsFactory.getInstance().create(input, null, null), training).get(0);
-    }
-
-    /**
-     * Sets the input and labels from this dataset
-     *
-     * @param data the dataset to initialize with
-     */
-    public void initialize(DataSet data) {
-        setInput(data.getFeatureMatrix());
-        feedForward(getInput());
-        this.labels = data.getLabels();
-        if (getOutputLayer() instanceof IOutputLayer) {
-            IOutputLayer ol = (IOutputLayer) getOutputLayer();
-            ol.setLabels(labels);
-        }
     }
 
     /**
@@ -1444,36 +1429,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         setListeners(cListeners);
     }
 
-
-    /**
-     * Run SGD based on the given labels
-     */
-    public void finetune() {
-        if (!layerWiseConfigurations.isBackprop()) {
-            log.warn("Warning: finetune is not applied.");
-            return;
-        }
-        if (!(getOutputLayer() instanceof IOutputLayer)) {
-            log.warn("Output layer not instance of output layer returning.");
-            return;
-        }
-        if (flattenedGradients == null) {
-            initGradientsView();
-        }
-
-        if (labels == null)
-            throw new IllegalStateException("No labels found");
-
-        log.info("Finetune phase");
-        IOutputLayer output = (IOutputLayer) getOutputLayer();
-        if (output.conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
-            feedForward();
-            output.fit(output.input(), labels);
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
     /**
      * Fit the model
      *
@@ -1536,20 +1491,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         clearLayersStates();
     }
 
-    /**
-     * Fit the unsupervised model
-     *
-     * @param data the examples to classify (one example in each row)
-     */
-
-    @Override
-    public void fit(INDArray data) {
-        throw new UnsupportedOperationException("Use pretrainLayer method instead");
-    }
-
     @Override
     public void fit(Activations data) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Use pretrainLayer method instead");
     }
 
 
@@ -1658,64 +1602,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Label the probabilities of the input
-     *
-     * @param iterator test data to evaluate
-     * @return a vector of probabilities
-     * given each label.
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
-     */
-    public INDArray output(DataSetIterator iterator, boolean train) {
-        List<INDArray> outList = new ArrayList<>();
-        while (iterator.hasNext()) {
-            DataSet next = iterator.next();
-
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
-                break;
-
-            INDArray features = next.getFeatures();
-
-            if (next.hasMaskArrays()) {
-                INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
-                outList.add(this.output(features, train, fMask, lMask));
-
-            } else {
-                outList.add(output(features, train));
-            }
-        }
-        return Nd4j.vstack(outList.toArray(new INDArray[0]));
-    }
-
-    public INDArray output(DataSetIterator iterator) {
-        return output(iterator, false);
-    }
-
-
-    /**
-     * Reconstructs the input.
-     * This is equivalent functionality to a
-     * deep autoencoder.
-     *
-     * @param x        the input to transform
-     * @param layerNum the layer to output for encoding
-     * @return a reconstructed matrix
-     * relative to the size of the last hidden layer.
-     * This is great for data compression and visualizing
-     * high dimensional data (or just doing dimensionality reduction).
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
-     */
-    public INDArray reconstruct(INDArray x, int layerNum) {
-        List<INDArray> forward = feedForward(x);
-        return forward.get(layerNum - 1);
-    }
-
-
-    /**
      * Prints the configuration
      */
     public void printConfiguration() {
@@ -1760,8 +1646,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             setLabels(data.getLabels());
             if (getOutputLayer() instanceof IOutputLayer) {
                 IOutputLayer ol = (IOutputLayer) getOutputLayer();
-                INDArray olInput = activations.get(n - 1).get(0);
-                ol.setInput(0, olInput); //Feedforward doesn't include output layer for efficiency
+                Activations olInput = activations.get(n - 1);
+                ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
                 ol.setLabels(data.getLabels());
                 ol.computeScore(calcL1(true), calcL2(true), training);
                 this.score = ol.score();
@@ -1841,7 +1727,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     public void computeGradientAndScore() {
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
+            List<Activations> activations = rnnActivateUsingStoredState(getInput(), true, true);
             if (trainingListeners.size() > 0) {
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
@@ -1854,15 +1740,15 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
-            List<INDArray> activations = feedForwardToLayer(layers.length - 2, true);
+            List<Activations> activations = feedForwardToLayer(input, layers.length - 2, true);
             if (trainingListeners.size() > 0) {
                 //TODO: We possibly do want output layer activations in some cases here...
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
                 }
             }
-            INDArray actSecondLastLayer = activations.get(activations.size() - 1);
-            getOutputLayer().setInput(0, actSecondLastLayer);
+            Activations actSecondLastLayer = activations.get(activations.size() - 1);
+            getOutputLayer().setInput(actSecondLastLayer);
             //Then: compute gradients
             backprop();
         }
@@ -1912,11 +1798,23 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @param input
      */
     public void setInput(INDArray input) {
-        setInput(0, input);
+        if(input == null){
+            if(this.input != null)
+                this.input.clear();
+        } else if(this.input == null){
+            this.input = ActivationsFactory.getInstance().create(input);
+        } else {
+            this.input.set(0, input);
+        }
     }
 
     public void setInput(Activations input){
         this.input = input;
+    }
+
+    @Override
+    public Activations getInput() {
+        return input;
     }
 
     public void setInputs(INDArray... inputs){
@@ -1926,24 +1824,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Cannot set more than 1 input in MultiLayerNetwork: got "
                     + inputs.length + " inputs");
         setInput(inputs[0]);
-    }
-
-    @Override
-    public void setInput(int inputNumber, INDArray input) {
-        if(inputNumber != 0)
-            throw new IllegalArgumentException();
-        if(this.input == null){
-            this.input = ActivationsFactory.getInstance().create(input);
-        } else {
-            this.input.set(0, input);
-        }
-    }
-
-    @Override
-    public INDArray getInput(int inputNumber) {
-        if(input == null)
-            return null;
-        return input.get(inputNumber);
     }
 
 
@@ -1974,10 +1854,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     public INDArray getLabels() {
         return labels;
-    }
-
-    public INDArray getInput() {
-        return getInput(0);
     }
 
 
@@ -2185,17 +2061,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         if(input == null || input.get(0) == null){
             return -1;
         }
-        return getInput(0).size(0);
-    }
-
-    @Override
-    public void setMaskArray(int idx, INDArray maskArray) {
-
-    }
-
-    @Override
-    public INDArray getMaskArray(int idx) {
-        return null;
+        return input.get(0).size(0);
     }
 
     /**
@@ -2293,8 +2159,13 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @return Activations for each layer (including input, as per feedforward() etc)
      */
     public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        INDArray currInput = input;
-        List<INDArray> activations = new ArrayList<>();
+        List<Activations> list = rnnActivateUsingStoredState(ActivationsFactory.getInstance().create(input), training, storeLastForTBPTT);
+        return ActivationsFactory.getActivationINDArrays(list);
+    }
+
+    public List<Activations> rnnActivateUsingStoredState(Activations input, boolean training, boolean storeLastForTBPTT){
+        Activations currInput = input;
+        List<Activations> activations = new ArrayList<>();
         activations.add(currInput);
 
         for (int i = 0; i < layers.length; i++) {
@@ -2302,12 +2173,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 currInput = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(currInput, training,
                                 storeLastForTBPTT);
             } else if (layers[i] instanceof MultiLayerNetwork) {
-                List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(currInput, training,
+                List<Activations> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(currInput, training,
                                 storeLastForTBPTT);
                 currInput = temp.get(temp.size() - 1);
             } else {
-                currInput = layers[i].activate(
-                        ActivationsFactory.getInstance().create(currInput, null, null), training).get(0);
+                currInput = layers[i].activate(currInput, training);
             }
             activations.add(currInput);
         }

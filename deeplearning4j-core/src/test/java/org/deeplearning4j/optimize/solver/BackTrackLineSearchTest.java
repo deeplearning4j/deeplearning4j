@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.solver;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -35,6 +36,8 @@ public class BackTrackLineSearchTest {
     private DataSetIterator irisIter;
     private DataSet irisData;
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Before
     public void before() {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
@@ -57,7 +60,7 @@ public class BackTrackLineSearchTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(af.create(irisData.getFeatures()));
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
 
@@ -75,7 +78,7 @@ public class BackTrackLineSearchTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(af.create(irisData.getFeatures()));
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
         score1 = layer.score();
@@ -96,7 +99,7 @@ public class BackTrackLineSearchTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(af.create(irisData.getFeatures()));
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
         score1 = layer.score();
@@ -124,7 +127,7 @@ public class BackTrackLineSearchTest {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(af.create(irisData.getFeatures()));
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
         score1 = layer.score();

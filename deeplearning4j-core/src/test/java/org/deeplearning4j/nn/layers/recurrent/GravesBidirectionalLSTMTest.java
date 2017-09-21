@@ -107,7 +107,8 @@ public class GravesBidirectionalLSTMTest {
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
         //Set input, do a forward pass:
         lstm.activate(af.create(inputData));
-        assertNotNull(lstm.input());
+        assertNotNull(lstm.getInput());
+        assertNotNull(lstm.getInput().get(0));
 
         INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
@@ -170,11 +171,11 @@ public class GravesBidirectionalLSTMTest {
         final GravesBidirectionalLSTM lstm =
                         (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         final INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
-        lstm.setInput(input);
+        lstm.setInput(af.create(input));
 
 
         final INDArray fwdPassFalse = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
-                        lstm.input(),
+                        lstm.getInput().get(0),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
@@ -182,7 +183,7 @@ public class GravesBidirectionalLSTMTest {
                         null, CacheMode.NONE).fwdPassOutput;
 
         final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
-                        lstm.input(),
+                        lstm.getInput().get(0),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
@@ -330,7 +331,7 @@ public class GravesBidirectionalLSTMTest {
                         Nd4j.zeros(biasWeightsB.shape()));
 
 
-        forwardsLSTM.setInput(sig);
+        forwardsLSTM.setInput(af.create(sig));
 
         //compare activations
         final INDArray activation1 = forwardsLSTM.activate(af.create(sig)).get(0).slice(0);

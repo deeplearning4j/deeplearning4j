@@ -85,13 +85,6 @@ public interface Model extends Layer {
      */
     void computeGradientAndScore();
 
-
-    /**
-     * Fit the model to the given data
-     * @param data the data to fit the model to
-     */
-    void fit(INDArray data);
-
     void fit(Activations data);
 
     /**

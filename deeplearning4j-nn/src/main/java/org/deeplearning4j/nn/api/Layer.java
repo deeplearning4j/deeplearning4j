@@ -45,12 +45,6 @@ public interface Layer {
 
     int numOutputs();
 
-    /**
-     * The input/feature matrix for the model
-     * @return the input/feature matrix for the model
-     */
-    INDArray input();
-
 
     // ----- Parameter Methods -----
     /**
@@ -174,14 +168,9 @@ public interface Layer {
     Activations activate(Activations input);
 
 
-    /**
-     * Get the layer input.
-     */
-    void setInput(int inputNumber, INDArray input);
+    void setInput(Activations activations);
 
-    void setInputs(INDArray... inputs);
-
-    INDArray getInput(int inputNumber);
+    Activations getInput();
 
     /** Set current/last input mini-batch size.<br>
      * Used for score and gradient calculations. Mini batch size may be different from
@@ -194,17 +183,6 @@ public interface Layer {
      * @see Layer#setInputMiniBatchSize(int)
      */
     int getInputMiniBatchSize();
-
-    /**
-     * Set the mask array.
-     * @param idx Index of the mask array
-     * @param maskArray Mask array to set
-     */
-    @Deprecated
-    void setMaskArray(int idx, INDArray maskArray);
-
-    @Deprecated
-    INDArray getMaskArray(int idx);
 
 
 

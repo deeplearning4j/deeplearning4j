@@ -256,7 +256,7 @@ public class GravesBidirectionalLSTM
 
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public Activations rnnActivateUsingStoredState(Activations input, boolean training, boolean storeLastForTBPTT) {
         throw new UnsupportedOperationException(
                         "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
     }

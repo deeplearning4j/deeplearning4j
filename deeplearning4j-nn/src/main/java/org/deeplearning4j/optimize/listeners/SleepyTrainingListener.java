@@ -3,6 +3,7 @@ package org.deeplearning4j.optimize.listeners;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -165,7 +166,7 @@ public class SleepyTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void onForwardPass(Model model, List<INDArray> activations) {
+    public void onForwardPass(Model model, List<Activations> activations) {
         sleep(lastFF.get(), timerFF);
 
         if (lastFF.get() == null)
@@ -175,7 +176,7 @@ public class SleepyTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+    public void onForwardPass(Model model, Map<String, Activations> activations) {
         sleep(lastFF.get(), timerFF);
 
         if (lastFF.get() == null)

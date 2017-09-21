@@ -88,7 +88,7 @@ public class TestKryo extends BaseSparkKryoTest {
                         new PreprocessorVertex(new CnnToFeedForwardPreProcessor(28, 28, 1)),
                         new ReshapeVertex(new int[] {1, 1}), new ScaleVertex(1.0), new ShiftVertex(1.0),
                         new SubsetVertex(1, 1), new UnstackVertex(0, 2), new DuplicateToTimeSeriesVertex("in1"),
-                        new LastTimeStepVertex("in1")};
+                        new LastTimeStepVertex()};
 
         for (GraphVertex gv : vertices) {
             testSerialization(gv, si);

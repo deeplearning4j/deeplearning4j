@@ -174,7 +174,7 @@ public class SubsamplingLayerTest {
         INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
-        layer.setInput(0, input);
+        layer.setInput(af.create(input));
 
         Gradients containedOutput = layer.backpropGradient(gf.create(expectedContainedEpsilonInput));
         assertEquals(expectedContainedEpsilonResult, containedOutput.get(0));
@@ -193,7 +193,7 @@ public class SubsamplingLayerTest {
     public void testSubSampleLayerSumBackprop() throws Exception {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         INDArray input = getData();
-        layer.setInput(0, input);
+        layer.setInput(af.create(input));
         layer.backpropGradient(gf.create(epsilon));
     }
 

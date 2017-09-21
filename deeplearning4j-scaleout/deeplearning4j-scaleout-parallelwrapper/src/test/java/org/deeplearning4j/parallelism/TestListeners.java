@@ -5,6 +5,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -162,12 +163,12 @@ public class TestListeners {
         public void onEpochEnd(Model model) {}
 
         @Override
-        public void onForwardPass(Model model, List<INDArray> activations) {
+        public void onForwardPass(Model model, List<Activations> activations) {
             forwardPassCount.incrementAndGet();
         }
 
         @Override
-        public void onForwardPass(Model model, Map<String, INDArray> activations) {
+        public void onForwardPass(Model model, Map<String, Activations> activations) {
             forwardPassCount.incrementAndGet();
         }
 

@@ -82,11 +82,6 @@ public class LayerVertex extends BaseGraphVertex {
         return layer.numOutputs();
     }
 
-    @Override
-    public INDArray input(){
-        return layer.input();
-    }
-
 
     // ----- Parameter Methods -----
     @Override
@@ -171,21 +166,6 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public void setInputs(INDArray... inputs){
-        layer.setInputs(inputs);
-    }
-
-    @Override
-    public INDArray getInput(int inputNumber){
-        return layer.getInput(inputNumber);
-    }
-
-    @Override
-    public void setInput(int inputNumber, INDArray input){
-        layer.setInput(inputNumber, input);
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size){
         layer.setInputMiniBatchSize(size);
     }
@@ -193,16 +173,6 @@ public class LayerVertex extends BaseGraphVertex {
     @Override
     public int getInputMiniBatchSize(){
         return layer.getInputMiniBatchSize();
-    }
-
-    @Override
-    public void setMaskArray(int idx, INDArray maskArray){
-        layer.setMaskArray(idx, maskArray);
-    }
-
-    @Override
-    public INDArray getMaskArray(int idx){
-        return layer.getMaskArray(idx);
     }
 
 

@@ -77,11 +77,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return score;
     }
 
-    @Override
-    public void setMaskArray(int idx, INDArray mask){
-        setLabelMask(mask);
-    }
-
     /** Compute score after labels and input have been set.
      * @param fullNetworkL1 L1 regularization term for the entire network
      * @param fullNetworkL2 L2 regularization term for the entire network
@@ -91,7 +86,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        if (getInput(0) == null || labels == null)
+        if (input == null || input.anyActivationsNull() || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
@@ -118,7 +113,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        if (getInput(0) == null || labels == null)
+        if (input == null || input.anyActivationsNull() || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false);
 
@@ -134,8 +129,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public void computeGradientAndScore() {
-        if (getInput(0) == null || labels == null)
-            return;
+        if (input == null || input.anyActivationsNull() || labels == null)
+            throw new IllegalStateException("Cannot compute gradient and score without input and labels " + layerId());
 
         INDArray preOut = preOutput2d(true);
         Gradients pair = getGradientsAndDelta(preOut);
@@ -204,14 +199,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return output(training);
     }
 
-    public Activations output(INDArray input, boolean training) {
+    public Activations output(Activations input, boolean training) {
         setInput(input);
         return output(training);
-    }
-
-    public Activations output(INDArray input) {
-        setInput(input);
-        return output(false);
     }
 
     /**
@@ -244,25 +234,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(INDArray input, INDArray labels) {
-        setInput(input);
-        setLabels(labels);
-        applyPreprocessorIfNecessary(true);
-        applyDropOutIfNecessary(true);
-        if (solver == null) {
-            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
-            Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = 0;
-            Map<String, INDArray> paramTable = paramTable();
-            for (Map.Entry<String, INDArray> entry : paramTable.entrySet()) {
-                updaterStateSize += (int) conf().getLayer().getUpdaterByParam(entry.getKey())
-                                .stateSize(entry.getValue().length());
-            }
-            if (updaterStateSize > 0)
-                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
-                                true);
-        }
-        solver.optimize();
+        throw new UnsupportedOperationException("No longer supported (to be removed)");
     }
 
     /**
@@ -282,21 +254,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         solver = null;
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        throw new UnsupportedOperationException("Cannot fit output layers in an unsupervised way from features" +
-                " array only");
-    }
-
     @Override
     public void fit(Activations data){
         throw new UnsupportedOperationException("Cannot fit output layers in an unsupervised way from features" +
-                " array(s) only");
+                " array(s) only - TO BE REMOVED");  //TODO
     }
 
 
@@ -316,6 +277,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     protected void applyMask(INDArray to) {
         INDArray maskArray = getLabelsMask2d();
+        if (maskArray == null) {
+            return;
+        }
+
         //For output layers: can be either per-example masking, or per-
         if (maskArray.isColumnVector()) {
             to.muliColumnVector(maskArray);

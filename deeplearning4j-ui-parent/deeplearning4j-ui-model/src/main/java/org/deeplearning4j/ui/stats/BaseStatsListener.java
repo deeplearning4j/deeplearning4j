@@ -8,6 +8,7 @@ import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -220,16 +221,16 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onForwardPass(Model model, List<INDArray> activations) {
+    public void onForwardPass(Model model, List<Activations> activations) {
         int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             //Assumption: we have input, layer 0, layer 1, ...
             activationsMap = new HashMap<>();
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 int count = 0;
-                for (INDArray arr : activations) {
+                for (Activations arr : activations) {
                     String layerName = (count == 0 ? "input" : String.valueOf(count - 1));
-                    activationsMap.put(layerName, arr.dup());
+                    activationsMap.put(layerName, arr.get(0).dup());
                     count++;
                 }
             }
@@ -237,14 +238,14 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+    public void onForwardPass(Model model, Map<String, Activations> activations) {
         int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             activationsMap = new HashMap<>();
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (Map.Entry<String, INDArray> e : activations.entrySet()) {
-                    activationsMap.put(e.getKey(), e.getValue().dup());
+                for (Map.Entry<String, Activations> e : activations.entrySet()) {
+                    activationsMap.put(e.getKey(), e.getValue().get(0).dup());      //TODO multiple outputs
                 }
             }
         }

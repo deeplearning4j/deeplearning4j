@@ -262,12 +262,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     @Override
-    public void fit(INDArray input) {
-        setInput(input);
-        fit();
-    }
-
-    @Override
     public  void fit(){
         applyPreprocessorIfNecessary(true);
         applyDropOutIfNecessary(true);

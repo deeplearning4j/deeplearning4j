@@ -223,11 +223,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void fit(INDArray input) {
-        // no-op
-    }
-
-    @Override
     public void fit(Activations data) {
         throw new UnsupportedOperationException("LossLayer cannot be fit from input activations only (no labels)");
     }
@@ -247,17 +242,17 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Activations activate(Activations input, boolean training) {
-        setInput(input.get(0));
+        setInput(input);
         return ActivationsFactory.getInstance().create(output(training));
     }
 
     public INDArray output(INDArray input, boolean training) {
-        setInput(input);
+        setInput(ActivationsFactory.getInstance().create(input));
         return output(training);
     }
 
     public INDArray output(INDArray input) {
-        setInput(input);
+        setInput(ActivationsFactory.getInstance().create(input));
         return output(false);
     }
 

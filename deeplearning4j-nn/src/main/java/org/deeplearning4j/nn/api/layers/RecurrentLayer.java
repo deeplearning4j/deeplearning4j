@@ -71,7 +71,7 @@ public interface RecurrentLayer extends Layer {
      * @param storeLastForTBPTT If true: store the final state in tBpttStateMap for use in truncated BPTT training
      * @return Layer activations
      */
-    INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT);
+    Activations rnnActivateUsingStoredState(Activations input, boolean training, boolean storeLastForTBPTT);
 
     /**
      * Get the RNN truncated backpropagations through time (TBPTT) state for the recurrent layer.

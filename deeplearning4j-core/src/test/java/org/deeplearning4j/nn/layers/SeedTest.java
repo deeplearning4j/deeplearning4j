@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class SeedTest {
         INDArray params = Nd4j.create(1, numParams);
         Model layer = (Model)conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
-        layer.fit(data.getFeatureMatrix());
+        layer.fit(ActivationsFactory.getInstance().create(data.getFeatures()));
 
         layer.computeGradientAndScore();
         double score = layer.score();

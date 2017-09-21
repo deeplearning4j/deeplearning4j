@@ -22,6 +22,38 @@ public abstract class BaseActivations implements Activations {
     }
 
     @Override
+    public boolean anyActivationsNull(){
+        for( int i=0; i<size(); i++ ){
+            if(get(i) == null)
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean anyMasksNull(){
+        for( int i=0; i<size(); i++ ){
+            if(getMask(i) == null)
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void set(int idx, INDArray activations, INDArray mask, MaskState maskState) {
+        assertIndex(idx);
+        set(idx, activations);
+        setMask(idx, mask);
+        setMaskState(idx, maskState);
+    }
+
+    @Override
+    public void setMask(int idx, INDArray mask, MaskState maskState){
+        setMask(idx, mask);
+        setMaskState(idx, maskState);
+    }
+
+    @Override
     public INDArray[] getAsArray(){
         INDArray[] out = new INDArray[size()];
         for( int i=0; i<size(); i++ ){
@@ -109,4 +141,30 @@ public abstract class BaseActivations implements Activations {
         }
         return this;
     }
+
+    @Override
+    public Activations detach() {
+        for( int i=0; i<size(); i++ ){
+            if(get(i) != null ){
+                set(i, get(i).detach());
+            }
+            if(getMask(i) != null){
+                setMask(i, getMask(i).detach());
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public Activations getSubset(int idx) {
+        if(idx < 0 || idx >= size()){
+            throw new IllegalArgumentException("Cannot get activations index " + idx + " from activations of size "
+                    + size() + " (must be in range 0 to size()-1)");
+        }
+        if(this instanceof ActivationsSingle){
+            return this;
+        }
+        return ActivationsFactory.getInstance().create(get(idx), getMask(idx), getMaskState(idx));
+    }
+
 }

@@ -490,7 +490,7 @@ public class GradientCheckUtil {
         }
 
         //Check network configuration:
-        layer.setInput(0, input);
+        layer.setInput(ActivationsFactory.getInstance().create(input));
         Nd4j.getRandom().setSeed(rngSeed);
         layer.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();

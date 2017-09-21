@@ -137,7 +137,7 @@ public class TestDropout {
 
             net.fit(new DataSet(in, out));
 
-            INDArray l0Input = net.getLayer(0).input().dup('c');
+            INDArray l0Input = net.getLayer(0).getInput().get(0).dup('c');
             //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
             NdIndexIterator iter = new NdIndexIterator(inCopy.shape());
             while (iter.hasNext()) {
@@ -154,7 +154,7 @@ public class TestDropout {
             //all be ~1.0 before dropout -> either 0 or ~2.0 after dropout
             for (int j = 1; j < 3; j++) {
 
-                INDArray ljInput = net.getLayer(j).input();
+                INDArray ljInput = net.getLayer(j).getInput().get(0);
                 for (int k = 0; k < ljInput.length(); k++) {
                     double doValue = ljInput.getDouble(j);
                     if (doValue > 0.0) {

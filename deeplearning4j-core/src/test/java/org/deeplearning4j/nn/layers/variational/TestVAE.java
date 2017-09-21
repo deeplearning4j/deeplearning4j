@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.variational;
 
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -32,6 +33,8 @@ import static org.junit.Assert.*;
  * Created by Alex on 26/11/2016.
  */
 public class TestVAE {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testInitialization() {
@@ -158,7 +161,7 @@ public class TestVAE {
         Map<String, INDArray> layerParams = layer.paramTable();
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
-        layer.setInput(0, Nd4j.rand(3, 10));
+        layer.setInput(af.create(Nd4j.rand(3, 10)));
         layer.computeGradientAndScore();;
         Gradient g = layer.gradient();
         Map<String, INDArray> grads = g.gradientForVariable();

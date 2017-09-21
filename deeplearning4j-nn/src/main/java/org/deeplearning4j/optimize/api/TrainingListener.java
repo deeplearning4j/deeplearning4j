@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -35,7 +36,7 @@ public interface TrainingListener extends IterationListener {
      * @param model       Model
      * @param activations Layer activations (including input)
      */
-    void onForwardPass(Model model, List<INDArray> activations);
+    void onForwardPass(Model model, List<Activations> activations);
 
     /**
      * Called once per iteration (forward pass) for activations (usually for a {@link org.deeplearning4j.nn.graph.ComputationGraph}),
@@ -44,7 +45,7 @@ public interface TrainingListener extends IterationListener {
      * @param model       Model
      * @param activations Layer activations (including input)
      */
-    void onForwardPass(Model model, Map<String, INDArray> activations);
+    void onForwardPass(Model model, Map<String, Activations> activations);
 
 
     /**

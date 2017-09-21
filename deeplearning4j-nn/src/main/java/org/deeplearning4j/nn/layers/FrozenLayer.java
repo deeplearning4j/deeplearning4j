@@ -108,6 +108,16 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public void setInput(Activations activations) {
+        insideLayer.setInput(activations);
+    }
+
+    @Override
+    public Activations getInput() {
+        return insideLayer.getInput();
+    }
+
+    @Override
     public void update(Gradient gradient) {
         if (!logUpdate) {
             OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
@@ -177,11 +187,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public INDArray input() {
-        return insideLayer.input();
-    }
-
-    @Override
     public INDArray getParam(String param) {
         return insideLayer.getParam(param);
     }
@@ -247,23 +252,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void setInput(int idx, INDArray input) {
-        insideLayer.setInput(idx, input);
-    }
-
-    @Override
-    public void setInputs(INDArray... inputs) {
-        insideLayer.setInputs(inputs);
-    }
-
-    @Override
-    public INDArray getInput(int inputNumber) {
-        if(inputNumber != 0)
-            throw new IllegalArgumentException("Invalid idx: " + inputNumber);
-        return input();
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size) {
         insideLayer.setInputMiniBatchSize(size);
     }
@@ -271,16 +259,6 @@ public class FrozenLayer implements Layer {
     @Override
     public int getInputMiniBatchSize() {
         return insideLayer.getInputMiniBatchSize();
-    }
-
-    @Override
-    public void setMaskArray(int idx, INDArray maskArray) {
-        insideLayer.setMaskArray(idx, maskArray);
-    }
-
-    @Override
-    public INDArray getMaskArray(int idx) {
-        return insideLayer.getMaskArray(idx);
     }
 
     @Override

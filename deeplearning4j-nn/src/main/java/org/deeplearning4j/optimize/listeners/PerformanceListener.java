@@ -75,9 +75,9 @@ public class PerformanceListener implements IterationListener {
                 if (inputs != null && inputs.length > 0)
                     input = inputs[0];
                 else
-                    input = model.input();
+                    input = ((ComputationGraph) model).getInput(0);
             } else {
-                input = model.input();
+                input = model.getInput().get(0);
             }
 
             //            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));

@@ -117,7 +117,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
         //POSITIVE PHASE
         // hprob0, hstate0
-        Pair<INDArray, INDArray> probHidden = sampleHiddenGivenVisible(input());
+        Pair<INDArray, INDArray> probHidden = sampleHiddenGivenVisible(input);
 
         /*
          * Start the gibbs sampling.
@@ -167,7 +167,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         /*
          * Update gradient parameters - note taking mean based on batchsize is handled in LayerUpdater
          */
-        INDArray wGradient = input().transposei().mmul(probHidden.getFirst()).subi(negVProb.transpose().mmul(negHProb));
+        INDArray wGradient = input.transposei().mmul(probHidden.getFirst()).subi(negVProb.transpose().mmul(negHProb));
 
         INDArray hBiasGradient;
 
@@ -204,7 +204,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         if(data.getMask(0) != null){
             throw new UnsupportedOperationException();
         }
-        fit(data.get(0));
+        setInput(data);
+        fit();
     }
 
     @Override
@@ -216,12 +217,14 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        fit(examples);
+        Activations a = ActivationsFactory.getInstance().create(examples);
+        fit(a);
+        ActivationsFactory.getInstance().release(a);
     }
 
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatures());
+        fit(data.getFeatures(), null);
     }
 
     /**

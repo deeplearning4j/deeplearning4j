@@ -44,7 +44,7 @@ public class ActivationsSingle extends BaseActivations {
     @Override
     public void setMask(int idx, INDArray mask) {
         assertIndex(idx);
-        this.maskState = maskState;
+        this.mask = mask;
     }
 
     @Override
@@ -64,4 +64,5 @@ public class ActivationsSingle extends BaseActivations {
     public Activations cloneShallow() {
         return new ActivationsSingle(activations, mask, maskState);
     }
+
 }

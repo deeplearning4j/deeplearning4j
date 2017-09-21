@@ -15,11 +15,19 @@ public interface Activations {
 
     void set(int idx, INDArray activations);
 
+    void set(int idx, INDArray activations, INDArray mask, MaskState maskState);
+
     void setMask(int idx, INDArray mask);
+
+    void setMask(int idx, INDArray mask, MaskState maskState);
 
     void setMaskState(int idx, MaskState maskState);
 
     void clear();
+
+    boolean anyActivationsNull();
+
+    boolean anyMasksNull();
 
 
     INDArray[] getAsArray();
@@ -46,5 +54,18 @@ public interface Activations {
      * @return              This, after migrating any attached arrays (inc. masks) to the current workspace
      */
     Activations migrate();
+
+    /**
+     * @return These activations (same object) after detaching activations + masks from workspace
+     */
+    Activations detach();
+
+
+    /**
+     * Get a subset of the activations (inc. masks). This may return the original object in some cases
+     * @param idx
+     * @return
+     */
+    Activations getSubset(int idx);
 
 }

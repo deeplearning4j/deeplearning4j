@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
@@ -148,8 +149,10 @@ public class TestVariableLengthTSCG {
                                             "1")
                             .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                                             .nIn(2).nOut(1).build(), "2")
-                            .setOutputs("3").inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
-                            .inputPreProcessor("2", new FeedForwardToRnnPreProcessor()).build();
+                            .setOutputs("3")
+                            .inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
+                            .inputPreProcessor("2", new FeedForwardToRnnPreProcessor())
+                            .build();
 
             ComputationGraph net = new ComputationGraph(conf);
             net.init();
@@ -172,7 +175,7 @@ public class TestVariableLengthTSCG {
                 inputMask.putScalar(new int[] {j, 4}, 0);
             }
 
-
+            //Compute score + gradients without input mask:
             net.setInput(0, in1);
             net.setLabel(0, labels1);
             net.computeGradientAndScore();
@@ -183,9 +186,10 @@ public class TestVariableLengthTSCG {
                 map.put(s, map.get(s).dup()); //Gradients are views; need to dup otherwise they will be modified by next computeGradientAndScore
             }
 
-            net.setInput(0, in2);
+            //Compute score and gradients *with* input mask
+            net.setInput(ActivationsFactory.getInstance().create(in2, inputMask));
             net.setLabel(0, labels2);
-            net.setLayerMaskArrays(new INDArray[] {inputMask}, null);
+//            net.setLayerMaskArrays(new INDArray[] {inputMask}, null);
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
@@ -209,7 +213,7 @@ public class TestVariableLengthTSCG {
                 for (int k = 0; k < nIn; k++) {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
-                net.setInput(0, in2);
+                net.setInput(ActivationsFactory.getInstance().create(in2, inputMask));
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();

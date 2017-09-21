@@ -366,6 +366,16 @@ public class TestOptimizers {
         }
 
         @Override
+        public void setInput(Activations activations) {
+
+        }
+
+        @Override
+        public Activations getInput() {
+            return null;
+        }
+
+        @Override
         public void setBackpropGradientsViewArray(INDArray gradients) {
             throw new UnsupportedOperationException();
         }
@@ -388,21 +398,6 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
-        }
-
-        @Override
-        public void setInput(int inputNumber, INDArray input) {
-
-        }
-
-        @Override
-        public void setInputs(INDArray... inputs) {
-
-        }
-
-        @Override
-        public INDArray getInput(int inputNumber) {
-            return null;
         }
 
         @Override
@@ -594,6 +589,16 @@ public class TestOptimizers {
         }
 
         @Override
+        public void setInput(Activations activations) {
+
+        }
+
+        @Override
+        public Activations getInput() {
+            return null;
+        }
+
+        @Override
         public void setBackpropGradientsViewArray(INDArray gradients) {
             throw new UnsupportedOperationException();
         }
@@ -617,21 +622,6 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
-        }
-
-        @Override
-        public void setInput(int inputNumber, INDArray input) {
-
-        }
-
-        @Override
-        public void setInputs(INDArray... inputs) {
-
-        }
-
-        @Override
-        public INDArray getInput(int inputNumber) {
-            return null;
         }
 
         @Override
@@ -832,6 +822,16 @@ public class TestOptimizers {
         }
 
         @Override
+        public void setInput(Activations activations) {
+
+        }
+
+        @Override
+        public Activations getInput() {
+            return null;
+        }
+
+        @Override
         public void setBackpropGradientsViewArray(INDArray gradients) {
             throw new UnsupportedOperationException();
         }
@@ -854,21 +854,6 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
-        }
-
-        @Override
-        public void setInput(int idx, INDArray input) {
-
-        }
-
-        @Override
-        public void setInputs(INDArray... inputs) {
-
-        }
-
-        @Override
-        public INDArray getInput(int inputNumber) {
-            return null;
         }
 
         @Override
@@ -934,11 +919,6 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
-        }
-
-        @Override
-        public void setInput(int idx, INDArray input) {
-
         }
 
         @Override
@@ -1012,11 +992,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void fit(INDArray data) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Pair<Gradient, Double> gradientAndScore() {
             computeGradientAndScore();
             return new Pair<>(gradient(), score());
@@ -1030,13 +1005,6 @@ public class TestOptimizers {
         @Override
         public void setConf(NeuralNetConfiguration conf) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray input() {
-            //Work-around for BaseUpdater.postApply(): Uses Layer.input().size(0)
-            //in order to get mini-batch size. i.e., divide by 1 here.
-            return Nd4j.zeros(1);
         }
 
         @Override
@@ -1105,14 +1073,6 @@ public class TestOptimizers {
         @Override
         public int getInputMiniBatchSize() {
             return 1;
-        }
-
-        @Override
-        public void setMaskArray(int idx, INDArray maskArray) {}
-
-        @Override
-        public INDArray getMaskArray(int idx) {
-            return null;
         }
 
         @Override

@@ -242,8 +242,8 @@ public class ConvolutionLayerTest {
         Layer layer = getMNISTConfig();
         layer.activate(af.create(input)).get(0);
 
-        assertEquals(input, layer.input());
-        assertArrayEquals(input.shape(), layer.input().shape());
+        assertEquals(input, layer.getInput().get(0));
+        assertArrayEquals(input.shape(), layer.getInput().get(0).shape());
     }
 
     @Test

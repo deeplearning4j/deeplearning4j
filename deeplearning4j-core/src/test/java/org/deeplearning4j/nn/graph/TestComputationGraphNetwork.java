@@ -8,6 +8,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
@@ -706,7 +707,7 @@ public class TestComputationGraphNetwork {
 
         net.update(expectedGradient);
         actualParams = net.params();
-        assertEquals(Nd4j.ones(1, 43).addi(1), actualParams);
+        assertEquals(Nd4j.zeros(1, 43), actualParams);  //Original params: 1s. Gradients: 1s. Using gradient descent, hence subtract
     }
 
 
@@ -964,7 +965,7 @@ public class TestComputationGraphNetwork {
 
         cg.setInputs(Nd4j.ones(5));
 
-        Map<String, INDArray> ff = cg.feedForward(true, false, true);
+        Map<String, INDArray> ff = cg.feedForward(true, false);
 
         assertEquals(5, ff.size()); //3 layers + 1 input + merge vertex
         assertTrue(ff.containsKey("merge"));

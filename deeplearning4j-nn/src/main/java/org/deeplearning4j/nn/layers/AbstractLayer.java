@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -42,7 +43,6 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    @Getter(AccessLevel.PROTECTED)
     protected Activations input;
     protected int inputMinibatchSize;   //TODO eventially this field should be removed somehow...
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
@@ -82,25 +82,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void setInputs(INDArray... inputs){
-        if(inputs == null) {
-            input = null;
-            return;
-        }
-
-        if(inputs.length != numInputs()){
-            throw new IllegalArgumentException("Cannot set inputs: length " + numInputs() + " expected, got " + inputs.length);
-        }
-        if(input == null){
-            input = ActivationsFactory.getInstance().create(inputs, null, null);
-        } else {
-            for (int i = 0; i < inputs.length; i++) {
-                input.set(i, inputs[i]);
-            }
-        }
-    }
-
-    @Override
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
             mode = CacheMode.NONE;
@@ -117,38 +98,16 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
 
-    public void setInput(INDArray input){
-        setInput(0, input);
+    @Override
+    public Activations getInput(){
+        return input;
     }
 
-    protected void setInput(Activations input){
+    @Override
+    public void setInput(Activations input){
         this.input = input;
         this.dropoutApplied = false;
         this.preprocessorApplied = false;
-    }
-
-    @Override
-    public void setInput(int inputNumber, INDArray input){
-        if(inputNumber >= numInputs())
-            throw new IllegalArgumentException("Index must be in range 0 to " + (numInputs()-1) + ": got " + inputNumber);
-        if(this.input == null){
-            this.input = ActivationsFactory.getInstance().create(numInputs());
-            this.input.set(inputNumber, input);
-        } else {
-            this.input.set(inputNumber, input);
-        }
-        dropoutApplied = false;
-        preprocessorApplied = false;
-    }
-
-    @Override
-    public INDArray getInput(int inputNumber){
-        if(inputNumber >= numInputs())
-            throw new IllegalArgumentException("Index must be in range 0 to " + (numInputs()-1) + ": got " + inputNumber);
-        if(input == null){
-            return null;
-        }
-        return this.input.get(inputNumber);
     }
 
     @Override
@@ -316,14 +275,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public INDArray input() {
-        if(input == null){
-            return null;
-        }
-        return input.get(0);
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size) {
         this.inputMinibatchSize = size;
     }
@@ -331,28 +282,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public int getInputMiniBatchSize() {
         return inputMinibatchSize;
-    }
-
-    @Override
-    public void setMaskArray(int idx, INDArray maskArray) {
-        if(idx != 0)
-            throw new IllegalStateException("Index must be 0");
-
-        if(input == null){
-            this.input = ActivationsFactory.getInstance().create(null, maskArray, null);
-        } else {
-            this.input.setMask(0, maskArray);
-        }
-    }
-
-    @Override
-    public INDArray getMaskArray(int idx) {
-        if(idx != 0)
-            throw new IllegalStateException("Index must be 0");
-        if(input == null){
-            return null;
-        }
-        return input.getMask(0);
     }
 
 

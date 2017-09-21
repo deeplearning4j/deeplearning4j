@@ -8,6 +8,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.InvocationType;
@@ -168,12 +169,12 @@ public class EvaluativeListener implements TrainingListener {
     }
 
     @Override
-    public void onForwardPass(Model model, List<INDArray> activations) {
+    public void onForwardPass(Model model, List<Activations> activations) {
         // no-op
     }
 
     @Override
-    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+    public void onForwardPass(Model model, Map<String, Activations> activations) {
         // no-op
     }
 

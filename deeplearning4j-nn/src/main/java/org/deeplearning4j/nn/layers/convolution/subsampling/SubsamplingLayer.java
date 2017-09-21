@@ -125,8 +125,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
-        int inputHeight = input().size(-2);
-        int inputWidth = input().size(-1);
+        int inputHeight = input.size(-2);
+        int inputWidth = input.size(-1);
         Gradient retGradient = new DefaultGradient();
 
         //Epsilons in shape: [miniBatch, depth, outH, outW]

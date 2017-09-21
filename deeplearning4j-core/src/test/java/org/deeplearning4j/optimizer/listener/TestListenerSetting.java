@@ -4,6 +4,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -15,6 +16,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -92,10 +94,14 @@ public class TestListenerSetting {
         public void onEpochEnd(Model model) {}
 
         @Override
-        public void onForwardPass(Model model, List<INDArray> activations) {}
+        public void onForwardPass(Model model, List<Activations> activations) {
+
+        }
 
         @Override
-        public void onForwardPass(Model model, Map<String, INDArray> activations) {}
+        public void onForwardPass(Model model, Map<String, Activations> activations) {
+
+        }
 
         @Override
         public void onGradientCalculation(Model model) {}

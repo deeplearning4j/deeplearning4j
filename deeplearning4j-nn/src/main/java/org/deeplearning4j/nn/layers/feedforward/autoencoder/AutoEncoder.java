@@ -47,7 +47,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
-        setInput(v);
+        setInput(ActivationsFactory.getInstance().create(v));
         INDArray ret = encode(v, true);
         return new Pair<>(ret, ret);
     }
@@ -82,7 +82,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public Activations activate(Activations input, boolean training) {
-        setInput(input.get(0));
+        setInput(input);
         return ActivationsFactory.getInstance().create(encode(input.get(0), training));
     }
 
@@ -103,7 +103,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         double corruptionLevel = layerConf().getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input.get(0), corruptionLevel) : input.get(0);
-        setInput(corruptedX);
+        input.set(0, corruptedX);
 
         INDArray y = encode(corruptedX, true);
         INDArray z = decode(y);
@@ -126,7 +126,8 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         if(data.getMask(0) != null){
             throw new IllegalArgumentException("Cannot fit with mask array present (not yet implemneted)");
         }
-        fit(data.get(0));
+        setInput(data);
+        fit();
     }
 
     @Override
@@ -138,12 +139,12 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        fit(examples);
+        fit(ActivationsFactory.getInstance().create(examples));
     }
 
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatures());
+        fit(data.getFeatures(), null);
     }
 
 
