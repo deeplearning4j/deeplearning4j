@@ -392,31 +392,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public void init() {
-        //No op
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        //No op
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        //No op
-    }
-
-    @Override
-    public void addListeners(IterationListener... listener) {
-        //No op
-    }
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public void setLabels(INDArray labels, INDArray labelMask) {
         if(labelMask != null){
             throw new IllegalStateException("Label masks are not yet supported by Yolo2OutputLayer");
@@ -575,45 +550,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public void computeGradientAndScore(){
-
-        //TODO
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void fit(Activations data) {
-        throw new UnsupportedOperationException("Cannot fit Yolo2OutputLayer from activations only (without labels)");
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return null;
-    }
-
-    @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void fit(DataSetIterator iter) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(INDArray examples, INDArray labels) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(DataSet data) {
-        throw new UnsupportedOperationException("Not supported");
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

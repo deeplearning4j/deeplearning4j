@@ -172,11 +172,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public Gradient gradient() {
-        return zeroGradient;
-    }
-
-    @Override
     public NeuralNetConfiguration conf() {
         return insideLayer.conf();
     }

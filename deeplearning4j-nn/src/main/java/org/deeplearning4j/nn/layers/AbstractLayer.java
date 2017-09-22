@@ -289,13 +289,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
 
     @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-
-    @Override
     public void applyConstraints(int iteration, int epoch){
         if(layerConf().getConstraints() != null){
             for(LayerConstraint lc : layerConf().getConstraints()){

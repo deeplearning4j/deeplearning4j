@@ -109,7 +109,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     protected NeuralNetConfiguration defaultConfiguration;
     @Getter
     protected MultiLayerConfiguration layerWiseConfigurations;
-    protected Gradient gradient;
     protected INDArray epsilon;
     protected double score;
     @Setter
@@ -801,19 +800,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         return feedForwardToLayer(input, layers.length-1, train);
     }
 
-
-    @Override
-    public Gradient gradient() {
-        return gradient;
-    }
-
     public INDArray epsilon() {
         return epsilon;
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
     }
 
 
@@ -1776,6 +1764,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
         //Clear the post noise/dropconnect parameters on the output layer
         getOutputLayer().clearNoiseWeightParams();
+        clear();
     }
 
     /**

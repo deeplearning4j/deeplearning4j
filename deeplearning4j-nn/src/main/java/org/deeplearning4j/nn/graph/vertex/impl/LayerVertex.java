@@ -169,11 +169,6 @@ public class LayerVertex extends BaseGraphVertex {
 
     // ----- Gradient Methods -----
 
-    @Override
-    public Gradient gradient(){
-        return layer.gradient();
-    }
-
 
     @Override
     public INDArray getGradientsViewArray(){

@@ -212,11 +212,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return ActivationsFactory.getInstance().create(preOutput(input.get(0), training ));
     }
 
-    @Override
-    public Gradient gradient() {
-        return gradient;
-    }
-
 
     public INDArray preOutput(INDArray x, boolean training) {
         INDArray activations;

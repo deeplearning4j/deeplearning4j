@@ -1358,9 +1358,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
         synchronizeIterEpochCounts();
         //Calculate activations (which are stored in each layer, and used in backprop)
+        Gradients g;
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             Map<String, Activations> activations = rnnActivateUsingStoredState(input, true, true);
             if (trainingListeners.size() > 0) {
@@ -1370,7 +1371,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
             }
-            calcBackpropGradients(true);
+            g = calcBackpropGradients(true);
         } else {
             Map<String, Activations> activations = feedForward(input, true, FFType.Standard, true, false, false);
             if (trainingListeners.size() > 0) {
@@ -1380,7 +1381,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
             }
-            calcBackpropGradients(false);
+            g = calcBackpropGradients(false);
         }
 
         //Score: sum of the scores for the various output layers...
@@ -1416,6 +1417,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for( int i=0; i<numOutputArrays; i++ ){
             getOutputLayer(i).clearNoiseWeightParams();
         }
+
+
     }
 
     /**
@@ -1653,7 +1656,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      *                         the user has provided some errors externally, as they would do for example in reinforcement
      *                         learning situations.
      */
-    protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
+    protected Gradients calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1783,6 +1786,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         this.gradient = gradient;
+
+        return GradientsFactory.getInstance().create(gradient, null);   //TODO epsilons...
     }
 
     private INDArray[] getTempEpsilonsArray(String vertex){
@@ -2321,16 +2326,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void fit(Activations data) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Gradient gradient() {
-        return gradient;
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
     }
 
     @Override

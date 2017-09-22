@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -59,6 +60,8 @@ import java.util.Map;
 @Slf4j
 public class GradientCheckUtil {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
                     Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
                                     Activation.ELU.getActivationFunction().getClass(),
@@ -109,7 +112,7 @@ public class GradientCheckUtil {
                                          INDArray input, INDArray inputMask,
                                          INDArray labels, INDArray labelsMask) {
         return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
-                ActivationsFactory.getInstance().create(input, inputMask), labels, labelsMask);
+                af.create(input, inputMask), labels, labelsMask);
     }
     /**
      * Check backprop gradients for a MultiLayerNetwork.
@@ -186,15 +189,13 @@ public class GradientCheckUtil {
             }
         }
 
-        mln.setInput(input);
-        mln.setLabels(labels);
-        mln.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
+        Pair<Gradients, Double> gradAndScore = mln.computeGradientAndScore(input, af.create(labels));
+        Gradient g = gradAndScore.getFirst().getParameterGradients();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.getInputMiniBatchSize());
+        updater.update(mln, g, 0, 0, mln.getInputMiniBatchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
@@ -285,7 +286,7 @@ public class GradientCheckUtil {
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                                          INDArray[] labels) {
         return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
-                ActivationsFactory.getInstance().create(inputs, null, null), labels, null);
+                af.create(inputs, null, null), labels, null);
     }
 
 
@@ -376,13 +377,14 @@ public class GradientCheckUtil {
         for (int i = 0; i < labels.length; i++)
             graph.setLabel(i, labels[i]);
 
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
+
+        Pair<Gradients, Double> gradAndScore = graph.computeGradientAndScore(inputs, af.create(labelsMasks, labelsMasks, null));
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(gradAndScore.getFirst(), 0, 0, graph.getInputMiniBatchSize());
+        Gradient g = gradAndScore.getFirst().getParameterGradients();
+        updater.update(g, 0, 0, graph.getInputMiniBatchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
@@ -490,15 +492,15 @@ public class GradientCheckUtil {
         }
 
         //Check network configuration:
-        layer.setInput(ActivationsFactory.getInstance().create(input));
         Nd4j.getRandom().setSeed(rngSeed);
-        layer.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
+        Activations a = af.create(input);
+        Pair<Gradients, Double> gradAndScore = layer.computeGradientAndScore(a, null);
+        Gradient g = gradAndScore.getFirst().getParameterGradients();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.getInputMiniBatchSize());
+        updater.update(layer, g, 0, 0, layer.getInputMiniBatchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
@@ -530,13 +532,13 @@ public class GradientCheckUtil {
 
             //TODO add a 'score' method that doesn't calculate gradients...
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(a, null);
             double scorePlus = layer.score();
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(a, null);
             double scoreMinus = layer.score();
 
             //Reset original param value

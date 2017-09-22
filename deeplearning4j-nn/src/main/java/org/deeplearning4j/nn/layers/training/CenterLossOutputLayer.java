@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.training;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -137,23 +138,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    public void computeGradientAndScore() {
-        if (input == null || labels == null)
-            return;
-
-        INDArray preOut = preOutput2d(true);
-        Gradients pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getParameterGradients();
-
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
     public Gradients backpropGradient(Gradients epsilon) {
         INDArray input = this.input.get(0);
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
@@ -174,15 +158,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         Gradients g = GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
         return backpropPreprocessor(g);
-    }
-
-    /**
-     * Gets the gradient from one training iteration
-     * @return the gradient (bias and weight matrix)
-     */
-    @Override
-    public Gradient gradient() {
-        return gradient;
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */

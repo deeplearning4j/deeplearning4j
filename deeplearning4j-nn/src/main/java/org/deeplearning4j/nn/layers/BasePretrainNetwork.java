@@ -234,13 +234,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         return result;
     }
 
-
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient, score);
-    }
-
     @Override
     public void init() {
 

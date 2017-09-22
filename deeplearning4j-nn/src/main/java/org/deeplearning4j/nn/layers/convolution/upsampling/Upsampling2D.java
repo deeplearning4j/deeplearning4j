@@ -177,11 +177,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported - no parameters");
-    }
-
-    @Override
     public int numParams() {
         return 0;
     }

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -78,7 +79,8 @@ public interface Model extends Layer {
     /**
      * Update the score
      */
-    void computeGradientAndScore();
+    Pair<Gradients, Double> computeGradientAndScore(Activations input, Activations labels);
+
 
     void fit(Activations data);
 
@@ -101,12 +103,6 @@ public interface Model extends Layer {
      * @param data the data to train on
      */
     void fit(DataSet data);
-
-    /**
-     * Get the gradient and score
-     * @return the gradient and score
-     */
-    Pair<Gradient, Double> gradientAndScore();
 
 
     /**

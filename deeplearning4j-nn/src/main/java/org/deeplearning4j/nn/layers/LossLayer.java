@@ -75,31 +75,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void init() {
-        //No op
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        //No op
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        //No op
-    }
-
-    @Override
-    public void addListeners(IterationListener... listener) {
-        //No op
-    }
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public double score(){
         return score;
     }
@@ -170,16 +145,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return null;
-    }
-
-    @Override
     public Gradients backpropGradient(Gradients epsilon) {
         return getGradientsAndDelta(input.get(0));
     }
@@ -198,15 +163,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return backpropPreprocessor(g);
     }
 
-    /**
-     * Gets the gradient from one training iteration
-     * @return the gradient (bias and weight matrix)
-     */
-    @Override
-    public Gradient gradient() {
-        return gradient;
-    }
-
     @Override
     public double calcL2(boolean backpropParamsOnly) {
         return 0;
@@ -215,11 +171,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public double calcL1(boolean backpropParamsOnly) {
         return 0;
-    }
-
-    @Override
-    public void fit(Activations data) {
-        throw new UnsupportedOperationException("LossLayer cannot be fit from input activations only (no labels)");
     }
 
     @Override
@@ -275,33 +226,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public INDArray params() {
         return null;
-    }
-
-    @Override
-    public void fit(DataSetIterator iter) {
-        // no-op
-    }
-
-
-    /**
-     * Fit the model
-     *
-     * @param input the examples to classify (one example in each row)
-     * @param labels   the example labels(a binary outcome matrix)
-     */
-    @Override
-    public void fit(INDArray input, INDArray labels) {
-        throw new UnsupportedOperationException("LossLayer has no parameters and cannot be fit");
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param data the data to train on
-     */
-    @Override
-    public void fit(DataSet data) {
-        fit(data.getFeatures(), data.getLabels());
     }
 
     @Override

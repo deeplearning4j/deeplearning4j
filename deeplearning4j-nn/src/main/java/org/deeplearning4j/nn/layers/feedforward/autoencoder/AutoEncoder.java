@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
@@ -97,7 +99,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
 
         double corruptionLevel = layerConf().getCorruptionLevel();
@@ -116,9 +118,10 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray hBiasGradient = hiddenLoss.sum(0);
         INDArray vBiasGradient = visibleLoss.sum(0);
 
-        gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
+        Gradient g = createGradient(wGradient, vBiasGradient, hBiasGradient);
         setScoreWithZ(z);
 
+        return new Pair<>(GradientsFactory.getInstance().create(null, g), score);
     }
 
     @Override

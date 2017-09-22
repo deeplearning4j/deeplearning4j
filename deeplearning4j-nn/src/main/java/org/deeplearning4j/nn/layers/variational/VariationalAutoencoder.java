@@ -174,8 +174,21 @@ public class VariationalAutoencoder implements Model {
         return p;
     }
 
+    protected void applyPreprocessorIfNecessary(boolean training){
+        if(!preprocessorApplied && layerConf().getPreProcessor() != null){
+            input = layerConf().getPreProcessor().preProcess(input, getInputMiniBatchSize(), training);
+            preprocessorApplied = true;
+        }
+    }
+
     @Override
-    public void computeGradientAndScore() {
+    public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        if(labels != null){
+            throw new UnsupportedOperationException("Cannot use labels to fit VAE - labels must always be null");
+        }
+        setInput(input);
+        applyPreprocessorIfNecessary(true);
+
         //Forward pass through the encoder and mean for P(Z|X)
         VAEFwdHelper fwd = doForward(true, true);
         IActivation afn = layerConf().getActivationFn();
@@ -462,7 +475,10 @@ public class VariationalAutoencoder implements Model {
 
         weightNoiseParams.clear();
 
-        this.gradient = gradient;
+        Gradients ret = GradientsFactory.getInstance().create(null, gradient);
+
+        clear();
+        return new Pair<>(ret, score);
     }
 
     @Override
@@ -553,16 +569,6 @@ public class VariationalAutoencoder implements Model {
     @Override
     public void fit(DataSet data) {
         fit(data.getFeatures(), null);
-    }
-
-    @Override
-    public Gradient gradient() {
-        return gradient;
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
     }
 
     @Override

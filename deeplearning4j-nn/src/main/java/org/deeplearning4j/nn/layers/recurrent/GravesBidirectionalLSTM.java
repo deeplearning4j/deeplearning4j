@@ -65,11 +65,6 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public Gradients backpropGradient(Gradients epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }

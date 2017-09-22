@@ -347,11 +347,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported - no parameters");
-    }
-
-    @Override
     public int numParams() {
         return 0;
     }

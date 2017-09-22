@@ -46,7 +46,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected INDArray gradientsFlattened;
     protected Map<String, INDArray> params;
     protected transient Map<String, INDArray> gradientViews;
-    protected Gradient gradient;
 
     protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
 
@@ -105,11 +104,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         Gradients g = GradientsFactory.getInstance().create(epsilonNext, ret);
         return backpropPreprocessor(g);
-    }
-
-    @Override
-    public Gradient gradient() {
-        return gradient;
     }
 
     @Override

@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * Interface for output layers (those that calculate gradients with respect to a labels array)
  */
-public interface IOutputLayer extends Model {
+public interface IOutputLayer extends Layer {
 
     /**
      * Set the labels array for this output layer

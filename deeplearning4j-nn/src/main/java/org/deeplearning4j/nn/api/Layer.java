@@ -197,11 +197,6 @@ public interface Layer {
      */
     Gradients backpropGradient(Gradients epsilon);
 
-    /**
-     * @return the gradient for this model
-     */
-    Gradient gradient();
-
 
     INDArray getGradientsViewArray();
 

@@ -128,23 +128,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     @Override
-    public void computeGradientAndScore() {
-        if (input == null || input.anyActivationsNull() || labels == null)
-            throw new IllegalStateException("Cannot compute gradient and score without input and labels " + layerId());
-
-        INDArray preOut = preOutput2d(true);
-        Gradients pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getParameterGradients();
-
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
     public Gradients backpropGradient(Gradients epsilons) {
 
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
@@ -157,15 +140,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         Gradients g = GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
         return backpropPreprocessor(g);
-    }
-
-    /**
-     * Gets the gradient from one training iteration
-     * @return the gradient (bias and weight matrix)
-     */
-    @Override
-    public Gradient gradient() {
-        return gradient;
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
@@ -221,45 +195,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     @Override
-    public void fit(DataSetIterator iter) {
-        while (iter.hasNext())
-            fit(iter.next());
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param input the examples to classify (one example in each row)
-     * @param labels   the example labels(a binary outcome matrix)
-     */
-    @Override
-    public void fit(INDArray input, INDArray labels) {
-        throw new UnsupportedOperationException("No longer supported (to be removed)");
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param data the data to train on
-     */
-    @Override
-    public void fit(DataSet data) {
-        fit(data.getFeatures(), data.getLabels());
-    }
-
-    @Override
     public void clear() {
         super.clear();
         labels = null;
         solver = null;
     }
-
-    @Override
-    public void fit(Activations data){
-        throw new UnsupportedOperationException("Cannot fit output layers in an unsupervised way from features" +
-                " array(s) only - TO BE REMOVED");  //TODO
-    }
-
 
     @Override
     public INDArray getLabels() {
@@ -315,38 +255,5 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public boolean hasBias() {
         return layerConf().hasBias();
-    }
-
-
-
-
-    @Override
-    public void init() {
-        //No op
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        //No op
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        //No op
-    }
-
-    @Override
-    public void addListeners(IterationListener... listener) {
-        //No op
-    }
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return null;
     }
 }
