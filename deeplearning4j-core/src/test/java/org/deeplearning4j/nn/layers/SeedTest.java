@@ -34,7 +34,7 @@ public class SeedTest {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Model layer = (Model)conf.getLayer().instantiate(conf, null, 0, params, true);
+        Model layer = (Model)conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         layer.fit(ActivationsFactory.getInstance().create(data.getFeatures()));
 

@@ -237,7 +237,11 @@ public class TransferLearning {
             INDArray params;
             if (numParams > 0) {
                 params = Nd4j.create(1, numParams);
-                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, 0, params, true);
+                String name = null;
+                if(layerConf.getLayer() != null){
+                    name = layerConf.getLayer().getLayerName();
+                }
+                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, name,0, 1, params, true);
                 appendParams.add(someLayer.params());
                 appendConfs.add(someLayer.conf());
             } else {
@@ -363,7 +367,11 @@ public class TransferLearning {
             layerImplF.setNOut(nOut);
             int numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
-            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            String name = null;
+            if(layerConf.getLayer() != null){
+                name = layerConf.getLayer().getLayerName();
+            }
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, name,0, 1, params, true);
             editedParams.set(layerNum, someLayer.params());
 
             if (layerNum + 1 < editedConfs.size()) {
@@ -376,7 +384,11 @@ public class TransferLearning {
                 numParams = layerImpl.initializer().numParams(layerConf);
                 if (numParams > 0) {
                     params = Nd4j.create(1, numParams);
-                    someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+                    name = null;
+                    if(layerConf.getLayer() != null){
+                        name = layerConf.getLayer().getLayerName();
+                    }
+                    someLayer = layerImpl.instantiate(layerConf, null, name,0, 1, params, true);
                     editedParams.set(layerNum + 1, someLayer.params());
                 }
             }

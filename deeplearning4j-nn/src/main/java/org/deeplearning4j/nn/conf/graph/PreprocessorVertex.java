@@ -23,12 +23,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /** PreprocessorVertex is a simple adaptor class that allows a {@link InputPreProcessor} to be used in a ComputationGraph
  * GraphVertex, without it being associated with a layer.
@@ -80,9 +84,11 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.PreprocessorVertex(graph, name, idx, numInputs, preProcessor);
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.PreprocessorVertex(name, idx, numInputs, preProcessor);
     }
 
     @Override

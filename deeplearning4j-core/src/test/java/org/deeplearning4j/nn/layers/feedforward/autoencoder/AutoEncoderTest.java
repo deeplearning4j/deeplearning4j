@@ -53,7 +53,7 @@ public class AutoEncoderTest {
         //        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -78,7 +78,7 @@ public class AutoEncoderTest {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf,
-                        Arrays.<IterationListener>asList(new ScoreIterationListener(1)), 0, params, true);
+                        Arrays.<IterationListener>asList(new ScoreIterationListener(1)), null, 0, 1, params, true);
         assertEquals(da.params(), da.params());
         assertEquals(471784, da.params().length());
         da.setParams(da.params());
@@ -106,7 +106,7 @@ public class AutoEncoderTest {
         INDArray input = d2.getFeatureMatrix();
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf, null, 0, params, true);
+        AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
         Gradient g = new DefaultGradient();
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(ActivationsFactory.getInstance().create(input)).get(0)).sub(input));
     }

@@ -99,7 +99,7 @@ public class LocalResponseTest {
                         .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
                         .build();
 
-        layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
+        layer = new LocalResponseNormalization().instantiate(conf, null, null, 0, 1, null, false);
         activationsActual = layer.activate(af.create(x)).get(0);
     }
 
@@ -190,7 +190,7 @@ public class LocalResponseTest {
         NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().layer(lrn).build();
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization layer =
                         (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
-                                        null, 0, null, false);
+                                        null, null, 0, 1, null, false);
 
         INDArray outAct = layer.activate(af.create(in), true).get(0);
 

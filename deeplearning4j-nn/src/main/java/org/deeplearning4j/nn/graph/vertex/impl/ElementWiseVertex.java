@@ -18,16 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -52,8 +48,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
     private Op op;
     private int nInForwardPass;
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, Op op) {
-        super(graph, name, vertexIndex, numInputs);
+    public ElementWiseVertex(String name, int vertexIndex, int numInputs, Op op) {
+        super(name, vertexIndex, numInputs);
         this.op = op;
     }
 

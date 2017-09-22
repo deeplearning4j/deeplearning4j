@@ -18,16 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -45,8 +41,8 @@ public class ReshapeVertex extends BaseGraphVertex {
     private int[] maskShape;
 
 
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, char order, int[] newShape, int[] maskShape) {
-        super(graph, name, vertexIndex, numInputs);
+    public ReshapeVertex(String name, int vertexIndex, int numInputs, char order, int[] newShape, int[] maskShape) {
+        super(name, vertexIndex, numInputs);
         this.order = order;
         this.newShape = newShape;
         this.maskShape = maskShape;

@@ -20,13 +20,17 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Collection;
 
 /**
  * L2NormalizeVertex performs L2 normalization on a single input.
@@ -88,10 +92,12 @@ public class L2NormalizeVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph, name, idx, numInputs, dimension, eps);
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(name, idx, numInputs, dimension, eps);
     }
 
     @Override

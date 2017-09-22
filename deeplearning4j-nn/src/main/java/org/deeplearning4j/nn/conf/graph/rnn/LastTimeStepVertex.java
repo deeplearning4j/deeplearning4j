@@ -20,14 +20,18 @@ package org.deeplearning4j.nn.conf.graph.rnn;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Collection;
 
 /** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
@@ -63,8 +67,10 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph,
-                                                                                      String name, int idx, int numInputs, INDArray paramsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(NeuralNetConfiguration conf,
+                                                                                      Collection<IterationListener> iterationListeners,
+                                                                                      String name, int idx, int numInputs, INDArray layerParamsView,
+                                                                                      boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(name, idx, numInputs);
     }
 

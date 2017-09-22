@@ -21,13 +21,17 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Collection;
 
 /**
  * UnstackVertex allows for unstacking of inputs so that they may be forwarded through
@@ -54,9 +58,11 @@ public class UnstackVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, numInputs, from, stackSize);
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(name, idx, numInputs, from, stackSize);
     }
 
     @Override

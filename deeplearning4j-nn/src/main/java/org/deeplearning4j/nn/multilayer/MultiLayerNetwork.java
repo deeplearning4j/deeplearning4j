@@ -533,7 +533,12 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = conf.getLayer().instantiate(conf, listeners, i, paramsView, initializeParams);
+                String name = null;
+                if(conf != null && conf.getLayer() != null){
+                    name = conf.getLayer().getLayerName();
+                }
+
+                layers[i] = conf.getLayer().instantiate(conf, listeners, name, i, 1, paramsView, initializeParams);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;

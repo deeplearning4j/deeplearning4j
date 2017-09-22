@@ -20,12 +20,16 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /**
  * Removes the first column and row from an input. This is to fix inconsistencies from ZeroPadding
@@ -66,9 +70,11 @@ public class PoolHelperVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.PoolHelperVertex(graph, name, idx, numInputs);
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.PoolHelperVertex(name, idx, numInputs);
     }
 
     @Override

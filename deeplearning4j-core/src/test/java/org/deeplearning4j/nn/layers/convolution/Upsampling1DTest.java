@@ -94,7 +94,7 @@ public class Upsampling1DTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                         .layer(new Upsampling1D.Builder(size).build()).build();
-        return conf.getLayer().instantiate(conf, null, 0,
+        return conf.getLayer().instantiate(conf, null, null, 0, 1,
                 null, true);
     }
 

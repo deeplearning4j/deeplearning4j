@@ -23,7 +23,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -33,8 +32,6 @@ import org.nd4j.linalg.primitives.Pair;
 @Data
 public abstract class BaseGraphVertex extends AbstractLayer {
 
-    protected ComputationGraph graph;
-
     protected String vertexName;
 
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
@@ -43,8 +40,7 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     @Setter @Getter
     protected boolean outputVertex;
 
-    protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs) {
-        this.graph = graph;
+    protected BaseGraphVertex(String name, int vertexIndex, int numInputs) {
         this.vertexName = name;
         this.index = vertexIndex;
         this.numInputs = numInputs;

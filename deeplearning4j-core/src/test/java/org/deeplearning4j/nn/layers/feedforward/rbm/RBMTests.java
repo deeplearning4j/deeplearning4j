@@ -151,7 +151,7 @@ public class RBMTests {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, null,0, 1, params, true);
         rbm.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         rbm.fit(af.create(input));
 
@@ -363,7 +363,7 @@ public class RBMTests {
                         new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
         conf.setPretrain(pretrain);
 
-        return (RBM) conf.getLayer().instantiate(conf, null, 0, params, initialize);
+        return (RBM) conf.getLayer().instantiate(conf, null, null,0, 1, params, initialize);
     }
 
     private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params,
@@ -376,7 +376,7 @@ public class RBMTests {
                         new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
         conf.setPretrain(pretrain);
 
-        return (RBM) conf.getLayer().instantiate(conf, null, 0, params, initialize);
+        return (RBM) conf.getLayer().instantiate(conf, null, null,0, 1, params, initialize);
     }
 
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1,

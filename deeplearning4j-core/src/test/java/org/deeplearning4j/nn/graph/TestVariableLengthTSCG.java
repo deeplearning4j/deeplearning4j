@@ -215,7 +215,7 @@ public class TestVariableLengthTSCG {
                 for (int k = 0; k < nIn; k++) {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
-                Activations a = ActivationsFactory.getInstance().create(in2, inputMask);
+                a = ActivationsFactory.getInstance().create(in2, inputMask);
                 net.setInput(a);
                 net.computeGradientAndScore();
                 double score2a = net.score();

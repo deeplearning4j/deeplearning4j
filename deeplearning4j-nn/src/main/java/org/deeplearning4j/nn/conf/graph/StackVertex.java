@@ -20,12 +20,16 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /**
  * StackVertex allows for stacking of inputs so that they may be forwarded through
@@ -69,9 +73,11 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(graph, name, idx, numInputs);
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(name, idx, numInputs);
     }
 
     @Override

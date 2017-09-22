@@ -71,8 +71,10 @@ public class RBM extends BasePretrainNetwork {
     protected double sparsity;
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.rbm.RBM ret =
                         new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
         ret.setListeners(iterationListeners);

@@ -87,7 +87,7 @@ public class BatchNormalizationTest {
         if (numParams > 0) {
             params = Nd4j.create(1, numParams);
         }
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
         if (numParams > 0) {
             layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         }

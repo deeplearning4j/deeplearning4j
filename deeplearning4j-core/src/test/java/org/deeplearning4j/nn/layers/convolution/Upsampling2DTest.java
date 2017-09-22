@@ -97,7 +97,7 @@ public class Upsampling2DTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                         .layer(new Upsampling2D.Builder(size).build()).build();
-        return conf.getLayer().instantiate(conf, null, 0, null, true);
+        return conf.getLayer().instantiate(conf, null, null, 0, 1, null, true);
     }
 
     public INDArray getData() throws Exception {

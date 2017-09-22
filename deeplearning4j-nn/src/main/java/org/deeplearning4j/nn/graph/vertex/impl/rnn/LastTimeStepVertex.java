@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,7 +48,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     private int[] fwdPassTimeSteps;
 
     public LastTimeStepVertex(String name, int vertexIndex, int numInputs) {
-        super(null, name, vertexIndex, numInputs);
+        super(name, vertexIndex, numInputs);
     }
 
     @Override

@@ -28,9 +28,11 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
@@ -92,13 +94,14 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
-        //Now, we need to work out if this vertex is an output vertex or not...
-        boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
 
         org.deeplearning4j.nn.api.Layer layer =
-                        layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
+                        layerConf.getLayer().instantiate(layerConf, iterationListeners, name, layerIndex, numInputs,
+                                layerParamsView, initializeParams);
 
         return layer;
     }

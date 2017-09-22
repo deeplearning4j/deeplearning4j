@@ -18,16 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -49,8 +45,8 @@ public class SubsetVertex extends BaseGraphVertex {
     private int to; //inclusive
     private int[] forwardShape;
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, int from, int to) {
-        super(graph, name, vertexIndex, numInputs);
+    public SubsetVertex(String name, int vertexIndex, int numInputs, int from, int to) {
+        super(name, vertexIndex, numInputs);
         this.from = from;
         this.to = to;
     }

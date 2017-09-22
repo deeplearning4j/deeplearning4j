@@ -51,7 +51,7 @@ public class CustomOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
         CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);

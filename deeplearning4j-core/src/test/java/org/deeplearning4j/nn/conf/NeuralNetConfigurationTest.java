@@ -114,7 +114,7 @@ public class NeuralNetConfigurationTest {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer model = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer model = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
@@ -127,7 +127,7 @@ public class NeuralNetConfigurationTest {
 
         int numParams2 = conf2.getLayer().initializer().numParams(conf);
         INDArray params2 = Nd4j.create(1, numParams);
-        Layer model2 = conf2.getLayer().instantiate(conf2, null, 0, params2, true);
+        Layer model2 = conf2.getLayer().instantiate(conf2, null, null, 0, 1, params2, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -214,7 +214,7 @@ public class NeuralNetConfigurationTest {
         NeuralNetConfiguration conf = getRBMConfig(nIn, nOut, weightInit, preTrain);
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return conf.getLayer().instantiate(conf, null, 0, params, true);
+        return conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
     }
 
 

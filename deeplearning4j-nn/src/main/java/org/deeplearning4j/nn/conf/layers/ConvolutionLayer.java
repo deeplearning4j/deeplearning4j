@@ -127,8 +127,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =

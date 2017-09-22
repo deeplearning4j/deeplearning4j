@@ -24,11 +24,14 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -269,8 +272,8 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public Layer instantiate(ComputationGraph graph, String name, int idx,
-                                 int numInputs, INDArray paramsView, boolean initializeParams) {
+        public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, String name,
+                                 int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
             throw new UnsupportedOperationException("Not supported");
         }
 

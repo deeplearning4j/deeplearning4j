@@ -55,7 +55,8 @@ public class Upsampling1D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                                                       Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
                 new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);

@@ -20,13 +20,17 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Collection;
 
 /**
  * An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
@@ -92,8 +96,10 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op op;
         switch (this.op) {
             case Add:
@@ -114,7 +120,7 @@ public class ElementWiseVertex extends GraphVertex {
             default:
                 throw new RuntimeException();
         }
-        return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(graph, name, idx, numInputs, op);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(name, idx, numInputs, op);
     }
 
     @Override

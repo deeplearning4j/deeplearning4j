@@ -18,16 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -50,8 +46,8 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     private int[] dimension;
     private double eps;
 
-    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, int[] dimension, double eps) {
-        super(graph, name, vertexIndex, numInputs);
+    public L2NormalizeVertex(String name, int vertexIndex, int numInputs, int[] dimension, double eps) {
+        super(name, vertexIndex, numInputs);
         this.dimension = dimension;
         this.eps = eps;
     }

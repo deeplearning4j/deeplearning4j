@@ -468,7 +468,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Create network input vertices:
         int vertexNumber = 0;
         for (String name : networkInputNames) {
-            Layer gv = new InputVertex(this, name, vertexNumber, 0);
+            Layer gv = new InputVertex(name, vertexNumber, 0);
             allNamesReverse.put(name, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
@@ -536,7 +536,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String name = nodeEntry.getKey();
             List<String> currentInputs = vertexInputs.get(name);
             int nInputs = (currentInputs == null ? 0 : currentInputs.size());
-            Layer gv = n.instantiate(this, name, vertexNumber, nInputs, paramsViewForVertex[vertexNumber], initializeParams);
+            Layer gv = n.instantiate(null, listeners, name, vertexNumber, nInputs, paramsViewForVertex[vertexNumber], initializeParams);
 
             if (gv.numParams() > 0) {
                 numLayers++;

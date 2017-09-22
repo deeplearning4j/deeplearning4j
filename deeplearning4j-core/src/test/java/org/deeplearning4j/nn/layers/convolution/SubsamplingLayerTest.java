@@ -204,7 +204,7 @@ public class SubsamplingLayerTest {
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                         .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).build()).build();
 
-        return conf.getLayer().instantiate(conf, null, 0, null, true);
+        return conf.getLayer().instantiate(conf, null, null, 0, 1, null, true);
     }
 
     public INDArray getData() throws Exception {

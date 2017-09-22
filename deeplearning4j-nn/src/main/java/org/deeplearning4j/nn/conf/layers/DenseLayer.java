@@ -52,8 +52,10 @@ public class DenseLayer extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf,
+                             Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         LayerValidation.assertNInNOutSet("DenseLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =

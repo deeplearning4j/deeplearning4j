@@ -22,7 +22,6 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -35,14 +34,14 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     private InputPreProcessor preProcessor;
 
-    public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, InputPreProcessor preProcessor) {
-        super(graph, name, vertexIndex, numInputs);
+    public PreprocessorVertex(String name, int vertexIndex, int numInputs, InputPreProcessor preProcessor) {
+        super(name, vertexIndex, numInputs);
         this.preProcessor = preProcessor;
     }
 
     @Override
     public Activations activate(boolean training) {
-        return preProcessor.preProcess(input, graph.getInputMiniBatchSize(), training);
+        return preProcessor.preProcess(input, getInputMiniBatchSize(), training);
     }
 
     @Override

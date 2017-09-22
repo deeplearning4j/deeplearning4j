@@ -48,7 +48,7 @@ public class TestGraphNodes {
     @Test
     public void testMergeNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer mergeNode = new MergeVertex(null, "", -1, 2);
+        Layer mergeNode = new MergeVertex("", -1, 2);
 
         INDArray first = Nd4j.linspace(0, 11, 12).reshape(3, 4);
         INDArray second = Nd4j.linspace(0, 17, 18).reshape(3, 6).addi(100);
@@ -69,7 +69,7 @@ public class TestGraphNodes {
     public void testMergeNodeRNN() {
 
         Nd4j.getRandom().setSeed(12345);
-        Layer mergeNode = new MergeVertex(null, "", -1, 2);
+        Layer mergeNode = new MergeVertex("", -1, 2);
 
         INDArray first = Nd4j.linspace(0, 59, 60).reshape(3, 4, 5);
         INDArray second = Nd4j.linspace(0, 89, 90).reshape(3, 6, 5).addi(100);
@@ -89,7 +89,7 @@ public class TestGraphNodes {
     @Test
     public void testCnnDepthMerge() {
         Nd4j.getRandom().setSeed(12345);
-        Layer mergeNode = new MergeVertex(null, "", -1, 2);
+        Layer mergeNode = new MergeVertex("", -1, 2);
 
         INDArray first = Nd4j.linspace(0, 3, 4).reshape(1, 1, 2, 2);
         INDArray second = Nd4j.linspace(0, 3, 4).reshape(1, 1, 2, 2).addi(10);
@@ -137,7 +137,7 @@ public class TestGraphNodes {
     @Test
     public void testSubsetNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer subset = new SubsetVertex(null, "", -1, 1, 4, 7);
+        Layer subset = new SubsetVertex("", -1, 1, 4, 7);
 
         INDArray in = Nd4j.rand(5, 10);
         subset.setInput(af.create(in));
@@ -254,7 +254,7 @@ public class TestGraphNodes {
     @Test
     public void testStackNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer unstack = new StackVertex(null, "", -1, 3);
+        Layer unstack = new StackVertex( "", -1, 3);
 
         INDArray in1 = Nd4j.rand(5, 2);
         INDArray in2 = Nd4j.rand(5, 2);
@@ -275,7 +275,7 @@ public class TestGraphNodes {
     @Test
     public void testStackVertexEmbedding() {
         Nd4j.getRandom().setSeed(12345);
-        Layer unstack = new StackVertex(null, "", -1, 1);
+        Layer unstack = new StackVertex( "", -1, 1);
 
         INDArray in1 = Nd4j.zeros(5, 1);
         INDArray in2 = Nd4j.zeros(5, 1);
@@ -312,7 +312,7 @@ public class TestGraphNodes {
     @Test
     public void testStackUnstackNodeVariableLength() {
         Nd4j.getRandom().setSeed(12345);
-        Layer stack = new StackVertex(null, "", -1, 3);
+        Layer stack = new StackVertex( "", -1, 3);
 
         //Test stack with variable length + mask arrays
         INDArray in0 = Nd4j.rand(new int[] {5, 2, 5});
@@ -345,9 +345,9 @@ public class TestGraphNodes {
         //Test unstack with variable length + mask arrays
         //Note that we don't actually need changes here - unstack has a single input, and the unstacked mask
         //might be a bit longer than we really need, but it'll still be correct
-        Layer unstack0 = new UnstackVertex(null, "u0", 0, 3, 0, 3);
-        Layer unstack1 = new UnstackVertex(null, "u1", 0, 3, 1, 3);
-        Layer unstack2 = new UnstackVertex(null, "u2", 0, 3, 2, 3);
+        Layer unstack0 = new UnstackVertex( "u0", 0, 3, 0, 3);
+        Layer unstack1 = new UnstackVertex( "u1", 0, 3, 1, 3);
+        Layer unstack2 = new UnstackVertex( "u2", 0, 3, 2, 3);
 
         Activations a0 = unstack0.activate(out,true);
         Activations a1 = unstack1.activate(out, true);
@@ -365,9 +365,9 @@ public class TestGraphNodes {
     @Test
     public void testUnstackNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer unstack0 = new UnstackVertex(null, "", -1, 1, 0, 3);
-        Layer unstack1 = new UnstackVertex(null, "", -1, 1, 1, 3);
-        Layer unstack2 = new UnstackVertex(null, "", -1, 1, 2, 3);
+        Layer unstack0 = new UnstackVertex( "", -1, 1, 0, 3);
+        Layer unstack1 = new UnstackVertex( "", -1, 1, 1, 3);
+        Layer unstack2 = new UnstackVertex( "", -1, 1, 2, 3);
 
         INDArray in = Nd4j.rand(15, 2);
         unstack0.setInput(af.create(in));
@@ -443,7 +443,7 @@ public class TestGraphNodes {
     @Test
     public void testL2Node() {
         Nd4j.getRandom().setSeed(12345);
-        Layer l2 = new L2Vertex(null, "", -1, 2, 1e-8);
+        Layer l2 = new L2Vertex( "", -1, 2, 1e-8);
 
         INDArray in1 = Nd4j.rand(5, 2);
         INDArray in2 = Nd4j.rand(5, 2);
@@ -484,7 +484,7 @@ public class TestGraphNodes {
     @Test
     public void testReshapeNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer reshapeVertex = new ReshapeVertex(null, "", -1, 1, 'c', new int[] {-1, 736}, null);
+        Layer reshapeVertex = new ReshapeVertex( "", -1, 1, 'c', new int[] {-1, 736}, null);
 
         int[] inputShape = new int[] {1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);

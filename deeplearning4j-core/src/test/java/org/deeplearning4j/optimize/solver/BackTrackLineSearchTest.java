@@ -159,7 +159,7 @@ public class BackTrackLineSearchTest {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return (OutputLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        return (OutputLayer) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
     }
 
     ///////////////////////////////////////////////////////////////////////////

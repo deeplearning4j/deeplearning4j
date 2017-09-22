@@ -5,12 +5,16 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 @AllArgsConstructor
 @Data
@@ -42,8 +46,8 @@ public class TestGraphVertex extends GraphVertex {
     }
 
     @Override
-    public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             int numInputs, INDArray paramsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, String name,
+                             int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
         throw new UnsupportedOperationException("Not supported");
     }
 

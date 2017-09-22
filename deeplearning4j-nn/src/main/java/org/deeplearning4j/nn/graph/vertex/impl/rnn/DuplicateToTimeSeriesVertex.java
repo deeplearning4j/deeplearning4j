@@ -18,20 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
-import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
 /**DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
@@ -49,13 +41,14 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     private String inputName;
     private int inputVertexIndex;
 
-    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, String inputVertexName) {
-        super(graph, name, vertexIndex, numInputs);
+    public DuplicateToTimeSeriesVertex(String name, int vertexIndex, int numInputs, String inputVertexName) {
+        super(name, vertexIndex, numInputs);
         this.inputName = inputVertexName;
-        this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
+//        this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputVertexIndex == -1)
-            throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-                            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
+//            throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
+//                            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     @Override
@@ -67,14 +60,15 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     public Activations activate(boolean training) {
 
         //First: work out the time series length
-        int tsLength = graph.getInput(inputVertexIndex).size(2);
-        int[] outShape = new int[] {input.get(0).size(0), input.get(0).size(1), tsLength};
-
-        INDArray out = Nd4j.create(outShape);
-        for (int i = 0; i < tsLength; i++) {
-            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, input.get(0));
-        }
-        return ActivationsFactory.getInstance().create(out);
+//        int tsLength = graph.getInput(inputVertexIndex).size(2);
+//        int[] outShape = new int[] {input.get(0).size(0), input.get(0).size(1), tsLength};
+//
+//        INDArray out = Nd4j.create(outShape);
+//        for (int i = 0; i < tsLength; i++) {
+//            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, input.get(0));
+//        }
+//        return ActivationsFactory.getInstance().create(out);
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     @Override
@@ -93,12 +87,13 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //Present for all time steps, or as per the corresponding input mask (if present)
-        INDArray[] allMasks = graph.getInputMaskArrays();
-        if (allMasks == null || allMasks[inputVertexIndex] == null) {
-            //No mask
-            return null;
-        }
-        return new Pair<>(allMasks[inputVertexIndex], MaskState.Active);
+//        INDArray[] allMasks = graph.getInputMaskArrays();
+//        if (allMasks == null || allMasks[inputVertexIndex] == null) {
+//            No mask
+//            return null;
+//        }
+//        return new Pair<>(allMasks[inputVertexIndex], MaskState.Active);
+        throw new UnsupportedOperationException();
     }
 
     @Override

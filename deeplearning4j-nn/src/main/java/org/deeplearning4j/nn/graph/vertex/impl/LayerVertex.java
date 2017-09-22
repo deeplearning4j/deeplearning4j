@@ -24,23 +24,14 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
-import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.api.layers.IOutputLayer;
-import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
-import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -60,10 +51,9 @@ public class LayerVertex extends BaseGraphVertex {
     /**
      * Create a network input vertex:
      */
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, Layer layer,
+    public LayerVertex(String name, int vertexIndex, int numInputs, Layer layer,
                     InputPreProcessor layerPreProcessor, boolean outputVertex) {
-        super(graph, name, vertexIndex, numInputs);
-        this.graph = graph;
+        super(name, vertexIndex, numInputs);
         this.vertexName = name;
         this.index = vertexIndex;
         this.layer = layer;

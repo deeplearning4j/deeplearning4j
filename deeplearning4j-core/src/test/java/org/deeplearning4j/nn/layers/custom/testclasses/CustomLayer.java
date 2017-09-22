@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.custom.testclasses;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -47,10 +48,10 @@ public class CustomLayer extends FeedForwardLayer {
         this.nOut = 10;
     }
 
+
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, String name,
+                             int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
         CustomLayerImpl ret = new CustomLayerImpl(conf);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

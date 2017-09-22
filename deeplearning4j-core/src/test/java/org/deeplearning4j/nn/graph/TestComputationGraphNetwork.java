@@ -141,8 +141,8 @@ public class TestComputationGraphNetwork {
         DataSetIterator iris = new IrisDataSetIterator(150, 150);
         DataSet ds = iris.next();
 
-        graph.setInput(0, ds.getFeatureMatrix());
-        Map<String, INDArray> activations = graph.feedForward(false);
+        Activations a = af.create(ds.getFeatures());
+        Map<String, Activations> activations = graph.feedForward(a,false);
         assertEquals(3, activations.size()); //2 layers + 1 input node
         assertTrue(activations.containsKey("input"));
         assertTrue(activations.containsKey("firstLayer"));
@@ -155,8 +155,8 @@ public class TestComputationGraphNetwork {
         graph.setParams(params.dup());
         net.setParams(params.dup());
 
-        List<INDArray> mlnAct = net.feedForward(ds.getFeatureMatrix(), false);
-        activations = graph.feedForward(ds.getFeatureMatrix(), false);
+        List<INDArray> mlnAct = net.feedForward(ds.getFeatures(), false);
+        activations = graph.feedForward(af.create(ds.getFeatures()), false);
 
         assertEquals(mlnAct.get(0), activations.get("input"));
         assertEquals(mlnAct.get(1), activations.get("firstLayer"));
@@ -963,9 +963,8 @@ public class TestComputationGraphNetwork {
         ComputationGraph cg = new ComputationGraph(c);
         cg.init();
 
-        cg.setInputs(Nd4j.ones(5));
-
-        Map<String, INDArray> ff = cg.feedForward(true, false);
+        Activations a = af.create(Nd4j.ones(5));
+        Map<String, Activations> ff = cg.feedForward(a, true);
 
         assertEquals(5, ff.size()); //3 layers + 1 input + merge vertex
         assertTrue(ff.containsKey("merge"));

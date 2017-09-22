@@ -95,8 +95,9 @@ public class SubsamplingLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret =
                         new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
         ret.setIndex(layerIndex);

@@ -19,17 +19,20 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * A GraphVertex is a vertex in the computation graph. It may contain Layer, or define some arbitrary forward/backward pass
@@ -77,15 +80,13 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * Create a {@link Layer} instance, for the given computation graph,
      * given the configuration instance.
      *
-     * @param graph            The computation graph that this GraphVertex is to be part of
      * @param name             The name of the GraphVertex object
-     * @param idx              The index of the GraphVertex
-     * @param numInputs        Number of inputs to this graph vertex
-     *@param paramsView       A view of the full parameters array
      * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array   @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
-    public abstract Layer instantiate(ComputationGraph graph, String name,
-                                      int idx, int numInputs, INDArray paramsView, boolean initializeParams);
+    public abstract Layer instantiate(NeuralNetConfiguration conf,
+                                      Collection<IterationListener> iterationListeners,
+                                      String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                      boolean initializeParams);
 
     /**
      * Determine the type of output for this GraphVertex, given the specified inputs. Given that a GraphVertex may do arbitrary
@@ -93,7 +94,6 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * This is generally used to determine when to add preprocessors, as well as the input sizes etc for layers
      *
      * @param layerIndex The index of the layer (if appropriate/necessary).
-     * @param vertexInputs The inputs to this vertex
      * @return The type of output for this vertex
      * @throws InvalidInputTypeException If the input type is invalid for this type of GraphVertex
      */

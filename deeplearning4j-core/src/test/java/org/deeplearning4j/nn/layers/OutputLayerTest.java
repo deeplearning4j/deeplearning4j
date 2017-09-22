@@ -75,8 +75,8 @@ public class OutputLayerTest {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf,
-                        Collections.<IterationListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
+        OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf, Collections.<IterationListener>singletonList(new ScoreIterationListener(1)),
+                null,0, 1, params, true);
         params = l.params();
         l.setParams(params);
         assertEquals(params, l.params());
