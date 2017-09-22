@@ -118,7 +118,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
                 .opName(opName).inPlace(inPlace)
                 .extraArgs(extraArgs)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape)).result(information)
                 .build();
 

@@ -68,7 +68,7 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
                 .differentialFunction(this).inPlace(inPlace)
                 .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape)).scalarValue((Number) extraArgs[0])
                 .result(information)
                 .build();

@@ -895,7 +895,7 @@ public class ArrayField implements Field {
                 .arrayField(this)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .build();
 
         //map x -> z
@@ -944,8 +944,7 @@ public class ArrayField implements Field {
                         name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM)
                 .result(newVertex.getValue())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),
-                        String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .build();
         //map x -> z
         this.ops.getGraph().addEdge(
@@ -999,7 +998,7 @@ public class ArrayField implements Field {
                 .opName(name).extraArgs(extraArgs).arrayField( this)
 
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .opType(OpState.OpType.ACCUMULATION).build();
         xToz.setResult(information);
         this.ops.getGraph().addEdge(
@@ -1010,7 +1009,7 @@ public class ArrayField implements Field {
                 .n(ArrayUtil.prod(resultShape))
                 .opName(name).extraArgs(extraArgs).arrayField( this)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(i_v.getVertex().vertexID(),newVertex.vertexID()))
                 .opType(OpState.OpType.ACCUMULATION).build();
         yToZ.setResult(information);
 
@@ -1059,7 +1058,7 @@ public class ArrayField implements Field {
                 .n(ArrayUtil.prod(input.getShape()))
                 .opName(name).extraArgs(extraArgs)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .opType(opType).build();
         xToZ.setResult(resultInfo);
         if(!ops.graph().isFrozen() && vertex.vertexID() == newVertex.vertexID())
@@ -1074,7 +1073,7 @@ public class ArrayField implements Field {
                 .n(ArrayUtil.prod(input.getShape()))
                 .opName(name).extraArgs(extraArgs)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(i_v.getVertex().vertexID(),newVertex.vertexID()))
                 .opType(opType).build();
         yToZ.setResult(resultInfo);
         if(!ops.graph().isFrozen() && i_v.getVertex().vertexID() == newVertex.vertexID())
@@ -1172,7 +1171,7 @@ public class ArrayField implements Field {
                 .opName(name).extraArgs(extraArgs).axes(axes)
                 .result(newVertex.getValue())
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .opType(opType).build();
 
         if(opState.isInPlace()) {
@@ -1279,7 +1278,7 @@ public class ArrayField implements Field {
     }
 
     /**
-     * Transpsoe matrix multiply
+     * Transpose matrix multiply
      * @param y
      * @param dimensions
      * @return
