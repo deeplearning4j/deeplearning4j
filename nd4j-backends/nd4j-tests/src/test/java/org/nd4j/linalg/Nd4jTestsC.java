@@ -5385,6 +5385,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+    @Test
+    public void test4DSumView() throws Exception {
+        INDArray labels = Nd4j.linspace(1, 160, 160).reshape(new int[]{2, 5, 4, 4});
+        //INDArray labels = Nd4j.linspace(1, 192, 192).reshape(new int[]{2, 6, 4, 4});
+
+        int size1 = labels.size(1);
+        INDArray classLabels = labels.get(NDArrayIndex.all(), NDArrayIndex.interval(4, size1), NDArrayIndex.all(), NDArrayIndex.all());
+
+        /*
+        Should be 0s and 1s only in the "classLabels" subset - specifically a 1-hot vector, or all 0s
+        double minNumber = classLabels.minNumber().doubleValue();
+        double maxNumber = classLabels.maxNumber().doubleValue();
+        System.out.println("Min/max: " + minNumber + "\t" + maxNumber);
+        System.out.println(sum1);
+        */
+
+
+        assertEquals(classLabels, classLabels.dup());
+
+        //Expect 0 or 1 for each entry (sum of all 0s, or 1-hot vector = 0 or 1)
+        INDArray sum1 = classLabels.max(1);
+        INDArray sum1_dup = classLabels.dup().max(1);
+
+        assertEquals(sum1_dup, sum1 );
+    }
+
     @Override
     public char ordering() {
         return 'c';
