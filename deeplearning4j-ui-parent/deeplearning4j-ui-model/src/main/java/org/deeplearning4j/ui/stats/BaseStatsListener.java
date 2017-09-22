@@ -281,11 +281,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
     @Override
     public void onBackwardPass(Model model, Gradients g) {
-        //No op
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration, int epoch) {
+        int iteration = model.getIterationCount();
+        int epoch = model.getEpochCount();
         StatsUpdateConfiguration config = updateConfig;
 
         ModelInfo modelInfo = getModelInfo(model);
@@ -325,7 +322,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             }
             long totalRuntimeMS = currentTime - modelInfo.initTime;
             report.reportPerformance(totalRuntimeMS, modelInfo.totalExamples, modelInfo.totalMinibatches,
-                            examplesPerSecond, minibatchesPerSecond);
+                    examplesPerSecond, minibatchesPerSecond);
 
             modelInfo.examplesSinceLastReport = 0;
             modelInfo.minibatchesSinceLastReport = 0;
@@ -444,25 +441,25 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectHistograms(StatsType.Parameters)) {
             Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(backpropParamsOnly),
-                            config.numHistogramBins(StatsType.Parameters));
+                    config.numHistogramBins(StatsType.Parameters));
             report.reportHistograms(StatsType.Parameters, paramHistograms);
         }
 
         if (config.collectHistograms(StatsType.Gradients)) {
             Map<String, Histogram> gradientHistograms =
-                            getHistograms(gradientsPreUpdateMap, config.numHistogramBins(StatsType.Gradients));
+                    getHistograms(gradientsPreUpdateMap, config.numHistogramBins(StatsType.Gradients));
             report.reportHistograms(StatsType.Gradients, gradientHistograms);
         }
 
         if (config.collectHistograms(StatsType.Updates)) {
-            Map<String, Histogram> updateHistograms = getHistograms(model.gradient().gradientForVariable(),
-                            config.numHistogramBins(StatsType.Updates));
+            Map<String, Histogram> updateHistograms = getHistograms(g.getParameterGradients().gradientForVariable(),
+                    config.numHistogramBins(StatsType.Updates));
             report.reportHistograms(StatsType.Updates, updateHistograms);
         }
 
         if (config.collectHistograms(StatsType.Activations)) {
             Map<String, Histogram> activationHistograms =
-                            getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
+                    getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
             report.reportHistograms(StatsType.Activations, activationHistograms);
         }
 
@@ -481,7 +478,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectMean(StatsType.Updates)) {
             Map<String, Double> meanUpdates =
-                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Mean);
+                    calculateSummaryStats(g.getParameterGradients().gradientForVariable(), StatType.Mean);
             report.reportMean(StatsType.Updates, meanUpdates);
         }
 
@@ -493,7 +490,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectStdev(StatsType.Parameters)) {
             Map<String, Double> stdevParams =
-                            calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
+                    calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
             report.reportStdev(StatsType.Parameters, stdevParams);
         }
 
@@ -504,7 +501,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectStdev(StatsType.Updates)) {
             Map<String, Double> stdevUpdates =
-                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Stdev);
+                    calculateSummaryStats(g.getParameterGradients().gradientForVariable(), StatType.Stdev);
             report.reportStdev(StatsType.Updates, stdevUpdates);
         }
 
@@ -516,7 +513,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectMeanMagnitudes(StatsType.Parameters)) {
             Map<String, Double> meanMagParams =
-                            calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
+                    calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Parameters, meanMagParams);
         }
 
@@ -527,7 +524,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectMeanMagnitudes(StatsType.Updates)) {
             Map<String, Double> meanMagUpdates =
-                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.MeanMagnitude);
+                    calculateSummaryStats(g.getParameterGradients().gradientForVariable(), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Updates, meanMagUpdates);
         }
 
@@ -547,6 +544,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         modelInfo.iterCount = iteration;
         activationsMap = null;
+    }
+
+    @Override
+    public void iterationDone(Model model, int iteration, int epoch) {
+        //No op
     }
 
     private long getTime() {

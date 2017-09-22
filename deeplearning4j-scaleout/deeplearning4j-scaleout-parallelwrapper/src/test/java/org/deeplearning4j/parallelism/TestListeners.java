@@ -6,6 +6,7 @@ import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -173,10 +174,10 @@ public class TestListeners {
         }
 
         @Override
-        public void onGradientCalculation(Model model) {}
+        public void onGradientCalculation(Model model, Gradients g) {}
 
         @Override
-        public void onBackwardPass(Model model) {
+        public void onBackwardPass(Model model, Gradients g) {
             backwardPassCount.getAndIncrement();
         }
 

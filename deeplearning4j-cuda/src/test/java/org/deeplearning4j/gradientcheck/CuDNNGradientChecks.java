@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class CuDNNGradientChecks {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-5;
@@ -120,13 +122,11 @@ public class CuDNNGradientChecks {
 
                     if (doLearningFirst) {
                         //Run a number of iterations of learning
-                        mln.setInput(input);
-                        mln.setLabels(labels);
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(input), af.create(labels));
                         double scoreBefore = mln.score();
                         for (int j = 0; j < 10; j++)
                             mln.fit(input, labels);
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(input), af.create(labels));
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
