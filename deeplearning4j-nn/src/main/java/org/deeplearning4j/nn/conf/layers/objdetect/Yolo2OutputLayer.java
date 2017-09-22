@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.objdetect;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -42,6 +43,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     private double lambdaCoord;

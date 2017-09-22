@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
@@ -21,6 +22,7 @@ import java.util.Map;
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasMerge extends KerasLayer {
 
     private final String LAYER_FIELD_MODE = "mode";

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -44,6 +45,7 @@ import java.util.Collection;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class SubsetVertex extends GraphVertex {
 
     private int from;
@@ -61,19 +63,6 @@ public class SubsetVertex extends GraphVertex {
     @Override
     public SubsetVertex clone() {
         return new SubsetVertex(from, to);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof SubsetVertex))
-            return false;
-        SubsetVertex s = (SubsetVertex) o;
-        return s.from == from && s.to == to;
-    }
-
-    @Override
-    public int hashCode() {
-        return new Integer(from).hashCode() ^ new Integer(to).hashCode();
     }
 
     @Override

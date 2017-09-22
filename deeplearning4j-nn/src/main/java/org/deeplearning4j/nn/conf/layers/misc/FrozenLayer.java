@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Created by Alex on 10/07/2017.
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class FrozenLayer extends Layer {
 
     @Getter

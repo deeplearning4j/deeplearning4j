@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.datavec.iterator;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -12,6 +13,7 @@ import java.net.URI;
 import java.util.List;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class SparkSourceDummySeqReader extends SparkSourceDummyReader implements SequenceRecordReader {
 
     /**

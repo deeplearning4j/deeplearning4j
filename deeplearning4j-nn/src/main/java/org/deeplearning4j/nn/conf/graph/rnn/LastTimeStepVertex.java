@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph.rnn;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -44,6 +45,7 @@ import java.util.Collection;
  */
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class LastTimeStepVertex extends GraphVertex {
 
     @Override

@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -40,6 +41,7 @@ import java.util.Collection;
  */
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
@@ -54,18 +56,6 @@ public class PreprocessorVertex extends GraphVertex {
     @Override
     public GraphVertex clone() {
         return new PreprocessorVertex(preProcessor.clone());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof PreprocessorVertex))
-            return false;
-        return ((PreprocessorVertex) o).preProcessor.equals(preProcessor);
-    }
-
-    @Override
-    public int hashCode() {
-        return preProcessor.hashCode();
     }
 
     @Override

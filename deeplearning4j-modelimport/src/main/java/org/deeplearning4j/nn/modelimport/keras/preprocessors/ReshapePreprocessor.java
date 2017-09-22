@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
@@ -37,6 +38,7 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@EqualsAndHashCode(callSuper = true)
 public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     private int[] inputShape;

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -42,6 +43,7 @@ import java.util.Collection;
  * @author Justin Long (crockpotveggies)
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class ReshapeVertex extends GraphVertex {
     public static final char DEFAULT_RESHAPE_ORDER = 'c';
 
@@ -63,18 +65,6 @@ public class ReshapeVertex extends GraphVertex {
     @Override
     public ReshapeVertex clone() {
         return new ReshapeVertex(newShape);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof ReshapeVertex))
-            return false;
-        return Arrays.equals(((ReshapeVertex) o).newShape, newShape);
-    }
-
-    @Override
-    public int hashCode() {
-        return reshapeOrder ^ Arrays.hashCode(newShape);
     }
 
     @Override

@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
@@ -53,6 +55,7 @@ import java.util.Collection;
                 @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
                 @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
                 @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")})
+@EqualsAndHashCode
 public abstract class GraphVertex implements Cloneable, Serializable {
 
     @Override

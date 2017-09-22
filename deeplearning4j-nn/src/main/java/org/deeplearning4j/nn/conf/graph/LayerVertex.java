@@ -61,24 +61,6 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof LayerVertex))
-            return false;
-        LayerVertex lv = (LayerVertex) o;
-        if ((layerConf == null && lv.layerConf != null) || (layerConf != null && lv.layerConf == null)) {
-            return false;
-        }
-        if (layerConf != null && !layerConf.equals(lv.layerConf))
-            return false;
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return layerConf.hashCode();
-    }
-
-    @Override
     public int numParams(boolean backprop) {
         return layerConf.getLayer().initializer().numParams(layerConf);
     }

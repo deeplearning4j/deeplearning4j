@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
@@ -19,6 +20,7 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.Keras
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasZeroPadding2D extends KerasLayer {
 
     /**

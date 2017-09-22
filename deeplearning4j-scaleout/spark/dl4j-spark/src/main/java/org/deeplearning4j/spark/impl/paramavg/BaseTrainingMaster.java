@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,6 +42,7 @@ import java.util.Random;
  * @author Alex Black
  */
 @Slf4j
+@EqualsAndHashCode(exclude = {"stats", "listeners", "rng", "lastExportedRDDId", "lastRDDExportPath","trainingMasterUID"})
 public abstract class BaseTrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>>
                 implements TrainingMaster<R, W> {
     protected static ObjectMapper jsonMapper;

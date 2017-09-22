@@ -56,8 +56,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Data
 @JsonIgnoreProperties({"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
                 "trainingMasterUID"})
-@EqualsAndHashCode(exclude = {"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
-                "trainingMasterUID"})
+@EqualsAndHashCode(exclude = {"iterationCount"}, callSuper = true)
 @Slf4j
 public class ParameterAveragingTrainingMaster
                 extends BaseTrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker>

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -17,6 +18,7 @@ import java.util.Map;
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasInput extends KerasLayer {
 
     private final int NO_TRUNCATED_BPTT = 0;

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.MaskState;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.primitives.Pair;
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class BaseGraphVertex extends AbstractLayer {
 
     protected String vertexName;

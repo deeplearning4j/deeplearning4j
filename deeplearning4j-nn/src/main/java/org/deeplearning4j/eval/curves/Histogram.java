@@ -1,6 +1,7 @@
 package org.deeplearning4j.eval.curves;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
@@ -9,6 +10,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class Histogram extends BaseHistogram {
     private final String title;
     private final double lower;

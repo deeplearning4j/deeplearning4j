@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers;
 
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -46,6 +47,7 @@ import java.util.*;
  *
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
                 extends BaseLayer<LayerConfT> implements Model {
 

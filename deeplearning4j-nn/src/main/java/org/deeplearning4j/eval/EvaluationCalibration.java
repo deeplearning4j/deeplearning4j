@@ -37,7 +37,7 @@ import org.nd4j.shade.serde.jackson.shaded.NDArraySerializer;
  * @author Alex Black
  */
 @Getter
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration> {
 
     public static final int DEFAULT_RELIABILITY_DIAG_NUM_BINS = 10;

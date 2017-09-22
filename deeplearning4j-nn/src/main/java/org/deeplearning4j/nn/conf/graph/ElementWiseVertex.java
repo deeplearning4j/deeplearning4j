@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -40,6 +41,7 @@ import java.util.Collection;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class ElementWiseVertex extends GraphVertex {
 
     public ElementWiseVertex(@JsonProperty("op") Op op) {
@@ -55,18 +57,6 @@ public class ElementWiseVertex extends GraphVertex {
     @Override
     public ElementWiseVertex clone() {
         return new ElementWiseVertex(op);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof ElementWiseVertex))
-            return false;
-        return ((ElementWiseVertex) o).op == op;
-    }
-
-    @Override
-    public int hashCode() {
-        return op.hashCode();
     }
 
     @Override

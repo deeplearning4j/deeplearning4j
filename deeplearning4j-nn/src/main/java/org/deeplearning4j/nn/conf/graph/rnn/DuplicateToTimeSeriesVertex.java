@@ -66,21 +66,6 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof DuplicateToTimeSeriesVertex))
-            return false;
-        DuplicateToTimeSeriesVertex d = (DuplicateToTimeSeriesVertex) o;
-        if (inputName == null && d.inputName != null || inputName != null && d.inputName == null)
-            return false;
-        return inputName == null || inputName.equals(d.inputName);
-    }
-
-    @Override
-    public int hashCode() {
-        return 534806565 ^ (inputName != null ? inputName.hashCode() : 0);
-    }
-
-    @Override
     public int numParams(boolean backprop) {
         return 0;
     }
