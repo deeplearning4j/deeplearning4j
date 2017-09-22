@@ -82,10 +82,11 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         }
 
 
+        //Note: masks should always be null, even when present: see comments in activate method
         Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input.get(0),
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, this.input.getMask(0), true, null);
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, null, true, null);
 
         weightNoiseParams.clear();
         return backpropPreprocessor(p);
@@ -94,8 +95,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     @Override
     public Activations activate(Activations input, boolean training) {
         setInput(input);
-        INDArray ret = activateHelper(training, null, null, false).fwdPassOutput;
-        return ActivationsFactory.getInstance().create(ret, input.getMask(0), MaskState.Passthrough);
+        return activate(training);
     }
 
     @Override
@@ -127,10 +127,11 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         final INDArray inputWeights = getParamWithNoise(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, training); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParamWithNoise(GravesLSTMParamInitializer.BIAS_KEY, training); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
+        //Note: masks should always be null, even when present: see comments in activate method
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                         this.input.get(0), recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, this.input.getMask(0), true, null,
+                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true, null,
                         forBackprop ? cacheMode : CacheMode.NONE);
 
 
@@ -173,6 +174,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.workspaceTBPTT));
         }
 
-        return ActivationsFactory.getInstance().create(outAct, input.getMask(0), input.getMaskState(0));
+        return ActivationsFactory.getInstance().create(outAct, input.getMask(0), MaskState.Passthrough);
     }
 }

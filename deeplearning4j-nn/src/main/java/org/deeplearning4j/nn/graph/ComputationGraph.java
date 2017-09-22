@@ -303,7 +303,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void setInput(Activations input){
-        this.input = input;
+        if(input == null){
+            this.input = null;
+        } else {
+            //Make a shallow copy so clear() doesn't impact something user has later
+            this.input = input.cloneShallow();
+        }
     }
 
     @Override
