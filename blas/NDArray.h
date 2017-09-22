@@ -184,6 +184,10 @@ namespace nd4j {
         // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
         NDArray<T> *sum(const std::initializer_list<int> &dimensions) const;
 
+		// eventually this method reduces this array to 1xN row 
+        template<typename OpName>
+        NDArray<T> *reduceAlongDimension(const std::vector<int> &dimensions) const;
+		
         // eventually this method reduces this array to 1xN row 
         template<typename OpName>
         NDArray<T> *reduceAlongDimension(const std::initializer_list<int> &dimensions) const;
@@ -269,6 +273,12 @@ namespace nd4j {
         // This method adds given row to all rows in this NDArray, that is this array becomes affected
         void addiRowVector(const NDArray<T> *row);
 
+		// This method adds given column to all columns in this NDArray, that is this array becomes affected
+		void addiColumnVector(const NDArray<T> *column);
+
+		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
+		void muliColumnVector(const NDArray<T> *column);
+
         // this method returns number of bytes used by buffer & shapeInfo
         Nd4jIndex memoryFootprint();
 
@@ -278,12 +288,12 @@ namespace nd4j {
         }
 
         // this method returns true if this ndarray is vector
-        bool isVector() {
+        bool isVector() const {
             return !isScalar() && shape::isVector(this->_shapeInfo);
         }
 
         // this method returns true if this ndarray is column vector
-        bool isColumnVector() {
+        bool isColumnVector() const {
             return !isScalar() && shape::isColumnVector(this->_shapeInfo);
         }
 
@@ -293,7 +303,7 @@ namespace nd4j {
         }
 
         // this method returns true if this ndarray is scalar
-        bool isScalar() {
+        bool isScalar() const {
             return this->lengthOf() == 1;
         }
 
@@ -303,11 +313,14 @@ namespace nd4j {
         std::vector<int32_t> getShapeAsVector();
 		
 		// set new order and shape in case of suitable array length 
-		bool reshape(const char order, const std::initializer_list<int>& shape);
+		bool reshapei(const char order, const std::initializer_list<int>& shape);
 	
 		// set new order and shape in case of suitable array length 
-		bool reshape(const char order, const std::vector<int>& shape);
+		bool reshapei(const char order, const std::vector<int>& shape);
 	
+		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
+		NDArray<T>* reshape(const char order, const std::vector<int>& shape);
+		
 		// calculate strides 
 		void updateStrides(const char order);
 

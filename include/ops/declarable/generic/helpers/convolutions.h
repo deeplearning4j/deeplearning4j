@@ -53,6 +53,8 @@ namespace nd4j {
 
         template <typename T>
         void _col2vol(const T* data_col, const int channels, const int depth, const int height, const int width, const int out_depth, const int out_height, const int out_width, const int kT, const int kH, const int kW, const int pT, const int pH, const int pW, const int dT, const int dH, const int dW, const int dilationT, const int dilationH, const int dilationW, T* data_vol);
+
+		void calcOutHWpool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode);
     }
 }
 
@@ -653,6 +655,19 @@ Nd4jStatus nd4j::ops::conv3D(T* output_data,
         }
 
     return ND4J_STATUS_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// calculation of output height and width during 2D pooling procedure
+void nd4j::ops::calcOutHWpool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode) {
+	if(isSameMode > 0) {
+		oH = (int) nd4j::math::nd4j_ceil(iH * 1.f / sH);
+		oW = (int) nd4j::math::nd4j_ceil(iW * 1.f / sW);
+	}
+	else {
+		oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;
+		oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;
+	}
 }
 
 #endif //LIBND4J_CONVOLUTIONS_H

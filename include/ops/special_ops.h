@@ -53,25 +53,21 @@ namespace simdOps {
 			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 
-		    int kernelWidth = (int)extraParams[0];
-			int kernelHeight = (int)extraParams[1];
-			int strideX = (int)extraParams[2];
-			int strideY = (int)extraParams[3];
-			int padWidth = (int)extraParams[4];
-			int padHeight = (int)extraParams[5];
-			int dW = (int)extraParams[6];			//Dilation, width dimension
-			int dH = (int)extraParams[7];			//Dilation, height dimension
+		    int kernelHeight = (int)extraParams[0];
+			int kernelWidth = (int)extraParams[1];
+			int strideY = (int)extraParams[2];
+			int strideX = (int)extraParams[3];
+			int padHeight = (int)extraParams[4];
+			int padWidth = (int)extraParams[5];
+			int dH = (int)extraParams[6];			//Dilation, height dimension
+			int dW = (int)extraParams[7];			//Dilation,  width dimension
 			int poolingMode = (int)extraParams[9];
+			T extraParam0 = extraParams[10];
+			
 			int kSize = kernelWidth * kernelHeight;
-
-            T extraParam0 = extraParams[10];
 
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
-
-            // we expect tadShape field to be used here
-            int *im2colShape = tadShapeInfo;
-
 			int samples = inShape[0];
 			int depth = inShape[1];
 			int height = inShape[2];
@@ -83,13 +79,18 @@ namespace simdOps {
 			int strideh = inStride[2];
 			int stridew = inStride[3];
 
-            int *outShape = shape::shapeOf(im2colShape);
-            char resultOrder = shape::order(im2colShape);
-            int *outStride = shape::stride(im2colShape);
+			int outH = resultShapeBuffer[3];
+			int outW = resultShapeBuffer[4];			
+			int *im2colShapeInfo = tadShapeInfo; // we expect (or not ??) tadShape field to be used here
+			if(im2colShapeInfo==nullptr)
+				im2colShapeInfo = new int[16] {6, samples, depth, kernelHeight, kernelWidth, outH, outW, depth*kernelHeight*kernelWidth*outH*outW, kernelHeight*kernelWidth*outH*outW, kernelWidth*outH*outW, outH*outW, outW, 1, 0, 1, 99};
+
+            int *outShape = shape::shapeOf(im2colShapeInfo);
+            char resultOrder = shape::order(im2colShapeInfo);
+            int *outStride = shape::stride(im2colShapeInfo);
 
 			int height_col = outShape[4];
 			int width_col = outShape[5];
-
 			int n = samples * depth * height_col * width_col;
 
             T res;
@@ -181,38 +182,40 @@ namespace simdOps {
 				T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 
-			int kernelWidth = (int)extraParams[0];
-			int kernelHeight = (int)extraParams[1];
-			int strideX = (int)extraParams[2];
-			int strideY = (int)extraParams[3];
-			int padWidth = (int)extraParams[4];
-			int padHeight = (int)extraParams[5];
-			int dW = (int)extraParams[6];			//Dilation, width dimension
-			int dH = (int)extraParams[7];			//Dilation, height dimension
+			int kernelHeight = (int)extraParams[0];
+			int kernelWidth = (int)extraParams[1];
+			int strideY = (int)extraParams[2];
+			int strideX = (int)extraParams[3];
+			int padHeight = (int)extraParams[4];
+			int padWidth = (int)extraParams[5];
+			int dH = (int)extraParams[6];			//Dilation, height dimension
+			int dW = (int)extraParams[7];			//Dilation, width dimension
 			int poolingMode = (int)extraParams[9];
-			int kSize = kernelWidth * kernelHeight;
+			T extraParam0 = extraParams[10];
 
-            T extraParam0 = extraParams[10];
+			int kSize = kernelWidth * kernelHeight;
 
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
-
-            // we expect tadShape field to be used here
-            int *im2colShape = tadShapeInfo;
 
 			int samples = inShape[0];
 			int depth = inShape[1];
 			int height = inShape[2];
 			int width = inShape[3];
 
-
 			int strideex = inStride[0];
 			int stridech = inStride[1];
 			int strideh = inStride[2];
 			int stridew = inStride[3];
 
-            int *outShape = shape::shapeOf(im2colShape);
-            int *outStride = shape::stride(im2colShape);
+			int outH = resultShapeBuffer[3];
+			int outW = resultShapeBuffer[4];			
+            int *im2colShapeInfo = tadShapeInfo; // we expect (or not ??) tadShape field to be used here
+			if(im2colShapeInfo==nullptr)
+				im2colShapeInfo = new int[16] {6, samples, depth, kernelHeight, kernelWidth, outH, outW, depth*kernelHeight*kernelWidth*outH*outW, kernelHeight*kernelWidth*outH*outW, kernelWidth*outH*outW, outH*outW, outW, 1, 0, 1, 99};
+
+            int *outShape = shape::shapeOf(im2colShapeInfo);
+            int *outStride = shape::stride(im2colShapeInfo);
 
 			int height_col = outShape[4];
 			int width_col = outShape[5];
@@ -303,6 +306,8 @@ namespace simdOps {
                     result[index] = res;
                 }
             }
+			if(tadShapeInfo==nullptr)
+				delete im2colShapeInfo;
 		}
 
 		op_def static T op(T d1, T *params) {
@@ -380,14 +385,14 @@ namespace simdOps {
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
-			int kernelWidth = (int)extraParams[0];
-			int kernelHeight = (int)extraParams[1];
-			int strideX = (int)extraParams[2];
-			int strideY = (int)extraParams[3];
-			int padWidth = (int)extraParams[4];
-			int padHeight = (int)extraParams[5];
-			int dX = (int)extraParams[6];			//Dilation, width/x dimension
-			int dY = (int)extraParams[7];			//Dilation, height/y dimension
+			int kernelHeight = (int)extraParams[0];
+			int kernelWidth = (int)extraParams[1];
+			int strideY = (int)extraParams[2];
+			int strideX = (int)extraParams[3];
+			int padHeight = (int)extraParams[4];
+			int padWidth = (int)extraParams[5];
+			int dY = (int)extraParams[6];			//Dilation, height/x dimension
+			int dX = (int)extraParams[7];			//Dilation, width/y dimension
 			int kSize = kernelWidth * kernelHeight;
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -809,14 +814,14 @@ namespace simdOps {
 
 			// C
 
-			int strideX = (int)extraParams[0];
-			int strideY = (int)extraParams[1];
-			int padWidth = (int)extraParams[2];
-			int padHeight = (int)extraParams[3];
+			int strideY = (int)extraParams[0];
+			int strideX = (int)extraParams[1];
+			int padHeight = (int)extraParams[2];
+			int padWidth = (int)extraParams[3];
 			int imgHeight = (int)extraParams[4];
 			int imgWidth = (int)extraParams[5];
-			int dX = (int)extraParams[6];			//Dilation in width/x dimension
-			int dY = (int)extraParams[7];			//Dilation in height/y dimension
+			int dY = (int)extraParams[6];			//Dilation in height/x dimension
+			int dX = (int)extraParams[7];			//Dilation in width/y dimension
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
@@ -2045,9 +2050,9 @@ namespace simdOps {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
-
-			if (extraParams == nullptr || extraParams[0] == 0 ||
-				(extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION)) {
+			//FIXME: this op should be moved to CustomOps
+			if (extraParams == nullptr || (int)extraParams[0] == 0 ||
+				((int)extraParams[0] == 1 && (int)extraParams[1] == MAX_DIMENSION)) {
 				doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
 			}
 			else if (shape::isVector(xShapeBuffer)) {
@@ -2163,17 +2168,18 @@ namespace simdOps {
                 for (int i = 0; i < dimensionLength; i++) {
                     dimension[i] = (int) extraParams[i + 1];
                 }
-/*
-                shape::TAD tad(xShapeBuffer, dimension, dimensionLength);
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
-*/
-//                int tads = tad.numTads;
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
                 //to the back.
-                //permuted version of the x shape info for setting up the tad problem
-                int *tadShapeShapeInfo = tadShapeInfo;
+                //permuted version of the x shape info for setting up the tad problem				
+				int *tadShapeShapeInfo = tadShapeInfo;
+				shape::TAD tad (xShapeBuffer, dimension, dimensionLength);
+				if(tadShapeInfo==nullptr) {
+					tad.createTadOnlyShapeInfo();
+					tad.createOffsets();
+					tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+					tadOffsets = tad.tadOffsets;
+				}						                                				
 
                 int tadLength = shape::tadLength(xShapeBuffer, dimension, dimensionLength);
                 int tads = shape::length(xShapeBuffer) / tadLength;

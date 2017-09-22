@@ -19,8 +19,22 @@ class DeclarableOpsTests : public testing::Test {
 public:
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
-		
 
+	const int bS = 2;      	// batch size
+	const int iD = 1;      	// input depth (number of picture channels, for example rgb=3)
+	const int iH = 28;     	// picture height in pixels
+	const int iW = 28;     	// picture width in pixels
+	const int oD = 3;      	// output depth (= N for dense layer)
+	const int kH = 5;      	// kernel height in pixels
+	const int kW = 5;      	// kernel width in pixels
+	const int sH = 1;      	// stride step in horizontal direction
+	const int sW = 1;      	// stride step in vertical direction
+	const int pH = 0;      	// padding height
+	const int pW = 0; 		// padding width
+	const int dH = 2;      	// dilation height
+	const int dW = 2; 		// dilation width
+	const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;		// output height
+	const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;		// output width
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -1103,10 +1117,12 @@ TEST_F(DeclarableOpsTests, Reshapeas1) {
 	
 	NDArray<float> x('c', xShape);
 	NDArray<float> y('f', yShape);
+	NDArray<float> z;
 
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
+	variableSpace->putVariable(1, &z);
 	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
@@ -1242,7 +1258,7 @@ TEST_F(DeclarableOpsTests, Reshape1) {
 	*arguments = yShape;
 	arguments->push_back(y.ordering());
 	
-	nd4j::ops::reshape<float> reshape;
+	nd4j::ops::reshapei<float> reshape;
 	
 	reshape.execute(block);
 
@@ -1267,7 +1283,7 @@ TEST_F(DeclarableOpsTests, Reshape2) {
 	*arguments = yShape;
 	arguments->push_back(y.ordering());
 	
-	nd4j::ops::reshape<float> reshape;
+	nd4j::ops::reshapei<float> reshape;
 	
 	Nd4jStatus status = reshape.execute(block);
 	ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -1635,4 +1651,242 @@ TEST_F(DeclarableOpsTests, DilatedMaxPool3D_ff_Test1) {
 
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Sum1) {
 
+	float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
+	int xShape[]  = {2, 4, 2, 2, 1, 0, 1, 99};
+	float expBuff[] = {16, 20};
+	int expShape[]  = {2, 1, 2, 2, 1, 0, 1, 99};
+
+	const std::vector<int> dimensions = {1,0};
+
+	NDArray<float> x(xBuff, xShape);
+	NDArray<float> z(1, 2);
+	NDArray<float> exp(expBuff, expShape);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+	std::vector<int>* arguments = block->getIArguments();
+	*arguments = dimensions;
+
+	nd4j::ops::sum<float> sum;
+	Nd4jStatus status = sum.execute(block);
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+	ASSERT_EQ(ND4J_STATUS_OK, status);
+	ASSERT_TRUE(result->equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Maxpool2d1) {
+
+	NDArray<float> x('c', {bS,iD,iH,iW});
+	NDArray<float> exp('c',{bS,iD,oH,oW});
+	// NDArray<float> z('c',{bS,iD,oH,oW});
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	// variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	std::vector<int>* argI = block->getIArguments();
+	*argI = {4, kH,kW, sH,sW, pH,pW, dW,dH, iH,iW, bS, iD, 0};  // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+
+	nd4j::ops::maxpool2d<float> pooling;
+	Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Avgpool2d1) {
+
+	NDArray<float> x('c', {bS,iD,iH,iW});
+	NDArray<float> exp('c',{bS,iD,oH,oW});
+	// NDArray<float> z('c',{bS,iD,oH,oW});
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	// variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	std::vector<int>* argI = block->getIArguments();
+	*argI = {4, kH,kW, sH,sW, pH,pW, dW,dH, iH,iW, bS, iD, 0};  // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+
+	nd4j::ops::avgpool2d<float> pooling;
+	Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Pnormpool2d1) {
+
+	NDArray<float> x('c', {bS,iD,iH,iW});
+	NDArray<float> exp('c',{bS,iD,oH,oW});
+	// NDArray<float> z('c',{bS,iD,oH,oW});
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	// variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	std::vector<int>* argI = block->getIArguments();
+	*argI = {4, kH,kW, sH,sW, pH,pW, dW,dH, iH,iW, bS, iD, 0};  // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+
+	nd4j::ops::pnormpool2d<float> pooling;
+	Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, IsMax1) {
+
+	float xBuff[]   = {1,2,3,4,5,6,7,8,9};
+	int xShape[]    = {2,3,3,3,1,0,1,99};
+	float expBuff[] = {0,0,1,0,0,1,0,0,1};
+
+	NDArray<float> x(xBuff, xShape);	
+	NDArray<float> exp(expBuff, xShape);	
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	std::vector<int>* argI = block->getIArguments();
+	*argI = {1};										// dimensions
+
+	nd4j::ops::ismax<float> ismax;
+	Nd4jStatus status = ismax.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();	
+    ASSERT_TRUE(exp.equalsTo(result));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Pooling2d1) {
+
+	NDArray<float> x('c', {bS,iD,iH,iW});
+	NDArray<float> exp('c',{bS,iD,oH,oW});
+	// NDArray<float> z('c',{bS,iD,oH,oW});
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	// variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	std::vector<int>* argI = block->getIArguments();
+	std::vector<float>* argT = block->getTArguments();	
+	*argI = {4, kH,kW, sH,sW, pH,pW, dW,dH, iH,iW, bS, iD, 0, 2};		// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 14 - pooling mode
+	*argT = {8};														// 0 - divisor for pnorm mode -> extraParam0
+	nd4j::ops::pooling2d<float> pooling;
+	Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MaxPool2dBP) {
+
+	NDArray<float> input  ('c', {bS,iD,iH,iW});
+	NDArray<float> epsilon('c', {bS,iD,oH,oW});
+	NDArray<float> exp    ('c', {bS,iD,iH,iW});
+	
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &input);
+	variableSpace->putVariable(-2, &epsilon);
+	// variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	block->fillInputs({-2});
+	std::vector<int>* argI = block->getIArguments();
+	*argI = {4, kH,kW, sH,sW, pH,pW, dW,dH, iH,iW, bS, iD, 0};   // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+
+	nd4j::ops::maxpool2d_bp<float> bp;
+	Nd4jStatus status = bp.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+
+}
+
+TEST_F(DeclarableOpsTests, AvgPool2dBP) {
+
+	NDArray<float> input  ('c', {bS,iD,iH,iW});
+	NDArray<float> epsilon('c', {bS,iD,oH,oW});
+	NDArray<float> exp    ('c', {bS,iD,iH,iW});
+	
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &input);
+	variableSpace->putVariable(-2, &epsilon);
+	// variableSpace->putVariable(1, &z);
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});
+	block->fillInputs({-2});
+	std::vector<int>* argI = block->getIArguments();
+	*argI = {4, kH,kW, sH,sW, pH,pW, dW,dH, iH,iW, bS, iD, 0};   // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+
+	nd4j::ops::avgpool2d_bp<float> bp;
+	Nd4jStatus status = bp.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+	
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests, Sum2) {
+
+	// float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
+	// int xShape[]  = {2, 4, 2, 2, 1, 0, 1, 99};
+	// float expBuff[] = {36, 0};
+	// int expShape[]  = {2, 1, 2, 2, 1, 0, 1, 99};
+
+	// const std::vector<int> dimensions;
+
+	// NDArray<float> x(xBuff, xShape);
+	// NDArray<float> z(1, 2);
+	// NDArray<float> exp(expBuff, expShape);
+
+	// VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    // variableSpace->putVariable(-1, &x);
+	// variableSpace->putVariable(1, &z);
+
+	// Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+    // block->fillInputs({-1});
+	// std::vector<int>* arguments = block->getIArguments();
+	// *arguments = dimensions;
+
+	// nd4j::ops::sum<float> sum;
+	// Nd4jStatus status = sum.execute(block);
+	// NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+	// result->printBuffer();
+	// ASSERT_EQ(ND4J_STATUS_OK, status);
+	// ASSERT_TRUE(result->getScalar(0,0) == exp.getScalar(0,0));
+// }

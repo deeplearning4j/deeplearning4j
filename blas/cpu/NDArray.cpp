@@ -456,10 +456,10 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         return true;
     }
 
-// eventually this method reduces this array to 1xN row 
+// eventually this method reduces this array to 1xN row
     template<typename T>
     template<typename OpName>
-    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::initializer_list<int> &dimensions) const {
+    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int> &dimensions) const {
 
         std::vector<int> copy(dimensions);
 
@@ -479,6 +479,15 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
         return result;
     }
+
+// eventually this method reduces this array to 1xN row
+    template<typename T>
+    template<typename OpName>
+    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::initializer_list<int> &dimensions) const {
+
+		return reduceAlongDimension<OpName>(std::vector<int>(dimensions));
+	}
+
 
 //
     template<typename T>
@@ -829,12 +838,12 @@ T& NDArray<T>::operator()(const int i, const int j) {
     return _buffer[xOffset];
 }
 
-
+//////////////////////////////////////////////////////////////////////////
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
     template<typename T>
     void NDArray<T>::addiRowVector(const NDArray<T> *row) {
         if (rankOf() != 2)
-            throw std::invalid_argument("addiRowVector can be called only on Matrix");
+            throw std::invalid_argument("addiRowVector can be called only for Matrix");
 
         if (!shape::isRowVector(row->_shapeInfo))
             throw std::invalid_argument("Argument should be row vector");
@@ -846,6 +855,49 @@ T& NDArray<T>::operator()(const int i, const int j) {
         tad->createOffsets();
 
         NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, _buffer, _shapeInfo,
+                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
+                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method adds given column to all columns in this NDArray, that is this array becomes affected
+    template<typename T>
+    void NDArray<T>::addiColumnVector(const NDArray<T> *column) {
+        if (rankOf() != 2)
+            throw std::invalid_argument("addiRowVector can be called only for Matrix");
+
+        if (!shape::isColumnVector(column->_shapeInfo))
+            throw std::invalid_argument("Argument should be column vector");
+
+        int dimension[1] = {0};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
+                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
+                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+    }
+
+
+//////////////////////////////////////////////////////////////////////////
+// This method adds given column to all columns in this NDArray, that is this array becomes affected
+    template<typename T>
+    void NDArray<T>::muliColumnVector(const NDArray<T> *column) {
+        if (rankOf() != 2)
+            throw std::invalid_argument("muliColumnVector method can be called only for 2D matrix");
+
+        if (!column->isColumnVector())
+            throw std::invalid_argument("muliColumnVector method: argument should be column vector");
+
+        int dimension[1] = {0};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        NativeOpExcutioner<T>::execBroadcast(2, _buffer, _shapeInfo, column->_buffer, column->_shapeInfo, _buffer, _shapeInfo,
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
@@ -896,9 +948,9 @@ template <typename T> void NDArray<T>::updateStrides(const char order) {
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T> bool NDArray<T>::reshape(const char order, const std::initializer_list<int>& shape) {
+template <typename T> bool NDArray<T>::reshapei(const char order, const std::initializer_list<int>& shape) {
         std::vector<int> vShape(shape);
-        return reshape(order, vShape);
+        return reshapei(order, vShape);
 /*
     int rank = shape.size();
     int arrLength = 1;
@@ -935,7 +987,7 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::init
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T> bool NDArray<T>::reshape(const char order, const std::vector<int>& cshape) {
+template <typename T> bool NDArray<T>::reshapei(const char order, const std::vector<int>& cshape) {
 
     std::vector<int> shape(cshape);
     int rank = shape.size();
@@ -1013,6 +1065,23 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
 }
 
 //////////////////////////////////////////////////////////////////////////
+// create new array with corresponding order and shape, new array will point to the same _buffer as this array
+template <typename T> NDArray<T>* NDArray<T>::reshape(const char order, const std::vector<int>& shape) {
+	int shapeInfoLength = shape::shapeInfoLength(rankOf());
+	int* newShapeInfo = nullptr;
+
+	ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, int);
+	memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(int));
+
+	NDArray<T>* newArr = new NDArray<T>(_buffer, newShapeInfo, _workspace);
+	newArr->_isShapeAlloc = true;
+	newArr->_isBuffAlloc  = false;
+	newArr->reshapei(order, shape);
+
+	return newArr;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 template <typename T> void NDArray<T>::tilei(const std::vector<int>& reps) {
 	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
@@ -1028,7 +1097,7 @@ template <typename T> void NDArray<T>::tilei(const std::vector<int>& reps) {
 		if(diff < 0) {		// reshape to higher dimension			
 			std::vector<int> shapeNew = reps;				// need to have unities at first "diff" positions of new shape
 			memcpy(&shapeNew[-diff], _shapeInfo+1, rankOld*sizeof(int));   // put old shape numbers at rest of positions
-			reshape(ordering(), shapeNew);
+			reshapei(ordering(), shapeNew);
 		}		
 		return;				// nothing to do, if diff >= 0 -> identity tile 
 	}	
@@ -1275,7 +1344,7 @@ template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) 
         for (auto v: origShape)
             newS.push_back(v);
 
-        this->reshape('c', newS);
+        this->reshapei('c', newS);
     }
 
     // evaluate new shape
@@ -1315,7 +1384,7 @@ template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) 
     NDArray<T>* result = this;
     for (int i = 0; i < rank; i++) {
         if (repeat[i] != 1) {
-            result->reshape('c', {-1, n});
+            result->reshapei('c', {-1, n});
             NDArray<T> *tmp = result->repeat(0, {repeat[i]});
 
             if (result->_shapeInfo != this->_shapeInfo)
@@ -1333,10 +1402,10 @@ template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) 
     }
     delete[] shape;
 
-    result->reshape('c', shapeNew);
+    result->reshapei('c', shapeNew);
 
     if (wasReshaped)
-        this->reshape(origOrder, origShape);
+        this->reshapei(origOrder, origShape);
 
     return result;
 }

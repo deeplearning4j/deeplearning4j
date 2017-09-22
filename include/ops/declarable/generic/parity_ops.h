@@ -7,6 +7,7 @@
 #ifndef LIBND4J_PARITY_OPS_H
 #define LIBND4J_PARITY_OPS_H
 
+#include <climits>
 #include <op_boilerplate.h>
 #include <memory>
 #include <shape.h>
@@ -131,8 +132,6 @@ namespace nd4j {
         DECLARE_SYN(gemm, matmul);
         DECLARE_SYN(gemv, matmul);
         DECLARE_SYN(dot, matmul);
-
-
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(lrn, 2, 1, true) {
@@ -306,10 +305,10 @@ namespace nd4j {
             auto bT = b->ordering() == 'c' ? b : b->dup('c');
 
             aT->permutei(newAxesA);
-            aT->reshape('c', newShapeA);
+            aT->reshapei('c', newShapeA);
 
             bT->permutei(newAxesB);
-            bT->reshape('f', newShapeB);
+            bT->reshapei('f', newShapeB);
 
             auto c = nd4j::NDArrayFactory::mmulHelper<T>(aT, bT, nullptr, 1.0, 0.0);
 
@@ -317,7 +316,7 @@ namespace nd4j {
             for (auto v: oldShapeB)
                 aPlusB.push_back(v);
 
-            c->reshape('f', aPlusB);
+            c->reshapei('f', aPlusB);
 
             STORE_RESULT(*c);
 
@@ -798,11 +797,13 @@ namespace nd4j {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();	
 			
+			NDArray<T>* z = this->getZ(block);
 			std::vector<int> shapeNew(y->shapeOf(), y->shapeOf() + y->rankOf());
 			char order = y->ordering();
 			
-			if (x->reshape(order, shapeNew)) {
-				STORE_RESULT(*x);
+			if (x->reshapei(order, shapeNew)) {
+				*z = *x;
+				STORE_RESULT(*z);
 				return ND4J_STATUS_OK;				
 			}			
 			
@@ -812,7 +813,7 @@ namespace nd4j {
 
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is vector with shape dimensions at the beginning and last element in iArgs is order
-		DECLARE_CONFIGURABLE_OP(reshape, 1, 1, true, 0, -1) {
+		DECLARE_CONFIGURABLE_OP(reshapei, 1, 1, true, 0, -1) {
 			std::vector<int>* argumets = block.getIArguments();
 			int argsSize = argumets->size();
 			char order = (*argumets)[argsSize-1];
@@ -821,14 +822,14 @@ namespace nd4j {
 
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			if(block.isInplace()) {
-				if (x->reshape(order, shapeNew)) {
+				if (x->reshapei(order, shapeNew)) {
 					STORE_RESULT(*x);
 					return ND4J_STATUS_OK;				
 				}
 			}
 			else {
 				auto ret = new NDArray<T>(*x);
-				if (ret->reshape(order, shapeNew)) {
+				if (ret->reshapei(order, shapeNew)) {
 					STORE_RESULT(*ret);
 					return ND4J_STATUS_OK;				
 				}
@@ -870,7 +871,7 @@ namespace nd4j {
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is int vector of ordered set of dimensions to be permuted
 		DECLARE_CONFIGURABLE_OP(permute, 1, 1, true, 0, -1) {
-			std::vector<int>* argumets = block.getIArguments();								
+			std::vector<int>* argumets = block.getIArguments();
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			
 			if(block.isInplace()) {		// in-place
@@ -883,6 +884,220 @@ namespace nd4j {
 			}
 			return ND4J_STATUS_OK;
         }
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_CONFIGURABLE_OP(sum, 1, 1, false, 0, -1) {
+
+			std::vector<int> argI = *(block.getIArguments());
+			argI.erase(argI.begin(), argI.begin()+1);
+			NDArray<T>* x = block.getVariables().at(0)->getNDArray();
+			NDArray<T> *z = this->getZ(block);
+
+			if((argI.size()==1 && argI[0]==INT_MAX) || argI.size()==0) {
+				z->putScalar(0, 0, x->template reduceNumber<simdOps::Sum<T>>(nullptr));
+				STORE_RESULT(*z);
+			}
+			else {
+				z = x->template reduceAlongDimension<simdOps::Sum<T>>(argI);
+				STORE_RESULT(*z);
+			}
+
+			return ND4J_STATUS_OK;
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(maxpool2d) {
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+			// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+			std::vector<int> argI = *(block.getIArguments());			
+			int kH = argI[1];
+			int kW = argI[2];
+			int sH = argI[3];
+			int sW = argI[4];
+			int pH = argI[5];
+			int pW = argI[6];
+			int dH = argI[7];
+			int dW = argI[8];
+			int iH = argI[9];
+			int iW = argI[10];
+			int bS = argI[11];
+			int iD = argI[12];
+			int isSameMode = argI[13];
+			char order = (block.getVariables().at(0)->getNDArray())->ordering();  // output order must be equal to input order
+
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			// allocate memory for new shape
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = bS;
+			newShapeInfo[2] = iD;
+			newShapeInfo[3] = oH;
+			newShapeInfo[4] = oW;
+            shape::updateStrides(newShapeInfo, order);
+
+			return new ShapeList(newShapeInfo);
+		}	
+		
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(avgpool2d) {
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+			// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 
+			std::vector<int> argI = *(block.getIArguments());			
+			int kH = argI[1];
+			int kW = argI[2];
+			int sH = argI[3];
+			int sW = argI[4];
+			int pH = argI[5];
+			int pW = argI[6];
+			int dH = argI[7];
+			int dW = argI[8];
+			int iH = argI[9];
+			int iW = argI[10];
+			int bS = argI[11];
+			int iD = argI[12];
+			int isSameMode = argI[13];
+			char order = (block.getVariables().at(0)->getNDArray())->ordering();  // output order must be equal to input order
+
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			// allocate memory for new shape
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = bS;
+			newShapeInfo[2] = iD;
+			newShapeInfo[3] = oH;
+			newShapeInfo[4] = oW;
+            shape::updateStrides(newShapeInfo, order);
+
+			return new ShapeList(newShapeInfo);
+		}	
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(pnormpool2d) {
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+			// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 
+			std::vector<int> argI = *(block.getIArguments());			
+			int kH = argI[1];
+			int kW = argI[2];
+			int sH = argI[3];
+			int sW = argI[4];
+			int pH = argI[5];
+			int pW = argI[6];
+			int dH = argI[7];
+			int dW = argI[8];
+			int iH = argI[9];
+			int iW = argI[10];
+			int bS = argI[11];
+			int iD = argI[12];
+			int isSameMode = argI[13];
+			char order = (block.getVariables().at(0)->getNDArray())->ordering();  // output order must be equal to input order
+
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			// allocate memory for new shape
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = bS;
+			newShapeInfo[2] = iD;
+			newShapeInfo[3] = oH;
+			newShapeInfo[4] = oW;
+            shape::updateStrides(newShapeInfo, order);
+
+			return new ShapeList(newShapeInfo);
+		}	
+			
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(pooling2d) {
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+			// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 
+			std::vector<int> argI = *(block.getIArguments());			
+			int kH = argI[1];
+			int kW = argI[2];
+			int sH = argI[3];
+			int sW = argI[4];
+			int pH = argI[5];
+			int pW = argI[6];
+			int dH = argI[7];
+			int dW = argI[8];
+			int iH = argI[9];
+			int iW = argI[10];
+			int bS = argI[11];
+			int iD = argI[12];
+			int isSameMode = argI[13];
+			char order = (block.getVariables().at(0)->getNDArray())->ordering();  // output order must be equal to input order
+
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			// allocate memory for new shape
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = bS;
+			newShapeInfo[2] = iD;
+			newShapeInfo[3] = oH;
+			newShapeInfo[4] = oW;
+            shape::updateStrides(newShapeInfo, order);
+
+			return new ShapeList(newShapeInfo);
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(maxpool2d_bp) {
+
+			// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 
+			std::vector<int> argI = *(block.getIArguments());			
+			int iH = argI[9];
+			int iW = argI[10];
+			int bS = argI[11];
+			int iD = argI[12];
+			// calculate output Height/Width
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = iD;
+			newShapeInfo[2] = bS;
+			newShapeInfo[3] = iH;
+			newShapeInfo[4] = iW;
+            shape::updateStrides(newShapeInfo, 'c');
+			int dimensions[] = {1, 0, 2, 3};
+			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
+			return new ShapeList(newShapeInfo);
+		}	
+		
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(avgpool2d_bp) {
+
+			// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 
+			std::vector<int> argI = *(block.getIArguments());			
+			int iH = argI[9];
+			int iW = argI[10];
+			int bS = argI[11];
+			int iD = argI[12];
+			// calculate output Height/Width
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = iD;
+			newShapeInfo[2] = bS;
+			newShapeInfo[3] = iH;
+			newShapeInfo[4] = iW;
+            shape::updateStrides(newShapeInfo, 'c');
+			int dimensions[] = {1, 0, 2, 3};
+			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
+			return new ShapeList(newShapeInfo);
+		}	
+
+
+
+
     }
 }
 

@@ -248,6 +248,40 @@ TEST_F(NDArrayTest, TestAddiRowVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestAddiColumnVector) {
+    float arr1[] = {1, 2, 3, 4};
+    float arr2[] = {5, 6};
+	float arr3[] = {6, 7, 9, 10};
+	int shape1[] = {2,2,2,2,1,0,1,99};
+	int shape2[] = {2,2,1,1,1,0,1,99};
+	NDArray<float> matrix(arr1, shape1);
+	NDArray<float> column(arr2, shape2);
+	NDArray<float> exp(arr3, shape1);
+	
+    matrix.addiColumnVector(&column);	
+	ASSERT_TRUE(exp.isSameShapeStrict(&matrix));		
+    ASSERT_TRUE(exp.equalsTo(&matrix));
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestMuliColumnVector) {
+    float arr1[] = {1, 2, 3, 4};
+    float arr2[] = {5, 6};
+	float arr3[] = {5, 10, 18, 24};
+	int shape1[] = {2,2,2,2,1,0,1,99};
+	int shape2[] = {2,2,1,1,1,0,1,99};
+	NDArray<float> matrix(arr1, shape1);
+	NDArray<float> column(arr2, shape2);
+	NDArray<float> exp(arr3, shape1);
+	
+    matrix.muliColumnVector(&column);
+
+	ASSERT_TRUE(exp.isSameShapeStrict(&matrix));	
+    ASSERT_TRUE(exp.equalsTo(&matrix));
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test3D_1) {
     auto arrayC = new NDArray<double>('c', {2, 5, 10});
     auto arrayF = new NDArray<double>('f', {2, 5, 10});
