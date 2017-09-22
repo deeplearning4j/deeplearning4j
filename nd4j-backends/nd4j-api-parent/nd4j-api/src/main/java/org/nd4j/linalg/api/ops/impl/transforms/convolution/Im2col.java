@@ -58,7 +58,7 @@ public class Im2col extends BaseTransformOp {
 
     @Override
     public Object[] extraArgs() {
-        return new Object[] {kw, kh, sx, sy, pw, ph, dw, dh, isSameMode ? 1.0 : 0.0};
+        return new Object[] {kh, kw, sy, sx, ph, pw, dh, dw, isSameMode ? 1.0 : 0.0};
     }
 
     private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,

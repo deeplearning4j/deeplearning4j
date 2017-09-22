@@ -71,7 +71,7 @@ public class Pooling2D extends BaseTransformOp {
 
     @Override
     public Object[] extraArgs() {
-        return new Object[] {kw, kh, sx, sy, pw, ph, dw, dh, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
+        return new Object[] {kh, kw, sy, sx, ph, pw, dh, dw, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
     }
 
     private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
