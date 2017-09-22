@@ -168,8 +168,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         //For RNN: need to sum up the score over each time step before returning.
+        setInput(layerInput);
+        setLabels(labels);
 
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
@@ -191,22 +193,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             summedScores.addi(l1l2);
         }
 
+        clear();
         return summedScores;
     }
-
-//    @Override
-//    protected void applyMask(INDArray to) {
-//        if (labelMask == null) {
-//            return;
-//        }
-//        if(labelMask.rank() == 2){
-//            //Per time step masking
-//            Broadcast.mul(to, labelMask, to, 0, 2);
-//        } else {
-//            //Per output masking
-//            to.muli(labelMask);
-//        }
-//    }
 
     protected void applyLabelMask(INDArray to){
         if(labelMask == null){

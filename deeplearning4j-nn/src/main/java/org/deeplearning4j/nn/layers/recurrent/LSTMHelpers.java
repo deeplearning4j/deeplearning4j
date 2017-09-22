@@ -81,8 +81,8 @@ public class LSTMHelpers {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
         //Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
-        if (input == null || input.length() == 0)
-            throw new IllegalArgumentException("Invalid input: not set or 0 length");
+        if (input == null )
+            throw new IllegalArgumentException("Invalid input: not set (null)");
 
         INDArray inputWeights = originalInputWeights;
         INDArray prevOutputActivations = originalPrevOutputActivations;

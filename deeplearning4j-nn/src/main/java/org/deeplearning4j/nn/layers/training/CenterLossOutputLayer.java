@@ -61,7 +61,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
+        setInput(layerInput);
+        setLabels(labels);
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray input = this.input.get(0);
@@ -75,7 +77,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray centersForExamples = this.labels.mmul(centers);
 
         //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), this.input.getMask(0), false);
         INDArray norm2DifferenceSquared = input.sub(centersForExamples).norm2(1);
@@ -102,6 +104,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         this.score = score;
 
+        clear();
         return score;
     }
 
@@ -112,7 +115,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
+        setInput(layerInput);
+        setLabels(labels);
+
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray input = this.input.get(0);
@@ -120,7 +126,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray centersForExamples = this.labels.mmul(centers);
         INDArray intraClassScoreArray = input.sub(centersForExamples);
 
         // calculate the inter-class score component

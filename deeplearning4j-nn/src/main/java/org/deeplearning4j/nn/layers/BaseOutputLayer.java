@@ -85,16 +85,18 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(Activations input, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || input.anyActivationsNull() || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
+        setInput(input);
+        this.labels = labels.get(0);
+        this.labelMask = labels.getMask(0);
         INDArray preOut = preOutput2d(training);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
         double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), getLabelsMask2d(),
                         false);
         score += fullNetworkL1 + fullNetworkL2;
@@ -112,9 +114,13 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations input, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         if (input == null || input.anyActivationsNull() || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId()
+                    + (input == null ? " - input null" : "" ) + (labels == null ? " - labels null" : ""));
+        setInput(input);
+        this.labels = labels.get(0);
+        this.labelMask = labels.getMask(0);
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
@@ -129,6 +135,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Gradients backpropGradient(Gradients epsilons) {
+        if(input == null || input.anyActivationsNull()){
+            throw new IllegalStateException("Cannot compute backprop gradient: input is null/not set");
+        }
 
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.get(0);
@@ -210,6 +219,18 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void setLabels(INDArray labels, INDArray labelsMask) {
         this.labels = labels;
         this.labelMask = labelsMask;
+    }
+
+    @Override
+    public void setLabels(Activations labels){
+        if(labels == null){
+            setLabels(null, null);
+        } else {
+            if(labels.size() != 1){
+                throw new IllegalArgumentException("Cannot set labels: must be of size (# arrays) 1. Got labels size: " + labels.size());
+            }
+            setLabels(labels.get(0), labels.getMask(0));
+        }
     }
 
     protected INDArray preOutput2d(boolean training) {

@@ -542,7 +542,7 @@ public class ElementWiseVertexTest {
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
 
-        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.create(input1, input2), af.create(target));
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.createPair(input1, input2), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();

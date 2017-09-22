@@ -382,7 +382,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(Activations input, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
+        setInput(input);
+        setLabels(labels);
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
 
@@ -397,6 +399,18 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             throw new IllegalStateException("Label masks are not yet supported by Yolo2OutputLayer");
         }
         this.labels = labels;
+    }
+
+    @Override
+    public void setLabels(Activations labels){
+        if(labels == null){
+            setLabels(null, null);
+        } else {
+            if(labels.size() != 1){
+                throw new IllegalArgumentException("Cannot set labels: must be of size (# arrays) 1. Got labels size: " + labels.size());
+            }
+            setLabels(labels.get(0), labels.getMask(0));
+        }
     }
 
     @Override
@@ -550,7 +564,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

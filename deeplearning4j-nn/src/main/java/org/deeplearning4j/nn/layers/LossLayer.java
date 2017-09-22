@@ -55,8 +55,7 @@ import java.util.List;
  *
  * @author Justin Long (crockpotveggies)
  */
-public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer>
-                implements Serializable, IOutputLayer {
+public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer> implements IOutputLayer {
 
     //current input and label matrices
     protected INDArray labels;
@@ -87,7 +86,10 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
+        setInput(layerInput);
+        setLabels(labels);
+
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
@@ -105,6 +107,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
         this.score = score;
 
+        clear();
         return score;
     }
 
@@ -115,7 +118,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray input = this.input.get(0);
@@ -128,6 +131,9 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
+
+        setInput(layerInput);
+        setLabels(labels);
         return scoreArray;
     }
 
@@ -234,6 +240,18 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public void setLabels(INDArray labels, INDArray labelMask) {
         this.labels = labels;
         this.labelMask = labelMask;
+    }
+
+    @Override
+    public void setLabels(Activations labels){
+        if(labels == null){
+            setLabels(null, null);
+        } else {
+            if(labels.size() != 1){
+                throw new IllegalArgumentException("Cannot set labels: must be of size (# arrays) 1. Got labels size: " + labels.size());
+            }
+            setLabels(labels.get(0), labels.getMask(0));
+        }
     }
 
     protected INDArray getLabels2d() {

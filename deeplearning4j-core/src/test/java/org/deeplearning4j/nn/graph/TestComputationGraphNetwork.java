@@ -158,9 +158,9 @@ public class TestComputationGraphNetwork {
         List<INDArray> mlnAct = net.feedForward(ds.getFeatures(), false);
         activations = graph.feedForward(af.create(ds.getFeatures()), false);
 
-        assertEquals(mlnAct.get(0), activations.get("input"));
-        assertEquals(mlnAct.get(1), activations.get("firstLayer"));
-        assertEquals(mlnAct.get(2), activations.get("outputLayer"));
+        assertEquals(mlnAct.get(0), activations.get("input").get(0));
+        assertEquals(mlnAct.get(1), activations.get("firstLayer").get(0));
+        assertEquals(mlnAct.get(2), activations.get("outputLayer").get(0));
     }
 
     @Test
@@ -644,12 +644,15 @@ public class TestComputationGraphNetwork {
         Pair<Gradients,Double> p = s.computeGradientAndScore(af.create(inData), af.create(outData));
         Gradient sGrad = p.getFirst().getParameterGradients();
 
+        Map<String,Activations> activations = s.feedForward(af.create(inData));
         org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
+        ol.setInput(activations.get("l0"));
+        ol.setLabels(af.create(outData));
         Gradients olPairStd = ol.backpropGradient(null);
 
         INDArray olEpsilon = olPairStd.get(0);
 
-        e.feedForward(inData, true);
+        e.feedForward(inData, true, false);
         Gradients extErrorGrad = e.backpropGradient(gf.create(olEpsilon));
 
 
