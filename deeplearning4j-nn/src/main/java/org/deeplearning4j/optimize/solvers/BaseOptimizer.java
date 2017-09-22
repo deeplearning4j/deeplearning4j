@@ -24,6 +24,8 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -122,12 +124,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public double score() {
-        model.computeGradientAndScore();
-        return model.score();
-    }
-
-    @Override
     public Updater getUpdater() {
         if (updater == null) {
             updater = UpdaterCreator.getUpdater(model);
@@ -171,22 +167,23 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         oldScore = score;
-        model.computeGradientAndScore();
+        Activations input = model.getInput();
+        Activations labels = model.getLabels();
+        Pair<Gradients, Double> pair = model.computeGradientAndScore(input, labels);
 
         if (iterationListeners != null && iterationListeners.size() > 0) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener l : iterationListeners) {
                     if (l instanceof TrainingListener) {
-                        ((TrainingListener) l).onGradientCalculation(model);
+                        ((TrainingListener) l).onGradientCalculation(model, pair.getFirst());
                     }
                 }
             }
         }
 
-        Pair<Gradient, Double> pair = model.gradientAndScore();
         score = pair.getSecond();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.getInputMiniBatchSize());
-        return pair;
+        updateGradientAccordingToParams(pair.getFirst().getParameterGradients(), model, model.getInputMiniBatchSize());
+        return new Pair<>(pair.getFirst().getParameterGradients(), score);
     }
 
     /**

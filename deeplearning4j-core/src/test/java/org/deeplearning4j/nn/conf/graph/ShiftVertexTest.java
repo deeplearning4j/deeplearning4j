@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
@@ -31,6 +33,9 @@ import static org.deeplearning4j.TestUtils.nullsafe;
  */
 
 public class ShiftVertexTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testShiftVertexNumParamsTrue() {
         /*
@@ -138,12 +143,11 @@ public class ShiftVertexTest {
                         .setOutputs("output").backprop(true).build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
-        cg.setInput(0, input);
-        cg.setLabel(0, target);
-        cg.computeGradientAndScore();
+
+        Pair<Gradients,Double> p = cg.computeGradientAndScore(af.create(input), af.create(target));
         double score_dl4j = cg.score();
         Map<String, INDArray> weights = cg.paramTable();
-        Gradient g = cg.gradient();
+        Gradient g = p.getFirst().getParameterGradients();
         Map<String, INDArray> gradients = g.gradientForVariable();
         Map<String, INDArray> manual_gradients = new TreeMap<String, INDArray>();
 

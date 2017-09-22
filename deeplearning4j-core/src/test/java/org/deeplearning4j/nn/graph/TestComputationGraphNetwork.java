@@ -185,24 +185,16 @@ public class TestComputationGraphNetwork {
 
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
-        graph.setInput(0, input.dup());
-        graph.setLabel(0, labels.dup());
-
-        net.setInput(input.dup());
-        net.setLabels(labels.dup());
 
         //Compute gradients
-        net.computeGradientAndScore();
-        Pair<Gradient, Double> netGradScore = net.gradientAndScore();
-
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> graphGradScore = graph.gradientAndScore();
+        Pair<Gradients, Double> netGradScore = net.computeGradientAndScore(af.create(input.dup()), af.create(labels.dup()));
+        Pair<Gradients, Double> graphGradScore = graph.computeGradientAndScore(af.create(input.dup()), af.create(labels.dup()));
 
         assertEquals(netGradScore.getSecond(), graphGradScore.getSecond(), 1e-3);
 
         //Compare gradients
-        Gradient netGrad = netGradScore.getFirst();
-        Gradient graphGrad = graphGradScore.getFirst();
+        Gradient netGrad = netGradScore.getFirst().getParameterGradients();
+        Gradient graphGrad = graphGradScore.getFirst().getParameterGradients();
 
         assertNotNull(graphGrad);
         assertEquals(netGrad.gradientForVariable().size(), graphGrad.gradientForVariable().size());
@@ -649,10 +641,8 @@ public class TestComputationGraphNetwork {
         ComputationGraph e = new ComputationGraph(external);
         e.init();
 
-        s.setInputs(inData);
-        s.setLabels(outData);
-        s.computeGradientAndScore();
-        Gradient sGrad = s.gradient();
+        Pair<Gradients,Double> p = s.computeGradientAndScore(af.create(inData), af.create(outData));
+        Gradient sGrad = p.getFirst().getParameterGradients();
 
         org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
         Gradients olPairStd = ol.backpropGradient(null);
@@ -1040,10 +1030,7 @@ public class TestComputationGraphNetwork {
         INDArray f = Nd4j.create(1, 10);
         INDArray l = Nd4j.create(1, 10);
 
-        cg.setInputs(f);
-        cg.setLabels(l);
-
-        cg.computeGradientAndScore();
+        cg.computeGradientAndScore(af.create(f), af.create(l));
     }
 
 

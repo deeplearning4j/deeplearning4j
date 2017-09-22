@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -20,6 +21,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 import java.util.List;
@@ -76,18 +78,13 @@ public class TestVariableLengthTS {
                 labelMask.putScalar(new int[] {j, 4}, 0);
             }
 
-
-            net.setInput(in1);
-            net.setLabels(labels1);
-            net.computeGradientAndScore();
+            Pair<Gradients,Double> p = net.computeGradientAndScore(af.create(in1), af.create(labels1));
             double score1 = net.score();
-            Gradient g1 = net.gradient();
+            Gradient g1 = p.getFirst().getParameterGradients();
 
-            net.setInput(in2);
-            net.setLabels(labels2, labelMask);
-            net.computeGradientAndScore();
+            p = net.computeGradientAndScore(af.create(in2), af.create(labels2, labelMask));
             double score2 = net.score();
-            Gradient g2 = net.gradient();
+            Gradient g2 = p.getFirst().getParameterGradients();
 
             //Scores and gradients should be identical for two cases (given mask array)
             assertEquals(score1, score2, 1e-6);
@@ -108,10 +105,9 @@ public class TestVariableLengthTS {
                     double d = r.nextDouble();
                     labels2.putScalar(new int[] {i, j, 4}, d);
                 }
-                net.setLabels(labels2);
-                net.computeGradientAndScore();
+                p = net.computeGradientAndScore(af.create(in2), af.create(labels2, labelMask));
                 double score2a = net.score();
-                Gradient g2a = net.gradient();
+                Gradient g2a = p.getFirst().getParameterGradients();
                 assertEquals(score2, score2a, 1e-6);
                 for (String s : g2map.keySet()) {
                     INDArray g2s = g2map.get(s);
@@ -166,22 +162,17 @@ public class TestVariableLengthTS {
                 inputMask.putScalar(new int[] {j, 4}, 0);
             }
 
-
-            net.setInput(in1);
-            net.setLabels(labels1);
-            net.computeGradientAndScore();
+            Pair<Gradients,Double> p = net.computeGradientAndScore(af.create(in1), af.create(labels1));
             double score1 = net.score();
-            Gradient g1 = net.gradient();
+            Gradient g1 = p.getFirst().getParameterGradients();
             Map<String, INDArray> map1 = g1.gradientForVariable();
             for (String s : map1.keySet()) {
                 map1.put(s, map1.get(s).dup()); //Note: gradients are a view normally -> second computeGradientAndScore would have modified the original gradient map values...
             }
 
-            net.setInput(af.create(in2, inputMask));
-            net.setLabels(labels2);
-            net.computeGradientAndScore();
+            p = net.computeGradientAndScore(af.create(in2, inputMask), af.create(labels2));
             double score2 = net.score();
-            Gradient g2 = net.gradient();
+            Gradient g2 = p.getFirst().getParameterGradients();
             List<INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
@@ -206,10 +197,9 @@ public class TestVariableLengthTS {
                 for (int k = 0; k < nIn; k++) {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
-                net.setInput(in2);
-                net.computeGradientAndScore();
+                p = net.computeGradientAndScore(af.create(in2), af.create(labels2));
                 double score2a = net.score();
-                Gradient g2a = net.gradient();
+                Gradient g2a = p.getFirst().getParameterGradients();
                 assertEquals(score2, score2a, 1e-12);
                 for (String s : g2.gradientForVariable().keySet()) {
                     assertEquals(g2.getGradientFor(s), g2a.getGradientFor(s));
@@ -290,10 +280,7 @@ public class TestVariableLengthTS {
                         //MSE loss function: 1/n * sum(squaredErrors)... but sum(squaredErrors) = n * (1-0) here -> sum(squaredErrors)
                         double expScore = (tsLength - nToMask); //Sum over minibatches, then divide by minibatch size
 
-                        mln.setInput(input);
-                        mln.setLabels(labels, labelMaskArray);
-
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(input), af.create(labels, labelMaskArray));
                         double score = mln.score();
 
                         assertEquals(msg, expScore, score, 0.1);

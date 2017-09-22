@@ -150,7 +150,7 @@ public class ParamAndGradientIterationListener implements IterationListener {
             return; //No op this iteration
 
         Map<String, INDArray> params = model.paramTable();
-        Map<String, INDArray> grads = model.gradient().gradientForVariable();
+        Map<String, INDArray> grads = null; //model.gradient().gradientForVariable();       //TODO
 
         StringBuilder sb = new StringBuilder();
         sb.append(totalIterationCount);
@@ -219,5 +219,6 @@ public class ParamAndGradientIterationListener implements IterationListener {
             }
         }
 
+        throw new UnsupportedOperationException("Not yet re-implemented");
     }
 }

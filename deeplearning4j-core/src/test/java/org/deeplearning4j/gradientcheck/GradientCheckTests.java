@@ -87,13 +87,11 @@ public class GradientCheckTests {
 
                     if (doLearningFirst) {
                         //Run a number of iterations of learning
-                        mln.setInput(ds.getFeatures());
-                        mln.setLabels(ds.getLabels());
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(ds);
                         double scoreBefore = mln.score();
                         for (int j = 0; j < 10; j++)
                             mln.fit(ds);
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(ds);
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
@@ -181,13 +179,11 @@ public class GradientCheckTests {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
@@ -308,13 +304,11 @@ public class GradientCheckTests {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
@@ -403,13 +397,11 @@ public class GradientCheckTests {
                         String msg;
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="

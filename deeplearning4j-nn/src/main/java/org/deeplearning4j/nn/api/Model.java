@@ -25,6 +25,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -42,6 +43,8 @@ public interface Model extends Layer {
      * Init the model
      */
     void init();
+
+    Activations getLabels();
 
 
     /**
@@ -75,6 +78,10 @@ public interface Model extends Layer {
      */
     double score();
 
+
+    Pair<Gradients, Double> computeGradientAndScore(DataSet dataSet);
+
+    Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet);
 
     /**
      * Update the score

@@ -456,12 +456,9 @@ public class BatchNormalizationTest {
         DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
 
         DataSet ds = iter.next();
-        net.setInput(ds.getFeatures());
-        net.setLabels(ds.getLabels());
+        Pair<Gradients,Double> p = net.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
 
-        net.computeGradientAndScore();
-
-        Gradient g = net.gradient();
+        Gradient g = p.getFirst().getParameterGradients();
         Map<String, INDArray> map = g.gradientForVariable();
 
         for (String s : map.keySet()) {

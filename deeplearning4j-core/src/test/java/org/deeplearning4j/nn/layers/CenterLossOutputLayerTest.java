@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -54,6 +55,8 @@ import static org.junit.Assert.assertNotEquals;
  * @author Justin Long (@crockpotveggies)
  */
 public class CenterLossOutputLayerTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     private ComputationGraph getGraph(int numLabels, double lambda) {
         Nd4j.getRandom().setSeed(12345);
@@ -125,9 +128,7 @@ public class CenterLossOutputLayerTest {
 
         for (int i = 0; i < lambdas.length; i++) {
             graph = getGraph(numClasses, lambdas[i]);
-            graph.setInput(0, input);
-            graph.setLabel(0, labels);
-            graph.computeGradientAndScore();
+            graph.computeGradientAndScore(af.create(input), af.create(labels));
             results[i] = graph.score();
         }
 

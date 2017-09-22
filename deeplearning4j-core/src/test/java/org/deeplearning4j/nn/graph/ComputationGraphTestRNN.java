@@ -4,6 +4,8 @@ import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,6 +38,8 @@ import static org.deeplearning4j.TestUtils.assertAllNull;
 import static org.junit.Assert.*;
 
 public class ComputationGraphTestRNN {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testRnnTimeStepGravesLSTM() {
@@ -367,19 +371,11 @@ public class ComputationGraphTestRNN {
         INDArray inputData = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         INDArray labels = Nd4j.rand(new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-        graph.setInput(0, inputData);
-        graph.setLabel(0, labels);
+        Pair<Gradients, Double> graphPair = graph.computeGradientAndScore(af.create(inputData), af.create(labels));
+        Pair<Gradients, Double> graphTbpttPair = graphTBPTT.computeGradientAndScore(af.create(inputData), af.create(labels));
 
-        graphTBPTT.setInput(0, inputData);
-        graphTBPTT.setLabel(0, labels);
-
-        graph.computeGradientAndScore();
-        graphTBPTT.computeGradientAndScore();
-
-        Pair<Gradient, Double> graphPair = graph.gradientAndScore();
-        Pair<Gradient, Double> graphTbpttPair = graphTBPTT.gradientAndScore();
-
-        assertEquals(graphPair.getFirst().gradientForVariable(), graphTbpttPair.getFirst().gradientForVariable());
+        assertEquals(graphPair.getFirst().getParameterGradients().gradientForVariable(),
+                graphTbpttPair.getFirst().getParameterGradients().gradientForVariable());
         assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond());
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be

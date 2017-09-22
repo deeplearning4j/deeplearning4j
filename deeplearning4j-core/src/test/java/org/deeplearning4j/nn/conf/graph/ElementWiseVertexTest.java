@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
@@ -31,6 +33,9 @@ import static org.deeplearning4j.TestUtils.nullsafe;
  */
 
 public class ElementWiseVertexTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testElementWiseVertexNumParams() {
         /*
@@ -200,10 +205,8 @@ public class ElementWiseVertexTest {
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray input3 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
-        cg.setInputs(input1, input2, input3);
-        cg.setLabels(target);
 
-        cg.computeGradientAndScore();
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.createTriple(input1, input2, input3), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();
@@ -239,12 +242,10 @@ public class ElementWiseVertexTest {
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
-        Pair<Gradient, Double> pgd = cg.gradientAndScore();
-
         double score = pgd.getSecond();
         Assert.assertEquals(score, mse(output, target), this.epsilon);
 
-        Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
+        Map<String, INDArray> gradients = pgd.getFirst().getParameterGradients().gradientForVariable();
         /*
          * So. Let's say we have inputs a, b, c
          * mh = a W1 + b1
@@ -375,10 +376,8 @@ public class ElementWiseVertexTest {
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray input3 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
-        cg.setInputs(input1, input2, input3);
-        cg.setLabels(target);
 
-        cg.computeGradientAndScore();
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.createTriple(input1, input2, input3), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();
@@ -414,12 +413,10 @@ public class ElementWiseVertexTest {
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
-        Pair<Gradient, Double> pgd = cg.gradientAndScore();
-
         double score = pgd.getSecond();
         Assert.assertEquals(score, mse(output, target), this.epsilon);
 
-        Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
+        Map<String, INDArray> gradients = pgd.getFirst().getParameterGradients().gradientForVariable();
         /*
          * So. Let's say we have inputs a, b, c
          * mh = a W1 + b1
@@ -544,10 +541,8 @@ public class ElementWiseVertexTest {
         INDArray input1 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
-        cg.setInputs(input1, input2);
-        cg.setLabels(target);
 
-        cg.computeGradientAndScore();
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.create(input1, input2), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();
@@ -578,12 +573,10 @@ public class ElementWiseVertexTest {
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
-        Pair<Gradient, Double> pgd = cg.gradientAndScore();
-
         double score = pgd.getSecond();
         Assert.assertEquals(score, mse(output, target), this.epsilon);
 
-        Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
+        Map<String, INDArray> gradients = pgd.getFirst().getParameterGradients().gradientForVariable();
         /*
          * So. Let's say we have inputs a, b, c
          * mh = a W1 + b1

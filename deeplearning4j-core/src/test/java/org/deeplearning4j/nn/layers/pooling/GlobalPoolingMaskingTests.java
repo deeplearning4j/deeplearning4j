@@ -143,11 +143,8 @@ public class GlobalPoolingMaskingTests {
             assertEquals(outSubset, outMaskedSubset);
 
             //Finally: check gradient calc for exceptions
-            net.setInput(af.create(inToBeMasked, maskArray));
             INDArray labels = Nd4j.create(new double[] {0, 1});
-            net.setLabels(labels);
-
-            net.computeGradientAndScore();
+            net.computeGradientAndScore(af.create(inToBeMasked, maskArray), af.create(labels));
         }
     }
 
@@ -202,11 +199,8 @@ public class GlobalPoolingMaskingTests {
             assertEquals(outSubset, outMaskedSubset);
 
             //Finally: check gradient calc for exceptions
-            net.setInput(ActivationsFactory.getInstance().create(inToBeMasked, maskArray));
             INDArray labels = Nd4j.create(new double[] {0, 1});
-            net.setLabels(labels);
-
-            net.computeGradientAndScore();
+            net.computeGradientAndScore(af.create(inToBeMasked, maskArray), af.create(labels));
         }
     }
 

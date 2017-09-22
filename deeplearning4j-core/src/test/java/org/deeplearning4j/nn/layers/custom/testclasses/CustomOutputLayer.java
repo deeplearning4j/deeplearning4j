@@ -53,7 +53,6 @@ public class CustomOutputLayer extends BaseOutputLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
         CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.api.activations;
 
 import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -142,6 +144,19 @@ public class ActivationsFactory {
         return new ActivationsTuple(activations, maskArrays, maskStates);
     }
 
+    public Activations create(INDArray[] activations, INDArray[] maskArrays){
+        MaskState[] ms = null;
+        if(maskArrays != null){
+            ms = new MaskState[maskArrays.length];
+            for( int i=0; i<maskArrays.length; i++ ){
+                if(maskArrays[i] != null){
+                    ms[i] = MaskState.Active;
+                }
+            }
+        }
+        return create(activations, maskArrays, ms);
+    }
+
     private Activations setValues(Activations to, int idx, INDArray a, INDArray m, MaskState ms){
         to.set(idx, a);
         to.setMask(idx, m);
@@ -218,5 +233,21 @@ public class ActivationsFactory {
             out.put(e.getKey(), ActivationsFactory.getInstance().create(e.getValue()));
         }
         return out;
+    }
+
+    public Activations featuresAsActivations(DataSet dataSet){
+        return create(dataSet.getFeatures(), dataSet.getFeaturesMaskArray());
+    }
+
+    public Activations labelsAsActivations(DataSet dataSet){
+        return create(dataSet.getLabels(), dataSet.getLabelsMaskArray());
+    }
+
+    public Activations featuresAsActivations(MultiDataSet dataSet){
+        return create(dataSet.getFeatures(), dataSet.getFeaturesMaskArrays());
+    }
+
+    public Activations labelsAsActivations(MultiDataSet dataSet){
+        return create(dataSet.getLabels(), dataSet.getLabelsMaskArrays());
     }
 }

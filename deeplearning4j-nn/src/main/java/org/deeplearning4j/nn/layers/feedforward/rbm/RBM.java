@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -86,38 +87,34 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
     protected INDArray sigma, hiddenSigma;
 
 
-    /**
-     * Contrastive divergence revolves around the idea
-     * of approximating the log likelihood around x1(input) with repeated sampling.
-     * Given is an energy based model: the higher k is (the more we sample the model)
-     * the more we lower the energy (increase the likelihood of the model)
-     * <p>
-     * and lower the likelihood (increase the energy) of the hidden samples.
-     * <p>
-     * Other insights:
-     * CD - k involves keeping the first k samples of a gibbs sampling of the model.
-     * @deprecated No longer used; use fit methods in MultiLayerNetwork
-     */
-    @Deprecated
-    public void contrastiveDivergence() {
-        Gradient gradient = gradient();
-        getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)
-                        .subi(gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
-        getParam(PretrainParamInitializer.BIAS_KEY)
-                        .subi(gradient.gradientForVariable().get(PretrainParamInitializer.BIAS_KEY));
-        getParam(PretrainParamInitializer.WEIGHT_KEY)
-                        .subi(gradient.gradientForVariable().get(PretrainParamInitializer.WEIGHT_KEY));
+    @Override
+    public Activations getLabels() {
+        return null;    //No labels for pretrain layers
     }
 
+    @Override
+    public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
 
     @Override
-    public void computeGradientAndScore() {
-        INDArray input = this.input.get(0);
+    public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
+
+    @Override
+    public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        setInput(input);
+        applyPreprocessorIfNecessary(true);
         int k = layerConf().getK();
 
         //POSITIVE PHASE
         // hprob0, hstate0
-        Pair<INDArray, INDArray> probHidden = sampleHiddenGivenVisible(input);
+        Pair<INDArray, INDArray> probHidden = sampleHiddenGivenVisible(input.get(0));
 
         /*
          * Start the gibbs sampling.
@@ -167,7 +164,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         /*
          * Update gradient parameters - note taking mean based on batchsize is handled in LayerUpdater
          */
-        INDArray wGradient = input.transposei().mmul(probHidden.getFirst()).subi(negVProb.transpose().mmul(negHProb));
+        INDArray wGradient = input.get(0).transposei().mmul(probHidden.getFirst()).subi(negVProb.transpose().mmul(negHProb));
 
         INDArray hBiasGradient;
 
@@ -179,7 +176,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             hBiasGradient = probHidden.getFirst().sub(negHProb).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray delta = input.sub(negVProb);
+        INDArray delta = input.get(0).sub(negVProb);
         INDArray vBiasGradient = delta.sum(0);
 
         if (conf.isPretrain()) {
@@ -188,15 +185,18 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             vBiasGradient.negi();
         }
 
-        gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
+        Gradient gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
 
         setScoreWithZ(negVSamples); // this is compared to input on
 
+        Pair<Gradients,Double> p = new Pair<>(GradientsFactory.getInstance().create(gradient, null), score);
         if (trainingListeners != null && trainingListeners.size() > 0) {
             for (TrainingListener tl : trainingListeners) {
-                tl.onBackwardPass(this);
+                tl.onBackwardPass(this, p.getFirst());
             }
         }
+
+        return p;
     }
 
     @Override

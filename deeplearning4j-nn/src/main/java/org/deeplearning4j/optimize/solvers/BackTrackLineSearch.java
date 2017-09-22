@@ -140,7 +140,7 @@ public class BackTrackLineSearch implements LineOptimizer {
         }
 
         layer.setParams(parameters);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(layer.getInput(), layer.getLabels());
         return layer.score();
     }
 

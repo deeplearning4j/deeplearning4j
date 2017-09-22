@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class EmbeddingLayerTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testEmbeddingLayerConfig() {
@@ -140,19 +144,14 @@ public class EmbeddingLayerTest {
             outLabels.putScalar(new int[] {i, labelIdx}, 1.0);
         }
 
-        net.setInput(inEmbedding);
-        net2.setInput(inOneHot);
-        net.setLabels(outLabels);
-        net2.setLabels(outLabels);
-
-        net.computeGradientAndScore();
-        net2.computeGradientAndScore();
+        Pair<Gradients,Double> g1 = net.computeGradientAndScore(af.create(inEmbedding), af.create(outLabels));
+        Pair<Gradients,Double> g2 = net2.computeGradientAndScore(af.create(inOneHot), af.create(outLabels));
 
         System.out.println(net.score() + "\t" + net2.score());
         assertEquals(net2.score(), net.score(), 1e-6);
 
-        Map<String, INDArray> gradient = net.gradient().gradientForVariable();
-        Map<String, INDArray> gradient2 = net2.gradient().gradientForVariable();
+        Map<String, INDArray> gradient = g1.getFirst().getParameterGradients().gradientForVariable();
+        Map<String, INDArray> gradient2 = g2.getFirst().getParameterGradients().gradientForVariable();
         assertEquals(gradient.size(), gradient2.size());
 
         for (String s : gradient.keySet()) {
@@ -208,19 +207,14 @@ public class EmbeddingLayerTest {
             }
         }
 
-        net.setInput(inEmbedding);
-        net2.setInput(inOneHot);
-        net.setLabels(outLabels);
-        net2.setLabels(outLabels);
-
-        net.computeGradientAndScore();
-        net2.computeGradientAndScore();
+        Pair<Gradients,Double> g1 = net.computeGradientAndScore(af.create(inEmbedding), af.create(outLabels));
+        Pair<Gradients,Double> g2 = net2.computeGradientAndScore(af.create(inOneHot), af.create(outLabels));
 
         System.out.println(net.score() + "\t" + net2.score());
         assertEquals(net2.score(), net.score(), 1e-6);
 
-        Map<String, INDArray> gradient = net.gradient().gradientForVariable();
-        Map<String, INDArray> gradient2 = net2.gradient().gradientForVariable();
+        Map<String, INDArray> gradient = g1.getFirst().getParameterGradients().gradientForVariable();
+        Map<String, INDArray> gradient2 = g2.getFirst().getParameterGradients().gradientForVariable();
         assertEquals(gradient.size(), gradient2.size());
 
         for (String s : gradient.keySet()) {
@@ -315,17 +309,17 @@ public class EmbeddingLayerTest {
                 net2.setInput(aDense);
                 net.setLabels(labels);
                 net2.setLabels(labels);
-                net.computeGradientAndScore();
-                net2.computeGradientAndScore();
+                Pair<Gradients,Double> g1 = net.computeGradientAndScore(aEmbedding, af.create(labels));
+                Pair<Gradients,Double> g2 = net2.computeGradientAndScore(aDense, af.create(labels));
 
                 System.out.println(net.score() + "\t" + net2.score());
                 assertEquals(net2.score(), net.score(), 1e-5);
 
-                Map<String, INDArray> gradients = net.gradient().gradientForVariable();
-                Map<String, INDArray> gradients2 = net2.gradient().gradientForVariable();
-                assertEquals(gradients.keySet(), gradients2.keySet());
-                for (String s : gradients.keySet()) {
-                    assertEquals(gradients2.get(s), gradients.get(s));
+                Map<String, INDArray> gradient = g1.getFirst().getParameterGradients().gradientForVariable();
+                Map<String, INDArray> gradient2 = g2.getFirst().getParameterGradients().gradientForVariable();
+                assertEquals(gradient.keySet(), gradient2.keySet());
+                for (String s : gradient.keySet()) {
+                    assertEquals(gradient2.get(s), gradient.get(s));
                 }
             }
 

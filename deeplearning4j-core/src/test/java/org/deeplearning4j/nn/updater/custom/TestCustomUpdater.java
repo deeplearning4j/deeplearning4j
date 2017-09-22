@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.updater.custom;
 
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -20,6 +21,8 @@ import static org.junit.Assert.assertTrue;
  * Created by Alex on 09/05/2017.
  */
 public class TestCustomUpdater {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testCustomUpdater() {
@@ -84,8 +87,8 @@ public class TestCustomUpdater {
         net1.setLabels(labels);
         net2.setLabels(labels);
 
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();;
+        net1.computeGradientAndScore(af.create(in), af.create(labels));
+        net2.computeGradientAndScore(af.create(in), af.create(labels));
 
         assertEquals(net1.getFlattenedGradients(), net2.getFlattenedGradients());
     }

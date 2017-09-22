@@ -250,9 +250,6 @@ public class MultiLayerTest {
         net2.feedForward(x2.getFeatureMatrix());
         ((BaseOutputLayer) net1.getLayer(1)).setLabels(x1.getLabels(), null);
         ((BaseOutputLayer) net2.getLayer(1)).setLabels(x2.getLabels(), null);
-
-        net1.gradient();
-        net2.gradient();
     }
 
     /**
@@ -680,13 +677,15 @@ public class MultiLayerTest {
                                         .backprop(true).pretrain(false).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.fit(iter.next());
+        DataSet ds = iter.next();
+        Pair<Gradients,Double> p = net.computeGradientAndScore(ds);
+        net.fit(ds);
         // TODO validate actual layer gradientView - issue getting var out of BaseLayer w/o adding MLN getter that gets confused with local gradient vars
-        Gradient actualGradient = net.gradient;
+        Gradient actualGradient = p.getFirst().getParameterGradients();
         assertNotEquals(expectedGradient.getGradientFor("0_W"), actualGradient.getGradientFor("0_W"));
 
         net.update(expectedGradient);
-        actualGradient = net.gradient;
+        actualGradient = p.getFirst().getParameterGradients();
         assertEquals(expectedGradient.getGradientFor("0_W"), actualGradient.getGradientFor("0_W"));
 
         // Update params with set
@@ -872,13 +871,8 @@ public class MultiLayerTest {
 
         net2.setParams(net1.params().dup());
 
-        net1.setInput(features);
-        net1.setLabels(labels);
-        net2.setInput(features);
-        net2.setLabels(labels);
-
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();
+        Pair<Gradients,Double> p1 = net1.computeGradientAndScore(af.create(features), af.create(labels));
+        Pair<Gradients,Double> p2 = net2.computeGradientAndScore(af.create(features), af.create(labels));
 
         double l1 = net1.calcL1(true);
         double l2 = net1.calcL2(true);
@@ -904,8 +898,8 @@ public class MultiLayerTest {
         net2.setInput(features);
         net1.setLabels(labels);
         net2.setLabels(labels);
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();
+        p1 = net1.computeGradientAndScore(af.create(features), af.create(labels));
+        p2 = net2.computeGradientAndScore(af.create(features), af.create(labels));
 
         l1 = net1.calcL1(true);
         l2 = net1.calcL2(true);
@@ -993,10 +987,7 @@ public class MultiLayerTest {
         INDArray f = Nd4j.create(1, 10);
         INDArray l = Nd4j.create(1, 10);
 
-        net.setInput(f);
-        net.setLabels(l);
-
-        net.computeGradientAndScore();
+        net.computeGradientAndScore(af.create(f), af.create(l));
     }
 
 

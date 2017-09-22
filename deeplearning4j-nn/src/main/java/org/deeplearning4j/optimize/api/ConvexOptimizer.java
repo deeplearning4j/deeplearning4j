@@ -35,11 +35,6 @@ import java.util.Collection;
  * @author Adam Gibson
  */
 public interface ConvexOptimizer extends Serializable {
-    /**
-     * The score for the optimizer so far
-     * @return the score for this optimizer so far
-     */
-    double score();
 
     Updater getUpdater();
 

@@ -24,6 +24,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -79,8 +80,8 @@ public class RBMTests {
                         LossFunctions.LossFunction.SQUARED_LOSS, 1);
         //        INDArray expectedStepParams = Nd4j.create(new double[] {-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-        rbm.fit(ActivationsFactory.getInstance().create(features));
-        Gradient g = rbm.gradient();
+        Pair<Gradients,Double> p = rbm.computeGradientAndScore(ActivationsFactory.getInstance().create(features), null);
+        Gradient g = p.getFirst().getParameterGradients();
 
         List<INDArray> grList = new ArrayList();
         grList.add(g.getGradientFor("W"));
@@ -165,8 +166,7 @@ public class RBMTests {
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         INDArray rand2 = Nd4j.rand(new int[] {1, rbm.numParams()});
         rbm.setParams(rand2);
-        rbm.setInput(af.create(Nd4j.zeros(6)));
-        rbm.computeGradientAndScore();
+        rbm.computeGradientAndScore(af.create(Nd4j.zeros(6)), null);
         INDArray getParams = rbm.params();
         assertEquals(rand2, getParams);
     }
@@ -184,9 +184,9 @@ public class RBMTests {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
-        rbm.fit(af.create(input));
+        Pair<Gradients, Double> pair = rbm.computeGradientAndScore(af.create(input), null);
         double value = rbm.score();
-        Gradient grad2 = rbm.gradient();
+        Gradient grad2 = pair.getFirst().getParameterGradients();
         assertEquals(24, grad2.getGradientFor("W").length());
 
     }
@@ -224,10 +224,8 @@ public class RBMTests {
 
         RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
                         LossFunctions.LossFunction.MSE);
-        rbm.setInput(af.create(input));
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
-        rbm.computeGradientAndScore();
-        Pair<Gradient, Double> pair = rbm.gradientAndScore();
+        Pair<Gradients, Double> pair = rbm.computeGradientAndScore(af.create(input), null);
 
         INDArray hprob = sigmoid(input.mmul(rbm.getParam(PretrainParamInitializer.WEIGHT_KEY))
                         .addiRowVector(rbm.getParam(PretrainParamInitializer.BIAS_KEY)));

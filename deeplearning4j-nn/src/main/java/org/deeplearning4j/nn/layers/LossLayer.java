@@ -132,19 +132,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void computeGradientAndScore() {
-        if (input == null || labels == null)
-            return;
-        INDArray input = this.input.get(0);
-
-        INDArray preOut = input;
-        Gradients pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getParameterGradients();
-
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
-    }
-
-    @Override
     public Gradients backpropGradient(Gradients epsilon) {
         return getGradientsAndDelta(input.get(0));
     }

@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -34,6 +36,8 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class MultiLayerTestRNN {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testGravesLSTMInit() {
@@ -392,19 +396,11 @@ public class MultiLayerTestRNN {
         INDArray inputData = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         INDArray labels = Nd4j.rand(new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-        mln.setInput(inputData);
-        mln.setLabels(labels);
+        Pair<Gradients, Double> mlnPair = mln.computeGradientAndScore(af.create(inputData), af.create(labels));
+        Pair<Gradients, Double> tbpttPair = mlnTBPTT.computeGradientAndScore(af.create(inputData), af.create(labels));
 
-        mlnTBPTT.setInput(inputData);
-        mlnTBPTT.setLabels(labels);
-
-        mln.computeGradientAndScore();
-        mlnTBPTT.computeGradientAndScore();
-
-        Pair<Gradient, Double> mlnPair = mln.gradientAndScore();
-        Pair<Gradient, Double> tbpttPair = mlnTBPTT.gradientAndScore();
-
-        assertEquals(mlnPair.getFirst().gradientForVariable(), tbpttPair.getFirst().gradientForVariable());
+        assertEquals(mlnPair.getFirst().getParameterGradients().gradientForVariable(),
+                tbpttPair.getFirst().getParameterGradients().gradientForVariable());
         assertEquals(mlnPair.getSecond(), tbpttPair.getSecond());
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be

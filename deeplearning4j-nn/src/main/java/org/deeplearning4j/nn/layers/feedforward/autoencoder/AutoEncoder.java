@@ -30,6 +30,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -96,6 +97,25 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     @Override
     public Activations activate(boolean training) {
         return ActivationsFactory.getInstance().create(decode(encode(input.get(0), training)));
+    }
+
+    @Override
+    public Activations getLabels() {
+        return null;    //No labels for pretrain layers
+    }
+
+    @Override
+    public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
+
+    @Override
+    public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
     }
 
     @Override

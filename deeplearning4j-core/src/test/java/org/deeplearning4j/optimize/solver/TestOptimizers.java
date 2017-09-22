@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -198,7 +200,7 @@ public class TestOptimizers {
         org.nd4j.linalg.api.rng.distribution.Distribution dist =
                         new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
         Model m = new SphereFunctionModel(nDimensions, dist, conf);
-        m.computeGradientAndScore();
+        Pair<Gradients,Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
         double scoreBefore = m.score();
         assertTrue(!Double.isNaN(scoreBefore) && !Double.isInfinite(scoreBefore));
         if (PRINT_OPT_RESULTS) {
@@ -209,9 +211,9 @@ public class TestOptimizers {
 
         ConvexOptimizer opt = getOptimizer(oa, conf, m);
 
-        opt.setupSearchState(m.gradientAndScore());
+        opt.setupSearchState(new Pair<>(p.getFirst().getParameterGradients(), p.getSecond()));
         opt.optimize();
-        m.computeGradientAndScore();
+        m.computeGradientAndScore(m.getInput(), m.getLabels());
         double scoreAfter = m.score();
 
         assertTrue(!Double.isNaN(scoreAfter) && !Double.isInfinite(scoreAfter));
@@ -286,12 +288,12 @@ public class TestOptimizers {
 
             Model m = new SphereFunctionModel(100, dist, conf);
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.optimize();
-                m.computeGradientAndScore();
+                Pair<Gradients,Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -325,7 +327,7 @@ public class TestOptimizers {
 
 
         @Override
-        public void computeGradientAndScore() {
+        public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
             // Gradients: d(x^2)/dx = 2x
             INDArray gradient = parameters.mul(2);
             Gradient g = new DefaultGradient();
@@ -333,6 +335,8 @@ public class TestOptimizers {
             this.gradient = g;
             this.score = Nd4j.getBlasWrapper().dot(parameters, parameters); //sum_i x_i^2
             this.gradientView.assign(gradient);
+
+            return new Pair<>(GradientsFactory.getInstance().create(g), score);
         }
 
         @Override
@@ -391,8 +395,23 @@ public class TestOptimizers {
         }
 
         @Override
+        public Activations getLabels() {
+            return null;    //No labels
+        }
+
+        @Override
         public void setListeners(IterationListener... listeners) {
 
+        }
+
+        @Override
+        public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+            return null;
+        }
+
+        @Override
+        public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+            return null;
         }
 
         @Override
@@ -456,13 +475,13 @@ public class TestOptimizers {
             Model m = new RastriginFunctionModel(10, conf);
             int nParams = m.numParams();
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
                 opt.optimize();
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -507,7 +526,7 @@ public class TestOptimizers {
 
 
         @Override
-        public void computeGradientAndScore() {
+        public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
             //Gradient decomposes due to sum, so:
             //d(x^2 - 10*cos(2*Pi*x))/dx
             // = 2x + 20*pi*sin(2*Pi*x)
@@ -556,6 +575,8 @@ public class TestOptimizers {
 
             this.score = costFn;
             this.gradientView.assign(gradient);
+
+            return new Pair<>(GradientsFactory.getInstance().create(gradient), score);
         }
 
         @Override
@@ -615,8 +636,23 @@ public class TestOptimizers {
         }
 
         @Override
+        public Activations getLabels() {
+            return null;
+        }
+
+        @Override
         public void setListeners(IterationListener... listeners) {
 
+        }
+
+        @Override
+        public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+            return null;
+        }
+
+        @Override
+        public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+            return null;
         }
 
         @Override
@@ -675,12 +711,12 @@ public class TestOptimizers {
 
             Model m = new RosenbrockFunctionModel(100, conf);
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.optimize();
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i],
                                 !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
@@ -728,7 +764,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public void computeGradientAndScore() {
+        public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
             int nDims = parameters.length();
             INDArray gradient = Nd4j.zeros(nDims);
             double x0 = parameters.getDouble(0);
@@ -788,7 +824,7 @@ public class TestOptimizers {
                 this.score = score;
             }
 
-
+            return new Pair<>(GradientsFactory.getInstance().create(gradient), score);
         }
 
         @Override
@@ -847,8 +883,23 @@ public class TestOptimizers {
         }
 
         @Override
+        public Activations getLabels() {
+            return null;
+        }
+
+        @Override
         public void setListeners(IterationListener... listeners) {
 
+        }
+
+        @Override
+        public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+            return null;
+        }
+
+        @Override
+        public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+            return null;
         }
 
         @Override
@@ -952,11 +1003,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public Gradient gradient() {
-            return gradient;
-        }
-
-        @Override
         public double calcL2(boolean backpropParamsOnly) {
             return 0;
         }
@@ -967,7 +1013,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public void computeGradientAndScore() {
+        public Pair<Gradients,Double> computeGradientAndScore(Activations in, Activations labels) {
             throw new UnsupportedOperationException("Ensure you implement this function.");
         }
 
@@ -984,12 +1030,6 @@ public class TestOptimizers {
         @Override
         public void setParams(INDArray params) {
             this.parameters = params;
-        }
-
-        @Override
-        public Pair<Gradient, Double> gradientAndScore() {
-            computeGradientAndScore();
-            return new Pair<>(gradient(), score());
         }
 
         @Override

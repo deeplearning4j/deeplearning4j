@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -196,7 +197,7 @@ public class SleepyTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void onBackwardPass(Model model) {
+    public void onBackwardPass(Model model, Gradients g) {
         sleep(lastBP.get(), timerBP);
 
         if (lastBP.get() == null)
@@ -206,7 +207,7 @@ public class SleepyTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void onGradientCalculation(Model model) {
+    public void onGradientCalculation(Model model, Gradients g) {
         //
     }
 }

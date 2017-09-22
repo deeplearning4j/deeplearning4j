@@ -9,6 +9,7 @@ import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -252,11 +253,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onGradientCalculation(Model model) {
+    public void onGradientCalculation(Model model, Gradients gradients) {
         int iterCount = getModelInfo(model).iterCount;
         if (storeGradients() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
-            Gradient g = model.gradient();
+            Gradient g = gradients.getParameterGradients();
             gradientsPreUpdateMap.clear();
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
@@ -279,7 +280,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onBackwardPass(Model model) {
+    public void onBackwardPass(Model model, Gradients g) {
         //No op
     }
 

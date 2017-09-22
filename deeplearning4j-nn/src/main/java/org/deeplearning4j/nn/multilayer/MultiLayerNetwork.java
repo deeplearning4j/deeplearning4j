@@ -1067,13 +1067,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         incrementEpochCount();
     }
 
-    /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
-    protected void backprop() {
-        Gradients pair = calcBackpropGradients(null, true);
-        this.gradient = (pair == null ? null : pair.getParameterGradients());
-        this.epsilon = (pair == null ? null : pair.get(0));
-    }
-
     /** Calculate gradients and errors. Used in two places:
      * (a) backprop (for standard multi layer network learning)
      * (b) backpropGradient (layer method, for when MultiLayerNetwork is used as a layer)
@@ -1181,7 +1174,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             gradient.setGradientFor(triple.getFirst(), triple.getSecond(), triple.getThird());
         }
 
-//        return new Pair<>(gradient, currPair.getSecond());
         return GradientsFactory.getInstance().create(gradient, currGrad.getActivationGradAsArray());
     }
 
@@ -1290,18 +1282,18 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
-    protected void truncatedBPTTGradient() {
+    protected Gradients truncatedBPTTGradient() {
         synchronizeIterEpochCounts();
         if (flattenedGradients == null) {
             initGradientsView();
         }
         String multiGradientKey;
-        gradient = new DefaultGradient(flattenedGradients);
+        Gradient gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
 
         if (!(getOutputLayer() instanceof IOutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You cannot use backprop (truncated BPTT) without an output layer.");
-            return;
+            return null;
         }
 
         IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
@@ -1353,6 +1345,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         //Add gradients to Gradients, in correct order
         for (Pair<String, INDArray> pair : gradientList)
             gradient.setGradientFor(pair.getFirst(), pair.getSecond());
+
+        return GradientsFactory.getInstance().create(null, gradient);
     }
 
 
@@ -1716,8 +1710,27 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
+
+    @Override
+    public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
+
+    @Override
+    public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        setInput(input);
+        this.labels = labels.get(0);
+        this.labelsMask = labels.getMask(0);
+
         //Calculate activations (which are stored in each layer, and used in backprop)
+        Gradients g;
         if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
             List<Activations> activations = rnnActivateUsingStoredState(getInput(), true, true);
             if (trainingListeners.size() > 0) {
@@ -1725,7 +1738,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                     tl.onForwardPass(this, activations);
                 }
             }
-            truncatedBPTTGradient();
+            g = truncatedBPTTGradient();
         } else {
             synchronizeIterEpochCounts();
 
@@ -1741,9 +1754,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             }
             Activations actSecondLastLayer = activations.get(activations.size() - 1);
             getOutputLayer().setInput(actSecondLastLayer);
-            ((IOutputLayer)getOutputLayer()).setLabels(labels, labelsMask);
+            ((IOutputLayer)getOutputLayer()).setLabels(labels.get(0), labels.getMask(0));
             //Then: compute gradients
-            backprop();
+            g = calcBackpropGradients(null, true);
         }
 
         //Calculate score
@@ -1757,7 +1770,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         if (trainingListeners.size() > 0) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (TrainingListener tl : trainingListeners) {
-                    tl.onBackwardPass(this);
+                    tl.onBackwardPass(this, g);
                 }
             }
         }
@@ -1765,6 +1778,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         //Clear the post noise/dropconnect parameters on the output layer
         getOutputLayer().clearNoiseWeightParams();
         clear();
+
+        return new Pair<>(g, score);
     }
 
     /**
@@ -1846,8 +1861,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         return defaultConfiguration;
     }
 
-    public INDArray getLabels() {
-        return labels;
+    public Activations getLabels() {
+        if(labels == null){
+            return null;
+        }
+        return ActivationsFactory.getInstance().create(labels, labelsMask);
     }
 
 

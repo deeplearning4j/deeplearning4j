@@ -29,6 +29,7 @@ import static org.junit.Assert.*;
  * Created by nyghtowl on 9/1/15.
  */
 public class CNNGradientCheckTest {
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
@@ -78,15 +79,11 @@ public class CNNGradientCheckTest {
 
                     if (doLearningFirst) {
                         //Run a number of iterations of learning
-                        mln.setInput(ds.getFeatures());
-                        mln.setLabels(ds.getLabels());
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                         double scoreBefore = mln.score();
                         for (int j = 0; j < 10; j++)
                             mln.fit(ds);
-                        mln.setInput(ds.getFeatures());
-                        mln.setLabels(ds.getLabels());
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
@@ -168,13 +165,11 @@ public class CNNGradientCheckTest {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = testName

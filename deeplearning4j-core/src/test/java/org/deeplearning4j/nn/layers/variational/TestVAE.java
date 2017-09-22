@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.variational;
 
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -21,6 +22,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -161,9 +163,8 @@ public class TestVAE {
         Map<String, INDArray> layerParams = layer.paramTable();
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
-        layer.setInput(af.create(Nd4j.rand(3, 10)));
-        layer.computeGradientAndScore();;
-        Gradient g = layer.gradient();
+        Pair<Gradients,Double> pair = layer.computeGradientAndScore(af.create(Nd4j.rand(3, 10)), null);
+        Gradient g = pair.getFirst().getParameterGradients();
         Map<String, INDArray> grads = g.gradientForVariable();
 
         assertEquals(layerParams.size(), layerGradViews.size());

@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.rl;
 
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -18,6 +21,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -29,6 +33,9 @@ import static org.junit.Assert.assertNotEquals;
  * @author Alex Black
  */
 public class TestMultiModelGradientApplication {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     @Test
     public void testGradientApplyMultiLayerNetwork() {
@@ -69,24 +76,19 @@ public class TestMultiModelGradientApplication {
                 for (int i = 0; i < minibatch; i++) {
                     l.putScalar(i, i % nOut, 1.0);
                 }
-                net1GradCalc.setInput(f);
-                net1GradCalc.setLabels(l);
-
-                net2GradUpd.setInput(f);
-                net2GradUpd.setLabels(l);
 
                 //Calculate gradient in first net, update and apply it in the second
                 //Also: calculate gradient in the second net, just to be sure it isn't modified while doing updating on
                 // the other net's gradient
-                net1GradCalc.computeGradientAndScore();
-                net2GradUpd.computeGradientAndScore();
+                Pair<Gradients,Double> p1 = net1GradCalc.computeGradientAndScore(af.create(f), af.create(l));
+                Pair<Gradients,Double> p2 = net2GradUpd.computeGradientAndScore(af.create(f), af.create(l));
 
-                Gradient g = net1GradCalc.gradient();
+                Gradient g = p1.getFirst().getParameterGradients();
                 INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
-                INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup(); //But net 2 gradient should not be
+                INDArray net2GradBefore = p2.getFirst().getParameterGradients().gradient().dup(); //But net 2 gradient should not be
                 net2GradUpd.getUpdater().update(net2GradUpd, g, 0, 0, minibatch);
                 INDArray gAfter = g.gradient().dup();
-                INDArray net2GradAfter = net2GradUpd.gradient().gradient().dup();
+                INDArray net2GradAfter = p2.getFirst().getParameterGradients().gradient().dup();
 
                 assertNotEquals(gBefore, gAfter); //Net 1 gradient should be modified
                 assertEquals(net2GradBefore, net2GradAfter); //But net 2 gradient should not be
@@ -161,24 +163,19 @@ public class TestMultiModelGradientApplication {
                 for (int i = 0; i < minibatch; i++) {
                     l.putScalar(i, i % nOut, 1.0);
                 }
-                net1GradCalc.setInputs(f);
-                net1GradCalc.setLabels(l);
-
-                net2GradUpd.setInputs(f);
-                net2GradUpd.setLabels(l);
 
                 //Calculate gradient in first net, update and apply it in the second
                 //Also: calculate gradient in the second net, just to be sure it isn't modified while doing updating on
                 // the other net's gradient
-                net1GradCalc.computeGradientAndScore();
-                net2GradUpd.computeGradientAndScore();
+                Pair<Gradients,Double> p1 = net1GradCalc.computeGradientAndScore(af.create(f), af.create(l));
+                Pair<Gradients,Double> p2 = net2GradUpd.computeGradientAndScore(af.create(f), af.create(l));
 
-                Gradient g = net1GradCalc.gradient();
+                Gradient g = p1.getFirst().getParameterGradients();
                 INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
-                INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup(); //But net 2 gradient should not be
+                INDArray net2GradBefore = p2.getFirst().getParameterGradients().gradient().dup(); //But net 2 gradient should not be
                 net2GradUpd.getUpdater().update(g, 0, 0, minibatch);
                 INDArray gAfter = g.gradient().dup();
-                INDArray net2GradAfter = net2GradUpd.gradient().gradient().dup();
+                INDArray net2GradAfter = p1.getFirst().getParameterGradients().gradient().dup();
 
                 assertNotEquals(gBefore, gAfter); //Net 1 gradient should be modified
                 assertEquals(net2GradBefore, net2GradAfter); //But net 2 gradient should not be

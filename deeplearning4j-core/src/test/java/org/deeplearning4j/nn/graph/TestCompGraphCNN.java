@@ -4,6 +4,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -149,8 +150,7 @@ public class TestCompGraphCNN {
         graph.setLabel(0, labels.dup());
 
         //Compute gradients
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> graphGradScore = graph.gradientAndScore();
+        Pair<Gradients, Double> graphGradScore = graph.computeGradientAndScore(af.create(input.dup()), af.create(labels.dup()));
 
         // Check gradients
     }

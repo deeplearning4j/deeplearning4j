@@ -430,6 +430,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         init(null, false);
     }
 
+    @Override
+    public Activations getLabels() {
+        if(labels == null){
+            return null;
+        }
+        return ActivationsFactory.getInstance().create(labels, labelMaskArrays, null);
+    }
+
     /**
      * Initialize the ComputationGraph, optionally with an existing parameters array.
      * If an existing parameters array is specified, it will be used (and the values will not be modified) in the network;
@@ -1358,7 +1366,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
+    public Pair<Gradients, Double> computeGradientAndScore(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
+
+    @Override
+    public Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet) {
+        return computeGradientAndScore(
+                ActivationsFactory.getInstance().featuresAsActivations(dataSet),
+                ActivationsFactory.getInstance().labelsAsActivations(dataSet));
+    }
+
+    @Override
     public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        setInput(input);
+        this.labels = labels.getAsArray();
+        this.labelMaskArrays = labels.getMaskAsArray();
+
         synchronizeIterEpochCounts();
         //Calculate activations (which are stored in each layer, and used in backprop)
         Gradients g;
@@ -1408,7 +1434,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (trainingListeners.size() > 0) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (TrainingListener tl : trainingListeners) {
-                    tl.onBackwardPass(this);
+                    tl.onBackwardPass(this, g);
                 }
             }
         }
@@ -1418,7 +1444,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             getOutputLayer(i).clearNoiseWeightParams();
         }
 
-
+        clear();
+        return new Pair<>(g, score);
     }
 
     /**
