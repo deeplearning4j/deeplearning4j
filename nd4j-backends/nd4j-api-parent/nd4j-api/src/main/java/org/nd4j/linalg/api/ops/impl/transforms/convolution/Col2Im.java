@@ -41,7 +41,7 @@ public class Col2Im extends BaseTransformOp {
 
     @Override
     public Object[] extraArgs() {
-        return new Object[] {sx, sy, pw, ph, h, w, dw, dh, isSameMode ? 1.0 : 0.0};
+        return new Object[] {sy, sx, ph, pw, h, w, dh, dw, isSameMode ? 1.0 : 0.0};
     }
 
     @Override

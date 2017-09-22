@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import lombok.NonNull;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -3927,7 +3928,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray mean(INDArray result, int... dimension) {
+    public INDArray mean(@NonNull INDArray result, int... dimension) {
         return Nd4j.getExecutioner().exec(new Mean(this, null, result), dimension);
     }
 
@@ -4028,7 +4029,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray sum(INDArray result, int... dimension) {
+    public INDArray sum(@NonNull INDArray result, int... dimension) {
         return Nd4j.getExecutioner().exec(new Sum(this, null, result), dimension);
     }
 
