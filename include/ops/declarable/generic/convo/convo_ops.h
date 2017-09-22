@@ -255,7 +255,7 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
             std::vector<int> argI = *(block.getIArguments());					// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<T> argT = {argI[1], argI[2], argI[3], argI[4], argI[5], argI[6], argI[7], argI[8], (T)0.f, (T)0.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::vector<T> argT = {(T)argI[1], (T)argI[2], (T)argI[3], (T)argI[4], (T)argI[5], (T)argI[6], (T)argI[7], (T)argI[8], (T)0.f, (T)0.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
@@ -275,7 +275,7 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
             std::vector<int> argI = *(block.getIArguments());					// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<T> argT = {argI[1], argI[2], argI[3], argI[4], argI[5], argI[6], argI[7], argI[8], (T)1.f, (T)1.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T)argI[7], (T)argI[8], (T)1.f, (T)1.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
@@ -295,7 +295,7 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             std::vector<int> argI = *(block.getIArguments());					// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<T> argT = {argI[1], argI[2], argI[3], argI[4], argI[5], argI[6], argI[7], argI[8], (T)2.f, (T)2.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T)2.f, (T)2.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
@@ -1209,13 +1209,13 @@ namespace nd4j {
 			if (cOrderStrides) {
 				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW});
 				col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
-				epsilon1d = epsilon->reshape('c', {epsilon->lengthOf(), 1}); //zero copy reshape
+				epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
 			}
 			else {
 				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW});
 				col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
 				NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
-				epsilon1d = epsilonTemp->reshape('c', {epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
+				epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
 				delete epsilonTemp;
 			}
 
@@ -1657,13 +1657,13 @@ namespace nd4j {
 			if (cOrderStrides) {
 				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW});
 				col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
-				epsilon1d = epsilon->reshape('c', {epsilon->lengthOf(), 1}); //zero copy reshape
+				epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
 			}
 			else {
 				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW});
 				col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
 				NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
-				epsilon1d = epsilonTemp->reshape('c', {epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
+				epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
 				delete epsilonTemp;
 			}
 
@@ -1674,7 +1674,7 @@ namespace nd4j {
 			// NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
 			T extraParams3[] = {sW, sH, pW, pH, iH, iW, dW, dH};   			// ??? zeros
 			col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
-            outEpsilon->template applyScalar<simdOps::Divide<T>>(kH*kW, outEpsilon);
+            outEpsilon->template applyScalar<simdOps::Divide<T>>((T) kH*kW, outEpsilon);
 
 			STORE_RESULT(*outEpsilon);
 

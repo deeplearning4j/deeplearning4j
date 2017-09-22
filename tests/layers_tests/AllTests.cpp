@@ -12,6 +12,7 @@
 #include "HashUtilsTests.cpp"
 #include "WorkspaceTests.h"
 #include "ConvolutionTests.h"
+#include "TadTests.h"
 ///////
 
 //#include "CyclicTests.h"

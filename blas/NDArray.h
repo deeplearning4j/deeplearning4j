@@ -76,6 +76,16 @@ namespace nd4j {
 
         int* getShapeInfo();
 
+        void setShapeInfo(int *shapeInfo) {
+            _shapeInfo = shapeInfo;
+            _isShapeAlloc = false;
+        }
+
+        void setBuffer(T* buffer) {
+            _buffer = buffer;
+            _isBuffAlloc = false;
+        }
+
         void triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
             _isBuffAlloc = bufferAllocated;
             _isShapeAlloc = shapeAllocated;

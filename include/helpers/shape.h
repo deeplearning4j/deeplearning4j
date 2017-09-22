@@ -1484,8 +1484,10 @@ namespace shape {
             this->tadShape = shape::shapeOf(existingTAD);
             this->tadStride = shape::stride(existingTAD);
 
+            int ews = shape::elementWiseStride(originalShape);
+
             this->numTads = shape::length(originalShape) / shape::length(existingTAD); // this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);//shape::length(originalShape) / shape::length(existingTAD);
-            this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo);
+            this->wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo)) && ews == 1);
         }
 
 
@@ -1503,8 +1505,10 @@ namespace shape {
             this->rank = shape::rank(shapeInfo);
             this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
 
+            int ews = shape::elementWiseStride(shapeInfo);
+
             if(!shape::isVector(shapeInfo))
-                wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo);
+                wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo)) && ews == 1);
             else if(shape::isScalar(shapeInfo))
                 wholeThing = true;
                 //vector case
