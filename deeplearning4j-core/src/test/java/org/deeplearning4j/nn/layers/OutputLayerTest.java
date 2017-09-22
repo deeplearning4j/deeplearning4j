@@ -66,7 +66,7 @@ public class OutputLayerTest {
     @Test
     public void testSetParams() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-1))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX)

@@ -134,7 +134,7 @@ public class LocalResponseTest {
     @Test
     public void testMultiCNNLayer() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(123).list()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new LocalResponseNormalization.Builder().build()).layer(2,

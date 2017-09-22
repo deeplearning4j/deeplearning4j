@@ -67,7 +67,7 @@ public class DropoutLayerTest {
         MultiLayerConfiguration confSeparate =
                 new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .iterations(1).seed(3648)
+                        .seed(3648)
                         .list().layer(0, new DropoutLayer.Builder(0.25).build())
                         .layer(1, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
                                 .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
@@ -109,7 +109,7 @@ public class DropoutLayerTest {
 
         // Run without separate activation layer
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10)
                                         .activation(Activation.RELU).weightInit(
@@ -126,7 +126,7 @@ public class DropoutLayerTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())

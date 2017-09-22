@@ -55,7 +55,7 @@ public class BackTrackLineSearchTest {
     private static OutputLayer getIrisLogisticLayerConfig(Activation activationFunction, int maxIterations,
                     LossFunctions.LossFunction lossFunction) {
         NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345L).iterations(1).miniBatch(true)
+                        new NeuralNetConfiguration.Builder().seed(12345L).miniBatch(true)
                                         .maxNumLineSearchIterations(maxIterations)
                                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
                                                         .nIn(4).nOut(3).activation(activationFunction)
@@ -139,7 +139,7 @@ public class BackTrackLineSearchTest {
     private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, int iterations,
                     OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)
-                        .iterations(iterations).miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
+                        .miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(activationFunction).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

@@ -236,7 +236,7 @@ public class TestUpdaters {
         double epsilon = Nadam.DEFAULT_NADAM_EPSILON;
 
         NeuralNetConfiguration conf =
-                new NeuralNetConfiguration.Builder().iterations(iteration)
+                new NeuralNetConfiguration.Builder()
                         .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
                                 .updater(Nadam.builder().learningRate(lr).beta1(beta1)
                                         .beta2(beta2).epsilon(epsilon).build())

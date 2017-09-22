@@ -603,7 +603,7 @@ public class MultiLayerTestRNN {
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).list()
+                                        .list()
                                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(10)
                                                         .nOut(10).activation(Activation.TANH).build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(10)
@@ -624,7 +624,7 @@ public class MultiLayerTestRNN {
     public void testRnnTimeStepWithPreprocessorGraph() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(10).nOut(10)
                                         .activation(Activation.TANH).build(), "in")

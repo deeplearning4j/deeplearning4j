@@ -164,8 +164,6 @@ public class FineTuneConfiguration {
         }
         if (miniBatch != null)
             nnc.setMiniBatch(miniBatch);
-        if (numIterations != null)
-            nnc.setNumIterations(numIterations);
         if (maxNumLineSearchIterations != null)
             nnc.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)
@@ -255,8 +253,6 @@ public class FineTuneConfiguration {
             confBuilder.biasUpdater(biasUpdater);
         if (miniBatch != null)
             confBuilder.setMiniBatch(miniBatch);
-        if (numIterations != null)
-            confBuilder.setNumIterations(numIterations);
         if (maxNumLineSearchIterations != null)
             confBuilder.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)

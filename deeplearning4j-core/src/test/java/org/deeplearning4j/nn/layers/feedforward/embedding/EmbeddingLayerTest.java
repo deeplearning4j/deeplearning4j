@@ -241,7 +241,7 @@ public class EmbeddingLayerTest {
                 Nd4j.getRandom().setSeed(12345);
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.1)).seed(12345).list()
                         .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
                                 .nOut(5).build())
@@ -256,7 +256,7 @@ public class EmbeddingLayerTest {
                 net.init();
 
                 MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.1)).seed(12345).list()
                         .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
                                 .build())

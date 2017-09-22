@@ -1022,14 +1022,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                                     next.getLabelsMaskArray());
                 } else {
 
-                    setInput(next.getFeatures());
-                    input.setMask(0, next.getFeaturesMaskArray());
-                    if(next.getFeaturesMaskArray() != null){
-                        input.setMaskState(0, MaskState.Active);
-                    } else {
-                        input.setMaskState(0, null);
-                    }
-                    setLabels(next.getLabels());
+                    setInput(ActivationsFactory.getInstance().featuresAsActivations(next));
+                    setLabels(next.getLabels(), next.getLabelsMaskArray());
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -1726,8 +1720,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     @Override
     public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
         setInput(input);
-        this.labels = labels.get(0);
-        this.labelsMask = labels.getMask(0);
+        setLabels(labels.get(0), labels.getMask(0));
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         Gradients g;

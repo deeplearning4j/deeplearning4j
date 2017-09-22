@@ -69,7 +69,7 @@ public class TestOptimizers {
                         };
 
         for (OptimizationAlgorithm oa : toTest) {
-            MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa, 1));
+            MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
             network.init();
 
             iter.reset();
@@ -94,7 +94,7 @@ public class TestOptimizers {
 
         for (OptimizationAlgorithm oa : toTest) {
             int nIter = 10;
-            MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa, nIter));
+            MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
             network.init();
             double score = network.score(ds);
             assertTrue(score != 0.0 && !Double.isNaN(score));
@@ -106,7 +106,9 @@ public class TestOptimizers {
             double[] scores = new double[nCallsToOptimizer + 1];
             scores[0] = score;
             for (int i = 0; i < nCallsToOptimizer; i++) {
-                network.fit(ds);
+                for( int j=0; j<nIter; j++ ) {
+                    network.fit(ds);
+                }
                 double scoreAfter = network.score(ds);
                 scores[i + 1] = scoreAfter;
                 assertTrue("Score is NaN after optimization", !Double.isNaN(scoreAfter));
@@ -119,8 +121,8 @@ public class TestOptimizers {
         }
     }
 
-    private static MultiLayerConfiguration getMLPConfigIris(OptimizationAlgorithm oa, int nIterations) {
-        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().optimizationAlgo(oa).iterations(nIterations)
+    private static MultiLayerConfiguration getMLPConfigIris(OptimizationAlgorithm oa) {
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().optimizationAlgo(oa)
                         .updater(new AdaGrad(1e-1)).seed(12345L)
                         .list().layer(0,
                                         new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
@@ -192,7 +194,8 @@ public class TestOptimizers {
                             + nDimensions);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().maxNumLineSearchIterations(numLineSearchIter)
-                        .iterations(100).updater(new Sgd(1e-2))
+                        //.iterations(100)
+                        .updater(new Sgd(1e-2))
                         .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();
         conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
@@ -282,7 +285,7 @@ public class TestOptimizers {
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
                             new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).updater(new Sgd(0.1))
+                            .maxNumLineSearchIterations(maxNumLineSearchIter).updater(new Sgd(0.1))
                             .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
@@ -467,7 +470,7 @@ public class TestOptimizers {
 
         for (int i = 0; i <= nOptIter; i++) {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).miniBatch(false)
+                            .maxNumLineSearchIterations(maxNumLineSearchIter).miniBatch(false)
                             .updater(new AdaGrad(1e-2))
                             .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
@@ -702,7 +705,7 @@ public class TestOptimizers {
 
         for (int i = 0; i <= nOptIter; i++) {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i)
+                            .maxNumLineSearchIterations(maxNumLineSearchIter)
                             .updater(new Sgd(1e-1))
                             .stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
                             .layer(new RBM.Builder().nIn(1).nOut(1).build())

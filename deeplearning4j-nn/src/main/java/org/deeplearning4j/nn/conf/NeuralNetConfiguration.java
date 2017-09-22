@@ -90,7 +90,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
-    protected int numIterations;
     //number of line search iterations
     protected int maxNumLineSearchIterations;
     protected long seed;
@@ -582,7 +581,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected IUpdater biasUpdater = null;
         protected Layer layer;
         protected boolean miniBatch = true;
-        protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
@@ -610,7 +608,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 minimize = newConf.minimize;
                 maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
                 layer = newConf.layer;
-                numIterations = newConf.numIterations;
                 optimizationAlgo = newConf.optimizationAlgo;
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
@@ -759,15 +756,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public ComputationGraphConfiguration.GraphBuilder graphBuilder() {
             return new ComputationGraphConfiguration.GraphBuilder(this);
-        }
-
-        /**
-         * Number of optimization iterations. Should be set to 1 for >99% of use cases (possible exception:
-         * very tiny full batch dataset training)
-         */
-        public Builder iterations(int numIterations) {
-            this.numIterations = numIterations;
-            return this;
         }
 
         /**
@@ -1042,7 +1030,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
             conf.layer = layer;
-            conf.numIterations = numIterations;
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
             conf.stepFunction = stepFunction;

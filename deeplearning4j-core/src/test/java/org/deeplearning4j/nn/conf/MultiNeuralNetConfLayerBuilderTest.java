@@ -77,7 +77,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
     public void testRbmSetup() throws Exception {
         MultiLayerConfiguration multiLayerConfiguration =
                         new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                        .seed(123).iterations(5).maxNumLineSearchIterations(10) // Magical Optimisation Stuff
+                                        .seed(123).maxNumLineSearchIterations(10) // Magical Optimisation Stuff
 
                                         .list().layer(0,
                                                         new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
@@ -129,7 +129,9 @@ public class MultiNeuralNetConfLayerBuilderTest {
             assertArrayEquals(biasAssertions[i], hiddenBiases[i].shape());
         }
 
-        network.fit(d);
+        for( int i=0; i<5; i++ ) {
+            network.fit(d);
+        }
 
 
     }

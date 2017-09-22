@@ -52,7 +52,7 @@ public class ActivationLayerTest {
 
         // Run without separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -68,7 +68,7 @@ public class ActivationLayerTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10).activation(Activation.IDENTITY)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -121,7 +121,7 @@ public class ActivationLayerTest {
         // Run without separate activation layer
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0)
                                         .activation(Activation.SIGMOID).build())
@@ -139,7 +139,7 @@ public class ActivationLayerTest {
         // Run with separate activation layer
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0)
                                         .activation(Activation.IDENTITY).build())
@@ -183,7 +183,7 @@ public class ActivationLayerTest {
 
         // Run without separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
                                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER).build())
@@ -200,8 +200,7 @@ public class ActivationLayerTest {
         // Run with separate activation layer
         MultiLayerConfiguration conf2 =
                         new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(
-                                                        1)
+                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .seed(123).list()
                                         .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
                                                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
@@ -244,7 +243,7 @@ public class ActivationLayerTest {
     //        // Run without separate activation layer
     //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-    //                .iterations(1)
+    //
     //                .seed(123)
     //                .list()
     //                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
@@ -260,7 +259,7 @@ public class ActivationLayerTest {
     //        // Run with separate activation layer
     //        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
     //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-    //                .iterations(1)
+    //
     //                .seed(123)
     //                .list()
     //                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.IDENTITY).nIn(2).nOut(2).build())
@@ -302,7 +301,7 @@ public class ActivationLayerTest {
     //        // Run without separate activation layer
     //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-    //                .iterations(1)
+    //
     //                .seed(123)
     //                .list()
     //                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
@@ -318,7 +317,7 @@ public class ActivationLayerTest {
     //        // Run with separate activation layer
     //        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
     //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-    //                .iterations(1)
+    //
     //                .seed(123)
     //                .list()
     //                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.IDENTITY).nIn(2).nOut(2).build())

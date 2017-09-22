@@ -244,7 +244,7 @@ public class SubsamplingLayerTest {
 
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
-                        new NeuralNetConfiguration.Builder().seed(123).iterations(1).list()
+                        new NeuralNetConfiguration.Builder().seed(123).list()
                                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
                                                         kernelHeight, kernelWidth).stride(1, 1).nOut(2)
                                                                         .activation(Activation.RELU).weightInit(

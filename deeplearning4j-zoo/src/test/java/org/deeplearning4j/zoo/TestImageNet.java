@@ -38,7 +38,7 @@ public class TestImageNet {
     @Test
     public void testImageNetLabels() throws IOException {
         // set up model
-        ZooModel model = new VGG19(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new VGG19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward

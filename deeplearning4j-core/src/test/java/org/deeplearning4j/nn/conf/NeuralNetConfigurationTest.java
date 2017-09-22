@@ -109,7 +109,7 @@ public class NeuralNetConfigurationTest {
                         .hiddenUnit(RBM.HiddenUnit.RECTIFIED).activation(Activation.TANH)
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).iterations(3)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -122,7 +122,7 @@ public class NeuralNetConfigurationTest {
                         .weightInit(WeightInit.UNIFORM).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                         .hiddenUnit(RBM.HiddenUnit.RECTIFIED).activation(Activation.TANH)
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build();
-        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123).iterations(3)
+        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer2).build();
 
         int numParams2 = conf2.getLayer().initializer().numParams(conf);
@@ -203,7 +203,7 @@ public class NeuralNetConfigurationTest {
                         .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                         .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(3)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer)
                         .build();
         conf.setPretrain(pretrain);
@@ -323,7 +323,7 @@ public class NeuralNetConfigurationTest {
                                         .nIn(10).nOut(5).updater(new Sgd(1e-1))
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(42).layer(layer).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
 
         assertFalse(conf.isPretrain());
         conf.setPretrain(pretrain);

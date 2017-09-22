@@ -37,19 +37,17 @@ public class TextGenerationLSTM extends ZooModel {
     private int totalUniqueCharacters = 47;
     private int[] inputShape = new int[] {maxLength, totalUniqueCharacters};
     private long seed;
-    private int iterations;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public TextGenerationLSTM(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public TextGenerationLSTM(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public TextGenerationLSTM(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public TextGenerationLSTM(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.totalUniqueCharacters = numLabels;
         this.inputShape = new int[] {maxLength, totalUniqueCharacters};
         this.seed = seed;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -77,7 +75,7 @@ public class TextGenerationLSTM extends ZooModel {
 
     public MultiLayerConfiguration conf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .seed(12345).l2(0.001).weightInit(WeightInit.XAVIER)
                         .updater(new RmsProp(0.01)).list()
                         .layer(0, new GravesLSTM.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH)

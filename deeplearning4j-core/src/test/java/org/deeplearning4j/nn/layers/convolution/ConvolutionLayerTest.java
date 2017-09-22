@@ -52,7 +52,7 @@ public class ConvolutionLayerTest {
 
     @Test
     public void testTwdFirstLayer() throws Exception {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).iterations(5)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
                         .updater(new Nesterovs(0.9)).dropOut(0.5)
                         .list().layer(0,
@@ -75,7 +75,9 @@ public class ConvolutionLayerTest {
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        network.fit(iter.next());
+        for( int i=0; i<5; i++ ) {
+            network.fit(iter.next());
+        }
     }
 
     @Test
@@ -92,8 +94,7 @@ public class ConvolutionLayerTest {
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder()
-                                        .seed(123).iterations(
-                                                        1)
+                                        .seed(123)
                                         .list()
                                         .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1)
                                                         .nOut(2).activation(Activation.RELU)
@@ -132,8 +133,7 @@ public class ConvolutionLayerTest {
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder()
-                                        .seed(123).iterations(
-                                                        1)
+                                        .seed(123)
                                         .list()
                                         .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth) //(img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
                                                         .stride(1, 1).nOut(2).activation(Activation.RELU)
@@ -168,8 +168,7 @@ public class ConvolutionLayerTest {
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder()
-                                        .seed(123).iterations(
-                                                        1)
+                                        .seed(123)
                                         .list()
                                         .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 0)
                                                         .nOut(2).activation(Activation.RELU)
@@ -203,7 +202,7 @@ public class ConvolutionLayerTest {
         int kernelWidth = 3;
 
         DataSet trainInput;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).iterations(1).list()
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(2).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())
                         .layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).build())
@@ -288,7 +287,7 @@ public class ConvolutionLayerTest {
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding).nIn(nIn).nOut(nOut)
                         .activation(Activation.SIGMOID).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).layer(layer).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(layer).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -668,7 +667,7 @@ public class ConvolutionLayerTest {
         int seed = 123;
 
         MultiLayerConfiguration.Builder conf =
-                        new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+                        new NeuralNetConfiguration.Builder().seed(seed)
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                                         .layer(0, new ConvolutionLayer.Builder(new int[] {10, 10}).nOut(6).build())
                                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX,

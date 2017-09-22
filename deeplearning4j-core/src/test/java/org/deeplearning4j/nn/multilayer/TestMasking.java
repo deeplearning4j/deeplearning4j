@@ -50,7 +50,7 @@ public class TestMasking {
     public void checkMaskArrayClearance() {
         for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345).list()
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
                             .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                             .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
                             .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard)

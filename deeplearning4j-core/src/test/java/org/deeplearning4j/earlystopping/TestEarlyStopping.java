@@ -48,7 +48,7 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingIris() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -91,7 +91,7 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingEveryNEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -119,7 +119,7 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingIrisMultiEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -167,7 +167,7 @@ public class TestEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(5.0)) //Intentionally huge LR
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
@@ -206,7 +206,7 @@ public class TestEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -248,7 +248,7 @@ public class TestEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -286,7 +286,7 @@ public class TestEarlyStopping {
         //Simulate this by setting LR = 0.0
         Random rng = new Random(123);
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).iterations(10)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Nesterovs(0.0,0.9)).list()
                         .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
@@ -334,7 +334,7 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingGetBestModel() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -362,7 +362,6 @@ public class TestEarlyStopping {
         MultiLayerNetwork mln = result.getBestModel();
 
         assertEquals(net.getnLayers(), mln.getnLayers());
-        assertEquals(net.conf().getNumIterations(), mln.conf().getNumIterations());
         assertEquals(net.conf().getOptimizationAlgo(), mln.conf().getOptimizationAlgo());
         BaseLayer bl = (BaseLayer) net.conf().getLayer();
         assertEquals(bl.getActivationFn().toString(), ((BaseLayer) mln.conf().getLayer()).getActivationFn().toString());
@@ -372,7 +371,7 @@ public class TestEarlyStopping {
     @Test
     public void testListeners() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())

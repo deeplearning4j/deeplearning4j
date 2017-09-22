@@ -40,7 +40,7 @@ public class RandomTests {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(119).iterations(1) // Training iterations as above
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(119) // Training iterations as above
                                     .l2(0.0005)
                                     //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
                                     .weightInit(WeightInit.XAVIER)

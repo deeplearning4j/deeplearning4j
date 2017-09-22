@@ -210,22 +210,4 @@ public class CNNProcessorTest {
             }
         }
     }
-
-
-    public static MultiLayerNetwork getCNNMnistConfig() {
-
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).iterations(5)
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {9, 9},
-                                        new int[] {1, 1}).nOut(20).weightInit(WeightInit.XAVIER)
-                                                        .activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
-                                        .build())
-                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
-        return new MultiLayerNetwork(conf);
-    }
 }

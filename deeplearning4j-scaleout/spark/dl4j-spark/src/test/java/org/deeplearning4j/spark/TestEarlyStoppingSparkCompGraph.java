@@ -66,7 +66,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     @Test
     public void testEarlyStoppingIris() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
@@ -116,7 +116,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(2.0)) //Intentionally huge LR
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
@@ -154,7 +154,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new  Sgd(1e-6)).weightInit(WeightInit.XAVIER).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
@@ -199,7 +199,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
@@ -235,7 +235,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     @Test
     public void testListeners() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")

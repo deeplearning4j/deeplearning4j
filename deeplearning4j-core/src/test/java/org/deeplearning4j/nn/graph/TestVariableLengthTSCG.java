@@ -53,7 +53,7 @@ public class TestVariableLengthTSCG {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
                             .addLayer("0", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")
@@ -136,7 +136,7 @@ public class TestVariableLengthTSCG {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
                             .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")

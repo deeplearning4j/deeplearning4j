@@ -62,7 +62,7 @@ public class ConvolutionLayerSetupTest {
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -84,7 +84,9 @@ public class ConvolutionLayerSetupTest {
                         FeatureUtil.toOutcomeMatrix(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
         network.init();
-        network.fit(d);
+        for( int i=0; i<iterations; i++ ) {
+            network.fit(d);
+        }
 
     }
 
@@ -230,7 +232,7 @@ public class ConvolutionLayerSetupTest {
         int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
@@ -253,7 +255,7 @@ public class ConvolutionLayerSetupTest {
         int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
@@ -319,7 +321,7 @@ public class ConvolutionLayerSetupTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {1, 1}).nIn(1).nOut(6)
                                         .activation(Activation.IDENTITY).build())
@@ -340,7 +342,9 @@ public class ConvolutionLayerSetupTest {
         INDArray activationsActual = network.activate(ActivationsFactory.getInstance().create(next.getFeatureMatrix())).get(0);
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
-        network.fit(next);
+        for( int i=0; i<2; i++ ) {
+            network.fit(next);
+        }
         INDArray actualGammaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.GAMMA);
         INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
         assertTrue(actualGammaParam != null);

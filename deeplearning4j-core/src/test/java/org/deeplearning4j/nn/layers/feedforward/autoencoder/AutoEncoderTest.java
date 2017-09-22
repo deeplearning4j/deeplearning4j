@@ -64,7 +64,7 @@ public class AutoEncoderTest {
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).updater(new Sgd(0.1))
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                                         .corruptionLevel(0.6)
                                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
@@ -93,7 +93,7 @@ public class AutoEncoderTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         //        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                         .updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                                         .corruptionLevel(0.6)

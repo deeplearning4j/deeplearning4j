@@ -89,7 +89,6 @@ public class GravesLSTMOutputTest {
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder()
                                         .updater(new AdaGrad(0.1)).l2(0.0025)
-                                        .iterations(iterations).stepFunction(new NegativeDefaultStepFunction())
                                         .list()
                                         .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn)

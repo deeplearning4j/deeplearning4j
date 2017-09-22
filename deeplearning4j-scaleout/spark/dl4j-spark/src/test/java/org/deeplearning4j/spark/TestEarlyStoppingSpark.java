@@ -45,7 +45,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
     @Test
     public void testEarlyStoppingIris() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -97,7 +97,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(10.0)) //Intentionally huge LR
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
@@ -134,7 +134,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -177,7 +177,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -210,7 +210,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
     @Test
     public void testListeners() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())

@@ -32,19 +32,17 @@ public class FaceNetNN4Small2 extends ZooModel {
     private int[] inputShape = new int[] {3, 96, 96};
     private int numLabels;
     private long seed;
-    private int iterations;
     private Activation transferFunction = Activation.RELU;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public FaceNetNN4Small2(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public FaceNetNN4Small2(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public FaceNetNN4Small2(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public FaceNetNN4Small2(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -74,7 +72,7 @@ public class FaceNetNN4Small2 extends ZooModel {
         int embeddingSize = 128;
 
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
-                        .iterations(iterations).activation(Activation.IDENTITY)
+                        .activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Adam(0.1, 0.9, 0.999, 0.01)).weightInit(WeightInit.RELU)
                         .l2(5e-5).miniBatch(true).convolutionMode(ConvolutionMode.Same)

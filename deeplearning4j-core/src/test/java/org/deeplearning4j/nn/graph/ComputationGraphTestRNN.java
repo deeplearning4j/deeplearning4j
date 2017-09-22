@@ -492,7 +492,7 @@ public class ComputationGraphTestRNN {
     @Test
     public void testTbpttMasking() {
         //Simple "does it throw an exception" type test...
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                         .activation(Activation.IDENTITY).nIn(1).nOut(1).build(), "in")
@@ -514,7 +514,7 @@ public class ComputationGraphTestRNN {
     public void checkMaskArrayClearance() {
         for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345)
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                             .graphBuilder().addInputs("in")
                             .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                             .activation(Activation.IDENTITY).nIn(1).nOut(1).build(), "in")

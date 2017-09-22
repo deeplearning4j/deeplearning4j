@@ -301,7 +301,7 @@ public class BackPropMLPTest {
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes,
                     Activation activationFunction) {
-        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().iterations(1).updater(new Sgd(0.1))
+        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                     .seed(12345L).list();
 
         for (int i = 0; i < hiddenLayerSizes.length; i++) {
