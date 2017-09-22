@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VocabularyHolder implements Serializable {
     private Map<String, VocabularyWord> vocabulary = new ConcurrentHashMap<>();
 
@@ -41,8 +43,6 @@ public class VocabularyHolder implements Serializable {
     private transient AtomicLong hiddenWordsCounter = new AtomicLong(0);
 
     private AtomicInteger totalWordCount = new AtomicInteger(0);
-
-    private Logger logger = LoggerFactory.getLogger(VocabularyHolder.class);
 
     private static final int MAX_CODE_LENGTH = 40;
 
@@ -83,7 +83,7 @@ public class VocabularyHolder implements Serializable {
         // there's no sense building huffman tree just for UNK word
         if (numWords() > 1)
             updateHuffmanCodes();
-        logger.info("Init from VocabCache is complete. " + numWords() + " word(s) were transferred.");
+        log.info("Init from VocabCache is complete. " + numWords() + " word(s) were transferred.");
     }
 
     public static HuffmanNode buildNode(List<Byte> codes, List<Integer> points, int codeLen, int index) {
@@ -314,7 +314,7 @@ public class VocabularyHolder implements Serializable {
                     otherwise nullify word.frequencyShift to avoid further checks
               */
             int activation = Math.max(minWordFrequency / 5, 2);
-            logger.debug("Current state> Activation: [" + activation + "], retention info: "
+            log.debug("Current state> Activation: [" + activation + "], retention info: "
                             + Arrays.toString(word.getFrequencyShift()));
             if (word.getCount() <= activation && word.getFrequencyShift()[this.retentionDelay - 1] > 0) {
 
@@ -334,7 +334,7 @@ public class VocabularyHolder implements Serializable {
                 }
             }
         }
-        logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" + vocabulary.size()
+        log.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" + vocabulary.size()
                         + "]");
     }
 
@@ -370,7 +370,7 @@ public class VocabularyHolder implements Serializable {
      * @param threshold exclusive threshold for removal
      */
     public void truncateVocabulary(int threshold) {
-        logger.debug("Truncating vocabulary to minWordFrequency: [" + threshold + "]");
+        log.debug("Truncating vocabulary to minWordFrequency: [" + threshold + "]");
         Set<String> keyset = vocabulary.keySet();
         for (String word : keyset) {
             VocabularyWord vw = vocabulary.get(word);

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.datavec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
@@ -34,8 +35,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Handle dividing things up by mini batch
  */
+@Slf4j
 public class MiniBatchTests extends BaseSparkTest {
-    private static final Logger log = LoggerFactory.getLogger(MiniBatchTests.class);
 
     @Test
     public void testMiniBatches() throws Exception {

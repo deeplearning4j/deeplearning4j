@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.optimize.solvers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -37,9 +38,9 @@ import java.util.Collection;
  * Deep Learning (in preparation) Ch8.
  * See also Nocedal & Wright, Numerical optimization, Ch5
  */
+@Slf4j
 public class ConjugateGradient extends BaseOptimizer {
     private static final long serialVersionUID = -1269296013474864091L;
-    private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
 
     public ConjugateGradient(NeuralNetConfiguration conf, StepFunction stepFunction,
                     Collection<IterationListener> iterationListeners, Model model) {
@@ -76,7 +77,7 @@ public class ConjugateGradient extends BaseOptimizer {
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
         double gamma = Math.max(dgg / gg, 0.0);
         if (dgg <= 0.0)
-            logger.debug("Polak-Ribiere gamma <= 0.0; using gamma=0.0 -> SGD line search. dgg={}, gg={}", dgg, gg);
+            log.debug("Polak-Ribiere gamma <= 0.0; using gamma=0.0 -> SGD line search. dgg={}, gg={}", dgg, gg);
 
         //Standard Polak-Ribiere does not guarantee that the search direction is a descent direction
         //But using max(gamma_Polak-Ribiere,0) does guarantee a descent direction. Hence the max above.

@@ -19,6 +19,7 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -48,11 +49,8 @@ import static org.junit.Assume.assumeNotNull;
 /**
  *@author Adam Gibson
  */
+@Slf4j
 public class BagOfWordsVectorizerTest {
-
-    private static final Logger log = LoggerFactory.getLogger(BagOfWordsVectorizerTest.class);
-
-
 
     @Test
     public void testBagOfWordsVectorizer() throws Exception {

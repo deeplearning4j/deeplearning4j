@@ -36,8 +36,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class DefaultDocumentIteratorTest {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultDocumentIteratorTest.class);
-
     @Test
     public void testDocumentIterator() throws Exception {
         ClassPathResource reuters5250 = new ClassPathResource("/reuters/5250");

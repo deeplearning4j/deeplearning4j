@@ -1,5 +1,6 @@
 package org.deeplearning4j.text.sentenceiterator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -14,9 +15,8 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Created by fartovii on 09.11.15.
  */
+@Slf4j
 public class StreamLineIteratorTest {
-
-    protected Logger logger = LoggerFactory.getLogger(StreamLineIteratorTest.class);
 
     @Test
     public void testHasNext() throws Exception {
@@ -31,7 +31,7 @@ public class StreamLineIteratorTest {
             String line = iterator.nextSentence();
 
             assertNotEquals(null, line);
-            logger.info("Line: " + line);
+            log.info("Line: " + line);
             cnt++;
         }
 

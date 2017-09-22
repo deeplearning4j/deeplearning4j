@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.embeddings.reader.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -24,9 +25,9 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 @Ignore
+@Slf4j
 public class FlatModelUtilsTest {
     private Word2Vec vec;
-    private static final Logger log = LoggerFactory.getLogger(FlatModelUtilsTest.class);
 
     @Before
     public void setUp() throws Exception {

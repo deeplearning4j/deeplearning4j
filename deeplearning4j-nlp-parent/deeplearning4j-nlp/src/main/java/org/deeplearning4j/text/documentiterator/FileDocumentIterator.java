@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.documentiterator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -36,12 +37,12 @@ import java.util.Iterator;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class FileDocumentIterator implements DocumentIterator {
 
     private Iterator<File> iter;
     private LineIterator lineIterator;
     private File rootDir;
-    private static final Logger log = LoggerFactory.getLogger(FileDocumentIterator.class);
 
     public FileDocumentIterator(String path) {
         this(new File(path));

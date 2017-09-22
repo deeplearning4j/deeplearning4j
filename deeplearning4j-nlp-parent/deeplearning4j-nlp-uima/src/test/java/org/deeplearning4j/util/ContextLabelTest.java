@@ -36,7 +36,6 @@ import static org.junit.Assert.assertEquals;
  * Basic test case for the context label test
  */
 public class ContextLabelTest {
-    private static final Logger log = LoggerFactory.getLogger(ContextLabelTest.class);
     private TokenizerFactory tokenizerFactory;
 
     @Before

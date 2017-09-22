@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -244,9 +245,9 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         assertEquals(1, listener.onCompletionCallCount);
     }
 
+    @Slf4j
     private static class LoggingEarlyStoppingListener implements EarlyStoppingListener<MultiLayerNetwork> {
 
-        private static Logger log = LoggerFactory.getLogger(LoggingEarlyStoppingListener.class);
         private int onStartCallCount = 0;
         private int onEpochCallCount = 0;
         private int onCompletionCallCount = 0;

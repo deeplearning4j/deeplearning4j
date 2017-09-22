@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -31,9 +32,8 @@ import java.io.ByteArrayInputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 public class DefaulTokenizerTests {
-
-    protected static final Logger log = LoggerFactory.getLogger(DefaulTokenizerTests.class);
 
     @Test
     public void testDefaultTokenizer1() throws Exception {

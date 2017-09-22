@@ -32,7 +32,6 @@ public class UimaResultSetIterator extends BasicResultSetIterator {
 
     private UimaResource resource;
     protected volatile Iterator<String> sentences;
-    private static final Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
 
     /**
      * Constructor which builds a new UimaResource object

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.glove;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -44,8 +45,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 12/3/14.
  */
+@Slf4j
 public class GloveTest {
-    private static final Logger log = LoggerFactory.getLogger(GloveTest.class);
     private Glove glove;
     private SentenceIterator iter;
 

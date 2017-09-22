@@ -3,6 +3,7 @@ package org.deeplearning4j.models.sequencevectors;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
@@ -55,9 +56,8 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SequenceVectorsTest {
-
-    protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
 
     @Before
     public void setUp() throws Exception {
@@ -69,7 +69,7 @@ public class SequenceVectorsTest {
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
         File file = resource.getFile();
 
-        logger.info("dtype: {}", Nd4j.dataType());
+        log.info("dtype: {}", Nd4j.dataType());
 
         AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -112,7 +112,7 @@ public class SequenceVectorsTest {
 
         VocabWord wordz = vocabCache.wordFor("day");
 
-        logger.info("Wordz: " + wordz);
+        log.info("Wordz: " + wordz);
 
         /*
             Time to build WeightLookupTable instance for our new model
@@ -172,11 +172,11 @@ public class SequenceVectorsTest {
         /*
             Now, after all options are set, we just call fit()
          */
-        logger.info("Starting training...");
+        log.info("Starting training...");
 
         vectors.fit();
 
-        logger.info("Model saved...");
+        log.info("Model saved...");
 
         /*
             As soon as fit() exits, model considered built, and we can test it.
@@ -184,18 +184,18 @@ public class SequenceVectorsTest {
             objects/relations please take care of Labels uniqueness and meaning for yourself.
          */
         double sim = vectors.similarity("day", "night");
-        logger.info("Day/night similarity: " + sim);
+        log.info("Day/night similarity: " + sim);
         assertTrue(sim > 0.6d);
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
-        logger.info("Nearest labels to 'day': " + labels);
+        log.info("Nearest labels to 'day': " + labels);
 
         SequenceElementFactory<VocabWord> factory = new AbstractElementFactory<VocabWord>(VocabWord.class);
         WordVectorSerializer.writeSequenceVectors(vectors, factory, "seqvec.mod");
 
         SequenceVectors<VocabWord> model = WordVectorSerializer.readSequenceVectors(factory, new File("seqvec.mod"));
         sim = model.similarity("day", "night");
-        logger.info("day/night similarity: " + sim);
+        log.info("day/night similarity: " + sim);
     }
 
     @Test
@@ -219,18 +219,18 @@ public class SequenceVectorsTest {
                         .resetModel(false).trainElementsRepresentation(true).build();
 
 
-        logger.info("Fitting model...");
+        log.info("Fitting model...");
 
         vectors.fit();
 
-        logger.info("Model ready...");
+        log.info("Model ready...");
 
         double sim = vectors.similarity("day", "night");
-        logger.info("Day/night similarity: " + sim);
+        log.info("Day/night similarity: " + sim);
         assertTrue(sim > 0.6d);
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
-        logger.info("Nearest labels to 'day': " + labels);
+        log.info("Nearest labels to 'day': " + labels);
     }
 
     @Test
@@ -255,7 +255,7 @@ public class SequenceVectorsTest {
     @Ignore
     @Test
     public void testGlove1() throws Exception {
-        logger.info("Max available memory: " + Runtime.getRuntime().maxMemory());
+        log.info("Max available memory: " + Runtime.getRuntime().maxMemory());
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
         File file = resource.getFile();
 
@@ -285,26 +285,26 @@ public class SequenceVectorsTest {
         vectors.fit();
 
         double sim = vectors.similarity("day", "night");
-        logger.info("Day/night similarity: " + sim);
+        log.info("Day/night similarity: " + sim);
 
 
         sim = vectors.similarity("day", "another");
-        logger.info("Day/another similarity: " + sim);
+        log.info("Day/another similarity: " + sim);
 
         sim = vectors.similarity("night", "year");
-        logger.info("Night/year similarity: " + sim);
+        log.info("Night/year similarity: " + sim);
 
         sim = vectors.similarity("night", "me");
-        logger.info("Night/me similarity: " + sim);
+        log.info("Night/me similarity: " + sim);
 
         sim = vectors.similarity("day", "know");
-        logger.info("Day/know similarity: " + sim);
+        log.info("Day/know similarity: " + sim);
 
         sim = vectors.similarity("best", "police");
-        logger.info("Best/police similarity: " + sim);
+        log.info("Best/police similarity: " + sim);
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
-        logger.info("Nearest labels to 'day': " + labels);
+        log.info("Nearest labels to 'day': " + labels);
 
 
         sim = vectors.similarity("day", "night");
@@ -342,7 +342,7 @@ public class SequenceVectorsTest {
         Blogger blogger = graph.getVertex(0).getValue();
         assertEquals(119, blogger.getElementFrequency(), 0.001);
 
-        logger.info("Blogger: " + blogger);
+        log.info("Blogger: " + blogger);
 
 
         AbstractSequenceIterator<Blogger> sequenceIterator =
@@ -409,11 +409,11 @@ public class SequenceVectorsTest {
 
         vectors.setModelUtils(new FlatModelUtils());
 
-        //     logger.info("12: " + Arrays.toString(vectors.getWordVector("12")));
+        //     log.info("12: " + Arrays.toString(vectors.getWordVector("12")));
 
         double sim = vectors.similarity("12", "72");
         Collection<String> list = vectors.wordsNearest("12", 20);
-        logger.info("12->72: " + sim);
+        log.info("12->72: " + sim);
         printWords("12", list, vectors);
 
         assertTrue(sim > 0.10);
@@ -465,9 +465,9 @@ public class SequenceVectorsTest {
             graph.addEdge(from - 1, to - 1, 1.0, false);
         }
 
-        logger.info("Connected on 0: [" + graph.getConnectedVertices(0).size() + "]");
-        logger.info("Connected on 1: [" + graph.getConnectedVertices(1).size() + "]");
-        logger.info("Connected on 3: [" + graph.getConnectedVertices(3).size() + "]");
+        log.info("Connected on 0: [" + graph.getConnectedVertices(0).size() + "]");
+        log.info("Connected on 1: [" + graph.getConnectedVertices(1).size() + "]");
+        log.info("Connected on 3: [" + graph.getConnectedVertices(3).size() + "]");
         assertEquals(119, graph.getConnectedVertices(0).size());
         assertEquals(9, graph.getConnectedVertices(1).size());
         assertEquals(6, graph.getConnectedVertices(3).size());

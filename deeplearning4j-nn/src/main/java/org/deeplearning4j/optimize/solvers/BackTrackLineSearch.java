@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.optimize.solvers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
@@ -60,9 +61,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.abs;
 
 
  */
-
+@Slf4j
 public class BackTrackLineSearch implements LineOptimizer {
-    private static final Logger log = LoggerFactory.getLogger(BackTrackLineSearch.class);
     private Model layer;
     private StepFunction stepFunction;
     private ConvexOptimizer optimizer;

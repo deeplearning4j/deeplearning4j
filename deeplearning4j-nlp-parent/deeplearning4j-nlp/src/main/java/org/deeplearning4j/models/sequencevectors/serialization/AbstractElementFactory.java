@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -15,10 +16,9 @@ import java.io.IOException;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AbstractElementFactory<T extends SequenceElement> implements SequenceElementFactory<T> {
     private final Class targetClass;
-
-    protected static final Logger log = LoggerFactory.getLogger(AbstractElementFactory.class);
 
     /**
      * This is the only constructor available for AbstractElementFactory

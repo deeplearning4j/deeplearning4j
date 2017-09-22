@@ -37,8 +37,6 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 7/1/14.
  */
 public class TreeTransformerTests {
-
-    private static final Logger log = LoggerFactory.getLogger(TreeTransformerTests.class);
     private TreeParser parser;
 
     @Before

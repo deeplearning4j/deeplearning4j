@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,14 +20,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author raver119@gmail.com
  */
 @Deprecated
+@Slf4j
 public class PrefetchingSentenceIterator implements SentenceIterator {
 
     private SentenceIterator sourceIterator;
     private int fetchSize;
     private AsyncIteratorReader reader;
     private SentencePreProcessor preProcessor;
-
-    protected static final Logger log = LoggerFactory.getLogger(PrefetchingSentenceIterator.class);
 
     private PrefetchingSentenceIterator() {
 

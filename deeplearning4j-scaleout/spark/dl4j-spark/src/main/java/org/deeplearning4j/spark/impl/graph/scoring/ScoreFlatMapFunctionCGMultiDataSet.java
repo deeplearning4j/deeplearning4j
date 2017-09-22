@@ -50,8 +50,6 @@ public class ScoreFlatMapFunctionCGMultiDataSet
 /** Function used to score a MultiDataSet using a given ComputationGraph */
 class ScoreFlatMapFunctionCGMultiDataSetAdapter
                 implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, Tuple2<Integer, Double>> {
-
-    private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGMultiDataSet.class);
     private String json;
     private Broadcast<INDArray> params;
     private int minibatchSize;

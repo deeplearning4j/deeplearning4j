@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.api.storage.Persistable;
@@ -36,6 +37,7 @@ import java.util.UUID;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ConvolutionalIterationListener implements IterationListener {
 
     private enum Orientation {
@@ -43,7 +45,6 @@ public class ConvolutionalIterationListener implements IterationListener {
     }
 
     private int freq = 10;
-    private static final Logger log = LoggerFactory.getLogger(ConvolutionalIterationListener.class);
     private int minibatchNum = 0;
     private boolean openBrowser = true;
     private String path;

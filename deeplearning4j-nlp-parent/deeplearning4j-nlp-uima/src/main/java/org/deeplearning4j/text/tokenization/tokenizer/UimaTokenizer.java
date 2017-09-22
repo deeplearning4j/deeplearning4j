@@ -38,7 +38,6 @@ public class UimaTokenizer implements Tokenizer {
 
     private List<String> tokens;
     private int index;
-    private static final Logger log = LoggerFactory.getLogger(UimaTokenizer.class);
     private boolean checkForLabel;
     private TokenPreProcess preProcess;
 

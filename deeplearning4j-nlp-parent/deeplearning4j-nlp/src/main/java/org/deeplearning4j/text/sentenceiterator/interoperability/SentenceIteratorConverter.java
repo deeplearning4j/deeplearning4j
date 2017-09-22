@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.sentenceiterator.interoperability;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
@@ -16,10 +17,10 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SentenceIteratorConverter implements LabelAwareIterator {
     private SentenceIterator backendIterator;
     private LabelsSource generator;
-    protected static final Logger log = LoggerFactory.getLogger(SentenceIteratorConverter.class);
 
     public SentenceIteratorConverter(@NonNull SentenceIterator iterator) {
         this.backendIterator = iterator;

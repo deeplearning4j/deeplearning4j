@@ -17,8 +17,6 @@ public class BinaryCoOccurrenceWriter<T extends SequenceElement> implements CoOc
     private File file;
     private DataOutputStream outputStream;
 
-    private static final Logger log = LoggerFactory.getLogger(BinaryCoOccurrenceWriter.class);
-
     public BinaryCoOccurrenceWriter(@NonNull File file) {
         this.file = file;
 

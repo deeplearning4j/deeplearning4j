@@ -1,6 +1,7 @@
 package org.deeplearning4j.plot;
 
 import com.google.common.primitives.Ints;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
@@ -33,6 +34,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  * @author raver119@gmail.com
  * @author Adam Gibson
  */
+@Slf4j
 public class Tsne {
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
@@ -51,8 +53,6 @@ public class Tsne {
     protected double perplexity = 30;
     //protected INDArray gains,yIncs;
     protected INDArray Y;
-
-    protected static final Logger logger = LoggerFactory.getLogger(Tsne.class);
 
 
     public Tsne(final int maxIter, final double realMin, final double initialMomentum, final double finalMomentum,
@@ -99,7 +99,7 @@ public class Tsne {
         INDArray gains = Nd4j.ones(n, targetDimensions);
 
         boolean stopLying = false;
-        logger.debug("Y:Shape is = " + Arrays.toString(Y.shape()));
+        log.debug("Y:Shape is = " + Arrays.toString(Y.shape()));
 
         // compute P-values
         INDArray P = x2p(X, tolerance, perplexity);
@@ -121,8 +121,8 @@ public class Tsne {
 
             INDArray PQ = P.sub(Q).muli(qu);
 
-            logger.debug("PQ shape is: " + Arrays.toString(PQ.shape()));
-            logger.debug("PQ.sum(1) shape is: " + Arrays.toString(PQ.sum(1).shape()));
+            log.debug("PQ shape is: " + Arrays.toString(PQ.shape()));
+            log.debug("PQ.sum(1) shape is: " + Arrays.toString(PQ.sum(1).shape()));
 
             dY = diag(PQ.sum(1)).subi(PQ).mmul(Y).muli(4);
 
@@ -148,7 +148,7 @@ public class Tsne {
             iY.muli(momentum).subi(gradChange);
 
             double cost = P.mul(log(P.div(Q), false)).sumNumber().doubleValue();
-            logger.info("Iteration [" + i + "] error is: [" + cost + "]");
+            log.info("Iteration [" + i + "] error is: [" + cost + "]");
 
             Y.addi(iY);
             //  Y.addi(iY).subiRowVector(Y.mean(0));
@@ -250,25 +250,25 @@ public class Tsne {
 
         INDArray sumX = pow(X, 2).sum(1);
 
-        logger.debug("sumX shape: " + Arrays.toString(sumX.shape()));
+        log.debug("sumX shape: " + Arrays.toString(sumX.shape()));
 
         INDArray times = X.mmul(X.transpose()).muli(-2);
 
-        logger.debug("times shape: " + Arrays.toString(times.shape()));
+        log.debug("times shape: " + Arrays.toString(times.shape()));
 
         INDArray prodSum = times.transpose().addiColumnVector(sumX);
 
-        logger.debug("prodSum shape: " + Arrays.toString(prodSum.shape()));
+        log.debug("prodSum shape: " + Arrays.toString(prodSum.shape()));
 
         INDArray D = X.mmul(X.transpose()).mul(-2) // thats times
                         .transpose().addColumnVector(sumX) // thats prodSum
                         .addRowVector(sumX.transpose()); // thats D
 
-        logger.info("Calculating probabilities of data similarities...");
-        logger.debug("Tolerance: " + tolerance);
+        log.info("Calculating probabilities of data similarities...");
+        log.debug("Tolerance: " + tolerance);
         for (int i = 0; i < n; i++) {
             if (i % 500 == 0 && i > 0)
-                logger.info("Handled [" + i + "] records out of [" + n + "]");
+                log.info("Handled [" + i + "] records out of [" + n + "]");
 
             double betaMin = Double.NEGATIVE_INFINITY;
             double betaMax = Double.POSITIVE_INFINITY;
@@ -307,7 +307,7 @@ public class Tsne {
 
 
         //dont need data in memory after
-        logger.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
+        log.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
         BooleanIndexing.applyWhere(p, Conditions.isNan(), new Value(1e-12));
 
         //set 0 along the diagonal

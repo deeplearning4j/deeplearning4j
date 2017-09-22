@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.glove.count;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -16,9 +17,8 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Created by fartovii on 25.12.15.
  */
+@Slf4j
 public class BinaryCoOccurrenceReaderTest {
-
-    private static final Logger log = LoggerFactory.getLogger(BinaryCoOccurrenceReaderTest.class);
 
     @Before
     public void setUp() throws Exception {

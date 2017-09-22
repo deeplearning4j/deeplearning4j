@@ -19,6 +19,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,14 +33,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class DefaultStreamTokenizer implements Tokenizer {
 
     private StreamTokenizer streamTokenizer;
     private TokenPreProcess tokenPreProcess;
     private List<String> tokens = new ArrayList<>();
     private AtomicInteger position = new AtomicInteger(0);
-
-    protected static final Logger log = LoggerFactory.getLogger(DefaultStreamTokenizer.class);
 
     public DefaultStreamTokenizer(InputStream is) {
         Reader r = new BufferedReader(new InputStreamReader(is));

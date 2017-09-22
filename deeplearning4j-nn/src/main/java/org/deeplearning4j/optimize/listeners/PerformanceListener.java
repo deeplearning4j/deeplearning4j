@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.listeners;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -16,9 +17,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class PerformanceListener implements IterationListener {
     private final int frequency;
-    private static final Logger logger = LoggerFactory.getLogger(PerformanceListener.class);
     private ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
     private ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
     private ThreadLocal<Long> lastTime = new ThreadLocal<>();
@@ -115,7 +116,7 @@ public class PerformanceListener implements IterationListener {
                 builder.append("score: ").append(model.score()).append(";");
 
 
-            logger.info(builder.toString());
+            log.info(builder.toString());
         }
 
         lastTime.set(System.currentTimeMillis());

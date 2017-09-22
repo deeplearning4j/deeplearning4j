@@ -1,5 +1,6 @@
 package org.deeplearning4j.earlystopping;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
@@ -400,9 +401,9 @@ public class TestEarlyStopping {
         assertEquals(1, listener.onCompletionCallCount);
     }
 
+    @Slf4j
     private static class LoggingEarlyStoppingListener implements EarlyStoppingListener<MultiLayerNetwork> {
 
-        private static Logger log = LoggerFactory.getLogger(LoggingEarlyStoppingListener.class);
         private int onStartCallCount = 0;
         private int onEpochCallCount = 0;
         private int onCompletionCallCount = 0;

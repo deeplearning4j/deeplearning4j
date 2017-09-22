@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.uima;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;
@@ -31,11 +32,11 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class UimaResource {
 
     private AnalysisEngine analysisEngine;
     private CasPool casPool;
-    private static final Logger log = LoggerFactory.getLogger(UimaResource.class);
 
     public UimaResource(AnalysisEngine analysisEngine) throws ResourceInitializationException {
         this.analysisEngine = analysisEngine;

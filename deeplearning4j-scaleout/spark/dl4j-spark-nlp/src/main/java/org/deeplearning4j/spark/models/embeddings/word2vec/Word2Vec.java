@@ -20,6 +20,7 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -58,10 +59,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable {
 
     private INDArray trainedSyn1;
-    private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
     private int MAX_EXP = 6;
     @Getter
     private double[] expTable;

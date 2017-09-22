@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.earlystopping;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
@@ -42,9 +43,8 @@ import java.util.Map;
  * or a {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * @author Alex Black
  */
+@Slf4j
 public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
-
-    private static Logger log = LoggerFactory.getLogger(BaseSparkEarlyStoppingTrainer.class);
 
     private JavaSparkContext sc;
     private final EarlyStoppingConfiguration<T> esConfig;

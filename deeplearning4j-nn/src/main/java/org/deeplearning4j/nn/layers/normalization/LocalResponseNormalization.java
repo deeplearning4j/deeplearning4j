@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
@@ -48,10 +49,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * <p>
  * Created by nyghtowl on 10/29/15.
  */
+@Slf4j
 public class LocalResponseNormalization
                 extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
-    protected static final Logger log =
-                    LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
     LocalResponseNormalizationHelper helper = null;
 

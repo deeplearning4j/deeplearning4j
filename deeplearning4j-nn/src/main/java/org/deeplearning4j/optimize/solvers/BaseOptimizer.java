@@ -19,6 +19,7 @@
 package org.deeplearning4j.optimize.solvers;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -51,10 +52,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Base optimizer
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected NeuralNetConfiguration conf;
-    protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     @Getter
     protected StepFunction stepFunction;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();

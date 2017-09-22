@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
@@ -45,10 +46,10 @@ import java.util.Random;
  *
  * @author Justin Long (crockpotveggies)
  */
+
 public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
 
     private File fileDir;
-    private static Logger log = LoggerFactory.getLogger(TinyImageNetFetcher.class);
 
     public static int INPUT_WIDTH = 64;
     public static int INPUT_HEIGHT = 64;

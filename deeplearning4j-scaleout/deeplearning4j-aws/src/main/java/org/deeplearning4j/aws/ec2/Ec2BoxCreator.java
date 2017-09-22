@@ -21,6 +21,7 @@ package org.deeplearning4j.aws.ec2;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.model.*;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.aws.s3.BaseS3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +35,8 @@ import java.util.List;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class Ec2BoxCreator extends BaseS3 {
-
 
     private String amiId;
     private int numBoxes;
@@ -44,7 +45,6 @@ public class Ec2BoxCreator extends BaseS3 {
     private String securityGroupId;
     private String keyPair;
     private Regions regions = Regions.DEFAULT_REGION;
-    private static final Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
 
     //centos
     public final static String DEFAULT_AMI = "ami-8997afe0";

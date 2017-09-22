@@ -1,6 +1,7 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.IVertexSequence;
 import org.deeplearning4j.graph.api.NoEdgeHandling;
@@ -28,9 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * search, etc on the graph<br>
  * @author Alex Black
  */
+@Slf4j
 public class DeepWalk<V, E> extends GraphVectorsImpl<V, E> {
     public static final int STATUS_UPDATE_FREQUENCY = 1000;
-    private Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
     private int vectorSize;
     private int windowSize;

@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.conf;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
@@ -56,8 +57,8 @@ import java.util.*;
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
+@Slf4j
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
-    private static Logger log = LoggerFactory.getLogger(ComputationGraphConfiguration.class);
 
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();

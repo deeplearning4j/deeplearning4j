@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -46,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     private static final long serialVersionUID = 78249242142L;
 
@@ -58,8 +60,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     @Getter
     protected VectorsConfiguration configuration = new VectorsConfiguration();
-
-    protected static final Logger log = LoggerFactory.getLogger(SequenceVectors.class);
 
     protected transient WordVectors existingModel;
     protected transient T unknownElement;

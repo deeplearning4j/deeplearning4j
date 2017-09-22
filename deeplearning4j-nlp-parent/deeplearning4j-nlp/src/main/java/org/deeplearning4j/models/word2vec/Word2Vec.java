@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -29,6 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Word2Vec extends SequenceVectors<VocabWord> {
     private static final long serialVersionUID = 78249242142L;
 

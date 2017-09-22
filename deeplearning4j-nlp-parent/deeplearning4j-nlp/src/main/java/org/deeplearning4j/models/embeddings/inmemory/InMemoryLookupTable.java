@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -53,9 +54,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class InMemoryLookupTable<T extends SequenceElement> implements WeightLookupTable<T> {
-
-    private static final Logger log = LoggerFactory.getLogger(InMemoryLookupTable.class);
 
     protected INDArray syn0, syn1;
     protected int vectorLength;

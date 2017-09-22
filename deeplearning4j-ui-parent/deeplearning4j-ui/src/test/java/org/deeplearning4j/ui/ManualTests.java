@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.LFWLoader;
@@ -62,9 +63,8 @@ import static org.junit.Assert.fail;
  * @author raver119@gmail.com
  */
 @Ignore
+@Slf4j
 public class ManualTests {
-
-    private static Logger log = LoggerFactory.getLogger(ManualTests.class);
 
     @Test
     public void testLaunch() throws Exception {

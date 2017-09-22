@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.bagofwords.vectorizer;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -50,9 +51,8 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 public class TfidfVectorizerTest {
-
-    private static final Logger log = LoggerFactory.getLogger(TfidfVectorizerTest.class);
 
 
     @Test

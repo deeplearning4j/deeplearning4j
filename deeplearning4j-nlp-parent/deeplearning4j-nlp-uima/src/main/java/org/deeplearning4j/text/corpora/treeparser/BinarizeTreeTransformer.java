@@ -38,10 +38,6 @@ public class BinarizeTreeTransformer implements TreeTransformer {
     private String factor = "left";
     private int horizontonalMarkov = 999;
 
-
-
-    private static final Logger log = LoggerFactory.getLogger(BinarizeTreeTransformer.class);
-
     @Override
     public Tree transform(Tree t) {
         if (t == null)

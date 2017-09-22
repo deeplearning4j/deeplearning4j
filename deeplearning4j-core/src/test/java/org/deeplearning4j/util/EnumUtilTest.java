@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -26,9 +27,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by agibsonccc on 9/3/14.
  */
+@Slf4j
 public class EnumUtilTest {
-
-    private static final Logger log = LoggerFactory.getLogger(EnumUtil.class);
 
     @Test
     public void testGetEnum() {

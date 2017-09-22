@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.exception.NoEdgesException;
@@ -20,13 +21,12 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class RandomWalkerTest {
 
     private static IGraph<VocabWord, Double> graph;
     private static IGraph<VocabWord, Double> graphBig;
     private static IGraph<VocabWord, Double> graphDirected;
-
-    protected static final Logger logger = LoggerFactory.getLogger(RandomWalkerTest.class);
 
     @Before
     public void setUp() throws Exception {
@@ -137,7 +137,7 @@ public class RandomWalkerTest {
         try {
             while (walker.hasNext()) {
                 Sequence<VocabWord> sequence = walker.next();
-                logger.info("Sequence: " + sequence);
+                log.info("Sequence: " + sequence);
             }
 
             // if cycle passed without exception - something went bad

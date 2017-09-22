@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.SequenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>> {
     /*
             So, we must accept any SentenceIterator implementations, and build vocab out of it, and use it for further transforms between text and Sequences
@@ -35,8 +37,6 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     protected AtomicInteger sentenceCounter = new AtomicInteger(0);
     protected boolean allowMultithreading = false;
     protected BasicTransformerIterator currentIterator;
-
-    protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
     private SentenceTransformer(@NonNull LabelAwareIterator iterator) {
         this.iterator = iterator;

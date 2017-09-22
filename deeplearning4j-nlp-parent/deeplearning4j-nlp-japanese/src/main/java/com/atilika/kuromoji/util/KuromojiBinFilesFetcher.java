@@ -1,5 +1,6 @@
 package com.atilika.kuromoji.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.util.ArchiveUtils;
 import org.slf4j.Logger;
@@ -14,8 +15,8 @@ import java.util.List;
 /**
  * Created by kepricon on 16. 11. 24.
  */
+@Slf4j
 public class KuromojiBinFilesFetcher {
-    protected static final Logger log = LoggerFactory.getLogger(KuromojiBinFilesFetcher.class);
     protected static final String TEMP_ROOT = System.getProperty("user.home");
     protected static final String KUROMOJI_BIN_ROOT;
     static {

@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize.listeners;
 
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,9 +28,9 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Slf4j
 public class ParamAndGradientIterationListener implements IterationListener {
     private static final int MAX_WRITE_FAILURE_MESSAGES = 10;
-    private static final Logger logger = LoggerFactory.getLogger(ParamAndGradientIterationListener.class);
 
     private boolean invoked = false;
 
@@ -131,16 +132,16 @@ public class ParamAndGradientIterationListener implements IterationListener {
                 } catch (IOException e) {
                     if (writeFailureCount++ < MAX_WRITE_FAILURE_MESSAGES) {
                         //Print error message
-                        logger.warn("Error writing to file: {}", e);
+                        log.warn("Error writing to file: {}", e);
                     }
                     if (writeFailureCount == MAX_WRITE_FAILURE_MESSAGES) {
-                        logger.warn("Max file write messages displayed. No more failure messages will be printed");
+                        log.warn("Max file write messages displayed. No more failure messages will be printed");
                     }
                 }
             }
 
             if (outputToLogger)
-                logger.info(sb.toString());
+                log.info(sb.toString());
             if (outputToConsole)
                 System.out.println(sb.toString());
         }
@@ -200,7 +201,7 @@ public class ParamAndGradientIterationListener implements IterationListener {
 
         String out = sb.toString();
         if (outputToLogger)
-            logger.info(out);
+            log.info(out);
         if (outputToConsole)
             System.out.print(out);
 
@@ -210,10 +211,10 @@ public class ParamAndGradientIterationListener implements IterationListener {
             } catch (IOException e) {
                 if (writeFailureCount++ < MAX_WRITE_FAILURE_MESSAGES) {
                     //Print error message
-                    logger.warn("Error writing to file: {}", e);
+                    log.warn("Error writing to file: {}", e);
                 }
                 if (writeFailureCount == MAX_WRITE_FAILURE_MESSAGES) {
-                    logger.warn("Max file write messages displayed. No more failure messages will be printed");
+                    log.warn("Max file write messages displayed. No more failure messages will be printed");
                 }
             }
         }

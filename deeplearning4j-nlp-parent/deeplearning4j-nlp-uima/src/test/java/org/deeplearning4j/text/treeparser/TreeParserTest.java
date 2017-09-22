@@ -35,7 +35,6 @@ import static org.junit.Assert.assertEquals;
  * @author  Adam Gibson
  */
 public class TreeParserTest {
-    private static final Logger log = LoggerFactory.getLogger(TreeParserTest.class);
     private TreeParser parser;
 
     @Before

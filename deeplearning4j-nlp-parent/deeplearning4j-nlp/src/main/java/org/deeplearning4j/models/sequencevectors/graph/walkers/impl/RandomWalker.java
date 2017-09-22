@@ -2,6 +2,7 @@ package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * Based on Alex Black RandomWalkIterator implementation
  */
+@Slf4j
 public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected int walkLength = 5;
     protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
@@ -39,8 +41,6 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected int[] order;
     protected WalkDirection walkDirection;
     protected double alpha;
-
-    private static final Logger logger = LoggerFactory.getLogger(RandomWalker.class);
 
     protected RandomWalker() {
 
@@ -233,7 +233,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     public void reset(boolean shuffle) {
         this.position.set(0);
         if (shuffle) {
-            logger.debug("Calling shuffle() on entries...");
+            log.debug("Calling shuffle() on entries...");
             // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
             for (int i = order.length - 1; i > 0; i--) {
                 int j = rng.nextInt(i + 1);

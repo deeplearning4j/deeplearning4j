@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -26,8 +27,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by agibsonccc on 11/12/16.
  */
+@Slf4j
 public class ParallelWrapperTest {
-    private static final Logger log = LoggerFactory.getLogger(ParallelWrapperTest.class);
 
     @Test
     public void testParallelWrapperRun() throws Exception {

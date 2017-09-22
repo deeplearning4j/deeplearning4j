@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.time;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
 import org.slf4j.Logger;
@@ -25,6 +26,7 @@ import java.util.TimerTask;
  *
  * @author Alex Black
  */
+@Slf4j
 public class NTPTimeSource implements TimeSource {
 
     public static final String NTP_SOURCE_UPDATE_FREQUENCY_MS_PROPERTY =
@@ -37,7 +39,6 @@ public class NTPTimeSource implements TimeSource {
 
     public static final String DEFAULT_NTP_SERVER = "0.pool.ntp.org";
 
-    private static Logger log = LoggerFactory.getLogger(NTPTimeSource.class);
     private static NTPTimeSource instance;
 
     public static synchronized TimeSource getInstance() {
