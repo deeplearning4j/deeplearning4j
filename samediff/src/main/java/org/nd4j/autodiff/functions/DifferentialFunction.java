@@ -203,8 +203,10 @@ public abstract class DifferentialFunction implements Differential {
             DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
             DifferentialFunction arg = sameDiff.setupFunction(args()[i]);
             DifferentialFunction grad = arg.getGradient() != null ? sameDiff.setupFunction(arg.getGradient()) : null;
-            if(grad != null)
-                f().addi(differentialFunction,grad);
+            if(grad != null) {
+                DifferentialFunction ret = f().addi(differentialFunction, grad);
+                arg.setGradient(ret);
+            }
             else
                 arg.setGradient(differentialFunction);
             differentialFunction.setGradFunction(true);
