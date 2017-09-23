@@ -5,7 +5,7 @@ layout: default
 
 # Using Deeplearning4j with cuDNN
 
-Deeplearning4j supports CUDA but can be further accelerated with cuDNN. Starting with version 0.9.1, both CNNs and LSTMs are supported. To use cuDNN, you will first need to switch ND4J to the CUDA backend. This can be done by replacing `nd4j-native` with `nd4j-cuda-7.5` or `nd4j-cuda-8.0` in your `pom.xml` files, ideally adding a dependency on `nd4j-cuda-7.5-platform` or `nd4j-cuda-8.0-platform` to include automatically binaries from all platforms:
+Deeplearning4j supports CUDA but can be further accelerated with cuDNN. Starting with version 0.9.1, both CNNs and LSTMs are supported. **Note:** cuDNN does not support [`GravesLSTM`](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesLSTM.html) layers. Please consider switching to new [`LSTM`](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/LSTM.html) layers. To use cuDNN, you will first need to switch ND4J to the CUDA backend. This can be done by replacing `nd4j-native` with `nd4j-cuda-7.5` or `nd4j-cuda-8.0` in your `pom.xml` files, ideally adding a dependency on `nd4j-cuda-7.5-platform` or `nd4j-cuda-8.0-platform` to include automatically binaries from all platforms:
 
 	 <dependency>
 	   <groupId>org.nd4j</groupId>
