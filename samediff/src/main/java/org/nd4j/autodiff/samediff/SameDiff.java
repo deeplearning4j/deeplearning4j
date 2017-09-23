@@ -164,14 +164,14 @@ public class SameDiff {
                 List<Edge<OpState>> edgesForNewVertex = new ArrayList<>();
                 sameDiff.graph().getEdges().put(newVertexMap, edgesForNewVertex);
                 for (Edge<OpState> edge : edgesForVertex) {
-                    Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getFrom()),"Edge missing from vertex id for copy " + edge.getFrom());
-                    Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getTo()),"Edge missing to vertex id for copy " + edge.getTo());
+                    Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getFrom()[0]),"Edge missing from vertex id for copy " + edge.getFrom()[0]);
+                    Preconditions.checkState(thisVertexIdToNew.containsKey(edge.getTo()[0]),"Edge missing to vertex id for copy " + edge.getTo()[0]);
 
                     OpStateEdge newEdge = new OpStateEdge(
-                            new int[]{thisVertexIdToNew.get(edge.getFrom())},
-                            new int[]{thisVertexIdToNew.get(edge.getTo())},
+                            new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
+                            new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                             cloner.deepClone(edge.getValue()), true);
-                    newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
+                    newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
                     edgesForNewVertex.add(newEdge);
 
                 }
@@ -182,10 +182,10 @@ public class SameDiff {
                 sameDiff.graph().getIncomingEdges().put(newVertexMap,newIncomingEdges);
                 for(Edge<OpState> edge : incomingEdgesForVertex) {
                     OpStateEdge newEdge = new OpStateEdge(
-                             new int[]{thisVertexIdToNew.get(edge.getFrom())},
-                            new int[]{thisVertexIdToNew.get(edge.getTo())},
+                             new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
+                            new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                             cloner.deepCloneDontCloneInstances(edge.getValue()),true);
-                    newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
+                    newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
 
                     newIncomingEdges.add(newEdge);
 
@@ -196,7 +196,7 @@ public class SameDiff {
                     if(newEdge.getValue().getDifferentialFunction() != null) {
                         ensureSameDiffInstance(sameDiff,newEdge.getValue().getDifferentialFunction());
                         newEdge.getValue().setDifferentialFunction(sameDiff.setupFunction(newEdge.getValue().getDifferentialFunction()));
-                        newEdge.getValue().getDifferentialFunction().setVertexId(edge.getValue().getDifferentialFunction().getVertexId());
+                        newEdge.getValue().getDifferentialFunction().setVertexId(edge.getValue().getDifferentialFunction().resultVertexId());
                     }
                 }
             }
@@ -417,6 +417,13 @@ public class SameDiff {
         }
     }
 
+
+    public String[] generateVertexIds(int...vertexIds) {
+        String[] ret = new String[vertexIds.length];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = String.valueOf(vertexIds[i]);
+        return ret;
+    }
 
     /**
      * Attempts to insert the {@link ArrayField}

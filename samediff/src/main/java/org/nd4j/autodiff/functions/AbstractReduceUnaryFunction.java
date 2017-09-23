@@ -78,7 +78,7 @@ public abstract class AbstractReduceUnaryFunction extends DifferentialFunction {
                 .opType(OpState.OpType.ACCUMULATION)
                 .opName(opName).axes(dimensions)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
                 .differentialFunction(this)
                 .build();

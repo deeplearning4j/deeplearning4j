@@ -44,9 +44,7 @@
         </repository>
     </repositories>
 
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
+
 
     <profiles>
 
@@ -452,7 +450,7 @@
         <jcommander.version>1.27</jcommander.version>
         <guava.version>20.0</guava.version>
         <playframework.version>2.4.6</playframework.version>
-        <lombok.version>1.16.16</lombok.version>
+        <lombok.version>1.16.18</lombok.version>
         <jackson.version>2.5.1</jackson.version>
         <reflections.version>0.9.10</reflections.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -475,7 +473,7 @@
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-surefire.version>2.19.1</maven-surefire.version>
         <maven-lifecycle-mapping.version>1.0.0</maven-lifecycle-mapping.version>
-        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.0.0-M1</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
         <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
@@ -591,7 +589,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+          <!--  <plugin>
               <groupId>com.lewisd</groupId>
               <artifactId>lint-maven-plugin</artifactId>
               <version>0.0.11</version>
@@ -614,7 +612,7 @@
                   </goals>
                 </execution>
               </executions>
-            </plugin>
+            </plugin>-->
             <plugin>
               <groupId>net.revelc.code.formatter</groupId>
               <artifactId>formatter-maven-plugin</artifactId>

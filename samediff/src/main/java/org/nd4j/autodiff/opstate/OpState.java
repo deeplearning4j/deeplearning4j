@@ -42,35 +42,6 @@ public class OpState implements Serializable {
     private boolean inPlace;
 
     /**
-     * Creates an op state from
-     * the given op.
-     * @param op
-     * @param arrToVertexID a map of {@link INDArray}
-     *                      to vertex id (this map
-     *                      is typically a reference map
-     *                      {@link java.util.IdentityHashMap})
-     * @return
-     */
-    public static OpState fromOp(Op op, Map<INDArray,Integer> arrToVertexID) {
-        OpState opState = OpState.builder()
-                .extraArgs(op.extraArgs())
-                .opNum(op.opNum())
-                .n(op.n()).vertexIds(null)
-                .id(UUID.randomUUID().toString())
-                .opName(op.name()).vertexIds(new String[]{
-                        String.valueOf(arrToVertexID.get(op.x()))
-                        ,String.valueOf(arrToVertexID.get(op.y()))
-                })
-                .opType(opTypeFromOp(op))
-                .build();
-        NDArrayInformation ndArrayInformation = NDArrayInformation.newInfo(op.z());
-        ndArrayInformation.setOwner(opState);
-        opState.setResult(ndArrayInformation);
-        return opState;
-    }
-
-
-    /**
      * Create an {@link OpType}
      * based on the type of {@link Op}
      * @param op the input op

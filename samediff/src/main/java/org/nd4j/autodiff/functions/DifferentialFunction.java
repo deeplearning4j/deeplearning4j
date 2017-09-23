@@ -203,8 +203,10 @@ public abstract class DifferentialFunction implements Differential {
             DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
             DifferentialFunction arg = sameDiff.setupFunction(args()[i]);
             DifferentialFunction grad = arg.getGradient() != null ? sameDiff.setupFunction(arg.getGradient()) : null;
-            if(grad != null)
-                f().addi(differentialFunction,grad);
+            if(grad != null) {
+                DifferentialFunction ret = f().addi(differentialFunction, grad);
+                arg.setGradient(ret);
+            }
             else
                 arg.setGradient(differentialFunction);
             differentialFunction.setGradFunction(true);
@@ -313,7 +315,7 @@ public abstract class DifferentialFunction implements Differential {
                     .differentialFunction(this)
                     .opName(opName)
                     .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
+                    .vertexIds(sameDiff.generateVertexIds(v2VertexId,newVertex.vertexID()))
                     .n(ArrayUtil.prod(shape))
                     .extraArgs(extraArgs)
                     .result(arrInfo)
@@ -327,7 +329,7 @@ public abstract class DifferentialFunction implements Differential {
                     .opName(opName).inPlace(inPlace)
                     .differentialFunction(this)
                     .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
+                    .vertexIds(sameDiff.generateVertexIds(v2VertexId,newVertex.vertexID()))
                     .n(ArrayUtil.prod(shape))
                     .extraArgs(extraArgs)
                     .result(arrInfo)
@@ -338,7 +340,7 @@ public abstract class DifferentialFunction implements Differential {
                 .opType(opType).inPlace(inPlace)
                 .opName(opName).result(arrInfo)
                 .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                .vertexIds(new String[]{String.valueOf(v1VertexId),String.valueOf(newVertex.vertexID())})
+                .vertexIds(sameDiff.generateVertexIds(v1VertexId,newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape))
                 .extraArgs(extraArgs)
                 .differentialFunction(this)
