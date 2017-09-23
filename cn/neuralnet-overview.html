@@ -7,12 +7,17 @@ redirect_from: /zh-neuralnet-overview
 <p>目录</p>
 <ul>
   <li><a href="#define">神经网络的定义</a></li>
+  <li><a href="#concrete">应用实例</a></li>
   <li><a href="#element">神经网络的要素</a></li>
   <li><a href="#concept">深度神经网络的重要概念</a></li>
   <li><a href="#forward">示例：前馈网络与反向传播</a></li>
   <li><a href="#regression">多元线性回归</a></li>
+  <li><a href="#updaters">更新器</a></li>
+  <li><a href="#custom">自定义的层、激活函数和损失函数</a></li>
   <li><a href="#gradient">梯度下降</a></li>
   <li><a href="#logistic">逻辑回归与分类器</a></li>
+  <li><a href="#lossFunction">DeepLearning4j中的损失函数</a></li>
+  <li><a href="#apllyingLossFunction">在DeepLearning4j中应用损失函数</a></li>
   <li><a href="#ai">神经网络与人工智能</a></li>
   <li><a href="#intro">其他教程资源</a></li>
 </ul>
@@ -26,6 +31,35 @@ redirect_from: /zh-neuralnet-overview
 <p>举例而言，如果你要识别癌症高危人群，所需的定型数据集可以是一份癌症病人和健康人的名单，包括与个人身份号码相关联的所有数据，既有年龄、是否吸烟等明显特征，也包括记录动作的时间序列或网络行为记录等原始数据，这些数据或许能揭示出大量有关生活方式、习惯、兴趣和风险的信息。</p>
 <p>你可以用这一数据集定型一个神经网络，将这些人分为癌症病人和健康人两个类别，再将分类模型应用于癌症风险未知的人，以此预测新病人的癌症风险，对有风险的患者加强关注和预防治疗。</p>
 <p>无论你要找的是合适的相亲对象、棒球联赛的明日之星、一家企业最有潜力的员工，还是演技差的演员，基本流程都大致相同：收集人口统计、社交图谱、原始通讯文本、点击流等各种数据，创建一个定型数据集，随后将不同类型的数据进行比较，以此揭示出模式，发现目标个体。</p><br>
+
+<p><h2><a name="concrete">应用实例</a></h2></p>
+<p>深度学习网络将输入映射至输出。它能发现关联。深度学习网络亦被称为“通用拟合器”，因为假设任意输入<code>x</code>与任意输出<code>y</code>之间存在一定关联或因果关系，神经网络就可以学习拟合<code>x</code>与<code>y</code>之间的函数关系<code>f(x) = y</code>。在学习过程中，神经网络会寻找最恰当的<code>f</code>，亦即将<code>x</code>转换为<code>y</code>的正确方式，无论是<code>f(x) = 3x + 12</code>还是<code>f(x) = 9x - 0.1</code>。以下是一些深度学习实际用途的例子。</p>
+<p><h3>分类</h3></p>
+<p>一切分类任务都依赖于已标记的数据集；也就是说，人类必须将自己的知识转移到数据集中，以供神经网络学习标签与数据之间的关联。这被称为<em>有监督学习</em>。</p>
+<ul>
+    <li>检测人脸，识别图像中的人物，辨识面部表情（愤怒、快乐等）</li>
+    <li>识别图像中的物体（停车标志、行人、车道线等）</li>
+    <li>辨识视频中的手势动作</li>
+    <li>检测语音，识别讲话人，语音转换为文本，识别语音中的情感等</li>
+    <li>分辨垃圾信息（电子邮件）或欺诈信息（保险理赔申请）；辨识文本中的情感（客户反馈）</li>
+</ul>
+<p>任何常人可以想到的标签、任何与数据相关联的重要结果都可以用来训练神经网络。</p>
+<p><h3>聚类</h3></p>
+<p>聚类或分组就是检测相似性。深度学习用于检测相似性时不需要标签。不依赖标签的学习又称<em>无监督学习</em>。世界上大部分的数据都是未标记数据。机器学习的法则之一是：用于训练算法的数据越多，算法就会变得越准确。因此，无监督学习具有产生高准确率模型的潜力。</p>
+<ul>
+    <li>搜索：比较文档、图像和声音，发现类似的项目。</li>
+    <li>异常检测：相似性检测的反面是异常事件和异常行为检测。在许多情况下，异常行为往往与欺诈等需要及时发现和预防的事件高度相关。</li> 
+</ul>
+<p><h3>预测分析</h3></p>
+<p>深度学习可以通过分类来发现事物间的关联，比如图像像素与人物姓名之间的关联。这可以称为静态预测。同样，如果有足够且合适的数据，深度学习网络可以发现当前事件与未来事件之间的关联。从某种意义上说，未来事件就像是标签一样。深度学习其实并不在意时间，或者某件事是否已经发生。深度学习网络可以处理一个特定的时间序列，读取一串数字，然后预测接下来最有可能出现的是什么数字。</p>
+<ul>
+    <li>硬件故障预测（数据中心、制造业、运输业）</li>
+    <li>健康问题预测（根据人口统计信息和可穿戴设备的数据来预测中风、心脏病发作等）</li>
+    <li>顾客流失预测（根据网页活动及元数据来预测顾客流失的可能性）</li>
+    <li>员工流动预测（同上，但用于预测雇员流失）</li>
+</ul>
+<p>预测水平越高，预防和提前行动的效果就越好。如上所述，神经网络正在让我们迈向一个意外更少的未来。意外并不会完全消失，只是一定程度地减少。</p>
+<p>以上便是<a href="https://deeplearning4j.org/cn/use_cases">深度学习应用案例</a>的概述，接下来我们将介绍神经网络的组成要素。</p><br>
 
 <p><h2><a name="element">神经网络的要素</a></h2></p>
 <p>深度学习系统指一系列由多个层堆叠组成的特定神经网络。每一层则由节点构成。运算在节点中进行，节点的运作模式与人类的神经元大致相似，遇到足够的刺激信息时就会激活并释放信号。节点将输入数据与一组系数（或称权重）结合，通过放大或抑制输入来指定其在算法学习任务中的重要性。输入数据与权重的乘积之和将进入节点的激活函数，判定信号是否继续在网络中传递，以及传递的距离，从而决定信号如何影响网络的最终结果，例如分类动作。</p>
@@ -88,7 +122,7 @@ Y_hat = b_1*X_1 + b_2*X_2 + b_3*X_3 + a
 <p>每个节点所要实现的功能相当于一个开关（就像神经元一样……），其开关状态取决于是否应当让输入信号通过并对网络的最终判定结果产生影响。</p>
 <p>每个开关也就是一个分类问题。对于输入的信号，节点应当将其归为足够还是不够，开还是关？二元判定可以用1和0表示，使用<a href="#logistic">逻辑回归</a>这种非线性函数可以挤压输入，将其转换至0到1的区间内。</p>
 <p>每个节点的非线性变换通常使用与逻辑回归相似的S型函数。这类函数被称为sigmoid（希腊字母&ldquo;S&rdquo;的读音）、tanh、hard tanh等，用于调整每个节点的输出。每个节点的输出均被挤压至0到1之间的s形空间内，随后作为输入传递至前馈神经网络的下一个层，如此不断推进，直至网络进行判定的最终层。</p><br>
-
+  
 <p><h2><a name="gradient">梯度下降</a></h2></p>
 <p>&ldquo;梯度下降&rdquo;是一种常用的权重优化函数，根据权重造成的误差来调整权重。</p>
 <p>梯度即是斜率。对x-y坐标系图像而言，斜率通常代表了两个变量之间的关联：纵向距离与横向距离之比、金额变化与时间变化之比等。在这个具体的例子中，我们所关注的斜率描述了网络误差与单个权重之间的关系，亦即：权重调整时，误差会如何变化。</p>
@@ -101,6 +135,51 @@ Y_hat = b_1*X_1 + b_2*X_2 + b_3*X_3 + a
 <img class="img-responsive center-block" src="../img/backprop_chain_rule.png" alt="deeplearning4j">
 <p>亦即，<em>误差</em>和<em>权重</em>这两个给定的变量之间存在第三个变量<em>激活值</em>作为中介，权重通过中介变量传递。如要计算<em>权重</em>变化对于<em>误差</em>变化的影响，可以先计算<em>激活值</em>变化对于<em>误差</em>变化的影响，以及<em>权重</em>变化如何影响<em>激活值</em>的变化。</p>
 <p>深度学习的实质无非如此：根据模型产生的误差调整模型中的诸多权重，直到误差不能再减少为止。</p><br>
+
+<p><h2><a name="updaters">更新器</a></h2></p>
+<p>DL4J支持下列更新器</p>
+<ul>
+    <li>ADADELTA</li> 
+    <li>ADAGRAD</li> 
+    <li>ADAM</li> 
+    <li>NESTEROVS</li> 
+    <li>NONE</li> 
+    <li>RMSPROP</li> 
+    <li>SGD</li> 
+    <li>CONJUGATE GRADIENT（共轭梯度法）</li> 
+    <li>HESSIAN FREE（无Hessian矩阵法）</li> 
+    <li>LBFGS</li> 
+    <li>LINE GRADIENT DESCENT（线搜索梯度下降法）</li>
+</ul>
+<p>更新器的JavaDoc是DeepLearning4j JavaDoc的一部分，参见<a href="https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/Updater.html">此处</a>。</p><br>
+
+<p><h2><a name="activation">激活函数</a></h2></p>
+<p>激活函数决定节点根据输入生成怎样的输出。Sigmoid激活函数过去一直很受欢迎，目前非常流行的则是ReLU函数。DeepLearnging4j中的激活函数以层为对象进行设定，应用于该层中的所有神经元。</p>
+<p>支持的激活函数</p>
+<ul>
+    <li>CUBE</li> 
+    <li>ELU</li> 
+    <li>HARDSIGMOID</li> 
+    <li>HARDTANH</li> 
+    <li>IDENTITY</li> 
+    <li>LEAKYRELU</li> 
+    <li>RATIONALTANH</li> 
+    <li>RELU</li> 
+    <li>RRELU</li> 
+    <li>SIGMOID</li> 
+    <li>SOFTMAX</li> 
+    <li>SOFTPLUS</li> 
+    <li>SOFTSIGN</li> 
+    <li>TANH</li>
+</ul>
+<p>配置激活函数</p>
+<pre><code>
+layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX)
+</code></pre>
+<br>
+
+<p><h2><a name="custom">自定义的层、激活函数和损失函数</a></h2></p>
+<p>Deeplearning4j支持自定义的层、激活函数和损失函数。</p><br>
 
 <p><h2><a name="logistic">逻辑回归</a></h2></p>
 <p>对于多层的深度神经网络，最后一个层有着独特的作用。在处理已标记的输入时，输出层会对每个样例进行分类，添加最有可能与之匹配的标签。输出层上的每个节点都代表一个标签，节点根据其从上一层输入和参数中接收到的信号强度来决定开关。</p>
@@ -115,6 +194,24 @@ Y_hat = b_1*X_1 + b_2*X_2 + b_3*X_3 + a
 <p>触发标签的输入<em>x</em>增加时，<em>e的负x次幂</em>会逐渐趋于零，函数的结果则趋向1/1，即100%，意味着我们越来越接近（但并不会达到）确定标签绝对匹配的状态。与输出负相关的输入作为<em>e</em>的指数时会被负号转换成正数，所以随着负信号不断增加，<em>e的负x次幂</em>也会增大，使整个分数更趋向于零。</p>
 <p>现在试想指数不再是<em>x</em>，而是所有权重与其对应输入的乘积的总和－在网络中传递的信号总和。这就是输入神经网络分类器输出层的逻辑回归层的数据。</p>
 <p>我们可以为这个层设置判定的标准，高于标准的样例标记为1，低于标准则不予标记。你可以按照需要自行设定不同的标准－标准过低会增加取伪错误的数量，标准过高会增加弃真错误的数量－具体取决于你更能容忍哪一类的错误。</p><br>
+
+<p><h2><a name="lossFunction">DeepLearning4j中的损失函数</a></h2></p>
+<p>DeepLearning4j支持下列损失函数。</p>
+<ul>
+    <li>MSE：均方差：线性回归</li>
+    <li>EXPLL：指数型对数似然函数：泊松回归</li>
+    <li>XENT：叉熵二元分类</li>
+    <li>MCXENT：多类别叉熵</li>
+    <li>RMSE_XENT：RMSE叉熵</li>
+    <li>SQUARED_LOSS：平方损失</li>
+    <li>NEGATIVELOGLIKELIHOOD：负对数似然函数</li>
+</ul>
+<p><h2><a name="applyingLossFunction">在DeepLearning4j中应用损失函数</a></h2></p>
+<p>损失函数在构建输出层时应用。</p>
+<pre><code>
+layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+</code></pre>
+<p>损失函数的JavaDoc是ND4J JavaDoc的一部分，参见<a href="https://nd4j.org/doc/org/nd4j/linalg/api/ops/LossFunction.html">此处</a>。</p><br>
 
 <p><h2><a name="ai">神经网络与人工智能</a></h2></p>
 <p>有些领域内，神经网络被视为&ldquo;蛮力型&rdquo;人工智能，因为这类系统最开始都是白纸一张，随后再一步一步打造出一个准确的模型。神经网络很有效，但有些人认为这种建模方法效率低下，不能对输出与输入之间的函数依赖性进行假设。</p>
