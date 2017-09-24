@@ -7,7 +7,7 @@ layout: default
 
 [*By Stephan Duquesnoy*](https://twitter.com/stephanduq)
 
-## Background
+## Background (NOTE THAT THIS PAGE IS A YEAR OLD. PLEASE CHECK THE NEW EXAMPLES FOR HOW TO RUN AN IMAGE CLASSIFICATION ENGINE OR ASK IN THE GITTER CHANNEL)
 
 I have a background in theater and IT. 
 
