@@ -19,19 +19,8 @@ public class DL4JArbiterStatusReportingListener implements IterationListener {
     private List<StatusListener> statusListeners;
     private CandidateInfo candidateInfo;
 
-
     @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    @Override
-    public void invoke() {
-
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         if (statusListeners == null) {
             return;
         }
