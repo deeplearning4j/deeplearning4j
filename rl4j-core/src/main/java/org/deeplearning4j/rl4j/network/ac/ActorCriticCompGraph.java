@@ -97,7 +97,7 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         Collection<IterationListener> iterationListeners = cg.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
             for (IterationListener listener : iterationListeners) {
-                listener.iterationDone(cg, iterationCount);
+                listener.iterationDone(cg, iterationCount, epochCount);
             }
         }
         cgConf.setIterationCount(iterationCount + 1);
