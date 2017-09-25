@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -500,41 +501,19 @@ public class TestComputationGraphNetwork {
     public void testPreTraining() {
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder()
+                        .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-6))
                         .l2(2e-4).graphBuilder().addInputs("in")
-                        .addLayer("layer0",
-                                new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(0,
-                                                1))
-                                        .activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                        .build(),
-                                "in")
-                        .addLayer("layer1",
-                                new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(0,
-                                                1))
-                                        .activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                        .build(),
-                                "in")
-                        .addLayer("layer2",
-                                new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                        RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(0,
-                                                1))
-                                        .activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                        .build(),
+                        .addLayer("layer0", new VariationalAutoencoder.Builder().nIn(4).nOut(3)
+                                        .encoderLayerSizes(5).decoderLayerSizes(5).build(), "in")
+                        .addLayer("layer1", new VariationalAutoencoder.Builder().nIn(4).nOut(3)
+                                        .encoderLayerSizes(5).decoderLayerSizes(5).build(),"in")
+                        .addLayer("layer2", new VariationalAutoencoder.Builder().nIn(3).nOut(3)
+                                        .encoderLayerSizes(5).decoderLayerSizes(5).build(),
                                 "layer1")
                         .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                        LossFunctions.LossFunction.MCXENT).nIn(3 + 3).nOut(3)
+                                        LossFunctions.LossFunction.MCXENT).nIn(3+3).nOut(3)
                                         .weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
@@ -547,9 +526,7 @@ public class TestComputationGraphNetwork {
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator iter = new IrisDataSetIterator(10, 150);
-        for( int i=0; i<100; i++ ) {
-            net.fit(iter);
-        }
+        net.fit(iter);
     }
 
     @Test

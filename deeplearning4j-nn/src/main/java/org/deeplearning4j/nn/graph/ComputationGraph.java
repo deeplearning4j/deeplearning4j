@@ -847,6 +847,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if(!(layer instanceof Model)){
             log.warn("Layer {} is not pretrainable, returning", layer.conf().getLayer().getLayerName());
+            return;
         }
 
         Model m = (Model)layer;
@@ -885,46 +886,45 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                     try (MemoryWorkspace wP = wsPTR.notifyScopeEntered()) {
 
-                        setInputs(multiDataSet.getFeatures());
+                        setInput(ActivationsFactory.getInstance().featuresAsActivations(multiDataSet));
+                        //Step 0: input copy to parent workspace
+                        input.leverageTo(workspaceExternal);
 
-//                        for (int j = 0; j < fwdPassOrder.length - 1; j++) {
-//                            try (MemoryWorkspace wF = wsFF.notifyScopeEntered()) {
-//                                Layer current = vertices[fwdPassOrder[j]];
-////                                if (gvInputVertex.contains(current.getName())) {
-//                                if (gvInputVertex.contains(current.getName())) {
-//                                    VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
-//                                    INDArray input = this.input.get(current.getIndex());
-//
-//                                    for (VertexIndices v : inputsTo) {
-//                                        int vIdx = v.getVertexIndex();
-//                                        int vIdxInputNum = v.getVertexEdgeNumber();
-//                                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-//                                        vertices[vIdx].setInput(vIdxInputNum,
-//                                                input.dup().leverageTo(workspacePretrain)); //TODO When to dup?
-//                                    }
-//
-//                                } else {
-//                                    //Do forward pass:
-//                                    Activations out = current.activate(true);
-//
-//                                    //Now, set the inputs for the next vertices:
-////                                    VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
-//                                    VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
-//                                    if (outputsTo != null) {
-//                                        for (VertexIndices v : outputsTo) {
-//                                            int vIdx = v.getVertexIndex();
-//                                            int inputNum = v.getVertexEdgeNumber();
-//                                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-//                                            vertices[vIdx].setInput(inputNum, out.get(0));
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                        }
-                        throw  new UnsupportedOperationException("Not yet reimplemented");
-                        //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
-//                        m.fit(gv.getInput());
-//                        layer.conf().setPretrain(false);
+                        setInputMiniBatchSize(input.get(0).size(0));
+
+                        //Step 1: Set the input vertices activations
+                        List<String> netInputs = configuration.getNetworkInputs();
+                        for( int i=0; i<netInputs.size(); i++ ){
+                            String inputName = netInputs.get(i);
+                            Layer l = verticesMap.get(inputName);
+                            l.setInput(input.getSubset(i));
+                        }
+
+                        //Step 2: Do forward pass based on topological order- *until we get to the required vertex*
+                        int idxToPretrain = gv.getIndex();
+                        for(int j=0; j<fwdPassOrder.length; j++ ){
+                            Layer current = vertices[fwdPassOrder[j]];
+                            Activations out = current.activate(false);  //All other layers should be treated as test/inference
+                            out = out.leverageTo(workspaceExternal);
+
+                            //Now, set the inputs for the next vertices:
+                            VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
+                            if (outputsTo != null) {
+                                for (VertexIndices v : outputsTo) {
+                                    int vIdx = v.getVertexIndex();
+                                    int inputNum = v.getVertexEdgeNumber();
+                                    //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                                    Activations thisInput = vertices[vIdx].getInput();
+                                    if (thisInput == null) {
+                                        thisInput = ActivationsFactory.getInstance().create(vertices[vIdx].numInputs());
+                                        vertices[vIdx].setInput(thisInput);
+                                    }
+                                    thisInput.set(inputNum, out.get(0), out.getMask(0), out.getMaskState(0));   //TODO MULTIPLE OUTPUTS
+                                }
+                            }
+                        }
+                        m.fit(gv.getInput());
+                        layer.conf().setPretrain(false);
                     }
                 }
             }
@@ -2221,6 +2221,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             labelMaskArrays = data.getLabelsMaskArrays();
         }
         Map<String,Activations> ff = feedForward(ActivationsFactory.getInstance().featuresAsActivations(data), false);
+        INDArray[] labels = data.getLabels();
         INDArray[] labelsMasks = data.getLabelsMaskArrays();
 
         INDArray out = null;
@@ -3056,6 +3057,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray labels = next.getLabels();
                 INDArray labelMask = next.getLabelsMaskArray();
 
+                if(input == null){
+                    input = ActivationsFactory.getInstance().create(numInputArrays);
+                }
                 input.setMask(0, featuresMask);
                 input.setMaskState(0, featuresMask == null ? null : MaskState.Active);
                 labelMaskArrays = labelMask == null ? null : new INDArray[]{labelMask};
