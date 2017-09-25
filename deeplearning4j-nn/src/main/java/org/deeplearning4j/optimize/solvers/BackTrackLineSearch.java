@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.LineOptimizer;
@@ -134,13 +135,9 @@ public class BackTrackLineSearch implements LineOptimizer {
         this.maxIterations = maxIterations;
     }
 
-    public double setScoreFor(INDArray parameters) {
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY) {
-            BooleanIndexing.applyWhere(parameters, Conditions.isNan(), new Value(Nd4j.EPS_THRESHOLD));
-        }
-
+    public double setScoreFor(INDArray parameters, Activations input, Activations labels) {
         layer.setParams(parameters);
-        layer.computeGradientAndScore(layer.getInput(), layer.getLabels());
+        layer.computeGradientAndScore(input, labels);
         return layer.score();
     }
 
@@ -156,7 +153,7 @@ public class BackTrackLineSearch implements LineOptimizer {
      * @throws InvalidStepException
      */
     @Override
-    public double optimize(INDArray parameters, INDArray gradients, INDArray searchDirection)
+    public double optimize(Activations input, Activations labels, INDArray parameters, INDArray gradients, INDArray searchDirection)
                     throws InvalidStepException {
         double test, stepMin, step, step2, oldStep, tmpStep;
         double rhs1, rhs2, a, b, disc, score, scoreAtStart, score2;
@@ -232,13 +229,13 @@ public class BackTrackLineSearch implements LineOptimizer {
                                             Shape.toOffsetZeroCopy(candidateParameters, 'f'),
                                             candidateParameters.length()))
                             .sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
-                score = setScoreFor(parameters);
+                score = setScoreFor(parameters, input, labels);
                 log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}",
                                 stepMin, score);
                 return 0.0;
             }
 
-            score = setScoreFor(candidateParameters);
+            score = setScoreFor(candidateParameters, input, labels);
             log.debug("Model score after step = {}", score);
 
             //Score best step size for use if we terminate on maxIterations
@@ -274,7 +271,7 @@ public class BackTrackLineSearch implements LineOptimizer {
                                 oldStep, score, score2);
                 tmpStep = .2 * step;
                 if (step < stepMin) { //convergence on delta x
-                    score = setScoreFor(parameters);
+                    score = setScoreFor(parameters, input, labels);
                     log.warn("EXITING BACKTRACK: Jump too small (step={} < stepMin={}). Exiting and using previous parameters. Value={}",
                                     step, stepMin, score);
                     return 0.0;
@@ -358,7 +355,7 @@ public class BackTrackLineSearch implements LineOptimizer {
         } else {
             log.debug("Exited line search after maxIterations termination condition; score did not improve (bestScore={}, scoreAtStart={}). Resetting parameters",
                             bestScore, scoreAtStart);
-            setScoreFor(parameters);
+            setScoreFor(parameters, input, labels);
             return 0.0;
         }
     }

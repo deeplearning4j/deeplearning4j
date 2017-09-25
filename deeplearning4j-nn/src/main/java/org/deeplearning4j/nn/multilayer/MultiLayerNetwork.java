@@ -98,6 +98,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     //Current training data: input features and labels
     protected Activations input = new ActivationsSingle(null, null, null);        //Input activations, and mask
+    protected int inputMinibatchSize = -1;  //Might still be needed for updating gradients, after feedForward has cleared input
 
     protected INDArray labels;
     protected INDArray labelsMask;
@@ -723,13 +724,10 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     public List<Activations> feedForwardToLayer(Activations input, int layerNum, boolean train){
-        //TODO this next call should eventually be removed (after redesign etc)
         if(input == null || input.get(0) == null){
-            throw new RuntimeException();
+            throw new IllegalStateException("Cannot perform forward pass: input is null");
         }
-        for(Layer l : layers){
-            l.setInputMiniBatchSize(input.get(0).size(0));
-        }
+        this.setInputMiniBatchSize(input.get(0).size(0));
 
         // TODO: maybe remove that?
         Activations currInput = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? input : input.migrate();
@@ -2069,15 +2067,18 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void setInputMiniBatchSize(int size) {
-        if (layers != null)
-            for (Layer l : layers)
+        if (layers != null) {
+            for (Layer l : layers) {
                 l.setInputMiniBatchSize(size);
+            }
+        }
+        this.inputMinibatchSize = size;
     }
 
     @Override
     public int getInputMiniBatchSize() {
         if(input == null || input.get(0) == null){
-            return -1;
+            return inputMinibatchSize;
         }
         return input.get(0).size(0);
     }

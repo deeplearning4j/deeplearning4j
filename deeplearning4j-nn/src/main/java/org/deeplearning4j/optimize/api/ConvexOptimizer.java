@@ -20,6 +20,7 @@ package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -73,7 +74,7 @@ public interface ConvexOptimizer extends Serializable {
      * The gradient and score for this optimizer
      * @return the gradient and score for this optimizer
      */
-    Pair<Gradient, Double> gradientAndScore();
+    Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels);
 
     /**
      * Calls optimize

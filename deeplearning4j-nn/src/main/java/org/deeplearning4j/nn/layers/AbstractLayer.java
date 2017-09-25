@@ -221,9 +221,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void clear() {
-        if(input != null){
-            input.clear();
-        }
+        input = null;
         dropoutApplied = false;
         preprocessorApplied = false;
         preOutput = null;

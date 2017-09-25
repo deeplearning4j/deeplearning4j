@@ -56,7 +56,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
     @Override
     public boolean optimize() {
-        Pair<Gradient, Double> pair = gradientAndScore();
+        Pair<Gradient, Double> pair = gradientAndScore(model.getInput(), model.getLabels());
 
         Gradient gradient = pair.getFirst();
 

@@ -221,6 +221,9 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
      * @param batchSize The current minibatch size (number of examples)
      */
     public void update(Gradient gradient, int iteration, int epoch, int batchSize) {
+        if(batchSize <= 0){
+            throw new IllegalArgumentException("Cannot update gradients: minibatch size must be >= 1. Got: " + batchSize);
+        }
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array

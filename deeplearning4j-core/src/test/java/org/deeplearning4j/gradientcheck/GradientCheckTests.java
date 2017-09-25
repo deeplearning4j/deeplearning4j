@@ -71,7 +71,8 @@ public class GradientCheckTests {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                     .seed(12345L)
-                                    .list().layer(0,
+                                    .list()
+                                  .layer(0,
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
                                                                     .weightInit(WeightInit.DISTRIBUTION)
                                                                     .dist(new NormalDistribution(0, 1))

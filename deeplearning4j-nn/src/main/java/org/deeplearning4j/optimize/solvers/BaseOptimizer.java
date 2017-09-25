@@ -165,10 +165,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore() {
+    public Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels) {
         oldScore = score;
-        Activations input = model.getInput();
-        Activations labels = model.getLabels();
         Pair<Gradients, Double> pair = model.computeGradientAndScore(input, labels);
 
         if (iterationListeners != null && iterationListeners.size() > 0) {
@@ -197,7 +195,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         INDArray gradient;
         INDArray searchDirection;
         INDArray parameters;
-        Pair<Gradient, Double> pair = gradientAndScore();
+
+        //Get the original input/labels
+        Activations input = model.getInput();
+        Activations labels = model.getLabels();
+
+        Pair<Gradient, Double> pair = gradientAndScore(input, labels);
         if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
             setupSearchState(pair); //Only do this once
@@ -224,7 +227,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
         //perform one line search optimization
         try {
-            step = lineMaximizer.optimize(parameters, gradient, searchDirection);
+            step = lineMaximizer.optimize(input, labels, parameters, gradient, searchDirection);
         } catch (InvalidStepException e) {
             log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
             step = 0.0;
@@ -239,7 +242,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             log.debug("Step size returned by line search is 0.0.");
         }
 
-        pair = gradientAndScore();
+        pair = gradientAndScore(input, labels);
 
         //updates searchDirection
         postStep(pair.getFirst().gradient());
