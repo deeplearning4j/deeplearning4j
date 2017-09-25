@@ -330,10 +330,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         MultiDataSet mds = underlying.next(num);
         DataSet ds = mdsToDataSet(mds);
 
-        if (preProcessor != null) {
-            preProcessor.preProcess(ds);
-        }
-
         if (totalOutcomes == -1) {
             inputColumns = ds.getFeatures().size(1);
             totalOutcomes = ds.getLabels().size(1);
