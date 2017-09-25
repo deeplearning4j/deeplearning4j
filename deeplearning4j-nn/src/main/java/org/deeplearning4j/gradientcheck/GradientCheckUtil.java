@@ -131,7 +131,7 @@ public class GradientCheckUtil {
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          Activations input, INDArray labels, INDArray labelsMask) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, labels, labelsMask);
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, true, input, labels, labelsMask);
     }
 
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
