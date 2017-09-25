@@ -2537,8 +2537,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
      */
     public INDArray[] rnnTimeStep(INDArray... inputs) {
-        this.input.clear();
-        this.input.setFromArray(inputs);
+        if(this.input != null)
+            this.input.clear();
+        setInputs(inputs);
 
         //Idea: if 2d in, want 2d out
         boolean inputIs2d = true;

@@ -121,7 +121,8 @@ public class GradientCheckTestsMasking {
 
                 Activations a = ActivationsFactory.getInstance().create(input);
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, a, labels, maskArr);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, false,
+                        a, labels, maskArr);
 
                 String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
                                 + ", miniBatchSize=" + 1;
@@ -131,7 +132,7 @@ public class GradientCheckTestsMasking {
         }
     }
 
-    //@Test
+    @Test
     public void testBidirectionalLSTMMasking() {
         //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);

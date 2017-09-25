@@ -54,8 +54,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected int index = 0;
     protected int numInputs = 1;
     protected int numOutput = 1;
-//    protected INDArray maskArray;
-//    protected MaskState maskState;
     protected CacheMode cacheMode = CacheMode.NONE;
 
     protected int iterationCount;

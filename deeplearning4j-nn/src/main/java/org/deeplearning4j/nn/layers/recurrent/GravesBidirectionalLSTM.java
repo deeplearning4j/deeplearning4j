@@ -153,6 +153,7 @@ public class GravesBidirectionalLSTM
     }
 
     private Activations activateOutput(final boolean training, boolean forBackprop) {
+        applyPreprocessorIfNecessary(training);
         final FwdPassReturn forwardsEval;
         final FwdPassReturn backwardsEval;
 

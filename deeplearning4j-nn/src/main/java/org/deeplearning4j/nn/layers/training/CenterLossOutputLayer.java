@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -45,9 +47,7 @@ import org.nd4j.linalg.primitives.Pair;
  * @author Justin Long (@crockpotveggies)
  */
 public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer> {
-
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private static final IActivation IDENTITY = new ActivationIdentity();
 
     public CenterLossOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -62,14 +62,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      */
     @Override
     public double computeScore(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
-        setInput(layerOutput);
-        setLabels(labels);
-        if (input == null || labels == null)
+        if (layerOutput == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray input = this.input.get(0);
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
 
         // center loss has two components
         // the first enforces inter-class dissimilarity, the second intra-class dissimilarity (squared l2 norm of differences)
@@ -77,10 +71,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = this.labels.mmul(centers);
+        INDArray centersForExamples = labels.get(0).mmul(centers);
 
         //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), this.input.getMask(0), false);
-        INDArray norm2DifferenceSquared = input.sub(centersForExamples).norm2(1);
+        INDArray norm2DifferenceSquared = input.get(0).sub(centersForExamples).norm2(1);
         norm2DifferenceSquared.muli(norm2DifferenceSquared);
 
         double sum = norm2DifferenceSquared.sumNumber().doubleValue();
@@ -94,7 +88,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
 
         // now calculate the inter-class score component
-        double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(),
+        //Note: (preOutput + activation function) == (output + identity), from the perspective of scoring
+        double interClassScore = interClassLoss.computeScore(getLabels2d(), layerOutput.get(0), layerConf().getActivationFn(),
                         this.input.getMask(0), false);
 
         double score = interClassScore + intraClassScore;

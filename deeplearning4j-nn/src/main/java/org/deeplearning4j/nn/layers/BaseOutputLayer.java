@@ -95,7 +95,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
 
         //Note: (preOutput + activation function) == (output + identity), from the perspective of scoring
-        double score = lossFunction.computeScore(getLabels2d(labels.get(0)), layerOutput.get(0), IDENTITY, getLabelsMask2d(labels.getMask(0)),
+        INDArray labels2d = getLabels2d(labels.get(0));
+        INDArray out2d = getLabels2d(layerOutput.get(0));    //Labels and output have same shape -> same reshape op required
+        double score = lossFunction.computeScore(labels2d, out2d, IDENTITY, getLabelsMask2d(labels.getMask(0)),
                         false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= labels.get(0).size(0); //Divide by minibatch size
@@ -150,7 +152,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     private Gradients getGradientsAndDelta(INDArray preOut) {
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
-        //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), getLabelsMask2d(labelMask));
 
         Gradient gradient = new DefaultGradient();
@@ -239,7 +240,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             return;
         }
 
-        //For output layers: can be either per-example masking, or per-
+        //For output layers: can be either per-example masking, or per-output masking
         if (maskArray.isColumnVector()) {
             to.muliColumnVector(maskArray);
         } else if (Arrays.equals(to.shape(), maskArray.shape())) {

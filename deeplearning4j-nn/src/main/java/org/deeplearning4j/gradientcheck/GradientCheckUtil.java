@@ -90,10 +90,10 @@ public class GradientCheckUtil {
             afn = o.layerConf().getActivationFn();
         }
 
-        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getSoftmaxClipEps() != 0) {
+        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getClipEps() != 0) {
             log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
-            ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+            ((LossMCXENT) lfn).setClipEps(0.0);
         } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
             log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
@@ -111,7 +111,7 @@ public class GradientCheckUtil {
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray inputMask,
                                          INDArray labels, INDArray labelsMask) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, true,
                 af.create(input, inputMask), labels, labelsMask);
     }
     /**
@@ -129,8 +129,14 @@ public class GradientCheckUtil {
      * @return true if gradients are passed, false otherwise.
      */
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                 double minAbsoluteError, boolean print, boolean exitOnFirstError, Activations input,
-                                         INDArray labels, INDArray labelsMask) {
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         Activations input, INDArray labels, INDArray labelsMask) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, labels, labelsMask);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                 double minAbsoluteError, boolean print, boolean exitOnFirstError, boolean lossFunctionRemoveClipping,
+                                         Activations input, INDArray labels, INDArray labelsMask) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -183,13 +189,15 @@ public class GradientCheckUtil {
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : mln.getLayers()){
-            if(l instanceof IOutputLayer){
-                configureLossFnClippingIfPresent((IOutputLayer) l);
+        if(lossFunctionRemoveClipping) {
+            for (Layer l : mln.getLayers()) {
+                if (l instanceof IOutputLayer) {
+                    configureLossFnClippingIfPresent((IOutputLayer) l);
+                }
             }
         }
 
-        Pair<Gradients, Double> gradAndScore = mln.computeGradientAndScore(input, af.create(labels));
+        Pair<Gradients, Double> gradAndScore = mln.computeGradientAndScore(input, af.create(labels, labelsMask));
         Gradient g = gradAndScore.getFirst().getParameterGradients();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
@@ -498,7 +506,7 @@ public class GradientCheckUtil {
         Gradient g = gradAndScore.getFirst().getParameterGradients();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, g, 0, 0, layer.getInputMiniBatchSize());
+        updater.update(layer, g, 0, 0, input.size(0));
 
         INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters

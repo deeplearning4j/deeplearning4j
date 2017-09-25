@@ -34,6 +34,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -56,16 +58,12 @@ import java.util.List;
  * @author Justin Long (crockpotveggies)
  */
 public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer> implements IOutputLayer {
+    private static final IActivation IDENTITY = new ActivationIdentity();
 
     //current input and label matrices
     protected INDArray labels;
     @Setter @Getter
     protected INDArray labelMask;
-
-    private transient Solver solver;
-
-    private double fullNetworkL1;
-    private double fullNetworkL2;
 
     private double score;
 
@@ -86,24 +84,17 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return score (loss function)
      */
     @Override
-    public double computeScore(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
-        setInput(layerInput);
-        setLabels(labels);
+    public double computeScore(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
 
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
-        INDArray input = this.input.get(0);
-        INDArray preOut = input;
+            throw new IllegalStateException("Cannot calculate score without network output and labels: " + layerId());
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), this.input.getMask(0), false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), this.input.getMask(0),
-                        false);
+        //For scoring: (preout + activation fn) == (output + identity)
+        double score = lossFunction.computeScore(labels.get(0), layerOutput.get(0), IDENTITY, labelMask, false);
         score += fullNetworkL1 + fullNetworkL2;
-        score /= getInputMiniBatchSize();
+        score /= labels.get(0).size(0);
 
         this.score = score;
 
@@ -118,22 +109,18 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray input = this.input.get(0);
-        INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), this.input.getMask(0));
+        //For scoring: (preout + activation fn) == (output + identity)
+        INDArray scoreArray = lossFunction.computeScoreArray(labels.get(0), layerOutput.get(0), IDENTITY, labelMask);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
 
-        setInput(layerInput);
-        setLabels(labels);
         return scoreArray;
     }
 
@@ -147,7 +134,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     private Gradients getGradientsAndDelta(INDArray preOut) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFn(), this.input.getMask(0));
+        INDArray delta = lossFunction.computeGradient(getLabels(), preOut, layerConf().getActivationFn(), this.input.getMask(0));
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -228,7 +215,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             labels.data().destroy();
             labels = null;
         }
-        solver = null;
     }
 
     @Override
@@ -252,12 +238,5 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             }
             setLabels(labels.get(0), labels.getMask(0));
         }
-    }
-
-    protected INDArray getLabels2d() {
-        if (labels.rank() > 2) {
-            return labels.reshape(labels.size(2), labels.size(1));
-        }
-        return labels;
     }
 }

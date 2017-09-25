@@ -64,6 +64,12 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         weightNoiseParams.clear();
 
         gradAndEpsilonNext.set(0, epsilon3d);
+
+
+
+        if(getPreProcessor() != null){
+            return getPreProcessor().backprop(gradAndEpsilonNext, getInputMiniBatchSize());
+        }
         return gradAndEpsilonNext;
     }
 
@@ -86,6 +92,11 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     protected INDArray getLabels2d() {
+        return getLabels2d(labels);
+    }
+
+    @Override
+    protected INDArray getLabels2d(INDArray labels){
         if (labels.rank() == 3)
             return TimeSeriesUtils.reshape3dTo2d(labels);
         return labels;
@@ -113,19 +124,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray input = this.input.get(0);
         //Assume that input is 3d
         if (input.rank() != 3)
-            throw new IllegalArgumentException(
-                            "input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray preOutput2d = preOutput2d(training);
-
-        //if(conf.getLayer().getActivationFunction().equals("softmax")) {
-        if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
-            INDArray out2d = Nd4j.getExecutioner().execAndReturn(new SoftMax(preOutput2d));
-            if (labelMask != null) {
-                applyMask(out2d);
-            }
-            INDArray ret = TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
-            return ActivationsFactory.getInstance().create(ret, null, null);    //TODO masks
-        }
+            throw new IllegalArgumentException("input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
 
         applyDropOutIfNecessary(training);
         INDArray origInput = input;
@@ -137,6 +136,22 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             applyMask(out.get(0));
         }
         return out;
+    }
+
+    @Override
+    public void applyMask(INDArray to){
+        if(to.rank() == 2){
+            super.applyMask(to);
+            return;
+        }
+
+        if(labelMask.rank() == 3){
+            //Per-output masking
+            to.muli(labelMask);
+        } else {
+            //Per-time step masking
+            Broadcast.mul(to, labelMask, to, 0, 2);
+        }
     }
 
     @Override

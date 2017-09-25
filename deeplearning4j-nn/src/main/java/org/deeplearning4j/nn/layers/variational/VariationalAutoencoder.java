@@ -638,8 +638,7 @@ public class VariationalAutoencoder implements Model {
 
     @Override
     public void clear() {
-        if(input != null)
-            input.clear();
+        this.input = null;
         weightNoiseParams.clear();
     }
 
@@ -827,7 +826,6 @@ public class VariationalAutoencoder implements Model {
     @Override
     public void setInput(Activations activations) {
         this.input = activations;
-
     }
 
     @Override
