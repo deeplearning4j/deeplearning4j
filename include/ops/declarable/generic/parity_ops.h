@@ -561,7 +561,7 @@ namespace nd4j {
             std::unique_ptr<ArrayList<T>> tadsOperand(nd4j::NDArrayFactory::multipleTensorsAlongDimension(operand, indices, tadDimension));
             std::unique_ptr<ArrayList<T>> tadsUpdate(nd4j::NDArrayFactory::multipleTensorsAlongDimension(updates, indicesU, tadDimension));
 
-#pragma omp parallel for schedule(dynamic) proc_bind(close) shared(tadsOperand, tadsUpdate)
+//#pragma omp parallel for schedule(dynamic) proc_bind(close) shared(tadsOperand, tadsUpdate)
             for (unsigned long x = 0; x < indices.size(); x++) {
                 NDArray<T> *tad = tadsOperand->at(x);
                 NDArray<T> *tadUpdates = tadsUpdate->at(x);
