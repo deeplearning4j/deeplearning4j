@@ -182,7 +182,7 @@ public class SameDiff {
                 sameDiff.graph().getIncomingEdges().put(newVertexMap,newIncomingEdges);
                 for(Edge<OpState> edge : incomingEdgesForVertex) {
                     OpStateEdge newEdge = new OpStateEdge(
-                             new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
+                            new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
                             new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                             cloner.deepCloneDontCloneInstances(edge.getValue()),true);
                     newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
@@ -3205,15 +3205,6 @@ public class SameDiff {
         for(int i = 0; i < opExecActions.size(); i++) {
 
             OpExecAction opExecAction = opExecActions.get(i);
-            SDVariable variable = null;
-            Op forwardOp = null;
-            if(onBackward && getVertexIdToVariable().get(opExecAction.getOutputId()) != null) {
-                variable = getVertexIdToVariable().get(opExecAction.getOutputId()).getForwardVariable();
-                forwardOp = opMap.get(variable);
-                System.out.println(forwardOp);
-
-            }
-
             if(!onBackward && opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().name())) {
                 onBackward = true;
             }
@@ -3273,6 +3264,9 @@ public class SameDiff {
 
                 currVariable.setArr(op.z());
             opMap.put(currVariable,op);
+            vertexIdxToInfo.put(opExecAction.getOutputId(),opExecAction.getOutput());
+            getVertexToArray().put(opExecAction.getOutput().getArrId(),op.z());
+            getFunctionInstances().put(opExecAction.getOutputId(),opExecAction.getOpState().getDifferentialFunction());
         }
 
 

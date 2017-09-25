@@ -75,6 +75,34 @@ public class SDVariable  implements Serializable {
 
     }
 
+    public INDArray getArr() {
+        return getArr(false);
+    }
+
+    public INDArray getArr(boolean requireArray) {
+        if(arr == null && requireArray) {
+            if(sameDiff.getVertexIdxToInfo().get(vertexId) != null)
+                this.arr = sameDiff.getNDArray(sameDiff.getVertexIdxToInfo().get(vertexId));
+            if(this.arr == null && sameDiff.getArrayFieldInstances().get(vertexId) != null) {
+                this.arr = sameDiff.getNDArray(sameDiff.getArrayFieldInstances().get(vertexId).getInput());
+            }
+
+            if(this.arr == null && sameDiff.getFunctionInstances().get(vertexId) != null) {
+                this.arr = sameDiff.getNDArray(sameDiff.getFunctionInstances().get(vertexId).getResult());
+            }
+
+            if(this.arr == null && sameDiff.getFunction("grad") != null) {
+                this.arr = sameDiff.getFunction("grad").getVariable(varName).getArr(requireArray);
+            }
+
+            if(arr == null) {
+                throw new IllegalStateException("Unable to get array. No vertex info or array field definition found.");
+            }
+
+        }
+
+        return arr;
+    }
 
     /**
      * Nicer looking alias
