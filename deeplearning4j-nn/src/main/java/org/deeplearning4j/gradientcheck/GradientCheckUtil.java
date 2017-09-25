@@ -378,7 +378,7 @@ public class GradientCheckUtil {
             graph.setLabel(i, labels[i]);
 
 
-        Pair<Gradients, Double> gradAndScore = graph.computeGradientAndScore(inputs, af.create(labelsMasks, labelsMasks, null));
+        Pair<Gradients, Double> gradAndScore = graph.computeGradientAndScore(inputs, af.create(labels, labelsMasks, null));
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
         Gradient g = gradAndScore.getFirst().getParameterGradients();

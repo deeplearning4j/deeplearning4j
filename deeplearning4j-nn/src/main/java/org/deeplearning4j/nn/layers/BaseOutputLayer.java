@@ -101,6 +101,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
                         false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
+        int imb = getInputMiniBatchSize();
 
         this.score = score;
 
@@ -259,7 +260,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
 
     protected INDArray getLabels2d() {
-        if (labels.rank() > 2) {
+        if (labels != null && labels.rank() > 2) {
             return labels.reshape(labels.size(2), labels.size(1));
         }
         return labels;

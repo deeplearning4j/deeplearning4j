@@ -98,7 +98,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     //Current training data: input features and labels
     protected Activations input = new ActivationsSingle(null, null, null);        //Input activations, and mask
-    protected int inputMinibatchSize = -1;  //Might still be needed for updating gradients, after feedForward has cleared input
+    protected int inputMinibatchSize = -1;  //Might still be needed for updating gradients, after feedForward etc has cleared input
 
     protected INDArray labels;
     protected INDArray labelsMask;

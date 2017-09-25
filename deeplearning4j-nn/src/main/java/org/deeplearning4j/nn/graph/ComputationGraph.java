@@ -169,9 +169,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     //Current inputs, labels, input mask arrays and label mask arrays
     private transient Activations input;
-//    private transient INDArray[] inputs;
+    protected int inputMinibatchSize = -1;  //Might still be needed for updating gradients, after feedForward etc has cleared input
     private transient INDArray[] labels;
-//    private transient INDArray[] inputMaskArrays;
     private transient INDArray[] labelMaskArrays;
 
     private NeuralNetConfiguration defaultConfiguration;
@@ -318,13 +317,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void setInputMiniBatchSize(int size) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        this.inputMinibatchSize = size;
+        for(Layer l : layers)
+            l.setInputMiniBatchSize(size);
     }
 
     @Override
     public int getInputMiniBatchSize() {
-        if(input == null || input.get(0) == null)
-            return -1;
+        if(input == null || input.get(0) == null){
+            return inputMinibatchSize;
+        }
         return input.get(0).size(0);
     }
 
@@ -354,7 +356,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays
                     + " inputs, but array is of length " + inputs.length);
         }
-        input.setFromArray(inputs);
+        this.input = ActivationsFactory.getInstance().create(inputs, null, null);
     }
 
     /**
@@ -389,6 +391,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Set the specified label for the ComputationGraph
      */
     public void setLabel(int labelNum, INDArray label) {
+        if(labels == null){
+            labels = new INDArray[numOutputArrays];
+        }
         labels[labelNum] = label;
     }
 
@@ -1523,9 +1528,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         Map<String, Activations> layerActivations = new HashMap<>();
 
         //TODO this next call should eventually be removed (after redesign etc)
-        for(Layer l : layers){
-            l.setInputMiniBatchSize(input.get(0).size(0));
-        }
+        setInputMiniBatchSize(input.get(0).size(0));
 
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
                 ? new DummyWorkspace()
@@ -2502,17 +2505,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void clear() {
-        input.clear();
-        if (labels != null) {
-            for( int i=0; i<labels.length; i++ ){
-                labels[i] = null;
-            }
-        }
-        if(labelMaskArrays != null){
-            for( int i=0; i<labelMaskArrays.length; i++ ){
-                labelMaskArrays[i] = null;
-            }
-        }
+        input = null;
+        labels = null;
+        labelMaskArrays = null;
 
         for(Layer l : layers){
             l.clear();

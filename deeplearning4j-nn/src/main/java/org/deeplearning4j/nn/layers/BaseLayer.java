@@ -299,8 +299,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                 double l2Coeff = conf().getL2ByParam(e.getKey());
                 if(l2Coeff > 0.0){
                     //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
-                    double norm2 = e.getValue().norm1Number().doubleValue();
-                    l1l2 += l2Coeff * norm2 * norm2;
+                    double norm2 = e.getValue().norm2Number().doubleValue();
+                    l1l2 += 0.5 * l2Coeff * norm2 * norm2;
                 }
             }
         }
