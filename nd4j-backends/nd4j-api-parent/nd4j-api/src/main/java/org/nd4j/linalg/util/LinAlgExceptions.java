@@ -37,17 +37,19 @@ public class LinAlgExceptions {
      */
     public static void assertSameLength(INDArray n, INDArray n2) {
         if (n.length() != n2.length() && n.length() != 1 && n2.length() != 1)
-            throw new IllegalStateException("Mis matched lengths: [" + n.length() + "] != [" + n2.length() + "]");
+            throw new IllegalStateException("Mis matched lengths: [" + n.length() + "] != [" + n2.length() + "] - " +
+                    "Array 1 shape: " + Arrays.toString(n.shape()) + ", array 2 shape: " + Arrays.toString(n2.shape()));
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {
         if (!Arrays.equals(n.shape(), n2.shape()))
-            throw new IllegalStateException("Mis matched shapes");
+            throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", "
+                    + Arrays.toString(n2.shape()));
     }
 
     public static void assertRows(INDArray n, INDArray n2) {
         if (n.rows() != n2.rows())
-            throw new IllegalStateException("Mis matched rows");
+            throw new IllegalStateException("Mis matched rows: " + n.rows() + " != " + n2.rows());
     }
 
 
@@ -63,12 +65,12 @@ public class LinAlgExceptions {
 
     public static void assertVector(INDArray arr) {
         if (!arr.isVector())
-            throw new IllegalArgumentException("Array must be a vector");
+            throw new IllegalArgumentException("Array must be a vector. Array has shape: " + Arrays.toString(arr.shape()));
     }
 
     public static void assertMatrix(INDArray arr) {
         if (arr.shape().length > 2)
-            throw new IllegalArgumentException("Array must be a matrix");
+            throw new IllegalArgumentException("Array must be a matrix. Array has shape: " + Arrays.toString(arr.shape()));
     }
 
 
@@ -93,7 +95,7 @@ public class LinAlgExceptions {
 
     public static void assertColumns(INDArray n, INDArray n2) {
         if (n.columns() != n2.columns())
-            throw new IllegalStateException("Mis matched rows");
+            throw new IllegalStateException("Mis matched columns: " + n.columns() + " != " + n2.columns());
     }
 
     public static void assertValidNum(INDArray n) {
