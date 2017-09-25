@@ -97,7 +97,7 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         Collection<IterationListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
             for (IterationListener listener : iterationListeners) {
-                listener.iterationDone(mln, iterationCount);
+                listener.iterationDone(mln, iterationCount, epochCount);
             }
         }
         mlnConf.setIterationCount(iterationCount + 1);

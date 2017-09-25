@@ -112,7 +112,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
         if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
             for (IterationListener listener : valueIterationListeners) {
-                listener.iterationDone(valueNet, valueIterationCount);
+                listener.iterationDone(valueNet, valueIterationCount, valueEpochCount);
             }
         }
         valueConf.setIterationCount(valueIterationCount + 1);
@@ -125,7 +125,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
         if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
             for (IterationListener listener : policyIterationListeners) {
-                listener.iterationDone(policyNet, policyIterationCount);
+                listener.iterationDone(policyNet, policyIterationCount, policyEpochCount);
             }
         }
         policyConf.setIterationCount(policyIterationCount + 1);
