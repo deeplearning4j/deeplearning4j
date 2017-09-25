@@ -889,7 +889,8 @@ namespace nd4j {
 		DECLARE_CONFIGURABLE_OP(sum, 1, 1, false, 0, -1) {
 
 			std::vector<int> argI = *(block.getIArguments());
-			argI.erase(argI.begin(), argI.begin()+1);
+			// FIXME: fix        this
+            //argI.erase(argI.begin(), argI.begin()+1);
 			NDArray<T>* x = block.getVariables().at(0)->getNDArray();
 			NDArray<T> *z = this->getZ(block);
 

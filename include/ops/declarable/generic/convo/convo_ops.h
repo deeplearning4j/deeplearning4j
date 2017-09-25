@@ -255,7 +255,11 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
             std::vector<int> argI = *(block.getIArguments());					// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<T> argT = {(T)argI[1], (T)argI[2], (T)argI[3], (T)argI[4], (T)argI[5], (T)argI[6], (T)argI[7], (T)argI[8], (T)0.f, (T)0.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::initializer_list<T> lst({(T)argI[1], (T)argI[2], (T)argI[3], (T)argI[4], (T)argI[5], (T)argI[6], (T)argI[7], (T)argI[8], (T)0.f, (T)0.f, (T)1.f});
+            std::vector<T> argT;  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+
+            for (auto v: lst)
+                argT.push_back(v);
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
@@ -275,7 +279,11 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
             std::vector<int> argI = *(block.getIArguments());					// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T)argI[7], (T)argI[8], (T)1.f, (T)1.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::initializer_list<T> lst({(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T)argI[7], (T)argI[8], (T)1.f, (T)1.f, (T)1.f}) ;  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::vector<T> argT;
+
+            for (auto v: lst)
+                argT.push_back(v);
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
@@ -295,7 +303,11 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             std::vector<int> argI = *(block.getIArguments());					// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T)2.f, (T)2.f, (T)1.f};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::initializer_list<T> lst( {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T)2.f, (T)2.f, (T)1.f});  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::vector<T> argT;
+
+            for (auto v: lst)
+                argT.push_back(v);
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
