@@ -444,6 +444,99 @@ public class SameDiffTests {
         assertEquals(2,ints.getIncomingEdges().get(3).size());
     }
 
+    @Test
+    public void testRunLogisticRegression() {
+        Map<String,INDArray> vars = this.variablesForInput();
+        SameDiff outside = SameDiff.create();
+        outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                sameDiff.enableDebugMode();
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                SDVariable activation = sameDiff.sigmoid("activation",sameDiff.mmul("mmul",x,w));
+                SDVariable oneMinusY = y.rsub("oneminusy",1.0);
+                SDVariable oneMinusPredictions = activation.rsub("oneminusactivations",1.0);
+                SDVariable outputTimesY = y.mul("output * y",activation);
+                SDVariable yHat = oneMinusPredictions.mul("yhat",oneMinusY);
+                SDVariable probs = outputTimesY.add("probs",yHat);
+                SDVariable logProbs = sameDiff.log("logprob",probs);
+                SDVariable ret = sameDiff.sum("totalsum",logProbs,Integer.MAX_VALUE);
+                SDVariable ret2 = sameDiff.neg("negtotalsum",ret);
+                return ret2;
+            }
+        },vars);
+
+        SameDiff activation = outside.getFunction("activate");
+        int epochsToRun = 5;
+        double lr = 0.1;
+        for(int i = 0; i < epochsToRun; i++) {
+            activation.execBackwards();
+            INDArray wGrad = activation.grad("w").getArr().reshape(vars.get("w").shape());
+            vars.get("w").subi(wGrad.mul(lr));
+            System.out.println("Score: " + activation.getVariable("negtotalsum").getArr(true));
+        }
+
+    }
+
+
+    @Test
+    public void testSoftmaxRegression() {
+        Map<String,INDArray> vars = this.variablesForInput();
+        SameDiff outside = SameDiff.create();
+        outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                sameDiff.enableDebugMode();
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                SDVariable activation = sameDiff.softmax("activation",sameDiff.mmul("mmul",x,w));
+                SDVariable ret = sameDiff.sum("totalsum",activation,Integer.MAX_VALUE);
+                SDVariable ret2 = sameDiff.neg("negtotalsum",ret);
+                return ret2;
+            }
+        },vars);
+
+
+        /**
+         * Backwards should be:
+         * neg score
+         * sum sum of log
+         * log (log probs)
+         * add
+         * mul
+         * mul
+         * rsub (predictions)
+         * sigmoid
+         * rsub
+         * matrix multiply
+         *
+         */
+
+
+        Pair<Map<SDVariable, Op>, List<Op>> opsBackward = outside.getFunction("activate").execBackwards();
+        SameDiff gradSameDiff = outside.getFunction("activate").getFunction("grad");
+
+        SDVariable gradWrtX = outside.getFunction("activate").grad("x");
+        SDVariable gradWrtW = outside.getFunction("activate").grad("w");
+        assumeNotNull(gradWrtX);
+        assumeNotNull(gradWrtW);
+
+        INDArray wGradAssertion = Nd4j.create(new double[]{0,0,0}).reshape(3,1);
+        assertEquals(wGradAssertion,outside.getFunction("activate").grad("w").getArr());
+        //note here that the gradients here end up being some weird really low eps where it
+        //isn't exactly zero
+        //        assertEquals(inputAssertion,outside.getFunction("activate").grad("x").getArr());
+
+
+
+        System.out.println(gradWrtX);
+        System.out.println(gradWrtW);
+
+
+    }
 
     @Test
     public void testLogisticRegression() {
