@@ -546,7 +546,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     } else {
                         InputPreProcessor inputPreProcessor = inputPreProcessors.get(i);
                         if (inputPreProcessor != null) {
-                            currentInputType = inputPreProcessor.getOutputType(currentInputType)[0];
                             l.setPreProcessor(inputPreProcessor);   //Set on layer, from legacy map
                         }
                         l.setNIn(new InputType[]{currentInputType}, false); //Don't override the nIn setting, if it's manually set by the user

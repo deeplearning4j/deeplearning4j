@@ -258,9 +258,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     @Override
-//    public  void fit(){
     public void fit(Activations data) {
         setInput(data);
+        setInputMiniBatchSize(data.get(0).size(0));
         applyPreprocessorIfNecessary(true);
         applyDropOutIfNecessary(true);
         if (solver == null) {

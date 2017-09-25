@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -173,7 +174,7 @@ public class TestVariableLengthTS {
             p = net.computeGradientAndScore(af.create(in2, inputMask), af.create(labels2));
             double score2 = net.score();
             Gradient g2 = p.getFirst().getParameterGradients();
-            List<INDArray> activations2 = net.feedForward();
+            List<Activations> activations2 = net.feedForward(af.create(in2, inputMask), false);
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
             assertNotEquals(score1, score2, 0.01);
@@ -185,19 +186,19 @@ public class TestVariableLengthTS {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
 
-                System.out.println("-------");
-                System.out.println("Variable: " + s);
-                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
-                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
+//                System.out.println("-------");
+//                System.out.println("Variable: " + s);
+//                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
+//                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
                 assertNotEquals(s, g1s, g2s);
             }
 
-            //Modify the values at the masked time step, and check that neither the gradients, score or activations change
+            //Modify the *input* values at the masked time step, and check that neither the gradients, score or activations change
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
-                p = net.computeGradientAndScore(af.create(in2), af.create(labels2));
+                p = net.computeGradientAndScore(af.create(in2, inputMask), af.create(labels2));
                 double score2a = net.score();
                 Gradient g2a = p.getFirst().getParameterGradients();
                 assertEquals(score2, score2a, 1e-12);
@@ -205,16 +206,16 @@ public class TestVariableLengthTS {
                     assertEquals(g2.getGradientFor(s), g2a.getGradientFor(s));
                 }
 
-                List<INDArray> activations2a = net.feedForward();
+                List<Activations> activations2a = net.feedForward(af.create(in2, inputMask), false);
                 for (int k = 1; k < activations2.size(); k++) {
-                    assertEquals(activations2.get(k), activations2a.get(k));
+                    assertEquals(activations2.get(k).get(0), activations2a.get(k).get(0));
                 }
             }
 
             //Finally: check that the activations for the first two (dense) layers are zero at the appropriate time step
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
-            INDArray l0Before = activations2.get(1);
-            INDArray l1Before = activations2.get(2);
+            INDArray l0Before = activations2.get(1).get(0);
+            INDArray l1Before = activations2.get(2).get(0);
             INDArray l0After = temp.preProcess(af.create(l0Before), nExamples, true).get(0);
             INDArray l1After = temp.preProcess(af.create(l1Before), nExamples, true).get(0);
 

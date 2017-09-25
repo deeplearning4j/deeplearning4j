@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -60,7 +61,9 @@ public class GravesLSTMOutputTest {
         MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(40, false));
         network.init();
         network.setListeners(new ScoreIterationListener(1));
-        network.fit(reshapeInput(data.dup()), data.dup());
+        for( int i=0; i<40; i++ ) {
+            network.fit(reshapeInput(data.dup()), data.dup());
+        }
         Evaluation ev = eval(network);
         Assert.assertTrue(ev.f1() > 0.90);
     }
@@ -93,11 +96,10 @@ public class GravesLSTMOutputTest {
                                         .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn)
                                                         .nOut(layerSize).activation(Activation.TANH).build())
-                                        .layer(1, new OutputLayer.Builder(
+                                        .layer(1, new RnnOutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(layerSize)
                                                                         .nOut(nIn).activation(Activation.SOFTMAX)
                                                                         .build())
-                                        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).backprop(true)
                                         .pretrain(false);
         if (useTBPTT) {
             builder.backpropType(BackpropType.TruncatedBPTT);

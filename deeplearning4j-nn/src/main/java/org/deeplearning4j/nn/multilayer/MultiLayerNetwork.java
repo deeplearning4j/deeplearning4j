@@ -1183,6 +1183,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             return;
         }
 
+        setInputMiniBatchSize(input.size(0));
+
         int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
         update(TaskUtils.buildTask(input, labels));
         int timeSeriesLength = input.size(2);
@@ -1422,7 +1424,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @param labels the example labels(a binary outcome matrix)
      */
     @Override
-    @Deprecated
     public void fit(INDArray data, INDArray labels) {
         fit(data, labels, null, null);
     }

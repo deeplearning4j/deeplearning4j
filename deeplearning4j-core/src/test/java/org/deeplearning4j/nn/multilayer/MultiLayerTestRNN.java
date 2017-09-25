@@ -151,6 +151,7 @@ public class MultiLayerTestRNN {
                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .build();
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
 
         INDArray input = Nd4j.rand(new int[] {3, 5, timeSeriesLength});
 
@@ -217,6 +218,7 @@ public class MultiLayerTestRNN {
                         .inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
                         .inputPreProcessor(3, new FeedForwardToRnnPreProcessor()).build();
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
 
         INDArray input = Nd4j.rand(new int[] {3, 5, timeSeriesLength});
 

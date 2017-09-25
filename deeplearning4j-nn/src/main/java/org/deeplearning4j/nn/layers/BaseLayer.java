@@ -257,10 +257,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             ret.addiRowVector(b);
         }
 
-        if (input.getMask(0) != null) {
-            applyMask(ret);
-        }
-
         return ret;
     }
 
