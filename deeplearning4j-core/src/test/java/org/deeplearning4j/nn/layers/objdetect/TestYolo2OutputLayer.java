@@ -109,7 +109,8 @@ public class TestYolo2OutputLayer {
         labels.putScalar(2, 2, 2, 2, 6);
         labels.putScalar(2, 3, 2, 2, 6);
 
-        double score = y2impl.computeScore(af.create(input), af.create(labels), 0, 0, true);
+        //Compute the score using the output layer *output*
+        double score = y2impl.computeScore(af.create(out), af.create(labels), 0, 0, true);
 
         System.out.println("SCORE: " + score);
         assertTrue(score > 0.0);
@@ -119,7 +120,8 @@ public class TestYolo2OutputLayer {
         MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
 
         y2impl = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) netLoaded.getLayer(1);
-        double score2 = y2impl.computeScore(af.create(input), af.create(labels),0, 0, true);
+        //Compute the score using the output layer *output*
+        double score2 = y2impl.computeScore(af.create(out), af.create(labels),0, 0, true);
 
         assertEquals(score, score2, 1e-8);
     }

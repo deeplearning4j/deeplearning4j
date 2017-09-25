@@ -61,8 +61,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return score (loss function)
      */
     @Override
-    public double computeScore(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
-        setInput(layerInput);
+    public double computeScore(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
+        setInput(layerOutput);
         setLabels(labels);
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
@@ -115,8 +115,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
-        setInput(layerInput);
+    public INDArray computeScoreForExamples(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
+        setInput(layerOutput);
         setLabels(labels);
 
         if (input == null || labels == null)
@@ -218,7 +218,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    protected INDArray getLabelsMask2d() {
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
         return labelMask;
     }
 }

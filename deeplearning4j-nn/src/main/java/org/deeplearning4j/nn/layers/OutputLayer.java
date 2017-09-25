@@ -42,7 +42,7 @@ public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.laye
     }
 
     @Override
-    protected INDArray getLabelsMask2d() {
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
         return labelMask;
     }
 

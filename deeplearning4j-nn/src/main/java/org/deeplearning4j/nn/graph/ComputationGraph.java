@@ -297,6 +297,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     @Deprecated
     public void setInput(int inputNum, INDArray input) {
+        if(this.input == null){
+            this.input = ActivationsFactory.getInstance().create(numInputArrays);
+        }
         this.input.set(inputNum, input);
     }
 
@@ -377,6 +380,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Get the previously set feature/input mask arrays for the ComputationGraph
      */
     public INDArray[] getInputMaskArrays() {
+        if( input == null)
+            return null;
         return input.getMaskAsArray();
     }
 
@@ -1398,8 +1403,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         synchronizeIterEpochCounts();
         //Calculate activations (which are stored in each layer, and used in backprop)
         Gradients g;
+        Map<String, Activations> activations;
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            Map<String, Activations> activations = rnnActivateUsingStoredState(input, true, true);
+            activations = rnnActivateUsingStoredState(input, true, true);
             if (trainingListeners.size() > 0) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
@@ -1409,7 +1415,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             g = calcBackpropGradients(true);
         } else {
-            Map<String, Activations> activations = feedForward(input, true, FFType.Standard, true, false, false);
+            activations = feedForward(input, true, FFType.Standard, false, false, false);
             if (trainingListeners.size() > 0) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
@@ -1433,7 +1439,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             IOutputLayer ol = ((IOutputLayer) gv);
             Activations l = ActivationsFactory.getInstance().create(ol.getLabels(), ol.getLabelMask());
-            score += ol.computeScore(ol.getInput(), l, l1, l2, true);
+            //Compute score, using output layer *output* plus labels
+            score += ol.computeScore(activations.get(ol.getName()), l, l1, l2, true);
 
 
             //Only want to add l1/l2 once...
@@ -2162,15 +2169,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 i++;
 
                 Activations l = ActivationsFactory.getInstance().create(currLabels, currLabelMasks);
-                VertexIndices[] inputsToOL = gvInputVertices.get(ol.getName());
-                Activations olInput;
-                if(inputsToOL.length == 1){
-                    String inputName = vertices[inputsToOL[0].getVertexIndex()].getName();
-                    olInput = ff.get(inputName);
-                } else {
-                    throw new UnsupportedOperationException("Multiple inputs to output layer: not yet supported");
-                }
-                score += ol.computeScore(olInput, l, l1, l2, training);
+                Activations olOutput = ff.get(ol.getName());
+                //Compute score, using output layer *output* plus labels
+                score += ol.computeScore(olOutput, l, l1, l2, training);
 
                 //Only want to add l1/l2 once...
                 l1 = 0.0;
@@ -2216,8 +2217,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             input.setMaskFromArray(data.getFeaturesMaskArrays(), null);
             labelMaskArrays = data.getLabelsMaskArrays();
         }
-        Map<String,INDArray> ff = feedForward(data.getFeatures(), false);
-        setLabels(data.getLabels());
+        Map<String,Activations> ff = feedForward(ActivationsFactory.getInstance().featuresAsActivations(data), false);
         INDArray[] labelsMasks = data.getLabelsMaskArrays();
 
         INDArray out = null;
@@ -2238,15 +2238,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             i++;
             Activations l = ActivationsFactory.getInstance().create(currLabels, currLabelMasks);
 
-            VertexIndices[] inputsToOL = gvInputVertices.get(ol.getName());
-            Activations olInput;
-            if(inputsToOL.length == 1){
-                String inputName = vertices[inputsToOL[0].getVertexIndex()].getName();
-                olInput = ActivationsFactory.getInstance().create(ff.get(inputName));
-            } else {
-                throw new UnsupportedOperationException("Multiple inputs to output layer: not yet supported");
-            }
-            INDArray scoreCurrLayer = ol.computeScoreForExamples(olInput, l, l1, l2);
+
+            Activations olOutput = ff.get(ol.getName());
+            INDArray scoreCurrLayer = ol.computeScoreForExamples(olOutput, l, l1, l2);
             if (out == null)
                 out = scoreCurrLayer;
             else

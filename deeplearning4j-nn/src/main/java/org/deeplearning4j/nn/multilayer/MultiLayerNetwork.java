@@ -1627,14 +1627,15 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             // activation for output layer is calculated in computeScore
             Activations a = ActivationsFactory.getInstance().create(data.getFeatures(), data.getFeaturesMaskArray());
-            List<Activations> activations = feedForwardToLayer(a, layers.length - 2, training);
+            List<Activations> activations = feedForwardToLayer(a, layers.length - 1, training);
             int n = activations.size();
             setLabels(data.getLabels());
             if (getOutputLayer() instanceof IOutputLayer) {
                 IOutputLayer ol = (IOutputLayer) getOutputLayer();
-                Activations olInput = activations.get(n - 1);
+                Activations olOutput = activations.get(n - 1);
                 Activations l = ActivationsFactory.getInstance().labelsAsActivations(data);
-                ol.computeScore(olInput, l, calcL1(true), calcL2(true), training);
+                //Compute score using output layer *output*
+                ol.computeScore(olOutput, l, calcL1(true), calcL2(true), training);
                 this.score = ol.score();
             } else {
                 log.warn("Cannot calculate score wrt labels without an OutputLayer");
@@ -1667,7 +1668,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      */
     public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms) {
         Activations a = ActivationsFactory.getInstance().create(data.getFeatures(), data.getFeaturesMaskArray());
-        List<Activations> activations = feedForwardToLayer(a, layers.length-2, false);  //Excludes output layer
+        List<Activations> activations = feedForwardToLayer(a, layers.length-1, false);  //Includes output layer
         setLabels(data.getLabels());
 
         INDArray out;
@@ -1675,9 +1676,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
             double l1 = (addRegularizationTerms ? calcL1(true) : 0.0);
             double l2 = (addRegularizationTerms ? calcL2(true) : 0.0);
-            Activations olInput = activations.get(activations.size()-1);
+            Activations olOutput = activations.get(activations.size()-1);
             Activations l = ActivationsFactory.getInstance().labelsAsActivations(data);
-            out = ol.computeScoreForExamples(olInput, l, l1, l2);
+            out = ol.computeScoreForExamples(olOutput, l, l1, l2);
         } else {
             throw new UnsupportedOperationException(
                             "Cannot calculate score with respect to labels without an OutputLayer");
@@ -1737,16 +1738,13 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
-            activations = feedForwardToLayer(input, layers.length - 2, true);
+            activations = feedForwardToLayer(input, layers.length - 1, true);
             if (trainingListeners.size() > 0) {
                 //TODO: We possibly do want output layer activations in some cases here...
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
                 }
             }
-            Activations actSecondLastLayer = activations.get(activations.size() - 1);
-            getOutputLayer().setInput(actSecondLastLayer);
-            ((IOutputLayer)getOutputLayer()).setLabels(labels.get(0), labels.getMask(0));
             //Then: compute gradients
             g = calcBackpropGradients(null, true);
         }
@@ -1756,8 +1754,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             throw new DL4JException(
                             "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
         }
-        Activations actSecondLastLayer = activations.get(activations.size() - 1);
-        score = ((IOutputLayer) getOutputLayer()).computeScore(actSecondLastLayer, labels,
+        Activations actOut = activations.get(activations.size() - 1);
+        //Compute score, using output layer *output* plus labels
+        score = ((IOutputLayer) getOutputLayer()).computeScore(actOut, labels,
                 calcL1(true), calcL2(true), true);
 
         //Listeners

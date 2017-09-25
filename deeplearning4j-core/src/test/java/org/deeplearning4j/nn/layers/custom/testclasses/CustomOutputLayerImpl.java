@@ -29,7 +29,7 @@ public class CustomOutputLayerImpl extends BaseOutputLayer<CustomOutputLayer> {
     }
 
     @Override
-    protected INDArray getLabelsMask2d() {
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
         return labelMask;
     }
 }

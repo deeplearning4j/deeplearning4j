@@ -92,7 +92,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    protected INDArray getLabelsMask2d() {
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
         if(labelMask == null)
             return null;
         if(labelMask.isColumnVector()){
@@ -167,18 +167,16 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         //For RNN: need to sum up the score over each time step before returning.
-        setInput(layerInput);
-        setLabels(labels);
-
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        setInput(layerOutput);
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray labels2d = getLabels2d();
-        INDArray mask2d = getLabelsMask2d();
+        INDArray labels2d = getLabels2d(labels.get(0));
+        INDArray mask2d = getLabelsMask2d(labels.getMask(0));
         INDArray scoreArray =
                         lossFunction.computeScoreArray(labels2d, preOut, layerConf().getActivationFn(), mask2d);
         //scoreArray: shape [minibatch*timeSeriesLength, 1]

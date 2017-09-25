@@ -56,7 +56,7 @@ public interface IOutputLayer extends Layer {
      *                      dropout, etc)
      * @return score (loss function)
      */
-    double computeScore(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training);
+    double computeScore(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training);
 
     /**
      * Compute the score for each example individually, after labels and input have been set.
@@ -65,7 +65,7 @@ public interface IOutputLayer extends Layer {
      * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
-    INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2);
+    INDArray computeScoreForExamples(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2);
 
 
 }
