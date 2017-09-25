@@ -1096,7 +1096,7 @@ public class GradientCheckTestsComputationGraph {
 
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                            ActivationsFactory.getInstance().createPair(in1, in2, inMask1, inMask1, MaskState.Active, MaskState.Active),
+                            ActivationsFactory.getInstance().createPair(in1, in2, inMask1, inMask2, MaskState.Active, MaskState.Active),
                             new INDArray[] {labels1, labels2}, null);
 
             assertTrue(testName, gradOK);

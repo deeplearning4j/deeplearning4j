@@ -64,6 +64,19 @@ public abstract class BaseActivations implements Activations {
 
     @Override
     public INDArray[] getMaskAsArray(){
+        //First: check if any are non-null
+        boolean allNull = true;
+        for( int i=0; i<size(); i++ ){
+            if(getMask(i) != null){
+                allNull = false;
+                break;
+            }
+        }
+        if(allNull){
+            return null;
+        }
+
+
         INDArray[] out = new INDArray[size()];
         for( int i=0; i<size(); i++ ){
             out[i] = getMask(i);

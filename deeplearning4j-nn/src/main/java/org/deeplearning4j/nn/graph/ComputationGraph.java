@@ -2134,6 +2134,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public double score(MultiDataSet dataSet, boolean training) {
         boolean hasMaskArrays = dataSet.hasMaskArrays();
         if (hasMaskArrays) {
+            if(input == null){
+                input = ActivationsFactory.getInstance().create(numInputArrays);
+            }
             input.setMaskFromArray(dataSet.getFeaturesMaskArrays(), null);
             labelMaskArrays = dataSet.getLabelsMaskArrays();
         }

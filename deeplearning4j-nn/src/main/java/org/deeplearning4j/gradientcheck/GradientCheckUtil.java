@@ -408,7 +408,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
-        MultiDataSet mds = new MultiDataSet(inputs.getAsArray(), labels);
+        MultiDataSet mds = new MultiDataSet(inputs.getAsArray(), labels, inputs.getMaskAsArray(), labelsMasks);
         INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
         for (int i = 0; i < nParams; i++) {
             //Get param name
