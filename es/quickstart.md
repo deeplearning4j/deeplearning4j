@@ -50,7 +50,7 @@ Una vez que haya configurado su red, puede entrenar el model con `model.fit`.
 
 ## Prerequisitos
 
-* [Java (versi&oacute;n desarrollador)](#Java) 1.7 o posterior (**S&oacute;lo la versi&oacute;n de 64-Bit est&aacute; soportad**)
+* [Java (versi&oacute;n desarrollador)](#Java) 1.7 o posterior (**S&oacute;lo la versi&oacute;n de 64-Bit est&aacute; soportada**)
 * [Apache Maven](#Maven) (gestor automatizado de construcci&oacute;n y dependencias)
 * [IntelliJ IDEA](#IntelliJ) o Eclipse
 * [Git](#Git)
