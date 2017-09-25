@@ -15,9 +15,11 @@
  */
 package org.datavec.image.transform;
 
+import java.nio.FloatBuffer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -52,6 +54,8 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     @Getter
     @Setter
     Scalar borderValue = Scalar.ZERO;
+
+    private Mat M;
 
     /** Calls {@code this(null, delta, delta, delta, delta, delta, delta, delta, delta)}. */
     public WarpImageTransform(float delta) {
@@ -121,10 +125,19 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
             dst.put(i, src.get(i) + deltas[i] * (random != null ? 2 * random.nextFloat() - 1 : 1));
         }
         Mat result = new Mat();
-        Mat M = getPerspectiveTransform(src, dst);
+        M = getPerspectiveTransform(src, dst);
         warpPerspective(mat, result, M, mat.size(), interMode, borderMode, borderValue);
 
         return new ImageWritable(converter.convert(result));
     }
 
+    public float[] query(float... coordinates) {
+        Mat src = new Mat(1, coordinates.length / 2, CV_32FC2, new FloatPointer(coordinates));
+        Mat dst = new Mat();
+        perspectiveTransform(src, dst, M);
+        FloatBuffer buf = dst.createBuffer();
+        float[] transformed = new float[coordinates.length];
+        buf.get(transformed);
+        return transformed;
+    }
 }

@@ -111,6 +111,13 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         return image;
     }
 
+    public float[] query(float... coordinates) {
+        for (Pair<ImageTransform, Double> tuple : imageTransforms) {
+            coordinates = tuple.getFirst().query(coordinates);
+        }
+        return coordinates;
+    }
+
     /**
      * Optional builder helper for PipelineImageTransform
      */

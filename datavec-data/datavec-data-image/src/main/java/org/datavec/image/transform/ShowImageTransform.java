@@ -91,4 +91,7 @@ public class ShowImageTransform extends BaseImageTransform {
         return image;
     }
 
+    public float[] query(float... coordinates) {
+        return coordinates;
+    }
 }

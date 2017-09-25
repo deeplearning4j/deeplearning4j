@@ -32,4 +32,8 @@ public class MultiImageTransform extends BaseImageTransform<Mat> {
     public ImageWritable transform(ImageWritable image) {
         return transform.transform(image);
     }
+
+    public float[] query(float... coordinates) {
+        return transform.query(coordinates);
+    }
 }

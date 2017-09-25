@@ -127,6 +127,20 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new WarpImageTransform(1, 2, 3, 4, 5, 6, 7, 8);
+        writable = transform.transform(writable);
+        float[] coordinates = { 0, 0,                                frame.imageWidth, 0,
+                                frame.imageWidth, frame.imageHeight, 0, frame.imageHeight};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(transformed[0], 1, 0);
+        assertEquals(transformed[1], 2, 0);
+        assertEquals(transformed[2], 3 + frame.imageWidth, 0);
+        assertEquals(transformed[3], 4, 0);
+        assertEquals(transformed[4], 5 + frame.imageWidth, 0);
+        assertEquals(transformed[5], 6 + frame.imageHeight, 0);
+        assertEquals(transformed[6], 7, 0);
+        assertEquals(transformed[7], 8 + frame.imageHeight, 0);
     }
 
     @Test
