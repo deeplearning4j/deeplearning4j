@@ -208,6 +208,7 @@ public class MultiLayerTest {
 
 
         MultiLayerNetwork d = new MultiLayerNetwork(conf);
+        d.init();
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -220,7 +221,7 @@ public class MultiLayerTest {
         SplitTestAndTrain testAndTrain = next.splitTestAndTrain(110);
         DataSet train = testAndTrain.getTrain();
 
-        for( int i=0; i<100; i++ ) {
+        for( int i=0; i<10; i++ ) {
             d.fit(train);
         }
 

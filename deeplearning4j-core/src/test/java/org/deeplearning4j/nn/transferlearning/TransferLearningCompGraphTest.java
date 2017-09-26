@@ -354,9 +354,6 @@ public class TransferLearningCompGraphTest {
                                         "layer7")
                                 .setOutputs("layer8").backprop(true).pretrain(false).build());
         modelExpectedArch.init();
-//        modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
-//        modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
-        fail();
 
         assertEquals(modelExpectedArch.getConfiguration().toJson(), modelNow.getConfiguration().toJson());
 
@@ -394,7 +391,8 @@ public class TransferLearningCompGraphTest {
                         new FineTuneConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).build();
 
         ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration)
-                        .removeVertexKeepConnections("out").setFeatureExtractor("dense")
+                        .removeVertexKeepConnections("out")
+                        .setFeatureExtractor("dense")
                         .addLayer("out", new OutputLayer.Builder().updater(new Adam(0.1))
                                 .weightInit(WeightInit.XAVIER)
                                         .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)

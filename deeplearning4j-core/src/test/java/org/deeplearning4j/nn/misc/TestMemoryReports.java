@@ -69,7 +69,7 @@ public class TestMemoryReports {
         out.add(new Pair<>(new UnstackVertex(0, 2), new InputType[] {InputType.recurrent(10, 10)}));
 
         out.add(new Pair<>(new DuplicateToTimeSeriesVertex(),
-                        new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
+                new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
         out.add(new Pair<>(new LastTimeStepVertex(), new InputType[] {InputType.recurrent(10, 10)}));
 
         return out;
@@ -142,9 +142,6 @@ public class TestMemoryReports {
             }
 
             String[] layerInputs = inputs.toArray(new String[inputs.size()]);
-            if (p.getFirst() instanceof DuplicateToTimeSeriesVertex) {
-                layerInputs = new String[] {"1"};
-            }
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs(inputs)
                             .addVertex("gv", p.getFirst(), layerInputs).setOutputs("gv").build();

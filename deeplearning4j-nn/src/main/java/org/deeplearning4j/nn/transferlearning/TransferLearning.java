@@ -773,28 +773,34 @@ public class TransferLearning {
                     if (allFrozen.contains(gv.getName())) {
                         //Need to freeze this layer - both the layer implementation, and the layer configuration
                         org.deeplearning4j.nn.api.Layer l = gv;
-                        gv = new FrozenLayer(gv);
-                        vertices[topologicalOrder[i]] = gv;
+                        if(!(gv instanceof FrozenLayer)) {
+                            gv = new FrozenLayer(gv);
+                            vertices[topologicalOrder[i]] = gv;
+                        }
 
+                        //Freeze in the configuration
                         String layerName = gv.getName();
                         LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
-                        Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
-                        Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
-                        newLayerConf.setLayerName(origLayerConf.getLayerName());
-                        //Complication here(and reason for clone on next line): inner Layer (implementation)
-                        // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
-                        // NNC should have the frozen layer
-                        NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
-                        currLayerVertex.setLayerConf(newNNC);
-                        currLayerVertex.getLayerConf().setLayer(newLayerConf);
+                        if(!newConfig.getNetworkInputs().contains(layerName) && currLayerVertex.getLayerConf() != null) {
+                            //Skip input vertices, and vertices without layer configurations...
+                            Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
+                            Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
+                            newLayerConf.setLayerName(origLayerConf.getLayerName());
+                            //Complication here(and reason for clone on next line): inner Layer (implementation)
+                            // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
+                            // NNC should have the frozen layer
+                            NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
+                            currLayerVertex.setLayerConf(newNNC);
+                            currLayerVertex.getLayerConf().setLayer(newLayerConf);
 
-                        //Make sure the underlying layer doesn't change:
-                        List<String> vars = currLayerVertex.getLayerConf().variables(true);
-                        currLayerVertex.getLayerConf().clearVariables();
-                        for (String s : vars) {
-                            newNNC.variables(false).add(s);
-                            newNNC.getL1ByParam().put(s, 0.0);
-                            newNNC.getL2ByParam().put(s, 0.0);
+                            //Make sure the underlying layer doesn't change:
+                            List<String> vars = currLayerVertex.getLayerConf().variables(true);
+                            currLayerVertex.getLayerConf().clearVariables();
+                            for (String s : vars) {
+                                newNNC.variables(false).add(s);
+                                newNNC.getL1ByParam().put(s, 0.0);
+                                newNNC.getL2ByParam().put(s, 0.0);
+                            }
                         }
 
                         //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
@@ -806,16 +812,13 @@ public class TransferLearning {
                                 break;
                             }
                         }
+                        System.out.println();
 
-//                        //Also: mark any inputs as to be frozen also
-//                        VertexIndices[] inputs = gv.getInputVertices();
-//                        if (inputs != null && inputs.length > 0) {
-//                            for (int j = 0; j < inputs.length; j++) {
-//                                int inputVertexIdx = inputs[j].getVertexIndex();
-//                                String alsoFreeze = vertices[inputVertexIdx].getName();
-//                                allFrozen.add(alsoFreeze);
-//                            }
-//                        }
+                        //Also: mark any inputs to the current vertex to be frozen also
+                        List<String> inputsToCurrent = newConfig.getVertexInputs().get(gv.getName());
+                        if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                            allFrozen.addAll(inputsToCurrent);
+                        }
                     }
                 }
                 newGraph.initGradientsView();

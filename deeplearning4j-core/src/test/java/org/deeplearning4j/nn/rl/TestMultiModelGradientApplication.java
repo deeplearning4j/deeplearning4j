@@ -175,7 +175,7 @@ public class TestMultiModelGradientApplication {
                 INDArray net2GradBefore = p2.getFirst().getParameterGradients().gradient().dup(); //But net 2 gradient should not be
                 net2GradUpd.getUpdater().update(g, 0, 0, minibatch);
                 INDArray gAfter = g.gradient().dup();
-                INDArray net2GradAfter = p1.getFirst().getParameterGradients().gradient().dup();
+                INDArray net2GradAfter = p2.getFirst().getParameterGradients().gradient().dup();
 
                 assertNotEquals(gBefore, gAfter); //Net 1 gradient should be modified
                 assertEquals(net2GradBefore, net2GradAfter); //But net 2 gradient should not be

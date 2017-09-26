@@ -1879,6 +1879,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     public void setLabels(INDArray labels, INDArray labelsMask){
         this.labels = labels;
         this.labelsMask = labelsMask;
+        if(getOutputLayer() instanceof IOutputLayer){
+            ((IOutputLayer) getOutputLayer()).setLabels(labels, labelsMask);
+        }
     }
 
     /**

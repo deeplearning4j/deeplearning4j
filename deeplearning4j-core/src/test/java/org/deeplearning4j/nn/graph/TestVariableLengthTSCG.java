@@ -187,7 +187,6 @@ public class TestVariableLengthTSCG {
 
             //Compute score and gradients *with* input mask
             Activations a = ActivationsFactory.getInstance().create(in2, inputMask);
-            System.out.println("Net 2");
             Pair<Gradients,Double> p2 = net.computeGradientAndScore(a, af.create(labels2));
             double score2 = net.score();
             Gradient g2 = p2.getFirst().getParameterGradients();
@@ -198,28 +197,14 @@ public class TestVariableLengthTSCG {
 
             Map<String, INDArray> g2map = g2.gradientForVariable();
 
-            //Gradients should be identical for the dense layers (given input masking) but must be different for the LSTM and RNN output
-            //However: note that the LSTM Input weight gradients (but not recurrent!) on the first LSTM will also be the same - they
-            // get 0s an input from the masked steps... consequently, their gradients for the masked step get multiplied
-            // by 0
+            //Gradients will be different for the dense layers AND RNN layers, even with input masking: this is because
+            // of the recurrent connections (which also impact the gradients flowing back to the dense layers at the
+            // non-masked time steps)
             for (String s : g1map.keySet()) {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
 
-//                System.out.println(s);
-
-                if(s.startsWith("0_") || s.startsWith("1_") || s.equals("2_W")){
-                    assertEquals(s, g1s, g2s);
-                } else if(s.startsWith("2_") || s.startsWith("3_") || s.startsWith("4_")){
-                    if(g1s.equals(g2s)){
-                        System.out.println(s + "\t - WRONG - should differ");
-                    } else {
-                        System.out.println(s + "\t - OK");
-                    }
-//                    assertNotEquals(s, g1s, g2s);
-                } else {
-                    throw new RuntimeException(s);
-                }
+                assertNotEquals(s, g1s, g2s);
             }
 
             //Modify the values at the masked time step, and check that neither the gradients, score or activations change
@@ -238,7 +223,7 @@ public class TestVariableLengthTSCG {
 
                 Map<String, Activations> activations2a = net.feedForward(a);
                 for (String s : activations2.keySet()) {
-                    assertEquals(activations2.get(s), activations2a.get(s));
+                    assertEquals(activations2.get(s).get(0), activations2a.get(s).get(0));
                 }
             }
 
@@ -398,9 +383,8 @@ public class TestVariableLengthTSCG {
                         ComputationGraph net2 = new ComputationGraph(conf2);
                         net2.init();
 
-                        net.setLayerMaskArrays(null, new INDArray[] {labelMaskArray});
-                        net2.setLayerMaskArrays(null, new INDArray[] {labelMaskArray});
-
+                        net.setLabels(null, new INDArray[] {labelMaskArray});
+                        net2.setLabels(null, new INDArray[] {labelMaskArray});
 
                         INDArray out = net.output(input).get(0);
                         INDArray out2 = net2.output(input).get(0);
@@ -414,8 +398,8 @@ public class TestVariableLengthTSCG {
                                     INDArray outRow2 = out2.get(NDArrayIndex.point(i), NDArrayIndex.all(),
                                                     NDArrayIndex.point(j));
                                     for (int k = 0; k < nOut; k++) {
-                                        assertEquals(outRow.getDouble(k), 0.0, 0.0);
-                                        assertEquals(outRow2.getDouble(k), 0.0, 0.0);
+                                        assertEquals(0.0, outRow.getDouble(k), 0.0);
+                                        assertEquals(0.0, outRow2.getDouble(k), 0.0);
                                     }
                                 }
                             }

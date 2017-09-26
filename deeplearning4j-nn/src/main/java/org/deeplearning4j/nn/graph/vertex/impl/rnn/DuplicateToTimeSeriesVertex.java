@@ -97,7 +97,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         INDArray out = Nd4j.create(outShape);
         //TODO: replace with broadcast once ND4J #2066 is closed
         for (int i = 0; i < tsLength; i++) {
-            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, input.get(0));
+            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, act2d);
         }
 
         return ActivationsFactory.getInstance().create(out, mask, maskState);
@@ -108,7 +108,13 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
         //Note that we don't need to worry about masks here: if masks were relevant, they should be applied already
         // in the activations gradients that are coming as input from the layer/vertex above
-        return GradientsFactory.getInstance().create(gradient.get(0).sum(2), null);
+
+        INDArray outEps3d = Nd4j.create(input.get(tsInputIdx).shape());
+        if(tsInputIdx == 0){
+            return GradientsFactory.getInstance().createPair(outEps3d, gradient.get(0).sum(2), null);
+        } else {
+            return GradientsFactory.getInstance().createPair(gradient.get(0).sum(2), outEps3d, null);
+        }
     }
 
     @Override

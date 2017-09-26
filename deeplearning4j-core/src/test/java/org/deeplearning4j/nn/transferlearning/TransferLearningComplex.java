@@ -105,7 +105,7 @@ public class TransferLearningComplex {
         */
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
-                        .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
+                        .addLayer("denseCentre0", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(new DenseLayer.Builder().nIn(2).nOut(2).build()), "inCentre")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inRight")
                         .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
                         .addLayer("outRight",
@@ -122,22 +122,18 @@ public class TransferLearningComplex {
                         new MultiDataSet(new INDArray[] {denseCentre0, randData.getFeatures(1)}, randData.getLabels());
 
         ComputationGraphConfiguration otherConf =
-                        overallConf.graphBuilder().addInputs("denseCentre0", "inRight")
-                                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),
-                                                        "inRight")
-                                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
-                                        .addLayer("outRight",
-                                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4)
-                                                                        .nOut(2).build(),
-                                                        "mergeRight")
-                                        .setOutputs("outRight").build();
+                overallConf.graphBuilder()
+                        .addInputs("denseCentre0", "inRight")
+                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
+                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4) .nOut(2).build(),"mergeRight")
+                        .setOutputs("outRight")
+                        .build();
         ComputationGraph modelOther = new ComputationGraph(otherConf);
         modelOther.init();
         modelOther.getLayer("denseRight0").setParams(modelToTune.getLayer("denseRight0").params());
         modelOther.getLayer("outRight").setParams(modelToTune.getLayer("outRight").params());
 
-//        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
-        fail();
         ComputationGraph modelNow =
                         new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
         int n = 0;

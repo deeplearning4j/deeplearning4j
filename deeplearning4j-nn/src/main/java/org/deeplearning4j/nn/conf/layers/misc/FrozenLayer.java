@@ -135,6 +135,16 @@ public class FrozenLayer extends Layer {
         this.layer.setConstraints(constraints);
     }
 
+    @Override
+    public void setPreProcessor(InputPreProcessor preProcessor){
+        layer.setPreProcessor(preProcessor);
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessor(){
+        return layer.getPreProcessor();
+    }
+
     public static class Builder extends Layer.Builder<Builder> {
         private Layer layer;
 

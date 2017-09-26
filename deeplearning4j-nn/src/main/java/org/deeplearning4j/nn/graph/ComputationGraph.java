@@ -406,6 +406,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Set all labels for the ComputationGraph network
      */
     public void setLabels(INDArray... labels) {
+        setLabels(labels, null);
+    }
+
+    public void setLabels(INDArray[] labels, INDArray[] labelMaskArrays){
         if (labels != null && labels.length != this.numOutputArrays) {
             throw new IllegalArgumentException("Invalid output array: network has " + numOutputArrays
                     + " outputs, but array is of length " + labels.length);
@@ -417,9 +421,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         } else if(this.labels == null){
             this.labels = Arrays.copyOf(labels, labels.length);
         } else {
-            for( int i=0; i<numOutputArrays; i++ ){
-                this.labels[i] = labels[i];
+            System.arraycopy(labels, 0, this.labels, 0, numOutputArrays);
+        }
+
+        if(labelMaskArrays == null){
+            this.labelMaskArrays = null;
+        } else if(this.labelMaskArrays == null){
+            this.labelMaskArrays = Arrays.copyOf(labelMaskArrays, labelMaskArrays.length);
+        } else {
+            System.arraycopy(labelMaskArrays, 0, this.labelMaskArrays, 0, numOutputArrays);
+        }
+
+        if(labels == null && labelMaskArrays == null){
+            return;
+        }
+
+        //Finally: set the labels on the output layers...
+        int i=0;
+        for(String s : configuration.getNetworkOutputs()){
+            Layer l = getLayer(s);
+            if(l instanceof IOutputLayer){
+               ((IOutputLayer) l).setLabels((labels == null ? null : labels[i]),
+                       (labelMaskArrays == null ? null : labelMaskArrays[i]));
             }
+            i++;
         }
     }
 
@@ -1734,6 +1759,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         workspaceConfigurationFeedForward,
                         workspaceFeedForward);
 
+        //Set the output layer labels arrays
+        if(externalEpsilons == null || externalEpsilons.length == 0 && labels != null){
+            for( int i=0; i<numOutputArrays; i++ ){
+                ((IOutputLayer)getOutputLayer(i)).setLabels(labels[i], (labelMaskArrays == null ? null : labelMaskArrays[i]));
+            }
+        }
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
