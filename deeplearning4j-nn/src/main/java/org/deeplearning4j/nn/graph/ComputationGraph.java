@@ -2179,8 +2179,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         workspaceConfigurationExternal, workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-            Map<String,Activations> ff = feedForward(
-                    ActivationsFactory.getInstance().featuresAsActivations(dataSet), training);
+            Map<String,Activations> ff = feedForward( ActivationsFactory.getInstance().featuresAsActivations(dataSet), training, false);
             INDArray[] labels = dataSet.getLabels();
             INDArray[] labelsMasks = dataSet.getLabelsMaskArrays();
             setLabels(labels);

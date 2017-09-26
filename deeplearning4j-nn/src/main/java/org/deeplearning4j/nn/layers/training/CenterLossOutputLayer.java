@@ -62,8 +62,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      */
     @Override
     public double computeScore(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
-        if (layerOutput == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        if (layerOutput == null || labels == null || input == null)
+            throw new IllegalStateException("Cannot calculate score without input, output and labels " + layerId());
 
         // center loss has two components
         // the first enforces inter-class dissimilarity, the second intra-class dissimilarity (squared l2 norm of differences)
@@ -89,7 +89,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // now calculate the inter-class score component
         //Note: (preOutput + activation function) == (output + identity), from the perspective of scoring
-        double interClassScore = interClassLoss.computeScore(getLabels2d(), layerOutput.get(0), layerConf().getActivationFn(),
+        double interClassScore = interClassLoss.computeScore(getLabels2d(), layerOutput.get(0), IDENTITY,
                         this.input.getMask(0), false);
 
         double score = interClassScore + intraClassScore;

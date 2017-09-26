@@ -1,10 +1,12 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -151,7 +153,7 @@ public class TransferLearningHelper {
     }
 
     /**
-     * Runs through the comp graph and saves off a new model that is simply the "unfrozen" part of the origModel
+     * Runs through the comp graph and saves off a new model that is simply the "frozen" part of the origModel
      * This "unfrozen" model is then used for training with featurized data
      */
     private void initHelperGraph() {
@@ -163,69 +165,55 @@ public class TransferLearningHelper {
         if (applyFrozen) {
             Collections.addAll(allFrozen, frozenOutputAt);
         }
-//        for (int i = 0; i < backPropOrder.length; i++) {
-//            Layer gv = origGraph.getVertices()[backPropOrder[i]];
-//            if (applyFrozen && allFrozen.contains(gv.getName())) {
-//                if (gv.hasLayer()) {
-//                    //Need to freeze this layer
-//                    org.deeplearning4j.nn.api.Layer l = gv.getLayer();
-//                    gv.setLayerAsFrozen();
-//
-//                    //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
-//                    //This could no doubt be done more efficiently
-//                    org.deeplearning4j.nn.api.Layer[] layers = origGraph.getLayers();
-//                    for (int j = 0; j < layers.length; j++) {
-//                        if (layers[j] == l) {
-//                            layers[j] = gv.getLayer(); //Place the new frozen layer to replace the original layer
-//                            break;
-//                        }
-//                    }
-//                }
-//
-//                //Also: mark any inputs as to be frozen also
-//                VertexIndices[] inputs = gv.getInputVertices();
-//                if (inputs != null && inputs.length > 0) {
-//                    for (int j = 0; j < inputs.length; j++) {
-//                        int inputVertexIdx = inputs[j].getVertexIndex();
-//                        String alsoFreeze = origGraph.getVertices()[inputVertexIdx].getName();
-//                        allFrozen.add(alsoFreeze);
-//                    }
-//                }
-//            } else {
-//                if (gv.hasLayer()) {
-//                    if (gv.getLayer() instanceof FrozenLayer) {
-//                        allFrozen.add(gv.getName());
-//                        //also need to add parents to list of allFrozen
-//                        VertexIndices[] inputs = gv.getInputVertices();
-//                        if (inputs != null && inputs.length > 0) {
-//                            for (int j = 0; j < inputs.length; j++) {
-//                                int inputVertexIdx = inputs[j].getVertexIndex();
-//                                String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getName();
-//                                allFrozen.add(alsoFrozen);
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        for (int i = 0; i < backPropOrder.length; i++) {
-//            Layer gv = origGraph.getVertices()[backPropOrder[i]];
-//            String gvName = gv.getName();
-//            //is it an unfrozen vertex that has an input vertex that is frozen?
-//            if (!allFrozen.contains(gvName) && !gv.isInputVertex()) {
-//                VertexIndices[] inputs = gv.getInputVertices();
-//                for (int j = 0; j < inputs.length; j++) {
-//                    int inputVertexIdx = inputs[j].getVertexIndex();
-//                    String inputVertex = origGraph.getVertices()[inputVertexIdx].getName();
-//                    if (allFrozen.contains(inputVertex)) {
-//                        frozenInputVertices.add(inputVertex);
-//                    }
-//                }
-//            }
-//        }
+        for (int i = 0; i < backPropOrder.length; i++) {
+            Layer[] vertices = origGraph.getVertices();
+            Layer gv = vertices[backPropOrder[i]];
+            if (applyFrozen && allFrozen.contains(gv.getName())) {
+                //Need to freeze this layer
+                if(!(gv instanceof FrozenLayer)) {
+                    gv = new FrozenLayer(gv);
+                    vertices[backPropOrder[i]] = gv;
+                }
 
-        throw new UnsupportedOperationException();
-        /*
+                //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
+                //This could no doubt be done more efficiently
+                org.deeplearning4j.nn.api.Layer[] layers = origGraph.getLayers();
+                for (int j = 0; j < layers.length; j++) {
+                    if (layers[j] == gv) {
+                        layers[j] = gv; //Place the new frozen layer to replace the original layer
+                        break;
+                    }
+                }
+
+                //Also: mark any inputs as to be frozen also
+                List<String> inputsToCurrent = origGraph.getConfiguration().getVertexInputs().get(gv.getName());
+                if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                    allFrozen.addAll(inputsToCurrent);
+                }
+            } else {
+                //Current layer is already frozen... so also free
+                if (gv instanceof FrozenLayer) {
+                    allFrozen.add(gv.getName());
+                    //also need to add parents to list of allFrozen
+                    List<String> inputsToCurrent = origGraph.getConfiguration().getVertexInputs().get(gv.getName());
+                    if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                        allFrozen.addAll(inputsToCurrent);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < backPropOrder.length; i++) {
+            Layer gv = origGraph.getVertices()[backPropOrder[i]];
+            String gvName = gv.getName();
+            //is it an unfrozen vertex that has an input vertex that is frozen?
+            if (!allFrozen.contains(gvName) && !(gv instanceof InputVertex)) {
+                List<String> inputsToCurrent = origGraph.getConfiguration().getVertexInputs().get(gvName);
+                if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                    allFrozen.addAll(inputsToCurrent);
+                }
+            }
+        }
+
         TransferLearning.GraphBuilder builder = new TransferLearning.GraphBuilder(origGraph);
         for (String toRemove : allFrozen) {
             if (frozenInputVertices.contains(toRemove)) {
@@ -244,7 +232,7 @@ public class TransferLearningHelper {
         }
         frozenInputVerticesSorted.addAll(frozenInputVertices);
         //Sort all inputs to the computation graph - in order to have a predictable order
-        graphInputs = new ArrayList(frozenInputVerticesSorted);
+        graphInputs = new ArrayList<>(frozenInputVerticesSorted);
         Collections.sort(graphInputs);
         for (String asInput : frozenInputVerticesSorted) {
             //add back in the right order
@@ -257,7 +245,6 @@ public class TransferLearningHelper {
         if (frozenInputVertices.isEmpty()) {
             throw new IllegalArgumentException("No frozen layers found");
         }
-        */
     }
 
     private void initHelperMLN() {
