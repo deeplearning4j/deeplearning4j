@@ -628,10 +628,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             //Build reverse network structure:
             for (String s : vertexInputNames) {
-                List<String> list = verticesOutputTo.get(s);
+                //Normalize name: remove "/0" etc for multiple output index...
+                String s2 = ComputationGraphConfiguration.getLayerNameFromMultiOut(s);
+                List<String> list = verticesOutputTo.get(s2);
                 if (list == null) {
                     list = new ArrayList<>();
-                    verticesOutputTo.put(s, list);
+                    verticesOutputTo.put(s2, list);
                 }
                 list.add(vertexName); //Edge: s -> vertexName
             }
@@ -650,6 +652,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.size()];
             for (int j = 0; j < vertexInputNames.size(); j++) {
                 String inName = vertexInputNames.get(j);
+                inName = ComputationGraphConfiguration.getLayerNameFromMultiOut(inName);
                 int inputVertexIndex = allNamesReverse.get(inName);
 
                 //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
@@ -1326,8 +1329,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             i++;
         }
 
-        Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
-        Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
+        Map<Integer, Set<Integer>> inputEdges = new HashMap<>();    //key: vertex. Values: vertices that the key vertex receives input from
+        Map<Integer, Set<Integer>> outputEdges = new HashMap<>();   //key: vertex. Values: vertices that the key vertex outputs to
 
         for (String s : configuration.getNetworkInputs()) {
             int idx = vertexNamesMap2.get(s);
@@ -1339,13 +1342,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             int idx = vertexNamesMap2.get(thisVertexName);
             List<String> inputsToThisVertex = configuration.getVertexInputs().get(thisVertexName);
 
-            if (inputsToThisVertex == null || inputsToThisVertex.isEmpty()) {
+            //Normalize the input names, to handle multiple output layers (input could be format like "myLayer/1" etc
+            List<String> inputsToThisVertexNormalized = (inputsToThisVertex == null ? null : new ArrayList<String>(inputsToThisVertex.size()));
+            if(inputsToThisVertex != null){
+                for(String s : inputsToThisVertex){
+                    String normalized = ComputationGraphConfiguration.getLayerNameFromMultiOut(s);
+                    if(!inputsToThisVertexNormalized.contains(normalized)){
+                        inputsToThisVertexNormalized.add(normalized);
+                    }
+                }
+            }
+
+
+            if (inputsToThisVertexNormalized == null || inputsToThisVertexNormalized.isEmpty()) {
                 inputEdges.put(idx, null);
                 continue;
             }
 
             Set<Integer> inputSet = new HashSet<>();
-            for (String s : inputsToThisVertex) {
+            for (String s : inputsToThisVertexNormalized) {
                 Integer inputIdx = vertexNamesMap2.get(s);
                 if (inputIdx == null) {
                     System.out.println();
