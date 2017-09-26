@@ -136,6 +136,10 @@ public abstract class Layer implements Serializable, Cloneable {
         this.constraints = null;
     }
 
+    public int numOutputs(){
+        return 1;
+    }
+
     @Override
     public Layer clone() {
         try {

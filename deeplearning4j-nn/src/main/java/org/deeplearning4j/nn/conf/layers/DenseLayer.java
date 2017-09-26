@@ -44,7 +44,7 @@ import java.util.Map;
 public class DenseLayer extends FeedForwardLayer {
     private boolean hasBias = true;
 
-    private DenseLayer(Builder builder) {
+    protected DenseLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
 

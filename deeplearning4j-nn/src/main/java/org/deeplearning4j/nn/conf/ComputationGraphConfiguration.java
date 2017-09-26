@@ -33,8 +33,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -256,6 +254,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         return conf;
     }
 
+    /**
+     * Convert the name from a possible multi-output format (like "myLayer/0", which specifies the first (0th) output
+     * of the layer "myLayer") to the layer name only
+     *
+     * @param multiOut Possible multi-output layer name (OK to pass 'standard' layer namas also)
+     * @return Layer name, with "/x" prefix removed if necessary
+     */
+    public static String getLayerNameFromMultiOut(String multiOut){
+        if(multiOut.matches(".+/\\d")){
+            return multiOut.substring(0, multiOut.length()-2);  //Strip last 2 characters - "/0" etc off
+        }
+        return multiOut;
+    }
 
     /**
      * Check the configuration, make sure it is valid
@@ -287,7 +298,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 throw new IllegalStateException("Invalid configuration: vertex \"" + nodeName + "\" has no inputs");
             }
             for (String inputName : e.getValue()) {
-                if (!vertices.containsKey(inputName) && !networkInputs.contains(inputName)) {
+                String noOutputIdxName = getLayerNameFromMultiOut(inputName);
+                if (!vertices.containsKey(noOutputIdxName) && !networkInputs.contains(noOutputIdxName)) {
                     throw new IllegalStateException("Invalid configuration: Vertex \"" + nodeName + "\" has input \""
                                     + inputName + "\" that does not exist");
                 }

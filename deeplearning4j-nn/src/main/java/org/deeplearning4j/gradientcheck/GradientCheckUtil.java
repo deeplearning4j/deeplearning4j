@@ -1,14 +1,12 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
-import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
-import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -34,6 +32,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.primitives.Pair;
 
