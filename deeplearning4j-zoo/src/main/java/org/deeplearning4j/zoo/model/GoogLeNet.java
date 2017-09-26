@@ -158,7 +158,7 @@ public class GoogLeNet extends ZooModel {
         graph.addLayer("max3",
                         new SubsamplingLayer.Builder(new int[] {3, 3}, new int[] {2, 2}, new int[] {0, 0}).build(),
                         "3b-depthconcat1");
-        inception(graph, "4a", 480, new int[][] {{192}, {96, 208}, {16, 48}, {64}}, "3b-depthconcat1");
+        inception(graph, "4a", 480, new int[][] {{192}, {96, 208}, {16, 48}, {64}}, "max3");
         inception(graph, "4b", 512, new int[][] {{160}, {112, 224}, {24, 64}, {64}}, "4a-depthconcat1");
         inception(graph, "4c", 512, new int[][] {{128}, {128, 256}, {24, 64}, {64}}, "4b-depthconcat1");
         inception(graph, "4d", 512, new int[][] {{112}, {144, 288}, {32, 64}, {64}}, "4c-depthconcat1");
@@ -172,7 +172,8 @@ public class GoogLeNet extends ZooModel {
                         .addLayer("fc1", fullyConnected(1024, 1024, 0.4), "avg3") // output: 1x1x1024
                         .addLayer("output", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nIn(1024).nOut(numLabels).activation(Activation.SOFTMAX).build(), "fc1")
-                        .setOutputs("output").backprop(true).pretrain(false);
+                        .setOutputs("output").backprop(true).pretrain(false)
+                        .setInputTypes(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]));
 
         return graph.build();
     }
