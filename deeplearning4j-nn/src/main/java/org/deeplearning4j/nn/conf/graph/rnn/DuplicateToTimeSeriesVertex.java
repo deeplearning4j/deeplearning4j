@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -50,19 +51,12 @@ import java.util.Collection;
 @EqualsAndHashCode(callSuper = false)
 public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
-    private String inputName;
-
-    /**
-     * @param inputName Name of the input in the ComputationGraph network to use, to determine how long the output time
-     *                  series should be. This input should (a) exist, and (b) be a time series input
-     */
-    public DuplicateToTimeSeriesVertex(@JsonProperty("inputName") String inputName) {
-        this.inputName = inputName;
+    public DuplicateToTimeSeriesVertex() {
     }
 
     @Override
     public GraphVertex clone() {
-        return new DuplicateToTimeSeriesVertex(inputName);
+        return new DuplicateToTimeSeriesVertex();
     }
 
     @Override
@@ -72,12 +66,12 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     @Override
     public int minVertexInputs() {
-        return 1;
+        return 2;
     }
 
     @Override
     public int maxVertexInputs() {
-        return 1;
+        return 2;
     }
 
     @Override
@@ -85,28 +79,39 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
                              Collection<IterationListener> iterationListeners,
                              String name, int idx, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex( name, idx, numInputs, inputName);
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex( name, idx, numInputs);
     }
 
     @Override
     public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if (vertexInputs.length != 1)
-            throw new InvalidInputTypeException("Invalid input type: cannot duplicate more than 1 input");
+        if (vertexInputs.length != 2)
+            throw new InvalidInputTypeException("Invalid input type: expected 2 inputs (rank 2 to duplicate + " +
+                    "rank 3 to determine output size). Got: " + Arrays.toString(vertexInputs));
 
-        int tsLength = 1; //TODO work this out properly
+        InputType it2d = null;
+        InputType it3d = null;
 
-        if (vertexInputs[0].getType() == InputType.Type.FF) {
-            return new InputType[]{InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize(), tsLength)};
-        } else if (vertexInputs[0].getType() != InputType.Type.CNNFlat) {
-            return new InputType[]{InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(),
-                            tsLength)};
-        } else {
-            throw new InvalidInputTypeException(
-                            "Invalid input type: cannot duplicate to time series non feed forward (or CNN flat) input (got: "
-                                            + vertexInputs[0] + ")");
+        if (vertexInputs[0].getType() == InputType.Type.FF || vertexInputs[0].getType() == InputType.Type.CNNFlat) {
+            it2d = vertexInputs[0];
+        } else if(vertexInputs[0].getType() == InputType.Type.RNN ){
+            it3d = vertexInputs[0];
         }
 
+        if (vertexInputs[1].getType() == InputType.Type.FF || vertexInputs[1].getType() == InputType.Type.CNNFlat) {
+            it2d = vertexInputs[1];
+        } else if(vertexInputs[1].getType() == InputType.Type.RNN ){
+            it3d = vertexInputs[1];
+        }
 
+        if(it2d == null || it3d == null){
+            throw new InvalidInputTypeException("Invalid input type: expected 2 inputs (rank 2 to duplicate + " +
+                    "rank 3 to determine output size). Got: " + Arrays.toString(vertexInputs));
+        }
+
+        int outSize = it2d.arrayElementsPerExample();
+        int tsLength = ((InputType.InputTypeRecurrent)it3d).getTimeSeriesLength();
+
+        return new InputType[]{InputType.recurrent(outSize, tsLength)};
     }
 
     @Override

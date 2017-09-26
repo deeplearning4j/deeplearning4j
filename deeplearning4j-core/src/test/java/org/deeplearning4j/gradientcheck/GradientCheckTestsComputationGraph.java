@@ -478,7 +478,7 @@ public class GradientCheckTestsComputationGraph {
                                                                         .activation(Activation.SOFTSIGN).build(),
                                                         "input2")
                                         .addVertex("lastTS", new LastTimeStepVertex(), "lstm2")
-                                        .addVertex("duplicate", new DuplicateToTimeSeriesVertex("input2"), "lastTS")
+                                        .addVertex("duplicate", new DuplicateToTimeSeriesVertex(), "lastTS", "input2")
                                         .addLayer("out", new RnnOutputLayer.Builder().nIn(5 + 4).nOut(3)
                                                         .activation(Activation.SOFTMAX)
                                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),

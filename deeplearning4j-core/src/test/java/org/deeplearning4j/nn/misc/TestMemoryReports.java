@@ -68,7 +68,7 @@ public class TestMemoryReports {
                         new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new UnstackVertex(0, 2), new InputType[] {InputType.recurrent(10, 10)}));
 
-        out.add(new Pair<>(new DuplicateToTimeSeriesVertex("0"),
+        out.add(new Pair<>(new DuplicateToTimeSeriesVertex(),
                         new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
         out.add(new Pair<>(new LastTimeStepVertex(), new InputType[] {InputType.recurrent(10, 10)}));
 

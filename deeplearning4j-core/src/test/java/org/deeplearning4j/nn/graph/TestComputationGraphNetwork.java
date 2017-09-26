@@ -1027,7 +1027,7 @@ public class TestComputationGraphNetwork {
         GraphVertex[] singleInputVertices = new GraphVertex[]{new L2NormalizeVertex(), new LayerVertex(nnc),
                 new PoolHelperVertex(), new PreprocessorVertex(), new ReshapeVertex(new int[]{1, 1}),
                 new ScaleVertex(1.0), new ShiftVertex(1.0), new SubsetVertex(1, 1), new UnstackVertex(0, 2),
-                new DuplicateToTimeSeriesVertex("in1"), new LastTimeStepVertex()};
+                new LastTimeStepVertex()};
 
         for (GraphVertex gv : singleInputVertices) {
             ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder()

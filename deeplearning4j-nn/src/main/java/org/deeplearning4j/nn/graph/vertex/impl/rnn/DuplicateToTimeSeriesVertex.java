@@ -20,35 +20,37 @@ package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
-/**DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
+import java.util.Arrays;
+
+/**
+ * DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
  * duplication. That is, given a 2d input with shape [numExamples,nIn] duplicate each row to give output of
  * [numExamples,nIn,timeSeriesLength], where the activations are the same for all time steps.<br>
- * This method is used for example in sequence to sequence models.<br>
- * <b>Note</b>: The length of the output time series (number of time steps) is determined by means of referencing one of the
- * inputs in the ComputationGraph. That is: Because the length of the time series may differ at runtime, we generally want the number
- * of time steps to match some other input; here, we are specifying the length of the output time series to be the same as
- * one of the input time series<br>
+ * <br>
+ * To use DuplicateToTimeSeriesVertex, a user must specify 2 inputs (any order is OK)
+ * (a) A 2d input, to be duplicated, and<br>
+ * (b) A 3d (time series) input, that provides the shape/length, and a mask array (if present) for handling variable-
+ *     length time series.<br>
+ * This method is used for example in some sequence to sequence models.<br>
  * @author Alex Black
  */
 public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
 
-    private String inputName;
-    private int inputVertexIndex;
+    private int tsInputIdx = -1;
 
-    public DuplicateToTimeSeriesVertex(String name, int vertexIndex, int numInputs, String inputVertexName) {
+    public DuplicateToTimeSeriesVertex(String name, int vertexIndex, int numInputs) {
         super(name, vertexIndex, numInputs);
-        this.inputName = inputVertexName;
-//        this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if (inputVertexIndex == -1)
-//            throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-//                            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
-        throw new UnsupportedOperationException("Not yet reimplemented");
+
     }
 
     @Override
@@ -58,22 +60,54 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
+        if(input == null || input.anyActivationsNull()){
+            throw new IllegalStateException("Cannot perform forward pass: input is not set");
+        }
 
-        //First: work out the time series length
-//        int tsLength = graph.getInput(inputVertexIndex).size(2);
-//        int[] outShape = new int[] {input.get(0).size(0), input.get(0).size(1), tsLength};
-//
-//        INDArray out = Nd4j.create(outShape);
-//        for (int i = 0; i < tsLength; i++) {
-//            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, input.get(0));
-//        }
-//        return ActivationsFactory.getInstance().create(out);
-        throw new UnsupportedOperationException("Not yet reimplemented");
+        INDArray act2d = null;
+        INDArray act3d = null;
+        INDArray mask = null;
+        MaskState maskState = null;
+        if(input.get(0).rank() == 2){
+            act2d = input.get(0);
+        } else if(input.get(0).rank() == 3){
+            act3d = input.get(0);
+            mask = input.getMask(0);
+            maskState = input.getMaskState(0);
+            tsInputIdx = 0;
+        }
+        if(input.get(1).rank() == 2){
+            act2d = input.get(1);
+        } else if(input.get(1).rank() == 3){
+            act3d = input.get(1);
+            mask = input.getMask(1);
+            maskState = input.getMaskState(1);
+            tsInputIdx = 1;
+        }
+
+        if(act2d == null || act3d == null){
+            throw new IllegalStateException("Expected to get 1x rank 2 array (to duplicate) and 1x rank 3 array" +
+                    " (to determine output size). Got arrays of ranks " + input.get(0).rank() + " and "
+                    + input.get(1).rank() + ", with shapes " + Arrays.toString(input.get(0).shape()) + " and "
+                    + Arrays.toString(input.get(1).shape()));
+        }
+
+        int tsLength = act3d.size(2);
+        int[] outShape = new int[] {act2d.size(0), act2d.size(1), tsLength};
+        INDArray out = Nd4j.create(outShape);
+        //TODO: replace with broadcast once ND4J #2066 is closed
+        for (int i = 0; i < tsLength; i++) {
+            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, input.get(0));
+        }
+
+        return ActivationsFactory.getInstance().create(out, mask, maskState);
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
+        //Note that we don't need to worry about masks here: if masks were relevant, they should be applied already
+        // in the activations gradients that are coming as input from the layer/vertex above
         return GradientsFactory.getInstance().create(gradient.get(0).sum(2), null);
     }
 
@@ -84,20 +118,12 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
-        //Present for all time steps, or as per the corresponding input mask (if present)
-//        INDArray[] allMasks = graph.getInputMaskArrays();
-//        if (allMasks == null || allMasks[inputVertexIndex] == null) {
-//            No mask
-//            return null;
-//        }
-//        return new Pair<>(allMasks[inputVertexIndex], MaskState.Active);
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public String toString() {
-        return "DuplicateToTimeSeriesVertex(inputName=" + inputName + ")";
+        return "DuplicateToTimeSeriesVertex()";
     }
 }

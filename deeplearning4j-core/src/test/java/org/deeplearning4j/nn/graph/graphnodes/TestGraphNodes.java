@@ -220,7 +220,7 @@ public class TestGraphNodes {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
                         .addInputs("in2d", "in3d")
-                        .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex("in3d"), "in2d")
+                        .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex(), "in2d", "in3d")
                         .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "duplicateTS")
                         .setOutputs("out").build();
 
@@ -238,13 +238,26 @@ public class TestGraphNodes {
         }
 
         Layer gv = graph.getVertex("duplicateTS");
-        gv.setInput(af.create(in2d));
+        gv.setInput(af.createPair(in2d, in3d));
         INDArray outFwd = gv.activate(true).get(0);
         assertEquals(expOut, outFwd);
 
-        INDArray expOutBackward = expOut.sum(2);
-        INDArray outBwd = gv.backpropGradient(gf.create(expOut)).get(0);
-        assertEquals(expOutBackward, outBwd);
+        INDArray expOutBackward0 = expOut.sum(2);
+        INDArray expOutBackward1 = Nd4j.create(in3d.shape());
+        Gradients outBwd = gv.backpropGradient(gf.create(expOut));
+        assertEquals(expOutBackward0, outBwd.get(0));
+        assertEquals(expOutBackward1, outBwd.get(1));
+
+
+        //Permute order - should still work
+        gv.setInput(af.createPair(in3d, in2d));
+        outFwd = gv.activate(true).get(0);
+        assertEquals(expOut, outFwd);
+
+        outBwd = gv.backpropGradient(gf.create(expOut));
+        assertEquals(expOutBackward1, outBwd.get(0));
+        assertEquals(expOutBackward0, outBwd.get(1));
+
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
@@ -508,7 +521,7 @@ public class TestGraphNodes {
                                         .addVertex("v3", new PreprocessorVertex(
                                                         new CnnToFeedForwardPreProcessor(1, 2, 1)), "in")
                                         .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0, 1), "in")
-                                        .addVertex("v5", new DuplicateToTimeSeriesVertex("in"), "in")
+                                        .addVertex("v5", new DuplicateToTimeSeriesVertex(), "in", "in")
                                         .addVertex("v6", new LastTimeStepVertex(), "in")
                                         .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
                                         .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
