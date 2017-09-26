@@ -4,7 +4,8 @@ layout: cn-default
 redirect_from: /zh-compare-dl4j-torch7-pylearn
 ---
 <p><h1>DL4J与Torch、Theano、TensorFlow、Caffe、Paddle、MxNet、Keras 和 CNTK的比较</h1></p>
-<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和<a href="spark.html">Spark</a>集成，可使用任意数量的[GPU](./gpu)或[CPU](./native)运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。DL4J是一种适用于各类平台的便携式学习库，并未同AWS、Azure或谷歌云等任何云端服务相捆绑。论速度，DL4J用多GPU运行非平凡图像处理任务时的[性能可媲美Caffe](https://github.com/deeplearning4j/dl4j-benchmark)，优于TensorFlow和Torch。如需对Deeplearning4j运行基准测试，请参阅[此页](https://deeplearning4j.org/benchmark)的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。 
+<p>与其他深度学习框架相比，Deeplearning4j在API语言、宗旨和集成性方面独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的**分布式深度学习框架**，能在合理的时间内解决各类涉及大量数据的问题。DL4J与Kafka、Hadoop和<a href="https://deeplearning4j.org/cn/spark.html">Spark</a>集成，可使用任意数量的<a href="https://deeplearning4j.org/cn/gpu.html">GPU</a>或<a href="https://deeplearning4j.org/cn/native.html">CPU</a>运行，而且发生任何问题都可以<a href="http://www.skymind.io/contact">联系服务热线</a>。</p>
+<p>DL4J是一种跨平台的便携式学习库，并非专门针对AWS、Azure或谷歌云等任何一种特定的云端服务而优化。论速度，DL4J用多GPU运行非平凡图像处理任务时的<a href="https://github.com/deeplearning4j/dl4j-benchmark">性能可媲美Caffe</a>，优于TensorFlow和Torch。如需对Deeplearning4j运行基准测试，请参阅<a href="https://deeplearning4j.org/cn/benchmark.html">此页</a>的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。Deeplearning4j拥有Java、<a href="https://github.com/deeplearning4j/scalnet">Scala</a>和<a href="https://deeplearning4j.org/cn/keras.html">Python API（所用的Python API为Keras）</a>。
 </p>
 <br />
 <p><h2>目录</h2></p>
@@ -17,6 +18,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
   <li><a href="#theano">Theano及其生态系统</a></li>
   <li><a href="#tensorflow">TensorFlow</a></li>
   <li><a href="#caffe">Caffe</a></li>
+  <li><a href="#caffe2">Caffe2</a></li>
   <li><a href="#cntk">CNTK</a></li>
   <li><a href="#chainer">Chainer</a></li>
   <li><a href="#dsstne">DSSTNE</a></li>
@@ -119,6 +121,17 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-danger">-</span> 不可扩展，有些不够精简 <br />
 <span class="label label-danger">-</span> 不提供商业支持 <br />
 <span class="label label-danger">-</span> 更新缓慢，可能以后不再更新 <br />
+<br />
+
+<p><h3><a name="caffe2">Caffe2</a></h3></p>
+<p>令业界翘首以盼的<a href="https://caffe2.ai/"><strong>Caffe2</strong></a>将接替原版Caffe。Caffe的开发人目前在Facebook就职。Caffe2是继Torch/PyTorch之后第二个得到<a href="https://techcrunch.com/2017/04/18/facebook-open-sources-caffe2-its-flexible-deep-learning-framework-of-choice/">Facebook支持</a>的深度学习框架。从目前的宣传来看，Caffe2的主要区别似乎是更加轻便且可扩展性更强。与Caffe和PyTorch一样，Caffe2提供一个在C++引擎上运行的Python API。</p>
+<ul>
+    <li><a href="https://github.com/caffe2/caffe2">Caffe2的GitHub代码库</a></li>
+</ul>
+<br />
+<p>利与弊：</p>
+<span class="label label-success">+</span> BSD许可协议 <br />
+<span class="label label-danger">-</span> 不提供商业支持 <br />
 <br />
 
 <p><h3><a name="cntk">CNTK</a></h3></p>
