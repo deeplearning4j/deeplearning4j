@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -151,11 +152,33 @@ public class TransferLearningHelperTest {
         INDArray outCentre = Nd4j.rand(10, 4);
         MultiDataSet origData = new MultiDataSet(new INDArray[] {inCentre, inRight},
                         new INDArray[] {outLeft, outCentre, outRight});
-        ComputationGraph modelIdentical = modelToTune.clone();
-//        modelIdentical.getVertex("denseCentre0").setLayerAsFrozen();
-//        modelIdentical.getVertex("denseCentre1").setLayerAsFrozen();
-//        modelIdentical.getVertex("denseCentre2").setLayerAsFrozen();
-        fail();
+
+
+        ComputationGraphConfiguration modelIdenticalConf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
+                .addLayer("denseCentre0", new FrozenLayer(new DenseLayer.Builder().nIn(10).nOut(9).build()), "inCentre")
+                .addLayer("denseCentre1", new FrozenLayer(new DenseLayer.Builder().nIn(9).nOut(8).build()), "denseCentre0")
+                .addLayer("denseCentre2", new FrozenLayer(new DenseLayer.Builder().nIn(8).nOut(7).build()), "denseCentre1")
+                .addLayer("denseCentre3", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
+                .addLayer("outCentre",
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7).nOut(4).build(),
+                        "denseCentre3")
+                .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
+                .addLayer("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "subsetLeft")
+                .addLayer("outLeft",
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).build(),
+                        "denseLeft0")
+                .addLayer("denseRight", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
+                .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "inRight")
+                .addVertex("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
+                .addLayer("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(), "mergeRight")
+                .addLayer("outRight",
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(5).build(),
+                        "denseRight1")
+                .setOutputs("outLeft", "outCentre", "outRight").build();
+
+        ComputationGraph modelIdentical = new ComputationGraph(modelIdenticalConf);
+        modelIdentical.init();
+        modelIdentical.setParams(modelToTune.params());
 
         TransferLearningHelper helper = new TransferLearningHelper(modelToTune, "denseCentre2");
         MultiDataSet featurizedDataSet = helper.featurize(origData);

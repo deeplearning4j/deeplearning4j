@@ -47,7 +47,6 @@ public class TransferLearning {
         private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
         private List<NeuralNetConfiguration> appendConfs = new ArrayList<>();
-
         private InputType inputType;
 
         /**
@@ -248,6 +247,11 @@ public class TransferLearning {
                 appendConfs.add(layerConf);
 
             }
+            return this;
+        }
+
+        public Builder setInputType(InputType inputType) {
+            this.inputType = inputType;
             return this;
         }
 
