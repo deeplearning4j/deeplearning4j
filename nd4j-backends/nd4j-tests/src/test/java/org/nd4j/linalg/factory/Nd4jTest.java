@@ -7,6 +7,9 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -37,6 +40,20 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray ret = Nd4j.create(new int[] {4, 2});
 
         assertEquals(ret.length(), 8);
+    }
+
+    @Test
+    public void testCreateFromList() {
+        List<Double> doubles = Arrays.asList(1.0, 2.0);
+        INDArray NdarrayDobules = Nd4j.create(doubles);
+
+        assertEquals((Double)NdarrayDobules.getDouble(0),doubles.get(0));
+        assertEquals((Double)NdarrayDobules.getDouble(1),doubles.get(1));
+
+        List<Float> floats = Arrays.asList(3.0f, 4.0f);
+        INDArray NdarrayFloats = Nd4j.create(floats);
+        assertEquals((Float)NdarrayFloats.getFloat(0),floats.get(0));
+        assertEquals((Float)NdarrayFloats.getFloat(1),floats.get(1));
     }
 
     @Test

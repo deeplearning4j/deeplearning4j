@@ -20,6 +20,8 @@
 package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
+import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
@@ -3301,6 +3303,28 @@ public class Nd4j {
      */
     public static INDArray create(float[] data) {
         return create(data, order());
+    }
+
+
+    /**
+     * Creates a row vector with the data
+     *
+     * @param list the columns of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(List<? extends Number> list) {
+        INDArray array = create(list.size());
+        int cnt = 0;
+        if (dataType() == DataBuffer.Type.DOUBLE) {
+            for (Number element: list) {
+                array.putScalar(cnt++,element.doubleValue());
+            }
+        } else {
+            for (Number element : list) {
+                array.putScalar(cnt++,element.floatValue());
+            }
+        }
+        return array;
     }
 
     /**
