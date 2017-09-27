@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -44,6 +45,7 @@ public class TestCGMultiOutputLayers {
                 .seed(12345)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
                 .activation(Activation.TANH)
+                .updater(new NoOp())
                 .graphBuilder()
                 .addInputs("in")
                 .layer("first", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")

@@ -1641,18 +1641,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 layerActivations.put(current.getName(), out);
 
                 //Now, set the inputs for the next vertices:
-                VertexIndices[] outputsTo = null;   //gvOutputVertices.get(current.getName());
+                Edge[] outputsTo = gvOutputVertices.get(current.getName()); //Array of vertices: (current -> x); set inputs to each x
                 if (outputsTo != null) {
-                    for (VertexIndices v : outputsTo) {
-                        int vIdx = v.getVertexIndex();
-                        int inputNum = v.getVertexEdgeNumber();
+                    for (Edge v : outputsTo) {
+                        int vIdx = v.getToIndex();
+                        int inputNum = v.getToInputNum();
                         //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
                         Activations thisInput = vertices[vIdx].getInput();
                         if(thisInput == null){
                             thisInput = ActivationsFactory.getInstance().create(vertices[vIdx].numInputs());
                             vertices[vIdx].setInput(thisInput);
                         }
-                        thisInput.set(inputNum, out.get(0), out.getMask(0), out.getMaskState(0));   //TODO MULTIPLE OUTPUTS
+                        int outNum = v.getFromOutputNum();
+                        thisInput.set(inputNum, out.get(outNum), out.getMask(outNum), out.getMaskState(outNum));
                     }
                 }
             }
@@ -1853,28 +1854,29 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 //Inputs to the current GraphVertex:
-                VertexIndices[] inputVertices = null;   //gvInputVertices.get(cName);
+//                VertexIndices[] inputVertices = null;   //gvInputVertices.get(cName);
+                Edge[] inputEdges = gvInputVertices.get(cName);  //Add edges (x -> current)
 
                 //Set epsilons for the vertices that provide inputs to this vertex:
-                if (inputVertices != null) {
+                if (inputEdges != null) {
                     int j = 0;
-                    for (VertexIndices v : inputVertices) {
-                        Layer gv = vertices[v.getVertexIndex()];
+                    for(Edge v : inputEdges){
+                        Layer gv = vertices[v.getFromIndex()];
                         String n = gv.getName();
-                        if (setVertexEpsilon[gv.getIndex()]) {
+                        if (setVertexEpsilon[gv.getIndex()]) {      //TODO MULTIPLE OUTPUTS
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
-                            INDArray currentEps = getTempEpsilonsArray(n)[0].leverageTo(workspaceExternal);
+                            INDArray currentEps = getTempEpsilonsArray(n)[v.getFromOutputNum()].leverageTo(workspaceExternal);
                             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
-                                getTempEpsilonsArray(n)[0] = currentEps.add(epsilons[j++]); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                                getTempEpsilonsArray(n)[v.getFromOutputNum()] = currentEps.add(epsilons[j++]); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                                         .getWorkspaceForCurrentThread(workspaceExternal)
                                         .notifyScopeBorrowed()) {
-                                    getTempEpsilonsArray(n)[0] = currentEps.add(epsilons[j++]);
+                                    getTempEpsilonsArray(n)[v.getFromOutputNum()] = currentEps.add(epsilons[j++]);
                                 }
                             }
                         } else {
-                            getTempEpsilonsArray(n)[0] = epsilons[j++];
+                            getTempEpsilonsArray(n)[v.getFromOutputNum()] = epsilons[j++];
                         }
                         setVertexEpsilon[gv.getIndex()] = true;
 
@@ -1914,7 +1916,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private INDArray[] getTempEpsilonsArray(String vertex){
         INDArray[] temp = tempEpsilons.get(vertex);
         if(temp == null){
-            temp = new INDArray[1];
+            temp = new INDArray[verticesMap.get(vertex).numOutputs()];
             tempEpsilons.put(vertex, temp);
         }
         return temp;

@@ -16,6 +16,11 @@ public class SplitDenseLayer extends DenseLayer {
     }
 
     @Override
+    public int numOutputs(){
+        return 2;
+    }
+
+    @Override
     public Gradients backpropGradient(Gradients epsilons) {
         INDArray eps1 = epsilons.get(0);
         INDArray eps2 = epsilons.get(1);
