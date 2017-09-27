@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -50,8 +52,8 @@ public class TestCGMultiOutputLayers {
                 .addInputs("in")
                 .layer("first", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
                 .layer("second", new SplitDenseLayerConf.Builder().nIn(5).nOut(5).build(), "first")
-                .layer("out1", new OutputLayer.Builder().nIn(2).nOut(3).build(), "second/0")
-                .layer("out2", new OutputLayer.Builder().nIn(3).nOut(4).build(), "second/1")
+                .layer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(3).build(), "second/0")
+                .layer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build(), "second/1")
                 .setOutputs("out1", "out2")
                 .build();
 
@@ -87,7 +89,7 @@ public class TestCGMultiOutputLayers {
         assertEqualsMap(gvInputVertices, gvInputVerticesAct);
         assertEqualsMap(gvOutputVertices, gvOutputVerticesAct);
 
-        INDArray input = Nd4j.create(minibatch, nIn);
+        INDArray input = Nd4j.rand(minibatch, nIn);
         Map<String,Activations> act = net.feedForward(af.create(input), true);
 
         assertEquals(5, act.size());    //Including input
@@ -100,6 +102,8 @@ public class TestCGMultiOutputLayers {
             }
         }
 
+
+
         //Gradient check:
         INDArray labels1 = Nd4j.rand(minibatch, 3);
         INDArray labels2 = Nd4j.rand(minibatch, 4);
@@ -109,7 +113,7 @@ public class TestCGMultiOutputLayers {
                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input},
                 labels);
 
-        String msg = "testBasicIrisWithMerging()";
+        String msg = "testMultipleOutputsSimple()";
         assertTrue(msg, gradOK);
     }
 
@@ -120,12 +124,13 @@ public class TestCGMultiOutputLayers {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
+                .updater(new NoOp())
                 .graphBuilder()
                 .addInputs("in")
                 .layer("first", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
                 .layer("second", new SplitDenseLayerConf.Builder().nIn(5).nOut(6).build(), "first")
                 .addVertex("ewise", new ElementWiseVertex(ElementWiseVertex.Op.Add), "second/0", "second/1")
-                .layer("out", new OutputLayer.Builder().nIn(2).nOut(3).build(), "ewise")
+                .layer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(3).build(), "ewise")
                 .setOutputs("out")
                 .build();
 
@@ -166,17 +171,30 @@ public class TestCGMultiOutputLayers {
         assertEqualsMap(gvInputVertices, gvInputVerticesAct);
         assertEqualsMap(gvOutputVertices, gvOutputVerticesAct);
 
-//        Map<String,Activations> act = net.feedForward(af.create(Nd4j.create(minibatch, nIn)), true);
-//
-//        assertEquals(5, act.size());    //Including input
-//
-//        for( Map.Entry<String,Activations> e : act.entrySet()){
-//            if(e.getKey().equals("second")){
-//                assertEquals(2, e.getValue().size());
-//            } else {
-//                assertEquals(1, e.getValue().size());
-//            }
-//        }
+        INDArray input = Nd4j.rand(minibatch, nIn);
+        Map<String,Activations> act = net.feedForward(af.create(input), true);
+
+        assertEquals(5, act.size());    //Including input
+
+        for( Map.Entry<String,Activations> e : act.entrySet()){
+            if(e.getKey().equals("second")){
+                assertEquals(2, e.getValue().size());
+            } else {
+                assertEquals(1, e.getValue().size());
+            }
+        }
+
+
+        //Gradient check:
+        INDArray labels1 = Nd4j.rand(minibatch, 3);
+        INDArray[] labels = new INDArray[]{labels1};
+
+        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input},
+                labels);
+
+        String msg = "testMultipleOutputStructure2()";
+        assertTrue(msg, gradOK);
     }
 
 

@@ -183,6 +183,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private Set<String> gvInputVertex = new HashSet<>();
 
     private Map<String,INDArray[]> tempEpsilons = new HashMap<>();
+    private boolean[][] setVertexEpsilon;
 
     public ComputationGraph(ComputationGraphConfiguration configuration) {
         this.configuration = configuration;
@@ -1798,7 +1799,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
-        boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
+        if(setVertexEpsilon == null){
+            setVertexEpsilon = new boolean[topologicalOrder.length][0];
+            for( int i=0; i<topologicalOrder.length; i++ ){
+                setVertexEpsilon[i] = new boolean[vertices[i].numOutputs()];
+            }
+        } else {
+            //Zero out first...
+            for( int i=0; i<setVertexEpsilon.length; i++ ){
+                for( int j=0; j<setVertexEpsilon[i].length; j++ ){
+                    setVertexEpsilon[i][j] = false;
+                }
+            }
+        }
+//        boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
+
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 Layer current = vertices[topologicalOrder[i]];
@@ -1837,7 +1852,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                     + " a labels array. ");
                         }
                         getTempEpsilonsArray(cName)[0] = externalEpsilons[thisOutputNumber];
-                        setVertexEpsilon[topologicalOrder[i]] = true;
+                        setVertexEpsilon[topologicalOrder[i]][0] = true;   //TODO multiple outputs on output layer...
                     }
                 }
 
@@ -1854,8 +1869,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 //Inputs to the current GraphVertex:
-//                VertexIndices[] inputVertices = null;   //gvInputVertices.get(cName);
-                Edge[] inputEdges = gvInputVertices.get(cName);  //Add edges (x -> current)
+                Edge[] inputEdges = gvInputVertices.get(cName);  //All edges (x -> current)
 
                 //Set epsilons for the vertices that provide inputs to this vertex:
                 if (inputEdges != null) {
@@ -1863,7 +1877,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     for(Edge v : inputEdges){
                         Layer gv = vertices[v.getFromIndex()];
                         String n = gv.getName();
-                        if (setVertexEpsilon[gv.getIndex()]) {      //TODO MULTIPLE OUTPUTS
+                        if (setVertexEpsilon[gv.getIndex()][v.getFromOutputNum()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = getTempEpsilonsArray(n)[v.getFromOutputNum()].leverageTo(workspaceExternal);
                             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
@@ -1878,7 +1892,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         } else {
                             getTempEpsilonsArray(n)[v.getFromOutputNum()] = epsilons[j++];
                         }
-                        setVertexEpsilon[gv.getIndex()] = true;
+                        setVertexEpsilon[gv.getIndex()][v.getFromOutputNum()] = true;
 
                     }
                 }
