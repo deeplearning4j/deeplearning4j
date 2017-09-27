@@ -220,7 +220,8 @@ public class ActivationsFactory {
         Map<String,INDArray> out = new HashMap<>();
         for(Map.Entry<String,Activations> e : activations.entrySet()){
             if(e.getValue().size() > 1){
-                throw new IllegalStateException("Cannot convert to map: activations have more than 1 array");
+                throw new IllegalStateException("Cannot convert to map: activations have more than 1 array. " +
+                        "Methods supporting multiple output arrays (Activations in return signature) should be used");
             }
             out.put(e.getKey(), e.getValue().get(0));
         }

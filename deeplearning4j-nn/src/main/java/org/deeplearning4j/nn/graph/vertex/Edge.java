@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.graph;
+package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

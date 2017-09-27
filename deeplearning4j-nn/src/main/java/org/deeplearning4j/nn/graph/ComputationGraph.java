@@ -39,12 +39,11 @@ import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.Edge;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
@@ -66,7 +65,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.fft.FFT;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
@@ -77,7 +75,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.Serializable;
 import java.util.*;
@@ -864,11 +861,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int j = layerIndex - 1; j >= 0; j--) {
             //Do we need to do forward pass on this GraphVertex?
             //If it is input to any other layer we need, then yes. Otherwise: no
-//            VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
-            VertexIndices[] outputsTo = null;   //gvOutputVertices.get(vertices[topologicalOrder[j]].getName());
+            Edge[] outputsTo = gvOutputVertices.get(vertices[topologicalOrder[j]].getName());
             boolean needed = false;
-            for (VertexIndices vi : outputsTo) {
-                if (seenSoFar.contains(vi.getVertexIndex())) {
+            for (Edge vi : outputsTo) {
+                if (seenSoFar.contains(vi.getFromIndex())) {
                     needed = true;
                     break;
                 }
@@ -950,18 +946,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             out = out.leverageTo(workspaceExternal);
 
                             //Now, set the inputs for the next vertices:
-                            VertexIndices[] outputsTo = null;   //gvOutputVertices.get(current.getName());
+                            Edge[] outputsTo = gvOutputVertices.get(current.getName());
                             if (outputsTo != null) {
-                                for (VertexIndices v : outputsTo) {
-                                    int vIdx = v.getVertexIndex();
-                                    int inputNum = v.getVertexEdgeNumber();
+                                for (Edge v : outputsTo) {
+                                    int vIdx = v.getFromIndex();
+                                    int inputNum = v.getFromOutputNum();
                                     //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
                                     Activations thisInput = vertices[vIdx].getInput();
                                     if (thisInput == null) {
                                         thisInput = ActivationsFactory.getInstance().create(vertices[vIdx].numInputs());
                                         vertices[vIdx].setInput(thisInput);
                                     }
-                                    thisInput.set(inputNum, out.get(0), out.getMask(0), out.getMaskState(0));   //TODO MULTIPLE OUTPUTS
+                                    int outNum = v.getFromOutputNum();
+                                    thisInput.set(inputNum, out.get(outNum), out.getMask(outNum), out.getMaskState(outNum));
                                 }
                             }
                         }
@@ -1718,13 +1715,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
+        Activations[] act = silentOutputAct(train, input);
+        INDArray[] out = new INDArray[act.length];
+        for( int i=0; i<out.length; i++ ){
+            if(act[i].size() > 1){
+                throw new UnsupportedOperationException("Cannot convert Activation[] to INDArray[]: output has multiple" +
+                        " outputs. Use silencOutputAct or similar");
+            }
+            out[i] = act[i].get(0);
+        }
+        return out;
+    }
+
+    protected Activations[] silentOutputAct(boolean train, INDArray... input) {
         setInputs(input);
         Map<String,Activations> map = feedForward(this.input, train, FFType.Standard, false, false, false);
-        Map<String, INDArray> activations = ActivationsFactory.getActivationINDArrays(map);
-        INDArray[] outputs = new INDArray[numOutputArrays];
+        Activations[] outputs = new Activations[numOutputArrays];
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
-            outputs[i++] = activations.get(s);
+            outputs[i++] = map.get(s);
         }
         return outputs;
     }

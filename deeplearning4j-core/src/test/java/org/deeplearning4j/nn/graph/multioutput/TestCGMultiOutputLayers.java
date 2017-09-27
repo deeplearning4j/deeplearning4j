@@ -1,28 +1,30 @@
 package org.deeplearning4j.nn.graph.multioutput;
 
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.Edge;
+import org.deeplearning4j.nn.graph.vertex.Edge;
 import org.deeplearning4j.nn.graph.multioutput.testlayers.SplitDenseLayerConf;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -195,6 +197,40 @@ public class TestCGMultiOutputLayers {
 
         String msg = "testMultipleOutputStructure2()";
         assertTrue(msg, gradOK);
+    }
+
+    @Test
+    public void testPretrainLayerMultipleOutputs(){
+
+        int nIn = 5;
+        int minibatch = 3;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .activation(Activation.TANH)
+                .updater(new NoOp())
+                .graphBuilder()
+                .addInputs("in")
+                .layer("first", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
+                .layer("second", new SplitDenseLayerConf.Builder().nIn(5).nOut(5).build(), "first")
+                .layer("vae", new VariationalAutoencoder.Builder().nIn(3).nOut(3).encoderLayerSizes(5).decoderLayerSizes(5).build(), "second/1")
+                .layer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(3).build(), "second/0")
+                .layer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build(), "vae")
+                .setOutputs("out1", "out2")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        //Simple sanity check on pretrainLayer method:
+        INDArray input = Nd4j.rand(minibatch, nIn);
+        DataSet ds = new DataSet(input, null);
+        DataSetIterator trainIter = new ListDataSetIterator<>(Collections.singletonList(ds), minibatch);
+        net.pretrainLayer("vae", trainIter);
+
+        Activations out = net.output(input);
+        System.out.println(out.size());
     }
 
 
