@@ -174,8 +174,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private Collection<IterationListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
-    private Map<String,Edge[]> gvInputVertices = new HashMap<>();  //Key: vertex X name. Value: Edges Y -> X, for all Y
-    private Map<String,Edge[]> gvOutputVertices = new HashMap<>(); //Key: vertex X name. Value: Edges X -> Y, for all Y
+    private Map<String,Edge[]> gvEdgesIn = new HashMap<>();  //Key: vertex X name. Value: Edges Y -> X, for all Y
+    private Map<String,Edge[]> gvEdgesOut = new HashMap<>(); //Key: vertex X name. Value: Edges X -> Y, for all Y
     private Set<String> gvOutputVertex = new HashSet<>();
     private Set<String> gvInputVertex = new HashSet<>();
 
@@ -185,9 +185,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public ComputationGraph(ComputationGraphConfiguration configuration) {
         this.configuration = configuration;
         this.numInputArrays = configuration.getNetworkInputs().size();
-        this.numOutputArrays = configuration.getNetworkOutputs().size();
+        this.numOutputArrays = -1;  //Due to potentially multiple output in an output layer: infer this after init
         this.input = ActivationsFactory.getInstance().create(numInputArrays);
-        this.labels = new INDArray[numOutputArrays];
         this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
@@ -439,10 +438,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(String s : configuration.getNetworkOutputs()){
             Layer l = getLayer(s);
             if(l instanceof IOutputLayer){
-               ((IOutputLayer) l).setLabels((labels == null ? null : labels[i]),
-                       (labelMaskArrays == null ? null : labelMaskArrays[i]));
+                IOutputLayer ol = ((IOutputLayer) l);
+                if(ol.numOutputs() == 1){
+                    ol.setLabels((labels == null ? null : labels[i]),
+                            (labelMaskArrays == null ? null : labelMaskArrays[i]));
+                } else {
+                    //Multiple outputs -> multiple labels arrays
+                    INDArray[] currLabels = new INDArray[ol.numOutputs()];
+                    INDArray[] currLabelsMasks = new INDArray[currLabels.length];
+                    for( int j=0; j<currLabels.length; j++ ){
+                        currLabels[j] = (labels == null ? null : labels[i]);
+                        currLabelsMasks[j] = (labelMaskArrays == null ? null : labelMaskArrays[i]);
+                        i++;
+                    }
+                    ol.setLabels(ActivationsFactory.getInstance().create(currLabels, currLabelsMasks));
+                }
+            } else {
+                i++;
             }
-            i++;
         }
     }
 
@@ -667,7 +680,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         vertexName, vertexIndex, j);
             }
 
-            gvInputVertices.put(gv.getName(), inputIndices);
+            gvEdgesIn.put(gv.getName(), inputIndices);
         }
 
         //Handle the outputs for this vertex
@@ -707,7 +720,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     inputNumber++;
                 }
             }
-            gvOutputVertices.put(gv.getName(), outputIndices.toArray(new Edge[outputIndices.size()]));
+            gvEdgesOut.put(gv.getName(), outputIndices.toArray(new Edge[outputIndices.size()]));
         }
 
         //Mark any output vertices as outputs:
@@ -729,6 +742,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 solver.initOptimizer();
             }
         }
+
+        //Finally: work out how many output arrays. This is *not* in general the same as the number of output *layers*
+        // as each output layer could have multiple outputs...
+        this.numOutputArrays = 0;
+        for(String s : gvOutputVertex){
+            this.numOutputArrays += verticesMap.get(s).numOutputs();
+        }
+
+        this.labels = new INDArray[numOutputArrays];
 
         synchronizeIterEpochCounts();
         initCalled = true;
@@ -861,7 +883,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int j = layerIndex - 1; j >= 0; j--) {
             //Do we need to do forward pass on this GraphVertex?
             //If it is input to any other layer we need, then yes. Otherwise: no
-            Edge[] outputsTo = gvOutputVertices.get(vertices[topologicalOrder[j]].getName());
+            Edge[] outputsTo = gvEdgesOut.get(vertices[topologicalOrder[j]].getName());
             boolean needed = false;
             for (Edge vi : outputsTo) {
                 if (seenSoFar.contains(vi.getFromIndex())) {
@@ -946,7 +968,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             out = out.leverageTo(workspaceExternal);
 
                             //Now, set the inputs for the next vertices:
-                            Edge[] outputsTo = gvOutputVertices.get(current.getName());
+                            Edge[] outputsTo = gvEdgesOut.get(current.getName());
                             if (outputsTo != null) {
                                 for (Edge v : outputsTo) {
                                     int vIdx = v.getFromIndex();
@@ -1509,7 +1531,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         //Clear the fields (inc. post noise/dropconnect parameters) on the output layers
-        for( int i=0; i<numOutputArrays; i++ ){
+        for( int i=0; i<gvOutputVertex.size(); i++ ){
             getOutputLayer(i).clearNoiseWeightParams();
         }
 
@@ -1639,7 +1661,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 layerActivations.put(current.getName(), out);
 
                 //Now, set the inputs for the next vertices:
-                Edge[] outputsTo = gvOutputVertices.get(current.getName()); //Array of vertices: (current -> x); set inputs to each x
+                Edge[] outputsTo = gvEdgesOut.get(current.getName()); //Array of vertices: (current -> x); set inputs to each x
                 if (outputsTo != null) {
                     for (Edge v : outputsTo) {
                         int vIdx = v.getToIndex();
@@ -1704,13 +1726,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         workspaceConfigurationExternal, workspaceExternal);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            INDArray[] tmp = silentOutput(train, input);
+            Activations[] tmp = silentOutputAct(train, input);
             for (int x = 0; x < tmp.length; x++)
                 tmp[x] = tmp[x].detach();
 
             configuration.setTrainingWorkspaceMode(cMode);
             clear();
-            return ActivationsFactory.getInstance().create(tmp, null, null);
+            return ActivationsFactory.getInstance().concat(tmp);
         }
     }
 
@@ -1730,7 +1752,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected Activations[] silentOutputAct(boolean train, INDArray... input) {
         setInputs(input);
         Map<String,Activations> map = feedForward(this.input, train, FFType.Standard, false, false, false);
-        Activations[] outputs = new Activations[numOutputArrays];
+        Activations[] outputs = new Activations[gvOutputVertex.size()];
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
             outputs[i++] = map.get(s);
@@ -1801,7 +1823,22 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Set the output layer labels arrays
         if(externalEpsilons == null || externalEpsilons.length == 0 && labels != null){
             for( int i=0; i<numOutputArrays; i++ ){
-                ((IOutputLayer)getOutputLayer(i)).setLabels(labels[i], (labelMaskArrays == null ? null : labelMaskArrays[i]));
+//                ((IOutputLayer)getOutputLayer(i)).setLabels(labels[i], (labelMaskArrays == null ? null : labelMaskArrays[i]));
+                IOutputLayer ol = (IOutputLayer)getOutputLayer(i);
+                if(ol.numOutputs() == 1){
+                    ol.setLabels((labels == null ? null : labels[i]),
+                            (labelMaskArrays == null ? null : labelMaskArrays[i]));
+                } else {
+                    //Multiple outputs -> multiple labels arrays
+                    INDArray[] currLabels = new INDArray[ol.numOutputs()];
+                    INDArray[] currLabelsMasks = new INDArray[currLabels.length];
+                    for( int j=0; j<currLabels.length; j++ ){
+                        currLabels[j] = (labels == null ? null : labels[i]);
+                        currLabelsMasks[j] = (labelMaskArrays == null ? null : labelMaskArrays[i]);
+                        i++;
+                    }
+                    ol.setLabels(ActivationsFactory.getInstance().create(currLabels, currLabelsMasks));
+                }
             }
         }
 
@@ -1841,11 +1878,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     int thisOutputNumber = configuration.getNetworkOutputs().indexOf(cName);
                     if (current instanceof IOutputLayer) {
-                        IOutputLayer outputLayer = (IOutputLayer) current;
-
-                        INDArray currLabels = labels[thisOutputNumber];
-                        INDArray currLabelsMask = (labelMaskArrays == null ? null : labelMaskArrays[thisOutputNumber]);
-                        outputLayer.setLabels(currLabels, currLabelsMask);
+//                        IOutputLayer outputLayer = (IOutputLayer) current;
+//
+//                        INDArray currLabels = labels[thisOutputNumber];
+//                        INDArray currLabelsMask = (labelMaskArrays == null ? null : labelMaskArrays[thisOutputNumber]);
+//                        outputLayer.setLabels(currLabels, currLabelsMask);
+                        //Already set the labels and masks earlier...
                     } else if(current instanceof LayerVertex && ((LayerVertex) current).getLayer() instanceof IOutputLayer){
                         IOutputLayer outputLayer = (IOutputLayer) ((LayerVertex) current).getLayer();
 
@@ -1878,7 +1916,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 //Inputs to the current GraphVertex:
-                Edge[] inputEdges = gvInputVertices.get(cName);  //All edges (x -> current)
+                Edge[] inputEdges = gvEdgesIn.get(cName);  //All edges (x -> current)
 
                 //Set epsilons for the vertices that provide inputs to this vertex:
                 if (inputEdges != null) {
@@ -2250,11 +2288,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 IOutputLayer ol = (IOutputLayer) outLayer;
-                INDArray currLabels = labels[i];
-                INDArray currLabelMasks = (labelsMasks == null ? null : labelsMasks[i]);
-                i++;
+                Activations l;
+                if(ol.numOutputs() == 1){
+                    INDArray currLabels = labels[i];
+                    INDArray currLabelMasks = (labelsMasks == null ? null : labelsMasks[i]);
+                    i++;
+                    l = ActivationsFactory.getInstance().create(currLabels, currLabelMasks);
+                } else {
+                    //Multiple outputs -> multiple labels arrays
+                    INDArray[] currLabels = new INDArray[ol.numOutputs()];
+                    INDArray[] currLabelsMasks = new INDArray[currLabels.length];
+                    for( int j=0; j<currLabels.length; j++ ){
+                        currLabels[j] = (labels == null ? null : labels[i]);
+                        currLabelsMasks[j] = (labelMaskArrays == null ? null : labelMaskArrays[i]);
+                        i++;
+                    }
+                    l = ActivationsFactory.getInstance().create(currLabels, currLabelsMasks);
+                }
 
-                Activations l = ActivationsFactory.getInstance().create(currLabels, currLabelMasks);
                 Activations olOutput = ff.get(ol.getName());
                 //Compute score, using output layer *output* plus labels
                 score += ol.computeScore(olOutput, l, l1, l2, training);
@@ -3321,7 +3372,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 if (inputTypes != null) {
                     //get input type
-                    String inputVertexName = null;  //vertices[gvInputVertices.get(currentVertex.getName())[0].getVertexIndex()].getName();
+                    String inputVertexName = null;  //vertices[gvEdgesIn.get(currentVertex.getName())[0].getVertexIndex()].getName();
                     InputType currentInType = vertexOutputs.get(inputVertexName);
                     inShape = currentInType.toString();
                     inputTypeList.add(currentInType);

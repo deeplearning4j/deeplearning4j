@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.multioutput.testlayers.SplitOutputLayerConf;
 import org.deeplearning4j.nn.graph.vertex.Edge;
 import org.deeplearning4j.nn.graph.multioutput.testlayers.SplitDenseLayerConf;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -65,17 +67,17 @@ public class TestCGMultiOutputLayers {
         //Validate the edges + structure:
         Set<String> gvInputVertex = Collections.singleton("in");
         Set<String> gvOutputVertex = new HashSet<>(Arrays.asList("out1","out2"));
-        Map<String,Edge[]> gvInputVertices = new HashMap<>();       //Key: vertex name X. Values: edges Y -> X, for all Y
-        Map<String,Edge[]> gvOutputVertices = new HashMap<>();      //Key: vertex name X. Values: edges X -> Y, for all Y
+        Map<String,Edge[]> gvEdgesIn = new HashMap<>();       //Key: vertex name X. Values: edges Y -> X, for all Y
+        Map<String,Edge[]> gvEdgesOut = new HashMap<>();      //Key: vertex name X. Values: edges X -> Y, for all Y
 
-        gvInputVertices.put("first", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
-        gvInputVertices.put("second", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
-        gvInputVertices.put("out1", new Edge[]{new Edge("second", 2, 0, "out1", 3, 0)});
-        gvInputVertices.put("out2", new Edge[]{new Edge("second", 2, 1, "out2", 4, 0)});
+        gvEdgesIn.put("first", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
+        gvEdgesIn.put("second", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
+        gvEdgesIn.put("out1", new Edge[]{new Edge("second", 2, 0, "out1", 3, 0)});
+        gvEdgesIn.put("out2", new Edge[]{new Edge("second", 2, 1, "out2", 4, 0)});
 
-        gvOutputVertices.put("in", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
-        gvOutputVertices.put("first", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
-        gvOutputVertices.put("second", new Edge[]{
+        gvEdgesOut.put("in", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
+        gvEdgesOut.put("first", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
+        gvEdgesOut.put("second", new Edge[]{
                 new Edge("second", 2, 0, "out1", 3, 0),
                 new Edge("second", 2, 1, "out2", 4, 0)
         });
@@ -83,13 +85,13 @@ public class TestCGMultiOutputLayers {
 
         Set<String> gvInputVertexAct = (Set<String>)getObject(net, "gvInputVertex");
         Set<String> gvOutputVertexAct = (Set<String>)getObject(net, "gvOutputVertex");
-        Map<String,Edge[]> gvInputVerticesAct = (Map<String,Edge[]>)getObject(net, "gvInputVertices");
-        Map<String,Edge[]> gvOutputVerticesAct = (Map<String,Edge[]>)getObject(net, "gvOutputVertices");
+        Map<String,Edge[]> gvEdgesInAct = (Map<String,Edge[]>)getObject(net, "gvEdgesIn");
+        Map<String,Edge[]> gvEdgesOutAct = (Map<String,Edge[]>)getObject(net, "gvEdgesOut");
 
         assertEquals(gvInputVertex, gvInputVertexAct);
         assertEquals(gvOutputVertex, gvOutputVertexAct);
-        assertEqualsMap(gvInputVertices, gvInputVerticesAct);
-        assertEqualsMap(gvOutputVertices, gvOutputVerticesAct);
+        assertEqualsMap(gvEdgesIn, gvEdgesInAct);
+        assertEqualsMap(gvEdgesOut, gvEdgesOutAct);
 
         INDArray input = Nd4j.rand(minibatch, nIn);
         Map<String,Activations> act = net.feedForward(af.create(input), true);
@@ -142,36 +144,36 @@ public class TestCGMultiOutputLayers {
         //Validate the edges + structure:
         Set<String> gvInputVertex = Collections.singleton("in");
         Set<String> gvOutputVertex = Collections.singleton("out");
-        Map<String,Edge[]> gvInputVertices = new HashMap<>();       //Key: vertex name X. Values: edges Y -> X, for all Y
-        Map<String,Edge[]> gvOutputVertices = new HashMap<>();      //Key: vertex name X. Values: edges X -> Y, for all Y
+        Map<String,Edge[]> gvEdgesIn = new HashMap<>();       //Key: vertex name X. Values: edges Y -> X, for all Y
+        Map<String,Edge[]> gvEdgesOut = new HashMap<>();      //Key: vertex name X. Values: edges X -> Y, for all Y
 
-        gvInputVertices.put("first", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
-        gvInputVertices.put("second", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
-        gvInputVertices.put("ewise", new Edge[]{
+        gvEdgesIn.put("first", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
+        gvEdgesIn.put("second", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
+        gvEdgesIn.put("ewise", new Edge[]{
                 new Edge("second", 2, 0, "ewise", 3, 0),
                 new Edge("second", 2, 1, "ewise", 3, 1),
         });
-        gvInputVertices.put("out", new Edge[]{new Edge("ewise", 3, 0, "out", 4, 0)});
+        gvEdgesIn.put("out", new Edge[]{new Edge("ewise", 3, 0, "out", 4, 0)});
 
-        gvOutputVertices.put("in", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
-        gvOutputVertices.put("first", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
-        gvOutputVertices.put("second", new Edge[]{
+        gvEdgesOut.put("in", new Edge[]{new Edge("in", 0, 0, "first", 1, 0)});
+        gvEdgesOut.put("first", new Edge[]{new Edge("first", 1, 0, "second", 2, 0)});
+        gvEdgesOut.put("second", new Edge[]{
                 new Edge("second", 2, 0, "ewise", 3, 0),
                 new Edge("second", 2, 1, "ewise", 3, 1)
         });
-        gvOutputVertices.put("ewise", new Edge[]{new Edge("ewise", 3, 0, "out", 4, 0)});
+        gvEdgesOut.put("ewise", new Edge[]{new Edge("ewise", 3, 0, "out", 4, 0)});
 
 
 
         Set<String> gvInputVertexAct = (Set<String>)getObject(net, "gvInputVertex");
         Set<String> gvOutputVertexAct = (Set<String>)getObject(net, "gvOutputVertex");
-        Map<String,Edge[]> gvInputVerticesAct = (Map<String,Edge[]>)getObject(net, "gvInputVertices");
-        Map<String,Edge[]> gvOutputVerticesAct = (Map<String,Edge[]>)getObject(net, "gvOutputVertices");
+        Map<String,Edge[]> gvEdgesInAct = (Map<String,Edge[]>)getObject(net, "gvEdgesIn");
+        Map<String,Edge[]> gvEdgesOutAct = (Map<String,Edge[]>)getObject(net, "gvEdgesOut");
 
         assertEquals(gvInputVertex, gvInputVertexAct);
         assertEquals(gvOutputVertex, gvOutputVertexAct);
-        assertEqualsMap(gvInputVertices, gvInputVerticesAct);
-        assertEqualsMap(gvOutputVertices, gvOutputVerticesAct);
+        assertEqualsMap(gvEdgesIn, gvEdgesInAct);
+        assertEqualsMap(gvEdgesOut, gvEdgesOutAct);
 
         INDArray input = Nd4j.rand(minibatch, nIn);
         Map<String,Activations> act = net.feedForward(af.create(input), true);
@@ -230,7 +232,57 @@ public class TestCGMultiOutputLayers {
         net.pretrainLayer("vae", trainIter);
 
         Activations out = net.output(input);
-        System.out.println(out.size());
+        assertEquals(2, out.size());
+    }
+
+
+    @Test
+    public void testMultiOutputOL(){
+        //Multi-output output layer
+
+        int minibatch = 3;
+        int nIn = 5;
+        int nOut = 7;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .activation(Activation.TANH)
+                .updater(new NoOp())
+                .graphBuilder()
+                .addInputs("in")
+                .layer("first", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
+                .layer("out", new SplitOutputLayerConf.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(nOut).build(), "first")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        assertEquals(2, cg.numOutputs());
+        assertEquals(2, cg.getNumOutputArrays());
+
+        INDArray in = Nd4j.rand(minibatch, nIn);
+        Activations out = cg.output(in);
+
+        assertEquals(2, out.size());
+
+        INDArray[] labels = new INDArray[]{Nd4j.rand(minibatch, nOut/2), Nd4j.rand(minibatch, nOut - nOut/2)};
+
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{in}, labels);
+        cg.fit(mds);
+
+        cg.clear();
+
+
+        //Gradient check:
+        boolean gradOK = GradientCheckUtil.checkGradients(cg, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in},
+                labels);
+
+        String msg = "testMultiOutputOL()";
+        assertTrue(msg, gradOK);
     }
 
 

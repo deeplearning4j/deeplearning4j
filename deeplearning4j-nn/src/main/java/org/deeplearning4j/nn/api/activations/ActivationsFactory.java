@@ -251,4 +251,19 @@ public class ActivationsFactory {
     public Activations labelsAsActivations(MultiDataSet dataSet){
         return create(dataSet.getLabels(), dataSet.getLabelsMaskArrays());
     }
+
+    public Activations concat(Activations... activations){
+        int outSize = 0;
+        for(Activations a : activations){
+            outSize += a.size();
+        }
+        Activations out = create(outSize);
+        int i=0;
+        for( Activations a : activations){
+            for( int j=0; j<a.size(); j++ ){
+                out.set(i++, a.get(j), a.getMask(j), a.getMaskState(j));
+            }
+        }
+        return out;
+    }
 }

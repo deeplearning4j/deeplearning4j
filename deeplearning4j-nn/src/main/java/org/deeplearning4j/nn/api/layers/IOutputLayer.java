@@ -33,7 +33,7 @@ public interface IOutputLayer extends Layer {
      */
     void setLabels(INDArray labels, INDArray labelMask);
 
-    void setLabels(Activations activations);
+    void setLabels(Activations labels);
 
     /**
      * Get the labels array previously set with {@link #setLabels(INDArray, INDArray)}
