@@ -177,8 +177,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private Collection<IterationListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
-    private Map<String,VertexIndices[]> gvInputVertices = new HashMap<>();
-    private Map<String,VertexIndices[]> gvOutputVertices = new HashMap<>();
+    private Map<String,Edge[]> gvInputVertices = new HashMap<>();  //Key: vertex X name. Value: Edges Y -> X, for all Y
+    private Map<String,Edge[]> gvOutputVertices = new HashMap<>(); //Key: vertex X name. Value: Edges X -> Y, for all Y
     private Set<String> gvOutputVertex = new HashSet<>();
     private Set<String> gvInputVertex = new HashSet<>();
 
@@ -463,12 +463,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         solver.getOptimizer().setGradientsAccumulator(accumulator);
     }
 
-    /**
-     * Initialize the ComputationGraph network
-     */
-    public void init() {
-        init(null, false);
-    }
 
     @Override
     public Activations getLabels() {
@@ -477,6 +471,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         return ActivationsFactory.getInstance().create(labels, labelMaskArrays, null);
     }
+
+
+    /**
+     * Initialize the ComputationGraph network
+     */
+    public void init() {
+        init(null, false);
+    }
+
 
     /**
      * Initialize the ComputationGraph, optionally with an existing parameters array.
@@ -635,11 +638,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     list = new ArrayList<>();
                     verticesOutputTo.put(s2, list);
                 }
-                list.add(vertexName); //Edge: s -> vertexName
+                if(!list.contains(vertexName)){ //Avoid adding same vertex multiple times. For example, (myLayer/0 -> x and myLayer/1 -> x) - only add myLayer once
+                    list.add(vertexName); //Edge: s -> vertexName
+                }
             }
         }
 
 
+        //For each vertex gv, determine all edges (y -> gv)
+        //Note that y and gv can have multiple inputs, multiple outputs
         for (Layer gv : vertices) {
             String vertexName = gv.getName();
             int vertexIndex = gv.getIndex();
@@ -649,54 +656,60 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (vertexInputNames == null)
                 continue;
 
-            VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.size()];
+            Edge[] inputIndices = new Edge[vertexInputNames.size()];
             for (int j = 0; j < vertexInputNames.size(); j++) {
-                String inName = vertexInputNames.get(j);
-                inName = ComputationGraphConfiguration.getLayerNameFromMultiOut(inName);
-                int inputVertexIndex = allNamesReverse.get(inName);
+                String inName = vertexInputNames.get(j);        //Name of the input to gv
+                int inputVertexOutputNum = ComputationGraphConfiguration.getOutputNumFromMultiOut(inName);  //For example, 1 from "inVertex/1"
+                String inVertexName = ComputationGraphConfiguration.getLayerNameFromMultiOut(inName);       //For example, "inVertex" from "inVertex/1"
+                int inputVertexIndex = allNamesReverse.get(inVertexName);
 
-                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
-                //For input indices, we need to know which output connection of vertex 'inputVertexIndex' this represents
-                Layer inputVertex = vertices[inputVertexIndex];
-                //First: get the outputs of the input vertex...
-                List<String> inputVertexOutputsTo = verticesOutputTo.get(inName);
-                int outputNumberOfInput = inputVertexOutputsTo.indexOf(vertexName);
+                //Output of vertex 'inputVertexIndex' is the jth input to the current vertex gv
 
-
-                if (outputNumberOfInput == -1)
-                    throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of outputs "
-                            + "for vertex " + inputVertex + "; error in graph structure?");
-                //Overall here: the 'outputNumberOfInput'th output of vertex 'inputVertexIndex' is the jth input to the current vertex
-
-                inputIndices[j] = new VertexIndices(inputVertexIndex, outputNumberOfInput);
+                inputIndices[j] = new Edge(inVertexName, inputVertexIndex, inputVertexOutputNum,
+                        vertexName, vertexIndex, j);
             }
 
-//            gv.setInputVertices(inputIndices);
             gvInputVertices.put(gv.getName(), inputIndices);
         }
 
         //Handle the outputs for this vertex
+        //For each vertex gv, determine all edges (gv -> y)
         for (Layer gv : vertices) {
             String vertexName = gv.getName();
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
 
             if (thisVertexOutputsTo == null || thisVertexOutputsTo.isEmpty())
-                continue; //Output vertex
-            VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
+                continue; //Output vertex - skip
+
+            //First: determine number of edges. Note that the "thisVertexOutputsTo" doesn't account for multiple output
+            // edges - which means (x/0 -> a) and (x/1 -> a) situations has x listed only once, but multiple edges are present...
+
+
+            List<Edge> outputIndices = new ArrayList<>();
             int j = 0;
             for (String s : thisVertexOutputsTo) {
                 //First, we have gv -> s
                 //Which input in s does gv connect to? s may in general have multiple inputs...
                 List<String> nextVertexInputNames = vertexInputs.get(s);
+                int sIdx = allNamesReverse.get(s);
 
-                int outputVertexInputNumber = nextVertexInputNames.indexOf(vertexName);
-
-                int outputVertexIndex = allNamesReverse.get(s);
-                outputIndices[j++] = new VertexIndices(outputVertexIndex, outputVertexInputNumber);
+                int inputNumber = 0;
+                for(String inputName : nextVertexInputNames ){
+                    //Connection (inputName -> s)... is this (gv -> s) ?
+                    //Note that inputName may be something like "myVertex/1" etc
+                    String inputVertexName = ComputationGraphConfiguration.getLayerNameFromMultiOut(inputName);
+                    int inputVertexOutputNum = ComputationGraphConfiguration.getOutputNumFromMultiOut(inputName);
+                    if(vertexName.equals(inputVertexName)){
+                        //is a (gv -> s) edge.
+                        outputIndices.add(new Edge(gv.getName(), gv.getIndex(), inputVertexOutputNum,
+                                s, sIdx, inputNumber));
+                        j++;
+                    }
+                    inputNumber++;
+                }
             }
-//            gv.setOutputVertices(outputIndices);
-            gvOutputVertices.put(gv.getName(), outputIndices);
+            gvOutputVertices.put(gv.getName(), outputIndices.toArray(new Edge[outputIndices.size()]));
         }
 
         //Mark any output vertices as outputs:
@@ -851,7 +864,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             //Do we need to do forward pass on this GraphVertex?
             //If it is input to any other layer we need, then yes. Otherwise: no
 //            VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
-            VertexIndices[] outputsTo = gvOutputVertices.get(vertices[topologicalOrder[j]].getName());
+            VertexIndices[] outputsTo = null;   //gvOutputVertices.get(vertices[topologicalOrder[j]].getName());
             boolean needed = false;
             for (VertexIndices vi : outputsTo) {
                 if (seenSoFar.contains(vi.getVertexIndex())) {
@@ -936,7 +949,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             out = out.leverageTo(workspaceExternal);
 
                             //Now, set the inputs for the next vertices:
-                            VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
+                            VertexIndices[] outputsTo = null;   //gvOutputVertices.get(current.getName());
                             if (outputsTo != null) {
                                 for (VertexIndices v : outputsTo) {
                                     int vIdx = v.getVertexIndex();
@@ -1628,7 +1641,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 layerActivations.put(current.getName(), out);
 
                 //Now, set the inputs for the next vertices:
-                VertexIndices[] outputsTo = gvOutputVertices.get(current.getName());
+                VertexIndices[] outputsTo = null;   //gvOutputVertices.get(current.getName());
                 if (outputsTo != null) {
                     for (VertexIndices v : outputsTo) {
                         int vIdx = v.getVertexIndex();
@@ -1840,7 +1853,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 //Inputs to the current GraphVertex:
-                VertexIndices[] inputVertices = gvInputVertices.get(cName);
+                VertexIndices[] inputVertices = null;   //gvInputVertices.get(cName);
 
                 //Set epsilons for the vertices that provide inputs to this vertex:
                 if (inputVertices != null) {
@@ -3283,7 +3296,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 if (inputTypes != null) {
                     //get input type
-                    String inputVertexName = vertices[gvInputVertices.get(currentVertex.getName())[0].getVertexIndex()].getName();
+                    String inputVertexName = null;  //vertices[gvInputVertices.get(currentVertex.getName())[0].getVertexIndex()].getName();
                     InputType currentInType = vertexOutputs.get(inputVertexName);
                     inShape = currentInType.toString();
                     inputTypeList.add(currentInType);

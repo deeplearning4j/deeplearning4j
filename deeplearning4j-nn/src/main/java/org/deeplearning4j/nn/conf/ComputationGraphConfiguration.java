@@ -268,6 +268,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         return multiOut;
     }
 
+    public static int getOutputNumFromMultiOut(String  multiOut){
+        if(multiOut.matches(".+/\\d")){
+            String num = multiOut.substring(multiOut.length()-1);   //Get last character only
+            return Integer.parseInt(num);
+        }
+        return 0;   //No specifier -> always 0
+    }
+
     /**
      * Check the configuration, make sure it is valid
      *
