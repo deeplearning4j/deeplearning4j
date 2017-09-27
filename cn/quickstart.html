@@ -196,3 +196,23 @@ at org.nd4j.linalg.factory.Nd4j.initContext(Nd4j.java:5553)
 <p><h3>在不使用Maven的前提下用Eclipse进行设置</h3></p>
 <p>我们推荐使用Maven和Intellij。如果您更青睐Eclipse且不想使用Maven，请参考<a href="http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html" target="
 ">这篇博文</a>中的Eclipse配置详解。</p>
+
+<p><h2>DL4J概述</h2></p>
+<p>Deeplearning4j是一个让您从一开始就能在所有组件中自行挑选的深度学习框架。我们与Tensorflow（配备自动微分的低级别数值计算库）或Pytorch不同。更多详情请参见<a href="https://deeplearning4j.org/cn/compare-dl4j-torch7-pylearn.html">我们的深度学习库对比分析</a>。Deeplearning4j的几个子项目可以帮助简化端到端应用的构建。</p> 
+<p>如果您希望在生产环境中部署模型，我们的<a href="https://deeplearning4j.org/model-import-keras.html">Keras模型导入功能</a>或许可以提供帮助。</p>
+<p>Deeplearning4j有多个子模块，包括可视化用户界面、基于Spark的分布式训练等。这些模块的简介请参见<strong><a href="https://github.com/deeplearning4j/dl4j-examples">Github上的Deeplearning4j示例</a></strong>。</p>
+<p>若要开始构建简单的桌面应用，您需要两个组件：<a href="http://nd4j.org/cn/backend.html">ND4J后端</a>以及<code>deeplearning4j-core</code>。详细代码参见<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L64">子模块简易示例</a>。</p>
+<p>如果您想要一个更灵活的深度学习API，有两种方法可供选择。您可以单独使用ND4J。参见<a href="https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples">ND4J示例</a>或<a href="http://deeplearning4j.org/cn/compgraph.html">计算图API</a>。</p>
+<p>如果您希望开展基于Spark的分布式训练，请参阅我们的<a href="http://deeplearning4j.org/cn/spark.html">Spark指南</a>。</p>
+<p>请注意，我们无法代您设置Spark。基于Spark和多个GPU的分布式系统基本上都需要由您自行设置。Deeplearning4j只是一个部署在现有Spark集群上的JAR文件。</p>
+<p>如果您希望使用Spark和多个GPU，我们推荐<a href="https://spark.apache.org/docs/latest/running-on-mesos.html">在Mesos上运行Spark</a>。</p>
+<p>如果您想在移动设备上进行部署，请参阅我们的<a href="http://deeplearning4j.org/cn/android.html">Android指南</a>]。</p>
+<p>我们以原生方式为各类硬件架构部署优化的代码。与其他框架一样，我们采用基于C++的for循环。</p>
+<p>相关信息请参见我们的<a href="https://github.com/deeplearning4j/libnd4j">C++框架libnd4j</a>。</p>
+<p>Deeplearning4j还有另外两个值得一提的组件：</p>
+<ul>
+    <li><a href="https://github.com/deeplearning4j/Arbiter">Arbiter：超参数优化与模型评估</a></li>
+    <li><a href="https://github.com/deeplearning4j/DataVec">DataVec：机器学习数据加工管道的内置ETL</a></li>
+</ul>
+<p>总体而言，Deeplearning4j的宗旨是成为构建实际应用的端到端平台，而不只是一个配备自动微分功能的张量库。如果您需要的是后者，ND4J中有一个名为<a href="https://github.com/deeplearning4j/nd4j/tree/master/samediff">samediff</a>的自动微分库。Samediff目前仍是alpha版本，但如果您想尝试为该项目贡献代码，请到<a href="https://gitter.im/deeplearning4j/deeplearning4j">线上交流群</a>中向我们提出。</p>
+<p>最后，如果您要对Deeplearnin4j开展基准测试，请考虑到我们的线上交流群中了解相关建议。Deeplearning4j拥有<a href="http://deeplearning4j.org/native.html">全套调节开关</a>，但一部分开关的工作方式可能与Python框架不同。您必须从源码构建Deeplearning4j才能使用某些应用。</p>
