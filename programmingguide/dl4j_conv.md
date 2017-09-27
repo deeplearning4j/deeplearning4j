@@ -120,7 +120,6 @@ This code depends on a few defined funcions and variables below to help make the
 
 Thus, we see that the first convolutional layer consists of a kernel of size 5 by 5, stride of 1 by 1, and 0 padding and takes in an input image with 3 channels. The second layer consists of a maxpool layer which has a kernel size of 2 by 2. Thus, the max value of each 2 by 2 block in the output from the convolutional layer will be used for input into the next layer, the second convolutional layer. This second convolutional layer takes has kernel size of 5 by 5, stride of 1 by 1, and pads the input using zeros in each dimension. Another maxpool layer is used, which outputs values into a 500 node dense layer. The final layer is the output layer which uses the negative log likelihood loss, 4 output labels (since there are 4 animal types), and a softmax activation for classification. 
 
-
 ## Training and Evaluating a Convolutional Neural Network
 
 Once the configuration of the neural network is defined, we are ready to train the model. 
