@@ -373,18 +373,28 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         // custom ops require Block inside. but we'll set it inside buildGraph
 
 
-        auto block = new Block<T>(node->id(), _variableSpace);
-        node->setBlock(block);
+        Block<T>* block = nullptr;
 
-        for (uint32_t e = 0; e < node->input()->size(); e++) {
-            auto var = _variableSpace->getVariable(node->input()->at(e));
+        if (!node->hasBlockAttached()) {
+            block = new Block<T>(node->id(), _variableSpace);
+            node->setBlock(block);
+        } else
+            block = node->getBlock();
 
-            block->getVariables().push_back(var);
+
+        if (!block->hasVariablesFilled()) {
+            block->setVariableSpace(_variableSpace);
+
+            for (uint32_t e = 0; e < node->input()->size(); e++) {
+                auto var = _variableSpace->getVariable(node->input()->at(e));
+
+                block->getVariables().push_back(var);
+            }
         }
 
         // and might have > 1 output
         if (node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs() > 1) {
-            for (int e = 0; e < node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs(); e++) {
+            for (int e = 1; e < node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs(); e++) {
                 auto deepVar = new Variable<T>();
                 //deepVar->setId(node->id(), e);
 
@@ -500,13 +510,23 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                     this->injectNode(node);
 
                     if (node->hasCustomOp()) {
-                        auto block = new Block<T>(node->id(), _variableSpace);
-                        node->setBlock(block);
+                        Block<T>* block = nullptr;
 
-                        for (uint32_t e = 0; e < node->input()->size(); e++) {
-                            auto var = _variableSpace->getVariable(node->input()->at(e));
+                        if (!node->hasBlockAttached()) {
+                            block = new Block<T>(node->id(), _variableSpace);
+                            node->setBlock(block);
+                        } else
+                            block = node->getBlock();
 
-                            block->getVariables().push_back(var);
+
+                        if (!block->hasVariablesFilled()) {
+                            block->setVariableSpace(_variableSpace);
+
+                            for (uint32_t e = 0; e < node->input()->size(); e++) {
+                                auto var = _variableSpace->getVariable(node->input()->at(e));
+
+                                block->getVariables().push_back(var);
+                            }
                         }
                     }
                 } else
@@ -539,13 +559,23 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 injectNode(node);
 
                 if (node->hasCustomOp()) {
-                    auto block = new Block<T>(node->id(), _variableSpace);
-                    node->setBlock(block);
+                    Block<T>* block = nullptr;
 
-                    for (uint32_t e = 0; e < node->input()->size(); e++) {
-                        auto var = _variableSpace->getVariable(node->input()->at(e));
+                    if (!node->hasBlockAttached()) {
+                        block = new Block<T>(node->id(), _variableSpace);
+                        node->setBlock(block);
+                    } else
+                        block = node->getBlock();
 
-                        block->getVariables().push_back(var);
+
+                    if (!block->hasVariablesFilled()) {
+                        block->setVariableSpace(_variableSpace);
+
+                        for (uint32_t e = 0; e < node->input()->size(); e++) {
+                            auto var = _variableSpace->getVariable(node->input()->at(e));
+
+                            block->getVariables().push_back(var);
+                        }
                     }
                 }
 

@@ -5,14 +5,14 @@
 // #include "testlayers.h"
 #include "DenseLayerTests.cpp"
 #include "NDArrayTests.cpp"
-#include "FlatBuffersTests.cpp"
 #include "VariableSpaceTests.cpp"
-#include "GraphTests.cpp"
 #include "DeclarableOpsTests.cpp"
 #include "HashUtilsTests.cpp"
 #include "WorkspaceTests.h"
 #include "ConvolutionTests.h"
 #include "TadTests.h"
+#include "GraphTests.cpp"
+#include "FlatBuffersTests.cpp"
 ///////
 
 //#include "CyclicTests.h"

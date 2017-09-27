@@ -37,11 +37,31 @@ namespace nd4j{
             OpType opType = node->opType();
             int opNum = node->opNum();
 
-            nd4j_debug("Executing node_%i{%i}\n", node->id(), opNum);
+            if (opType != OpType_CUSTOM) {
+                nd4j_debug("Executing node_%i{%i}\n", node->id(), opNum);
+            } else {
+                nd4j_debug("Executing node_%i{%s}\n", node->id(), node->getCustomOp()->getOpName()->c_str());
+            }
+
+            if (debug && verbose) {
+                //nd4j_debug("Input variables: %i\n", node->input()->size());
+                printf("       Inputs: {");
+                for (int e = 0; e < node->input()->size(); e++) {
+                    printf("[%i:%i]", node->input()->at(e).first, node->input()->at(e).second);
+
+                    if (e < node->input()->size() - 1)
+                        printf(", ");
+                }
+                printf("}\n");
+                fflush(stdout);
+            }
+
+
             fflush(stdout);
             if (node->hasCustomOp()) {
 
-                node->getCustomOp()->execute(node->getBlock());
+                auto status = node->getCustomOp()->execute(node->getBlock());
+                return status;
             } else if (opType == OpType_TRANSFORM) {
                 auto in = node->input()->at(0);
 
@@ -452,11 +472,14 @@ namespace nd4j{
             for (int l = 0; l < (int) graph->getOnion()->size(); l++) {
                 int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;
 
-#pragma omp parallel for if (layerSize > 1 && pe) schedule(dynamic) proc_bind(spread)
+//#pragma omp parallel for if (layerSize > 1 && pe) schedule(dynamic) proc_bind(spread)
                 for (int n = 0; n < layerSize; n++) {
                     auto node = graph->getOnion()->at(l)->at(n);
 
-                    executeFlatNode(graph, node, __variableSpace);
+                    Nd4jStatus status = executeFlatNode(graph, node, __variableSpace);
+
+                    if (status != ND4J_STATUS_OK)
+                        return status;
                 }
             }
 

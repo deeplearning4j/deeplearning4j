@@ -12,6 +12,8 @@
 #include <memory>
 #include <helpers/logger.h>
 #include <loops/broadcasting.h>
+#include <indexing/NDIndex.h>
+#include <indexing/IndicesList.h>
 
 namespace nd4j {
 
@@ -838,6 +840,25 @@ T& NDArray<T>::operator()(const int i, const int j) {
     return _buffer[xOffset];
 }
 
+    template<typename T>
+    void NDArray<T>::addRowVector(const NDArray<T> *row, NDArray<T>* target) {
+        if (rankOf() != 2)
+            throw std::invalid_argument("addRowVector can be called only for Matrix");
+
+        if (!shape::isRowVector(row->_shapeInfo))
+            throw std::invalid_argument("Argument should be row vector");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
+                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
+                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
     template<typename T>
@@ -1037,7 +1058,8 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
 
     if(_buffer==nullptr || arrLength != this->lengthOf()) {
         this->printShapeInfo("Mismatched shape");
-        nd4j_verbose("ArrLength: %i\n", arrLength);
+        nd4j::Logger::printv("Shape requested: ", shape);
+        nd4j_debug("Requested length in reshape: %i; Existing length: %i;\n", arrLength, this->lengthOf());
         throw "Bad shape!";
     }
 
@@ -1063,6 +1085,23 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
 
     return true;
 }
+    template <typename T>
+    Nd4jIndex NDArray<T>::argMax(std::initializer_list<int> dimensions) {
+        if (dimensions.size() == 0) {
+            Nd4jIndex max = 0;
+            T mv = -MAX_FLOAT;
+            for (Nd4jIndex e = 0; e < this->lengthOf(); e++) {
+                T val = this->getScalar(e);
+                if (mv < val) {
+                    mv = val;
+                    max = e;
+                }
+            }
+
+            return max;
+        } else
+            throw "Not implemented yet";
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
@@ -1076,6 +1115,7 @@ template <typename T> NDArray<T>* NDArray<T>::reshape(const char order, const st
 	NDArray<T>* newArr = new NDArray<T>(_buffer, newShapeInfo, _workspace);
 	newArr->_isShapeAlloc = true;
 	newArr->_isBuffAlloc  = false;
+    newArr->_isView = true;
 	newArr->reshapei(order, shape);
 
 	return newArr;
@@ -1276,35 +1316,33 @@ bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
 template <typename T>
 NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
 
-    if(_buffer==nullptr || rank != rankOf())
+    if (_buffer==nullptr || rank != rankOf())
         throw "Wrong arguments in permute method: either array is nullptr or rank is not suitable!";
+
 	int buffLength = lengthOf();
 	int shapeInfoLength = rankOf()*2 + 4;
 	// allocate memory for new array - buffer and shapeInfo
 
-
-    T* bufferNew;
     int* shapeInfoNew;
 
     if (_workspace == nullptr) {
-        bufferNew = new T[buffLength];
         shapeInfoNew = new int[shapeInfoLength];
     } else {
-        bufferNew = (T*) _workspace->allocateBytes(lengthOf() * sizeOfT());
         shapeInfoNew = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rankOf()));
     }
 
 	// copy this arrays _buffer and _shapeInfo into new array	
-	memcpy(bufferNew, _buffer, buffLength*sizeOfT());	
+	//memcpy(bufferNew, _buffer, buffLength*sizeOfT());
 	memcpy(shapeInfoNew, _shapeInfo, shapeInfoLength*sizeof(int));	
 	// perform buffer permutation	
 	shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));	
 
         // create array to be returned
-    NDArray<T>* ret = new NDArray<T>(bufferNew, shapeInfoNew, _workspace);
+    NDArray<T>* ret = new NDArray<T>(_buffer, shapeInfoNew, _workspace);
 	// don't forget to indicate that memory for new array was allocated
-    ret->_isBuffAlloc = true;
+    ret->_isBuffAlloc = false;
     ret->_isShapeAlloc = true;
+    ret->_isView = true;
 
     return ret;
 }
@@ -1786,6 +1824,41 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
    // transpose vt
     vt.transposei();
 }
+
+    template<typename T>
+    NDArray<T>* NDArray<T>::subarray(IndicesList& idx) {
+        if (idx.size() != this->rankOf())
+            throw "Number of indices should match";
+
+        int *newShape;
+        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), int);
+        memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+
+        int *shapeOf = shape::shapeOf(newShape);
+        int *stridesOf = shape::stride(newShape);
+
+        Nd4jIndex offset = 0;
+
+        for (int d = 0; d < idx.size(); d++) {
+            // building new shape first
+            auto index = idx.at(d);
+            if (index->isAll()) {
+                // shape is unchanged  for this dimension
+            } else {
+                // size at this dimension equals to either 1 or interval
+                shapeOf[d] = index->getIndices().size();
+
+                // for offset we're taking only the first index
+                int first = index->getIndices().at(0);
+                offset += first * stridesOf[d];
+            }
+        }
+
+        auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+
+        return result;
+    }
 
     // default destructor
     template<typename T>

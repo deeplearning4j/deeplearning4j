@@ -77,8 +77,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name1 = builder.CreateString("wow1");
     auto name2 = builder.CreateString("wow2");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, DataType_INHERIT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, in2, DataType_INHERIT, vec2);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, DataType_INHERIT, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, in2, 0, DataType_INHERIT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -213,7 +213,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
     auto name1 = builder.CreateString("wow1");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, DataType_FLOAT, out1);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, DataType_FLOAT, out1);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fXVar);
@@ -299,4 +299,27 @@ TEST_F(FlatBuffersTest, ReadFile3) {
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_EQ(8, z->getScalar(0));
+}
+
+
+TEST_F(FlatBuffersTest, ReadInception1) {
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests/resources/inception.fb");
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(227));
+
+    auto lastNode = graph->getVariableSpace()->getVariable(227)->getNDArray();
+
+    lastNode->printShapeInfo("Result shape");
+
+    auto argMax = lastNode->argMax();
+
+    nd4j_printf("Predicted class: %i\n", (int) argMax);
+    nd4j_printf("Probability: %f\n", lastNode->getScalar(argMax));
+    nd4j_printf("Probability ipod: %f\n", lastNode->getScalar(980));
+    lastNode->printBuffer("Whole output");
+
+    delete graph;
 }

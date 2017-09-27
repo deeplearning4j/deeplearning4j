@@ -16,6 +16,7 @@
 
 #else
 
+#define nd4j_debug(FORMAT, A, ...)
 #define nd4j_logger(FORMAT, A, ...)
 #define nd4j_verbose(FORMAT, ...)
 #define nd4j_printf(FORMAT, ...) nd4j::Logger::info(FORMAT, __VA_ARGS__);

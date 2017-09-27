@@ -1,5 +1,16 @@
 namespace nd4j.graph;
 
+table IntPair {
+    first:int; // node id
+    second:int; // time spent
+}
+
+table IntTriple {
+    first:int; // node id
+    second:int; // time spent
+    third:int; // something else
+}
+
 enum OpType:byte {
     TRANSFORM = 0,
     ACCUMULATION = 1, // for both reduce & reduce3
@@ -40,8 +51,9 @@ table FlatNode {
     id:int; // unique id for this node
     name: string; // literal id of this node (optional)
     opType:OpType;
-    opNum:short;
-    input:[int]; // ID's of input nodes for this node
+    opNum:long;
+    input:[int]; // ID's of input nodes for this node !!! only used if inputPaired in unset !!!
+    inputPaired:[IntPair]; //
     dataType:DataType;
     output:[int]; // ID's of connected nodes for this node
     extraParams:[float]; // extra params for this op (if any)

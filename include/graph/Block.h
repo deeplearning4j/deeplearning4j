@@ -66,12 +66,18 @@ namespace nd4j {
                 //
             }
 
+            bool hasVariablesFilled();
+
             bool hasWorkspaceProvided() {
                 return _workspace != nullptr;
             }
 
             void attachWorkspace(nd4j::memory::Workspace* workspace) {
                 _workspace = workspace;
+            }
+
+            void setVariableSpace(VariableSpace<T> *variableSpace) {
+                this->_variableSpace = variableSpace;
             }
 
             void forgetWorkspace() {
@@ -148,6 +154,11 @@ namespace nd4j {
             std::vector<nd4j::graph::Variable<T> *>& getVariables();
         };
     }
+}
+
+template <typename T>
+bool nd4j::graph::Block<T>::hasVariablesFilled() {
+    return _variables.size() > 0;
 }
 
 

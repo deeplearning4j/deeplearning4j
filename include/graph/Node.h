@@ -8,6 +8,7 @@
 #include <atomic>
 #include <string>
 #include <NDArray.h>
+#include "Block.h"
 #include <ops/declarable/declarable_ops.h>
 #include <graph/generated/node_generated.h>
 
@@ -21,7 +22,7 @@ namespace nd4j {
             DataType _dataType;
             OpType _opType;
             Block<T>* _block = nullptr;
-            int _opNum;
+            Nd4jIndex _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
             std::vector<int> _output;
@@ -36,6 +37,7 @@ namespace nd4j {
 
             // many ops require extra parameters to run
             T *_extraParams;
+
 
             // optional scalar. used in scalar ops and in summary stats
             float _scalar;
@@ -61,7 +63,7 @@ namespace nd4j {
             bool equals(Node *other);
 
             OpType opType();
-            int opNum();
+            Nd4jIndex opNum();
             int id();
             std::vector<std::pair<int,int>> *input();
             std::vector<int> *output();
@@ -104,6 +106,7 @@ namespace nd4j {
 
             void setBlock(Block<T> *block);
             Block<T>* getBlock();
+            bool hasBlockAttached();
 
             void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);
             nd4j::ops::DeclarableOp<T>* getCustomOp();
@@ -124,6 +127,11 @@ void nd4j::graph::Node<T>::markInplace(bool reallyInplace) {
 template <typename T>
 OpClass nd4j::graph::Node<T>::getOpClass() {
     return _opClass;
+}
+
+template <typename T>
+bool nd4j::graph::Node<T>::hasBlockAttached() {
+    return _block != nullptr;
 }
 
 template <typename T>
@@ -303,7 +311,7 @@ int nd4j::graph::Node<T>::id() {
 }
 
 template <typename T>
-int nd4j::graph::Node<T>::opNum() {
+Nd4jIndex nd4j::graph::Node<T>::opNum() {
     return _opNum;
 }
 
@@ -380,7 +388,12 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
 
         nd4j_verbose("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
 
-        if (node->input() != nullptr)
+        if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
+            for (int e = 0; e < (int) node->inputPaired()->size(); e++) {
+                auto pair = node->inputPaired()->Get(e);
+                pickInput(pair->first(), pair->second());
+            }
+        } else if (node->input() != nullptr)
             for (int e = 0; e < (int) node->input()->size(); e++)
                 pickInput(node->input()->Get(e));
 
@@ -415,6 +428,26 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
             _opClass = OpClass_TRANSFORM;
         } else if (this->_opType == OpType_ACCUMULATION || this->_opType == OpType_SUMMARYSTATS) {
             _opClass = OpClass_REDUCTION;
+        } else if (this->_opType == OpType_CUSTOM) {
+            auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(this->opNum());
+            if (op == nullptr) {
+                nd4j_verbose("Can't find operation: %lld\n", this->opNum());
+                throw "Boom";
+            }
+
+            auto block = new Block<T>(this->id(), nullptr);
+
+            if (node->extraInteger() != nullptr)
+                for (uint32_t e = 0; e < node->extraInteger()->size(); e++)
+                    block->getIArguments()->push_back(node->extraInteger()->Get(e));
+
+            if (node->extraParams() != nullptr)
+                for (uint32_t e = 0; e < node->extraParams()->size(); e++)
+                    block->getTArguments()->push_back(node->extraParams()->Get(e));
+
+            this->setBlock(block);
+
+            this->setCustomOp(op);
         }
     } else {
         // empty dynamic node, tests probably

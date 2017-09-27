@@ -55,7 +55,24 @@ namespace nd4j {
         void _col2vol(const T* data_col, const int channels, const int depth, const int height, const int width, const int out_depth, const int out_height, const int out_width, const int kT, const int kH, const int kW, const int pT, const int pH, const int pW, const int dT, const int dH, const int dW, const int dilationT, const int dilationH, const int dilationW, T* data_vol);
 
 		void calcOutHWpool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode);
+
+        void _calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW);
     }
+}
+
+void nd4j::ops::_calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW) {
+    int eKH, eKW;
+
+    if (dH == 1 && dW == 1) {
+        eKH = kH;
+        eKW = kW;
+    } else {
+        eKH = kH + (kH - 1) * (dH - 1);
+        eKW = kW + (kW - 1) * (dW - 1);
+    }
+
+    pH = ((oH - 1) * sH + eKH - inH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+    pW = ((oW - 1) * sW + eKW - inW) / 2;
 }
 
 template <typename T>

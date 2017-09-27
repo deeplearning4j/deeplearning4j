@@ -13,6 +13,9 @@ namespace nd4j {
     public:
 
         template<typename T>
+        static NDArray<T>* createUninitialized(NDArray<T>* other);
+
+        template<typename T>
         static ArrayList<T>* multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions);
 
         template<typename T>
@@ -36,6 +39,8 @@ namespace nd4j {
 
         template<typename T>
         static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
+
+
     };
 }
 

@@ -29,6 +29,8 @@ namespace nd4j {
             std::vector<nd4j::graph::Variable<T> *> _external;
             std::vector<nd4j::graph::Variable<T> *> _internal;
 
+            void silentPutVariable(std::pair<int,int>& pair, Variable<T> *variable);
+
             int _auto_counter = -1;
 
             std::mutex _varmap;
@@ -158,13 +160,19 @@ void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, NDArra
 
 
 template <typename T>
-void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {
+void nd4j::graph::VariableSpace<T>::silentPutVariable(std::pair<int,int>& pair, Variable<T> *variable) {
     _varmap.lock();
 
     //std::pair<std::pair<int, int>, nd4j::graph::Variable<T> *> p(pair, variable);
     _paired[pair] = variable;
 
     _varmap.unlock();
+}
+
+template <typename T>
+void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {
+
+    silentPutVariable(pair, variable);
 
     // copying duplicate for compatibility
     if (pair.second == 0 && !this->hasVariable(pair.first)) {
@@ -180,7 +188,6 @@ void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variab
 
 template <typename T>
 void nd4j::graph::VariableSpace<T>::putVariable(int id, Variable<T> *variable) {
-
     // we don't want to add variables more then once
     if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
         nd4j_verbose("Trying to update variable for node_%i\n", id);
@@ -224,6 +231,10 @@ void nd4j::graph::VariableSpace<T>::putVariable(int id, Variable<T> *variable) {
     }
 
     _varmap.unlock();
+
+    std::pair<int,int> pair(id, 0);
+    if (!hasVariable(pair))
+        this->silentPutVariable(pair, variable);
 }
 
 template <typename T>

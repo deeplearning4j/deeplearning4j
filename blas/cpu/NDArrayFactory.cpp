@@ -7,6 +7,7 @@
 
 #include "../NDArrayFactory.h"
 #include "../NDArray.h"
+#include <memory/Workspace.h>
 #include <ops/gemm.h>
 #include "NDArray.cpp"
 
@@ -267,6 +268,23 @@ namespace nd4j {
             T step = (T) e / ((T) numElements - (T) 1.0f);
             result->getBuffer()[e] = (from * ((T) 1.0f - step) + step * to);
         }
+
+        return result;
+    }
+
+
+    template<typename T>
+    NDArray<T>* NDArrayFactory::createUninitialized(NDArray<T>* other) {
+        auto workspace = other->getWorkspace();
+
+        int* newShape;
+        ALLOCATE(newShape, workspace, shape::shapeInfoLength(other->getShapeInfo()), int);
+        memcpy(newShape, other->getShapeInfo(), shape::shapeInfoByteLength(other->getShapeInfo()));
+
+        T* buffer;
+        ALLOCATE(buffer, workspace, other->lengthOf(), T);
+        auto result = new NDArray<T>(buffer, newShape, workspace);
+        result->triggerAllocationFlag(true, true);
 
         return result;
     }

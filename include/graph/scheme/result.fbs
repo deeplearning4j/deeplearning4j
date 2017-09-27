@@ -2,16 +2,6 @@ include "node.fbs";
 
 namespace nd4j.graph;
 
-table IntPair {
-    first:int; // node id
-    second:int; // time spent
-}
-
-table IntTriple {
-    first:int; // node id
-    second:int; // time spent
-}
-
 table FlatResult {
     id:int; // ID of the graph generated this result
     variables:[FlatVariable]; // variables with results

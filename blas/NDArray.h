@@ -7,6 +7,8 @@
 #include <shape.h>
 #include "NativeOpExcutioner.h"
 #include <memory/Workspace.h>
+#include <indexing/NDIndex.h>
+#include <indexing/IndicesList.h>
 
 namespace nd4j {
 
@@ -71,6 +73,12 @@ namespace nd4j {
         NDArray<T>* repeat(int dimension, const std::vector<int>& reps);
 
         NDArray<T>* getView();
+
+        NDArray<T> *subarray(IndicesList& indices);
+
+        nd4j::memory::Workspace* getWorkspace() {
+            return _workspace;
+        }
 
         T* getBuffer();
 
@@ -206,6 +214,7 @@ namespace nd4j {
         template<typename OpName>
         T reduceNumber(T *extraParams = nullptr);
 
+        Nd4jIndex argMax(std::initializer_list<int> dimensions = {});
 
         // perform array transformation
         template<typename OpName>
@@ -282,6 +291,8 @@ namespace nd4j {
 
         // This method adds given row to all rows in this NDArray, that is this array becomes affected
         void addiRowVector(const NDArray<T> *row);
+
+        void addRowVector(const NDArray<T> *row, NDArray<T>* target);
 
 		// This method adds given column to all columns in this NDArray, that is this array becomes affected
 		void addiColumnVector(const NDArray<T> *column);
