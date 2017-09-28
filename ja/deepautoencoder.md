@@ -3,14 +3,15 @@ title:Deep Autoencoders
 layout: default
 ---
 
-# ディープオートエンコーダ
+# ディープ・オートエンコーダ
 
-ディープオートエンコーダは、通常4～5つの浅い層からなるエンコーディング部分と4～5つの層からなるデコーディング部分の2対の対称的な[ディープ・ビリーフ・ネットワーク](./deepbeliefnetwork.html)で構成されています。
-これらの層は、[制限付きボルツマン・マシン](./restrictedboltzmannmachine.html)というディープ・ビリーフ・ネットワークのビルディングブロックなのですが、いくつかの特徴があります。ディープオートエンコーダの構造を簡略化すると以下のようになります。
+ディープ・オートエンコーダは、通常4～5つの浅い層からなるエンコーディング部分と4～5つの層からなるデコーディング部分の2対の対称的な[ディープ・ビリーフ・ネットワーク](./deepbeliefnetwork.html)で構成されています。
+
+これらの層は、[制限付きボルツマン・マシン](./restrictedboltzmannmachine.html)というディープ・ビリーフ・ネットワークのビルディングブロックなのですが、いくつかの特徴があります。ディープ・オートエンコーダの構造を簡略化すると以下のようになります。
 
 ![Alt text](./../img/deep_autoencoder.png) 
 
-ディープオートエンコーダはベンチマークのデータセットである[MNIST](http://yann.lecun.com/exdb/mnist/)を処理し、制限付きボルツマン・マシンの後にバイナリ変換を使用します。ディープオートエンコーダは実数値のデータで構成されるその他のデータセットにも使用できます。これらには制限付きボルツマン・マシンに適用するガウスの正規化変換を使用します。 
+ディープ・オートエンコーダはベンチマークのデータセットである[MNIST](http://yann.lecun.com/exdb/mnist/)を処理し、制限付きボルツマン・マシンの後にバイナリ変換を使用します。ディープ・オートエンコーダは実数値のデータで構成されるその他のデータセットにも使用できます。これらには制限付きボルツマン・マシンに適用するガウスの正規化変換を使用します。 
 
 ### エンコーディング
 
@@ -18,7 +19,7 @@ layout: default
     
      784（入力）----> 1000 ----> 500 ----> 250 ----> 100 -----> 30
 
-ネットワークに送り込まれる入力データが、784画素（MNISTデータセット内の28 x 28画素の画像）であったとすると、ディープオートエンコーダの最初の層には少し大きめの1000パラメータが必要です。 
+ネットワークに送り込まれる入力データが、784画素（MNISTデータセット内の28 x 28画素の画像）であったとすると、ディープ・オートエンコーダの最初の層には少し大きめの1000パラメータが必要です。 
 
 このように入力データよりパラメータが多いと過剰適合になりかねないため、普通に考えるとこれは逆にしなければならないのではないかと思われるかもしれません。 
 
@@ -47,7 +48,7 @@ layout: default
 
 ### 画像検索
 
-上述のように、ディープオートエンコーダは画像を数字30個のベクトルに圧縮させることができます。 
+上述のように、ディープ・オートエンコーダは画像を数字30個のベクトルに圧縮させることができます。 
 
 従って、画像検索とは、画像をアップロードすると、検索エンジンがそれを数字30個のベクトルへと圧縮し、インデックス内でその他すべてのベクトルと比較するという作業なのです。 
 
@@ -55,7 +56,7 @@ layout: default
 
 ### データ圧縮
 
-より一般的な画像圧縮のケースはデータ圧縮です。ディープエンコ―ダは、Geoff Hinton氏による[こちら](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf)の論文で言及されているようにセマンティックハッシングに役立ちます。
+より一般的な画像圧縮のケースはデータ圧縮です。ディープオートエンコ―ダは、Geoff Hinton氏による[こちら](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf)の論文で言及されているようにセマンティックハッシングに役立ちます。
 
 ### トピックモデリングおよび情報検索（IR）
 
@@ -73,7 +74,7 @@ layout: default
 
 ## コードの例
 
-ディープエンコーダは、Deeplearning4jの[MultiLayerNetworkクラス](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java)を延長させて構築することができます。
+ディープ・オートエンコーダは、Deeplearning4jの[MultiLayerNetworkクラス](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java)を延長させて構築することができます。
 
 そのコードは以下のようになります。
 
@@ -161,6 +162,7 @@ public class DeepAutoEncoderExample {
 ```
        
 
-ディープオートエンコーダを構築するには、最新の[Deeplearning4jおよびそのいくつかのexample](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief)を入手してください。
+ディープ・オートエンコーダを構築するには、最新の[Deeplearning4jおよびそのいくつかのexample](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief)を入手してください。
 
-ディープオートエンコーダについての質問は、[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)から弊社にお問合せください。 
+ディープ・オートエンコーダについての質問は、[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)から弊社にお問合せください。 
+
