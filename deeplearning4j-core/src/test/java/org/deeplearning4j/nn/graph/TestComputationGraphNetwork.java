@@ -106,7 +106,11 @@ public class TestComputationGraphNetwork {
         graph.init();
 
         //Get topological sort order
-        int[] order = graph.topologicalSortOrder();
+        List<String> topoOrder = graph.topologicalSortOrder();
+        int[] order = new int[topoOrder.size()];
+        for( int i=0; i<order.length; i++ ){
+            order[i] = graph.getVerticesMap().get(topoOrder.get(i)).getIndex();
+        }
         int[] expOrder = new int[]{0, 1, 2};
         assertArrayEquals(expOrder, order); //Only one valid order: 0 (input) -> 1 (firstlayer) -> 2 (outputlayer)
 

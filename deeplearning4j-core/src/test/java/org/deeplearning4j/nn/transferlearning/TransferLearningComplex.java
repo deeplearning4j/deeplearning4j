@@ -21,6 +21,8 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 /**
@@ -49,8 +51,11 @@ public class TransferLearningComplex {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-
-        int[] topologicalOrder = graph.topologicalSortOrder();
+        List<String> topoOrder = graph.topologicalSortOrder();
+        int[] topologicalOrder = new int[topoOrder.size()];
+        for( int i=0; i<topologicalOrder.length; i++ ){
+            topologicalOrder[i] = graph.getVerticesMap().get(topoOrder.get(i)).getIndex();
+        }
         Layer[] vertices = graph.getVertices();
 
         for (int i = 0; i < topologicalOrder.length; i++) {

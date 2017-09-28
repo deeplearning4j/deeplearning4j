@@ -99,7 +99,11 @@ public class TestCompGraphCNN {
     @Test
     public void testConfigBasic() {
         //Check the order. there are 2 possible valid orders here
-        int[] order = graph.topologicalSortOrder();
+        List<String> topoOrder = graph.topologicalSortOrder();
+        int[] order = new int[topoOrder.size()];
+        for( int i=0; i<order.length; i++ ){
+            order[i] = graph.getVerticesMap().get(topoOrder.get(i)).getIndex();
+        }
         int[] expOrder1 = new int[] {0, 1, 2, 4, 3, 5, 6}; //First of 2 possible valid orders
         int[] expOrder2 = new int[] {0, 2, 1, 4, 3, 5, 6}; //Second of 2 possible valid orders
         boolean orderOK = Arrays.equals(expOrder1, order) || Arrays.equals(expOrder2, order);

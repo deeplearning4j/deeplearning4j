@@ -740,14 +740,15 @@ public class TransferLearning {
             ComputationGraph newGraph = new ComputationGraph(newConfig);
             newGraph.init();
 
-            int[] topologicalOrder = newGraph.topologicalSortOrder();
-            org.deeplearning4j.nn.api.Layer[] vertices = newGraph.getVertices();
+//            int[] topologicalOrder = newGraph.topologicalSortOrder();
+            List<String> topologicalOrder = newGraph.topologicalSortOrder();
+            Map<String,org.deeplearning4j.nn.api.Layer> vertices = newGraph.getVerticesMap();
             if (!editedVertices.isEmpty()) {
                 //set params from orig graph as necessary to new graph
-                for (int i = 0; i < topologicalOrder.length; i++) {
+                for (int i = 0; i < topologicalOrder.size(); i++) {
 
-                    org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]];
-                    String layerName = vertices[topologicalOrder[i]].getName();
+                    org.deeplearning4j.nn.api.Layer layer = vertices.get(topologicalOrder.get(i));
+                    String layerName = vertices.get(topologicalOrder.get(i)).getName();
                     int range = layer.numParams();
                     if (range <= 0)
                         continue; //some layers have no params
@@ -771,14 +772,14 @@ public class TransferLearning {
                 Set<String> allFrozen = new HashSet<>();
                 Collections.addAll(allFrozen, frozenOutputAt);
 
-                for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-                    org.deeplearning4j.nn.api.Layer gv = vertices[topologicalOrder[i]];
+                for (int i = topologicalOrder.size() - 1; i >= 0; i--) {
+                    org.deeplearning4j.nn.api.Layer gv = vertices.get(topologicalOrder.get(i));
                     if (allFrozen.contains(gv.getName())) {
                         //Need to freeze this layer - both the layer implementation, and the layer configuration
                         org.deeplearning4j.nn.api.Layer l = gv;
                         if(!(gv instanceof FrozenLayer)) {
                             gv = new FrozenLayer(gv);
-                            vertices[topologicalOrder[i]] = gv;
+                            vertices.put(topologicalOrder.get(i), gv);
                         }
 
                         //Freeze in the configuration

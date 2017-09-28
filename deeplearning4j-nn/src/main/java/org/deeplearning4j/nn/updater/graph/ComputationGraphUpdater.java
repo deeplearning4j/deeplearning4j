@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Gradient updater for ComputationGraph. Most of the functionality is shared with
@@ -36,16 +38,16 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         if (orderedLayers != null) {
             return orderedLayers;
         }
-        Layer[] vertices = network.getVertices();
+        Map<String,Layer> vertices = network.getVerticesMap();
 
         //In CompGraph: we need to know topological ordering, so we know how parameters are laid out in the 1d view arrays
-        int[] topologicalOrdering = network.topologicalSortOrder();
+        List<String> topologicalOrdering = network.topologicalSortOrder();
 
         Layer[] out = new Layer[network.getNumLayers()];
 
         int j = 0;
-        for (int i = 0; i < topologicalOrdering.length; i++) {
-            Layer currentVertex = vertices[topologicalOrdering[i]];
+        for (int i = 0; i < topologicalOrdering.size(); i++) {
+            Layer currentVertex = vertices.get(topologicalOrdering.get(i));
             if(currentVertex.numParams() == 0){
                 continue;
             }

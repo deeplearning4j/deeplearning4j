@@ -157,7 +157,12 @@ public class TransferLearningHelper {
      */
     private void initHelperGraph() {
 
-        int[] backPropOrder = origGraph.topologicalSortOrder().clone();
+        List<String> topologicalOrder = origGraph.topologicalSortOrder();
+        int[] backPropOrder = new int[topologicalOrder.size()];
+        for( int i=0; i<backPropOrder.length; i++ ){
+            backPropOrder[i] = origGraph.getVerticesMap().get(topologicalOrder.get(i)).getIndex();
+        }
+
         ArrayUtils.reverse(backPropOrder);
 
         Set<String> allFrozen = new HashSet<>();
