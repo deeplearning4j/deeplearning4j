@@ -117,8 +117,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //Input: 2d mask array, for masking a time series. After extracting out the last time step, we no longer need the mask array
 

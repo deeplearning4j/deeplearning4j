@@ -50,19 +50,20 @@ public class ReshapeVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
-            throw new IllegalStateException("Cannot do forward pass: inputs not set");
+        if (input == null || input.anyActivationsNull())
+            throw new IllegalStateException("Cannot do forward pass: inputs not net");
 
         if (input.size() > 1)
             throw new IllegalStateException("Reshape vertex requires a single input.");
 
 
-        return ActivationsFactory.getInstance().create(input.get(0).reshape(order, newShape));
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(input.get(0).reshape(order, newShape), masks.getFirst(), masks.getSecond());
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        if (!canDoBackward())
+        if (gradients == null || gradients.get(0) == null)
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         INDArray out = gradients.get(0).reshape(order, input.get(0).shape());
@@ -75,7 +76,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
+
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null || maskArrays.length < 1 || maskArrays[0] == null) {

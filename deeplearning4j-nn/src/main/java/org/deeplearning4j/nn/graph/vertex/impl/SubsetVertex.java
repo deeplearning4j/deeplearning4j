@@ -53,7 +53,7 @@ public class SubsetVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         forwardShape = Arrays.copyOf(input.get(0).shape(), input.get(0).rank());
@@ -74,14 +74,16 @@ public class SubsetVertex extends BaseGraphVertex {
                 throw new UnsupportedOperationException(
                                 "Cannot get subset for activations of rank " + input.get(0).rank());
         }
-        return ActivationsFactory.getInstance().create(ret);
+
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(ret, masks.getFirst(), masks.getSecond());
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
         INDArray epsilon = gradient.get(0);
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
         switch (forwardShape.length) {
@@ -114,8 +116,8 @@ public class SubsetVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op: subset just provides part of the activations for each example (or time step)
         if (maskArrays == null || maskArrays.length == 0) {

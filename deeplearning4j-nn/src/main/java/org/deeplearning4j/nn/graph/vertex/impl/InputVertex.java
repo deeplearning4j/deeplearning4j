@@ -64,17 +64,6 @@ public class InputVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
-        //No op
-        if (maskArrays == null || maskArrays.length == 0) {
-            return null;
-        }
-
-        return new Pair<>(maskArrays[0], currentMaskState);
-    }
-
-    @Override
     public String toString() {
         return "InputVertex(id=" + getIndex() + ",name=\"" + vertexName + "\")";
     }

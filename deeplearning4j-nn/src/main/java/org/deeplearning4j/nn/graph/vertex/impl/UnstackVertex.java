@@ -56,7 +56,7 @@ public class UnstackVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         // once we know the inputs, save the shape and interval size for doBackward
@@ -89,8 +89,8 @@ public class UnstackVertex extends BaseGraphVertex {
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: error not set");
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
         INDArray epsilon = gradient.get(0);
 
         INDArray out = Nd4j.zeros(forwardShape);
@@ -121,8 +121,8 @@ public class UnstackVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null || maskArrays.length == 0) {
             return new Pair<>(null, currentMaskState);

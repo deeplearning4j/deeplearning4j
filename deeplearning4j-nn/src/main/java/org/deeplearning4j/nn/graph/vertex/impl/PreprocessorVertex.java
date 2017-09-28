@@ -60,16 +60,4 @@ public class PreprocessorVertex extends BaseGraphVertex {
         if (backpropGradientsViewArray != null)
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
-        //No op
-        if (maskArrays == null || maskArrays.length == 0) {
-            return null;
-        }
-
-//        return preProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
-        throw new UnsupportedOperationException();
-    }
 }

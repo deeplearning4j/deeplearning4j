@@ -98,10 +98,10 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        INDArray epsilon = gradient.get(0);
         // this is basically activate on UnstackVertex
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass");
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
+        INDArray epsilon = gradient.get(0);
 
         if (epsilon == null) {
             //Edge case for stack vertex: stack -> embedding
@@ -148,8 +148,8 @@ public class StackVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //Cases here: no mask arrays, or all mask arrays - all of the same size
         if (maskArrays == null) {

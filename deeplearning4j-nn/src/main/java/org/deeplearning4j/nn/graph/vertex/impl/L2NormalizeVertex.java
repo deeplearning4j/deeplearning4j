@@ -54,7 +54,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (L2NormalizeVertex " + vertexName
                             + " idx " + getIndex() + ")");
 
@@ -66,19 +66,21 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         INDArray xNorm2 = x.norm2(dimensions);
         Transforms.max(xNorm2, eps, false);
 
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
         if (x.rank() == 2) {
             return ActivationsFactory.getInstance().create(x.divColumnVector(xNorm2));
         } else {
             INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
-            return ActivationsFactory.getInstance().create(Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0)));
+            return ActivationsFactory.getInstance().create(
+                    Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0)),
+                            masks.getFirst(), masks.getSecond());
         }
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set (L2NormalizeVertex " + vertexName
-                            + " idx " + getIndex() + ")");
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null) " + layerId());
         INDArray epsilon = gradient.get(0);
 
         INDArray x = input.get(0);
@@ -135,8 +137,8 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

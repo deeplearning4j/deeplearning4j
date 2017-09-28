@@ -261,11 +261,6 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Gradients backpropGradient(Gradients gradient) {
         return layer.backpropGradient(gradient);
     }

@@ -124,11 +124,6 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         return "DuplicateToTimeSeriesVertex()";
     }

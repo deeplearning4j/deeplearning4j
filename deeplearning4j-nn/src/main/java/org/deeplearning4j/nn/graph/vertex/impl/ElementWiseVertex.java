@@ -55,7 +55,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
         nInForwardPass = input.size();
@@ -104,7 +104,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
 
-        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, input.get(0).size(0));    //TODO
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
         return ActivationsFactory.getInstance().create(ret, masks.getFirst(), masks.getSecond());
     }
 
@@ -112,8 +112,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
     @Override
     public Gradients backpropGradient(Gradients gradients) {
         INDArray epsilon = gradients.get(0);
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set");
+        if (epsilon == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available");
 
         if (nInForwardPass == 1)
             return gradients;
@@ -174,8 +174,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);

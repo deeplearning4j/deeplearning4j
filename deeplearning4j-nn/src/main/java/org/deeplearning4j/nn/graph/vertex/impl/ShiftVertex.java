@@ -53,9 +53,9 @@ public class ShiftVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ShiftVertex " + vertexName
-                            + " idx " + input.size() + ")");
+                            + " idx " + index + ")");
 
         if (input.size() > 1)
             throw new IllegalArgumentException(
@@ -64,7 +64,8 @@ public class ShiftVertex extends BaseGraphVertex {
         INDArray shifted = input.get(0).dup();
         shifted.addi(shiftFactor);
 
-        return ActivationsFactory.getInstance().create(shifted);
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(shifted, masks.getFirst(), masks.getSecond());
     }
 
     @Override
@@ -86,8 +87,8 @@ public class ShiftVertex extends BaseGraphVertex {
                         + shiftFactor + ")";
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

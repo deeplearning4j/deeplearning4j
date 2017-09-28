@@ -49,7 +49,7 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         INDArray a = input.get(0);
@@ -60,13 +60,16 @@ public class L2Vertex extends BaseGraphVertex {
             dimensions[i - 1] = i;
         }
 
-        return ActivationsFactory.getInstance().create(Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions));
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(
+                Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions),
+                masks.getFirst(), masks.getSecond());
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: error not set");
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
         INDArray epsilon = gradient.get(0);
 
         INDArray a = input.get(0);
@@ -108,8 +111,8 @@ public class L2Vertex extends BaseGraphVertex {
         return "L2Vertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ")";
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

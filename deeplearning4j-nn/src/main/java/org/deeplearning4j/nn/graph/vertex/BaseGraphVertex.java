@@ -64,24 +64,6 @@ public abstract class BaseGraphVertex extends AbstractLayer {
 
     @Override
     public void clearNoiseWeightParams() {
-
-    }
-
-    protected abstract Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                                                                              int minibatchSize);
-
-    public boolean canDoForward(){
-        return input != null && !input.anyActivationsNull();
-    }
-
-    public boolean canDoBackward(){
-        return true;    //TODO remove
-    }
-
-
-    @Override
-    public InputPreProcessor getPreProcessor() {
-        //TODO support preprocessors for vertices...
-        return null;
+        //No op
     }
 }

@@ -44,7 +44,7 @@ public class ScaleVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ScaleVertex " + vertexName
                             + " idx " + getIndex() + ")");
 
@@ -55,14 +55,14 @@ public class ScaleVertex extends BaseGraphVertex {
         INDArray prod = input.get(0).dup();
         prod.muli(scaleFactor);
 
-        return ActivationsFactory.getInstance().create(prod);
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(prod, masks.getFirst(), masks.getSecond());
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set (ScaleVertex " + vertexName
-                            + " idx " + getIndex() + ")");
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null) " + layerId());
 
         INDArray epsilon = gradient.get(0);
         epsilon.muli(scaleFactor);
@@ -84,8 +84,7 @@ public class ScaleVertex extends BaseGraphVertex {
                         + scaleFactor + ")";
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

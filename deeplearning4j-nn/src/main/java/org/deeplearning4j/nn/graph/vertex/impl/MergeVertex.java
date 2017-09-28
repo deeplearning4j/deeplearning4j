@@ -58,7 +58,7 @@ public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        if (!canDoForward())
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
         if (input.size() == 1) {
@@ -92,14 +92,16 @@ public class MergeVertex extends BaseGraphVertex {
         }
 
         INDArray out = Nd4j.hstack(input.getAsArray());
-        return ActivationsFactory.getInstance().create(out);
+
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(out, masks.getFirst(), masks.getSecond());
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
         INDArray epsilon = gradient.get(0);
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if (forwardPassShapes.length == 1) {
             return gradient;
@@ -151,8 +153,8 @@ public class MergeVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);
