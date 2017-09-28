@@ -135,7 +135,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
     /**
-     * All GraphVertex objects in the network.
+     * All Layer objects in the network.
      */
     protected Layer[] vertices;
     /**
@@ -522,7 +522,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         Map<String,Integer> vertexIndices = configuration.getVertexIndices();
 
         //Initialization: create the Layer objects, based on configuration structure
-        Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
+        Map<String, org.deeplearning4j.nn.conf.layers.Layer> configVertexMap = configuration.getVertices();
 
         //Names of all of the (data) inputs to the ComputationGraph
         List<String> networkInputNames = configuration.getNetworkInputs();
@@ -552,7 +552,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //Input vertex
                 numParamsForVertex[idx] = 0;
             } else {
-                numParamsForVertex[idx] = configuration.getVertices().get(s).numParams(false);
+                org.deeplearning4j.nn.conf.layers.Layer l = configVertexMap.get(s);
+                numParamsForVertex[idx] = l.initializer().numParams(l);
             }
             numParams += numParamsForVertex[idx];
         }
@@ -602,8 +603,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         List<Layer> tempLayerList = new ArrayList<>();
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+        for (Map.Entry<String, org.deeplearning4j.nn.conf.layers.Layer> nodeEntry : configVertexMap.entrySet()) {
+            org.deeplearning4j.nn.conf.layers.Layer n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
             List<String> currentInputs = vertexInputs.get(name);
             int nInputs = (currentInputs == null ? 0 : currentInputs.size());
@@ -782,11 +783,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for (; i < configuration.getNetworkInputs().size(); i++) {
                 numParamsForVertex[i] = 0; //No parameters for input vertices
             }
-            Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap
+            Map<String, org.deeplearning4j.nn.conf.layers.Layer> configVertexMap = configuration.getVertices();
+            for (Map.Entry<String, org.deeplearning4j.nn.conf.layers.Layer> nodeEntry : configVertexMap
                     .entrySet()) {
-                org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
-                numParamsForVertex[i] = n.numParams(true);
+                org.deeplearning4j.nn.conf.layers.Layer n = nodeEntry.getValue();
+                numParamsForVertex[i] = n.initializer().numParams(n);
                 numParams += numParamsForVertex[i];
                 i++;
             }
@@ -891,7 +892,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         partialTopoSort.add(topologicalOrder.get(layerIndex));
         seenSoFar.add(topologicalOrder.get(layerIndex));
         for (int j = layerIndex - 1; j >= 0; j--) {
-            //Do we need to do forward pass on this GraphVertex?
+            //Do we need to do forward pass on this Layer?
             //If it is input to any other layer we need, then yes. Otherwise: no
             Edge[] outputsTo = gvEdgesOut.get(topologicalOrder.get(j));
             boolean needed = false;
@@ -1566,7 +1567,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      *
      * @param input The input array
      * @param train If true: do forward pass at training time
-     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     * @return A map of activations for each layer. Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray input, boolean train) {
         return feedForward(input, train, true);
@@ -1591,7 +1592,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      *
      * @param input An array of ComputationGraph inputs
      * @param train If true: do forward pass at training time; false: do forward pass at test time
-     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     * @return A map of activations for each layer. Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train) {
         return feedForward(input, train, true);
@@ -1940,7 +1941,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
                 }
 
-                //Inputs to the current GraphVertex:
+                //Inputs to the current Layer:
                 Edge[] inputEdges = gvEdgesIn.get(cName);  //All edges (x -> current)
 
                 //Set epsilons for the vertices that provide inputs to this vertex:

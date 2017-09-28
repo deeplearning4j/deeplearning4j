@@ -48,8 +48,7 @@ public class ElementWiseVertexTest {
 
         for (ElementWiseVertex.Op op : ops) {
             ElementWiseVertex ewv = new ElementWiseVertex(op);
-            Assert.assertEquals(0, ewv.numParams(true));
-            Assert.assertEquals(0, ewv.numParams(false));
+            Assert.assertEquals(0, ewv.initializer().numParams(ewv));
         }
     }
 

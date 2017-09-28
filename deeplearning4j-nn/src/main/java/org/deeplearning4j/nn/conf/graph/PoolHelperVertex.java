@@ -37,7 +37,7 @@ import java.util.Collection;
  *
  * @author Justin Long (crockpotveggies)
  */
-public class PoolHelperVertex extends GraphVertex {
+public class PoolHelperVertex extends BaseGraphVertex {
 
     @Override
     public PoolHelperVertex clone() {
@@ -51,12 +51,7 @@ public class PoolHelperVertex extends GraphVertex {
 
     @Override
     public int hashCode() {
-        return 433682566;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
+        return 1538997;
     }
 
     @Override

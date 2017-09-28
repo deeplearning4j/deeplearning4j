@@ -1028,19 +1028,19 @@ public class TestComputationGraphNetwork {
 
         NeuralNetConfiguration nnc = new NeuralNetConfiguration();
         nnc.setLayer(new DenseLayer.Builder().build());
-        GraphVertex[] singleInputVertices = new GraphVertex[]{new L2NormalizeVertex(), new LayerVertex(nnc),
+        Layer[] singleInputVertices = new Layer[]{new L2NormalizeVertex(), new LayerVertex(nnc),
                 new PoolHelperVertex(), new PreprocessorVertex(), new ReshapeVertex(new int[]{1, 1}),
 //                new ScaleVertex(1.0),
                 new ShiftVertex(1.0), new SubsetVertex(1, 1), new UnstackVertex(0, 2),
                 new LastTimeStepVertex()};
         fail("fix me");
 
-        for (GraphVertex gv : singleInputVertices) {
+        for (Layer gv : singleInputVertices) {
             ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder()
                     .addInputs("in1", "in2").addVertex("gv", gv, "in1", "in2").setOutputs("gv").build();
 
             boolean foundMerge = false;
-            for (GraphVertex g : c.getVertices().values()) {
+            for (Layer g : c.getVertices().values()) {
                 if (g instanceof MergeVertex) {
                     foundMerge = true;
                     break;

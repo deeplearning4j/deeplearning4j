@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.conf;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -42,7 +41,7 @@ import java.util.*;
  * ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
  * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
  * architecture.<br>
- * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is a {@link GraphVertex},
+ * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is a {@link Layer},
  * which may for example be a layer or a vertex/object that defines arbitrary forward and backward pass functionality.<br>
  * Note that the ComputationGraph may have an arbitrary number of inputs (multiple independent inputs, possibly of different
  * types), and an arbitrary number of outputs (for example, multiple {@link OutputLayer} instances.
@@ -58,7 +57,7 @@ import java.util.*;
 @Slf4j
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
-    protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
+    protected Map<String, Layer> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
     protected Map<String, Integer> vertexIndices;
     protected List<String> topologicalSortOrder;
@@ -124,25 +123,26 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //Add preprocessors that were defined separately to the Layers to which they belong
         //This "set separately" is now deprecated, and preprocessors should be set on the layers directly
         for (Map.Entry<String, InputPreProcessor> entry : builder.inputPreProcessors.entrySet()) {
-            GraphVertex gv = vertices.get(entry.getKey());
+            org.deeplearning4j.nn.conf.layers.Layer gv = vertices.get(entry.getKey());
             if (gv instanceof LayerVertex) {
                 LayerVertex lv = (LayerVertex) gv;
                 lv.getLayerConf().getLayer().setPreProcessor(entry.getValue());
             } else {
                 throw new IllegalStateException(
-                        "Invalid configuration: InputPreProcessor defined for GraphVertex \""
+                        "Invalid configuration: InputPreProcessor defined for Layer \""
                                 + entry.getKey() + "\", but this vertex is not a LayerVertex");
             }
 
         }
 
-        for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
+        for (Map.Entry<String, org.deeplearning4j.nn.conf.layers.Layer> gv : vertices.entrySet()) {
             if (gv.getValue() instanceof LayerVertex) {
                 LayerVertex lv = (LayerVertex) gv.getValue();
                 Layer l = lv.getLayerConf().getLayer();
                 if (l instanceof BasePretrainNetwork)
                     lv.getLayerConf().setPretrain(pretrain);
             }
+            //TODO LayerVertex should be removed
 
         }
 
@@ -183,7 +183,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     protected List<String> topologicalSort(){
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
-        Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = getVertices();
+        Map<String, org.deeplearning4j.nn.conf.layers.Layer> nodeMap = getVertices();
         List<String> networkInputNames = getNetworkInputs();
         int numVertices = networkInputNames.size() + nodeMap.size();
         List<String> out = new ArrayList<>(numVertices);
@@ -196,7 +196,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             vertexInputs.put(s, Collections.<String>emptyList());
         }
 
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()) {
+        for (Map.Entry<String, org.deeplearning4j.nn.conf.layers.Layer> entry : nodeMap.entrySet()) {
             String thisVertexName = entry.getKey();
             List<String> inputsToThisVertex = getVertexInputs().get(thisVertexName);
 
@@ -339,9 +339,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //To maintain backward compatibility after activation function refactoring (configs generated with v0.7.1 or earlier)
         // Previously: enumeration used for activation functions. Now: use classes
         int layerCount = 0;
-        Map<String, GraphVertex> vertexMap = conf.getVertices();
+        Map<String, Layer> vertexMap = conf.getVertices();
         JsonNode vertices = null;
-        for (Map.Entry<String, GraphVertex> entry : vertexMap.entrySet()) {
+        for (Map.Entry<String, Layer> entry : vertexMap.entrySet()) {
             if (!(entry.getValue() instanceof LayerVertex)) {
                 continue;
             }
@@ -400,7 +400,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
 
         conf.vertices = new LinkedHashMap<>();
-        for (Map.Entry<String, GraphVertex> entry : this.vertices.entrySet()) {
+        for (Map.Entry<String, Layer> entry : this.vertices.entrySet()) {
             conf.vertices.put(entry.getKey(), entry.getValue().clone());
         }
 
@@ -525,7 +525,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         //Now: need to do essentially a forward pass through the network, to work out what type of preprocessors to add
-        //To do this: need to know what the output types are for each GraphVertex.
+        //To do this: need to know what the output types are for each Layer.
 
         //Do topological sort
         List<String> topologicalOrdering = topologicalOrdering();
@@ -540,7 +540,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 continue;
             }
 
-            GraphVertex gv = vertices.get(s);
+            Layer gv = vertices.get(s);
 
             List<InputType> inputTypeList = new ArrayList<>();
 
@@ -584,7 +584,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     private Map<String, List<String>> verticesOutputTo() {
         Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
-        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
+        for (Map.Entry<String, Layer> entry : vertices.entrySet()) {
             String vertexName = entry.getKey();
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
@@ -671,7 +671,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 continue;
             }
 
-            GraphVertex gv = vertices.get(s);
+            Layer gv = vertices.get(s);
 
             List<InputType> inputTypeList = new ArrayList<>();
 
@@ -706,7 +706,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Data
     public static class GraphBuilder {
-        protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
+        protected Map<String, Layer> vertices = new LinkedHashMap<>();
 
         /**
          * Key: graph node. Values: input to that node
@@ -833,8 +833,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                    on a combination of the two.
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers/vertices
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
@@ -846,8 +845,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                    on a combination of the two.
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers/vertices
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
         public GraphBuilder layer(String layerName, Layer layer, String... layerInputs) {
@@ -860,17 +858,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
-         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                     on a combination of the two.
+         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers/vertices
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
                         String... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-//            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             NeuralNetConfiguration nnc = builder.build();
             nnc.getLayer().setPreProcessor(preProcessor);
-            addVertex(layerName, new LayerVertex(builder.build()), layerInputs);
+            addLayer(layerName, layer, layerInputs);
             layer.setLayerName(layerName);
             return this;
         }
@@ -881,8 +877,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
-         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                     on a combination of the two.
+         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers/vertices
          */
         public GraphBuilder layer(String layerName, Layer layer, InputPreProcessor preProcessor,
                                      String... layerInputs) {
@@ -986,36 +981,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return layer(layerName, layer, layerInputs);
         }
 
-        @Deprecated
-        public GraphBuilder addVertex(String vertexName, Layer vertex, String... vertexInputs){
-            return layer(vertexName, vertex, vertexInputs);
-        }
-
         /**
-         * Add a {@link GraphVertex} to the network configuration. A GraphVertex defines forward and backward pass methods,
-         * and can contain a {@link LayerVertex}, a {@link org.deeplearning4j.nn.conf.graph.ElementWiseVertex} to do element-wise
-         * addition/subtraction, a {@link MergeVertex} to combine/concatenate the activations out of multiple layers or vertices,
-         * a {@link org.deeplearning4j.nn.conf.graph.SubsetVertex} to select a subset of the activations out of another layer/GraphVertex.<br>
-         * Custom GraphVertex objects (that extend the abstract {@link GraphVertex} class) may also be used.
+         * Add a {@link Layer} (formerly a GraphVertex) to the network configuration.
          *
-         * @param vertexName   The name of the GraphVertex to add
-         * @param vertex       The GraphVertex to add
-         * @param vertexInputs The inputs/activations to this GraphVertex
+         * @param vertexName   The name of the Layer to add
+         * @param vertex       The Layer to add
+         * @param vertexInputs The inputs/activations to this Layer
          * @deprecated Use
          */
         @Deprecated
-        public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
-            vertices.put(vertexName, vertex);
-
-            //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
-            if (vertex.maxInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
-                String mergeName = vertexName + "-merge";
-                addVertex(mergeName, new MergeVertex(), vertexInputs);
-                this.vertexInputs.put(vertexName, Collections.singletonList(mergeName));
-            } else if (vertexInputs != null) {
-                this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
-            }
-            return this;
+        public GraphBuilder addVertex(String vertexName, Layer vertex, String... vertexInputs){
+            return layer(vertexName, vertex, vertexInputs);
         }
 
         /**

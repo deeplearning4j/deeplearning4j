@@ -51,7 +51,6 @@ public class KerasZeroPadding2D extends KerasLayer {
                 getZeroPaddingFromConfig(layerConfig, conf, 2))
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**

@@ -44,7 +44,7 @@ import java.util.Collection;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class ReshapeVertex extends GraphVertex {
+public class ReshapeVertex extends BaseGraphVertex {
     public static final char DEFAULT_RESHAPE_ORDER = 'c';
 
     protected char reshapeOrder = 'c';
@@ -65,11 +65,6 @@ public class ReshapeVertex extends GraphVertex {
     @Override
     public ReshapeVertex clone() {
         return new ReshapeVertex(newShape);
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

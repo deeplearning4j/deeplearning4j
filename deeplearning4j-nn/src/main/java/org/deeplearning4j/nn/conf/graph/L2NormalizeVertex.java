@@ -44,7 +44,7 @@ import java.util.Collection;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class L2NormalizeVertex extends GraphVertex {
+public class L2NormalizeVertex extends BaseGraphVertex {
     public static final double DEFAULT_EPS = 1e-8;
 
     protected int[] dimension;
@@ -64,11 +64,6 @@ public class L2NormalizeVertex extends GraphVertex {
     @Override
     public L2NormalizeVertex clone() {
         return new L2NormalizeVertex(dimension, eps);
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

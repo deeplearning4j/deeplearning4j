@@ -52,7 +52,6 @@ public class KerasLayer {
     protected DimOrder dimOrder; // Keras layer backend dimension order
     protected List<String> inboundLayerNames; // List of inbound layers
     protected Layer layer; // Resulting DL4J layer
-    protected GraphVertex vertex; // Resulting DL4J vertex
     protected Map<String, INDArray> weights; // Weights
     protected double weightL1Regularization = 0.0; // L1 regularization
     protected double weightL2Regularization = 0.0; // L2 regularization
@@ -73,7 +72,6 @@ public class KerasLayer {
         this.dimOrder = DimOrder.NONE;
         this.inboundLayerNames = new ArrayList<>();
         this.layer = null;
-        this.vertex = null;
         this.weights = null;
         this.kerasMajorVersion = kerasVersion;
         this.conf = KerasLayerConfigurationFactory.get(this.kerasMajorVersion);
@@ -91,7 +89,6 @@ public class KerasLayer {
         this.dimOrder = DimOrder.NONE;
         this.inboundLayerNames = new ArrayList<>();
         this.layer = null;
-        this.vertex = null;
         this.weights = null;
         this.conf = KerasLayerConfigurationFactory.get(this.kerasMajorVersion);
 
@@ -130,7 +127,6 @@ public class KerasLayer {
         this.dimOrder = KerasLayerUtils.getDimOrderFromConfig(layerConfig, conf);
         this.inboundLayerNames = KerasLayerUtils.getInboundLayerNamesFromConfig(layerConfig, conf);
         this.layer = null;
-        this.vertex = null;
         this.weights = null;
 
         this.weightL1Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
@@ -313,25 +309,6 @@ public class KerasLayer {
     }
 
     /**
-     * Whether this Keras layer maps to a DL4J Vertex.
-     *
-     * @return true or false
-     */
-    public boolean isVertex() {
-        return this.vertex != null;
-    }
-
-    /**
-     * Gets corresponding DL4J Vertex, if any.
-     *
-     * @return DL4J Vertex
-     * @see org.deeplearning4j.nn.conf.graph.GraphVertex
-     */
-    public GraphVertex getVertex() {
-        return this.vertex;
-    }
-
-    /**
      * Whether this Keras layer maps to a DL4J InputPreProcessor.
      *
      * @return true or false
@@ -381,7 +358,7 @@ public class KerasLayer {
      * @see org.deeplearning4j.nn.api.Layer
      */
     public boolean isValidInboundLayer() throws InvalidKerasConfigurationException {
-        return (getLayer() != null || getVertex() != null || getInputPreprocessor() != null
+        return (getLayer() != null || getInputPreprocessor() != null
                 || this.className.equals(conf.getLAYER_CLASS_NAME_INPUT()));
     }
 }

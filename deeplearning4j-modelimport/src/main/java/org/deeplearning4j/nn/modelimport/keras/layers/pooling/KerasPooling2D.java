@@ -70,7 +70,6 @@ public class KerasPooling2D extends KerasLayer {
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**

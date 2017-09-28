@@ -50,7 +50,6 @@ public class KerasLRN extends KerasLayer {
                         .dropOut(this.dropout).alpha((double) lrnParams.get("alpha"))
                         .beta((double) lrnParams.get("beta")).k((int) lrnParams.get("k")).n((int) lrnParams.get("n"));
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**

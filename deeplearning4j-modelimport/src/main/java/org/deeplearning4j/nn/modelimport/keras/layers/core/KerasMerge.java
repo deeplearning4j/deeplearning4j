@@ -71,9 +71,9 @@ public class KerasMerge extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         this.mergeMode = getMergeMode(layerConfig);
         if (this.mergeMode == null)
-            this.vertex = new MergeVertex();
+            this.layer = new MergeVertex();
         else
-            this.vertex = new ElementWiseVertex(mergeMode);
+            this.layer = new ElementWiseVertex(mergeMode);
     }
 
     public ElementWiseVertex.Op getMergeMode(Map<String, Object> layerConfig)
@@ -118,6 +118,6 @@ public class KerasMerge extends KerasLayer {
      */
     @Override
     public InputType[] getOutputType(InputType... inputType) {
-        return this.vertex.getOutputType(-1, inputType);
+        return this.layer.getOutputType(-1, inputType);
     }
 }

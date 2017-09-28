@@ -38,7 +38,7 @@ import java.util.Collection;
  *
  * @author Justin Long (crockpotveggies)
  */
-public class StackVertex extends GraphVertex {
+public class StackVertex extends BaseGraphVertex {
 
     public StackVertex() {}
 
@@ -50,11 +50,6 @@ public class StackVertex extends GraphVertex {
     @Override
     public boolean equals(Object o) {
         return o instanceof StackVertex;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

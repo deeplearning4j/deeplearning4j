@@ -102,7 +102,7 @@ public class TestTransferLearningModelSerializer {
         assertTrue(withFrozen.getLayer(0) instanceof FrozenLayer);
         assertTrue(withFrozen.getLayer(1) instanceof FrozenLayer);
 
-        Map<String, GraphVertex> m = withFrozen.getConfiguration().getVertices();
+        Map<String, Layer> m = withFrozen.getConfiguration().getVertices();
         Layer l0 = ((LayerVertex) m.get("0")).getLayerConf().getLayer();
         Layer l1 = ((LayerVertex) m.get("1")).getLayerConf().getLayer();
         assertTrue(l0 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);

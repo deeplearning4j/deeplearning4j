@@ -472,8 +472,8 @@ public class TransferLearning {
             this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,
                             fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
 
-            Map<String, GraphVertex> vertices = this.editedConfigBuilder.getVertices();
-            for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
+            Map<String, Layer> vertices = this.editedConfigBuilder.getVertices();
+            for (Map.Entry<String, Layer> gv : vertices.entrySet()) {
                 if (gv.getValue() instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv.getValue();
                     NeuralNetConfiguration nnc = lv.getLayerConf().clone();

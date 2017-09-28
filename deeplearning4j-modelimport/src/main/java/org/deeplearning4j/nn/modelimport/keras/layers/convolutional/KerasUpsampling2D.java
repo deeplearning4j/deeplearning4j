@@ -68,7 +68,6 @@ public class KerasUpsampling2D extends KerasLayer {
                 .size(size[0]);
 
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**

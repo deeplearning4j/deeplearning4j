@@ -42,7 +42,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class PreprocessorVertex extends GraphVertex {
+public class PreprocessorVertex extends BaseGraphVertex {
 
     private InputPreProcessor preProcessor;
 
@@ -54,13 +54,8 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public GraphVertex clone() {
+    public PreprocessorVertex clone() {
         return new PreprocessorVertex(preProcessor.clone());
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

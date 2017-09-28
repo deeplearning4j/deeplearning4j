@@ -43,7 +43,7 @@ import java.util.Collection;
  * @author Justin Long (crockpotveggies)
  */
 @Getter
-public class UnstackVertex extends GraphVertex {
+public class UnstackVertex extends BaseGraphVertex {
     protected int from;
     protected int stackSize;
 
@@ -75,11 +75,6 @@ public class UnstackVertex extends GraphVertex {
         if (!(o instanceof UnstackVertex))
             return false;
         return ((UnstackVertex) o).from == from && ((UnstackVertex) o).stackSize == stackSize;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

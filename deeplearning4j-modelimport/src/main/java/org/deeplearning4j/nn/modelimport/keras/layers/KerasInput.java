@@ -80,7 +80,6 @@ public class KerasInput extends KerasLayer {
         this.inputShape = inputShape;
         this.inboundLayerNames = new ArrayList<String>();
         this.layer = null;
-        this.vertex = null;
         if (this.inputShape.length < 0 || this.inputShape.length > 3)
             throw new UnsupportedKerasConfigurationException(
                             "Inputs with " + this.inputShape.length + " dimensions not supported");

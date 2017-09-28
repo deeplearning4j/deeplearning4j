@@ -41,8 +41,8 @@ public class ComputationGraphConfigurationDeserializer
         //Here, we manually create the appropriate Updater instances, if the IUpdater field is empty
 
         List<Layer> layerList = new ArrayList<>();
-        Map<String, GraphVertex> vertices = conf.getVertices();
-        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
+        Map<String, Layer> vertices = conf.getVertices();
+        for (Map.Entry<String, Layer> entry : vertices.entrySet()) {
             if (entry.getValue() instanceof LayerVertex) {
                 LayerVertex lv = (LayerVertex) entry.getValue();
                 layerList.add(lv.getLayerConf().getLayer());

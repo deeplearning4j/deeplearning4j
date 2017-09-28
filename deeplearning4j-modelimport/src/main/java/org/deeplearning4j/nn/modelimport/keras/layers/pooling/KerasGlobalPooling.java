@@ -77,7 +77,6 @@ public class KerasGlobalPooling extends KerasLayer {
                                 .name(this.layerName)
                                 .dropOut(this.dropout);
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**

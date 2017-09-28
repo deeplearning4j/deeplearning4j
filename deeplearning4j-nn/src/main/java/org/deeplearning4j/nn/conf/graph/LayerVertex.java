@@ -43,7 +43,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class LayerVertex extends GraphVertex {
+public class LayerVertex extends BaseGraphVertex {
 
     private NeuralNetConfiguration layerConf;
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
@@ -57,13 +57,8 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public GraphVertex clone() {
+    public LayerVertex clone() {
         return new LayerVertex(layerConf.clone());
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return layerConf.getLayer().initializer().numParams(layerConf);
     }
 
     @Override

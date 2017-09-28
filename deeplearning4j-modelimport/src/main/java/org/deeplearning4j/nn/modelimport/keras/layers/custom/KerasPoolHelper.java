@@ -42,7 +42,7 @@ public class KerasPoolHelper extends KerasLayer {
     public KerasPoolHelper(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.vertex = new PoolHelperVertex();
+        this.layer = new PoolHelperVertex();
     }
 
     /**
@@ -54,6 +54,6 @@ public class KerasPoolHelper extends KerasLayer {
      */
     @Override
     public InputType[] getOutputType(InputType... inputType) {
-        return this.vertex.getOutputType(-1, inputType);
+        return this.layer.getOutputType(-1, inputType);
     }
 }

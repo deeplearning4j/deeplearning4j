@@ -40,7 +40,7 @@ import java.util.Collection;
  *      -> [numExamples,depth1 + depth2,width,height]<br>
  * @author Alex Black
  */
-public class MergeVertex extends GraphVertex {
+public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public MergeVertex clone() {
@@ -55,11 +55,6 @@ public class MergeVertex extends GraphVertex {
     @Override
     public int hashCode() {
         return 433682566;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

@@ -44,7 +44,7 @@ public class ShiftVertexTest {
          */
 
         ShiftVertex sv = new ShiftVertex(0.7); // The 0.7 doesn't really matter.
-        Assert.assertEquals(0, sv.numParams(true));
+        Assert.assertEquals(0, sv.initializer().numParams(sv));
     }
 
     @Test
@@ -55,7 +55,7 @@ public class ShiftVertexTest {
          */
 
         ShiftVertex sv = new ShiftVertex(0.7); // The 0.7 doesn't really matter.
-        Assert.assertEquals(0, sv.numParams(false));
+        Assert.assertEquals(0, sv.initializer().numParams(sv));
     }
 
     @Test

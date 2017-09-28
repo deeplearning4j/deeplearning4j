@@ -46,7 +46,7 @@ import java.util.Collection;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class SubsetVertex extends GraphVertex {
+public class SubsetVertex extends BaseGraphVertex {
 
     private int from;
     private int to;
@@ -63,11 +63,6 @@ public class SubsetVertex extends GraphVertex {
     @Override
     public SubsetVertex clone() {
         return new SubsetVertex(from, to);
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

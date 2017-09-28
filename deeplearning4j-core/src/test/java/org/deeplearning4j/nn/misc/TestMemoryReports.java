@@ -50,9 +50,9 @@ public class TestMemoryReports {
         return l;
     }
 
-    public static List<Pair<? extends GraphVertex, InputType[]>> getTestVertices() {
+    public static List<Pair<? extends Layer, InputType[]>> getTestVertices() {
 
-        List<Pair<? extends GraphVertex, InputType[]>> out = new ArrayList<>();
+        List<Pair<? extends Layer, InputType[]>> out = new ArrayList<>();
         out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add),
                         new InputType[] {InputType.feedForward(10), InputType.feedForward(10)}));
         out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add),
@@ -63,8 +63,7 @@ public class TestMemoryReports {
                         new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new PreprocessorVertex(new FeedForwardToCnnPreProcessor(1, 10, 1)),
                         new InputType[] {InputType.convolutional(1, 10, 1)}));
-//        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
-        fail("Fix me");
+        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new ShiftVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new StackVertex(),
                         new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
@@ -135,9 +134,9 @@ public class TestMemoryReports {
 
     @Test
     public void testMemoryReportsVerticesCG() {
-        List<Pair<? extends GraphVertex, InputType[]>> l = getTestVertices();
+        List<Pair<? extends Layer, InputType[]>> l = getTestVertices();
 
-        for (Pair<? extends GraphVertex, InputType[]> p : l) {
+        for (Pair<? extends Layer, InputType[]> p : l) {
             List<String> inputs = new ArrayList<>();
             for (int i = 0; i < p.getSecond().length; i++) {
                 inputs.add(String.valueOf(i));

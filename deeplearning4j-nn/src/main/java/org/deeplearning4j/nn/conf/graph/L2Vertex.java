@@ -39,7 +39,7 @@ import java.util.Collection;
  *
  * @author Justin Long (crockpotveggies)
  */
-public class L2Vertex extends GraphVertex {
+public class L2Vertex extends BaseGraphVertex {
     protected double eps;
 
     public L2Vertex() {
@@ -58,11 +58,6 @@ public class L2Vertex extends GraphVertex {
     @Override
     public boolean equals(Object o) {
         return o instanceof L2Vertex;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

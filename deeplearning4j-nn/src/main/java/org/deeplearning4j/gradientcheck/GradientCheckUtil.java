@@ -335,9 +335,7 @@ public class GradientCheckUtil {
         //Check configuration
         int layerCount = 0;
         for (String vertexName : graph.getConfiguration().getVertices().keySet()) {
-            GraphVertex gv = graph.getConfiguration().getVertices().get(vertexName);
-            if (!(gv instanceof LayerVertex))
-                continue;
+            org.deeplearning4j.nn.conf.layers.Layer gv = graph.getConfiguration().getVertices().get(vertexName);
             LayerVertex lv = (LayerVertex) gv;
 
             if (lv.getLayerConf().getLayer() instanceof BaseLayer) {

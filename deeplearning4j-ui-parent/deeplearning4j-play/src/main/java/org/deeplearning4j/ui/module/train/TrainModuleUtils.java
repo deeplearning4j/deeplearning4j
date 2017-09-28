@@ -6,7 +6,6 @@ import lombok.Data;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -80,7 +79,7 @@ public class TrainModuleUtils {
         List<Map<String, String>> layerInfo = new ArrayList<>();
 
 
-        Map<String, GraphVertex> vertices = config.getVertices();
+        Map<String, Layer> vertices = config.getVertices();
         Map<String, List<String>> vertexInputs = config.getVertexInputs();
         List<String> networkInputs = config.getNetworkInputs();
 
@@ -102,8 +101,8 @@ public class TrainModuleUtils {
         }
 
         int layerCount = 0;
-        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
-            GraphVertex gv = entry.getValue();
+        for (Map.Entry<String, Layer> entry : vertices.entrySet()) {
+            Layer gv = entry.getValue();
             layerNames.add(entry.getKey());
 
             List<String> inputsThisVertex = vertexInputs.get(entry.getKey());

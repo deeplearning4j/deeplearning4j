@@ -876,7 +876,7 @@ public class TrainModule implements UIModule {
 
                     String vertexName = gi.getVertexNames().get(layerIdx);
 
-                    Map<String, GraphVertex> vertices = conf.getVertices();
+                    Map<String, Layer> vertices = conf.getVertices();
                     if (vertices.containsKey(vertexName) && vertices.get(vertexName) instanceof LayerVertex) {
                         LayerVertex lv = (LayerVertex) vertices.get(vertexName);
                         nnc = lv.getLayerConf();
@@ -884,7 +884,7 @@ public class TrainModule implements UIModule {
                     } else if (conf.getNetworkInputs().contains(vertexName)) {
                         layerType = "Input";
                     } else {
-                        GraphVertex gv = conf.getVertices().get(vertexName);
+                        Layer gv = conf.getVertices().get(vertexName);
                         if (gv != null) {
                             layerType = gv.getClass().getSimpleName();
                         }

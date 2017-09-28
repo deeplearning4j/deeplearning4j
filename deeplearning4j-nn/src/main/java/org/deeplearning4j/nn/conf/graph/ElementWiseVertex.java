@@ -42,7 +42,7 @@ import java.util.Collection;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class ElementWiseVertex extends GraphVertex {
+public class ElementWiseVertex extends BaseGraphVertex {
 
     public ElementWiseVertex(@JsonProperty("op") Op op) {
         this.op = op;
@@ -57,11 +57,6 @@ public class ElementWiseVertex extends GraphVertex {
     @Override
     public ElementWiseVertex clone() {
         return new ElementWiseVertex(op);
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override

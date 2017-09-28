@@ -55,7 +55,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = false)
-public class ShiftVertex extends GraphVertex {
+public class ShiftVertex extends BaseGraphVertex {
 
     public ShiftVertex(@JsonProperty("shiftFactor") double shiftFactor) {
         this.shiftFactor = shiftFactor;
@@ -66,11 +66,6 @@ public class ShiftVertex extends GraphVertex {
     @Override
     public ShiftVertex clone() {
         return new ShiftVertex(shiftFactor);
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
     }
 
     @Override
