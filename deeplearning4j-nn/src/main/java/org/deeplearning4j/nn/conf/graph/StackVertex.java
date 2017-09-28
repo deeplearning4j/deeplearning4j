@@ -58,12 +58,12 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return Integer.MAX_VALUE;
     }
 
@@ -183,7 +183,7 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //No working memory, just output activations
         InputType outputType = getOutputType(-1, inputTypes)[0];
 

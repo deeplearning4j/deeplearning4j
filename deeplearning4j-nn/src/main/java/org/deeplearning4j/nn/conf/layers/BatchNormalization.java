@@ -164,7 +164,12 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         InputType outputType = getOutputType(-1, inputType)[0];
 
         //TODO CuDNN helper etc

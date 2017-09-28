@@ -60,12 +60,12 @@ public class PoolHelperVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -173,7 +173,7 @@ public class PoolHelperVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //It's just a get op on the forward pass... no memory use
         InputType outputType = getOutputType(-1, inputTypes)[0];
 

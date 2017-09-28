@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by Alex on 14/07/2017.
@@ -62,7 +63,8 @@ public class TestMemoryReports {
                         new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new PreprocessorVertex(new FeedForwardToCnnPreProcessor(1, 10, 1)),
                         new InputType[] {InputType.convolutional(1, 10, 1)}));
-        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
+//        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
+        fail("Fix me");
         out.add(new Pair<>(new ShiftVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new StackVertex(),
                         new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));

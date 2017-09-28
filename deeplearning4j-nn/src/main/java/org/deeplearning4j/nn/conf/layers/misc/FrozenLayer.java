@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -119,7 +120,11 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         return layer.getMemoryReport(inputType);
     }
 

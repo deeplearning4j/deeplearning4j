@@ -65,12 +65,12 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 2;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         switch (op) {
             case Add:
             case Average:
@@ -161,7 +161,7 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //No working memory in addition to output activations
         return new LayerMemoryReport.Builder(null, ElementWiseVertex.class, inputTypes[0], inputTypes[0])
                 .standardMemory(0, 0).workingMemory(0, 0, 0, 0).cacheMemory(0, 0).build();

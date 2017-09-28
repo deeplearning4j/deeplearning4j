@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -74,7 +75,12 @@ public class DenseLayer extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         InputType outputType = getOutputType(-1, inputType)[0];
 
         int numParams = initializer().numParams(this);

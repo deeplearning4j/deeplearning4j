@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by Alex on 04/07/2017.
@@ -86,9 +87,13 @@ public class TestKryo extends BaseSparkKryoTest {
         GraphVertex[] vertices = new GraphVertex[] {new ElementWiseVertex(ElementWiseVertex.Op.Add),
                         new L2NormalizeVertex(), new LayerVertex(null), new MergeVertex(), new PoolHelperVertex(),
                         new PreprocessorVertex(new CnnToFeedForwardPreProcessor(28, 28, 1)),
-                        new ReshapeVertex(new int[] {1, 1}), new ScaleVertex(1.0), new ShiftVertex(1.0),
+                        new ReshapeVertex(new int[] {1, 1}),
+//                new ScaleVertex(1.0),
+                new ShiftVertex(1.0),
                         new SubsetVertex(1, 1), new UnstackVertex(0, 2), new DuplicateToTimeSeriesVertex(),
                         new LastTimeStepVertex()};
+
+        fail("FIX ME");
 
         for (GraphVertex gv : vertices) {
             testSerialization(gv, si);

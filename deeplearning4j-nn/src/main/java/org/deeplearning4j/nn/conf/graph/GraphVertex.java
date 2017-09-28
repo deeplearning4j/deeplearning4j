@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,7 +26,6 @@ import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
@@ -56,7 +54,8 @@ import java.util.Collection;
                 @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
                 @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")})
 @EqualsAndHashCode
-public abstract class GraphVertex implements Cloneable, Serializable {
+@Deprecated
+public abstract class GraphVertex extends BaseGraphVertex implements Cloneable, Serializable {
 
     @Override
     public abstract GraphVertex clone();
@@ -72,12 +71,12 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     /**
      * @return The Smallest valid number of inputs to this vertex
      */
-    public abstract int minVertexInputs();
+    public abstract int minInputs();
 
     /**
      * @return The largest valid number of inputs to this vertex
      */
-    public abstract int maxVertexInputs();
+    public abstract int maxInputs();
 
     /**
      * Create a {@link Layer} instance, for the given computation graph,
@@ -101,13 +100,5 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @throws InvalidInputTypeException If the input type is invalid for this type of GraphVertex
      */
     public abstract InputType[] getOutputType(int layerIndex, InputType... inputTypes);
-
-    /**
-     * This is a report of the estimated memory consumption for the given vertex
-     *
-     * @param inputTypes Input types to the vertex. Memory consumption is often a function of the input type
-     * @return Memory report for the vertex
-     */
-    public abstract MemoryReport getMemoryReport(InputType... inputTypes);
 
 }

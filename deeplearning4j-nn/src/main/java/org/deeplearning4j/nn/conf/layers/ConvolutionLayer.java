@@ -213,12 +213,15 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
         int paramSize = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(paramSize);
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputTypes[0];
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputTypes[0])[0];
 
         //TODO convolution helper memory use... (CuDNN etc)
 
@@ -247,7 +250,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
             if (getIDropout() != null) {
                 //Dup on the input before dropout, but only for training
-                trainWorkingSizePerEx += inputType.arrayElementsPerExample();
+                trainWorkingSizePerEx += inputTypes[0].arrayElementsPerExample();
             }
 
             trainWorkingMemoryPerEx.put(cm, trainWorkingSizePerEx);
@@ -255,7 +258,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
 
-        return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputType, outputType)
+        return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputTypes[0], outputType)
                         .standardMemory(paramSize, updaterStateSize)
                         //im2col caching -> only variable size caching
                         .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)

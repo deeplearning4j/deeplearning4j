@@ -83,12 +83,12 @@ public class UnstackVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -193,7 +193,7 @@ public class UnstackVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Get op with dup - accounted for in activations size (no working memory)
         //Do one dup on the forward pass (output activations). Accounted for in output activations.
         InputType outputType = getOutputType(-1, inputTypes)[0];

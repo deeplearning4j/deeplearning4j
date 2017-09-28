@@ -99,8 +99,6 @@ public class StackVertex extends BaseGraphVertex {
     @Override
     public Gradients backpropGradient(Gradients gradient) {
         // this is basically activate on UnstackVertex
-        if (gradient == null || gradient.get(0) == null)
-            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
         INDArray epsilon = gradient.get(0);
 
         if (epsilon == null) {

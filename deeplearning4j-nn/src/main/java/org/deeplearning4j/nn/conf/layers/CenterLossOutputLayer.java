@@ -36,6 +36,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -141,7 +142,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         //Basically a dense layer, with some extra params...
         InputType outputType = getOutputType(-1, inputType)[0];
 

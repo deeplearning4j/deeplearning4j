@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -99,7 +100,12 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
 

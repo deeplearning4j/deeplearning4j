@@ -59,12 +59,12 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -89,7 +89,7 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //No additional working memory (beyond activations/epsilons)
         return new LayerMemoryReport.Builder(null, LastTimeStepVertex.class, inputTypes[0],
                         getOutputType(-1, inputTypes)[0])

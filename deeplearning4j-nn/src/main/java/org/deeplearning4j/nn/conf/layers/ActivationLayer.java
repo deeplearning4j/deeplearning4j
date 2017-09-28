@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -92,7 +93,12 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         int actElementsPerEx = inputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)

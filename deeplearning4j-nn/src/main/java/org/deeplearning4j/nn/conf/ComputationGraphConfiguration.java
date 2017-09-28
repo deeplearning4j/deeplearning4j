@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
-import org.deeplearning4j.nn.graph.vertex.Edge;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
@@ -983,6 +982,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        public GraphBuilder add(String layerName, Layer layer, String... layerInputs){
+            return layer(layerName, layer, layerInputs);
+        }
+
+        @Deprecated
+        public GraphBuilder addVertex(String vertexName, Layer vertex, String... vertexInputs){
+            return layer(vertexName, vertex, vertexInputs);
+        }
+
         /**
          * Add a {@link GraphVertex} to the network configuration. A GraphVertex defines forward and backward pass methods,
          * and can contain a {@link LayerVertex}, a {@link org.deeplearning4j.nn.conf.graph.ElementWiseVertex} to do element-wise
@@ -993,12 +1001,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param vertexName   The name of the GraphVertex to add
          * @param vertex       The GraphVertex to add
          * @param vertexInputs The inputs/activations to this GraphVertex
+         * @deprecated Use
          */
+        @Deprecated
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
             vertices.put(vertexName, vertex);
 
             //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
-            if (vertex.maxVertexInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
+            if (vertex.maxInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
                 String mergeName = vertexName + "-merge";
                 addVertex(mergeName, new MergeVertex(), vertexInputs);
                 this.vertexInputs.put(vertexName, Collections.singletonList(mergeName));

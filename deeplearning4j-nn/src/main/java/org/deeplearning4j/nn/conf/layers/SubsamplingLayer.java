@@ -163,10 +163,14 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
-        int actElementsPerEx = outputType.arrayElementsPerExample();
 
         //TODO Subsampling helper memory use... (CuDNN etc)
 

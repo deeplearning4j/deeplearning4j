@@ -87,6 +87,14 @@ public abstract class Layer implements Serializable, Cloneable {
         this.preProcessor = builder.preProcessor;
     }
 
+    public int minInputs(){
+        return 1;
+    }
+
+    public int maxInputs(){
+        return 1;
+    }
+
     /**
      * Initialize the weight constraints. Should be called last, in the outer-most constructor
      */
@@ -240,7 +248,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param inputType Input type to the layer. Memory consumption is often a function of the input type
      * @return Memory report for the layer
      */
-    public abstract LayerMemoryReport getMemoryReport(InputType inputType);
+    public abstract LayerMemoryReport getMemoryReport(InputType... inputType);
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {

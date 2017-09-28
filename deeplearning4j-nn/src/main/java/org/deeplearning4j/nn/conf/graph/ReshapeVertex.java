@@ -73,12 +73,12 @@ public class ReshapeVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -112,7 +112,7 @@ public class ReshapeVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Assume it's a reshape-with-copy op. In this case: memory use is accounted for in activations
         InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ReshapeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params

@@ -81,7 +81,7 @@ public class CustomLayer extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         throw new UnsupportedOperationException();
     }
 }

@@ -71,12 +71,12 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -124,7 +124,7 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Get op without dup - no additional memory use
         InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params

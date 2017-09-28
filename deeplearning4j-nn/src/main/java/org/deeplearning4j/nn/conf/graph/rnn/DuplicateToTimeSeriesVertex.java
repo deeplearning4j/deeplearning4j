@@ -65,12 +65,12 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 2;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 2;
     }
 
@@ -115,7 +115,7 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //No working memory in addition to output activations
         return new LayerMemoryReport.Builder(null, DuplicateToTimeSeriesVertex.class, inputTypes[0],
                         getOutputType(-1, inputTypes)[0])

@@ -72,12 +72,12 @@ public class L2NormalizeVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -100,7 +100,7 @@ public class L2NormalizeVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         InputType outputType = getOutputType(-1, inputTypes)[0];
         //norm2 value (inference working mem): 1 per example during forward pass
 

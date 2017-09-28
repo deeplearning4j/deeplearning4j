@@ -21,6 +21,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -111,7 +112,12 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         //For training: we'll assume unsupervised pretraining, as this has higher memory requirements
 
         InputType outputType = getOutputType(-1, inputType)[0];

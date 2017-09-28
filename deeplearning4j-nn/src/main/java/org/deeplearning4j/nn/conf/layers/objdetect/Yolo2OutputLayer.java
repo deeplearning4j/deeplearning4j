@@ -131,7 +131,11 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         long numValues = inputType.arrayElementsPerExample();
 
         //This is a VERY rough estimate...

@@ -64,12 +64,12 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -90,7 +90,7 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //TODO: eventually account for preprocessor memory use
 
         InputType outputType = getOutputType(-1, inputTypes)[0];

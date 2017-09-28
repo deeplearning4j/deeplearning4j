@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -90,8 +91,12 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
-        int actElementsPerEx = inputType.arrayElementsPerExample();
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         //During inference: not applied. During  backprop: dup the input, in case it's used elsewhere
         //But: this will be counted in the activations
         //(technically inference memory is over-estimated as a result)

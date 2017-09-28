@@ -20,13 +20,10 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -42,7 +39,7 @@ import java.util.Collection;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class ScaleVertex extends GraphVertex {
+public class ScaleVertex extends BaseGraphVertex {
 
     public ScaleVertex(@JsonProperty("scaleFactor") double scaleFactor) {
         this.scaleFactor = scaleFactor;
@@ -55,29 +52,27 @@ public class ScaleVertex extends GraphVertex {
         return new ScaleVertex(scaleFactor);
     }
 
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                              Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
 
         return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(name, layerIndex, numInputs, scaleFactor);
     }
+
+
 
     @Override
     public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
@@ -88,8 +83,10 @@ public class ScaleVertex extends GraphVertex {
         return new InputType[]{first}; //Same output shape/size as
     }
 
+
+
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Do one dup on the forward pass (output activations). Accounted for in output activations.
         InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ScaleVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params

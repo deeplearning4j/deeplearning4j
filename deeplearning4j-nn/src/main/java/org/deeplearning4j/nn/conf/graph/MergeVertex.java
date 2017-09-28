@@ -63,12 +63,12 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 2;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return Integer.MAX_VALUE;
     }
 
@@ -185,7 +185,7 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         InputType outputType = getOutputType(-1, inputTypes)[0];
 
         //TODO multiple input types

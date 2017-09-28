@@ -66,12 +66,12 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 2;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 2;
     }
 
@@ -94,7 +94,7 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         InputType outputType = getOutputType(-1, inputTypes)[0];
 
         //Inference: only calculation is for output activations; no working memory

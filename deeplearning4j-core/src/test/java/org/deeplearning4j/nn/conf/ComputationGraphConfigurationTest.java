@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -262,12 +263,12 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public int minVertexInputs() {
+        public int minInputs() {
             return 1;
         }
 
         @Override
-        public int maxVertexInputs() {
+        public int maxInputs() {
             return 1;
         }
 
@@ -283,7 +284,7 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public MemoryReport getMemoryReport(InputType... inputTypes) {
+        public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
             throw new UnsupportedOperationException();
         }
     }

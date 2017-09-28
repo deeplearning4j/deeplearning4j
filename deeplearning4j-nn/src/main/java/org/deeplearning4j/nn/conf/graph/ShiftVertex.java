@@ -74,12 +74,12 @@ public class ShiftVertex extends GraphVertex {
     }
 
     @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
@@ -102,7 +102,7 @@ public class ShiftVertex extends GraphVertex {
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Do one dup on the forward pass (output activations). Accounted for in output activations.
         InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ShiftVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
