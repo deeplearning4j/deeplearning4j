@@ -10,6 +10,7 @@
 #include <pointercast.h>
 #include <stdexcept>
 #include <memory>
+#include <climits>
 #include <helpers/logger.h>
 #include <loops/broadcasting.h>
 #include <indexing/NDIndex.h>
