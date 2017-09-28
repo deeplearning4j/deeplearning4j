@@ -462,23 +462,58 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     template<typename T>
     template<typename OpName>
     NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int> &dimensions) const {
-
-        std::vector<int> copy(dimensions);
-
+		
+		int dimSize = dimensions.size();
+		int rank = rankOf();
+		int newRank = rank - dimSize;
+		if(newRank<=0)
+			throw "NDArray::reduceAlongDimension method: the size of dimensions to reduce along must be < rank of array!";
+        
+		std::vector<int> copy(dimensions);
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
 
+		int* newShape = nullptr; 
+		
+		if (dimSize==1 && copy[0]==INT_MAX) { 			// check whether given dimension is meant for the whole dimension
+			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
+			newShape[0] = 2;
+			newShape[1] = 1;
+			newShape[2] = 1;			
+		}
+		else {
+			ALLOCATE(newShape, _workspace, newRank*2 + 4, int);
+			int* tempShape = shape::removeIndex(shapeOf(), copy.data(), rank, dimSize);
+			for(int i=0; i<newRank; ++i)
+				newShape[i+1] = tempShape[i]; 			// ignore zero index (rank)
+			delete []tempShape;
+		}		
+		//ensure vector is proper shape 
+		if (newRank == 1) {
+			int oldValue = newShape[1];
+			RELEASE(newShape, _workspace);
+			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
+			newShape[0] = 2;
+            if (dimensions[0] == 0) {
+                newShape[1] = 1; 
+				newShape[2] = oldValue;
+			}
+            else {
+                newShape[1] = oldValue;
+				newShape[2] = 1; 				
+			}
+        } 
+		shape::updateStrides(newShape, 'c');
 
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad(_shapeInfo, copy.data(), dimSize);
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        auto result = new NDArray<T>(1, tad.numTads, 'c', _workspace);
+        auto result = new NDArray<T>(newShape, _workspace);
 
         functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result->_buffer,
                                                                     result->_shapeInfo, copy.data(), copy.size(),
-                                                                    tad.tadOnlyShapeInfo, tad.tadOffsets);
-
+                                                                    tad.tadOnlyShapeInfo, tad.tadOffsets);		
         return result;
     }
 
@@ -524,6 +559,8 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     template<typename T>
     template<typename OpName>
     void NDArray<T>::applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams) {
+        if (other->lengthOf() != target->lengthOf())
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");     
         functions::pairwise_transforms::PairWiseTransform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo,
                                                                                     other->_buffer, other->_shapeInfo,
                                                                                     target->_buffer, target->_shapeInfo,
@@ -616,7 +653,7 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         return array;
     }
 
-// method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
+// method makes copy of this array and applies to the copy the transpose operation, this array remains unaffected 
 template <typename T> NDArray<T>* NDArray<T>::transpose() const {
     int *rearrange = new int[rankOf()];
     int cnt = 0;
@@ -840,13 +877,11 @@ T& NDArray<T>::operator()(const int i, const int j) {
     return _buffer[xOffset];
 }
 
-    template<typename T>
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
     void NDArray<T>::addRowVector(const NDArray<T> *row, NDArray<T>* target) {
-        if (rankOf() != 2)
-            throw std::invalid_argument("addRowVector can be called only for Matrix");
-
-        if (!shape::isRowVector(row->_shapeInfo))
-            throw std::invalid_argument("Argument should be row vector");
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
 
         int dimension[1] = {1};
 
@@ -857,17 +892,13 @@ T& NDArray<T>::operator()(const int i, const int j) {
         NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
-    }
-
+}
 //////////////////////////////////////////////////////////////////////////
-// This method adds given row to all rows in this NDArray, that is this array becomes affected
+// This method adds given row to all rows in this NDArray, this array becomes affected
     template<typename T>
     void NDArray<T>::addiRowVector(const NDArray<T> *row) {
-        if (rankOf() != 2)
-            throw std::invalid_argument("addiRowVector can be called only for Matrix");
-
-        if (!shape::isRowVector(row->_shapeInfo))
-            throw std::invalid_argument("Argument should be row vector");
+    if (rankOf() != 2 || !row->isRowVector() || columns() != row->columns())
+        throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
 
         int dimension[1] = {1};
 
@@ -881,14 +912,11 @@ T& NDArray<T>::operator()(const int i, const int j) {
     }
 
 //////////////////////////////////////////////////////////////////////////
-// This method adds given column to all columns in this NDArray, that is this array becomes affected
+// This method adds given column to all columns in this NDArray, this array becomes affected
     template<typename T>
     void NDArray<T>::addiColumnVector(const NDArray<T> *column) {
-        if (rankOf() != 2)
-            throw std::invalid_argument("addiRowVector can be called only for Matrix");
-
-        if (!shape::isColumnVector(column->_shapeInfo))
-            throw std::invalid_argument("Argument should be column vector");
+        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->rows())
+            throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
 
         int dimension[1] = {0};
 
@@ -903,14 +931,11 @@ T& NDArray<T>::operator()(const int i, const int j) {
 
 
 //////////////////////////////////////////////////////////////////////////
-// This method adds given column to all columns in this NDArray, that is this array becomes affected
+// This method multiplies each column of this array by given argument-column, this array becomes affected
     template<typename T>
     void NDArray<T>::muliColumnVector(const NDArray<T> *column) {
-        if (rankOf() != 2)
-            throw std::invalid_argument("muliColumnVector method can be called only for 2D matrix");
-
-        if (!column->isColumnVector())
-            throw std::invalid_argument("muliColumnVector method: argument should be column vector");
+        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->rows())
+            throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
 
         int dimension[1] = {0};
 
@@ -1021,7 +1046,7 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
     for (int i = 0; i < (int) shape.size(); i++) {
         if (shape[i] < 0) {
             if (numberNegativesOnes >= 1)
-                throw "Only one dimension can be negative ones";
+                throw "Only one dimension can be negative at once";
 
             numberNegativesOnes++;
 
@@ -1085,7 +1110,9 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
 
     return true;
 }
-    template <typename T>
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
     Nd4jIndex NDArray<T>::argMax(std::initializer_list<int> dimensions) {
         if (dimensions.size() == 0) {
             Nd4jIndex max = 0;
@@ -1101,7 +1128,7 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
             return max;
         } else
             throw "Not implemented yet";
-    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
@@ -1115,7 +1142,6 @@ template <typename T> NDArray<T>* NDArray<T>::reshape(const char order, const st
 	NDArray<T>* newArr = new NDArray<T>(_buffer, newShapeInfo, _workspace);
 	newArr->_isShapeAlloc = true;
 	newArr->_isBuffAlloc  = false;
-    newArr->_isView = true;
 	newArr->reshapei(order, shape);
 
 	return newArr;
@@ -1130,7 +1156,7 @@ template <typename T> void NDArray<T>::tilei(const std::vector<int>& reps) {
 	for(const auto& item : reps)
 		product *= item;
 	if(product == 0)
-		throw "Tile method: one of the elements in reps array is zero !";
+		throw "NDArray::tile method: one of the elements in reps array is zero !";
 	int rankOld = rankOf();
 	int diff = rankOld - dim;
 	if(product==1) {	    // in this case 2 possibilities are present: just reshape or nothing to do
@@ -1325,24 +1351,22 @@ NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
 
     int* shapeInfoNew;
 
-    if (_workspace == nullptr) {
+    if (_workspace == nullptr)         
         shapeInfoNew = new int[shapeInfoLength];
-    } else {
-        shapeInfoNew = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rankOf()));
-    }
+    else         
+        shapeInfoNew = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rankOf()));    
 
-	// copy this arrays _buffer and _shapeInfo into new array	
-	//memcpy(bufferNew, _buffer, buffLength*sizeOfT());
+	// copy this arrays  _shapeInfo into new array		
 	memcpy(shapeInfoNew, _shapeInfo, shapeInfoLength*sizeof(int));	
 	// perform buffer permutation	
 	shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));	
 
-        // create array to be returned
-    NDArray<T>* ret = new NDArray<T>(_buffer, shapeInfoNew, _workspace);
+    // create array to be returned
+    NDArray<T>* ret = new NDArray<T>(this->_buffer, shapeInfoNew, _workspace);
 	// don't forget to indicate that memory for new array was allocated
     ret->_isBuffAlloc = false;
     ret->_isShapeAlloc = true;
-    ret->_isView = true;
+	ret->_isView = true;
 
     return ret;
 }
@@ -1527,15 +1551,15 @@ NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {
 
 
 //////////////////////////////////////////////////////////////////////////
-// check whether array's rows (arg=0) or columns create orthogonal basis
+// check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
 template<typename T>
 bool NDArray<T>::hasOrthonormalBasis(const int arg) {
 
 	if(rankOf() !=2 )
-		throw "hasOrthBasis method: rank of ndarray is not equal 2 !";
+		throw "NDArray::hasOrthBasis method: rank of ndarray is not equal 2 !";
 
 	if(arg!=0  && arg!=1)
-		throw "hasOrthBasis method: input argument is not equal to 0 or 1 !";
+		throw "NDArray::hasOrthBasis method: input argument is not equal to 0 or 1 !";
 
 	const T eps = 1e-5f;
 	T dot = 0.f;

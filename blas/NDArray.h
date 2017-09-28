@@ -319,7 +319,7 @@ namespace nd4j {
         }
 
         // this method returns true if this ndarray is row vector
-        bool isRowVector() {
+        bool isRowVector() const {
             return !isScalar() && shape::isRowVector(this->_shapeInfo);
         }
 

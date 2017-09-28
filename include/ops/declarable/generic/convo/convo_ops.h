@@ -380,7 +380,7 @@ namespace nd4j {
 
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
 
-            STORE_RESULT(*z);
+            STORE_RESULT(*z);            
 
             z->printShapeInfo("MaxPool2D result shape");
 
@@ -475,7 +475,7 @@ namespace nd4j {
             int* inShape = inputShape->at(0);
             int* shapeOf = shape::shapeOf(inShape);
 
-            // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
+            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
             std::vector<int> argI = *(block.getIArguments());
             int kH = argI[0];
             int kW = argI[1];
@@ -519,17 +519,15 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 		// pnormpool2d corresponds to poolingMode=2	
-        DECLARE_CUSTOM_OP(pnormpool2d, 1, 1, false, 0, 14) {
+        DECLARE_CUSTOM_OP(pnormpool2d, 1, 1, false, 0, 10) {
 
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+			REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
-            // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T)2.f, (T)2.f, (T)1.f};
+            std::vector<int> argI = *(block.getIArguments()); // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - extraParam0 for pnorm case;
+            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T)2.f, (T)2.f, argI[9]};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - extraParam0 for pnorm case;
 
             auto z = this->getZ(block);
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
@@ -541,6 +539,44 @@ namespace nd4j {
 		DECLARE_SYN(PnormPool2D, pnormpool2d);
         DECLARE_SYN(PnormPool, pnormpool2d);
         DECLARE_SYN(pnormpool, pnormpool2d);
+	
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(pnormpool2d) {
+			int* inShape = inputShape->at(0);
+            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+            std::vector<int> argI = *(block.getIArguments());
+            int kH = argI[0];
+            int kW = argI[1];
+            int sH = argI[2];
+            int sW = argI[3];
+            int pH = argI[4];
+            int pW = argI[5];
+            int dH = argI[6];
+            int dW = argI[7];
+            int isSameMode = argI[8];
+
+            int bS = inShape[1];
+            int iD = inShape[2];
+            int iH = inShape[3];
+            int iW = inShape[4];
+
+            char order = shape::order(inShape); // output order must be equal to input order
+
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			// allocate memory for new shape
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = bS;
+			newShapeInfo[2] = iD;
+			newShapeInfo[3] = oH;
+			newShapeInfo[4] = oW;
+            shape::updateStrides(newShapeInfo, order);
+
+			return new ShapeList(newShapeInfo);
+		}	
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_CONFIGURABLE_OP(maxpool3d, 1, 2, true, 0, 13) {
@@ -1395,26 +1431,30 @@ namespace nd4j {
         }
 		
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CUSTOM_OP(maxpool2d_bp, 2, 1, false, 0, 14) {
+		DECLARE_CUSTOM_OP(maxpool2d_bp, 2, 1, false, 0, 9) {
 
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
 			NDArray<T>* epsilon = block.getVariables().at(1)->getNDArray();
 			NDArray<T>* outEpsilon = this->getZ(block);
-			std::vector<int> argI = *(block.getIArguments());
+			// 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+			std::vector<int> argI = *(block.getIArguments());			
+
+			int kH = argI[0];
+			int kW = argI[1];
+			int sH = argI[2];
+			int sW = argI[3];
+			int pH = argI[4];
+			int pW = argI[5];
+			int dH = argI[6];
+			int dW = argI[7];
+			int isSameMode = argI[8];
+
+			int bS = input->getShapeInfo()[1];
+			int iD = input->getShapeInfo()[2];
+			int iH = input->getShapeInfo()[3];
+			int iW = input->getShapeInfo()[4];
 			
-			int kH = argI[1];
-			int kW = argI[2];
-			int sH = argI[3];
-			int sW = argI[4];
-			int pH = argI[5];
-			int pW = argI[6];
-			int dH = argI[7];
-			int dW = argI[8];
-			int iH = argI[9];
-			int iW = argI[10];
-			int bS = argI[11];
-			int iD = argI[12];
-			int isSameMode = argI[13];
 			// calculate output Height/Width
 			int oH, oW;
 			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);			
@@ -1442,29 +1482,29 @@ namespace nd4j {
 			NDArray<T>* epsilon1d = nullptr;
 
 			if (cOrderStrides) {
-				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW});
+				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW}, block.getWorkspace());
 				col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
 				epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
 			}
 			else {
-				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW});
+				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW}, block.getWorkspace());
 				col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
 				NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
 				epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
 				delete epsilonTemp;
 			}
 
-			// NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
+			// NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW}, block.getWorkspace());
 
 			T extraParams1[] = {kW, kH, sW, sH, pW, pH, dW, dH};
 			input->template applyTransform<simdOps::Im2col<T>>(col6dPermuted, extraParams1);
 
 			//FIXME: this op should be moved to CustomOps
 			// T extraParams2[] = {(T)1.f, (T)1.f};
-			// col2d->template applyTransform<simdOps::IsMax<T>>(col2d, extraParams2);
+			// col2d->template applyTransform<simdOps::IsMax<T>>(extraParams2);
 			// col2d->muliColumnVector(epsilon1d);		
 
-			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW});
+			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW}, block.getWorkspace());
 			// NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
 			T extraParams3[] = {sW, sH, pW, pH, iH, iW, dW, dH};   			// ??? zeros
 			col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
@@ -1480,14 +1520,36 @@ namespace nd4j {
 
 			return ND4J_STATUS_OK;
         }
-	
+        DECLARE_SYN(MaxPool2D_bp, maxpool2d_bp);
+        DECLARE_SYN(MaxPool_bp, maxpool2d_bp);
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(maxpool2d_bp) {
+			int* inShape = inputShape->at(0);
+			int bS = inShape[1];
+			int iD = inShape[2];
+			int iH = inShape[3];
+			int iW = inShape[4];
+			// calculate output Height/Width
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = iD;
+			newShapeInfo[2] = bS;
+			newShapeInfo[3] = iH;
+			newShapeInfo[4] = iW;
+            shape::updateStrides(newShapeInfo, 'c');
+			int dimensions[] = {1, 0, 2, 3};
+			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
+			return new ShapeList(newShapeInfo);
+		}	
+
 		//////////////////////////////////////////////////////////////////////////
 		DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1) {			
-			// T *dx,
-			// int *xShapeBuffer,
-			// T *result,
-			// int *resultShapeBuffer,
-			// T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets
+
+			REQUIRE_OK(this->validateInputLengthMatch(block));
+            REQUIRE_OK(this->validateInputDimensionsMatch(block));
+
 			NDArray<T>* x = block.getVariables().at(0)->getNDArray();			
 			NDArray<T>* z = this->getZ(block);
 			std::vector<int> dimensions = *(block.getIArguments());			// argI
@@ -1706,26 +1768,26 @@ namespace nd4j {
             }
 			return ND4J_STATUS_OK;
 		}
+        DECLARE_SYN(IsMax, ismax);        
 
 		//////////////////////////////////////////////////////////////////////////        
-        DECLARE_CUSTOM_OP(pooling2d, 1, 1, false, 1, 15) {
+        DECLARE_CUSTOM_OP(pooling2d, 1, 1, false, 0, 11) {
 
-			REQUIRE_OK(this->validateInputLengthMatch(block));
-            REQUIRE_OK(this->validateInputDimensionsMatch(block));
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
-            std::vector<int> argI = *(block.getIArguments());				// 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode; 14 - pooling mode
-			std::vector<T> argT = *(block.getTArguments());					// 0 - divisor for pnorm mode -> extraParam0
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
+			REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());            
+            std::vector<int> argI = *(block.getIArguments());				// 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - pooling mode; 10 - divisor extraParam0 for pnorm case			
             auto z = this->getZ(block);
-			int kH = argT[1];
-			int kW = argT[2];
-			int sH = argI[3];
-			int sW = argI[4];
-			int pH = argI[5];
-			int pW = argI[6];
-			int dH = argI[7];			//Dilation, height dimension
-			int dW = argI[8];			//Dilation, width dimension
-			int poolingMode = argI[14];;
-			T extraParam0 = argT[0];
+			
+			int kH = argI[0];
+			int kW = argI[1];
+			int sH = argI[2];
+			int sW = argI[3];
+			int pH = argI[4];
+			int pW = argI[5];
+			int dH = argI[6];			//Dilation, height dimension
+			int dW = argI[7];			//Dilation, width dimension
+			int poolingMode = argI[9];
+			T extraParam0 = (int)argI[10];
 
 			int kSize = kW * kH;
 
@@ -1841,28 +1903,70 @@ namespace nd4j {
 			delete im2colShapeInfo;
 			return ND4J_STATUS_OK;
 		}
+		DECLARE_SYN(Pooling2D, pooling2d);
 		
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CUSTOM_OP(avgpool2d_bp, 2, 1, false, 0, 14) {
+		DECLARE_SHAPE_FN(pooling2d) {
+			int* inShape = inputShape->at(0);            
+			// 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - pooling mode; 
+			std::vector<int> argI = *(block.getIArguments());			
+			int kH = argI[0];
+			int kW = argI[1];
+			int sH = argI[2];
+			int sW = argI[3];
+			int pH = argI[4];
+			int pW = argI[5];
+			int dH = argI[6];
+			int dW = argI[7];
+			int isSameMode = argI[8];
 
+            int bS = inShape[1];
+            int iD = inShape[2];
+            int iH = inShape[3];
+            int iW = inShape[4];
+			
+			char order = shape::order(inShape); // output order must be equal to input order
+
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			// allocate memory for new shape
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = bS;
+			newShapeInfo[2] = iD;
+			newShapeInfo[3] = oH;
+			newShapeInfo[4] = oW;
+            shape::updateStrides(newShapeInfo, order);
+
+			return new ShapeList(newShapeInfo);
+		}
+		
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_CUSTOM_OP(avgpool2d_bp, 2, 1, false, 0, 9) {
+			
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+			REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
 			NDArray<T>* epsilon = block.getVariables().at(1)->getNDArray();
 			NDArray<T>* outEpsilon = this->getZ(block);
 			std::vector<int> argI = *(block.getIArguments());
 			
-			int kH = argI[1];
-			int kW = argI[2];
-			int sH = argI[3];
-			int sW = argI[4];
-			int pH = argI[5];
-			int pW = argI[6];
-			int dH = argI[7];
-			int dW = argI[8];
-			int iH = argI[9];
-			int iW = argI[10];
-			int bS = argI[11];
-			int iD = argI[12];
-			int isSameMode = argI[13];
+			int kH = argI[0];
+			int kW = argI[1];
+			int sH = argI[2];
+			int sW = argI[3];
+			int pH = argI[4];
+			int pW = argI[5];
+			int dH = argI[6];
+			int dW = argI[7];
+			int isSameMode = argI[8];
+			
+			int bS = input->getShapeInfo()[1];
+			int iD = input->getShapeInfo()[2];
+			int iH = input->getShapeInfo()[3];
+			int iW = input->getShapeInfo()[4];
+						
 			// calculate output Height/Width
 			int oH, oW;
 			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);			
@@ -1890,22 +1994,22 @@ namespace nd4j {
 			NDArray<T>* epsilon1d = nullptr;
 
 			if (cOrderStrides) {
-				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW});
+				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW}, block.getWorkspace());
 				col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
 				epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
 			}
 			else {
-				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW});
+				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW}, block.getWorkspace());
 				col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
 				NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
 				epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
 				delete epsilonTemp;
 			}
 
-			// NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});			
+			// NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW}, block.getWorkspace());			
 			// col2d->addiColumnVector(epsilon1d);		
 
-			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW});
+			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW}, block.getWorkspace());
 			// NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
 			T extraParams3[] = {sW, sH, pW, pH, iH, iW, dW, dH};   			// ??? zeros
 			col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
@@ -1922,8 +2026,168 @@ namespace nd4j {
 
 			return ND4J_STATUS_OK;
         }
-	
 
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(avgpool2d_bp) {
+			int* inShape = inputShape->at(0);            
+            int bS = inShape[1];
+            int iD = inShape[2];
+            int iH = inShape[3];
+            int iW = inShape[4];
+
+			// calculate output Height/Width
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = iD;
+			newShapeInfo[2] = bS;
+			newShapeInfo[3] = iH;
+			newShapeInfo[4] = iW;
+            shape::updateStrides(newShapeInfo, 'c');
+			int dimensions[] = {1, 0, 2, 3};
+			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
+			return new ShapeList(newShapeInfo);
+		}	
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_CUSTOM_OP(pnormpool2d_bp, 2, 1, false, 1, 10) {
+			
+            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+			NDArray<T>* epsilon = block.getVariables().at(1)->getNDArray();
+			NDArray<T>* outEpsilon = this->getZ(block);
+			std::vector<int> argI = *(block.getIArguments());
+			std::vector<T>   argT = *(block.getTArguments());
+			
+			int kH = argI[0];
+			int kW = argI[1];
+			int sH = argI[2];
+			int sW = argI[3];
+			int pH = argI[4];
+			int pW = argI[5];
+			int dH = argI[6];
+			int dW = argI[7];			
+			int isSameMode = argI[8];
+			int pnorm = argI[9];
+			T eps = argT[0];
+		
+			int bS = input->getShapeInfo()[1];
+			int iD = input->getShapeInfo()[2];
+			int iH = input->getShapeInfo()[3];
+			int iW = input->getShapeInfo()[4];
+			
+			// calculate output Height/Width
+			int oH, oW;
+			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);			
+
+			bool cOrderStrides = false;
+			bool isEpsilonDup = false;
+			if (epsilon->ordering() != 'c') {
+				epsilon = epsilon->dup('c');
+				cOrderStrides = true;
+				isEpsilonDup = true;
+			}
+
+			int strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
+			if (!cOrderStrides && shape::strideDescendingCAscendingF(epsilon->getShapeInfo())) {
+				cOrderStrides = true;
+			}
+			else if (!shape::strideEquals(strideToCompare, 4, epsilon->stridesOf(), epsilon->rankOf())) {
+				epsilon = epsilon->dup('c');
+				cOrderStrides = true;
+				isEpsilonDup = true;
+			}
+
+			NDArray<T>* col6d = nullptr;
+			NDArray<T>* col6dPermuted = nullptr;
+			NDArray<T>* epsilon1d = nullptr;
+
+			if (cOrderStrides) {
+				col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW}, block.getWorkspace());
+				col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
+				epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
+			}
+			else {
+				col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW}, block.getWorkspace());
+				col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
+				NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
+				epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
+				delete epsilonTemp;
+			}
+
+			NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
+
+			T extraParams1[] = {kW, kH, sW, sH, pW, pH, dW, dH};
+			input->template applyTransform<simdOps::Im2col<T>>(col6dPermuted, extraParams1);
+						
+			NDArray<T>* pNorm = new NDArray<T>(col2d->getShapeInfo(), block.getWorkspace()); 
+            col2d->template applyTransform<simdOps::Abs<T>>(pNorm, nullptr); 
+			
+			T extraParams11[] = {(T)pnorm};
+			pNorm->template applyTransform<simdOps::Pow<T>>(extraParams11);
+			*pNorm = *(pNorm->sum({1}));
+			T extraParams2[] = {1.f/pnorm};
+			pNorm->template applyTransform<simdOps::Pow<T>>(extraParams2);
+			
+			NDArray<T>* numerator = new NDArray<T>(col2d->getShapeInfo(), block.getWorkspace());
+            if (pnorm != 2) {
+				NDArray<T>* absp2 = new NDArray<T>(col2d->getShapeInfo(), block.getWorkspace());
+				col2d->template applyTransform<simdOps::Abs<T>>(absp2, nullptr);
+				T extraParams3[] = {pnorm - 2};
+				absp2->template applyTransform<simdOps::Pow<T>>(extraParams3);
+				nd4j::NDArrayFactory::mmulHelper(col2d, absp2, numerator, (T)1.f, (T)0.f);                
+				delete absp2;
+            }
+			NDArray<T>* denom = new NDArray<T>(pNorm->getShapeInfo(), block.getWorkspace()); 
+			T extraParams4[] = {pnorm - 1};
+
+			pNorm->template applyTransform<simdOps::Pow<T>>(denom, extraParams4);
+            denom->template applyScalar<simdOps::Max<T>>(eps); // in case of 0
+			denom->template applyPairwiseTransform<simdOps::Divide<T>>(epsilon1d, denom, nullptr);
+			numerator->muliColumnVector(denom);
+
+			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW});
+			// NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
+			T extraParams5[] = {sW, sH, pW, pH, iH, iW, dW, dH};   			// ??? zeros
+			col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams5);
+
+			STORE_RESULT(*outEpsilon);
+
+			if(isEpsilonDup)
+				delete epsilon;
+			delete col6d;
+			delete col6dPermuted;
+			delete epsilon1d;
+			delete pNorm;	
+			delete numerator;
+			delete denom;
+            delete col2d;
+
+			return ND4J_STATUS_OK;
+        }
+
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_SHAPE_FN(pnormpool2d_bp) {
+
+			int* inShape = inputShape->at(0);            
+            int bS = inShape[1];
+            int iD = inShape[2];
+            int iH = inShape[3];
+            int iW = inShape[4];
+
+			// calculate output Height/Width
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+			newShapeInfo[0] = 4;		// rank
+			newShapeInfo[1] = iD;
+			newShapeInfo[2] = bS;
+			newShapeInfo[3] = iH;
+			newShapeInfo[4] = iW;
+            shape::updateStrides(newShapeInfo, 'c');
+			int dimensions[] = {1, 0, 2, 3};
+			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
+			return new ShapeList(newShapeInfo);
+		}	
+		
 		
 
     }
