@@ -20,7 +20,7 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS  " -Wall -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
+set(CMAKE_CXX_FLAGS  " -Wall -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations -Wa,-mbig-obj ")
 
 
 if (APPLE)
