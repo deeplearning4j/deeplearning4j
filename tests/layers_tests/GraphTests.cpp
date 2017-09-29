@@ -961,3 +961,48 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
     ASSERT_EQ((25 + 100) * x->sizeOfT(), memReq);
 }
+
+TEST_F(GraphTests, TestGraphInGraph_1) {
+    // this one is external graph
+    Graph<float> graphA;
+
+    // and this ons is embedded
+    Graph<float> graphB;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-5.0);
+
+    auto modifier = new NDArray<float>(5,5, 'c');
+    modifier->assign(3.0);
+
+    graphA.getVariableSpace()->putVariable(-1, x);
+    graphB.getVariableSpace()->putVariable(-2, modifier);
+
+    // this is placeholder variable
+    graphB.getVariableSpace()->putVariable(-1, new Variable<float>(true));
+
+
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 25, 2, {1}, {3});
+    auto nodeA2 = new Node<float>(OpType_GRAPH, -1, 3, {2}, {4});
+    auto nodeA3 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+
+    nodeA2->setGraph(&graphB);
+
+    graphA.addNode(nodeA0);
+    graphA.addNode(nodeA1);
+    graphA.addNode(nodeA2);
+    graphA.addNode(nodeA3);
+
+    auto nodeB0 = new Node<float>(OpType_TRANSFORM, 25, 1, {-1, -2}, {2});
+    auto nodeB1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {});
+
+    graphB.addNode(nodeB0);
+    graphB.addNode(nodeB1);
+
+    graphB.buildGraph();
+    graphA.buildGraph();
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(&graphA);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+}

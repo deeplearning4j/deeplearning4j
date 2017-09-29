@@ -63,8 +63,9 @@ namespace nd4j{
 
                 /**
                  * basically, we should do following things here:
-                 * 1) invoke embedded graph
-                 * 2) announce its results as corresponding output variables in current VariableSpace
+                 * 1) fill embedded graph with input variables from this graph, if anything should be filled in
+                 * 2) invoke embedded graph
+                 * 3) announce its results as corresponding output variables in current VariableSpace
                  */
 
                 // enforcing IMPLICIT mode. or not... should we try to be smarter then user?

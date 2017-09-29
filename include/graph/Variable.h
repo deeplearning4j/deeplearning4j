@@ -21,8 +21,10 @@ namespace nd4j {
 
             bool _external;
             bool _readOnly;
+            bool _placeholder = false;
 
         public:
+            Variable(bool placeHolder);
             Variable(nd4j::NDArray<T> *array = nullptr);
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
@@ -34,6 +36,9 @@ namespace nd4j {
             bool isReadOnly();
             bool isEmpty();
 
+            bool isPlaceholder();
+            bool hasNDArray();
+
             void markExternal(bool reallyExternal);
             void markReadOnly(bool reallyReadOnly);
 
@@ -44,6 +49,16 @@ namespace nd4j {
             void setName(std::string *name);
         };
     }
+}
+
+template <typename T>
+bool nd4j::graph::Variable<T>::hasNDArray() {
+    return _ndarray != nullptr;
+}
+
+template <typename T>
+bool nd4j::graph::Variable<T>::isPlaceholder() {
+    return _placeholder;
 }
 
 template <typename T>
@@ -128,6 +143,11 @@ nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable
 
     _ndarray = new NDArray<T>(buffer, shape);
     _ndarray->triggerAllocationFlag(true, true);
+}
+
+template <typename T>
+nd4j::graph::Variable<T>::Variable(bool placeholder) {
+    _placeholder = placeholder;
 }
 
 template <typename T>
