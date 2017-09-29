@@ -39,9 +39,9 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     private int[] padding; // [padLeft, padRight]
 
-    public ZeroPadding1DLayer(NeuralNetConfiguration conf) {
+    public ZeroPadding1DLayer(org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer conf) {
         super(conf);
-        this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer) conf.getLayer()).getPadding();
+        this.padding = conf.getPadding();
     }
 
     @Override
@@ -84,6 +84,6 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Layer clone() {
-        return new ZeroPadding1DLayer(conf.clone());
+        return new ZeroPadding1DLayer((org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer)conf.clone());
     }
 }

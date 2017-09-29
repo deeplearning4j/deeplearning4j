@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -67,7 +68,7 @@ public class LSTMHelpers {
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all
      */
-    static public FwdPassReturn activateHelper(final BaseLayer layer, final NeuralNetConfiguration conf,
+    static public FwdPassReturn activateHelper(final BaseLayer layer, final Layer conf,
                     final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
                     final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
@@ -391,7 +392,7 @@ public class LSTMHelpers {
         return toReturn;
     }
 
-    public static Gradients backpropGradientHelper(final NeuralNetConfiguration conf,
+    public static Gradients backpropGradientHelper(final Layer conf,
                     final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
@@ -472,7 +473,7 @@ public class LSTMHelpers {
         }
 
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
+        IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf).getActivationFn();
 
         // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()

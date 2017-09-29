@@ -60,7 +60,7 @@ public class GravesBidirectionalLSTM
     protected FwdPassReturn cachedPassForward;
     protected FwdPassReturn cachedPassBackward;
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
+    public GravesBidirectionalLSTM(org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM conf) {
         super(conf);
     }
 

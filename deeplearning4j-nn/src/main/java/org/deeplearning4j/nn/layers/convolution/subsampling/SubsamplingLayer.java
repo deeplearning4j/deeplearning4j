@@ -59,11 +59,10 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     protected SubsamplingHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
-    public SubsamplingLayer(NeuralNetConfiguration conf) {
+    public SubsamplingLayer(org.deeplearning4j.nn.conf.layers.SubsamplingLayer conf) {
         super(conf);
         initializeHelper();
-        this.convolutionMode =
-                        ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
+        this.convolutionMode = conf.getConvolutionMode();
     }
 
     void initializeHelper() {

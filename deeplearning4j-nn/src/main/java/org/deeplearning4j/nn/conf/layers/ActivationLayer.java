@@ -31,7 +31,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     protected ActivationLayer(Builder builder) {
         super(builder);
         this.activationFn = builder.activationFn;
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     @Override
@@ -41,16 +41,15 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
-        org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf);
+        org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

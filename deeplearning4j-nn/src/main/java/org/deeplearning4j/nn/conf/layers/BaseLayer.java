@@ -21,10 +21,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.LearningRatePolicy;
-import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -44,17 +41,17 @@ import java.util.Map;
 public abstract class BaseLayer extends Layer implements Serializable, Cloneable {
     protected IActivation activationFn;
     protected WeightInit weightInit;
-    protected double biasInit;
+    protected Double biasInit;
     protected Distribution dist;
-    protected double l1;
-    protected double l2;
-    protected double l1Bias;
-    protected double l2Bias;
+    protected Double l1;
+    protected Double l2;
+    protected Double l1Bias;
+    protected Double l2Bias;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected IWeightNoise weightNoise;
-    protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
-    protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
+    protected GradientNormalization gradientNormalization; //Clipping, rescale based on l2 norm, etc
+    protected Double gradientNormalizationThreshold; //Threshold for l2 and element-wise gradient clipping
 
 
     public BaseLayer(Builder builder) {
@@ -73,6 +70,37 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
         this.weightNoise = builder.weightNoise;
+    }
+
+
+    public void applyGlobalConfiguration(GlobalConfiguration c){
+        super.applyGlobalConfiguration(c);
+        if(activationFn == null)
+            activationFn = c.getActivationFn();
+        if(weightInit == null)
+            weightInit = c.getWeightInit();
+        if(biasInit == null)
+            biasInit = c.getBiasInit();
+        if(dist == null)
+            dist = c.getDist();
+        if(l1 == null)
+            l1 = c.getL1();
+        if(l2 == null)
+            l2 = c.getL2();
+        if(l1Bias == null)
+            l1Bias = c.getL1Bias();
+        if(l2Bias == null)
+            l2Bias = c.getL2Bias();
+        if(iUpdater == null)
+            iUpdater = c.getUpdater();
+        if(biasUpdater == null)
+            biasUpdater = c.getBiasUpdater();
+        if(weightNoise == null)
+            weightNoise = c.getWeightNoise();
+        if(gradientNormalization == null)
+            gradientNormalization = c.getGradientNormalization();
+        if(gradientNormalizationThreshold == null)
+            gradientNormalizationThreshold = c.getGradientNormalizationThreshold();
     }
 
     /**

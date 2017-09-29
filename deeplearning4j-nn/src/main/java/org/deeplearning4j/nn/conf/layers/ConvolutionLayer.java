@@ -107,7 +107,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
 
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     public boolean hasBias(){
@@ -127,19 +127,18 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

@@ -63,10 +63,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
 
-    public ConvolutionLayer(NeuralNetConfiguration conf) {
+    public ConvolutionLayer(org.deeplearning4j.nn.conf.layers.ConvolutionLayer conf) {
         super(conf);
         initializeHelper();
-        convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf().getLayer()).getConvolutionMode();
+        convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf()).getConvolutionMode();
     }
 
     void initializeHelper() {
@@ -251,7 +251,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
-            String layerName = conf.getLayer().getLayerName();
+            String layerName = conf.getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -269,7 +269,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         if (input.size(1) != inDepth) {
-            String layerName = conf.getLayer().getLayerName();
+            String layerName = conf.getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName

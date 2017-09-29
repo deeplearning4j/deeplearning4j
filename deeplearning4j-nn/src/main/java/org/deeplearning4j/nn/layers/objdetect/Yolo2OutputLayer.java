@@ -76,7 +76,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     private double fullNetworkL2;
     private double score;
 
-    public Yolo2OutputLayer(NeuralNetConfiguration conf) {
+    public Yolo2OutputLayer(org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer conf) {
         super(conf);
     }
 

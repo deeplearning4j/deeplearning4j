@@ -36,17 +36,16 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
                                                        String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(this);
 //        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

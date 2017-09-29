@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -81,6 +82,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected List<LayerConstraint> constraints;
     protected InputPreProcessor preProcessor;
     protected long seed;
+    protected CacheMode cacheMode;
 
 
     public Layer(Builder builder) {
@@ -100,28 +102,30 @@ public abstract class Layer implements Serializable, Cloneable {
     /**
      * Initialize the weight constraints. Should be called last, in the outer-most constructor
      */
-    protected void initializeConstraints(Builder<?> builder){
+    protected void initializeConstraints(List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> weightConstraints,
+                                         List<LayerConstraint> biasConstraints){
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
-        if (builder.allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
-            for (LayerConstraint c : builder.allParamConstraints) {
+        if (allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
+            for (LayerConstraint c : allParamConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().paramKeys(this)));
                 allConstraints.add(c2);
             }
         }
 
-        if (builder.weightConstraints != null && initializer().weightKeys(this).size() > 0) {
-            for (LayerConstraint c : builder.weightConstraints) {
+        if (weightConstraints != null && initializer().weightKeys(this).size() > 0) {
+            for (LayerConstraint c : weightConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().weightKeys(this)));
                 allConstraints.add(c2);
             }
         }
 
-        if (builder.biasConstraints != null && initializer().biasKeys(this).size() > 0) {
-            for (LayerConstraint c : builder.biasConstraints) {
+        if (biasConstraints != null && initializer().biasKeys(this).size() > 0) {
+            for (LayerConstraint c : biasConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().biasKeys(this)));
                 allConstraints.add(c2);
@@ -132,15 +136,15 @@ public abstract class Layer implements Serializable, Cloneable {
         } else {
             this.constraints = null;
         }
-        this.iDropout = builder.iDropout;
     }
 
-    public void applyGlobalConfiguration(GlobalConfiguration globalConfiguration){
+    public void applyGlobalConfiguration(GlobalConfiguration c){
         if(iDropout == null)
-            iDropout = globalConfiguration.getDropOut();
-//        if(constraints == null)   //TODO
-
-
+            iDropout = c.getDropOut();
+        if(constraints == null )
+            initializeConstraints(c.getAllParamConstraints(), c.getWeightConstraints(), c.getBiasConstraints());
+        if(cacheMode == null)
+            cacheMode = c.getCacheMode();
     }
 
     /**

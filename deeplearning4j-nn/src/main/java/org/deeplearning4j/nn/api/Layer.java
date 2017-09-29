@@ -136,7 +136,9 @@ public interface Layer {
     double calcL1(boolean backpropOnlyParams);
 
 
+    void setConf(org.deeplearning4j.nn.conf.layers.Layer layer);
 
+    org.deeplearning4j.nn.conf.layers.Layer conf();
 
 
     // ----- Forward Pass Methods -----

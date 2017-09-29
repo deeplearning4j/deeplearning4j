@@ -51,7 +51,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     protected LSTMHelper helper = null;
     protected FwdPassReturn cachedFwdPass;
 
-    public LSTM(NeuralNetConfiguration conf) {
+    public LSTM(org.deeplearning4j.nn.conf.layers.LSTM conf) {
         super(conf);
         initializeHelper();
     }

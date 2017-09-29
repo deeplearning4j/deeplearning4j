@@ -49,7 +49,7 @@ import java.util.Arrays;
 public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
     private static final int[] DIM_1 = new int[]{1};
 
-    public EmbeddingLayer(NeuralNetConfiguration conf) {
+    public EmbeddingLayer(org.deeplearning4j.nn.conf.layers.EmbeddingLayer conf) {
         super(conf);
     }
 

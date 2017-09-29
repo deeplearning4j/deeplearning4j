@@ -47,7 +47,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected int inputMinibatchSize;   //TODO eventially this field should be removed somehow...
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     protected INDArray preOutput;
-    protected NeuralNetConfiguration conf;
+    protected org.deeplearning4j.nn.conf.layers.Layer conf;
     protected boolean preprocessorApplied = false;
     protected boolean dropoutApplied = false;
     @Getter @Setter
@@ -59,7 +59,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected int iterationCount;
     protected int epochCount;
 
-    public AbstractLayer(NeuralNetConfiguration conf) {
+    public AbstractLayer(org.deeplearning4j.nn.conf.layers.Layer conf) {
         this.conf = conf;
         cacheMode = conf.getCacheMode();
     }
@@ -76,7 +76,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public String getName(){
-        return conf.getLayer().getLayerName();
+        return conf.getLayerName();
     }
 
     @Override
@@ -88,7 +88,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected LayerConfT layerConf() {
-        return (LayerConfT) this.conf.getLayer();
+        return (LayerConfT) this.conf;
     }
 
     protected String layerId() {
@@ -114,7 +114,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void setConf(NeuralNetConfiguration conf) {
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
         this.conf = conf;
     }
 
@@ -212,7 +212,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public NeuralNetConfiguration conf() {
+    public org.deeplearning4j.nn.conf.layers.Layer conf() {
         return conf;
     }
 
@@ -297,7 +297,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public InputPreProcessor getPreProcessor() {
         if(conf != null){
-            return conf.getLayer().getPreProcessor();
+            return conf.getPreProcessor();
         }
         return null;
     }

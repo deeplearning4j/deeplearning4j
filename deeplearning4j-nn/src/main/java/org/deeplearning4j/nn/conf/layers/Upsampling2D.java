@@ -59,17 +59,16 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
                                                        String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D ret =
-                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

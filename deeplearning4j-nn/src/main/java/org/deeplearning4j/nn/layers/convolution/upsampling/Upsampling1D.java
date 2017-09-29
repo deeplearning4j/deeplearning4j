@@ -40,7 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class Upsampling1D extends Upsampling2D {
 
 
-    public Upsampling1D(NeuralNetConfiguration conf) {
+    public Upsampling1D(org.deeplearning4j.nn.conf.layers.Upsampling1D conf) {
         super(conf);
     }
 

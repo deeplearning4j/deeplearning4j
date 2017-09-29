@@ -37,7 +37,7 @@ import java.util.Collection;
  */
 public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> {
 
-    public OutputLayer(NeuralNetConfiguration conf) {
+    public OutputLayer(org.deeplearning4j.nn.conf.layers.OutputLayer conf) {
         super(conf);
     }
 

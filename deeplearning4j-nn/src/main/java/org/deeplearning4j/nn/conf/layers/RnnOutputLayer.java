@@ -30,19 +30,18 @@ public class RnnOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

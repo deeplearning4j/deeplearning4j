@@ -52,16 +52,13 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     private final PoolingType poolingType;
     private final int pNorm;
 
-    public GlobalPoolingLayer(NeuralNetConfiguration conf) {
+    public GlobalPoolingLayer(org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer conf) {
         super(conf);
 
-        org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
-
-        poolingDimensions = layerConf.getPoolingDimensions();
-        collapseDimensions = layerConf.isCollapseDimensions();
-        poolingType = layerConf.getPoolingType();
-        pNorm = layerConf.getPnorm();
+        poolingDimensions = conf.getPoolingDimensions();
+        collapseDimensions = conf.isCollapseDimensions();
+        poolingType = conf.getPoolingType();
+        pNorm = conf.getPnorm();
     }
 
     @Override
@@ -183,7 +180,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Layer clone() {
-        return new GlobalPoolingLayer(conf);
+        return new GlobalPoolingLayer((org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer)conf);
     }
 
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim) {

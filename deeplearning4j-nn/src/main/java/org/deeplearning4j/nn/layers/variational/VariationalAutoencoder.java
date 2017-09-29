@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.layers.variational;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
@@ -11,7 +10,6 @@ import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.variational.CompositeReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
@@ -65,14 +63,13 @@ public class VariationalAutoencoder implements Model {
     protected Map<String, INDArray> params;
     @Getter
     protected transient Map<String, INDArray> gradientViews;
-    protected NeuralNetConfiguration conf;
+    protected org.deeplearning4j.nn.conf.layers.Layer conf;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TrainingListener> trainingListeners = null;
     protected int index = 0;
-//    protected INDArray maskArray;
     protected Solver solver;
 
     protected int[] encoderLayerSizes;
@@ -91,26 +88,18 @@ public class VariationalAutoencoder implements Model {
     @Getter @Setter
     protected int epochCount;
 
-    public VariationalAutoencoder(NeuralNetConfiguration conf) {
+    public VariationalAutoencoder(org.deeplearning4j.nn.conf.layers.Layer conf) {
         this.conf = conf;
 
-        this.encoderLayerSizes =
-                        ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                                        .getEncoderLayerSizes();
-        this.decoderLayerSizes =
-                        ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                                        .getDecoderLayerSizes();
-        this.reconstructionDistribution =
-                        ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                                        .getOutputDistribution();
-        this.pzxActivationFn = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                        .getPzxActivationFn();
-        this.numSamples = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                        .getNumSamples();
+        this.encoderLayerSizes = layerConf().getEncoderLayerSizes();
+        this.decoderLayerSizes = layerConf().getDecoderLayerSizes();
+        this.reconstructionDistribution = layerConf().getOutputDistribution();
+        this.pzxActivationFn = layerConf().getPzxActivationFn();
+        this.numSamples = layerConf().getNumSamples();
     }
 
     protected org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder layerConf() {
-        return (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf().getLayer();
+        return (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf;
     }
 
     @Override
@@ -132,7 +121,7 @@ public class VariationalAutoencoder implements Model {
     }
 
     protected String layerId() {
-        String name = this.conf().getLayer().getLayerName();
+        String name = this.conf().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
 
@@ -548,7 +537,7 @@ public class VariationalAutoencoder implements Model {
         }
 
         this.gradientsFlattened = gradients;
-        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf, gradients);
+        this.gradientViews = conf.initializer().getGradientsFromFlattened(conf, gradients);
     }
 
     @Override
@@ -587,12 +576,12 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public NeuralNetConfiguration conf() {
+    public org.deeplearning4j.nn.conf.layers.Layer conf() {
         return conf;
     }
 
     @Override
-    public void setConf(NeuralNetConfiguration conf) {
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
         this.conf = conf;
     }
 

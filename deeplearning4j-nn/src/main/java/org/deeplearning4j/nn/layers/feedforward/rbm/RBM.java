@@ -74,7 +74,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
     private long seed;
 
-    public RBM(NeuralNetConfiguration conf) {
+    public RBM(org.deeplearning4j.nn.conf.layers.RBM conf) {
         super(conf);
         this.seed = conf.getSeed();
     }

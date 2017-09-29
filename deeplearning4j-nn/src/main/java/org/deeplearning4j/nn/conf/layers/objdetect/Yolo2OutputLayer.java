@@ -71,12 +71,11 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
-        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret = new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf);
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret = new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
         return ret;
     }
 

@@ -21,7 +21,6 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -52,22 +51,21 @@ public class AutoEncoder extends BasePretrainNetwork {
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder ret =
-                        new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(this);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

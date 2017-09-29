@@ -49,12 +49,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
 
-    public BaseLayer(NeuralNetConfiguration conf) {
+    public BaseLayer(org.deeplearning4j.nn.conf.layers.BaseLayer conf) {
         super(conf);
     }
 
     public LayerConfT layerConf() {
-        return (LayerConfT) this.conf.getLayer();
+        return (LayerConfT) this.conf;
     }
 
     @Override
@@ -139,7 +139,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     protected void setParams(INDArray params, char order) {
-        List<String> parameterList = conf.variables();
+        List<String> parameterList = conf.initializer().paramKeys(conf);
         int length = 0;
         for (String s : parameterList)
             length += getParam(s).length();
@@ -180,7 +180,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                             + ", got array of length " + gradients.length() + " - " + layerId());
 
         this.gradientsFlattened = gradients;
-        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf, gradients);
+        this.gradientViews = conf.initializer().getGradientsFromFlattened(conf, gradients);
     }
 
     @Override

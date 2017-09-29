@@ -40,7 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ActivationLayer> {
 
-    public ActivationLayer(NeuralNetConfiguration conf) {
+    public ActivationLayer(org.deeplearning4j.nn.conf.layers.ActivationLayer conf) {
         super(conf);
     }
 
@@ -83,7 +83,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Layer clone() {
-        return new ActivationLayer(conf.clone());
+        return new ActivationLayer((org.deeplearning4j.nn.conf.layers.ActivationLayer)conf.clone());
     }
 
     @Override

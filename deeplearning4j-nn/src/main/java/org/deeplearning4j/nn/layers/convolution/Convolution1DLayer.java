@@ -26,7 +26,7 @@ import java.util.Arrays;
  * @author dave@skymind.io
  */
 public class Convolution1DLayer extends ConvolutionLayer {
-    public Convolution1DLayer(NeuralNetConfiguration conf) {
+    public Convolution1DLayer(org.deeplearning4j.nn.conf.layers.Convolution1DLayer conf) {
         super(conf);
     }
 

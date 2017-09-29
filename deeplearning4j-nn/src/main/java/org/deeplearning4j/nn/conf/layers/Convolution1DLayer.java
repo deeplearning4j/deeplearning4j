@@ -37,25 +37,24 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     private Convolution1DLayer(Builder builder) {
         super(builder);
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
                                                        String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
                         getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(this);
 //        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

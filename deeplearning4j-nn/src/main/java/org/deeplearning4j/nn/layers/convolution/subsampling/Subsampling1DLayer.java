@@ -25,7 +25,7 @@ import java.util.Arrays;
  * @author dave@skymind.io
  */
 public class Subsampling1DLayer extends SubsamplingLayer {
-    public Subsampling1DLayer(NeuralNetConfiguration conf) {
+    public Subsampling1DLayer(org.deeplearning4j.nn.conf.layers.Subsampling1DLayer conf) {
         super(conf);
     }
 

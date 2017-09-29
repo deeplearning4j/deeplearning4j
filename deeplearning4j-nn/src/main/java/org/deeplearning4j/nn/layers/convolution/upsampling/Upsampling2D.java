@@ -53,7 +53,7 @@ import java.util.Arrays;
 public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling2D> {
 
 
-    public Upsampling2D(NeuralNetConfiguration conf) {
+    public Upsampling2D(org.deeplearning4j.nn.conf.layers.Upsampling2D conf) {
         super(conf);
     }
 
@@ -163,7 +163,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Layer clone() {
-        return new Upsampling2D(conf.clone());
+        return new Upsampling2D((org.deeplearning4j.nn.conf.layers.Upsampling2D)conf.clone());
     }
 
     @Override

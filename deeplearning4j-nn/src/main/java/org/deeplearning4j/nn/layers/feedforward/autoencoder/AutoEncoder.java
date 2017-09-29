@@ -44,7 +44,7 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder> {
 
-    public AutoEncoder(NeuralNetConfiguration conf) {
+    public AutoEncoder(org.deeplearning4j.nn.conf.layers.AutoEncoder conf) {
         super(conf);
     }
 

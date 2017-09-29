@@ -90,11 +90,11 @@ public class Solver {
     }
 
     public static class Builder {
-        private NeuralNetConfiguration conf;
+        private org.deeplearning4j.nn.conf.layers.Layer conf;
         private Model model;
         private List<IterationListener> listeners = new ArrayList<>();
 
-        public Builder configure(NeuralNetConfiguration conf) {
+        public Builder configure(org.deeplearning4j.nn.conf.layers.Layer conf) {
             this.conf = conf;
             return this;
         }

@@ -67,7 +67,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     private double score;
 
-    public LossLayer(NeuralNetConfiguration conf) {
+    public LossLayer(org.deeplearning4j.nn.conf.layers.LossLayer conf) {
         super(conf);
     }
 

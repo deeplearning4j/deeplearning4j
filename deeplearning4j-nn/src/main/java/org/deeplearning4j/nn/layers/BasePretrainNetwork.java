@@ -58,7 +58,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     protected Solver solver;
 
 
-    public BasePretrainNetwork(NeuralNetConfiguration conf) {
+    public BasePretrainNetwork(org.deeplearning4j.nn.conf.layers.BasePretrainNetwork conf) {
         super(conf);
     }
 
@@ -201,7 +201,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         //SetParams has two different uses: during pretrain vs. backprop.
         //pretrain = 3 sets of params (inc. visible bias); backprop = 2
 
-        List<String> parameterList = conf.variables();
+        List<String> parameterList = conf.initializer().paramKeys(conf);
         int paramLength = 0;
         for (String s : parameterList) {
             int len = getParam(s).length();

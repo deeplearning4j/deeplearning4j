@@ -14,7 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.DropoutLayer> {
 
-    public DropoutLayer(NeuralNetConfiguration conf) {
+    public DropoutLayer(org.deeplearning4j.nn.conf.layers.DropoutLayer conf) {
         super(conf);
     }
 

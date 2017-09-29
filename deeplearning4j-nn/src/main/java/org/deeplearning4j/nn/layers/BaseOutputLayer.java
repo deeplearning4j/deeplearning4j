@@ -69,7 +69,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     protected double score;
 
-    public BaseOutputLayer(NeuralNetConfiguration conf) {
+    public BaseOutputLayer(org.deeplearning4j.nn.conf.layers.BaseOutputLayer conf) {
         super(conf);
     }
 

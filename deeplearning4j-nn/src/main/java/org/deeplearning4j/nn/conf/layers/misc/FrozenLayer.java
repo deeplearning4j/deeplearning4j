@@ -4,6 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -41,6 +42,11 @@ public class FrozenLayer extends Layer {
         NeuralNetConfiguration nnc = conf.clone();
         nnc.setLayer(layer);
         return nnc;
+    }
+
+    @Override
+    public void applyGlobalConfiguration(GlobalConfiguration c){
+        layer.applyGlobalConfiguration(c);
     }
 
     @Override

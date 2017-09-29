@@ -49,7 +49,7 @@ import org.nd4j.linalg.primitives.Pair;
 public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer> {
     private static final IActivation IDENTITY = new ActivationIdentity();
 
-    public CenterLossOutputLayer(NeuralNetConfiguration conf) {
+    public CenterLossOutputLayer(org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer conf) {
         super(conf);
     }
 

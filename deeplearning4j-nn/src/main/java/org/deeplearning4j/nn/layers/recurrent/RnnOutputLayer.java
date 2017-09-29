@@ -44,7 +44,7 @@ import java.util.Arrays;
  */
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
-    public RnnOutputLayer(NeuralNetConfiguration conf) {
+    public RnnOutputLayer(org.deeplearning4j.nn.conf.layers.RnnOutputLayer conf) {
         super(conf);
     }
 

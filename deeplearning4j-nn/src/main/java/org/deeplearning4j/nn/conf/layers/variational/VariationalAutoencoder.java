@@ -60,21 +60,19 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         LayerValidation.assertNInNOutSet("VariationalAutoencoder", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret =
-                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
+                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(this);
 
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
         return ret;
     }
 

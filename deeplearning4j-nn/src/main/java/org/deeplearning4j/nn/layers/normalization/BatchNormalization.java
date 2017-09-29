@@ -48,7 +48,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected INDArray xMu;
     protected INDArray xHat;
 
-    public BatchNormalization(NeuralNetConfiguration conf) {
+    public BatchNormalization(org.deeplearning4j.nn.conf.layers.BatchNormalization conf) {
         super(conf);
         initializeHelper();
     }

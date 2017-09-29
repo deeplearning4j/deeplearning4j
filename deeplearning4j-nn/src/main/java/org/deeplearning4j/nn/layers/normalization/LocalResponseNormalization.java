@@ -64,10 +64,10 @@ public class LocalResponseNormalization
 
     @Override
     public Layer clone() {
-        return new LocalResponseNormalization(conf.clone());
+        return new LocalResponseNormalization((org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)conf.clone());
     }
 
-    public LocalResponseNormalization(NeuralNetConfiguration conf) {
+    public LocalResponseNormalization(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization conf) {
         super(conf);
         initializeHelper();
     }

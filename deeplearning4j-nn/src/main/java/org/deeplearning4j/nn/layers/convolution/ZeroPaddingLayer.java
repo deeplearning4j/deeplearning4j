@@ -24,9 +24,9 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
     private int[] padding; //[padTop, padBottom, padLeft, padRight]
 
-    public ZeroPaddingLayer(NeuralNetConfiguration conf) {
+    public ZeroPaddingLayer(org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer conf) {
         super(conf);
-        this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer) conf.getLayer()).getPadding();
+        this.padding = conf.getPadding();
     }
 
     @Override
