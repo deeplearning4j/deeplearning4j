@@ -7,6 +7,7 @@
 
 #include <helpers/logger.h>
 #include <string>
+#include <vector>
 #include <list>
 #include <map>
 #include <mutex>
@@ -29,6 +30,8 @@ namespace nd4j {
             std::vector<nd4j::graph::Variable<T> *> _external;
             std::vector<nd4j::graph::Variable<T> *> _internal;
 
+            std::vector<nd4j::graph::Variable<T> *> _placeholders;
+
             void silentPutVariable(std::pair<int,int>& pair, Variable<T> *variable);
 
             int _auto_counter = -1;
@@ -41,6 +44,9 @@ namespace nd4j {
         public:
             VariableSpace();
             ~VariableSpace();
+
+            int numberOfPlaceholders();
+            std::vector<nd4j::graph::Variable<T>*>* getPlaceholders();
 
             bool hasVariable(int id);
             bool hasVariable(std::pair<int,int>& pair);
@@ -71,6 +77,15 @@ namespace nd4j {
             }
         };
     }
+}
+template <typename T>
+std::vector<nd4j::graph::Variable<T>*> * nd4j::graph::VariableSpace<T>::getPlaceholders() {
+    return &_placeholders;
+}
+
+template <typename T>
+int nd4j::graph::VariableSpace<T>::numberOfPlaceholders() {
+    return _placeholders.size();
 }
 
 template <typename T>
@@ -174,6 +189,10 @@ void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variab
 
     silentPutVariable(pair, variable);
 
+
+    if (variable->isPlaceholder())
+        _placeholders.push_back(variable);
+
     // copying duplicate for compatibility
     if (pair.second == 0 && !this->hasVariable(pair.first)) {
         this->putVariable(pair.first, variable);
@@ -233,8 +252,12 @@ void nd4j::graph::VariableSpace<T>::putVariable(int id, Variable<T> *variable) {
     _varmap.unlock();
 
     std::pair<int,int> pair(id, 0);
-    if (!hasVariable(pair))
+    if (!hasVariable(pair)) {
         this->silentPutVariable(pair, variable);
+
+        if (variable->isPlaceholder())
+            _placeholders.push_back(variable);
+    }
 }
 
 template <typename T>

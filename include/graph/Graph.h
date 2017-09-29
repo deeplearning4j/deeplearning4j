@@ -67,6 +67,10 @@ namespace nd4j {
             // this method returns total number of nodes in this graph
             int totalNodes();
 
+            int numberOfPlaceholders();
+
+            std::vector<nd4j::graph::Variable<T>*>* getPlaceholders();
+
             /**
              * This method returns pointer to thread_local VariableSpace
              * @return
@@ -114,6 +118,15 @@ namespace nd4j {
         };
     }
 }
+template <typename T>
+std::vector<nd4j::graph::Variable<T>*>* nd4j::graph::Graph<T>::getPlaceholders() {
+    return _variableSpace->getPlaceholders();
+}
+
+template <typename T>
+int nd4j::graph::Graph<T>::numberOfPlaceholders() {
+    return _variableSpace->numberOfPlaceholders();
+};
 
 template <typename T>
 Nd4jIndex nd4j::graph::Graph<T>::estimateRequiredMemory() {

@@ -71,19 +71,59 @@ namespace nd4j{
                 // enforcing IMPLICIT mode. or not... should we try to be smarter then user?
                 //embedded->getExecutorConfiguration()->_outputMode = OutputMode_IMPLICIT;
 
+                if (node->input()->size() != embedded->numberOfPlaceholders()) {
+                    nd4j_debug("Placeholders amount mismatch: %i expected, and %i available\n",node->input()->size(), embedded->numberOfPlaceholders());
+                    return ND4J_STATUS_BAD_INPUT;
+                }
+
+                int cnt = 0;
+                //for (auto v: *node->input()) {
+                //}
+                for (nd4j::graph::Variable<T>* v: *embedded->getPlaceholders()) {
+                    if (v->getName() != nullptr && v->getName()->size() > 0) {
+                        // trying symbolic lookup
+
+                        if (variableSpace->hasVariable(v->getName())) {
+                            // symbolic feeder
+                            auto array = variableSpace->getVariable(v->getName())->getNDArray();
+                            v->setNDArray(array->dup(array->ordering()));
+                        } else {
+                            nd4j_debug("Can't find variable [%s] in parent graph...", v->getName()->c_str());
+                            return ND4J_STATUS_BAD_INPUT;
+                            //throw "Can't find desired variable";
+                        }
+                    } else {
+                        // if we're not using symbolic lookup - we'll use sequential approach then
+                        auto p = node->input()->at(cnt);
+                        auto array = variableSpace->getVariable(p)->getNDArray();
+                        v->setNDArray(array->dup(array->ordering()));
+                    }
+
+
+                    cnt++;
+                }
+
+
                 Nd4jStatus status = GraphExecutioner<T>::execute(embedded);
                 if (status != ND4J_STATUS_OK)
                     return status;
 
-                int cnt = 0;
+                cnt = 0;
                 for (auto v: *embedded->fetchOutputs()){
                     NDArray<T> *array = v->getNDArray();
                     v->setNDArray(nullptr);
-                    std::pair<int,int> pair(node->id(), cnt++);
 
-                    variableSpace->putVariable(pair, array);
+                    //if (cnt == 0) {
+                        //variableSpace->getVariable(node->id())->setNDArray(array);
+                    //}
+
+                    if (cnt == 0)
+                        variableSpace->getVariable(node->id())->setNDArray(array);
+
+                    std::pair<int,int> pair(node->id(), cnt++);
+                    variableSpace->getVariable(pair)->setNDArray(array);
                 }
-                nd4j_debug("Embedded graph execution finished. %i variable(s) migrated", cnt);
+                nd4j_debug("Embedded graph execution finished. %i variable(s) migrated\n", cnt);
 
             } else if (node->hasCustomOp()) {
 
@@ -507,6 +547,11 @@ namespace nd4j{
 
                     if (status != ND4J_STATUS_OK)
                         return status;
+
+                    if (debug && verbose) {
+                        NDArray<T> * array = __variableSpace->getVariable(node->id())->getNDArray();
+                        nd4j_debug("node_%i finished. result meanNumber: %f\n", node->id(), array->meanNumber());
+                    }
                 }
             }
 

@@ -981,11 +981,16 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     // this is placeholder variable
     graphB.getVariableSpace()->putVariable(-1, new Variable<float>(true));
 
-
+    // abs, result is 5
     auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 25, 2, {1}, {3});
+    // 1-, result -4
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 35, 2, {1}, {3});
+
+    // graph should return 12: abs(3.0 x -4)
     auto nodeA2 = new Node<float>(OpType_GRAPH, -1, 3, {2}, {4});
-    auto nodeA3 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+
+    // 1 - 12 = -11
+    auto nodeA3 = new Node<float>(OpType_TRANSFORM, 35, 4, {3}, {});
 
     nodeA2->setGraph(&graphB);
 
@@ -994,7 +999,8 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     graphA.addNode(nodeA2);
     graphA.addNode(nodeA3);
 
-    auto nodeB0 = new Node<float>(OpType_TRANSFORM, 25, 1, {-1, -2}, {2});
+    // this is going to be PWT
+    auto nodeB0 = new Node<float>(OpType_TRANSFORM, 6, 1, {-1, -2}, {2});
     auto nodeB1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {});
 
     graphB.addNode(nodeB0);
@@ -1003,6 +1009,20 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     graphB.buildGraph();
     graphA.buildGraph();
 
+    ASSERT_EQ(0, nodeA0->getLayer());
+    ASSERT_EQ(1, nodeA1->getLayer());
+    ASSERT_EQ(2, nodeA2->getLayer());
+    ASSERT_EQ(3, nodeA3->getLayer());
+
+    ASSERT_EQ(0, nodeB0->getLayer());
+    ASSERT_EQ(1, nodeB1->getLayer());
+
     Nd4jStatus status = GraphExecutioner<float>::execute(&graphA);
     ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber();
+
+    nd4j_printf("OpResult: %f\n", m);
+
+    ASSERT_NEAR(-11.0, m, 1e-5);
 }
