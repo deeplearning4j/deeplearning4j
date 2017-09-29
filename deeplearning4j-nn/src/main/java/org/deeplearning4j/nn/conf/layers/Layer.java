@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -132,6 +133,14 @@ public abstract class Layer implements Serializable, Cloneable {
             this.constraints = null;
         }
         this.iDropout = builder.iDropout;
+    }
+
+    public void applyGlobalConfiguration(GlobalConfiguration globalConfiguration){
+        if(iDropout == null)
+            iDropout = globalConfiguration.getDropOut();
+//        if(constraints == null)   //TODO
+
+
     }
 
     /**

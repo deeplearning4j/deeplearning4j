@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf;
 
 import com.google.common.collect.Sets;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -198,17 +199,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
         private int layerCounter = -1; //Used only for .layer(Layer) method
-        private Map<Integer, Builder> layerwise;
+        private Map<Integer, Layer> layerwise;
         private Builder globalConfig;
 
         // Constructor
-        public ListBuilder(Builder globalConfig, Map<Integer, Builder> layerMap) {
+        public ListBuilder(Builder globalConfig, Map<Integer, Layer> layerMap) {
             this.globalConfig = globalConfig;
             this.layerwise = layerMap;
         }
 
         public ListBuilder(Builder globalConfig) {
-            this(globalConfig, new HashMap<Integer, Builder>());
+            this(globalConfig, new HashMap<Integer, Layer>());
         }
 
         public ListBuilder backprop(boolean backprop) {
@@ -226,9 +227,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             if (layerwise.containsKey(ind)) {
                 log.info("Layer index {} already exists, layer of type {} will be replace by layer type {}",
                         ind, layerwise.get(ind).getClass().getSimpleName(), layer.getClass().getSimpleName());
-                layerwise.get(ind).layer(layer);
+                layerwise.put(ind, layer);
             } else {
-                layerwise.put(ind, globalConfig.clone().layer(layer));
+                layerwise.put(ind, layer);
             }
             if(layerCounter < ind){
                 //Edge case: user is mixing .layer(Layer) and .layer(int, Layer) calls
@@ -242,7 +243,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return layer(++layerCounter, layer);
         }
 
-        public Map<Integer, Builder> getLayerwise() {
+        public Map<Integer, Layer> getLayerwise() {
             return layerwise;
         }
 
@@ -267,7 +268,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return the configuration to build
          */
         public MultiLayerConfiguration build() {
-            List<NeuralNetConfiguration> list = new ArrayList<>();
+            List<Layer> list = new ArrayList<>();
             if (layerwise.isEmpty())
                 throw new IllegalStateException("Invalid configuration: no layers defined");
             for (int i = 0; i < layerwise.size(); i++) {
@@ -276,22 +277,23 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                                     + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
                                     + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
-                if (layerwise.get(i).getLayer() == null)
+                if (layerwise.get(i) == null)
                     throw new IllegalStateException("Cannot construct network: Layer config for" + "layer with index "
                                     + i + " is not defined)");
 
                 //Layer names: set to default, if not set
-                if (layerwise.get(i).getLayer().getLayerName() == null) {
-                    layerwise.get(i).getLayer().setLayerName("layer" + i);
+                if (layerwise.get(i).getLayerName() == null) {
+                    layerwise.get(i).setLayerName("layer" + i);
                 }
 
-                list.add(layerwise.get(i).build());
+                list.add(layerwise.get(i));
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
-                            .trainingWorkspaceMode(globalConfig.trainingWorkspaceMode).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
+                            .trainingWorkspaceMode(globalConfig.globalConf.getTrainingWorkspaceMode())
+                            .cacheMode(globalConfig.globalConf.getCacheMode())
+                            .inferenceWorkspaceMode(globalConfig.globalConf.getInferenceWorkspaceMode()).confs(list).build();
         }
 
         /** Helper class for setting input types */
@@ -566,53 +568,24 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     }
 
     @Data
+    @AllArgsConstructor
     public static class Builder implements Cloneable {
-        protected IActivation activationFn = new ActivationSigmoid();
-        protected WeightInit weightInit = WeightInit.XAVIER;
-        protected double biasInit = 0.0;
-        protected Distribution dist = null;
-        protected double l1 = Double.NaN;
-        protected double l2 = Double.NaN;
-        protected double l1Bias = Double.NaN;
-        protected double l2Bias = Double.NaN;
-        protected IDropout idropOut;
-        protected IWeightNoise weightNoise;
-        protected IUpdater iUpdater = new Sgd();
-        protected IUpdater biasUpdater = null;
-        protected Layer layer;
-        protected boolean miniBatch = true;
-        protected int maxNumLineSearchIterations = 5;
-        protected long seed = System.currentTimeMillis();
-        protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
-        protected StepFunction stepFunction = null;
-        protected boolean minimize = true;
-        protected GradientNormalization gradientNormalization = GradientNormalization.None;
-        protected double gradientNormalizationThreshold = 1.0;
-        protected boolean pretrain = false;
-        protected List<LayerConstraint> allParamConstraints;
-        protected List<LayerConstraint> weightConstraints;
-        protected List<LayerConstraint> biasConstraints;
-
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
-        protected CacheMode cacheMode = CacheMode.NONE;
-
-        protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
+        GlobalConfiguration globalConf;
 
         public Builder() {
-            //
+            globalConf = new GlobalConfiguration(true);
         }
 
         public Builder(NeuralNetConfiguration newConf) {
+            globalConf = new GlobalConfiguration(true);
             if (newConf != null) {
-                minimize = newConf.minimize;
-                maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
-                layer = newConf.layer;
-                optimizationAlgo = newConf.optimizationAlgo;
-                seed = newConf.seed;
-                stepFunction = newConf.stepFunction;
-                miniBatch = newConf.miniBatch;
-                pretrain = newConf.pretrain;
+                globalConf.setMinimize(newConf.minimize);
+                globalConf.setMaxNumLineSearchIterations(newConf.maxNumLineSearchIterations);
+                globalConf.setOptimizationAlgo(newConf.optimizationAlgo);
+                globalConf.setSeed(newConf.seed);
+                globalConf.setStepFunction(newConf.stepFunction);
+                globalConf.setMiniBatch(newConf.miniBatch);
+                globalConf.setPretrain(newConf.pretrain);
             }
         }
 
@@ -621,7 +594,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Default set to true.
          */
         public Builder miniBatch(boolean miniBatch) {
-            this.miniBatch = miniBatch;
+            globalConf.setMiniBatch(miniBatch);
             return this;
         }
 
@@ -635,7 +608,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return
          */
         public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.trainingWorkspaceMode = workspaceMode;
+            globalConf.setTrainingWorkspaceMode(workspaceMode);
             return this;
         }
 
@@ -649,7 +622,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.inferenceWorkspaceMode = workspaceMode;
+            globalConf.setInferenceWorkspaceMode(workspaceMode);
             return this;
         }
 
@@ -663,7 +636,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return
          */
         public Builder cacheMode(@NonNull CacheMode cacheMode) {
-            this.cacheMode = cacheMode;
+            globalConf.setCacheMode(cacheMode);
             return this;
         }
 
@@ -672,7 +645,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Default set to minimize true.
          */
         public Builder minimize(boolean minimize) {
-            this.minimize = minimize;
+            globalConf.setMinimize(minimize);
             return this;
         }
 
@@ -685,16 +658,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return
          */
         public Builder maxNumLineSearchIterations(int maxNumLineSearchIterations) {
-            this.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            return this;
-        }
-
-
-        /**
-         * Layer class.
-         */
-        public Builder layer(Layer layer) {
-            this.layer = layer;
+            globalConf.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
             return this;
         }
 
@@ -706,7 +670,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         @Deprecated
         public Builder stepFunction(StepFunction stepFunction) {
-            this.stepFunction = stepFunction;
+            globalConf.setStepFunction(stepFunction);
             return this;
         }
 
@@ -741,11 +705,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         public ListBuilder list(Layer... layers) {
             if (layers == null || layers.length == 0)
                 throw new IllegalArgumentException("Cannot create network with no layers");
-            Map<Integer, Builder> layerMap = new HashMap<>();
+            Map<Integer, Layer> layerMap = new HashMap<>();
             for (int i = 0; i < layers.length; i++) {
-                Builder b = this.clone();
-                b.layer(layers[i]);
-                layerMap.put(i, b);
+                layerMap.put(i, layers[i]);
             }
             return new ListBuilder(this, layerMap);
 
@@ -762,7 +724,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Random number generator seed. Used for reproducability between runs
          */
         public Builder seed(long seed) {
-            this.seed = seed;
+            globalConf.setSeed(seed);
             Nd4j.getRandom().setSeed(seed);
             return this;
         }
@@ -773,24 +735,13 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param optimizationAlgo Optimization algorithm to use when training
          */
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
-            this.optimizationAlgo = optimizationAlgo;
+            globalConf.setOptimizationAlgo(optimizationAlgo);
             return this;
         }
 
         @Override
         public Builder clone() {
-            try {
-                Builder clone = (Builder) super.clone();
-                if (clone.layer != null)
-                    clone.layer = clone.layer.clone();
-                if (clone.stepFunction != null)
-                    clone.stepFunction = clone.stepFunction.clone();
-
-                return clone;
-
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
+            return new NeuralNetConfiguration.Builder(globalConf.clone());
         }
 
         /**
@@ -799,7 +750,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see #activation(Activation)
          */
         public Builder activation(IActivation activationFunction) {
-            this.activationFn = activationFunction;
+            globalConf.setActivationFn(activationFunction);
             return this;
         }
 
@@ -816,7 +767,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see org.deeplearning4j.nn.weights.WeightInit
          */
         public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+            globalConf.setWeightInit(weightInit);
             return this;
         }
 
@@ -826,7 +777,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param biasInit Constant for bias initialization
          */
         public Builder biasInit(double biasInit) {
-            this.biasInit = biasInit;
+            globalConf.setBiasInit(biasInit);
             return this;
         }
 
@@ -835,7 +786,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * .weightInit(WeightInit.DISTRIBUTION).
          */
         public Builder dist(Distribution dist) {
-            this.dist = dist;
+            globalConf.setDist(dist);
             return this;
         }
 
@@ -843,7 +794,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * L1 regularization coefficient for the weights.
          */
         public Builder l1(double l1) {
-            this.l1 = l1;
+            globalConf.setL1(l1);
             return this;
         }
 
@@ -851,7 +802,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * L2 regularization coefficient for the weights.
          */
         public Builder l2(double l2) {
-            this.l2 = l2;
+            globalConf.setL2(l2);
             return this;
         }
 
@@ -859,7 +810,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * L1 regularization coefficient for the bias.
          */
         public Builder l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            globalConf.setL1Bias(l1Bias);
             return this;
         }
 
@@ -867,7 +818,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * L2 regularization coefficient for the bias.
          */
         public Builder l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            globalConf.setL2Bias(l2Bias);
             return this;
         }
 
@@ -904,7 +855,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return
          */
         public Builder dropOut(IDropout dropout){
-            this.idropOut = dropout;
+            globalConf.setDropOut(dropout);
             return this;
         }
 
@@ -915,7 +866,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param weightNoise Weight noise instance to use
          */
         public Builder weightNoise(IWeightNoise weightNoise){
-            this.weightNoise = weightNoise;
+            globalConf.setWeightNoise(weightNoise);
             return this;
         }
 
@@ -935,7 +886,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param updater Updater to use
          */
         public Builder updater(IUpdater updater) {
-            this.iUpdater = updater;
+            globalConf.setUpdater(updater);
             return this;
         }
 
@@ -946,7 +897,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param updater Updater to use for bias parameters
          */
         public Builder biasUpdater(IUpdater updater){
-            this.biasUpdater = updater;
+            globalConf.setBiasUpdater(updater);
             return this;
         }
 
@@ -958,7 +909,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see GradientNormalization
          */
         public Builder gradientNormalization(GradientNormalization gradientNormalization) {
-            this.gradientNormalization = gradientNormalization;
+            globalConf.setGradientNormalization(gradientNormalization);
             return this;
         }
 
@@ -969,7 +920,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
          */
         public Builder gradientNormalizationThreshold(double threshold) {
-            this.gradientNormalizationThreshold = threshold;
+            globalConf.setGradientNormalizationThreshold(threshold);
             return this;
         }
 
@@ -979,7 +930,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param convolutionMode Convolution mode to use
          */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
-            this.convolutionMode = convolutionMode;
+            globalConf.setConvolutionMode(convolutionMode);
             return this;
         }
 
@@ -991,7 +942,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all parameters of all layers
          */
         public Builder constrainAllParameters(LayerConstraint... constraints){
-            this.allParamConstraints = Arrays.asList(constraints);
+            globalConf.setAllParamConstraints(Arrays.asList(constraints));
             return this;
         }
 
@@ -1003,7 +954,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all bias parameters of all layers
          */
         public Builder constrainBias(LayerConstraint... constraints) {
-            this.biasConstraints = Arrays.asList(constraints);
+            globalConf.setBiasConstraints(Arrays.asList(constraints));
             return this;
         }
 
@@ -1015,7 +966,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all weight parameters of all layers
          */
         public Builder constrainWeights(LayerConstraint... constraints) {
-            this.weightConstraints = Arrays.asList(constraints);
+            globalConf.setWeightConstraints(Arrays.asList(constraints));
             return this;
         }
 
@@ -1027,98 +978,21 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         public NeuralNetConfiguration build() {
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration();
-            conf.minimize = minimize;
-            conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            conf.layer = layer;
-            conf.optimizationAlgo = optimizationAlgo;
-            conf.seed = seed;
-            conf.stepFunction = stepFunction;
-            conf.miniBatch = miniBatch;
-            conf.pretrain = pretrain;
-            conf.cacheMode = this.cacheMode;
+            conf.minimize = globalConf.getMinimize();
+            conf.maxNumLineSearchIterations = globalConf.getMaxNumLineSearchIterations();
+            conf.optimizationAlgo = globalConf.getOptimizationAlgo();
+            conf.seed = globalConf.getSeed();
+            conf.stepFunction = globalConf.getStepFunction();
+            conf.miniBatch = globalConf.getMiniBatch();
+            conf.pretrain = globalConf.getPretrain();
+            conf.cacheMode = globalConf.getCacheMode();
 
-            configureLayer(layer);
-            if (layer instanceof FrozenLayer) {
-                configureLayer(((FrozenLayer) layer).getLayer());
-            }
+//            configureLayer(layer);
+//            if (layer instanceof FrozenLayer) {
+//                configureLayer(((FrozenLayer) layer).getLayer());
+//            }
 
             return conf;
-        }
-
-        private void configureLayer(Layer layer) {
-            String layerName;
-            if (layer == null || layer.getLayerName() == null)
-                layerName = "Layer not named";
-            else
-                layerName = layer.getLayerName();
-
-            if (layer != null) {
-                copyConfigToLayer(layerName, layer);
-            }
-
-            if (layer instanceof FrozenLayer) {
-                copyConfigToLayer(layerName, ((FrozenLayer) layer).getLayer());
-            }
-
-            if (layer instanceof ConvolutionLayer) {
-                ConvolutionLayer cl = (ConvolutionLayer) layer;
-                if (cl.getConvolutionMode() == null) {
-                    cl.setConvolutionMode(convolutionMode);
-                }
-            }
-            if (layer instanceof SubsamplingLayer) {
-                SubsamplingLayer sl = (SubsamplingLayer) layer;
-                if (sl.getConvolutionMode() == null) {
-                    sl.setConvolutionMode(convolutionMode);
-                }
-            }
-            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias, dist,
-                    allParamConstraints, weightConstraints, biasConstraints);
-        }
-
-        private void copyConfigToLayer(String layerName, Layer layer) {
-
-            if (layer.getIDropout() == null)
-                layer.setIDropout(idropOut);
-
-            if (layer instanceof BaseLayer) {
-                BaseLayer bLayer = (BaseLayer) layer;
-                if (Double.isNaN(bLayer.getL1()))
-                    bLayer.setL1(l1);
-                if (Double.isNaN(bLayer.getL2()))
-                    bLayer.setL2(l2);
-                if (bLayer.getActivationFn() == null)
-                    bLayer.setActivationFn(activationFn);
-                if (bLayer.getWeightInit() == null)
-                    bLayer.setWeightInit(weightInit);
-                if (Double.isNaN(bLayer.getBiasInit()))
-                    bLayer.setBiasInit(biasInit);
-
-                //Configure weight noise:
-                if(weightNoise != null && ((BaseLayer) layer).getWeightNoise() == null){
-                    ((BaseLayer) layer).setWeightNoise(weightNoise.clone());
-                }
-
-                //Configure updaters:
-                if(iUpdater != null && bLayer.getIUpdater() == null){
-                    bLayer.setIUpdater(iUpdater);
-                }
-                if(biasUpdater != null && bLayer.getBiasUpdater() == null){
-                    bLayer.setBiasUpdater(biasUpdater);
-                }
-
-                if(bLayer.getIUpdater() == null && iUpdater == null && bLayer.initializer().numParams(bLayer) > 0){
-                    //No updater set anywhere
-                    IUpdater u = new Sgd();
-                    bLayer.setIUpdater(u);
-                    log.warn("*** No updater configuration is set for layer {} - defaulting to {} ***", layerName, u);
-                }
-
-                if (bLayer.getGradientNormalization() == null)
-                    bLayer.setGradientNormalization(gradientNormalization);
-                if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))
-                    bLayer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-            }
         }
     }
 
