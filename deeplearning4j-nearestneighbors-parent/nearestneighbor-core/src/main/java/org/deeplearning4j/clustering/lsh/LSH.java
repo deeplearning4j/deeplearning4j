@@ -15,7 +15,7 @@ public interface LSH {
 
     /**
      * Returns an instance of the distance measure associated to the LSH family of this implementation.
-     * Beware, hashing families and their amplificaiton constructs are distance-specific.
+     * Beware, hashing families and their amplification constructs are distance-specific.
      */
     public String getDistanceMeasure();
 
@@ -46,7 +46,7 @@ public interface LSH {
     public int getInDimension();
 
     /**
-     * Popolates the index with data vectors.
+     * Populates the index with data vectors.
      * @param data the vectors to index
      */
     public void makeIndex(INDArray data);

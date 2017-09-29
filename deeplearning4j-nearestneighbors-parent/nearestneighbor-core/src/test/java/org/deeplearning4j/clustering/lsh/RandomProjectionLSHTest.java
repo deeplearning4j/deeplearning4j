@@ -23,7 +23,7 @@ public class RandomProjectionLSHTest {
 
     @Before
     public void setUp() {
-        rpLSH = new RandomProjectionLSH(hashLength, numTables, intDimensions);
+        rpLSH = new RandomProjectionLSH(hashLength, numTables, intDimensions, 0.1f);
     }
 
     @Test

@@ -47,14 +47,14 @@ public class RandomProjectionLSH implements LSH {
         return "cosinedistance";
     }
 
-    @Getter int hashLength;
+    @Getter private int hashLength;
 
-    @Getter int numTables;
+    @Getter private int numTables;
 
-    @Getter int inDimension;
+    @Getter private int inDimension;
 
 
-    @Getter double radius;
+    @Getter private double radius;
 
     INDArray randomProjection;
 
