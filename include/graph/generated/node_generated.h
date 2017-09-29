@@ -27,12 +27,13 @@ enum OpType {
   OpType_SHAPE = 8,
   OpType_AGGREGATION = 9,
   OpType_CUSTOM = 10,
+  OpType_GRAPH = 11,
   OpType_VARIABLE = 119,
   OpType_MIN = OpType_TRANSFORM,
   OpType_MAX = OpType_VARIABLE
 };
 
-inline OpType (&EnumValuesOpType())[10] {
+inline OpType (&EnumValuesOpType())[11] {
   static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
@@ -43,6 +44,7 @@ inline OpType (&EnumValuesOpType())[10] {
     OpType_SHAPE,
     OpType_AGGREGATION,
     OpType_CUSTOM,
+    OpType_GRAPH,
     OpType_VARIABLE
   };
   return values;
@@ -52,15 +54,17 @@ enum OpClass {
   OpClass_TRANSFORM = 0,
   OpClass_REDUCTION = 1,
   OpClass_MULTIPLICATOR = 2,
+  OpClass_GRAPH = 3,
   OpClass_MIN = OpClass_TRANSFORM,
-  OpClass_MAX = OpClass_MULTIPLICATOR
+  OpClass_MAX = OpClass_GRAPH
 };
 
-inline OpClass (&EnumValuesOpClass())[3] {
+inline OpClass (&EnumValuesOpClass())[4] {
   static OpClass values[] = {
     OpClass_TRANSFORM,
     OpClass_REDUCTION,
-    OpClass_MULTIPLICATOR
+    OpClass_MULTIPLICATOR,
+    OpClass_GRAPH
   };
   return values;
 }
@@ -70,6 +74,7 @@ inline const char **EnumNamesOpClass() {
     "TRANSFORM",
     "REDUCTION",
     "MULTIPLICATOR",
+    "GRAPH",
     nullptr
   };
   return names;

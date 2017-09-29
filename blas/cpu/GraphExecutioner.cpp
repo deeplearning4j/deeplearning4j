@@ -37,7 +37,9 @@ namespace nd4j{
             OpType opType = node->opType();
             int opNum = node->opNum();
 
-            if (opType != OpType_CUSTOM) {
+            if (opType == OpType_GRAPH) {
+                nd4j_debug("Executing embedded graph node_%i", node->id());
+            } else if (opType != OpType_CUSTOM) {
                 nd4j_debug("Executing node_%i{%i}\n", node->id(), opNum);
             } else {
                 nd4j_debug("Executing node_%i{%s}\n", node->id(), node->getCustomOp()->getOpName()->c_str());
@@ -56,9 +58,33 @@ namespace nd4j{
                 fflush(stdout);
             }
 
+            if (node->hasGraphEmbedded()) {
+                auto embedded = node->getGraph();
 
-            fflush(stdout);
-            if (node->hasCustomOp()) {
+                /**
+                 * basically, we should do following things here:
+                 * 1) invoke embedded graph
+                 * 2) announce its results as corresponding output variables in current VariableSpace
+                 */
+
+                // enforcing IMPLICIT mode. or not... should we try to be smarter then user?
+                //embedded->getExecutorConfiguration()->_outputMode = OutputMode_IMPLICIT;
+
+                Nd4jStatus status = GraphExecutioner<T>::execute(embedded);
+                if (status != ND4J_STATUS_OK)
+                    return status;
+
+                int cnt = 0;
+                for (auto v: *embedded->fetchOutputs()){
+                    NDArray<T> *array = v->getNDArray();
+                    v->setNDArray(nullptr);
+                    std::pair<int,int> pair(node->id(), cnt++);
+
+                    variableSpace->putVariable(pair, array);
+                }
+                nd4j_debug("Embedded graph execution finished. %i variable(s) migrated", cnt);
+
+            } else if (node->hasCustomOp()) {
 
                 auto status = node->getCustomOp()->execute(node->getBlock());
                 return status;
