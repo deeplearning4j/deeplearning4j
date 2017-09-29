@@ -657,8 +657,33 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(softmax, 2, 1, false) {
+        DECLARE_OP(softmax, 1, 1, true) {
             // YaY
+            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* z = this->getZ(block);
+
+            input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(softmax_bp, 2, 1, true) {
+            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* epsInput = block.getVariables().at(1)->getNDArray();
+
+            NDArray<T>* z = this->getZ(block);
+
+            input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
+            z->template applyPairwiseTransform<simdOps::Multiply<T>>(epsInput, z, nullptr);
+
+            auto sum = z->template reduceAlongDimension<simdOps::Sum<T>>({-1});
+            z->template applyBroadcast<simdOps::Multiply<T>>({1}, sum);
+
+            STORE_RESULT(*z);
+
+            delete sum;
             return ND4J_STATUS_OK;
         }
 

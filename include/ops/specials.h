@@ -348,7 +348,7 @@ void concatCpuGeneric(
 template<typename T>
 void accumulateGeneric(T **x, T *z, int n, const Nd4jIndex length) {
     // aggregation step
-#ifdef _OPENNMP
+#ifdef _OPENMP
     int _threads = omp_get_max_threads();
 #else
     // we can use whatever we want here, this value won't be used if there's no omp

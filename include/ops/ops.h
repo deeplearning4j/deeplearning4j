@@ -59,7 +59,19 @@
 #define SELU_ALPHA 1.6732632423543772848170429916717
 #define SELU_LAMBDA 1.0507009873554804934193349852946
 
+#ifdef _OPENMP
+#pragma omp declare reduction(maxT : float,double,float16 :              \
+                omp_out = nd4j::math::nd4j_max(omp_in, omp_out) )\
+                initializer (omp_priv=-MAX_FLOAT)
 
+#pragma omp declare reduction(minT : float,double,float16 :              \
+                omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
+                initializer (omp_priv=MAX_FLOAT)
+
+#pragma omp declare reduction(sumT : float,double,float16 :              \
+                omp_out = omp_in + omp_out)\
+                initializer (omp_priv=0.0f)
+#endif
 
 
 namespace functions {

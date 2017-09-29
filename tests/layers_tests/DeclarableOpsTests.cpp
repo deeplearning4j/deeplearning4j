@@ -920,6 +920,43 @@ TEST_F(DeclarableOpsTests, TestMatMul1) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, TestSoftMax_bp_1) {
+    /*
+     * INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray inputDup = input.dup();
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative(input,Nd4j.ones(2,2),input));
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
+        assertEquals(input,inputDup);
+     */
+    auto input = new NDArray<float>(2,2,'c');
+    for (int e = 0; e < input->lengthOf(); e++)
+        input->putScalar(e, e+1);
+
+    auto epsilon = new NDArray<float>(2,2, 'c');
+    epsilon->assign(1.0);
+
+    auto output = new NDArray<float>(2,2,'c');
+
+    auto exp = new NDArray<float>(2, 2, 'c');
+    exp->assign(0.0);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, input);
+    variableSpace->putVariable(-2, epsilon);
+    variableSpace->putVariable(1, output);
+
+    Block<float>* block = new Block<float>(1, variableSpace, true);
+    block->fillInputs({-1, -2});
+
+    nd4j::ops::softmax_bp<float> op;
+
+    Nd4jStatus status = op.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(output->equalsTo(exp));
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, DivideMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
