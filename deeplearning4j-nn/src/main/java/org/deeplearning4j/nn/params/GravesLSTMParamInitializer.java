@@ -49,11 +49,6 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     public final static String INPUT_WEIGHT_KEY = LSTMParamInitializer.INPUT_WEIGHT_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        return numParams(conf.getLayer());
-    }
-
-    @Override
     public int numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf = (org.deeplearning4j.nn.conf.layers.GravesLSTM) l;
 
@@ -93,10 +88,10 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String, INDArray> init(Layer layer, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.GravesLSTM) layer;
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
@@ -104,11 +99,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
-        conf.addVariable(INPUT_WEIGHT_KEY);
-        conf.addVariable(RECURRENT_WEIGHT_KEY);
-        conf.addVariable(BIAS_KEY);
-
-        int length = numParams(conf);
+        int length = numParams(layer);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                             "Expected params view of length " + length + ", got length " + paramsView.length());
@@ -154,14 +145,14 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+    public Map<String, INDArray> getGradientsFromFlattened(Layer layer, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.GravesLSTM) layer;
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
-        int length = numParams(conf);
+        int length = numParams(layer);
         if (gradientView.length() != length)
             throw new IllegalStateException(
                             "Expected gradient view of length " + length + ", got length " + gradientView.length());

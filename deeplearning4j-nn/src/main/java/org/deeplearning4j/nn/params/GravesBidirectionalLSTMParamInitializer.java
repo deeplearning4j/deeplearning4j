@@ -61,11 +61,6 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
             BIAS_KEY_BACKWARDS));
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        return numParams(conf.getLayer());
-    }
-
-    @Override
     public int numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
                         (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) l;
@@ -107,24 +102,17 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     }
 
     @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String, INDArray> init(Layer layer, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) layer;
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
-
-        conf.addVariable(INPUT_WEIGHT_KEY_FORWARDS);
-        conf.addVariable(RECURRENT_WEIGHT_KEY_FORWARDS);
-        conf.addVariable(BIAS_KEY_FORWARDS);
-        conf.addVariable(INPUT_WEIGHT_KEY_BACKWARDS);
-        conf.addVariable(RECURRENT_WEIGHT_KEY_BACKWARDS);
-        conf.addVariable(BIAS_KEY_BACKWARDS);
 
         int nParamsInput = nLast * (4 * nL);
         int nParamsRecurrent = nL * (4 * nL + 3);
@@ -189,9 +177,9 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
 
 
     @Override
-    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+    public Map<String, INDArray> getGradientsFromFlattened(Layer layer, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) layer;
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer

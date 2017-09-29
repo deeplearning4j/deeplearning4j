@@ -51,30 +51,13 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
                                                        String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
 
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
-        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), iterationListeners,
+        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(iterationListeners,
                         name, layerIndex, numInputs, layerParamsView, initializeParams);
-
-        NeuralNetConfiguration nncUnderlying = underlying.conf();
-        if (nncUnderlying.variables() != null) {
-            List<String> vars = nncUnderlying.variables(true);
-            nncUnderlying.clearVariables();
-            conf.clearVariables();
-            for (String s : vars) {
-                conf.variables(false).add(s);
-                conf.getL1ByParam().put(s, 0.0);
-                conf.getL2ByParam().put(s, 0.0);
-
-                nncUnderlying.variables(false).add(s);
-                nncUnderlying.getL1ByParam().put(s, 0.0);
-                nncUnderlying.getL2ByParam().put(s, 0.0);
-            }
-        }
 
         return new org.deeplearning4j.nn.layers.FrozenLayer(underlying);
     }

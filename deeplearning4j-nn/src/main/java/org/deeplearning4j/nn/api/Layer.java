@@ -229,18 +229,6 @@ public interface Layer {
     void applyConstraints(int iteration, int epoch);
 
     /**
-     * The configuration for the neural network
-     * @return the configuration for the neural network
-     */
-    NeuralNetConfiguration conf();
-
-    /**
-     * Setter for the configuration
-     * @param conf
-     */
-    void setConf(NeuralNetConfiguration conf);
-
-    /**
      * This method sets given CacheMode for current layer
      *
      * @param mode

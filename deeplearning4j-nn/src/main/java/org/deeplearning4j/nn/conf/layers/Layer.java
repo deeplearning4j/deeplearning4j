@@ -79,6 +79,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected IDropout iDropout;
     protected List<LayerConstraint> constraints;
     protected InputPreProcessor preProcessor;
+    protected long seed;
 
 
     public Layer(Builder builder) {
@@ -157,8 +158,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners,
+    public abstract org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
                     String name, int layerIndex, int numInputs, INDArray layerParamsView,
                     boolean initializeParams);
 
