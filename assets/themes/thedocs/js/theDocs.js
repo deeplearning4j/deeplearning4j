@@ -221,85 +221,85 @@ $(function() {
   // Code viewers
   //
 
-  // Copy to clipboard
-  // It doesn't support Safari yet, and also has some minor bugs
-  $('pre').each(function(index, value) {
-    $(this).prepend('<a class="btn btn-sm btn-purple clipboard-copy" data-original-title="Copied!">Copy</a>');
-  });
+//   // Copy to clipboard
+//   // It doesn't support Safari yet, and also has some minor bugs
+//   $('pre').each(function(index, value) {
+//     $(this).prepend('<a class="btn btn-sm btn-purple clipboard-copy" data-original-title="Copied!">Copy</a>');
+//   });
 
-  // Code snippet
-  $('pre').each(function(index, value) {
-    if ($(this).parents('.code-window').length || $(this).parents('.code-taps').length) {
-      return;
-    }
-    var title = "";
-    if ($(this).children("code").attr('class')) {
-      title = $(this).children("code").attr('class');
-      title = title.replace("language-", "");
-      title = title.toLowerCase();
-      if (title == "markup") {
-        title = "html";
-      }
-    }
-    var span = '<span class="language-name">'+ title +'</span>';
-    $(this).prepend(span);
-  });
+//   // Code snippet
+//   $('pre').each(function(index, value) {
+//     if ($(this).parents('.code-window').length || $(this).parents('.code-taps').length) {
+//       return;
+//     }
+//     var title = "";
+//     if ($(this).children("code").attr('class')) {
+//       title = $(this).children("code").attr('class');
+//       title = title.replace("language-", "");
+//       title = title.toLowerCase();
+//       if (title == "markup") {
+//         title = "html";
+//       }
+//     }
+//     var span = '<span class="language-name">'+ title +'</span>';
+//     $(this).prepend(span);
+//   });
 
-  $('pre .language-name').parent().on('scroll', function(){
-    $(this).find('.language-name').css('transform', 'translate('+ $(this).scrollLeft() +'px, '+ $(this).scrollTop() +'px)');
-  });
+//   $('pre .language-name').parent().on('scroll', function(){
+//     $(this).find('.language-name').css('transform', 'translate('+ $(this).scrollLeft() +'px, '+ $(this).scrollTop() +'px)');
+//   });
 
-  // Code window
-  $('.code-window').each(function(index, value){
-    var topbar = '<div class="window-bar"><div class="circles">';
-    topbar += '<span class="circle circle-red"></span> <span class="circle circle-yellow"></span> <span class="circle circle-green"></span>';
-    if ($(this).attr('data-title')) {
-      topbar += '<span class="window-title">'+ $(this).data('title') +'</span>';
-    }
-    topbar += '</div>';//.circles
+//   // Code window
+//   $('.code-window').each(function(index, value){
+//     var topbar = '<div class="window-bar"><div class="circles">';
+//     topbar += '<span class="circle circle-red"></span> <span class="circle circle-yellow"></span> <span class="circle circle-green"></span>';
+//     if ($(this).attr('data-title')) {
+//       topbar += '<span class="window-title">'+ $(this).data('title') +'</span>';
+//     }
+//     topbar += '</div>';//.circles
 
-    //Languages
-    if ($(this).children().length > 1) {
-      topbar += '<div class="languages"><div class="btn-group" data-toggle="buttons">';
+//     //Languages
+//     if ($(this).children().length > 1) {
+//       topbar += '<div class="languages"><div class="btn-group" data-toggle="buttons">';
 
-      $(this).children().each(function(index, value){
-        var active='', check='', title='';
-        if (index == 0) {
-          active = ' active';
-          check = ' checked';
-        }
-        if ($(this).children("code").attr('class')) {
-          title = $(this).children("code").attr('class');
-          title = title.replace("language-", "");
-          title = title.toLowerCase();
-          if (title == "markup") {
-            title = "html";
-          }
-        }
-        else if ($(this).hasClass('code-preview')) {
-          title = 'Example';
-        }
-        topbar += '<label class="btn'+ active +'"><input type="radio" autocomplete="off"'+ check +'>'+ title +'</label>';
-      });
+//       $(this).children().each(function(index, value){
+//         var active='', check='', title='';
+//         if (index == 0) {
+//           active = ' active';
+//           check = ' checked';
+//         }
+//         if ($(this).children("code").attr('class')) {
+//           title = $(this).children("code").attr('class');
+//           title = title.replace("language-", "");
+//           title = title.toLowerCase();
+//           if (title == "markup") {
+//             title = "html";
+//           }
+//         }
+//         else if ($(this).hasClass('code-preview')) {
+//           title = 'Example';
+//         }
+//         topbar += '<label class="btn'+ active +'"><input type="radio" autocomplete="off"'+ check +'>'+ title +'</label>';
+//       });
 
-      topbar += '</div></div>';
-    }
+//       topbar += '</div></div>';
+//     }
 
-    topbar += '</div>';//.window-bar
+//     topbar += '</div>';//.window-bar
 
-    $(this).children(':not(:first)').hide(0);
-    $(this).children().wrapAll('<div class="window-content"></div>');
-    $(this).prepend(topbar);
+//     $(this).children(':not(:first)').hide(0);
+//     $(this).children().wrapAll('<div class="window-content"></div>');
+//     $(this).prepend(topbar);
 
-    //Event handler, change tab
-    var window_content = $(this).children('.window-content');
-    $(this).find(".btn-group .btn").on('click', function() {
-      var i = $(this).index();
-      window_content.children(":visible").fadeOut(200, function() {
-        window_content.children(":not(.prism-show-language):eq("+ i +")").fadeIn(200);
-      });
-    });
-  });
+//     //Event handler, change tab
+//     var window_content = $(this).children('.window-content');
+//     $(this).find(".btn-group .btn").on('click', function() {
+//       var i = $(this).index();
+//       window_content.children(":visible").fadeOut(200, function() {
+//         window_content.children(":not(.prism-show-language):eq("+ i +")").fadeIn(200);
+//       });
+//     });
+//   });
 
   // Code tabs
   $('.code-tabs').each(function(index, value){
