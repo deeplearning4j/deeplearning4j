@@ -29,7 +29,7 @@ With DL4J/ND4J, there are two types of memory limits to be aware of and configur
 
 `-Dorg.bytedeco.javacpp.maxbytes`  - this option allows you to specify the off-heap memory limit.
 
-`-Dorg.bytedeco.javacpp.maxPhysicalBytes`  - also for off-heap, this option usually should be set equal to `maxbytes`
+`-Dorg.bytedeco.javacpp.maxphysicalbytes`  - also for off-heap, this option usually should be set equal to `maxbytes`
 
 Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
 
