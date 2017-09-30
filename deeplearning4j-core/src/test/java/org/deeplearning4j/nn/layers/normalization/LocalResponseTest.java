@@ -94,12 +94,9 @@ public class LocalResponseTest {
 
     @Before
     public void doBefore() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
-                        .build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build();
 
-        layer = new LocalResponseNormalization().instantiate(conf, null, null, 0, 1, null, false);
+        layer = conf.instantiate(null, null, 0, 1, null, false);
         activationsActual = layer.activate(af.create(x)).get(0);
     }
 
@@ -118,17 +115,6 @@ public class LocalResponseTest {
         assertEquals(newEpsilonExpected.getDouble(20), containedOutput.get(0).getDouble(20), 1e-4);
         assertEquals(null, containedOutput.getParameterGradients().getGradientFor("W"));
         assertArrayEquals(newEpsilonExpected.shape(), containedOutput.get(0).shape());
-    }
-
-    @Test
-    public void testRegularization() {
-        // Confirm a structure with regularization true will not throw an error
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l1(0.2)
-                        .l2(0.1).seed(123)
-                        .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
-                        .build();
     }
 
     @Test
@@ -187,10 +173,9 @@ public class LocalResponseTest {
         }
 
         LocalResponseNormalization lrn = new LocalResponseNormalization.Builder().build();
-        NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().layer(lrn).build();
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization layer =
-                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
-                                        null, null, 0, 1, null, false);
+                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization)
+                                lrn.instantiate(null, null, 0, 1, null, false);
 
         INDArray outAct = layer.activate(af.create(in), true).get(0);
 

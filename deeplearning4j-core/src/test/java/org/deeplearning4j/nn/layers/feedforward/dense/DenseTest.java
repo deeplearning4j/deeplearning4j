@@ -32,13 +32,11 @@ public class DenseTest {
 
     @Test
     public void testDenseBiasInit() {
-        DenseLayer build = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
+        DenseLayer conf = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(build).build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = conf.instantiate(null, null, 0, 1, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }

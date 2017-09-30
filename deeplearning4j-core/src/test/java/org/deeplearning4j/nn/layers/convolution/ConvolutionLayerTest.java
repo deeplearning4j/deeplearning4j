@@ -226,11 +226,9 @@ public class ConvolutionLayerTest {
     public void testCNNBiasInit() {
         ConvolutionLayer cnn = new ConvolutionLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(cnn).build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = cnn.initializer().numParams(cnn);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = cnn.instantiate(null, null, 0, 1, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -287,11 +285,9 @@ public class ConvolutionLayerTest {
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding).nIn(nIn).nOut(nOut)
                         .activation(Activation.SIGMOID).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(layer).build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = layer.initializer().numParams(layer);
         INDArray params = Nd4j.create(1, numParams);
-        return conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        return layer.instantiate(null, null, 0, 1, params, true);
     }
 
     public Layer getMNISTConfig() {

@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -53,7 +52,7 @@ public class RegressionTest071 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
+        DenseLayer l0 = (DenseLayer) conf.getConf(0);
         assertEquals("relu", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
@@ -61,7 +60,7 @@ public class RegressionTest071 {
         assertEquals(new Nesterovs(0.15, 0.9), l0.getIUpdater());
         assertEquals(0.15, ((Nesterovs)l0.getIUpdater()).getLearningRate(), 1e-6);
 
-        OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
+        OutputLayer l1 = (OutputLayer) conf.getConf(1);
         assertEquals("softmax", l1.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
@@ -92,7 +91,7 @@ public class RegressionTest071 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
+        DenseLayer l0 = (DenseLayer) conf.getConf(0);
         assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
@@ -106,7 +105,7 @@ public class RegressionTest071 {
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
-        OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
+        OutputLayer l1 = (OutputLayer) conf.getConf(1);
         assertTrue(l1.getActivationFn() instanceof ActivationIdentity);
         assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
@@ -142,7 +141,7 @@ public class RegressionTest071 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
+        ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0);
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
@@ -154,14 +153,14 @@ public class RegressionTest071 {
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
         assertEquals(l0.getConvolutionMode(), ConvolutionMode.Same);
 
-        SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
+        SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1);
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l1.getStride());
         assertArrayEquals(new int[] {0, 0}, l1.getPadding());
         assertEquals(PoolingType.MAX, l1.getPoolingType());
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Same);
 
-        OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
+        OutputLayer l2 = (OutputLayer) conf.getConf(2);
         assertEquals("sigmoid", l2.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
@@ -194,21 +193,21 @@ public class RegressionTest071 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        GravesLSTM l0 = (GravesLSTM) conf.getConf(0).getLayer();
+        GravesLSTM l0 = (GravesLSTM) conf.getConf(0);
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
-        GravesBidirectionalLSTM l1 = (GravesBidirectionalLSTM) conf.getConf(1).getLayer();
+        GravesBidirectionalLSTM l1 = (GravesBidirectionalLSTM) conf.getConf(1);
         assertEquals("softsign", l1.getActivationFn().toString());
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
-        RnnOutputLayer l2 = (RnnOutputLayer) conf.getConf(2).getLayer();
+        RnnOutputLayer l2 = (RnnOutputLayer) conf.getConf(2);
         assertEquals(4, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals("softmax", l2.getActivationFn().toString());
@@ -229,7 +228,7 @@ public class RegressionTest071 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
+        GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf();
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
@@ -237,14 +236,14 @@ public class RegressionTest071 {
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
         GravesBidirectionalLSTM l1 =
-                        (GravesBidirectionalLSTM) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
+                        (GravesBidirectionalLSTM) ((LayerVertex) conf.getVertices().get("1")).getLayerConf();
         assertEquals("softsign", l1.getActivationFn().toString());
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
-        RnnOutputLayer l2 = (RnnOutputLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
+        RnnOutputLayer l2 = (RnnOutputLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf();
         assertEquals(4, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals("softmax", l2.getActivationFn().toString());

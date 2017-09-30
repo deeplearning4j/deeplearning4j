@@ -435,7 +435,7 @@ public class CNNGradientCheckTest {
                                         .setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
 
                         assertEquals(ConvolutionMode.Truncate,
-                                        ((ConvolutionLayer) conf.getConf(0).getLayer()).getConvolutionMode());
+                                        ((ConvolutionLayer) conf.getConf(0)).getConvolutionMode());
 
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                         net.init();

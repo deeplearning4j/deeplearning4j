@@ -79,14 +79,13 @@ public class BatchNormalizationTest {
             b.lockGammaBeta(true).gamma(gamma).beta(beta);
         }
         BatchNormalization bN = b.build();
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(bN).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = bN.initializer().numParams(bN);
         INDArray params = null;
         if (numParams > 0) {
             params = Nd4j.create(1, numParams);
         }
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = bN.instantiate(null, null, 0, 1, params, true);
         if (numParams > 0) {
             layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         }

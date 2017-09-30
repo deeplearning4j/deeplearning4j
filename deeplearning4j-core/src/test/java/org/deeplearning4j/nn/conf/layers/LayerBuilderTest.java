@@ -203,33 +203,32 @@ public class LayerBuilderTest {
     }
 
     private void checkSerialization(Layer layer) throws Exception {
-        NeuralNetConfiguration confExpected = new NeuralNetConfiguration.Builder().layer(layer).build();
-        NeuralNetConfiguration confActual;
-
+        Layer l2;
         // check Java serialization
         byte[] data;
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
-            out.writeObject(confExpected);
+            out.writeObject(layer);
             data = bos.toByteArray();
         }
         try (ByteArrayInputStream bis = new ByteArrayInputStream(data); ObjectInput in = new ObjectInputStream(bis)) {
-            confActual = (NeuralNetConfiguration) in.readObject();
+            l2 = (Layer) in.readObject();
         }
-        assertEquals("unequal Java serialization", confExpected.getLayer(), confActual.getLayer());
+        assertEquals("unequal Java serialization", layer, l2);
 
         // check JSON
-        String json = confExpected.toJson();
-        confActual = NeuralNetConfiguration.fromJson(json);
-        assertEquals("unequal JSON serialization", confExpected.getLayer(), confActual.getLayer());
-
-        // check YAML
-        String yaml = confExpected.toYaml();
-        confActual = NeuralNetConfiguration.fromYaml(yaml);
-        assertEquals("unequal YAML serialization", confExpected.getLayer(), confActual.getLayer());
-
-        // check the layer's use of callSuper on equals method
-        confActual.getLayer().setIDropout(new Dropout(new java.util.Random().nextDouble()));
-        assertNotEquals("broken equals method (missing callSuper?)", confExpected.getLayer(), confActual.getLayer());
+//        String json = layer.toJson();
+//        confActual = NeuralNetConfiguration.fromJson(json);
+//        assertEquals("unequal JSON serialization", layer, l2));
+//
+//        // check YAML
+//        String yaml = confExpected.toYaml();
+//        confActual = NeuralNetConfiguration.fromYaml(yaml);
+//        assertEquals("unequal YAML serialization", layer, l2);
+//
+//        // check the layer's use of callSuper on equals method
+//        confActual.getLayer().setIDropout(new Dropout(new java.util.Random().nextDouble()));
+//        assertNotEquals("broken equals method (missing callSuper?)", layer, l2);
+        throw new UnsupportedOperationException();
     }
 
 }

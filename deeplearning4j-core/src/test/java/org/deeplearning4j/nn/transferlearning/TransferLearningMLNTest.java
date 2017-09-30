@@ -58,7 +58,7 @@ public class TransferLearningMLNTest {
                         .build();
 
         for (org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()) {
-            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
+            BaseLayer bl = ((BaseLayer) l.conf());
             assertEquals(new RmsProp(0.5), bl.getIUpdater());
         }
 
@@ -126,9 +126,9 @@ public class TransferLearningMLNTest {
         //Will fail - expected because of dist and weight init changes
         //assertEquals(modelExpectedArch.getLayerWiseConfigurations().toJson(), modelNow.getLayerWiseConfigurations().toJson());
 
-        BaseLayer bl0 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(0).getLayer());
-        BaseLayer bl1 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(1).getLayer());
-        BaseLayer bl3 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(3).getLayer());
+        BaseLayer bl0 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(0));
+        BaseLayer bl1 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(1));
+        BaseLayer bl3 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(3));
         assertEquals(bl0.getWeightInit(), WeightInit.XAVIER);
         assertEquals(bl0.getDist(), null);
         assertEquals(bl1.getWeightInit(), WeightInit.DISTRIBUTION);
@@ -317,18 +317,19 @@ public class TransferLearningMLNTest {
                         .build();
 
         //modelNow should have the same architecture as modelExpectedArch
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(0).toJson());
-        //some learning related info the subsampling layer will not be overwritten
-        //assertTrue(modelExpectedArch.getLayerWiseConfigurations().getConf(1).toJson().equals(modelNow.getLayerWiseConfigurations().getConf(1).toJson()));
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(2).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(2).toJson());
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(3).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(3).toJson());
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(4).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(4).toJson());
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(5).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(5).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(0).toJson());
+//        //some learning related info the subsampling layer will not be overwritten
+//        //assertTrue(modelExpectedArch.getLayerWiseConfigurations().getConf(1).toJson().equals(modelNow.getLayerWiseConfigurations().getConf(1).toJson()));
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(2).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(2).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(3).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(3).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(4).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(4).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(5).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(5).toJson());
+        fail();
 
         assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());
         assertArrayEquals(modelExpectedArch.getLayer(0).params().shape(), modelNow.getLayer(0).params().shape());
@@ -462,13 +463,13 @@ public class TransferLearningMLNTest {
 
 
         //Check original net isn't modified:
-        BaseLayer l0 = (BaseLayer) net.getLayer(0).conf().getLayer();
+        BaseLayer l0 = (BaseLayer) net.getLayer(0).conf();
         assertEquals(new Adam(1e-4), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
-        BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
+        BaseLayer l1 = (BaseLayer) net.getLayer(1).conf();
         assertEquals(new Adam(1e-4), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(WeightInit.RELU, l1.getWeightInit());
@@ -477,13 +478,13 @@ public class TransferLearningMLNTest {
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
         //Check new net has only the appropriate things modified (i.e., LR)
-        l0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
+        l0 = (BaseLayer) net2.getLayer(0).conf();
         assertEquals(new Adam(2e-2), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
-        l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
+        l1 = (BaseLayer) net2.getLayer(1).conf();
         assertEquals(new Adam(2e-2), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(WeightInit.RELU, l1.getWeightInit());

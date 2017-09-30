@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
+import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.*;
 
@@ -48,24 +49,23 @@ public class TrainModuleUtils {
         layerInfo.add(Collections.emptyMap());
 
 
-        List<NeuralNetConfiguration> list = config.getConfs();
+        List<Layer> list = config.getConfs();
         int layerIdx = 1;
-        for (NeuralNetConfiguration c : list) {
-            Layer layer = c.getLayer();
+        for (Layer layer : list) {
             String layerName = layer.getLayerName();
             if (layerName == null)
                 layerName = "layer" + layerIdx;
             vertexNames.add(layerName);
             originalVertexName.add(String.valueOf(layerIdx - 1));
 
-            String layerType = c.getLayer().getClass().getSimpleName().replaceAll("Layer$", "");
+            String layerType = layer.getClass().getSimpleName().replaceAll("Layer$", "");
             layerTypes.add(layerType);
 
             layerInputs.add(Collections.singletonList(layerIdx - 1));
             layerIdx++;
 
             //Extract layer info
-            Map<String, String> map = getLayerInfo(c, layer);
+            Map<String, String> map = getLayerInfo(layer);
             layerInfo.add(map);
         }
 
@@ -102,7 +102,7 @@ public class TrainModuleUtils {
 
         int layerCount = 0;
         for (Map.Entry<String, Layer> entry : vertices.entrySet()) {
-            Layer gv = entry.getValue();
+            Layer layer = entry.getValue();
             layerNames.add(entry.getKey());
 
             List<String> inputsThisVertex = vertexInputs.get(entry.getKey());
@@ -113,22 +113,12 @@ public class TrainModuleUtils {
 
             layerInputs.add(inputIndexes);
 
-            if (gv instanceof LayerVertex) {
-                NeuralNetConfiguration c = ((LayerVertex) gv).getLayerConf();
-                Layer layer = c.getLayer();
+            String layerType = layer.getClass().getSimpleName().replaceAll("Layer$", "");
+            layerTypes.add(layerType);
 
-                String layerType = layer.getClass().getSimpleName().replaceAll("Layer$", "");
-                layerTypes.add(layerType);
-
-                //Extract layer info
-                Map<String, String> map = getLayerInfo(c, layer);
-                layerInfo.add(map);
-            } else {
-                String layerType = gv.getClass().getSimpleName();
-                layerTypes.add(layerType);
-                Map<String, String> thisVertexInfo = Collections.emptyMap(); //TODO
-                layerInfo.add(thisVertexInfo);
-            }
+            //Extract layer info
+            Map<String, String> map = getLayerInfo(layer);
+            layerInfo.add(map);
             originalVertexName.add(entry.getKey());
         }
 
@@ -239,7 +229,7 @@ public class TrainModuleUtils {
             layerInputs.add(Collections.singletonList(0));
 
             //Extract layer info
-            Map<String, String> map = getLayerInfo(config, layer);
+            Map<String, String> map = getLayerInfo(layer);
             layerInfo.add(map);
         }
 
@@ -248,7 +238,7 @@ public class TrainModuleUtils {
     }
 
 
-    private static Map<String, String> getLayerInfo(NeuralNetConfiguration c, Layer layer) {
+    private static Map<String, String> getLayerInfo(Layer layer) {
 
         Map<String, String> map = new LinkedHashMap<>();
 
@@ -256,7 +246,7 @@ public class TrainModuleUtils {
             FeedForwardLayer layer1 = (FeedForwardLayer) layer;
             map.put("Input size", String.valueOf(layer1.getNIn()));
             map.put("Output size", String.valueOf(layer1.getNOut()));
-            map.put("Num Parameters", String.valueOf(layer1.initializer().numParams(c)));
+            map.put("Num Parameters", String.valueOf(layer1.initializer().numParams(layer)));
             map.put("Activation Function", layer1.getActivationFn().toString());
         }
 

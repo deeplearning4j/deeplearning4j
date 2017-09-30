@@ -399,10 +399,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 //Need to append "0_", "1_" etc to param names from layers...
                 int layerIdx = 0;
                 for (Layer l : ((MultiLayerNetwork) model).getLayers()) {
-                    NeuralNetConfiguration conf = l.conf();
-                    List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
+                    org.deeplearning4j.nn.conf.layers.Layer conf = l.conf();
+                    List<String> paramkeys = l.conf().initializer().paramKeys(l.conf());
                     for(String s : paramkeys){
-                        double lr = conf.getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                        double lr = conf.getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
                         if(Double.isNaN(lr)){
                             //Edge case: No-Op updater, AdaDelta etc - don't have a LR hence return NaN for IUpdater.getLearningRate
                             lr = 0.0;
@@ -413,11 +413,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 }
             } else if (model instanceof ComputationGraph) {
                 for (Layer l : ((ComputationGraph) model).getLayers()) {
-                    NeuralNetConfiguration conf = l.conf();
-                    String layerName = conf.getLayer().getLayerName();
-                    List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
+                    org.deeplearning4j.nn.conf.layers.Layer conf = l.conf();
+                    String layerName = conf.getLayerName();
+                    List<String> paramkeys = l.conf().initializer().paramKeys(l.conf());
                     for(String s : paramkeys){
-                        double lr = conf.getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                        double lr = conf.getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
                         if(Double.isNaN(lr)){
                             //Edge case: No-Op updater, AdaDelta etc - don't have a LR hence return NaN for IUpdater.getLearningRate
                             lr = 0.0;
@@ -427,9 +427,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 }
             } else if (model instanceof Layer) {
                 Layer l = (Layer) model;
-                List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
+                List<String> paramkeys = l.conf().initializer().paramKeys(l.conf());
                 for(String s : paramkeys){
-                    double lr = l.conf().getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                    double lr = l.conf().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
                     lrs.put(s, lr);
                 }
             }
@@ -649,9 +649,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 numParams = cg.numParams();
             } else if (model instanceof Layer) {
                 Layer l = (Layer) model;
-                jsonConf = l.conf().toJson();
+                jsonConf = null;    //l.conf().toJson();
                 numLayers = 1;
                 numParams = l.numParams();
+                throw new UnsupportedOperationException("Not yet implemented"); //TODO
             } else {
                 throw new RuntimeException("Invalid model: Expected MultiLayerNetwork or ComputationGraph. Got: "
                                 + (model == null ? null : model.getClass()));

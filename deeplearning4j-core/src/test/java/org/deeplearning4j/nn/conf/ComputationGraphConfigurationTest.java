@@ -273,7 +273,7 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, String name,
+        public Layer instantiate(Collection<IterationListener> iterationListeners, String name,
                                  int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
             throw new UnsupportedOperationException("Not supported");
         }

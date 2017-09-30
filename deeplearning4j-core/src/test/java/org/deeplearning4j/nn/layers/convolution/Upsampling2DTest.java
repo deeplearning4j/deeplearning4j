@@ -94,10 +94,8 @@ public class Upsampling2DTest {
 
 
     private Layer getUpsamplingLayer() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new Upsampling2D.Builder(size).build()).build();
-        return conf.getLayer().instantiate(conf, null, null, 0, 1, null, true);
+        org.deeplearning4j.nn.conf.layers.Layer l = new Upsampling2D.Builder(size).build();
+        return l.instantiate(null, null, 0, 1, null, true);
     }
 
     public INDArray getData() throws Exception {

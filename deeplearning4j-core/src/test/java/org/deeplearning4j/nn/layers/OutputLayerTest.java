@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
@@ -65,17 +66,13 @@ public class OutputLayerTest {
 
     @Test
     public void testSetParams() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                        .updater(new Sgd(1e-1))
-                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
+                .weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX)
+                .lossFunction(LossFunctions.LossFunction.MCXENT).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf, Collections.<IterationListener>singletonList(new ScoreIterationListener(1)),
+        OutputLayer l = (OutputLayer) conf.instantiate(Collections.<IterationListener>singletonList(new ScoreIterationListener(1)),
                 null,0, 1, params, true);
         params = l.params();
         l.setParams(params);

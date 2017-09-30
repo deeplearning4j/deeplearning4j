@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -48,9 +49,9 @@ public class TestVAE {
                                                         .build())
                                         .build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         int allParams = vae.initializer().numParams(c);
 
@@ -84,9 +85,9 @@ public class TestVAE {
                                             .nOut(5).encoderLayerSizes(encLayerSizes[i]).decoderLayerSizes(13).build())
                             .build();
 
-            NeuralNetConfiguration c = mlc.getConf(0);
+            Layer c = mlc.getConf(0);
             org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                            (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                            (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
             MultiLayerNetwork net = new MultiLayerNetwork(mlc);
             net.init();
@@ -110,9 +111,9 @@ public class TestVAE {
                                         .nIn(inputSize).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
                         .pretrain(true).backprop(false).build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         int allParams = vae.initializer().numParams(c);
 
@@ -148,9 +149,9 @@ public class TestVAE {
                                         .nIn(10).nOut(5).encoderLayerSizes(12, 13).decoderLayerSizes(14, 15).build())
                         .build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
@@ -207,9 +208,9 @@ public class TestVAE {
                                         .activation(new ActivationTanH()).build())
                         .pretrain(true).backprop(true).build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();

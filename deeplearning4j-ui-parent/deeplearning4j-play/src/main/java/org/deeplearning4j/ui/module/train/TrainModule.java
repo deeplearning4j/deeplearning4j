@@ -860,13 +860,11 @@ public class TrainModule implements UIModule {
                 //TODO error handling...
                 String layerType = "";
                 Layer layer = null;
-                NeuralNetConfiguration nnc = null;
                 if (modelClass.endsWith("MultiLayerNetwork")) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(configJson);
                     int confIdx = layerIdx - 1; //-1 because of input
                     if (confIdx >= 0) {
-                        nnc = conf.getConf(confIdx);
-                        layer = nnc.getLayer();
+                        layer = conf.getConf(confIdx);
                     } else {
                         //Input layer
                         layerType = "Input";
@@ -879,8 +877,7 @@ public class TrainModule implements UIModule {
                     Map<String, Layer> vertices = conf.getVertices();
                     if (vertices.containsKey(vertexName) && vertices.get(vertexName) instanceof LayerVertex) {
                         LayerVertex lv = (LayerVertex) vertices.get(vertexName);
-                        nnc = lv.getLayerConf();
-                        layer = nnc.getLayer();
+                        layer = lv.getLayerConf();
                     } else if (conf.getNetworkInputs().contains(vertexName)) {
                         layerType = "Input";
                     } else {
@@ -913,7 +910,7 @@ public class TrainModule implements UIModule {
                     if (layer instanceof BaseLayer) {
                         BaseLayer bl = (BaseLayer) layer;
                         activationFn = bl.getActivationFn().toString();
-                        int nParams = layer.initializer().numParams(nnc);
+                        int nParams = layer.initializer().numParams(bl);
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
                                         String.valueOf(nParams)});
                         if (nParams > 0) {

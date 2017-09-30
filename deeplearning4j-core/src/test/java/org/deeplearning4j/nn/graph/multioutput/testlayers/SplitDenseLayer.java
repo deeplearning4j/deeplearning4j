@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 public class SplitDenseLayer extends DenseLayer {
-    public SplitDenseLayer(NeuralNetConfiguration conf) {
+    public SplitDenseLayer(SplitDenseLayerConf conf) {
         super(conf);
     }
 

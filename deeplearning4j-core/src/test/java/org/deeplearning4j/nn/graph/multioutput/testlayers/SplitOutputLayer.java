@@ -13,7 +13,7 @@ public class SplitOutputLayer extends OutputLayer {
 
     protected Activations twoLabels;
 
-    public SplitOutputLayer(NeuralNetConfiguration conf) {
+    public SplitOutputLayer(SplitOutputLayerConf conf) {
         super(conf);
     }
 

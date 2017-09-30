@@ -111,9 +111,9 @@ public class TransferLearningCompGraphTest {
                         //.setOutputs("layer3")
                         .build();
 
-        BaseLayer bl0 = ((BaseLayer) modelNow.getLayer("layer0").conf().getLayer());
-        BaseLayer bl1 = ((BaseLayer) modelNow.getLayer("layer1").conf().getLayer());
-        BaseLayer bl3 = ((BaseLayer) modelNow.getLayer("layer3").conf().getLayer());
+        BaseLayer bl0 = ((BaseLayer) modelNow.getLayer("layer0").conf());
+        BaseLayer bl1 = ((BaseLayer) modelNow.getLayer("layer1").conf());
+        BaseLayer bl3 = ((BaseLayer) modelNow.getLayer("layer3").conf());
         assertEquals(bl0.getWeightInit(), WeightInit.DISTRIBUTION);
         assertEquals(bl0.getDist(), new NormalDistribution(1, 1e-1));
         assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);

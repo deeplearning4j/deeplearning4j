@@ -27,15 +27,12 @@ public class SeedTest {
 
     @Test
     public void testAutoEncoderSeed() {
-        AutoEncoder layerType = new AutoEncoder.Builder().nIn(4).nOut(3).corruptionLevel(0.0)
+        AutoEncoder l = new AutoEncoder.Builder().nIn(4).nOut(3).corruptionLevel(0.0)
                         .activation(Activation.SIGMOID).build();
 
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().layer(layerType).seed(123).build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = l.initializer().numParams(l);
         INDArray params = Nd4j.create(1, numParams);
-        Model layer = (Model)conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Model layer = (Model)l.instantiate(null, null, 0, 1, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         Activations a = ActivationsFactory.getInstance().create(data.getFeatures());
         layer.fit(a);

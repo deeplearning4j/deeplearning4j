@@ -50,14 +50,14 @@ public class CustomLayer extends FeedForwardLayer {
 
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, String name,
+    public Layer instantiate(Collection<IterationListener> iterationListeners, String name,
                              int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
-        CustomLayerImpl ret = new CustomLayerImpl(conf);
+        CustomLayerImpl ret = new CustomLayerImpl(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

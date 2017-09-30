@@ -89,6 +89,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.layerName = builder.layerName;
         this.iDropout = builder.iDropout;
         this.preProcessor = builder.preProcessor;
+        this.seed = builder.seed;
     }
 
     public int minInputs(){
@@ -271,6 +272,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected List<LayerConstraint> biasConstraints;
         protected IDropout iDropout;
         protected InputPreProcessor preProcessor;
+        protected long seed;
 
         /**
          * Layer name assigns layer string name.
@@ -363,6 +365,11 @@ public abstract class Layer implements Serializable, Cloneable {
          */
         public T preProcessor(InputPreProcessor preProcessor){
             this.preProcessor = preProcessor;
+            return (T) this;
+        }
+
+        public T seed(long seed){
+            this.seed = seed;
             return (T) this;
         }
 

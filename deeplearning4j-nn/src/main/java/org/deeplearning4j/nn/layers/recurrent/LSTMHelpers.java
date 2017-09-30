@@ -181,7 +181,7 @@ public class LSTMHelpers {
         }
 
         if (helper != null) {
-            FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
+            FwdPassReturn ret = helper.activate(layer, gateActivationFn, input, recurrentWeights, inputWeights,
                             biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards,
                             inputWeightKey, maskArray, hasPeepholeConnections);
             if (ret != null) {

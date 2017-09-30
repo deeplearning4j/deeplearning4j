@@ -296,10 +296,10 @@ public class MultiLayerNeuralNetConfigurationTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DenseLayer dl = (DenseLayer) conf.getConf(0).getLayer();
+        DenseLayer dl = (DenseLayer) conf.getConf(0);
         assertEquals(3, dl.getNIn());
         assertEquals(4, dl.getNOut());
-        OutputLayer ol = (OutputLayer) conf.getConf(1).getLayer();
+        OutputLayer ol = (OutputLayer) conf.getConf(1);
         assertEquals(4, ol.getNIn());
         assertEquals(5, ol.getNOut());
 
@@ -353,10 +353,10 @@ public class MultiLayerNeuralNetConfigurationTest {
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
 
-        org.deeplearning4j.nn.conf.layers.BaseLayer l0 = (BaseLayer) conf.getConf(0).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l1 = (BaseLayer) conf.getConf(1).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l0 = (BaseLayer) conf.getConf(0);
+        org.deeplearning4j.nn.conf.layers.BaseLayer l1 = (BaseLayer) conf.getConf(1);
+        org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2);
+        org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3);
 
         assertEquals(0.5, ((Adam)l0.getUpdaterByParam("b")).getLearningRate(), 1e-6);
         assertEquals(1e-2, ((Adam)l0.getUpdaterByParam("W")).getLearningRate(), 1e-6);

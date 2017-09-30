@@ -54,9 +54,9 @@ public class TestTransferLearningModelSerializer {
         assertTrue(withFrozen.getLayer(1) instanceof FrozenLayer);
 
         assertTrue(withFrozen.getLayerWiseConfigurations().getConf(0)
-                        .getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
+                         instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
         assertTrue(withFrozen.getLayerWiseConfigurations().getConf(1)
-                        .getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
+                         instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 
         MultiLayerNetwork restored = TestUtils.testModelSerialization(withFrozen);
 
@@ -103,8 +103,8 @@ public class TestTransferLearningModelSerializer {
         assertTrue(withFrozen.getLayer(1) instanceof FrozenLayer);
 
         Map<String, Layer> m = withFrozen.getConfiguration().getVertices();
-        Layer l0 = ((LayerVertex) m.get("0")).getLayerConf().getLayer();
-        Layer l1 = ((LayerVertex) m.get("1")).getLayerConf().getLayer();
+        Layer l0 = ((LayerVertex) m.get("0")).getLayerConf();
+        Layer l1 = ((LayerVertex) m.get("1")).getLayerConf();
         assertTrue(l0 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
         assertTrue(l1 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 

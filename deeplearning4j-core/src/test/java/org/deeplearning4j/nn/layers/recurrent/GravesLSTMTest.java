@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
@@ -42,15 +43,12 @@ public class GravesLSTMTest {
         int nIn = 13;
         int nHiddenUnits = 17;
 
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
-                                                        .nOut(nHiddenUnits).activation(Activation.TANH).build())
-                                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
+                .nOut(nHiddenUnits).activation(Activation.TANH).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM layer = (GravesLSTM) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        GravesLSTM layer = (GravesLSTM) conf.instantiate(null, null, 0, 1, params, true);
 
         //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -88,16 +86,14 @@ public class GravesLSTMTest {
 
         INDArray inputData = Nd4j.ones(miniBatchSize, nIn, timeSeriesLength);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
-                                        .nOut(lstmNHiddenUnits).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
-                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
+                .nOut(lstmNHiddenUnits).weightInit(WeightInit.DISTRIBUTION)
+                .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
-        lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
+        GravesLSTM lstm = (GravesLSTM) conf.instantiate(null, null, 0, 1, params, true);
+        lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.initializer().numParams(conf)));
         //Set input, do a forward pass:
         lstm.activate(af.create(inputData)).get(0);
         assertNotNull(lstm.getInput());
@@ -138,15 +134,13 @@ public class GravesLSTMTest {
         int miniBatchSize = 4;
         int timeSeriesLength = 7;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                                        .activation(Activation.TANH).build())
-                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                .activation(Activation.TANH).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        GravesLSTM lstm = (GravesLSTM) conf.instantiate(null, null, 0, 1, params, true);
         INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         lstm.setInput(af.create(input));
 
@@ -251,7 +245,7 @@ public class GravesLSTMTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesLSTM) net.getLayer(0).conf().getLayer())
+            assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesLSTM) net.getLayer(0).conf())
                             .getGateActivationFn().toString());
 
             INDArray in = Nd4j.rand(new int[] {3, 2, 5});

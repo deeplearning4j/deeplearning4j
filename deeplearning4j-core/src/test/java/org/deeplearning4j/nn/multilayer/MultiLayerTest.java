@@ -507,9 +507,9 @@ public class MultiLayerTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
+        assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayerName());
         assertEquals(layerNameList, net.getLayerNames());
-        BaseLayer b = (BaseLayer) net.getLayer(layerNameList.get(2)).conf().getLayer();
+        BaseLayer b = (BaseLayer) net.getLayer(layerNameList.get(2)).conf();
         assertEquals("softmax", b.getActivationFn().toString());
     }
 
@@ -742,9 +742,10 @@ public class MultiLayerTest {
 
         // Test pretrain true
         MultiLayerNetwork rbmPre = getRBMModel(true, nIn, nOut);
-        assertTrue(rbmPre.conf().isPretrain()); // check on the network
-        assertTrue(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
+//        assertTrue(rbmPre.conf().isPretrain()); // check on the network
+//        assertTrue(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
+//        assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
+        fail();
         int actualNP = rbmPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         INDArray params = rbmPre.params();
@@ -758,9 +759,10 @@ public class MultiLayerTest {
 
         // Test pretrain false, expect same for true because its not changed when applying update
         MultiLayerNetwork rbmNoPre = getRBMModel(false, nIn, nOut);
-        assertFalse(rbmNoPre.conf().isPretrain());
-        assertFalse(rbmNoPre.getLayer(0).conf().isPretrain());
-        assertFalse(rbmPre.getLayer(1).conf().isPretrain());
+//        assertFalse(rbmNoPre.conf().isPretrain());
+//        assertFalse(rbmNoPre.getLayer(0).conf().isPretrain());
+//        assertFalse(rbmPre.getLayer(1).conf().isPretrain());
+        fail();
         actualNP = rbmNoPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         params = rbmNoPre.params();
@@ -777,10 +779,10 @@ public class MultiLayerTest {
 
         MultiLayerNetwork rbmPre = getRBMModel(true, nIn, nOut);
         rbmPre.pretrainLayer(0, input);
-        assertTrue(rbmPre.conf().isPretrain()); // check on the network
-        assertFalse(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-
+//        assertTrue(rbmPre.conf().isPretrain()); // check on the network
+//        assertFalse(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
+//        assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
+        fail();
     }
 
     public MultiLayerNetwork getRBMModel(boolean preTrain, int nIn, int nOut) {
@@ -869,7 +871,7 @@ public class MultiLayerTest {
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
 
-        BaseLayer bl0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
+        BaseLayer bl0 = (BaseLayer) net2.getLayer(0).conf();
         assertEquals(0.1, bl0.getL1Bias(), 1e-6);
         assertEquals(0.2, bl0.getL2Bias(), 1e-6);
 

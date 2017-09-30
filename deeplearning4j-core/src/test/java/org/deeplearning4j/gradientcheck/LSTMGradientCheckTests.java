@@ -459,7 +459,7 @@ public class LSTMGradientCheckTests {
                         .setInputType(InputType.convolutional(10, 10, 3)).pretrain(false).backprop(true).build();
 
         //Here: ConvolutionLayerSetup in config builder doesn't know that we are expecting time series input, not standard FF input -> override it here
-        conf.getConf(0).getLayer().setPreProcessor(new RnnToCnnPreProcessor(10, 10, 3));
+        conf.getConf(0).setPreProcessor(new RnnToCnnPreProcessor(10, 10, 3));
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();

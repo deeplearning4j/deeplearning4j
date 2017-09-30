@@ -6,10 +6,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -39,14 +36,12 @@ public class TestPreProcessors {
             int timeSeriesLength = timeSeriesLengths[x];
 
             RnnToFeedForwardPreProcessor proc = new RnnToFeedForwardPreProcessor();
-            NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder()
-                            .layer(new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
-                                            .nOut(layerSize).build())
-                            .build();
+            Layer conf = new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
+                    .nOut(layerSize).build();
 
-            int numParams = nnc.getLayer().initializer().numParams(nnc);
+            int numParams = conf.initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, null, 0, 1, params, true);
+            DenseLayer layer = (DenseLayer) conf.instantiate(null, null, 0, 1, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray activations3dc = Nd4j.create(new int[] {miniBatchSize, layerSize, timeSeriesLength}, 'c');
@@ -124,14 +119,12 @@ public class TestPreProcessors {
 
             FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor();
 
-            NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder()
-                            .layer(new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
-                                            .nOut(layerSize).build())
-                            .build();
+            Layer conf = new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
+                    .nOut(layerSize).build();
 
-            int numParams = nnc.getLayer().initializer().numParams(nnc);
+            int numParams = conf.initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, null, 0, 1, params, true);
+            DenseLayer layer = (DenseLayer) conf.instantiate(null, null, 0, 1, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray rand = Nd4j.rand(miniBatchSize * timeSeriesLength, layerSize);
@@ -208,17 +201,14 @@ public class TestPreProcessors {
 
                             InputPreProcessor proc = new CnnToRnnPreProcessor(inputHeight, inputWidth, nChannels);
 
-                            NeuralNetConfiguration nnc =
-                                            new NeuralNetConfiguration.Builder()
-                                                            .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
-                                                                            inputWidth, inputHeight).nIn(cnnNChannelsIn)
-                                                                                            .nOut(nChannels).build())
-                                                            .build();
+                            Layer nnc = new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                    inputWidth, inputHeight).nIn(cnnNChannelsIn)
+                                    .nOut(nChannels).build();
 
-                            int numParams = nnc.getLayer().initializer().numParams(nnc);
+                            int numParams = nnc.initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
-                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, null, 0, 1, params, true);
+                                            (ConvolutionLayer) nnc.instantiate(null, null, 0, 1, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             INDArray activationsCnn = Nd4j.rand(new int[] {miniBatchSize * timeSeriesLength, nChannels,
@@ -290,17 +280,14 @@ public class TestPreProcessors {
                         for (int nChannels : numChannels) {
                             InputPreProcessor proc = new RnnToCnnPreProcessor(inputHeight, inputWidth, nChannels);
 
-                            NeuralNetConfiguration nnc =
-                                            new NeuralNetConfiguration.Builder()
-                                                            .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
-                                                                            inputWidth, inputHeight).nIn(cnnNChannelsIn)
-                                                                                            .nOut(nChannels).build())
-                                                            .build();
+                            Layer nnc = new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                    inputWidth, inputHeight).nIn(cnnNChannelsIn)
+                                    .nOut(nChannels).build();
 
-                            int numParams = nnc.getLayer().initializer().numParams(nnc);
+                            int numParams = nnc.initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
-                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, null, 0, 1, params, true);
+                                            (ConvolutionLayer) nnc.instantiate(null, null, 0, 1, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             int[] shape_rnn = new int[] {miniBatchSize, nChannels * inputHeight * inputWidth,
@@ -390,9 +377,9 @@ public class TestPreProcessors {
                                     .build();
         //Expect preprocessors: layer1: FF->RNN; 2: RNN->FF; 3: FF->RNN
 //        assertEquals(3, conf1.getConf().getInputPreProcessors().size());
-        assertTrue(conf1.getConf(1).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
-        assertTrue(conf1.getConf(2).getLayer().getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
-        assertTrue(conf1.getConf(3).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf1.getConf(1).getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf1.getConf(2).getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
+        assertTrue(conf1.getConf(3).getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
 
         //FF-> CNN, CNN-> FF, FF->RNN
@@ -403,9 +390,9 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN; 1: CNN->FF; 2: FF->RNN
-        assertTrue(conf2.getConf(0).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf2.getConf(1).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        assertTrue(conf2.getConf(2).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf2.getConf(0).getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf2.getConf(1).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2.getConf(2).getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
         //CNN-> FF, FF->RNN - InputType.convolutional instead of convolutionalFlat
         MultiLayerConfiguration conf2a = new NeuralNetConfiguration.Builder().list()
@@ -415,8 +402,8 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
         //Expect preprocessors: 1: CNN->FF; 2: FF->RNN
-        assertTrue(conf2a.getConf(1).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        assertTrue(conf2a.getConf(2).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf2a.getConf(1).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2a.getConf(2).getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
 
         //FF->CNN and CNN->RNN:
@@ -427,8 +414,8 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;
-        assertTrue(conf3.getConf(0).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf3.getConf(1).getLayer().getPreProcessor() instanceof CnnToRnnPreProcessor);
+        assertTrue(conf3.getConf(0).getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf3.getConf(1).getPreProcessor() instanceof CnnToRnnPreProcessor);
     }
 
     @Test
@@ -451,14 +438,14 @@ public class TestPreProcessors {
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true)
                         .pretrain(false).build();
 
-        assertNotNull(conf.getConf(0).getLayer().getPreProcessor());
-        assertNotNull(conf.getConf(1).getLayer().getPreProcessor());
+        assertNotNull(conf.getConf(0).getPreProcessor());
+        assertNotNull(conf.getConf(1).getPreProcessor());
 
-        assertTrue(conf.getConf(0).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf.getConf(1).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf.getConf(0).getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf.getConf(1).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
 
-        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) conf.getConf(0).getLayer().getPreProcessor();
-        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) conf.getConf(1).getLayer().getPreProcessor();
+        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) conf.getConf(0).getPreProcessor();
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) conf.getConf(1).getPreProcessor();
 
         assertEquals(28, ffcnn.getInputHeight());
         assertEquals(28, ffcnn.getInputWidth());
@@ -468,6 +455,6 @@ public class TestPreProcessors {
         assertEquals(15, cnnff.getInputWidth());
         assertEquals(10, cnnff.getNumChannels());
 
-        assertEquals(15 * 15 * 10, ((FeedForwardLayer) conf.getConf(1).getLayer()).getNIn());
+        assertEquals(15 * 15 * 10, ((FeedForwardLayer) conf.getConf(1)).getNIn());
     }
 }

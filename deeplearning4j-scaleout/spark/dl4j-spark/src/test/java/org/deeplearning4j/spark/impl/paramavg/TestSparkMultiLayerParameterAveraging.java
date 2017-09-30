@@ -205,14 +205,14 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         netCopy.fit(data);
-        IUpdater expectedUpdater = ((BaseLayer) netCopy.conf().getLayer()).getIUpdater();
-        double expectedLR = ((Nesterovs)((BaseLayer) netCopy.conf().getLayer()).getIUpdater()).getLearningRate();
-        double expectedMomentum = ((Nesterovs)((BaseLayer) netCopy.conf().getLayer()).getIUpdater()).getMomentum();
+        IUpdater expectedUpdater = ((BaseLayer) netCopy.conf()).getIUpdater();
+        double expectedLR = ((Nesterovs)((BaseLayer) netCopy.conf()).getIUpdater()).getLearningRate();
+        double expectedMomentum = ((Nesterovs)((BaseLayer) netCopy.conf()).getIUpdater()).getMomentum();
 
-        IUpdater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater();
+        IUpdater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf()).getIUpdater();
         sparkNet.fit(sparkData);
-        double actualLR = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater()).getLearningRate();
-        double actualMomentum = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater()).getMomentum();
+        double actualLR = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf()).getIUpdater()).getLearningRate();
+        double actualMomentum = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf()).getIUpdater()).getMomentum();
 
         assertEquals(expectedUpdater, actualUpdater);
         assertEquals(expectedLR, actualLR, 0.01);

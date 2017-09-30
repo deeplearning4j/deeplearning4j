@@ -72,9 +72,9 @@ public class TransferLearningComplex {
         Layer[] layers = graph2.getLayers();
 
         for (Layer l : layers) {
-            String name = l.conf().getLayer().getLayerName();
+            String name = l.conf().getLayerName();
             log.info(name + "\t frozen: " + (l instanceof FrozenLayer));
-            if ("C".equals(l.conf().getLayer().getLayerName())) {
+            if ("C".equals(l.conf().getLayerName())) {
                 //Only C should be frozen in this config
                 cFound = true;
                 assertTrue(name, l instanceof FrozenLayer);
@@ -83,7 +83,7 @@ public class TransferLearningComplex {
             }
 
             //Also check config:
-            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
+            BaseLayer bl = ((BaseLayer) l.conf());
             assertEquals(new Adam(2e-2), bl.getIUpdater());
             assertEquals(Activation.LEAKYRELU.getActivationFunction(), bl.getActivationFn());
         }

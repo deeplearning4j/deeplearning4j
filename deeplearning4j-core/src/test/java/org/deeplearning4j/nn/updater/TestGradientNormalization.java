@@ -23,15 +23,13 @@ public class TestGradientNormalization {
     public void testRenormalizatonPerLayer() {
         Nd4j.getRandom().setSeed(12345);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new DenseLayer.Builder().nIn(10).nOut(20)
-                                        .updater(new NoOp())
-                                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
-                        .build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20)
+                .updater(new NoOp())
+                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = conf.instantiate(null, null, 0, 1, params, true);
         INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
         layer.setBackpropGradientsViewArray(gradArray);
         INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
@@ -69,15 +67,13 @@ public class TestGradientNormalization {
     public void testRenormalizationPerParamType() {
         Nd4j.getRandom().setSeed(12345);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new DenseLayer.Builder().nIn(10).nOut(20)
-                                        .updater(new NoOp())
-                                        .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType).build())
-                        .build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20)
+                .updater(new NoOp())
+                .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = conf.instantiate(null, null, 0, 1, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20);
@@ -102,15 +98,13 @@ public class TestGradientNormalization {
         Nd4j.getRandom().setSeed(12345);
         double threshold = 3;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                        new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
-                                        .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                                        .gradientNormalizationThreshold(threshold).build())
-                        .build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
+                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(threshold).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = conf.instantiate(null, null, 0, 1, params, true);
         INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
         layer.setBackpropGradientsViewArray(gradArray);
         INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
@@ -158,15 +152,13 @@ public class TestGradientNormalization {
             //t=0: small -> no clipping
             //t=1: large -> clipping
 
-            NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                            new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
-                                            .gradientNormalization(GradientNormalization.ClipL2PerLayer)
-                                            .gradientNormalizationThreshold(threshold).build())
-                            .build();
+            org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
+                    .gradientNormalization(GradientNormalization.ClipL2PerLayer)
+                    .gradientNormalizationThreshold(threshold).build();
 
-            int numParams = conf.getLayer().initializer().numParams(conf);
+            int numParams = conf.initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
-            Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+            Layer layer = conf.instantiate(null, null, 0, 1, params, true);
             INDArray gradArray = Nd4j.rand(1, 220).muli(t == 0 ? 0.05 : 10).subi(t == 0 ? 0 : 5);
             layer.setBackpropGradientsViewArray(gradArray);
             INDArray weightGrad =
@@ -213,15 +205,13 @@ public class TestGradientNormalization {
         Nd4j.getRandom().setSeed(12345);
         double threshold = 3;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                        new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
-                                        .gradientNormalization(GradientNormalization.ClipL2PerParamType)
-                                        .gradientNormalizationThreshold(threshold).build())
-                        .build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
+                .gradientNormalization(GradientNormalization.ClipL2PerParamType)
+                .gradientNormalizationThreshold(threshold).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        Layer layer = conf.instantiate(null, null, 0, 1, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20).muli(0.05);

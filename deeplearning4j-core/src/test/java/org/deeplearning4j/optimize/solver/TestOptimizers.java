@@ -1,10 +1,7 @@
 package org.deeplearning4j.optimize.solver;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
@@ -193,10 +190,12 @@ public class TestOptimizers {
             System.out.println("---------\n Alg= " + oa + ", nIter= " + numLineSearchIter + ", nDimensions= "
                             + nDimensions);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().maxNumLineSearchIterations(numLineSearchIter)
+        NeuralNetConfiguration conf = null;
+        /*
+                new NeuralNetConfiguration.Builder().maxNumLineSearchIterations(numLineSearchIter)
                         //.iterations(100)
                         .updater(new Sgd(1e-2))
-                        .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();
+                        .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();*/
         conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
         Random rng = new DefaultRandom(12345L);
@@ -212,7 +211,7 @@ public class TestOptimizers {
             System.out.println(m.params());
         }
 
-        ConvexOptimizer opt = getOptimizer(oa, conf, m);
+        ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
 
         opt.setupSearchState(new Pair<>(p.getFirst().getParameterGradients(), p.getSecond()));
         opt.optimize();
@@ -233,14 +232,14 @@ public class TestOptimizers {
                         scoreAfter < scoreBefore);
     }
 
-    private static ConvexOptimizer getOptimizer(OptimizationAlgorithm oa, NeuralNetConfiguration conf, Model m) {
+    private static ConvexOptimizer getOptimizer(OptimizationAlgorithm oa, OptimizationConfig conf, Model m) {
         switch (oa) {
             case STOCHASTIC_GRADIENT_DESCENT:
-                return new StochasticGradientDescent(conf, new NegativeDefaultStepFunction(), null, m);
+                return new StochasticGradientDescent(conf, new NegativeDefaultStepFunction(),  m);
             case LINE_GRADIENT_DESCENT:
-                return new LineGradientDescent(conf, new NegativeDefaultStepFunction(), null, m);
+                return new LineGradientDescent(conf, new NegativeDefaultStepFunction(), m);
             case CONJUGATE_GRADIENT:
-                return new ConjugateGradient(conf, new NegativeDefaultStepFunction(), null, m);
+                return new ConjugateGradient(conf, new NegativeDefaultStepFunction(), m);
             case LBFGS:
                 return new LBFGS(conf, new NegativeDefaultStepFunction(), null, m);
             default:
@@ -284,9 +283,10 @@ public class TestOptimizers {
             Random rng = new DefaultRandom(12345L);
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
                             new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
-            NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+            NeuralNetConfiguration conf = null;
+            /*new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).updater(new Sgd(0.1))
-                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();*/
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new SphereFunctionModel(100, dist, conf);
@@ -294,7 +294,7 @@ public class TestOptimizers {
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[0] = m.score(); //Before optimization
             } else {
-                ConvexOptimizer opt = getOptimizer(oa, conf, m);
+                ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
                 opt.optimize();
                 Pair<Gradients,Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
@@ -363,6 +363,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public OptimizationConfig getOptimizationConfig() {
+            return null;
+        }
+
+        @Override
         public int numParams(boolean backwards) {
             return 0;
         }
@@ -370,6 +375,16 @@ public class TestOptimizers {
         @Override
         public void setParamsViewArray(INDArray params) {
             throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public void setConf(org.deeplearning4j.nn.conf.layers.Layer layer) {
+
+        }
+
+        @Override
+        public org.deeplearning4j.nn.conf.layers.Layer conf() {
+            return null;
         }
 
         @Override
@@ -469,10 +484,11 @@ public class TestOptimizers {
         double[] scores = new double[nOptIter + 1];
 
         for (int i = 0; i <= nOptIter; i++) {
-            NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+            NeuralNetConfiguration conf = null;
+            /*new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).miniBatch(false)
                             .updater(new AdaGrad(1e-2))
-                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();*/
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(10, conf);
@@ -481,7 +497,7 @@ public class TestOptimizers {
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[0] = m.score(); //Before optimization
             } else {
-                ConvexOptimizer opt = getOptimizer(oa, conf, m);
+                ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
                 opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
                 opt.optimize();
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
@@ -603,6 +619,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public OptimizationConfig getOptimizationConfig() {
+            return null;
+        }
+
+        @Override
         public int numParams(boolean backwards) {
             return 0;
         }
@@ -610,6 +631,16 @@ public class TestOptimizers {
         @Override
         public void setParamsViewArray(INDArray params) {
             throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public void setConf(org.deeplearning4j.nn.conf.layers.Layer layer) {
+
+        }
+
+        @Override
+        public org.deeplearning4j.nn.conf.layers.Layer conf() {
+            return null;
         }
 
         @Override
@@ -704,12 +735,13 @@ public class TestOptimizers {
         double[] scores = new double[nOptIter + 1];
 
         for (int i = 0; i <= nOptIter; i++) {
-            NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+            NeuralNetConfiguration conf = null;
+            /*new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter)
                             .updater(new Sgd(1e-1))
                             .stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
                             .layer(new RBM.Builder().nIn(1).nOut(1).build())
-                            .build();
+                            .build();*/
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RosenbrockFunctionModel(100, conf);
@@ -717,7 +749,7 @@ public class TestOptimizers {
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[0] = m.score(); //Before optimization
             } else {
-                ConvexOptimizer opt = getOptimizer(oa, conf, m);
+                ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
                 opt.optimize();
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
@@ -851,6 +883,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public OptimizationConfig getOptimizationConfig() {
+            return null;
+        }
+
+        @Override
         public int numParams(boolean backwards) {
             return 0;
         }
@@ -858,6 +895,16 @@ public class TestOptimizers {
         @Override
         public void setParamsViewArray(INDArray params) {
             throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public void setConf(org.deeplearning4j.nn.conf.layers.Layer layer) {
+
+        }
+
+        @Override
+        public org.deeplearning4j.nn.conf.layers.Layer conf() {
+            return null;
         }
 
         @Override
@@ -1033,16 +1080,6 @@ public class TestOptimizers {
         @Override
         public void setParams(INDArray params) {
             this.parameters = params;
-        }
-
-        @Override
-        public NeuralNetConfiguration conf() {
-            return conf;
-        }
-
-        @Override
-        public void setConf(NeuralNetConfiguration conf) {
-            throw new UnsupportedOperationException();
         }
 
         @Override

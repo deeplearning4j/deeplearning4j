@@ -18,18 +18,17 @@ public class SplitDenseLayerConf extends DenseLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         LayerValidation.assertNInNOutSet("SplitDenseLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        SplitDenseLayer ret = new SplitDenseLayer(conf);
+        SplitDenseLayer ret = new SplitDenseLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 

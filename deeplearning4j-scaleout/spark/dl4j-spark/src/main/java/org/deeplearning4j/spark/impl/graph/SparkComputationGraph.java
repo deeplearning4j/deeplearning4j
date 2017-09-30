@@ -547,7 +547,7 @@ public class SparkComputationGraph extends SparkListenable {
      * @return     {@link RegressionEvaluation} instance with regression performance
      */
     public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize) {
-        int nOut = ((FeedForwardLayer) network.getOutputLayer(0).conf().getLayer()).getNOut();
+        int nOut = ((FeedForwardLayer) network.getOutputLayer(0).conf()).getNOut();
         return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
     }
 

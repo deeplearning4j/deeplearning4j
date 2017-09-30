@@ -91,10 +91,8 @@ public class Upsampling1DTest {
 
 
     private Layer getUpsampling1DLayer() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new Upsampling1D.Builder(size).build()).build();
-        return conf.getLayer().instantiate(conf, null, null, 0, 1,
+        org.deeplearning4j.nn.conf.layers.Layer conf = new Upsampling1D.Builder(size).build();
+        return conf.instantiate(null, null, 0, 1,
                 null, true);
     }
 

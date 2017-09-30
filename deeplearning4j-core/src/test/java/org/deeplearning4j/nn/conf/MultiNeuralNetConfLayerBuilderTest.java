@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
@@ -67,8 +68,8 @@ public class MultiNeuralNetConfLayerBuilderTest {
                                         .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1)
                                                         .activation(act).build())
                                         .build();
-        NeuralNetConfiguration firstLayer = multiConf1.getConf(0);
-        NeuralNetConfiguration secondLayer = multiConf1.getConf(1);
+        Layer firstLayer = multiConf1.getConf(0);
+        Layer secondLayer = multiConf1.getConf(1);
 
         assertFalse(firstLayer.equals(secondLayer));
     }

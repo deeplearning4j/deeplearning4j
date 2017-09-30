@@ -97,8 +97,8 @@ public class ConvolutionLayerSetupTest {
         incomplete.setInputType(InputType.convolutionalFlat(28, 28, 1));
 
         MultiLayerConfiguration testConf = incomplete.build();
-        assertEquals(800, ((FeedForwardLayer) testConf.getConf(4).getLayer()).getNIn());
-        assertEquals(500, ((FeedForwardLayer) testConf.getConf(5).getLayer()).getNIn());
+        assertEquals(800, ((FeedForwardLayer) testConf.getConf(4)).getNIn());
+        assertEquals(500, ((FeedForwardLayer) testConf.getConf(5)).getNIn());
 
         //test instantiation
         DataSetIterator iter = new MnistDataSetIterator(10, 10);
@@ -118,7 +118,7 @@ public class ConvolutionLayerSetupTest {
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
         builder.setInputType(InputType.convolutional(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
-        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2).getLayer();
+        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2);
         assertEquals(6, layer2.getNIn());
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -140,7 +140,7 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(3).getLayer();
+        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(3);
         assertEquals(6, layer2.getNIn());
 
     }
@@ -282,14 +282,14 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        assertNotNull(conf.getConf(2).getLayer().getPreProcessor());
-        assertTrue(conf.getConf(2).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getLayer().getPreProcessor();
+        assertNotNull(conf.getConf(2).getPreProcessor());
+        assertTrue(conf.getConf(2).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getPreProcessor();
         assertEquals(8, proc.getInputHeight());
         assertEquals(8, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2)).getNIn());
     }
 
     @Test
@@ -303,14 +303,14 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        assertNotNull(conf.getConf(2).getLayer().getPreProcessor());
-        assertTrue(conf.getConf(2).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getLayer().getPreProcessor();
+        assertNotNull(conf.getConf(2).getPreProcessor());
+        assertTrue(conf.getConf(2).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getPreProcessor();
         assertEquals(42, proc.getInputHeight());
         assertEquals(42, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2)).getNIn());
     }
 
 

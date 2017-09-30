@@ -52,9 +52,9 @@ public class TestWeightNoise {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            assertEquals(wn, ((BaseLayer) net.getLayer(0).conf().getLayer()).getWeightNoise());
-            assertEquals(new DropConnect(0.25), ((BaseLayer) net.getLayer(1).conf().getLayer()).getWeightNoise());
-            assertEquals(wn, ((BaseLayer) net.getLayer(2).conf().getLayer()).getWeightNoise());
+            assertEquals(wn, ((BaseLayer) net.getLayer(0).conf()).getWeightNoise());
+            assertEquals(new DropConnect(0.25), ((BaseLayer) net.getLayer(1).conf()).getWeightNoise());
+            assertEquals(wn, ((BaseLayer) net.getLayer(2).conf()).getWeightNoise());
 
             TestUtils.testModelSerialization(net);
 
@@ -72,9 +72,9 @@ public class TestWeightNoise {
             ComputationGraph graph = new ComputationGraph(conf2);
             graph.init();
 
-            assertEquals(wn, ((BaseLayer) graph.getLayer(0).conf().getLayer()).getWeightNoise());
-            assertEquals(new DropConnect(0.25), ((BaseLayer) graph.getLayer(1).conf().getLayer()).getWeightNoise());
-            assertEquals(wn, ((BaseLayer) graph.getLayer(2).conf().getLayer()).getWeightNoise());
+            assertEquals(wn, ((BaseLayer) graph.getLayer(0).conf()).getWeightNoise());
+            assertEquals(new DropConnect(0.25), ((BaseLayer) graph.getLayer(1).conf()).getWeightNoise());
+            assertEquals(wn, ((BaseLayer) graph.getLayer(2).conf()).getWeightNoise());
 
             TestUtils.testModelSerialization(graph);
         }

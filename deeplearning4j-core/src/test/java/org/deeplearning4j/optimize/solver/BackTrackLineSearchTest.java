@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -54,17 +55,14 @@ public class BackTrackLineSearchTest {
 
     private static OutputLayer getIrisLogisticLayerConfig(Activation activationFunction, int maxIterations,
                     LossFunctions.LossFunction lossFunction) {
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345L).miniBatch(true)
-                                        .maxNumLineSearchIterations(maxIterations)
-                                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
-                                                        .nIn(4).nOut(3).activation(activationFunction)
-                                                        .weightInit(WeightInit.XAVIER).build())
-                                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+                .nIn(4).nOut(3).activation(activationFunction)
+                .weightInit(WeightInit.XAVIER).build();
+
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return (OutputLayer) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+        return (OutputLayer) conf.instantiate(null, null, 0, 1, params, true);
     }
 
     ///////////////////////////////////////////////////////////////////////////

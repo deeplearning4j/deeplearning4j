@@ -200,11 +200,9 @@ public class SubsamplingLayerTest {
     //////////////////////////////////////////////////////////////////////////////////
 
     private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling) {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).build()).build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).build();
 
-        return conf.getLayer().instantiate(conf, null, null, 0, 1, null, true);
+        return conf.instantiate(null, null, 0, 1, null, true);
     }
 
     public INDArray getData() throws Exception {

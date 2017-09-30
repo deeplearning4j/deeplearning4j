@@ -132,12 +132,14 @@ public class RBMTests {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = null;
+        /*
+                new NeuralNetConfiguration.Builder()
                         .updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder().nIn(784).nOut(600)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
                                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
-                        .build();
+                        .build();*/
 
         conf.setPretrain(true);
         org.deeplearning4j.nn.conf.layers.RBM layerConf = (org.deeplearning4j.nn.conf.layers.RBM) conf.getLayer();
@@ -150,9 +152,9 @@ public class RBMTests {
 
         INDArray input = d2.getFeatureMatrix();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.getLayer().initializer().numParams(conf.getLayer());
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, null,0, 1, params, true);
+        RBM rbm = (RBM) conf.getLayer().instantiate(null, null,0, 1, params, true);
         rbm.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         for( int i=0; i<30; i++ ) {
             rbm.fit(af.create(input));
@@ -359,11 +361,11 @@ public class RBMTests {
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
                                         .updater(new Sgd(learningRate)).lossFunction(lossFunctions).build();
 
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
+        NeuralNetConfiguration conf = null;
+//                        new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
         conf.setPretrain(pretrain);
 
-        return (RBM) conf.getLayer().instantiate(conf, null, null,0, 1, params, initialize);
+        return (RBM) conf.getLayer().instantiate(null, null,0, 1, params, initialize);
     }
 
     private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params,
@@ -372,11 +374,11 @@ public class RBMTests {
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
                                         .updater(new Sgd(1e-1f)).lossFunction(lossFunctions).build();
 
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
+        NeuralNetConfiguration conf = null;
+//                        new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
         conf.setPretrain(pretrain);
 
-        return (RBM) conf.getLayer().instantiate(conf, null, null,0, 1, params, initialize);
+        return (RBM) conf.getLayer().instantiate(null, null,0, 1, params, initialize);
     }
 
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1,

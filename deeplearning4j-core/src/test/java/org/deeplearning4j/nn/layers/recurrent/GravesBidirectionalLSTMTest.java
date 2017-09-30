@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
@@ -49,15 +50,13 @@ public class GravesBidirectionalLSTMTest {
         int nIn = 13;
         int nHiddenUnits = 17;
 
-        final NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(nHiddenUnits).activation(Activation.TANH).build())
-                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
+                .nOut(nHiddenUnits).activation(Activation.TANH).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         final GravesBidirectionalLSTM layer =
-                        (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+                        (GravesBidirectionalLSTM) conf.instantiate(null, null, 0, 1, params, true);
 
         //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -95,17 +94,15 @@ public class GravesBidirectionalLSTMTest {
 
         INDArray inputData = Nd4j.ones(miniBatchSize, nIn, timeSeriesLength);
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(lstmNHiddenUnits).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
-                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
+                .nOut(lstmNHiddenUnits).weightInit(WeightInit.DISTRIBUTION)
+                .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesBidirectionalLSTM lstm =
-                        (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
-        lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
+                        (GravesBidirectionalLSTM) conf.instantiate(null, null, 0, 1, params, true);
+        lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.initializer().numParams(conf)));
         //Set input, do a forward pass:
         lstm.activate(af.create(inputData));
         assertNotNull(lstm.getInput());
@@ -161,16 +158,14 @@ public class GravesBidirectionalLSTMTest {
         final int miniBatchSize = 4;
         final int timeSeriesLength = 7;
 
-        final NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
-                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
+                .nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+                .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         final GravesBidirectionalLSTM lstm =
-                        (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, null, 0, 1, params, true);
+                        (GravesBidirectionalLSTM) conf.instantiate(null, null, 0, 1, params, true);
         final INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         lstm.setInput(af.create(input));
 
@@ -219,17 +214,14 @@ public class GravesBidirectionalLSTMTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        final NeuralNetConfiguration confBidirectional = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
-                                        .dist(new UniformDistribution(-0.1, 0.1)).activation(Activation.TANH).build())
-                        .build();
+        Layer confBidirectional = new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
+                .nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+                .dist(new UniformDistribution(-0.1, 0.1)).activation(Activation.TANH).build();
 
-
-        int numParams = confBidirectional.getLayer().initializer().numParams(confBidirectional);
+        int numParams = confBidirectional.initializer().numParams(confBidirectional);
         INDArray params = Nd4j.create(1, numParams);
-        final GravesBidirectionalLSTM bidirectionalLSTM = (GravesBidirectionalLSTM) confBidirectional.getLayer()
-                        .instantiate(confBidirectional, null, null, 0, 1, params, true);
+        final GravesBidirectionalLSTM bidirectionalLSTM = (GravesBidirectionalLSTM) confBidirectional
+                        .instantiate(null, null, 0, 1, params, true);
 
 
         final INDArray sig = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
@@ -257,32 +249,27 @@ public class GravesBidirectionalLSTMTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        final NeuralNetConfiguration confBidirectional =
-                        new NeuralNetConfiguration.Builder()
-                                        .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                                        .nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new UniformDistribution(-0.1, 0.1))
-                                                        .activation(Activation.TANH).updater(new NoOp()).build())
-                                        .build();
+        Layer confBidirectional = new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
+                .nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+                .dist(new UniformDistribution(-0.1, 0.1))
+                .activation(Activation.TANH).updater(new NoOp()).build();
 
-        final NeuralNetConfiguration confForwards = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                        .weightInit(WeightInit.ZERO).activation(Activation.TANH).build())
-                        .build();
+        Layer confForwards = new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                .weightInit(WeightInit.ZERO).activation(Activation.TANH).build();
 
-        int numParams = confForwards.getLayer().initializer().numParams(confForwards);
+        int numParams = confForwards.initializer().numParams(confForwards);
         INDArray params = Nd4j.create(1, numParams);
-        int numParamsBD = confBidirectional.getLayer().initializer().numParams(confBidirectional);
+        int numParamsBD = confBidirectional.initializer().numParams(confBidirectional);
         INDArray paramsBD = Nd4j.create(1, numParamsBD);
-        final GravesBidirectionalLSTM bidirectionalLSTM = (GravesBidirectionalLSTM) confBidirectional.getLayer()
-                        .instantiate(confBidirectional, null, null, 0, 1, paramsBD, true);
+        final GravesBidirectionalLSTM bidirectionalLSTM = (GravesBidirectionalLSTM) confBidirectional
+                        .instantiate(null, null, 0, 1, paramsBD, true);
         final GravesLSTM forwardsLSTM =
-                        (GravesLSTM) confForwards.getLayer().instantiate(confForwards, null, null, 0, 1, params, true);
+                        (GravesLSTM) confForwards.instantiate(null, null, 0, 1, params, true);
 
         bidirectionalLSTM.setBackpropGradientsViewArray(
-                        Nd4j.create(1, confBidirectional.getLayer().initializer().numParams(confBidirectional)));
+                        Nd4j.create(1, confBidirectional.initializer().numParams(confBidirectional)));
         forwardsLSTM.setBackpropGradientsViewArray(
-                        Nd4j.create(1, confForwards.getLayer().initializer().numParams(confForwards)));
+                        Nd4j.create(1, confForwards.initializer().numParams(confForwards)));
 
 
         final INDArray sig = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
@@ -564,7 +551,7 @@ public class GravesBidirectionalLSTMTest {
             net.init();
 
             assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) net.getLayer(0).conf()
-                            .getLayer()).getGateActivationFn().toString());
+                            ).getGateActivationFn().toString());
 
             INDArray in = Nd4j.rand(new int[] {3, 2, 5});
             INDArray labels = Nd4j.rand(new int[] {3, 2, 5});

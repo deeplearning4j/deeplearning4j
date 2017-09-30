@@ -51,7 +51,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -104,7 +104,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -156,7 +156,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -209,7 +209,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -270,7 +270,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -330,8 +330,8 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
-            assertEquals(exp.toString(), net.getLayer(1).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(1).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);

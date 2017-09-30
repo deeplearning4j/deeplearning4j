@@ -192,11 +192,12 @@ public class TransferLearningHelperTest {
         assertEquals(modelIdentical.getLayer("denseCentre2").params(), modelToTune.getLayer("denseCentre2").params());
         assertEquals(modelIdentical.getLayer("denseCentre3").params(), modelToTune.getLayer("denseCentre3").params());
         assertEquals(modelIdentical.getLayer("outCentre").params(), modelToTune.getLayer("outCentre").params());
-        assertEquals(modelIdentical.getLayer("denseRight").conf().toJson(),
-                        modelToTune.getLayer("denseRight").conf().toJson());
-        assertEquals(modelIdentical.getLayer("denseRight").params(), modelToTune.getLayer("denseRight").params());
-        assertEquals(modelIdentical.getLayer("denseRight0").conf().toJson(),
-                        modelToTune.getLayer("denseRight0").conf().toJson());
+//        assertEquals(modelIdentical.getLayer("denseRight").conf().toJson(),
+//                        modelToTune.getLayer("denseRight").conf().toJson());
+//        assertEquals(modelIdentical.getLayer("denseRight").params(), modelToTune.getLayer("denseRight").params());
+//        assertEquals(modelIdentical.getLayer("denseRight0").conf().toJson(),
+//                        modelToTune.getLayer("denseRight0").conf().toJson());
+        fail();
         //assertEquals(modelIdentical.getLayer("denseRight0").params(),modelToTune.getLayer("denseRight0").params());
         assertEquals(modelIdentical.getLayer("denseRight1").params(), modelToTune.getLayer("denseRight1").params());
         assertEquals(modelIdentical.getLayer("outRight").params(), modelToTune.getLayer("outRight").params());

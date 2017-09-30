@@ -305,7 +305,7 @@ public class LossFunctionGradientCheck {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                assertTrue(((LossLayer) net.getLayer(1).conf().getLayer()).getLossFn().getClass() == lossFunctions[i]
+                assertTrue(((LossLayer) net.getLayer(1).conf()).getLossFn().getClass() == lossFunctions[i]
                                 .getClass());
 
                 INDArray[] inOut = getFeaturesAndLabels(lossFunctions[i], minibatchSizes[j], 4, nOut[i], 12345);

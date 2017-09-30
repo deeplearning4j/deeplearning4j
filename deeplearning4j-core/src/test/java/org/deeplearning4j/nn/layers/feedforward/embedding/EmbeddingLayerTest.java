@@ -48,8 +48,8 @@ public class EmbeddingLayerTest {
             Layer l0 = net.getLayer(0);
 
             assertEquals(org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer.class, l0.getClass());
-            assertEquals(10, ((FeedForwardLayer) l0.conf().getLayer()).getNIn());
-            assertEquals(5, ((FeedForwardLayer) l0.conf().getLayer()).getNOut());
+            assertEquals(10, ((FeedForwardLayer) l0.conf()).getNIn());
+            assertEquals(5, ((FeedForwardLayer) l0.conf()).getNOut());
 
             INDArray weights = l0.getParam(DefaultParamInitializer.WEIGHT_KEY);
             INDArray bias = l0.getParam(DefaultParamInitializer.BIAS_KEY);
