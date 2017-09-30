@@ -228,25 +228,26 @@ public class TransferLearning {
             //Build a nn config builder with settings from finetune. Set layer with the added layer
             //Issue: fine tune config has .learningRate(x), then I add a layer with .learningRate(y)...
             //We don't want that to be overridden
-            NeuralNetConfiguration layerConf =
-                            finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
-
-            int numParams = layer.initializer().numParams(layerConf);
-            INDArray params;
-            if (numParams > 0) {
-                params = Nd4j.create(1, numParams);
-                String name = null;
-                if(layerConf.getLayer() != null){
-                    name = layerConf.getLayer().getLayerName();
-                }
-                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, name,0, 1, params, true);
-                appendParams.add(someLayer.params());
-                appendConfs.add(someLayer.conf());
-            } else {
-                appendConfs.add(layerConf);
-
-            }
-            return this;
+//            NeuralNetConfiguration layerConf =
+//                            finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
+//
+//            int numParams = layer.initializer().numParams(layerConf);
+//            INDArray params;
+//            if (numParams > 0) {
+//                params = Nd4j.create(1, numParams);
+//                String name = null;
+//                if(layerConf.getLayer() != null){
+//                    name = layerConf.getLayer().getLayerName();
+//                }
+//                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, name,0, 1, params, true);
+//                appendParams.add(someLayer.params());
+//                appendConfs.add(someLayer.conf());
+//            } else {
+//                appendConfs.add(layerConf);
+//
+//            }
+//            return this;
+            throw new RuntimeException("Not yet reimplemented");
         }
 
         public Builder setInputType(InputType inputType) {
@@ -272,6 +273,7 @@ public class TransferLearning {
                 for (int i = frozenTill; i >= 0; i--) {
                     //Complication here: inner Layer (implementation) NeuralNetConfiguration.layer (config) should keep
                     // the original layer config. While network NNC should have the frozen layer, for to/from JSON etc
+                    /*
                     NeuralNetConfiguration origNNC = editedModel.getLayerWiseConfigurations().getConf(i);
                     NeuralNetConfiguration layerNNC = origNNC.clone();
                     editedModel.getLayerWiseConfigurations().getConf(i).resetVariables();
@@ -299,6 +301,8 @@ public class TransferLearning {
                     Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
                     newLayerConf.setLayerName(origLayerConf.getLayerName());
                     editedModel.getLayerWiseConfigurations().getConf(i).setLayer(newLayerConf);
+                     */
+                    throw new RuntimeException("Not yet reimplemented");
                 }
                 editedModel.setLayers(layers);
             }
@@ -345,7 +349,8 @@ public class TransferLearning {
 
 
         private void fineTuneConfigurationBuild() {
-
+            throw new RuntimeException();
+            /*
             for (int i = 0; i < origConf.getConfs().size(); i++) {
                 NeuralNetConfiguration layerConf;
                 if (finetuneConfiguration != null) {
@@ -356,12 +361,13 @@ public class TransferLearning {
                     layerConf = origConf.getConf(i).clone();
                 }
                 editedConfs.add(layerConf);
-            }
+            }*/
         }
 
         private void nOutReplaceBuild(int layerNum, int nOut, Pair<WeightInit, Distribution> schemedist,
                         Pair<WeightInit, Distribution> schemedistNext) {
-
+            throw new RuntimeException();
+            /*
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
@@ -395,7 +401,7 @@ public class TransferLearning {
                     editedParams.set(layerNum + 1, someLayer.params());
                 }
             }
-
+            */
         }
 
         private INDArray constructParams() {
@@ -431,12 +437,15 @@ public class TransferLearning {
                 }
             }
 
+            /*
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder()
                             .setInputType(this.inputType).confs(allConfs).build();
             if (finetuneConfiguration != null) {
                 finetuneConfiguration.applyToMultiLayerConfiguration(conf);
             }
             return conf;
+            */
+            throw new RuntimeException();
         }
     }
 
@@ -472,6 +481,7 @@ public class TransferLearning {
             this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,
                             fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
 
+            /*
             Map<String, Layer> vertices = this.editedConfigBuilder.getVertices();
             for (Map.Entry<String, Layer> gv : vertices.entrySet()) {
                 if (gv.getValue() instanceof LayerVertex) {
@@ -482,8 +492,9 @@ public class TransferLearning {
                     nnc.getLayer().setLayerName(gv.getKey());
                 }
             }
-
             return this;
+            */
+            throw new RuntimeException();
         }
 
         /**
@@ -562,6 +573,7 @@ public class TransferLearning {
                         Distribution dist, Distribution distNext) {
             initBuilderIfReq();
 
+            /*
             NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
             Layer layerImpl = layerConf.getLayer().clone();
             layerImpl.resetLayerDefaultConfig();
@@ -603,6 +615,8 @@ public class TransferLearning {
                 editedVertices.add(fanoutVertexName);
             }
             return this;
+            */
+            throw new RuntimeException();
         }
 
         /**
@@ -690,8 +704,11 @@ public class TransferLearning {
                 //No fine tune config has been set. One isn't required, but we need one to create the editedConfigBuilder
                 //So: create an empty finetune config, which won't override anything
                 //but keep the seed
+                /*
                 fineTuneConfiguration(new FineTuneConfiguration.Builder()
                                 .seed(origConfig.getDefaultConfiguration().getSeed()).build());
+                                */
+                throw new RuntimeException();
             }
         }
 
@@ -782,6 +799,7 @@ public class TransferLearning {
                             vertices.put(topologicalOrder.get(i), gv);
                         }
 
+                        /*
                         //Freeze in the configuration
                         String layerName = gv.getName();
                         LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
@@ -823,6 +841,8 @@ public class TransferLearning {
                         if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
                             allFrozen.addAll(inputsToCurrent);
                         }
+                        */
+                        throw new RuntimeException();
                     }
                 }
                 newGraph.initGradientsView();

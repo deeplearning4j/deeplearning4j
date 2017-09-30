@@ -69,8 +69,7 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(NeuralNetConfiguration conf,
-                                                                                      Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(Collection<IterationListener> iterationListeners,
                                                                                       String name, int idx, int numInputs, INDArray layerParamsView,
                                                                                       boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(name, idx, numInputs);

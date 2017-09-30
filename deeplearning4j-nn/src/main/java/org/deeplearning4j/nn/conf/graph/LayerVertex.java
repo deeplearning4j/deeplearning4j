@@ -43,16 +43,17 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
+@Deprecated
 public class LayerVertex extends BaseGraphVertex {
 
-    private NeuralNetConfiguration layerConf;
+    private org.deeplearning4j.nn.conf.layers.Layer layerConf;
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
     // passed in externally
     private boolean outputVertex;
 
 
-    public LayerVertex(NeuralNetConfiguration layerConf) {
+    public LayerVertex(org.deeplearning4j.nn.conf.layers.Layer layerConf) {
         this.layerConf = layerConf;
     }
 
@@ -72,13 +73,12 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
 
         org.deeplearning4j.nn.api.Layer layer =
-                        layerConf.getLayer().instantiate(layerConf, iterationListeners, name, layerIndex, numInputs,
+                        layerConf.instantiate(iterationListeners, name, layerIndex, numInputs,
                                 layerParamsView, initializeParams);
 
         return layer;
@@ -86,12 +86,12 @@ public class LayerVertex extends BaseGraphVertex {
 
     @Override
     public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        return layerConf.getLayer().getOutputType(layerIndex, vertexInputs);
+        return layerConf.getOutputType(layerIndex, vertexInputs);
     }
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //TODO preprocessor memory
-        return layerConf.getLayer().getMemoryReport(inputTypes[0]);
+        return layerConf.getMemoryReport(inputTypes[0]);
     }
 }

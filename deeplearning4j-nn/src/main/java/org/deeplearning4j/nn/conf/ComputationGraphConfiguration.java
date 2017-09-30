@@ -19,6 +19,8 @@ package org.deeplearning4j.nn.conf;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -28,6 +30,8 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
@@ -55,7 +59,7 @@ import java.util.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Slf4j
-public class ComputationGraphConfiguration implements Serializable, Cloneable {
+public class ComputationGraphConfiguration implements OptimizationConfig, Serializable, Cloneable {
 
     protected Map<String, Layer> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
@@ -90,8 +94,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
 
-    protected NeuralNetConfiguration defaultConfiguration;
-
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
@@ -100,6 +102,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
 
+    //NEW fields, previously on defaultconfiguration, required for optimization:
+    protected boolean minibatch = true;
+    protected boolean minimize = true;
+    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
+    protected StepFunction stepFunction = new DefaultStepFunction();
+    protected int maxNumLineSearchIterations = 5;
 
     protected ComputationGraphConfiguration(GraphBuilder builder, NeuralNetConfiguration.Builder globalConfiguration){
         this.backprop = builder.backprop;
@@ -113,37 +121,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         this.vertices = builder.vertices;
         this.vertexInputs = builder.vertexInputs;
-        this.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
-        this.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
-        this.cacheMode = globalConfiguration.cacheMode;
-
-        this.defaultConfiguration = globalConfiguration.build();
-        this.getDefaultConfiguration().setPretrain(pretrain);
+        this.trainingWorkspaceMode = globalConfiguration.getGlobalConf().getTrainingWorkspaceMode();
+        this.inferenceWorkspaceMode = globalConfiguration.getGlobalConf().getInferenceWorkspaceMode();
+        this.cacheMode = globalConfiguration.getGlobalConf().getCacheMode();
 
         //Add preprocessors that were defined separately to the Layers to which they belong
         //This "set separately" is now deprecated, and preprocessors should be set on the layers directly
         for (Map.Entry<String, InputPreProcessor> entry : builder.inputPreProcessors.entrySet()) {
             org.deeplearning4j.nn.conf.layers.Layer gv = vertices.get(entry.getKey());
-            if (gv instanceof LayerVertex) {
-                LayerVertex lv = (LayerVertex) gv;
-                lv.getLayerConf().getLayer().setPreProcessor(entry.getValue());
-            } else {
-                throw new IllegalStateException(
-                        "Invalid configuration: InputPreProcessor defined for Layer \""
-                                + entry.getKey() + "\", but this vertex is not a LayerVertex");
-            }
-
-        }
-
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.layers.Layer> gv : vertices.entrySet()) {
-            if (gv.getValue() instanceof LayerVertex) {
-                LayerVertex lv = (LayerVertex) gv.getValue();
-                Layer l = lv.getLayerConf().getLayer();
-                if (l instanceof BasePretrainNetwork)
-                    lv.getLayerConf().setPretrain(pretrain);
-            }
-            //TODO LayerVertex should be removed
-
+            gv.setPreProcessor(entry.getValue());
         }
 
         this.validate(); //throws exception for invalid configuration
@@ -347,8 +333,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             LayerVertex lv = (LayerVertex) entry.getValue();
-            if (lv.getLayerConf() != null && lv.getLayerConf().getLayer() != null) {
-                Layer layer = lv.getLayerConf().getLayer();
+            if (lv.getLayerConf() != null && lv.getLayerConf() != null) {
+                Layer layer = lv.getLayerConf();
 
                 if (layer instanceof BaseLayer && ((BaseLayer) layer).getActivationFn() == null) {
                     String layerName = layer.getLayerName();
@@ -426,11 +412,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.backpropType = backpropType;
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
-        conf.defaultConfiguration = defaultConfiguration.clone();
         conf.trainingWorkspaceMode = trainingWorkspaceMode;
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
-        conf.defaultConfiguration.cacheMode = this.cacheMode;
+
+        conf.minibatch = minibatch;
+        conf.minibatch = minimize;
+        conf.optimizationAlgo = optimizationAlgo;
+        conf.stepFunction = stepFunction;
+        conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
 
         return conf;
     }
@@ -544,37 +534,26 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             List<InputType> inputTypeList = new ArrayList<>();
 
-            if (gv instanceof LayerVertex) {
-                //Add preprocessor, if necessary:
-                String in = vertexInputs.get(s).get(0);
-                InputType layerInput = vertexOutputs.get(in);
-                inputTypeList.add(layerInput);
+            //Add preprocessor, if necessary:
+            String in = vertexInputs.get(s).get(0);
+            InputType layerInput = vertexOutputs.get(in);
+            inputTypeList.add(layerInput);
 
-                LayerVertex lv = (LayerVertex) gv;
-                Layer l = lv.getLayerConf().getLayer();
 
-                //Preprocessors - add if necessary
-                if (lv.getLayerConf().getLayer().getPreProcessor() == null) {
-                    //But don't override preprocessors that are manually defined; if none has been defined,
-                    //add the appropriate preprocessor for this input type/layer combination
-                    InputPreProcessor preproc = l.getPreProcessorForInputType(layerInput);
-                    if (preproc != null) {
-                        l.setPreProcessor(preproc);
-                        l.setNIn(new InputType[]{layerInput}, false); //Don't override the nIn setting, if it's manually set by the user
-                    } else {
-                        l.setNIn(new InputType[]{layerInput}, false); //Don't override the nIn setting, if it's manually set by the user
-                    }
-                }
-
-                currLayerIdx++;
-            } else {
-                List<String> inputs = vertexInputs.get(s);
-                if (inputs != null) {
-                    for (String inputVertexName : inputs) {
-                        inputTypeList.add(vertexOutputs.get(inputVertexName));
-                    }
+            //Preprocessors - add if necessary
+            if (gv.getPreProcessor() == null) {
+                //But don't override preprocessors that are manually defined; if none has been defined,
+                //add the appropriate preprocessor for this input type/layer combination
+                InputPreProcessor preproc = gv.getPreProcessorForInputType(layerInput);
+                if (preproc != null) {
+                    gv.setPreProcessor(preproc);
+                    gv.setNIn(new InputType[]{layerInput}, false); //Don't override the nIn setting, if it's manually set by the user
+                } else {
+                    gv.setNIn(new InputType[]{layerInput}, false); //Don't override the nIn setting, if it's manually set by the user
                 }
             }
+
+            currLayerIdx++;
 
             InputType outputFromVertex =
                             gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];  //TODO mulitple outputs
@@ -862,10 +841,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
                         String... layerInputs) {
-            NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
-            builder.layer(layer);
-            NeuralNetConfiguration nnc = builder.build();
-            nnc.getLayer().setPreProcessor(preProcessor);
+            layer.setPreProcessor(preProcessor);
             layer.setLayerName(layerName);
             this.vertices.put(layerName, layer);
             this.vertexInputs.put(layerName, Arrays.asList(layerInputs));

@@ -1,12 +1,15 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ModelConfig extends Layer {
+@Data
+public abstract class ModelConfig extends Layer implements OptimizationConfig {
 
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
@@ -14,8 +17,6 @@ public abstract class ModelConfig extends Layer {
     protected int maxNumLineSearchIterations;
     protected long seed;
     protected OptimizationAlgorithm optimizationAlgo;
-    //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> variables = new ArrayList<>();
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;

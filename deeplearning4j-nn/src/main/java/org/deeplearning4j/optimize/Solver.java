@@ -19,7 +19,9 @@
 package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ModelConfig;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
@@ -41,8 +43,6 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Solver {
-    private NeuralNetConfiguration conf;
-    private Collection<IterationListener> listeners;
     private Model model;
     private ConvexOptimizer optimizer;
     private StepFunction stepFunction;
@@ -64,18 +64,20 @@ public class Solver {
     public ConvexOptimizer getOptimizer() {
         if (optimizer != null)
             return optimizer;
-        switch (conf.getOptimizationAlgo()) {
+        OptimizationConfig modelConfig = model.getOptimizationConfig();
+
+        switch (modelConfig.getOptimizationAlgo()) {
             case LBFGS:
-                optimizer = new LBFGS(conf, stepFunction, listeners, model);
+                optimizer = new LBFGS(modelConfig, stepFunction, model);
                 break;
             case LINE_GRADIENT_DESCENT:
-                optimizer = new LineGradientDescent(conf, stepFunction, listeners, model);
+                optimizer = new LineGradientDescent(modelConfig, stepFunction, model);
                 break;
             case CONJUGATE_GRADIENT:
-                optimizer = new ConjugateGradient(conf, stepFunction, listeners, model);
+                optimizer = new ConjugateGradient(modelConfig, stepFunction, model);
                 break;
             case STOCHASTIC_GRADIENT_DESCENT:
-                optimizer = new StochasticGradientDescent(conf, stepFunction, listeners, model);
+                optimizer = new StochasticGradientDescent(modelConfig, stepFunction, model);
                 break;
             default:
                 throw new IllegalStateException("No optimizer found");
@@ -83,29 +85,12 @@ public class Solver {
         return optimizer;
     }
 
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.listeners = listeners;
-        if (optimizer != null)
-            optimizer.setListeners(listeners);
-    }
-
     public static class Builder {
-        private org.deeplearning4j.nn.conf.layers.Layer conf;
+        private OptimizationConfig conf;
         private Model model;
-        private List<IterationListener> listeners = new ArrayList<>();
 
-        public Builder configure(org.deeplearning4j.nn.conf.layers.Layer conf) {
+        public Builder configure(OptimizationConfig conf) {
             this.conf = conf;
-            return this;
-        }
-
-        public Builder listener(IterationListener... listeners) {
-            this.listeners.addAll(Arrays.asList(listeners));
-            return this;
-        }
-
-        public Builder listeners(Collection<IterationListener> listeners) {
-            this.listeners.addAll(listeners);
             return this;
         }
 
@@ -116,10 +101,8 @@ public class Solver {
 
         public Solver build() {
             Solver solver = new Solver();
-            solver.conf = conf;
             solver.stepFunction = StepFunctions.createStepFunction(conf.getStepFunction());
             solver.model = model;
-            solver.listeners = listeners;
             return solver;
         }
     }

@@ -45,7 +45,7 @@ public class ComputationGraphConfigurationDeserializer
         for (Map.Entry<String, Layer> entry : vertices.entrySet()) {
             if (entry.getValue() instanceof LayerVertex) {
                 LayerVertex lv = (LayerVertex) entry.getValue();
-                layerList.add(lv.getLayerConf().getLayer());
+                layerList.add(lv.getLayerConf());
             }
         }
 

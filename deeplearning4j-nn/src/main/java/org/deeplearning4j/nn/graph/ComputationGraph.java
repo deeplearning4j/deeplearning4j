@@ -28,10 +28,7 @@ import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JException;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -170,7 +167,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private transient INDArray[] labels;
     private transient INDArray[] labelMaskArrays;
 
-    private NeuralNetConfiguration defaultConfiguration;
     private Collection<IterationListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
@@ -187,7 +183,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         this.numInputArrays = configuration.getNetworkInputs().size();
         this.numOutputArrays = -1;  //Due to potentially multiple output in an output layer: infer this after init
         this.input = ActivationsFactory.getInstance().create(numInputArrays);
-        this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
     /**
@@ -601,14 +596,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         int numLayers = 0;
         List<Layer> tempLayerList = new ArrayList<>();
-        defaultConfiguration.clearVariables();
-        List<String> variables = defaultConfiguration.variables(false);
+//        defaultConfiguration.clearVariables();
+//        List<String> variables = defaultConfiguration.variables(false);
         for (Map.Entry<String, org.deeplearning4j.nn.conf.layers.Layer> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.layers.Layer n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
             List<String> currentInputs = vertexInputs.get(name);
             int nInputs = (currentInputs == null ? 0 : currentInputs.size());
-            Layer gv = n.instantiate(null, listeners, name, vertexNumber, nInputs, paramsViewForVertex[vertexNumber], initializeParams);
+            Layer gv = n.instantiate(listeners, name, vertexNumber, nInputs, paramsViewForVertex[vertexNumber], initializeParams);
 
             if (gv.numParams() > 0) {
                 numLayers++;
@@ -618,12 +613,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //No conf for thisgs like ElementwiseVertex
                     continue;
                 }
-                List<String> layerVariables = l.conf().variables();
-                if (layerVariables != null) {
-                    for (String s : layerVariables) {
-                        variables.add(gv.getName() + "_" + s);
-                    }
-                }
+//                List<String> layerVariables = l.conf().variables();
+//                if (layerVariables != null) {
+//                    for (String s : layerVariables) {
+//                        variables.add(gv.getName() + "_" + s);
+//                    }
+//                }
             }
 
             allNamesReverse.put(name, vertexNumber);
@@ -748,7 +743,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         // now we init solver & optimizer
         if (solver == null) {
             try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                solver = new Solver.Builder().configure(configuration).model(this).build();
                 solver.initOptimizer();
             }
         }
@@ -915,7 +910,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         Layer layer = gv;
 
         if(!(layer instanceof Model)){
-            log.warn("Layer {} is not pretrainable, returning", layer.conf().getLayer().getLayerName());
+            log.warn("Layer {} is not pretrainable, returning", layer.conf().getLayerName());
             return;
         }
 
@@ -996,7 +991,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             }
                         }
                         m.fit(gv.getInput());
-                        layer.conf().setPretrain(false);
                     }
                 }
             }
@@ -1099,8 +1093,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     setLabel(0, next.getLabels());
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
-                                    .listeners(listeners).model(this).build();
+                            solver = new Solver.Builder().configure(null).model(this).build();      //TODO
                         }
                     }
 
@@ -1206,8 +1199,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners)
-                                    .model(this).build();
+                            solver = new Solver.Builder().configure(configuration).model(this).build();
                         }
                     }
 
@@ -1321,7 +1313,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             } else {
                 if (solver == null) {
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                        solver = new Solver.Builder().configure(configuration).model(this).build();
                     }
                 }
 
@@ -2118,10 +2110,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        if (solver != null) {
-            solver.setListeners(listeners);
-        }
-
         this.trainingListeners.clear();
         if (listeners != null) {
             for (IterationListener il : listeners) {
@@ -2166,10 +2154,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 this.trainingListeners.add((TrainingListener) listener);
             }
         }
-
-        if (solver != null) {
-            solver.setListeners(this.listeners);
-        }
     }
 
     /**
@@ -2184,7 +2168,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public ComputationGraphUpdater getUpdater() {
         if (solver == null) {
-            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+            solver = new Solver.Builder().configure(configuration).model(this).build();
             solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
         }
         return solver.getOptimizer().getComputationGraphUpdater();
@@ -2195,7 +2179,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void setUpdater(ComputationGraphUpdater updater) {
         if (solver == null) {
-            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+            solver = new Solver.Builder().configure(configuration).model(this).build();
         }
         solver.getOptimizer().setUpdaterComputationGraph(updater);
     }
@@ -2569,18 +2553,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public NeuralNetConfiguration conf() {
-        return defaultConfiguration;
+    public org.deeplearning4j.nn.conf.layers.Layer conf() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setConf(NeuralNetConfiguration conf) {
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public ConvexOptimizer getOptimizer() {
         return solver.getOptimizer();
+    }
+
+    @Override
+    public OptimizationConfig getOptimizationConfig() {
+        return configuration;
     }
 
     @Override
@@ -2606,7 +2595,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Layer layer : layers) {
             Map<String, INDArray> paramMap = layer.paramTable(backpropParamsOnly);
             for (Map.Entry<String, INDArray> entry : paramMap.entrySet()) {
-                String newKey = layer.conf().getLayer().getLayerName() + "_" + entry.getKey();
+                String newKey = layer.conf().getLayerName() + "_" + entry.getKey();
                 allParams.put(newKey, entry.getValue());
             }
         }
@@ -2748,7 +2737,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Hidden state, or null if layer is not an RNN layer
      */
     public Map<String, INDArray> rnnGetPreviousState(int layer) {
-        return rnnGetPreviousState(layers[layer].conf().getLayer().getLayerName());
+        return rnnGetPreviousState(layers[layer].conf().getLayerName());
     }
 
     /**
@@ -2775,7 +2764,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         Map<String, Map<String, INDArray>> states = new HashMap<>();
         for (Layer l : layers) {
             if (l instanceof RecurrentLayer) {
-                states.put(l.conf().getLayer().getLayerName(), ((RecurrentLayer) l).rnnGetPreviousState());
+                states.put(l.conf().getLayerName(), ((RecurrentLayer) l).rnnGetPreviousState());
             }
         }
         return states;
@@ -2788,7 +2777,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param state The state to set the specified layer to
      */
     public void rnnSetPreviousState(int layer, Map<String, INDArray> state) {
-        rnnSetPreviousState(layers[layer].conf().getLayer().getLayerName(), state);
+        rnnSetPreviousState(layers[layer].conf().getLayerName(), state);
     }
 
     /**
@@ -2938,7 +2927,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
+                            solver = new Solver.Builder().configure(configuration).model(this)
                                     .build();
                         }
                     }
@@ -3382,7 +3371,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     paramShape = "";
 //                        in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()..getNIn());
 //                        out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer().getNOut());
-                    List<String> paraNames = currentLayer.conf().variables();
+                    List<String> paraNames = currentLayer.conf().initializer().paramKeys(currentLayer.conf());
                     for (String aP : paraNames) {
                         String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
                         paramShape += aP + ":" + paramS + ", ";
@@ -3406,7 +3395,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //TODO
                     org.deeplearning4j.nn.conf.layers.Layer l = null;
                     if(configuration.getVertices().get(currentVertexName) instanceof org.deeplearning4j.nn.conf.graph.LayerVertex){
-                        l = ((org.deeplearning4j.nn.conf.graph.LayerVertex)configuration.getVertices().get(currentVertexName)).getLayerConf().getLayer();
+                        l = ((org.deeplearning4j.nn.conf.graph.LayerVertex)configuration.getVertices().get(currentVertexName)).getLayerConf();
                     }
                     if(l != null){
                         InputPreProcessor layerVertexPreProcesor = l.getPreProcessor();
@@ -3417,7 +3406,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
                 currLayerIdx++;
                 if (inputTypes != null) {
-                    InputType currentVertexOutputType = configuration.getVertices().get(currentVertexName).getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];
+                    InputType currentVertexOutputType = configuration.getVertices().get(currentVertexName)
+                            .getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];
                     outShape = currentVertexOutputType.toString();
                     vertexOutputs.put(currentVertexName, currentVertexOutputType);
                 }

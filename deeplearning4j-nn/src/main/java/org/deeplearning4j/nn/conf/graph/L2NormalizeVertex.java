@@ -77,8 +77,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int idx, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
 

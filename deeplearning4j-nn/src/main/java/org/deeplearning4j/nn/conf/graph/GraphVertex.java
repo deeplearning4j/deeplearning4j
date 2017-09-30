@@ -40,19 +40,7 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ElementWiseVertex.class, name = "ElementWiseVertex"),
-                @JsonSubTypes.Type(value = MergeVertex.class, name = "MergeVertex"),
-                @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
-                @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
-                @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
-                @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
-                @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
-                @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),
-                @JsonSubTypes.Type(value = UnstackVertex.class, name = "UnstackVertex"),
-                @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
-                @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
-                @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 @EqualsAndHashCode
 @Deprecated
 public abstract class GraphVertex extends BaseGraphVertex implements Cloneable, Serializable {
@@ -85,8 +73,7 @@ public abstract class GraphVertex extends BaseGraphVertex implements Cloneable, 
      * @param name             The name of the GraphVertex object
      * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array   @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
-    public abstract Layer instantiate(NeuralNetConfiguration conf,
-                                      Collection<IterationListener> iterationListeners,
+    public abstract Layer instantiate(Collection<IterationListener> iterationListeners,
                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                       boolean initializeParams);
 

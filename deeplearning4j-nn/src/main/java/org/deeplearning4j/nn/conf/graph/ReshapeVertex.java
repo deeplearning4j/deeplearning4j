@@ -78,8 +78,7 @@ public class ReshapeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int idx, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(name, idx, numInputs, reshapeOrder, newShape, maskShape);

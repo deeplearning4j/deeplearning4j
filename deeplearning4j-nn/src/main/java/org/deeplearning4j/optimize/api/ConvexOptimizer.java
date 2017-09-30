@@ -19,9 +19,11 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ModelConfig;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
@@ -45,8 +47,6 @@ public interface ConvexOptimizer extends Serializable {
 
     void setUpdaterComputationGraph(ComputationGraphUpdater updater);
 
-    void setListeners(Collection<IterationListener> listeners);
-
     /**
      * This method specifies GradientsAccumulator instance to be used for updates sharing across multiple models
      *
@@ -68,7 +68,7 @@ public interface ConvexOptimizer extends Serializable {
      */
     GradientsAccumulator getGradientsAccumulator();
 
-    NeuralNetConfiguration getConf();
+    OptimizationConfig getConf();
 
     /**
      * The gradient and score for this optimizer

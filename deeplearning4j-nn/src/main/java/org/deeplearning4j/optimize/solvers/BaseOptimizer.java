@@ -23,12 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ModelConfig;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -57,10 +59,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public abstract class BaseOptimizer implements ConvexOptimizer {
 
-    protected NeuralNetConfiguration conf;
+    protected OptimizationConfig conf;
     @Getter
     protected StepFunction stepFunction;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
@@ -83,12 +84,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      *
      * @param conf
      * @param stepFunction
-     * @param iterationListeners
      * @param model
      */
-    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        this(conf, stepFunction, iterationListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
+    public BaseOptimizer(OptimizationConfig conf, StepFunction stepFunction, Model model) {
+        this(conf, stepFunction, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
     }
 
 
@@ -96,16 +95,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      *
      * @param conf
      * @param stepFunction
-     * @param iterationListeners
      * @param terminationConditions
      * @param model
      */
-    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
-                    Collection<TerminationCondition> terminationConditions, Model model) {
+    public BaseOptimizer(OptimizationConfig conf, StepFunction stepFunction,
+                         Collection<TerminationCondition> terminationConditions, Model model) {
         this.conf = conf;
         this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
-        this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
@@ -152,15 +148,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        if (listeners == null)
-            this.iterationListeners = Collections.emptyList();
-        else
-            this.iterationListeners = listeners;
-    }
-
-    @Override
-    public NeuralNetConfiguration getConf() {
+    public OptimizationConfig getConf() {
         return conf;
     }
 
@@ -169,9 +157,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         oldScore = score;
         Pair<Gradients, Double> pair = model.computeGradientAndScore(input, labels);
 
-        if (iterationListeners != null && iterationListeners.size() > 0) {
+        if (model.getListeners() != null && model.getListeners().size() > 0) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener l : iterationListeners) {
+                for (IterationListener l : model.getListeners()) {
                     if (l instanceof TrainingListener) {
                         ((TrainingListener) l).onGradientCalculation(model, pair.getFirst());
                     }
@@ -250,9 +238,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //invoke listeners
         int iterationCount = BaseOptimizer.getIterationCount(model);
         int epochCount = BaseOptimizer.getEpochCount(model);
-        try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            for (IterationListener listener : iterationListeners)
-                listener.iterationDone(model, iterationCount, epochCount);
+        if(model.getListeners() != null ) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener listener : model.getListeners())
+                    listener.iterationDone(model, iterationCount, epochCount);
+            }
         }
 
 
@@ -336,7 +326,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
-        INDArray gradient = pair.getFirst().gradient(conf.variables());
+        INDArray gradient = pair.getFirst().gradient(); //.gradient(conf.variables());
         INDArray params = model.params().dup(); //Need dup here: params returns an array that isn't a copy (hence changes to this are problematic for line search methods)
         searchState.put(GRADIENT_KEY, gradient);
         searchState.put(SCORE_KEY, pair.getSecond());
@@ -358,7 +348,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         } else if (model instanceof ComputationGraph) {
             return ((ComputationGraph) model).getConfiguration().getIterationCount();
         } else {
-            return model.conf().getIterationCount();
+            return model.getOptimizationConfig().getIterationCount();
         }
     }
 
@@ -370,7 +360,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             ComputationGraphConfiguration conf = ((ComputationGraph) model).getConfiguration();
             conf.setIterationCount(conf.getIterationCount() + incrementBy);
         } else {
-            model.conf().setIterationCount(model.conf().getIterationCount() + incrementBy);
+            model.getOptimizationConfig().setIterationCount(model.getOptimizationConfig().getIterationCount() + incrementBy);
         }
     }
 
@@ -380,7 +370,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         } else if (model instanceof ComputationGraph) {
             return ((ComputationGraph) model).getConfiguration().getEpochCount();
         } else {
-            return model.conf().getEpochCount();
+            return model.getOptimizationConfig().getEpochCount();
         }
     }
 

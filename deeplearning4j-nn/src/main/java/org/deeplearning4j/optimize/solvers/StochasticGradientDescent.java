@@ -20,6 +20,7 @@ package org.deeplearning4j.optimize.solvers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -42,15 +43,13 @@ import java.util.Collection;
 public class StochasticGradientDescent extends BaseOptimizer {
 
 
-    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        super(conf, stepFunction, iterationListeners, model);
+    public StochasticGradientDescent(OptimizationConfig conf, StepFunction stepFunction, Model model) {
+        super(conf, stepFunction, model);
     }
 
-    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
+    public StochasticGradientDescent(OptimizationConfig  conf, StepFunction stepFunction,
                     Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, iterationListeners, terminationConditions, model);
+        super(conf, stepFunction, terminationConditions, model);
     }
 
 
@@ -85,9 +84,11 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
         int iterationCount = BaseOptimizer.getIterationCount(model);
         int epochCount = BaseOptimizer.getEpochCount(model);
-        try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            for (IterationListener listener : iterationListeners)
-                listener.iterationDone(model, iterationCount, epochCount);
+        if(model.getListeners() != null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener listener : model.getListeners())
+                    listener.iterationDone(model, iterationCount, epochCount);
+            }
         }
 
         checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, model.getIterationCount());

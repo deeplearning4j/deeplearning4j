@@ -118,5 +118,6 @@ public interface Model extends Layer {
      */
     ConvexOptimizer getOptimizer();
 
+    OptimizationConfig getOptimizationConfig();
 
 }

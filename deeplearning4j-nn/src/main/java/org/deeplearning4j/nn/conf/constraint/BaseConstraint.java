@@ -38,7 +38,7 @@ public abstract class BaseConstraint implements LayerConstraint {
             return;
         }
 
-        ParamInitializer i = layer.conf().getLayer().initializer();
+        ParamInitializer i = layer.conf().initializer();
         for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
             if(params.contains(e.getKey())){
                 apply(e.getValue());
