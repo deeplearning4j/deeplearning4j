@@ -421,6 +421,12 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     return result;
 }
 
+    template<typename T>
+    template<typename OpName>
+    T NDArray<T>::varianceNumber(bool biasCorrected) {
+        return functions::summarystats::SummaryStatsReduce<T>::template execScalar<OpName>(biasCorrected, this->getBuffer(), this->getShapeInfo(), nullptr);
+    }
+
 
 // This method returns sum of all elements of this NDArray
     template<typename T>
