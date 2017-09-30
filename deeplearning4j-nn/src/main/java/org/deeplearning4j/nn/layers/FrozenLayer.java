@@ -70,7 +70,7 @@ public class FrozenLayer implements Layer {
     }
 
     protected String layerId() {
-        String name = insideLayer.conf().getLayer().getLayerName();
+        String name = insideLayer.conf().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
 
@@ -172,12 +172,12 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public NeuralNetConfiguration conf() {
+    public org.deeplearning4j.nn.conf.layers.Layer conf() {
         return insideLayer.conf();
     }
 
     @Override
-    public void setConf(NeuralNetConfiguration conf) {
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
         insideLayer.setConf(conf);
     }
 

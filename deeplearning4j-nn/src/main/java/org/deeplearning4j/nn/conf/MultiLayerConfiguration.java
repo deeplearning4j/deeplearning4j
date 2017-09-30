@@ -22,11 +22,15 @@ package org.deeplearning4j.nn.conf;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -52,7 +56,7 @@ import java.util.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Slf4j
-public class MultiLayerConfiguration implements Serializable, Cloneable {
+public class MultiLayerConfiguration implements OptimizationConfig, Serializable, Cloneable {
 
     protected List<Layer> confs;
     protected boolean pretrain = false;
@@ -80,6 +84,14 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
+
+    //New fields, previously on defaultconfiguration, required for optimization etc:
+    protected long seed;
+    protected boolean miniBatch = true;
+    protected boolean minimize = true;
+    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
+    protected org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction = new org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction();
+    protected int maxNumLineSearchIterations = 5;
 
     /**
      *
@@ -288,6 +300,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
+
+            clone.seed = seed;
+            clone.miniBatch = miniBatch;
+            clone.minimize = minimize;
+            clone.optimizationAlgo = optimizationAlgo;
+            clone.stepFunction = stepFunction;
 
             return clone;
 

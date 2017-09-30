@@ -255,7 +255,7 @@ public class KerasLayer {
      */
     public void copyWeightsToLayer(org.deeplearning4j.nn.api.Layer layer) throws InvalidKerasConfigurationException {
         if (this.getNumParams() > 0) {
-            String dl4jLayerName = layer.conf().getLayer().getLayerName();
+            String dl4jLayerName = layer.conf().getLayerName();
             String kerasLayerName = this.getLayerName();
             String msg = "Error when attempting to copy weights from Keras layer " + kerasLayerName + " to DL4J layer "
                     + dl4jLayerName;

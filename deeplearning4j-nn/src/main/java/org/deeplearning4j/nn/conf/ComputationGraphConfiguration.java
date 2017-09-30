@@ -102,11 +102,12 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
 
-    //NEW fields, previously on defaultconfiguration, required for optimization:
-    protected boolean minibatch = true;
+    //New fields, previously on defaultconfiguration, required for optimization:
+    protected long seed;
+    protected boolean miniBatch = true;
     protected boolean minimize = true;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
-    protected StepFunction stepFunction = new DefaultStepFunction();
+    protected org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction = new org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction();
     protected int maxNumLineSearchIterations = 5;
 
     protected ComputationGraphConfiguration(GraphBuilder builder, NeuralNetConfiguration.Builder globalConfiguration){
@@ -416,8 +417,8 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
 
-        conf.minibatch = minibatch;
-        conf.minibatch = minimize;
+        conf.miniBatch = miniBatch;
+        conf.miniBatch = minimize;
         conf.optimizationAlgo = optimizationAlgo;
         conf.stepFunction = stepFunction;
         conf.maxNumLineSearchIterations = maxNumLineSearchIterations;

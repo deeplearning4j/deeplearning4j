@@ -153,9 +153,9 @@ public class GradientCheckUtil {
 
         //Check network configuration:
         int layerCount = 0;
-        for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
-            if (n.getLayer() instanceof BaseLayer) {
-                BaseLayer bl = (BaseLayer) n.getLayer();
+        for (org.deeplearning4j.nn.conf.layers.Layer n : mln.getLayerWiseConfigurations().getConfs()) {
+            if (n instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) n;
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
@@ -163,7 +163,7 @@ public class GradientCheckUtil {
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
                                         + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + n.getLayer().getLayerName() + "\"");
+                                        + n.getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
@@ -181,9 +181,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (n.getLayer().getIDropout() != null) {
+            if (n.getIDropout() != null) {
                 throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
-                                + n.getLayer().getIDropout() + " for layer " + layerCount);
+                                + n.getIDropout() + " for layer " + layerCount);
             }
         }
 
@@ -338,8 +338,8 @@ public class GradientCheckUtil {
             org.deeplearning4j.nn.conf.layers.Layer gv = graph.getConfiguration().getVertices().get(vertexName);
             LayerVertex lv = (LayerVertex) gv;
 
-            if (lv.getLayerConf().getLayer() instanceof BaseLayer) {
-                BaseLayer bl = (BaseLayer) lv.getLayerConf().getLayer();
+            if (lv.getLayerConf() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) lv.getLayerConf();
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
@@ -347,7 +347,7 @@ public class GradientCheckUtil {
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
                                         + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                                        + lv.getLayerConf().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
@@ -365,9 +365,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (lv.getLayerConf().getLayer().getIDropout() != null) {
+            if (lv.getLayerConf().getIDropout() != null) {
                 throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
-                        + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
+                        + lv.getLayerConf().getIDropout() + " for layer " + layerCount);
             }
         }
 

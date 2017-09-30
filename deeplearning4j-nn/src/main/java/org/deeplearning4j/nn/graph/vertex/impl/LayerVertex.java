@@ -205,12 +205,12 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public NeuralNetConfiguration conf(){
+    public org.deeplearning4j.nn.conf.layers.Layer conf(){
         return layer.conf();
     }
 
     @Override
-    public void setConf(NeuralNetConfiguration conf){
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf){
         layer.setConf(conf);
     }
 

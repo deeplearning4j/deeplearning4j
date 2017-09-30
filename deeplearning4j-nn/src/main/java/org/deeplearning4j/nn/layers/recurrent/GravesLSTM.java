@@ -48,7 +48,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     protected FwdPassReturn cachedFwdPass;
 
-    public GravesLSTM(NeuralNetConfiguration conf) {
+    public GravesLSTM(org.deeplearning4j.nn.conf.layers.GravesLSTM conf) {
         super(conf);
     }
     @Override

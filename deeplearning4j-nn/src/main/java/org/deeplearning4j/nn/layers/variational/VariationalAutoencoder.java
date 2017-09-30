@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.variational;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -550,7 +551,7 @@ public class VariationalAutoencoder implements Model {
 
         if (solver == null) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
+                solver = new Solver.Builder().model(this).configure(layerConf()).build();
             }
         }
         this.optimizer = solver.getOptimizer();
@@ -588,6 +589,11 @@ public class VariationalAutoencoder implements Model {
     @Override
     public ConvexOptimizer getOptimizer() {
         return optimizer;
+    }
+
+    @Override
+    public OptimizationConfig getOptimizationConfig() {
+        return layerConf();
     }
 
     @Override

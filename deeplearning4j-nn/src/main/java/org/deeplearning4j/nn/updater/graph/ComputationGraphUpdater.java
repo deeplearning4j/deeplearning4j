@@ -29,7 +29,7 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         layersByName = new HashMap<>();
         Layer[] layers = getOrderedLayers();
         for (Layer l : layers) {
-            layersByName.put(l.conf().getLayer().getLayerName(), l);
+            layersByName.put(l.conf().getLayerName(), l);
         }
     }
 
@@ -73,6 +73,6 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
 
     @Override
     protected boolean isMiniBatch() {
-        return network.conf().isMiniBatch();
+        return network.getOptimizationConfig().isMiniBatch();
     }
 }

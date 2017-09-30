@@ -18,7 +18,6 @@ import org.nd4j.linalg.learning.config.Sgd;
 import java.lang.reflect.Field;
 import java.util.List;
 
-@Builder
 @Data
 public class GlobalConfiguration {
 

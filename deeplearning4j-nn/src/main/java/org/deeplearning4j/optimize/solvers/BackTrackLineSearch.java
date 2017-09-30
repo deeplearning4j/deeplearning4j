@@ -88,7 +88,7 @@ public class BackTrackLineSearch implements LineOptimizer {
         this.layer = layer;
         this.stepFunction = stepFunction;
         this.optimizer = optimizer;
-        this.maxIterations = layer.conf().getMaxNumLineSearchIterations();
+        this.maxIterations = layer.getOptimizationConfig().getMaxNumLineSearchIterations();
     }
 
     /**

@@ -267,15 +267,17 @@ public class TransferLearningHelper {
         }
         List<NeuralNetConfiguration> allConfs = new ArrayList<>();
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
-            allConfs.add(origMLN.getLayer(i).conf());
+//            allConfs.add(origMLN.getLayer(i).conf());
+            throw new UnsupportedOperationException();
         }
 
         MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
 
-        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder().backprop(c.isBackprop())
-                        .pretrain(c.isPretrain())
-                        .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
-                        .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs).build());
+        unFrozenSubsetMLN = null;
+//        new MultiLayerNetwork(new MultiLayerConfiguration.Builder().backprop(c.isBackprop())
+//                        .pretrain(c.isPretrain())
+//                        .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
+//                        .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs).build());
         unFrozenSubsetMLN.init();
         //copy over params
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {

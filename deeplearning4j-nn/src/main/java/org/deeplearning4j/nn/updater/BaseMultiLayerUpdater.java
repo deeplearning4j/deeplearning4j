@@ -76,7 +76,7 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
                 for (int j = 0; j < variables.size(); j++) {
                     String var = variables.get(j);
                     int paramSizeThisVariable = layerParamTable.get(var).length();
-                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getUpdaterByParam(var)
+                    int updaterStateSizeThisVariable = (int) layers[i].conf().getUpdaterByParam(var)
                                     .stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;
@@ -235,7 +235,7 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
 
         Layer[] layers = getOrderedLayers();
         if (layers.length == 1 && isSingleLayerUpdater()) {
-            layerGradients.put(layers[0].conf().getLayer().getLayerName(), gradient);
+            layerGradients.put(layers[0].conf().getLayerName(), gradient);
         } else {
             for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
                 String key = gradientPair.getKey();
@@ -320,14 +320,14 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
-        if (!(layer.conf().getLayer() instanceof BaseLayer)) {
+        if (!(layer.conf() instanceof BaseLayer)) {
             //Layer does not have parameters -> no gradient
             return;
         }
-        BaseLayer bLayer = (BaseLayer) layer.conf().getLayer();
+        BaseLayer bLayer = (BaseLayer) layer.conf();
 
         GradientNormalization normalization = bLayer.getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain())
+        if (normalization == null || normalization == GradientNormalization.None /*|| layer.conf().isPretrain()*/)
             return; //no op
 
         final double threshold = bLayer.getGradientNormalizationThreshold();

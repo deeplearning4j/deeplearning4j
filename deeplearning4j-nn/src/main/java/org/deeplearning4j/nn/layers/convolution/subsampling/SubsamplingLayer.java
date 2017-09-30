@@ -332,7 +332,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Layer clone() {
-        return new SubsamplingLayer(conf.clone());
+        return new SubsamplingLayer((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.clone());
     }
 
     @Override

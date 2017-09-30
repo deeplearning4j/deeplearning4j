@@ -56,9 +56,9 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         initializeConstraints(builder);
     }
 
-    @Override
+
     protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
-        super.initializeConstraints(builder);
+        super.initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
         if(((Builder)builder).recurrentConstraints != null){
             if(constraints == null){
                 constraints = new ArrayList<>();

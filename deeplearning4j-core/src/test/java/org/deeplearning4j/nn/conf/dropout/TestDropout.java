@@ -44,9 +44,9 @@ public class TestDropout {
                 .layer(new DenseLayer.Builder().nIn(10).nOut(10).dropOut(new AlphaDropout(0.5)).build())
                 .build();
 
-        assertEquals(new Dropout(0.6), conf.getConf(0).getLayer().getIDropout());
-        assertEquals(new Dropout(0.7), conf.getConf(1).getLayer().getIDropout());
-        assertEquals(new AlphaDropout(0.5), conf.getConf(2).getLayer().getIDropout());
+        assertEquals(new Dropout(0.6), conf.getConf(0).getIDropout());
+        assertEquals(new Dropout(0.7), conf.getConf(1).getIDropout());
+        assertEquals(new AlphaDropout(0.5), conf.getConf(2).getIDropout());
 
 
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()

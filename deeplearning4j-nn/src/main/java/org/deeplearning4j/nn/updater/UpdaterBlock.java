@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -71,7 +72,7 @@ public class UpdaterBlock {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
             String varName = varState.getParamName();
-            gradientUpdater = varState.getLayer().conf().getLayer().getUpdaterByParam(varName).instantiate(updaterView,
+            gradientUpdater = varState.getLayer().conf().getUpdaterByParam(varName).instantiate(updaterView,
                             updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
         }
     }
@@ -79,14 +80,17 @@ public class UpdaterBlock {
     public boolean isPretrainUpdaterBlock() {
         //All in block should be the same layer, and all be pretrain params
         ParamState vs = layersAndVariablesInBlock.get(0);
-        return vs.getLayer().conf().getLayer().isPretrainParam(vs.getParamName());
+        return vs.getLayer().conf().isPretrainParam(vs.getParamName());
     }
 
     public boolean skipDueToPretrainConfig() {
         if (!isPretrainUpdaterBlock())
             return false;
         ParamState vs = layersAndVariablesInBlock.get(0);
-        return !vs.getLayer().conf().isPretrain(); //Skip if not pretrain
+//        if(vs.getLayer() instanceof Model){
+//            return !((Model)vs.getLayer()).getOptimizationConfig().isPretrain(); //Skip if not pretrain
+//        }
+        throw new UnsupportedOperationException();
     }
 
     public GradientUpdater getGradientUpdater() {
@@ -132,7 +136,7 @@ public class UpdaterBlock {
         //Second: apply learning rate policy. Note that by definition we have the same LR policy for every single
         // variable in the block
         Layer l0 = layersAndVariablesInBlock.get(0).getLayer();
-        if (!(l0.conf().getLayer() instanceof BaseLayer)) {
+        if (!(l0.conf() instanceof BaseLayer)) {
             //No params for this layer
             return;
         }
@@ -167,11 +171,10 @@ public class UpdaterBlock {
      * @param paramsView   Parameter view array for the layer + param
      */
     public void postApply(Layer layer, String paramName, INDArray gradientView, INDArray paramsView) {
-        NeuralNetConfiguration conf = layer.conf();
 
         //TODO: do this for multiple contiguous params/layers (fewer, larger ops)
 
-        double l2 = conf.getL2ByParam(paramName);
+        double l2 = layer.conf().getL2ByParam(paramName);
         if (l2 > 0) {
             //This can be an axpy op, saving an allocation...
             //gradientView += params * l2           i.e., dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
@@ -179,8 +182,8 @@ public class UpdaterBlock {
             int length = gradientView.length();
             Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
         }
-        if (conf.getL1ByParam(paramName) > 0) {
-            gradientView.addi(Transforms.sign(paramsView, true).muli(conf.getL1ByParam(paramName)));
+        if (layer.conf().getL1ByParam(paramName) > 0) {
+            gradientView.addi(Transforms.sign(paramsView, true).muli(layer.conf().getL1ByParam(paramName)));
         }
     }
 }

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -179,11 +180,12 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         INDArray delta = input.get(0).sub(negVProb);
         INDArray vBiasGradient = delta.sum(0);
 
-        if (conf.isPretrain()) {
-            wGradient.negi();
-            hBiasGradient.negi();
-            vBiasGradient.negi();
-        }
+//        if (conf.isPretrain()) {
+//            wGradient.negi();
+//            hBiasGradient.negi();
+//            vBiasGradient.negi();
+//        }
+        //TODO
 
         Gradient gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
 

@@ -4,7 +4,7 @@ import org.deeplearning4j.optimize.api.StepFunction;
 
 public interface OptimizationConfig {
 
-    boolean isMinibatch();
+    boolean isMiniBatch();
 
     int getMaxNumLineSearchIterations();
 

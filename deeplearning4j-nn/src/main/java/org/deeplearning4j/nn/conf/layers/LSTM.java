@@ -55,9 +55,8 @@ public class LSTM extends AbstractLSTM {
         initializeConstraints(builder);
     }
 
-    @Override
     protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
-        super.initializeConstraints(builder);
+        super.initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
         if(((Builder)builder).recurrentConstraints != null){
             if(constraints == null){
                 constraints = new ArrayList<>();
@@ -71,8 +70,7 @@ public class LSTM extends AbstractLSTM {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf,
-                             Collection<IterationListener> iterationListeners,
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
                              String name, int layerIndex, int numInputs, INDArray layerParamsView,
                              boolean initializeParams) {
         LayerValidation.assertNInNOutSet("LSTM", getLayerName(), layerIndex, getNIn(), getNOut());

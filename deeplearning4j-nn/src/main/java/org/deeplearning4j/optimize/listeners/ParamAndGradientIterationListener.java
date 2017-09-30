@@ -94,7 +94,6 @@ public class ParamAndGradientIterationListener implements IterationListener {
 
         if (totalIterationCount == 1 && printHeader) {
             Map<String, INDArray> params = model.paramTable();
-            model.conf().getVariables();
 
             StringBuilder sb = new StringBuilder();
 

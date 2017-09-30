@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.layers;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -264,7 +265,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         applyPreprocessorIfNecessary(true);
         applyDropOutIfNecessary(true);
         if (solver == null) {
-            solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
+            solver = new Solver.Builder().model(this).configure(layerConf()).build();
         }
         this.optimizer = solver.getOptimizer();
         solver.optimize();
@@ -273,9 +274,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     @Override
     public ConvexOptimizer getOptimizer() {
         if (optimizer == null) {
-            Solver solver = new Solver.Builder().model(this).configure(conf()).build();
+            Solver solver = new Solver.Builder().model(this).configure(layerConf()).build();
             this.optimizer = solver.getOptimizer();
         }
         return optimizer;
+    }
+
+    @Override
+    public OptimizationConfig getOptimizationConfig() {
+        return layerConf();
     }
 }

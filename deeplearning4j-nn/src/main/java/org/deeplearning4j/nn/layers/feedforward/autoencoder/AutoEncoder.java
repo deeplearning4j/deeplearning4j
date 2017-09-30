@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -159,6 +160,11 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     @Override
     public void fit(DataSet data) {
         fit(data.getFeatures(), null);
+    }
+
+    @Override
+    public OptimizationConfig getOptimizationConfig() {
+        return layerConf();
     }
 
 
