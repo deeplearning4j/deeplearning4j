@@ -8,6 +8,7 @@ import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
@@ -58,7 +59,7 @@ public class TensorFlowImportTest {
 
         OpState state = actions.get(0).getOpState();
 
-        assertEquals(OpState.OpType.TRANSFORM, state.getOpType());
+        assertEquals(Op.Type.TRANSFORM, state.getOpType());
         assertEquals(0, state.getOpNum());
 
         SDVariable var0 = graph.getVariableMap().get("zeros");
