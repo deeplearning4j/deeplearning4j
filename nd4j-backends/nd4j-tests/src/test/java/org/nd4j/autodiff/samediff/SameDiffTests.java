@@ -81,7 +81,7 @@ public class SameDiffTests {
         OpState opState = sameDiff.graph().getOpOrder().getActions().get(0).getOpState();
         assertEquals("sigmoid", opState.getOpName());
         sameDiff.allocate();
-        Op op = sameDiff.createOp(OpState.OpType.TRANSFORM, sameDiff.graph().getOpOrder().getActions().get(0));
+        Op op = sameDiff.createOp(Op.Type.TRANSFORM, sameDiff.graph().getOpOrder().getActions().get(0));
         assertTrue(op instanceof Sigmoid);
         Nd4j.getExecutioner().exec(op);
         assertEquals(Transforms.sigmoid(Nd4j.linspace(1, 4, 4)), op.z());
