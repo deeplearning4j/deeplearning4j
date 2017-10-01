@@ -164,7 +164,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
                         deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
-        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
+        checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
                         dilation[1], CUDNN_CROSS_CORRELATION, dataType));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
                         kW));
@@ -341,7 +341,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
                         kW));
-        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
+        checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
                         dilation[1], CUDNN_CROSS_CORRELATION, dataType));
 
         // find dimension of convolution output
