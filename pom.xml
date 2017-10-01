@@ -435,11 +435,13 @@
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
-        <module>samediff</module>
         <module>nd4j-uberjar</module>
     </modules>
 
     <properties>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.release>7</maven.compiler.release>
         <commons-io.version>2.4</commons-io.version>
         <commons-math3.version>3.4.1</commons-math3.version>
         <commons-lang3.version>3.3.1</commons-lang3.version>
@@ -476,7 +478,7 @@
         <maven-javadoc-plugin.version>3.0.0-M1</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
         <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
         <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
     </properties>
@@ -501,6 +503,10 @@
     <build>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+            </plugin>
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
@@ -721,11 +727,27 @@
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
-                    <configuration>
-                        <source>1.7</source>
-                        <target>1.7</target>
-                    </configuration>
                 </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-toolchains-plugin</artifactId>
+                        <version>1.1</version>
+                        <configuration>
+                            <toolchains>
+                                <jdk>
+                                    <version>1.9</version>
+                                    <vendor>oracle</vendor>
+                                </jdk>
+                            </toolchains>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>toolchain</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
             </plugins>
         </pluginManagement>
     </build>

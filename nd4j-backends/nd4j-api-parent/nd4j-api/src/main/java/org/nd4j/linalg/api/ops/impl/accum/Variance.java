@@ -20,6 +20,9 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -27,6 +30,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Variance with bias correction.
@@ -38,6 +44,16 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class Variance extends BaseAccumulation {
     protected double mean, bias;
     protected boolean biasCorrected = true;
+
+    public Variance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, boolean biasCorrected) {
+        super(sameDiff, i_v, dimensions);
+        this.biasCorrected = biasCorrected;
+    }
+
+    public Variance(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, boolean biasCorrected) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.biasCorrected = biasCorrected;
+    }
 
     public Variance() {}
 
@@ -302,4 +318,26 @@ public class Variance extends BaseAccumulation {
     public void setBiasCorrected(boolean biasCorrected) {
         this.biasCorrected = biasCorrected;
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().variance(arg().doGetValue(),
+                biasCorrected, dimensions);
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        validateDifferentialFunctionsameDiff(i_v1);
+        int inputs = f().getInputLength(i_v1.get(0));
+        DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
+        DifferentialFunction ret = f().mul(g,f().mul(f().mul(f().one(getResultShape()),2),g));
+        ret = f().mul(ret,arg());
+        ret = f().sub(ret,f().mean(arg(),dimensions));
+        ret = f().div(ret,f().one(getResultShape()));
+        ret = f().mul(ret,inputs);
+
+        return Collections.singletonList(ret);
+    }
+
 }

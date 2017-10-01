@@ -20,15 +20,31 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
+import java.util.List;
+
 /**
  * Cube derivative, e.g. 3x^2
  */
 public class CubeDerivative extends BaseTransformOp {
+    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
 
     public CubeDerivative() {}
 
@@ -125,5 +141,15 @@ public class CubeDerivative extends BaseTransformOp {
             return new CubeDerivative(x.tensorAlongDimension(index, dimension),
                             z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 }

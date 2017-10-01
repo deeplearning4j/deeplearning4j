@@ -19,10 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Rational Tanh Derivative, as described at as described at https://github.com/deeplearning4j/libnd4j/issues/351
@@ -31,6 +36,17 @@ import org.nd4j.linalg.api.ops.Op;
  * @author AlexDBlack
  */
 public class RationalTanhDerivative extends BaseTransformOp {
+    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
 
     public RationalTanhDerivative() {}
 
@@ -127,5 +143,15 @@ public class RationalTanhDerivative extends BaseTransformOp {
             return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
                             z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

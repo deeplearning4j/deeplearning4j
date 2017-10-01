@@ -1,9 +1,14 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Inverted DropOut implementation as Op
@@ -14,6 +19,21 @@ import org.nd4j.linalg.api.ops.Op;
 public class LegacyDropOutInverted extends BaseTransformOp {
 
     private double p;
+
+    public LegacyDropOutInverted(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double p) {
+        super(sameDiff, i_v, inPlace);
+        this.p = p;
+    }
+
+    public LegacyDropOutInverted(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.p = p;
+    }
+
+    public LegacyDropOutInverted(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double p) {
+        super(sameDiff, i_v, extraArgs);
+        this.p = p;
+    }
 
     public LegacyDropOutInverted() {
 
@@ -117,5 +137,15 @@ public class LegacyDropOutInverted extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {p, (double) n};
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

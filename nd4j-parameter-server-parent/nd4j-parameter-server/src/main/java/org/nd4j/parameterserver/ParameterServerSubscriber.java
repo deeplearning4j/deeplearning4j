@@ -87,7 +87,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                     arity = 1)
     private String statusServerHost = "localhost";
     @Parameter(names = {"-up", "--update"},
-                    description = "The update type for this parameter server. Defaults to sync. You can specify custom and use a jvm argument -Dorg.nd4j.parameterserver.updatetype=your.fully.qualified.class if you want to use a custom class. This must be able to be instantiated from an empty constructor though.",
+                    description = "The update opType for this parameter server. Defaults to sync. You can specify custom and use a jvm argument -Dorg.nd4j.parameterserver.updatetype=your.fully.qualified.class if you want to use a custom class. This must be able to be instantiated from an empty constructor though.",
                     arity = 1)
     private String updateTypeString = UpdateType.SYNC.toString().toLowerCase();
 
@@ -216,7 +216,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
         }
 
 
-        //ensure that the update type is configured from the command line args
+        //ensure that the update opType is configured from the command line args
         updateType = UpdateType.valueOf(updateTypeString.toUpperCase());
 
 
@@ -278,7 +278,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                         }
                         break;
                     default:
-                        throw new IllegalStateException("Illegal type of updater");
+                        throw new IllegalStateException("Illegal opType of updater");
                 }
 
                 callback = new ParameterServerListener(Ints.toArray(shape), updater);

@@ -33,7 +33,7 @@ public abstract class ReflectionUtils {
 
     public static Field findField(Class<?> clazz, String name, Class<?> type) {
         Assert.notNull(clazz, "Class must not be null");
-        Assert.isTrue(name != null || type != null, "Either name or type of the field must be specified");
+        Assert.isTrue(name != null || type != null, "Either name or opType of the field must be specified");
 
         for (Class searchType = clazz; !Object.class.equals(searchType) && searchType != null; searchType =
                         searchType.getSuperclass()) {

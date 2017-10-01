@@ -50,7 +50,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //SET DATA TYPE TO FLOAT and initialize another array with the same contents
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is " + Nd4j.dataType());
+        System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
@@ -80,7 +80,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //SET DATA TYPE TO FLOAT and initialize another array with the same contents
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is " + Nd4j.dataType());
+        System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
@@ -109,7 +109,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //SET DATA TYPE TO FLOAT and initialize another array with the same contents
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is " + Nd4j.dataType());
+        System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
@@ -137,7 +137,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         }
         byte[] bytes = baos.toByteArray();
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is " + Nd4j.dataType());
+        System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 

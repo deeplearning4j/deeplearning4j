@@ -1,7 +1,7 @@
 package org.nd4j.parameterserver.model;
 
 /**
- * Server type: master or slave
+ * Server opType: master or slave
  * @author Adam Gibson
  */
 public enum ServerType {

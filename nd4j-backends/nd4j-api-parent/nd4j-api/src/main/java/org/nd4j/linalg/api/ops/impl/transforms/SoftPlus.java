@@ -1,6 +1,9 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -8,10 +11,25 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * @author Adam Gibson
  */
 public class SoftPlus extends BaseTransformOp {
+    public SoftPlus(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public SoftPlus(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public SoftPlus(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public SoftPlus(INDArray x, INDArray z) {
         super(x, z);
     }
@@ -107,4 +125,20 @@ public class SoftPlus extends BaseTransformOp {
             return new SoftPlus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 
     }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().softplus(arg().getValue(true));
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().sigmoid(arg());
+
+        return Collections.singletonList(ret);
+    }
+
 }

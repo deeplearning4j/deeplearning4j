@@ -19,10 +19,16 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Identity function
@@ -30,6 +36,18 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class Identity extends BaseTransformOp {
+    public Identity(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public Identity(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public Identity(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public Identity() {}
 
     public Identity(INDArray x, INDArray z) {
@@ -121,4 +139,18 @@ public class Identity extends BaseTransformOp {
             return new Identity(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().valueArrayOf(arg().getValue(true),shape);
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction grad = sameDiff.setupFunction(new Ones(sameDiff,i_v.get(0),false));
+        return Collections.singletonList(grad);
+    }
+
 }

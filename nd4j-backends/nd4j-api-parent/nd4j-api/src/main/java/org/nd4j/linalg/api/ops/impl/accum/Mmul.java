@@ -19,53 +19,83 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.Shape;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Matrix multiplication/dot product
  *
  * @author Adam Gibson
  */
-public class Mmul extends BaseAccumulation {
+public class Mmul extends TensorMmul {
 
     private MMulTranspose mMulTranspose;
+
+    /**
+     *
+     * @param sameDiff
+     * @param i_v1
+     * @param i_v2
+     * @param mMulTranspose
+     */
+    public Mmul(SameDiff sameDiff,
+                DifferentialFunction i_v1,
+                DifferentialFunction i_v2,
+                MMulTranspose mMulTranspose) {
+        super(sameDiff,
+                i_v1,
+                i_v2, new int[][] {
+                        {1},{0}
+                },mMulTranspose);
+
+        this.mMulTranspose = mMulTranspose;
+    }
+
+
+    /**
+     *
+     * @param sameDiff
+     * @param i_v1
+     * @param i_v2
+     */
+    public Mmul(SameDiff sameDiff,
+                DifferentialFunction i_v1,
+                DifferentialFunction i_v2) {
+        this(sameDiff,i_v1,i_v2,MMulTranspose.allFalse());
+    }
+
+    public Mmul(INDArray x, INDArray y, int[][] axes, MMulTranspose mMulTranspose) {
+        super(x, y, axes);
+        this.mMulTranspose = mMulTranspose;
+    }
+
+    public Mmul(INDArray x, INDArray y, INDArray z, MMulTranspose mMulTranspose) {
+        super(x, y, z,  new int[][] {
+                {1},{0}
+        });
+        this.mMulTranspose = mMulTranspose;
+    }
 
     public Mmul() {}
 
 
-    public Mmul(INDArray x,
-                INDArray y,
-                INDArray z,
-                MMulTranspose mMulTranspose) {
-        this(x,y,z,x.lengthLong(),mMulTranspose);
-    }
-
-    public Mmul(INDArray x,
-                INDArray y,
-                INDArray z,
-                long n,
-                MMulTranspose mMulTranspose) {
-        super(x, y, z, n);
-        this.mMulTranspose = mMulTranspose;
-    }
-
-    public Mmul(INDArray x, INDArray y, INDArray z, long n) {
-        this(x,y,z,n,MMulTranspose.allFalse());
-    }
-
-    public Mmul(INDArray x, INDArray y, INDArray z) {
-        this(x,y,z,x.lengthLong());
-    }
 
 
 
-    public Mmul(INDArray x, INDArray y) {
-        super(x, y);
-    }
+
+
+
 
     @Override
     public int opNum() {
@@ -218,4 +248,56 @@ public class Mmul extends BaseAccumulation {
         else
             this.z = x.mmul(y,mMulTranspose);
     }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        List<DifferentialFunction> ret = new ArrayList<>();
+        DifferentialFunction setup = sameDiff.setupFunction(i_v1.get(0));
+        DifferentialFunction gradWrtX = f().reshape(f().mmul(setup,rarg(),
+                MMulTranspose.builder()
+                        .transposeB(!mMulTranspose.isTransposeB())
+                        .transposeResult(mMulTranspose.isTransposeA())
+                        .build()),larg().getResultShape());
+
+        DifferentialFunction gradWrtY = f().reshape(f().mmul(larg(),setup,
+                MMulTranspose.builder()
+                        .transposeA(!mMulTranspose.isTransposeA())
+                        .transposeResult(mMulTranspose.isTransposeB())
+                        .build()),rarg().getResultShape());
+
+        ret.add(gradWrtX);
+        ret.add(gradWrtY);
+        validateFunctionReference(larg());
+        validateFunctionReference(rarg());
+        return ret;
+    }
+
+    @Override
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction i_v1,
+                            DifferentialFunction i_v2,
+                            String opName) {
+        ArrayField arrayField = i_v1.getValue(true);
+        ArrayField secondVal = i_v2.getValue(true);
+        //skip empty dimensions
+        addEdges(sameDiff,i_v1,i_v2,opName,
+                Type.REDUCE3,
+                Shape.getMatrixMultiplyShape(arrayField.getInput().getShape(),
+                        secondVal.getInput().getShape()));
+    }
+
+
+
+    /**
+     * Get the value of this function
+     *
+     * @return
+     */
+    @Override
+    public ArrayField doGetValue() {
+        return a().mmul(larg(),rarg(),mMulTranspose);
+    }
+
 }
+

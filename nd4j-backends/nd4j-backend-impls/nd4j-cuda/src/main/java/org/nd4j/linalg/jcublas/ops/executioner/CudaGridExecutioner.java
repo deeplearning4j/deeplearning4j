@@ -411,7 +411,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     InvertedMetaOp, aka Postulate logic
                     
                     Postulate logic is simple too:
-                        1) LastOp is type of Reduce or Reduce3
+                        1) LastOp is opType of Reduce or Reduce3
                         2) LastOp op.z() isn't scalar
                         3) currentOp is one of the following op types: Scalar, Transform
                      */
@@ -703,7 +703,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return op.z();
     }
 
-    // FIXME: remove CudaContext return type. We just don't need it
+    // FIXME: remove CudaContext return opType. We just don't need it
     @Override
     protected CudaContext invoke(BroadcastOp op) {
         processAsGridOp(op, op.getDimension());
@@ -711,7 +711,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return null;
     }
 
-    // FIXME: remove CudaContext return type. We just don't need it
+    // FIXME: remove CudaContext return opType. We just don't need it
     @Override
     protected CudaContext invoke(ScalarOp op) {
         processAsGridOp(op, null);
@@ -719,7 +719,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return null;
     }
 
-    // FIXME: remove CudaContext return type. We just don't need it
+    // FIXME: remove CudaContext return opType. We just don't need it
     @Override
     protected CudaContext invoke(TransformOp op) {
         if (op.isExecSpecial()) {

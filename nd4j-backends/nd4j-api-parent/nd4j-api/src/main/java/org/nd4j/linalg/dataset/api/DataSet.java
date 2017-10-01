@@ -305,7 +305,7 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * Get the example metadata, or null if no metadata has been set<br>
      * Note: this method results in an unchecked cast - care should be taken when using this!
      *
-     * @param metaDataType Class of the metadata (used for type information)
+     * @param metaDataType Class of the metadata (used for opType information)
      * @param <T>          Type of metadata
      * @return List of metadata objects
      */

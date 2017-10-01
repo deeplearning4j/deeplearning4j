@@ -20,12 +20,18 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * ELU: Exponential Linear Unit (alpha=1.0)<br>
@@ -37,6 +43,18 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alex Black
  */
 public class ELU extends BaseTransformOp {
+    public ELU(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public ELU(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public ELU(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public ELU() {}
 
     public ELU(INDArray x, INDArray z) {
@@ -141,4 +159,18 @@ public class ELU extends BaseTransformOp {
     public TransformOp derivative() {
         return new ELUDerivative(x, y, z, n);
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().elu(arg().getValue(true));
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().eluDerivative(arg());
+
+        return Collections.singletonList(ret);
+    }
+
 }

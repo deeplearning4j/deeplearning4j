@@ -12,10 +12,15 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Multiplication operation
@@ -23,6 +28,34 @@ import org.nd4j.linalg.api.ops.Op;
  * @author raver119@gmail.com
  */
 public class FModOp extends BaseTransformOp {
+    public FModOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public FModOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
+
+    public FModOp(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public FModOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs) {
+        super(sameDiff, i_v1, i_v2, extraArgs);
+    }
+
+    public FModOp(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public FModOp(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public FModOp(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public FModOp() {}
 
     public FModOp(INDArray x, INDArray y, INDArray z, long n) {
@@ -126,5 +159,15 @@ public class FModOp extends BaseTransformOp {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to multiply");
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

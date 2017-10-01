@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Float data buffer tests
  *
- * This tests the float buffer data type
+ * This tests the float buffer data opType
  * Put all buffer related tests here
  *
  * @author Adam Gibson

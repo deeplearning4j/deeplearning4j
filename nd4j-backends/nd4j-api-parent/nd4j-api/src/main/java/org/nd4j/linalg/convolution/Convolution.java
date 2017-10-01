@@ -223,7 +223,7 @@ public class Convolution {
      *
      * @param input  the input to op
      * @param kernel the kerrnel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @param axes   the axes to do the convolution along
      * @return the convolution of the given input and kernel
      */
@@ -236,7 +236,7 @@ public class Convolution {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @param axes   the axes to do the convolution along
      * @return the convolution of the given input and kernel
      */
@@ -249,7 +249,7 @@ public class Convolution {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     public static INDArray convn(INDArray input, INDArray kernel, Type type) {
@@ -261,7 +261,7 @@ public class Convolution {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     public static IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Type type) {

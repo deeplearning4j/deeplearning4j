@@ -19,11 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Signum function
@@ -31,6 +37,18 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Sign extends BaseTransformOp {
+    public Sign(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public Sign(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public Sign(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public Sign() {}
 
     public Sign(INDArray x, INDArray z) {
@@ -140,6 +158,20 @@ public class Sign extends BaseTransformOp {
             return new Sign(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
                             xAlongDimension.length());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().sign(arg().getValue(true));
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
+
+        return Collections.singletonList(ret);
     }
 
 }

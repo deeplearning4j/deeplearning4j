@@ -136,13 +136,13 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         }
 
         long bytes = requiredMemoryBytes;
-        // hack for misalignment avoidance for 16bit data type
+        // hack for misalignment avoidance for 16bit data opType
         if (dataBuffer.dataType() == DataBuffer.Type.HALF) {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE || dataBuffer.dataType() == DataBuffer.Type.LONG) {
-            // for double data type, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
+            // for double data opType, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
             long div = bytes / 4;
             if (div % 2 != 0)
                 bytes += 4;
@@ -235,7 +235,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             return getConstantBuffer(data);
         }
 
-        throw new IllegalStateException("Unknown CudaDataBuffer type");
+        throw new IllegalStateException("Unknown CudaDataBuffer opType");
     }
 
     private void ensureMaps(Integer deviceId) {

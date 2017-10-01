@@ -19,12 +19,18 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -34,6 +40,21 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class RectifedLinear extends BaseTransformOp {
     private double cutoff = 0.0;
+
+    public RectifedLinear(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, double cutoff) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+        this.cutoff = cutoff;
+    }
+
+    public RectifedLinear(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs, double cutoff) {
+        super(sameDiff, i_v1, i_v2, extraArgs);
+        this.cutoff = cutoff;
+    }
+
+    public RectifedLinear(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double cutoff) {
+        super(sameDiff, i_v, inPlace);
+        this.cutoff = cutoff;
+    }
 
     public RectifedLinear() {
         this.extraArgs = new Object[] {cutoff};
@@ -169,5 +190,19 @@ public class RectifedLinear extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {cutoff};
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().relu(arg().getValue(true));
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().val(a().step(arg().getValue(true)));
+
+        return Collections.singletonList(ret);
     }
 }

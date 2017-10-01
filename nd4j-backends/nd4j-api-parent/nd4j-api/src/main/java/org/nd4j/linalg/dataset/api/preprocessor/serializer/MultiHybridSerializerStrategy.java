@@ -196,7 +196,7 @@ public class MultiHybridSerializerStrategy implements NormalizerSerializerStrate
     }
 
     /**
-     * This enum is exclusively used for ser/de purposes in this serializer, for indicating the type of normalizer 
+     * This enum is exclusively used for ser/de purposes in this serializer, for indicating the opType of normalizer
      * strategy used for an input/output or global settings.
      * 
      * NOTE: ONLY EVER CONCATENATE NEW VALUES AT THE BOTTOM!

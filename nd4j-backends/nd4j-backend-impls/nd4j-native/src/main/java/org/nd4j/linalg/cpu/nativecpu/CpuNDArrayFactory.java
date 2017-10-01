@@ -562,7 +562,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                             (IntPointer) m.shapeInfoDataBuffer().addressPointer());
 
                 } else {
-                    throw new UnsupportedOperationException("Illegal data type for copy");
+                    throw new UnsupportedOperationException("Illegal data opType for copy");
                 }
                 //Works for all cases...
 

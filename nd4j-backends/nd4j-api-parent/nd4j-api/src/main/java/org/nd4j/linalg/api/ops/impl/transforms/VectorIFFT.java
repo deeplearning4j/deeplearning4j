@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,6 +28,8 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
+
+import java.util.List;
 
 /**
  * Single ifft operation
@@ -186,5 +190,15 @@ public class VectorIFFT extends BaseTransformOp {
         //completely pass through
         this.z = originalN > 0 ? ComplexNDArrayUtil.truncate(ret, originalN, 0) : ret;
         this.x = this.z;
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

@@ -224,7 +224,7 @@ public class BlasBufferUtil {
      */
     public static void setData(float[] data, INDArray toSet) {
         if (toSet.data().dataType() != DataBuffer.Type.FLOAT) {
-            throw new IllegalArgumentException("Unable to set double data for type " + toSet.data().dataType());
+            throw new IllegalArgumentException("Unable to set double data for opType " + toSet.data().dataType());
         }
 
         if (toSet.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
@@ -289,7 +289,7 @@ public class BlasBufferUtil {
      */
     public static void setData(double[] data, INDArray toSet) {
         if (toSet.data().dataType() != DataBuffer.Type.DOUBLE) {
-            throw new IllegalArgumentException("Unable to set double data for type " + toSet.data().dataType());
+            throw new IllegalArgumentException("Unable to set double data for opType " + toSet.data().dataType());
         }
 
         if (toSet.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {

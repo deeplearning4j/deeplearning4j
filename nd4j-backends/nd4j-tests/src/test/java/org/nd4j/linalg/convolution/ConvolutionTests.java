@@ -1372,7 +1372,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
                                                         INDArray in = Nd4j.rand(new int[] {m, d, h, w});
                                                         //assertEquals(in.data().allocationMode(), mode);
-                                                        //assertEquals(in.data().dataType(), type);
+                                                        //assertEquals(in.data().dataType(), opType);
 
                                                         INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph,
                                                                         pw, -1, cAll); //Old implementation

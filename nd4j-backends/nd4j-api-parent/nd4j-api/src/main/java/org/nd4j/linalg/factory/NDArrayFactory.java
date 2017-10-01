@@ -147,7 +147,7 @@ public interface NDArrayFactory {
     void setOrder(char order);
 
     /**
-     * Sets the data type
+     * Sets the data opType
      *
      * @param dtype
      */
@@ -170,9 +170,9 @@ public interface NDArrayFactory {
     char order();
 
     /**
-     * Returns the data type for this ndarray
+     * Returns the data opType for this ndarray
      *
-     * @return the data type for this ndarray
+     * @return the data opType for this ndarray
      */
     DataBuffer.Type dtype();
 

@@ -81,8 +81,8 @@ public class SubscriberState implements Serializable, Comparable<SubscriberState
 
 
     /**
-     * Return the server type (master or slave)
-     * @return the server type
+     * Return the server opType (master or slave)
+     * @return the server opType
      */
     public String serverType() {
         return isMaster ? "master" : "slave";
@@ -124,7 +124,7 @@ public class SubscriberState implements Serializable, Comparable<SubscriberState
      * @return a negative integer, zero, or a positive integer as this object
      * is less than, equal to, or greater than the specified object.
      * @throws NullPointerException if the specified object is null
-     * @throws ClassCastException   if the specified object's type prevents it
+     * @throws ClassCastException   if the specified object's opType prevents it
      *                              from being compared to this object.
      */
     @Override

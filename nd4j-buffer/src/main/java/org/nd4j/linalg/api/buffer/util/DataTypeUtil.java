@@ -7,7 +7,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Manipulates the data type
+ * Manipulates the data opType
  * for the nd4j context
  * @author Adam Gibson
  */
@@ -18,7 +18,7 @@ public class DataTypeUtil {
 
 
     /**
-     * Returns the length for the given data type
+     * Returns the length for the given data opType
      * @param type
      * @return
      */
@@ -36,7 +36,7 @@ public class DataTypeUtil {
                 return 8;
             case COMPRESSED:
             default:
-                throw new IllegalArgumentException("Illegal type for length");
+                throw new IllegalArgumentException("Illegal opType for length");
 
         }
 

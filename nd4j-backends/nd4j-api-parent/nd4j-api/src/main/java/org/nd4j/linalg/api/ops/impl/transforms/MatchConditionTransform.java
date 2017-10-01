@@ -20,6 +20,9 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -28,6 +31,8 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.List;
+
 /**
  * Absolute sum the components
  *
@@ -35,9 +40,30 @@ import org.nd4j.linalg.indexing.conditions.Condition;
  */
 public class MatchConditionTransform extends BaseTransformOp {
 
-    double compare;
-    double eps;
-    int mode;
+    private double compare;
+    private double eps;
+    private int mode;
+
+    public MatchConditionTransform(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double compare, double eps, int mode) {
+        super(sameDiff, i_v, inPlace);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchConditionTransform(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double eps, int mode) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchConditionTransform(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double compare, double eps, int mode) {
+        super(sameDiff, i_v, extraArgs);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
 
     public MatchConditionTransform() {}
 
@@ -102,6 +128,16 @@ public class MatchConditionTransform extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
+        return null;
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
     }
 }

@@ -42,7 +42,7 @@ public class JacksonReflectionLoader {
             Set<Class<?>> subClasses = (Set<Class<?>>) reflections.getSubTypesOf(type);
             if (subClasses.size() > 1) {
                 throw new IllegalArgumentException(String.format(
-                                "Class " + type + " type can't be inferred. There is more than %d of sub class for the given class",
+                                "Class " + type + " opType can't be inferred. There is more than %d of sub class for the given class",
                                 subClasses.size()));
             } else if (subClasses.isEmpty())
                 throw new IllegalArgumentException("No class implementation found for " + type.getCanonicalName());
@@ -98,7 +98,7 @@ public class JacksonReflectionLoader {
     }
 
     /**
-     * Instantiate the given class type
+     * Instantiate the given class opType
      * @param clazz the class to instantiate
      * @param json the json to instantiate from
      * @param objectMapper the object mapper to

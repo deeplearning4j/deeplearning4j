@@ -19,6 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -26,6 +30,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Cosine similarity
@@ -38,6 +45,13 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class CosineSimilarity extends BaseAccumulation {
     private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
+    public CosineSimilarity(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public CosineSimilarity(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
 
     public CosineSimilarity() {
         passThrough = true;
@@ -250,5 +264,28 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public float calculateFinalResult(float accum, long n) {
         throw new UnsupportedOperationException("Not supported for passthrough op");
+    }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().cosineSimilarity(larg(), rarg(), dimensions);
+    }
+
+
+
+
+    @Override
+    public String doGetFormula(List<Variable > variables) {
+        return larg().doGetFormula(variables) + " * " + rarg().doGetFormula(variables) + "/" +
+                "sqrt(pow(" + larg().doGetFormula(variables) + ", 2) * pow(" + rarg().doGetFormula(variables) + ", 2))";
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        DifferentialFunction numerator = f().mul(larg(),rarg());
+        DifferentialFunction denom = f().sqrt(f().mul(f().pow(larg(),2),f().pow(rarg(),2)));
+        return Arrays.asList(f().div(numerator,denom));
     }
 }

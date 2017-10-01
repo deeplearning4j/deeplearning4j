@@ -59,7 +59,7 @@ public class RelativeByteBuddyIntArithmetic implements Implementation {
             case MOD:
                 return IntegerMod.INSTANCE;
             default:
-                throw new IllegalArgumentException("Illegal type of operation ");
+                throw new IllegalArgumentException("Illegal opType of operation ");
         }
     }
 

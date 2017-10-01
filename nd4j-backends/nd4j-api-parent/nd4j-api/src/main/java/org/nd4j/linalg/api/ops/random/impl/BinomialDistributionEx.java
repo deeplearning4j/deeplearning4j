@@ -1,8 +1,12 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+
+import java.util.List;
 
 /**
  * This Op generates binomial distribution
@@ -74,5 +78,15 @@ public class BinomialDistributionEx extends BaseRandomOp {
     @Override
     public boolean isExecSpecial() {
         return true;
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

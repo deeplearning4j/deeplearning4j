@@ -20,11 +20,17 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.util.ComplexUtil;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Abs elementwise function
@@ -32,6 +38,17 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Abs extends BaseTransformOp {
+    public Abs(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public Abs(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public Abs(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
 
     public Abs() {}
 
@@ -125,4 +142,20 @@ public class Abs extends BaseTransformOp {
             return new Abs(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().abs(arg().getValue(true));
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(arg(),f().abs(arg()));
+
+        return Collections.singletonList(ret);
+    }
+
+
 }

@@ -20,7 +20,7 @@ public class Float8 extends AbstractCompressor {
     }
 
     /**
-     * This method returns compression type provided by specific NDArrayCompressor implementation
+     * This method returns compression opType provided by specific NDArrayCompressor implementation
      *
      * @return
      */

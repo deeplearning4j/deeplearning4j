@@ -19,10 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  *  Level 1 blas op Axpy as libnd4j native op
@@ -32,6 +37,41 @@ import org.nd4j.linalg.api.ops.Op;
 public class Axpy extends BaseTransformOp {
 
     private double p;
+
+    public Axpy(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, double p) {
+        super(sameDiff, i_v1, i_v2);
+        this.p = p;
+    }
+
+    public Axpy(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, double p) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+        this.p = p;
+    }
+
+    public Axpy(SameDiff sameDiff, double p) {
+        super(sameDiff);
+        this.p = p;
+    }
+
+    public Axpy(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs, double p) {
+        super(sameDiff, i_v1, i_v2, extraArgs);
+        this.p = p;
+    }
+
+    public Axpy(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double p) {
+        super(sameDiff, i_v, inPlace);
+        this.p = p;
+    }
+
+    public Axpy(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.p = p;
+    }
+
+    public Axpy(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double p) {
+        super(sameDiff, i_v, extraArgs);
+        this.p = p;
+    }
 
     public Axpy() {
 
@@ -136,5 +176,15 @@ public class Axpy extends BaseTransformOp {
                             + "], Z: [" + z.lengthLong() + "], N: [" + n + "]");
 
         this.extraArgs = new Object[] {p, (double) n};
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

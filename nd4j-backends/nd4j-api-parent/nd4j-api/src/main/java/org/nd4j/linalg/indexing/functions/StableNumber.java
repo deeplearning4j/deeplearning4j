@@ -33,7 +33,7 @@ public class StableNumber implements Function<Number, Number> {
                 if (Float.isNaN(number.floatValue()))
                     return Nd4j.EPS_THRESHOLD;
             default:
-                throw new IllegalStateException("Illegal type");
+                throw new IllegalStateException("Illegal opType");
 
         }
 

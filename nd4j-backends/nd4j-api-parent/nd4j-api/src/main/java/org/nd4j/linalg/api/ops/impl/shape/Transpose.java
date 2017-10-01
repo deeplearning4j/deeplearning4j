@@ -20,6 +20,9 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
@@ -27,12 +30,18 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Transpose function
  *
  * @author Adam Gibson
  */
 public class Transpose extends ShapeOp {
+    public Transpose(SameDiff sameDiff, DifferentialFunction i_v) {
+        super(sameDiff, i_v, false);
+    }
 
     public Transpose() {}
 
@@ -152,4 +161,15 @@ public class Transpose extends ShapeOp {
             return new Transpose(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().transpose(arg().getValue(true));
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        return Collections.<DifferentialFunction>singletonList(this);
+    }
+
 }

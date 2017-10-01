@@ -228,7 +228,7 @@ public interface Random extends AutoCloseable {
      * having the same space usage as floats.
      * This also plays nice with blas.
      * <p/>
-     * If the data type is set to double,
+     * If the data opType is set to double,
      * then these will be whole doubles.
      *
      * @param shape the shape to generate
@@ -247,7 +247,7 @@ public interface Random extends AutoCloseable {
      * having the same space usage as floats.
      * This also plays nice with blas.
      * <p/>
-     * If the data type is set to double,
+     * If the data opType is set to double,
      * then these will be whole doubles.
      *
      * @param shape the shape to generate

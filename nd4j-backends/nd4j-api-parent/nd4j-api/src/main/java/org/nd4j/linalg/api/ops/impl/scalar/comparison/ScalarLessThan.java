@@ -19,11 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Return a binary (0 or 1) when less than a number
@@ -121,5 +125,21 @@ public class ScalarLessThan extends BaseScalarOp {
             return new ScalarLessThan(x.tensorAlongDimension(index, dimension), num);
         else
             return new ScalarLessThan(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
+
+
+    /**
+     * Get the value of this function
+     *
+     * @return
+     */
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        return null;
     }
 }

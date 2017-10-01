@@ -19,11 +19,16 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Unit step function.
@@ -32,6 +37,21 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Step extends BaseTransformOp {
     private final double cutoff;
+
+    public Step(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double cutoff) {
+        super(sameDiff, i_v, inPlace);
+        this.cutoff = cutoff;
+    }
+
+    public Step(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double cutoff) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.cutoff = cutoff;
+    }
+
+    public Step(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double cutoff) {
+        super(sameDiff, i_v, extraArgs);
+        this.cutoff = cutoff;
+    }
 
     public Step() {
         cutoff = 0.0;
@@ -157,5 +177,15 @@ public class Step extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {cutoff};
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

@@ -69,11 +69,11 @@ public class ParameterServerClient implements NDArrayCallback {
 
         try {
             String type = objectMapper.readValue(
-                            Unirest.get(String.format("http://%s:%d/type", masterStatusHost, masterStatusPort)).asJson()
+                            Unirest.get(String.format("http://%s:%d/opType", masterStatusHost, masterStatusPort)).asJson()
                                             .getBody().toString(),
                             ServerTypeJson.class).getType();
             if (!type.equals("master"))
-                throw new IllegalStateException("Wrong type " + type);
+                throw new IllegalStateException("Wrong opType " + type);
             Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort)).asJson().getBody();
             return objectMapper.readValue(
                             Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort))
@@ -136,11 +136,11 @@ public class ParameterServerClient implements NDArrayCallback {
 
         try {
             String type = objectMapper.readValue(
-                            Unirest.get(String.format("http://%s:%d/type", masterStatusHost, masterStatusPort)).asJson()
+                            Unirest.get(String.format("http://%s:%d/opType", masterStatusHost, masterStatusPort)).asJson()
                                             .getBody().toString(),
                             ServerTypeJson.class).getType();
             if (!type.equals("master"))
-                throw new IllegalStateException("Wrong type " + type);
+                throw new IllegalStateException("Wrong opType " + type);
             Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort)).asJson().getBody();
             return objectMapper.readValue(
                             Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort))

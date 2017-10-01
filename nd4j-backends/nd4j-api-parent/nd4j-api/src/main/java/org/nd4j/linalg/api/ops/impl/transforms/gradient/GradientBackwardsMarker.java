@@ -1,15 +1,28 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.List;
+
 /**
  *
  */
 public class GradientBackwardsMarker extends BaseGradientOp  {
+    public GradientBackwardsMarker(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public GradientBackwardsMarker(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
+
     public GradientBackwardsMarker(INDArray x, INDArray z) {
         super(x, z);
     }
@@ -101,4 +114,18 @@ public class GradientBackwardsMarker extends BaseGradientOp  {
     public void exec(int... dimensions) {
         super.exec(dimensions);
     }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().gradientBackwardsMarker(larg().getValue(true),rarg().getValue(true));
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        throw new UnsupportedOperationException();
+    }
+
 }

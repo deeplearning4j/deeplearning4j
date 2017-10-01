@@ -35,7 +35,7 @@ public class ArrayRetrieve implements ByteCodeAppender {
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
                     MethodDescription instrumentedMethod) {
-        //resolve the type to store in the array and retrieve the store command
+        //resolve the opType to store in the array and retrieve the store command
         StackManipulation store = ArrayAccess.of(typePool.describe("int").resolve()).load();
         StackManipulation.Size size = store.apply(methodVisitor, implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());

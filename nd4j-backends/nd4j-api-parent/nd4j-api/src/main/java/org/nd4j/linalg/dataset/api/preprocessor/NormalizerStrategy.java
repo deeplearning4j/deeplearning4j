@@ -28,7 +28,7 @@ public interface NormalizerStrategy<S extends NormalizerStats> extends Serializa
     void revert(INDArray array, INDArray maskArray, S stats);
 
     /**
-     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the type that 
+     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the opType that
      * belongs to the current NormalizerStrategy implementation
      * 
      * @return the new builder

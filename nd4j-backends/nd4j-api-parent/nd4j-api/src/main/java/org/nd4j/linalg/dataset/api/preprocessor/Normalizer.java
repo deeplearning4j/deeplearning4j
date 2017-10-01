@@ -33,9 +33,9 @@ public interface Normalizer<T> {
     void revert(T toRevert);
 
     /**
-     * Get the enum type of this normalizer
+     * Get the enum opType of this normalizer
      *
-     * @return the type
+     * @return the opType
      * @see NormalizerSerializerStrategy#getSupportedType()
      */
     NormalizerType getType();

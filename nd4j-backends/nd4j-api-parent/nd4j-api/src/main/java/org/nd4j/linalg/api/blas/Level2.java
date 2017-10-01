@@ -11,7 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * from the given ndarrays.
  *
  * To avoid boxing, doubles are used in place of normal numbers.
- * The underlying implementation will call the proper data type.
+ * The underlying implementation will call the proper data opType.
  *
  * This is a fortran 95 style api that gives us the efficiency
  * and flexibility of the fortran 77 api

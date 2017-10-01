@@ -175,7 +175,7 @@ public class ShapeOffsetResolution implements Serializable {
                     shapes[i] = arr.size(i);
                     strides[i] = arr.tensorAlongDimension(0, i).elementWiseStride();
                 } else
-                    throw new IllegalArgumentException("Illegal type of index " + indexes[i].getClass().getName());
+                    throw new IllegalArgumentException("Illegal opType of index " + indexes[i].getClass().getName());
             }
 
 

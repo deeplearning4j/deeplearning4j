@@ -101,7 +101,7 @@ public abstract class ObjectUtils {
             }
         }
 
-        throw new IllegalArgumentException(String.format("constant [%s] does not exist in enum type %s",
+        throw new IllegalArgumentException(String.format("constant [%s] does not exist in enum opType %s",
                         new Object[] {constant, enumValues.getClass().getComponentType().getName()}));
     }
 

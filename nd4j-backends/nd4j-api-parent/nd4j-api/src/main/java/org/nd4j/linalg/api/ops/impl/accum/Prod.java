@@ -19,11 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Prod the components
@@ -31,6 +37,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Prod extends BaseAccumulation {
+    public Prod(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public Prod(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public Prod() {}
 
     public Prod(INDArray x, INDArray y, INDArray z, long n) {
@@ -174,6 +188,25 @@ public class Prod extends BaseAccumulation {
             return new Prod(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Prod(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().prod(arg().doGetValue(),dimensions);
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        validateDifferentialFunctionsameDiff(i_v1);
+        DifferentialFunction ret = f().div(f().doRepeat(
+                this,
+                i_v1.get(0)
+                ,dimensions),f().mul(f().one(getResultShape()),f()
+                .getInputLength(i_v1.get(0))));
+
+        return Collections.singletonList(ret);
     }
 
 }

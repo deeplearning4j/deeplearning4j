@@ -20,21 +20,43 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.util.ComplexUtil;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Pow function
  *
  * @author Adam Gibson
  */
-public class Pow extends BaseTransformOp {
+public class
+Pow extends BaseTransformOp {
     private double pow;
 
     public Pow() {}
+
+    public Pow(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double pow) {
+        super(sameDiff, i_v, inPlace);
+        this.pow = pow;
+    }
+
+    public Pow(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.pow = pow;
+    }
+
+    public Pow(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double pow) {
+        super(sameDiff, i_v, extraArgs);
+        this.pow = pow;
+    }
 
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z);
@@ -142,4 +164,26 @@ public class Pow extends BaseTransformOp {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {pow};
     }
+
+    /**
+     * Get the value of this function
+     *
+     * @return
+     */
+    @Override
+    public ArrayField doGetValue() {
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
+
+        return arg().getValue(true).pow(scalarValue.doubleValue());
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        DifferentialFunction g = f().mul(f().pow(arg(),scalarValue.doubleValue()),i_v1.get(0));
+
+        return Arrays.asList(g);
+    }
+
 }

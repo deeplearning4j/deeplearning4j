@@ -351,9 +351,9 @@ public interface DataBuffer extends Serializable {
     byte[] asBytes();
 
     /**
-     * The data type of the buffer
+     * The data opType of the buffer
      *
-     * @return the data type of the buffer
+     * @return the data opType of the buffer
      */
     Type dataType();
 

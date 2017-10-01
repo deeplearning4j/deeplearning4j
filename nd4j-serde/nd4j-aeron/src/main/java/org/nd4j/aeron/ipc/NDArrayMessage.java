@@ -201,7 +201,7 @@ public class NDArrayMessage implements Serializable {
      * will track chunks being sent.
      *
      * Anytime a subscriber received an {@link MessageType#CHUNKED}
-     * as a type it will store the buffer temporarily.
+     * as a opType it will store the buffer temporarily.
      *
      * @param chunks
      * @return
@@ -274,7 +274,7 @@ public class NDArrayMessage implements Serializable {
     public static DirectBuffer toBuffer(NDArrayMessage message) {
         ByteBuffer byteBuffer =
                         ByteBuffer.allocateDirect(byteBufferSizeForMessage(message)).order(ByteOrder.nativeOrder());
-        //declare message type
+        //declare message opType
         byteBuffer.putInt(MessageType.WHOLE.ordinal());
         //perform the ndarray put on the
         if (message.getArr().isCompressed()) {
@@ -319,12 +319,12 @@ public class NDArrayMessage implements Serializable {
      *
      * @param buffer the buffer to convert
      * @param offset  the offset to start at with the buffer - note that this
-     *                method call assumes that the message type is specified at the beginning of the buffer.
+     *                method call assumes that the message opType is specified at the beginning of the buffer.
      *                This means whatever offset you pass in will be increased by 4 (the size of an int)
      * @return the ndarray message based on this direct buffer.
      */
     public static NDArrayMessage fromBuffer(DirectBuffer buffer, int offset) {
-        //skip the message type
+        //skip the message opType
         Pair<INDArray, ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset + 4);
         INDArray arr = pair.getKey();
         Nd4j.getCompressor().decompressi(arr);

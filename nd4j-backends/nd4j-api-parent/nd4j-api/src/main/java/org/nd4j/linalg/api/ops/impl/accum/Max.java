@@ -20,11 +20,17 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Calculate the max over a vector
@@ -32,6 +38,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Max extends BaseAccumulation {
+    public Max(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public Max(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public Max() {}
 
     public Max(INDArray x, INDArray y, long n) {
@@ -158,5 +172,18 @@ public class Max extends BaseAccumulation {
             return new Max(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Max(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().max(arg().doGetValue(),dimensions);
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        validateDifferentialFunctionsameDiff(i_v1);
+        List<DifferentialFunction> ret = new ArrayList<>(1);
+        ret.add(sameDiff.getFunctionFactory().doGradChoose(this,i_v1.get(0),dimensions));
+        return ret;
     }
 }

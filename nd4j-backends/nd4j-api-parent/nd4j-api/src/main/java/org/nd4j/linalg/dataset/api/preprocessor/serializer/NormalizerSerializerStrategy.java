@@ -7,9 +7,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Strategy for serializing and unserializing a specific type of normalizer
+ * Strategy for serializing and unserializing a specific opType of normalizer
  *
- * @param <T> the type of normalizer this strategy supports
+ * @param <T> the opType of normalizer this strategy supports
  * @author Ede Meijer
  */
 public interface NormalizerSerializerStrategy<T extends Normalizer> {
@@ -32,11 +32,11 @@ public interface NormalizerSerializerStrategy<T extends Normalizer> {
     T restore(InputStream stream) throws IOException;
 
     /**
-     * Get the enum type of the supported normalizer
+     * Get the enum opType of the supported normalizer
      *
      * @see Normalizer#getType()
      *
-     * @return the enum type
+     * @return the enum opType
      */
     NormalizerType getSupportedType();
 }

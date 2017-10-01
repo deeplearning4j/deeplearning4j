@@ -20,11 +20,17 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Sum of squared values (real)
@@ -33,6 +39,13 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * @author Adam Gibson
  */
 public class Norm2 extends BaseAccumulation {
+    public Norm2(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public Norm2(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
 
     public Norm2() {}
 
@@ -232,5 +245,17 @@ public class Norm2 extends BaseAccumulation {
         if (applyFinalTransform())
             return (float) FastMath.sqrt(accum);
         return accum;
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().norm1(arg().doGetValue(),dimensions);
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        DifferentialFunction ret = f().doNormGrad(this,i_v1.get(0),"norm2",dimensions);
+
+        return Collections.singletonList(ret);
     }
 }

@@ -19,10 +19,16 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Subtraction operation
@@ -30,6 +36,14 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class SubOp extends BaseTransformOp {
+    public SubOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public SubOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
+
     public SubOp() {}
 
     public SubOp(INDArray x, INDArray y, INDArray z, long n) {
@@ -136,4 +150,24 @@ public class SubOp extends BaseTransformOp {
         if (y == null)
             throw new IllegalArgumentException("No components to subtract");
     }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        if(!isInPlace())
+            return larg().getValue(true).sub(rarg().getValue(true));
+        else
+            return larg().getValue(true).subi(rarg().getValue(true));
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction gradWrtX = i_v.get(0);
+        DifferentialFunction gradWrtY = f().neg(i_v.get(0));
+        List<DifferentialFunction> ret = new ArrayList<>();
+        ret.add(gradWrtX);
+        ret.add(gradWrtY);
+        return ret;
+    }
+
 }

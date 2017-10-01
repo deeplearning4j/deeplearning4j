@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Data type validation
+ * Data opType validation
  *
  * @author Adam Gibson
  */
@@ -40,12 +40,12 @@ public class DataTypeValidation {
 
     public static void assertDouble(INDArray d) {
         if (d.data().dataType() != DataBuffer.Type.DOUBLE)
-            throw new IllegalStateException("Given ndarray does not have data type double");
+            throw new IllegalStateException("Given ndarray does not have data opType double");
     }
 
     public static void assertFloat(INDArray d2) {
         if (d2.data().dataType() != DataBuffer.Type.FLOAT) {
-            throw new IllegalStateException("Given ndarray does not have data type float");
+            throw new IllegalStateException("Given ndarray does not have data opType float");
         }
     }
 

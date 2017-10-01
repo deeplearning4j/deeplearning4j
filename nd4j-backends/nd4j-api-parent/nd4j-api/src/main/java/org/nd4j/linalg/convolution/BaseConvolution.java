@@ -58,7 +58,7 @@ public abstract class BaseConvolution implements ConvolutionInstance {
      *
      * @param input  the input to transform
      * @param kernel the kernel to transform with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     @Override
@@ -71,7 +71,7 @@ public abstract class BaseConvolution implements ConvolutionInstance {
      *
      * @param input  the input to transform
      * @param kernel the kernel to transform with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     @Override

@@ -20,11 +20,17 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -37,6 +43,17 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alex Black
  */
 public class ELUDerivative extends BaseTransformOp {
+    public ELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public ELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public ELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
 
     public ELUDerivative() {
 
@@ -138,5 +155,17 @@ public class ELUDerivative extends BaseTransformOp {
         else
             return new ELUDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension),
                             xAlongDimension.length());
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().eluDerivative(larg().getValue(true),rarg().getValue(true));
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
+        return Arrays.asList(ret);
     }
 }

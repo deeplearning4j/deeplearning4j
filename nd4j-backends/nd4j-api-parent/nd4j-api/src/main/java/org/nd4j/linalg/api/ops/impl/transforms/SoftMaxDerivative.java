@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -30,7 +32,13 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class SoftMaxDerivative extends SoftMax {
+    public SoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
 
+    public SoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
 
     public SoftMaxDerivative(INDArray x, INDArray z) {
         super(x, z);

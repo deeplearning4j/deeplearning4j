@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.ops;
 
 import com.google.common.base.Preconditions;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -10,13 +12,20 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * and that it is special exec (for now)
  *
- * This op type sis meant to be used
+ * This op opType sis meant to be used
  * to build derivative operations.
  *
  *
  * @author Adam Gibson
  */
 public abstract class BaseGradientOp extends BaseTransformOp implements GradientOp {
+    public BaseGradientOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public BaseGradientOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
 
     public BaseGradientOp(INDArray x, INDArray z) {
         super(x, z);
