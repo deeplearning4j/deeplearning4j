@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.functions;
 
 import com.google.common.base.Preconditions;
+import com.rits.cloning.Cloner;
 import lombok.*;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
@@ -8,6 +9,9 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -44,6 +48,22 @@ public abstract class DifferentialFunction implements Differential {
     @Setter
     protected DifferentialFunction forwardFunction;
 
+    @Getter
+    @Setter
+    protected int[] shape;
+
+    @Getter
+    @Setter
+    protected DifferentialFunction[] args;
+
+    @Getter
+    @Setter
+    protected Number scalarValue;
+
+
+    @Getter
+    @Setter
+    protected int[] dimensions;
 
     protected Object[] extraArgs;
 
@@ -178,9 +198,10 @@ public abstract class DifferentialFunction implements Differential {
         return ret;
     }
 
-    public abstract String doGetFormula(List<Variable> variables);
+    public  String doGetFormula(List<Variable> variables) {
+        return null;
+    }
 
-    public abstract String functionName();
 
     @Override
     public abstract String toString();
@@ -191,9 +212,13 @@ public abstract class DifferentialFunction implements Differential {
         return false;
     }
 
-    public abstract DifferentialFunction[] args();
+    public  DifferentialFunction[] args() {
+        return args;
+    }
 
-    public abstract DifferentialFunction arg();
+    public  DifferentialFunction arg() {
+        return args[0];
+    }
 
 
     @Override
@@ -223,11 +248,12 @@ public abstract class DifferentialFunction implements Differential {
 
 
 
+
     protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction i_v1,
                             DifferentialFunction i_v2,
                             String opName,
-                            OpState.OpType opType,
+                            Op.Type opType,
                             int[] shape) {
         addEdges(sameDiff,
                 i_v1,
@@ -251,7 +277,7 @@ public abstract class DifferentialFunction implements Differential {
                             DifferentialFunction i_v1,
                             DifferentialFunction i_v2,
                             String opName,
-                            OpState.OpType opType,
+                            Op.Type opType,
                             int[] shape, Object[] extraArgs) {
         validateFunctionReference(i_v1);
         validateFunctionReference(i_v2);
@@ -370,6 +396,31 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    public Op.Type resolveType() {
+        if(!(this instanceof  Op))
+            throw new IllegalStateException("Unable to resolve type. Must be an op");
+        if(this instanceof ScalarOp)
+            return Op.Type.SCALAR;
+        else if(this instanceof TransformOp)
+            return Op.Type.TRANSFORM;
+        else if(this instanceof BroadcastOp)
+            return Op.Type.BROADCAST;
+        else if(this instanceof Accumulation) {
+            Accumulation accumulation = (Accumulation) this;
+            if(accumulation.y() != null)
+                return Op.Type.REDUCE3;
+            else
+                return Op.Type.REDUCE;
+        }
+        else if(this instanceof Variance)
+            return Op.Type.VARIANCE;
+        else if(this instanceof IndexAccumulation)
+            return Op.Type.INDEXREDUCE;
+
+        throw new IllegalStateException("No type found for class " + getClass().getName());
+
+    }
+
 
     protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction i_v1,
@@ -386,20 +437,30 @@ public abstract class DifferentialFunction implements Differential {
                 i_v1,
                 i_v2,
                 opName,
-                OpState.OpType.TRANSFORM,
+                resolveType(),
                 arrayField.getInput().getShape());
 
 
     }
 
 
+    public DifferentialFunction larg() {
+        return args[0];
+    }
+
+    public DifferentialFunction rarg() {
+        return args[1];
+    }
 
 
     /**
      * Duplicate this function
      * @return
      */
-    public abstract DifferentialFunction dup();
+    public  DifferentialFunction dup() {
+        Cloner cloner = new Cloner();
+        return cloner.deepClone(this);
+    }
 
 
     protected void validateFunctionReference(List<DifferentialFunction> reference) {
@@ -448,6 +509,67 @@ public abstract class DifferentialFunction implements Differential {
                 "match this function " + this);
 
     }
+
+
+    /**
+     * Add nodes to the graph
+     * @param sameDiff
+     * @param i_v1
+     * @param opName
+     */
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction i_v1,
+                            String opName,
+                            int...shape) {
+        validateFunctionReference(i_v1);
+        ArrayField v1 = i_v1.getValue(true);
+        validateDifferentialFunctionsameDiff(v1);
+        NDArrayInformation information =   inPlace ? i_v1.getResult() :  NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
+                .id(opName + "(" + v1.getInput().getId() + " -> " +
+                        v1.getInput().getId() + ")")
+                .shape(shape).build();
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.graph().nextVertexId(),
+                i_v1.getVertex().depth() + 1,
+                information);
+        this.vertexId = newVertex.vertexID();
+        sameDiff.graph().addVertex(newVertex);
+        Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
+        OpState owner =  OpState.builder()
+                .opType(opState.getOpType()).differentialFunction(this)
+                .opName(opName).inPlace(inPlace)
+                .extraArgs(extraArgs)
+                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
+                .n(ArrayUtil.prod(shape)).result(information)
+                .build();
+        if(opState.getOpType() == Op.Type.SCALAR) {
+
+        }
+
+
+        sameDiff.getGraph().addEdge(
+                new int[]{arg().resultVertexId()},
+                new int[]{newVertex.vertexID()},
+                owner,
+                true);
+
+
+
+        newVertex.setOpState(owner);
+        information.setOwner(owner);
+        owner.setResult(information);
+        if(owner.isInPlace()) {
+            information.setArrId(v1.getInput().getArrId());
+        }
+        this.opState = owner;
+
+
+    }
+
 
 
     /**

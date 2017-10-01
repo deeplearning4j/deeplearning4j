@@ -10,7 +10,7 @@ package org.tensorflow.framework;
  * a single run.
  * </pre>
  *
- * Protobuf type {@code tensorflow.ResourceHandleProto}
+ * Protobuf opType {@code tensorflow.ResourceHandleProto}
  */
 public  final class ResourceHandleProto extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -240,7 +240,7 @@ private static final long serialVersionUID = 0L;
   private long hashCode_;
   /**
    * <pre>
-   * Hash code for the type of the resource. Is only valid in the same device
+   * Hash code for the opType of the resource. Is only valid in the same device
    * and in the same execution.
    * </pre>
    *
@@ -254,7 +254,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object maybeTypeName_;
   /**
    * <pre>
-   * For debug-only, the name of the type pointed to by this handle, if
+   * For debug-only, the name of the opType pointed to by this handle, if
    * available.
    * </pre>
    *
@@ -274,7 +274,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * For debug-only, the name of the type pointed to by this handle, if
+   * For debug-only, the name of the opType pointed to by this handle, if
    * available.
    * </pre>
    *
@@ -493,7 +493,7 @@ private static final long serialVersionUID = 0L;
    * a single run.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.ResourceHandleProto}
+   * Protobuf opType {@code tensorflow.ResourceHandleProto}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -922,7 +922,7 @@ private static final long serialVersionUID = 0L;
     private long hashCode_ ;
     /**
      * <pre>
-     * Hash code for the type of the resource. Is only valid in the same device
+     * Hash code for the opType of the resource. Is only valid in the same device
      * and in the same execution.
      * </pre>
      *
@@ -933,7 +933,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Hash code for the type of the resource. Is only valid in the same device
+     * Hash code for the opType of the resource. Is only valid in the same device
      * and in the same execution.
      * </pre>
      *
@@ -947,7 +947,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Hash code for the type of the resource. Is only valid in the same device
+     * Hash code for the opType of the resource. Is only valid in the same device
      * and in the same execution.
      * </pre>
      *
@@ -963,7 +963,7 @@ private static final long serialVersionUID = 0L;
     private Object maybeTypeName_ = "";
     /**
      * <pre>
-     * For debug-only, the name of the type pointed to by this handle, if
+     * For debug-only, the name of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -983,7 +983,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the type pointed to by this handle, if
+     * For debug-only, the name of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -1004,7 +1004,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the type pointed to by this handle, if
+     * For debug-only, the name of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -1022,7 +1022,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the type pointed to by this handle, if
+     * For debug-only, the name of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -1036,7 +1036,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the type pointed to by this handle, if
+     * For debug-only, the name of the opType pointed to by this handle, if
      * available.
      * </pre>
      *

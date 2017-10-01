@@ -12,7 +12,7 @@ package org.tensorflow.framework;
  * Summaries are also produced at the end of an evaluation.
  * </pre>
  *
- * Protobuf type {@code tensorflow.Summary}
+ * Protobuf opType {@code tensorflow.Summary}
  */
 public  final class Summary extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -135,7 +135,7 @@ private static final long serialVersionUID = 0L;
     com.google.protobuf.ByteString getEncodedImageString();
   }
   /**
-   * Protobuf type {@code tensorflow.Summary.Image}
+   * Protobuf opType {@code tensorflow.Summary.Image}
    */
   public  static final class Image extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -465,7 +465,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.Summary.Image}
+     * Protobuf opType {@code tensorflow.Summary.Image}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -859,7 +859,7 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * Encoded audio data and its associated RFC 2045 content type (e.g.
+     * Encoded audio data and its associated RFC 2045 content opType (e.g.
      * "audio/wav").
      * </pre>
      *
@@ -878,7 +878,7 @@ private static final long serialVersionUID = 0L;
         getContentTypeBytes();
   }
   /**
-   * Protobuf type {@code tensorflow.Summary.Audio}
+   * Protobuf opType {@code tensorflow.Summary.Audio}
    */
   public  static final class Audio extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -1018,7 +1018,7 @@ private static final long serialVersionUID = 0L;
     private com.google.protobuf.ByteString encodedAudioString_;
     /**
      * <pre>
-     * Encoded audio data and its associated RFC 2045 content type (e.g.
+     * Encoded audio data and its associated RFC 2045 content opType (e.g.
      * "audio/wav").
      * </pre>
      *
@@ -1262,7 +1262,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.Summary.Audio}
+     * Protobuf opType {@code tensorflow.Summary.Audio}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1535,7 +1535,7 @@ private static final long serialVersionUID = 0L;
       private com.google.protobuf.ByteString encodedAudioString_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <pre>
-       * Encoded audio data and its associated RFC 2045 content type (e.g.
+       * Encoded audio data and its associated RFC 2045 content opType (e.g.
        * "audio/wav").
        * </pre>
        *
@@ -1546,7 +1546,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Encoded audio data and its associated RFC 2045 content type (e.g.
+       * Encoded audio data and its associated RFC 2045 content opType (e.g.
        * "audio/wav").
        * </pre>
        *
@@ -1563,7 +1563,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Encoded audio data and its associated RFC 2045 content type (e.g.
+       * Encoded audio data and its associated RFC 2045 content opType (e.g.
        * "audio/wav").
        * </pre>
        *
@@ -1839,7 +1839,7 @@ private static final long serialVersionUID = 0L;
     public Value.ValueCase getValueCase();
   }
   /**
-   * Protobuf type {@code tensorflow.Summary.Value}
+   * Protobuf opType {@code tensorflow.Summary.Value}
    */
   public  static final class Value extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -2588,7 +2588,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.Summary.Value}
+     * Protobuf opType {@code tensorflow.Summary.Value}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -4071,7 +4071,7 @@ private static final long serialVersionUID = 0L;
    * Summaries are also produced at the end of an evaluation.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.Summary}
+   * Protobuf opType {@code tensorflow.Summary}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

@@ -9,7 +9,7 @@ package org.tensorflow.framework;
  * with a string name.  E.g., MatMul[T=float].
  * </pre>
  *
- * Protobuf type {@code tensorflow.NameAttrList}
+ * Protobuf opType {@code tensorflow.NameAttrList}
  */
 public  final class NameAttrList extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -395,7 +395,7 @@ private static final long serialVersionUID = 0L;
    * with a string name.  E.g., MatMul[T=float].
    * </pre>
    *
-   * Protobuf type {@code tensorflow.NameAttrList}
+   * Protobuf opType {@code tensorflow.NameAttrList}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

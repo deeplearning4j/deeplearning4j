@@ -33,8 +33,8 @@ import static guru.nidi.graphviz.model.Link.to;
  * As per {@link IGraph}, this graph representation can have arbitrary objects attached<br>
  * Vertices are initialized either directly via list. Edges are added using one of the
  * addEdge methods.
- * @param <V> Type parameter for vertices (type of objects attached to each vertex)
- * @param <E> Type parameter for edges (type of objects attached to each edge)
+ * @param <V> Type parameter for vertices (opType of objects attached to each vertex)
+ * @param <E> Type parameter for edges (opType of objects attached to each edge)
  * @author Alex Black
  */
 @Data

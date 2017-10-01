@@ -45,18 +45,18 @@ public interface AttrValueOrBuilder extends
 
   /**
    * <pre>
-   * "type"
+   * "opType"
    * </pre>
    *
-   * <code>.tensorflow.DataType type = 6;</code>
+   * <code>.tensorflow.DataType opType = 6;</code>
    */
   int getTypeValue();
   /**
    * <pre>
-   * "type"
+   * "opType"
    * </pre>
    *
-   * <code>.tensorflow.DataType type = 6;</code>
+   * <code>.tensorflow.DataType opType = 6;</code>
    */
   DataType getType();
 

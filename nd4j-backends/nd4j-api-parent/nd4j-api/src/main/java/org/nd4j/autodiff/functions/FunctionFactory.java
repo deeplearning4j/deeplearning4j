@@ -2,6 +2,10 @@ package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.impl.transforms.Constant;
+import org.nd4j.linalg.api.ops.impl.transforms.Ones;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
+import org.nd4j.linalg.api.ops.impl.transforms.Zero;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -23,12 +27,11 @@ public interface FunctionFactory {
 
     Zero zero(int[] shape);
 
-    One one(int[] shape);
+    Ones one(int[] shape);
 
 
     DifferentialFunction tile(DifferentialFunction iX, int[] repeat);
 
-    DifferentialFunction valueArrayOf(DifferentialFunction iX, int[] shape);
 
     DifferentialFunction sum(DifferentialFunction i_x, int... dimensions);
 

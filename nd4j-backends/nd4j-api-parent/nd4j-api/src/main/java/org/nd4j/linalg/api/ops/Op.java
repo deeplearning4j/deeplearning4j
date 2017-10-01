@@ -45,7 +45,21 @@ import java.nio.Buffer;
  */
 public interface Op {
     enum Type {
-        SCALAR, TRANSFORM, PAIRWISE, SPECIAL, BROADCAST, REDUCE, INDEXREDUCE, VARIANCE, REDUCE3, GRID, META, AGGREGATION
+        SCALAR,
+        TRANSFORM,
+        PAIRWISE,
+        SPECIAL,
+        BROADCAST,
+        REDUCE,
+        INDEXREDUCE,
+        VARIANCE,
+        REDUCE3,
+        GRID,
+        META,
+        AGGREGATION,
+        CUSTOM,
+        GRADIENT,
+        SHAPE
     }
 
     /**
@@ -66,7 +80,7 @@ public interface Op {
      * Returns a buffer of either float
      * or double
      * of the extra args for this buffer
-     * @return  a buffer of either type float or double
+     * @return  a buffer of either opType float or double
      * representing the extra args for this op
      */
     Buffer extraArgsBuff();

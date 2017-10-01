@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Can only be interpreted if you know the corresponding TensorShape.
  * </pre>
  *
- * Protobuf type {@code tensorflow.TensorSliceProto}
+ * Protobuf opType {@code tensorflow.TensorSliceProto}
  */
 public  final class TensorSliceProto extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -112,7 +112,7 @@ private static final long serialVersionUID = 0L;
    * Extent of the slice in one dimension.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.TensorSliceProto.Extent}
+   * Protobuf opType {@code tensorflow.TensorSliceProto.Extent}
    */
   public  static final class Extent extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -435,7 +435,7 @@ private static final long serialVersionUID = 0L;
      * Extent of the slice in one dimension.
      * </pre>
      *
-     * Protobuf type {@code tensorflow.TensorSliceProto.Extent}
+     * Protobuf opType {@code tensorflow.TensorSliceProto.Extent}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -940,7 +940,7 @@ private static final long serialVersionUID = 0L;
    * Can only be interpreted if you know the corresponding TensorShape.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.TensorSliceProto}
+   * Protobuf opType {@code tensorflow.TensorSliceProto}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

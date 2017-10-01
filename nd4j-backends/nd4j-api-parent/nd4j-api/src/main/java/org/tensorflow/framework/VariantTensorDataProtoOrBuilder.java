@@ -9,7 +9,7 @@ public interface VariantTensorDataProtoOrBuilder extends
 
   /**
    * <pre>
-   * Name of the type of objects being serialized.
+   * Name of the opType of objects being serialized.
    * </pre>
    *
    * <code>string type_name = 1;</code>
@@ -17,7 +17,7 @@ public interface VariantTensorDataProtoOrBuilder extends
   String getTypeName();
   /**
    * <pre>
-   * Name of the type of objects being serialized.
+   * Name of the opType of objects being serialized.
    * </pre>
    *
    * <code>string type_name = 1;</code>

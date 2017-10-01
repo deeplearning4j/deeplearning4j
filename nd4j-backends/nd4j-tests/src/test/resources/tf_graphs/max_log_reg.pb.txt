@@ -4,7 +4,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -22,7 +22,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -40,7 +40,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -67,7 +67,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -92,7 +92,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -123,7 +123,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -143,7 +143,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -155,7 +155,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -166,7 +166,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -177,13 +177,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "out_type"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -193,7 +193,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -216,7 +216,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -227,7 +227,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -250,7 +250,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -262,7 +262,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -273,13 +273,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "out_type"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -290,13 +290,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "out_type"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -308,7 +308,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -320,13 +320,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tidx"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -344,13 +344,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tshape"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -362,13 +362,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tidx"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -385,7 +385,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -397,13 +397,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tshape"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -421,7 +421,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -441,7 +441,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -460,13 +460,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "out_type"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -476,7 +476,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -500,7 +500,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -512,7 +512,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -524,13 +524,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tidx"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -548,13 +548,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tshape"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -566,7 +566,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }
@@ -578,13 +578,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tidx"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -602,13 +602,13 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
     key: "Tshape"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }
@@ -626,7 +626,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -646,7 +646,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -664,7 +664,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -688,7 +688,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {

@@ -5,7 +5,7 @@ import lombok.Data;
 
 /** Vertex in a graph
  *
- * @param <T> the type of the value/object associated with the vertex
+ * @param <T> the opType of the value/object associated with the vertex
  */
 @AllArgsConstructor
 @Data

@@ -22,7 +22,7 @@ package org.tensorflow.framework;
  * to x_i.
  * </pre>
  *
- * Protobuf type {@code tensorflow.GradientDef}
+ * Protobuf opType {@code tensorflow.GradientDef}
  */
 public  final class GradientDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -365,7 +365,7 @@ private static final long serialVersionUID = 0L;
    * to x_i.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.GradientDef}
+   * Protobuf opType {@code tensorflow.GradientDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

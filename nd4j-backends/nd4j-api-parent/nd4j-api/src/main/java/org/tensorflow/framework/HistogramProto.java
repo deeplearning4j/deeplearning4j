@@ -9,7 +9,7 @@ package org.tensorflow.framework;
  * core/lib/histogram/histogram.h
  * </pre>
  *
- * Protobuf type {@code tensorflow.HistogramProto}
+ * Protobuf opType {@code tensorflow.HistogramProto}
  */
 public  final class HistogramProto extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -536,7 +536,7 @@ private static final long serialVersionUID = 0L;
    * core/lib/histogram/histogram.h
    * </pre>
    *
-   * Protobuf type {@code tensorflow.HistogramProto}
+   * Protobuf opType {@code tensorflow.HistogramProto}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

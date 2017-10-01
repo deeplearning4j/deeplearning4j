@@ -68,7 +68,7 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
     }
 
     /**
-     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the type that 
+     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the opType that
      * belongs to the current NormalizerStrategy implementation
      *
      * @return the new builder

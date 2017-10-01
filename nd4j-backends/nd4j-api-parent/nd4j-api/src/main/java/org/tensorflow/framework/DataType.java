@@ -559,7 +559,7 @@ public enum DataType
       com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
     if (desc.getType() != getDescriptor()) {
       throw new IllegalArgumentException(
-        "EnumValueDescriptor is not for this type.");
+        "EnumValueDescriptor is not for this opType.");
     }
     if (desc.getIndex() == -1) {
       return UNRECOGNIZED;

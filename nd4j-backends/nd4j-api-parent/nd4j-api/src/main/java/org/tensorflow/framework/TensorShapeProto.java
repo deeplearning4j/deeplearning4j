@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Dimensions of a tensor.
  * </pre>
  *
- * Protobuf type {@code tensorflow.TensorShapeProto}
+ * Protobuf opType {@code tensorflow.TensorShapeProto}
  */
 public  final class TensorShapeProto extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -133,7 +133,7 @@ private static final long serialVersionUID = 0L;
    * One dimension of the tensor.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.TensorShapeProto.Dim}
+   * Protobuf opType {@code tensorflow.TensorShapeProto.Dim}
    */
   public  static final class Dim extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -438,7 +438,7 @@ private static final long serialVersionUID = 0L;
      * One dimension of the tensor.
      * </pre>
      *
-     * Protobuf type {@code tensorflow.TensorShapeProto.Dim}
+     * Protobuf opType {@code tensorflow.TensorShapeProto.Dim}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1048,7 +1048,7 @@ private static final long serialVersionUID = 0L;
    * Dimensions of a tensor.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.TensorShapeProto}
+   * Protobuf opType {@code tensorflow.TensorShapeProto}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

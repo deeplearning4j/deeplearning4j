@@ -10,7 +10,7 @@ package org.tensorflow.framework;
  * a single run.
  * </pre>
  *
- * Protobuf type {@code tensorflow.GraphTransferInfo}
+ * Protobuf opType {@code tensorflow.GraphTransferInfo}
  */
 public  final class GraphTransferInfo extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -242,7 +242,7 @@ private static final long serialVersionUID = 0L;
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
+          "EnumValueDescriptor is not for this opType.");
       }
       if (desc.getIndex() == -1) {
         return UNRECOGNIZED;
@@ -274,7 +274,7 @@ private static final long serialVersionUID = 0L;
     int getOutputPort();
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.NodeInput}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeInput}
    */
   public  static final class NodeInput extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -533,7 +533,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.NodeInput}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeInput}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -820,7 +820,7 @@ private static final long serialVersionUID = 0L;
     int getOutputCount();
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.NodeInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeInfo}
    */
   public  static final class NodeInfo extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -1259,7 +1259,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.NodeInfo}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeInfo}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1791,7 +1791,7 @@ private static final long serialVersionUID = 0L;
     DataType getDtype();
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.ConstNodeInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.ConstNodeInfo}
    */
   public  static final class ConstNodeInfo extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -2211,7 +2211,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.ConstNodeInfo}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.ConstNodeInfo}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -2698,7 +2698,7 @@ private static final long serialVersionUID = 0L;
             int index);
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.NodeInputInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeInputInfo}
    */
   public  static final class NodeInputInfo extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -2993,7 +2993,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.NodeInputInfo}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeInputInfo}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -3507,7 +3507,7 @@ private static final long serialVersionUID = 0L;
     int getMaxByteSize(int index);
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.NodeOutputInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeOutputInfo}
    */
   public  static final class NodeOutputInfo extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -3817,7 +3817,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.NodeOutputInfo}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.NodeOutputInfo}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -4146,7 +4146,7 @@ private static final long serialVersionUID = 0L;
     DataType getDtype();
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.GraphInputNodeInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.GraphInputNodeInfo}
    */
   public  static final class GraphInputNodeInfo extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -4514,7 +4514,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.GraphInputNodeInfo}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.GraphInputNodeInfo}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -4937,7 +4937,7 @@ private static final long serialVersionUID = 0L;
     DataType getDtype();
   }
   /**
-   * Protobuf type {@code tensorflow.GraphTransferInfo.GraphOutputNodeInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo.GraphOutputNodeInfo}
    */
   public  static final class GraphOutputNodeInfo extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -5305,7 +5305,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.GraphTransferInfo.GraphOutputNodeInfo}
+     * Protobuf opType {@code tensorflow.GraphTransferInfo.GraphOutputNodeInfo}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -6181,7 +6181,7 @@ private static final long serialVersionUID = 0L;
    * a single run.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.GraphTransferInfo}
+   * Protobuf opType {@code tensorflow.GraphTransferInfo}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

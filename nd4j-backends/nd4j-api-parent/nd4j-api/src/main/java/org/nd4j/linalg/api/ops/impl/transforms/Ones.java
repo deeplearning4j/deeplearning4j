@@ -19,11 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Ones (represents a constant)
@@ -31,6 +37,21 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Ones extends BaseTransformOp {
+    public Ones(SameDiff sameDiff, int[] shape) {
+        super(sameDiff, null,shape, false,null);
+    }
+
+    public Ones(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public Ones(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public Ones(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
 
     public Ones() {}
 
@@ -122,5 +143,15 @@ public class Ones extends BaseTransformOp {
         else
             return new Ones(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().one(shape);
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return Arrays.asList((DifferentialFunction) f().zero(f1.get(0).getResultShape()));
     }
 }

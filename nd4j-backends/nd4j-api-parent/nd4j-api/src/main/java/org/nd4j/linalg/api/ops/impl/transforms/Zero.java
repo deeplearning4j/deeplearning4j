@@ -1,6 +1,7 @@
-package org.nd4j.autodiff.functions;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 

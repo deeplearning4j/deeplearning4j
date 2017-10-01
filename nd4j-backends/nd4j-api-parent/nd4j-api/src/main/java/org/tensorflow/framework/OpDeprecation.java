@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Information about version-dependent deprecation of an op
  * </pre>
  *
- * Protobuf type {@code tensorflow.OpDeprecation}
+ * Protobuf opType {@code tensorflow.OpDeprecation}
  */
 public  final class OpDeprecation extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -308,7 +308,7 @@ private static final long serialVersionUID = 0L;
    * Information about version-dependent deprecation of an op
    * </pre>
    *
-   * Protobuf type {@code tensorflow.OpDeprecation}
+   * Protobuf opType {@code tensorflow.OpDeprecation}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

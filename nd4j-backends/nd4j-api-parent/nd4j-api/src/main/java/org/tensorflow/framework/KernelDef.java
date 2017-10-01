@@ -4,7 +4,7 @@
 package org.tensorflow.framework;
 
 /**
- * Protobuf type {@code tensorflow.KernelDef}
+ * Protobuf opType {@code tensorflow.KernelDef}
  */
 public  final class KernelDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -168,7 +168,7 @@ private static final long serialVersionUID = 0L;
     AttrValueOrBuilder getAllowedValuesOrBuilder();
   }
   /**
-   * Protobuf type {@code tensorflow.KernelDef.AttrConstraint}
+   * Protobuf opType {@code tensorflow.KernelDef.AttrConstraint}
    */
   public  static final class AttrConstraint extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -499,7 +499,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.KernelDef.AttrConstraint}
+     * Protobuf opType {@code tensorflow.KernelDef.AttrConstraint}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1360,7 +1360,7 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * Protobuf type {@code tensorflow.KernelDef}
+   * Protobuf opType {@code tensorflow.KernelDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

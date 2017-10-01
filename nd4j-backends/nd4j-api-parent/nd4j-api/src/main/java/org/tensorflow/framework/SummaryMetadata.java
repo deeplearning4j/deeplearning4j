@@ -9,7 +9,7 @@ package org.tensorflow.framework;
  * use of a certain summary value.
  * </pre>
  *
- * Protobuf type {@code tensorflow.SummaryMetadata}
+ * Protobuf opType {@code tensorflow.SummaryMetadata}
  */
 public  final class SummaryMetadata extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -145,7 +145,7 @@ private static final long serialVersionUID = 0L;
         getContentBytes();
   }
   /**
-   * Protobuf type {@code tensorflow.SummaryMetadata.PluginData}
+   * Protobuf opType {@code tensorflow.SummaryMetadata.PluginData}
    */
   public  static final class PluginData extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -472,7 +472,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.SummaryMetadata.PluginData}
+     * Protobuf opType {@code tensorflow.SummaryMetadata.PluginData}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1141,7 +1141,7 @@ private static final long serialVersionUID = 0L;
    * use of a certain summary value.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.SummaryMetadata}
+   * Protobuf opType {@code tensorflow.SummaryMetadata}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

@@ -74,7 +74,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     @Override
     protected void initTypeAndSize() {

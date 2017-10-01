@@ -164,7 +164,7 @@ public class NormalizerSerializer {
     }
 
     /**
-     * Check if a serializer strategy supports a normalizer. If the normalizer is a custom type, it checks if the
+     * Check if a serializer strategy supports a normalizer. If the normalizer is a custom opType, it checks if the
      * supported normalizer class matches.
      *
      * @param strategy
@@ -181,7 +181,7 @@ public class NormalizerSerializer {
             // Strategy should be instance of CustomSerializerStrategy
             if (!(strategy instanceof CustomSerializerStrategy)) {
                 throw new IllegalArgumentException(
-                                "Strategies supporting CUSTOM type must be instance of CustomSerializerStrategy, got"
+                                "Strategies supporting CUSTOM opType must be instance of CustomSerializerStrategy, got"
                                                 + strategy.getClass());
             }
             return ((CustomSerializerStrategy) strategy).getSupportedClass().equals(normalizerClass);
@@ -203,7 +203,7 @@ public class NormalizerSerializer {
         String header = dis.readUTF();
         if (!header.equals(HEADER)) {
             throw new IllegalArgumentException(
-                            "Could not restore normalizer: invalid header. If this normalizer was saved with a type-specific "
+                            "Could not restore normalizer: invalid header. If this normalizer was saved with a opType-specific "
                                             + "strategy like StandardizeSerializerStrategy, use that class to restore it as well.");
         }
 
@@ -214,7 +214,7 @@ public class NormalizerSerializer {
         if (version != 1) {
             throw new IllegalArgumentException("Could not restore normalizer: invalid version (" + version + ")");
         }
-        // The next value is a string indicating the normalizer type
+        // The next value is a string indicating the normalizer opType
         NormalizerType type = NormalizerType.valueOf(dis.readUTF());
         if (type.equals(NormalizerType.CUSTOM)) {
             // For custom serializers, the next value is a string with the class name
@@ -240,7 +240,7 @@ public class NormalizerSerializer {
         // Write the current version
         dos.writeInt(1);
 
-        // Write the normalizer type
+        // Write the normalizer opType
         dos.writeUTF(header.normalizerType.toString());
 
         // If the header contains a custom class name, write that too

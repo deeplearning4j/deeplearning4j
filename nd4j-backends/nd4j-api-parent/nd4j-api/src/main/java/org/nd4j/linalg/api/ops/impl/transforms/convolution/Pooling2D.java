@@ -31,8 +31,8 @@ public class Pooling2D extends BaseTransformOp {
     public Pooling2D() {}
 
     /*
-    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType type) {
-        this(x, kh, kw, sy, sx, ph, pw, isSameMode, type, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
+    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType opType) {
+        this(x, kh, kw, sy, sx, ph, pw, isSameMode, opType, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
     }
 */
     public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode,

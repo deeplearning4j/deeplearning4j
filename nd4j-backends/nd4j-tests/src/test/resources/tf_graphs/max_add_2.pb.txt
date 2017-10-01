@@ -4,7 +4,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -31,7 +31,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
   attr {
@@ -60,7 +60,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_INT32
+      opType: DT_INT32
     }
   }
 }

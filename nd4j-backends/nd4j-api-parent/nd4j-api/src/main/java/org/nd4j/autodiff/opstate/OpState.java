@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * Describes the type of
+ * Describes the opType of
  * operation that needs to happen
  * @author Adam Gibson
  */
@@ -20,7 +20,7 @@ import java.util.Arrays;
 @EqualsAndHashCode
 public class OpState implements Serializable {
     private long n;
-    private OpType opType;
+    private Op.Type opType;
     private String opName;
     private int opNum;
     private Number scalarValue;
@@ -36,32 +36,7 @@ public class OpState implements Serializable {
     private ArrayField arrayField;
     private boolean inPlace;
 
-    /**
-     * Create an {@link OpType}
-     * based on the type of {@link Op}
-     * @param op the input op
-     * @return the optype based on
-     * the given op
-     */
-    public static OpType opTypeFromOp(Op op) {
-        if(op instanceof ScalarOp)
-            return OpType.SCALAR_TRANSFORM;
-        else if(op instanceof Accumulation)
-            return OpType.ACCUMULATION;
-        else if(op instanceof IndexAccumulation)
-            return OpType.INDEX_ACCUMULATION;
-        else if(op instanceof GridOp)
-            return OpType.AGGREGATE;
-        else if(op instanceof TransformOp)
-            return OpType.TRANSFORM;
-        else if(op instanceof ShapeOp)
-            return OpType.SHAPE;
-        else if(op instanceof BroadcastOp)
-            return OpType.BROADCAST;
-        else if (op instanceof CustomOp)
-            return OpType.CUSTOM;
-        throw new IllegalStateException("Illegal op type " + op.getClass().getName());
-    }
+
 
 
     public DifferentialFunction getDifferentialFunction() {
@@ -101,18 +76,6 @@ public class OpState implements Serializable {
     }
 
 
-
-    public  enum OpType {
-        SCALAR_TRANSFORM,
-        ACCUMULATION,
-        TRANSFORM,
-        BROADCAST,
-        INDEX_ACCUMULATION,
-        AGGREGATE,
-        SHAPE,
-        GRADIENT,
-        CUSTOM,
-    }
 
 
     @Override

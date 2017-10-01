@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Protocol buffer representing a Variable.
  * </pre>
  *
- * Protobuf type {@code tensorflow.VariableDef}
+ * Protobuf opType {@code tensorflow.VariableDef}
  */
 public  final class VariableDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -548,7 +548,7 @@ private static final long serialVersionUID = 0L;
    * Protocol buffer representing a Variable.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.VariableDef}
+   * Protobuf opType {@code tensorflow.VariableDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

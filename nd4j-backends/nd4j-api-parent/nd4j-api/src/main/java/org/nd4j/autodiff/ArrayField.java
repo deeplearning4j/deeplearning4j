@@ -3,12 +3,12 @@ package org.nd4j.autodiff;
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.impl.binary.transform.gradient.GradientBackwardsMarker;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -563,7 +563,7 @@ public class ArrayField implements Field {
                 null,
                 ArrayUtil.reverseCopy(input.getShape()),
                 null,
-                OpState.OpType.SHAPE);
+                Op.Type.SHAPE);
     }
 
     @Override
@@ -573,7 +573,7 @@ public class ArrayField implements Field {
                 null,
                 ArrayUtil.permute(input.getShape(),dimensions),
                 null,
-                OpState.OpType.SHAPE);
+                Op.Type.SHAPE);
 
     }
 
@@ -584,7 +584,7 @@ public class ArrayField implements Field {
                 new int[]{dim},
                 ArrayUtil.reverseCopy(input.getShape()),
                 null,
-                OpState.OpType.SHAPE);
+                Op.Type.SHAPE);
     }
 
     @Override
@@ -594,7 +594,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -604,7 +604,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -614,7 +614,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
 
@@ -625,7 +625,7 @@ public class ArrayField implements Field {
                 ,dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 new Object[]{biasCorrected},
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -635,7 +635,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 new Object[]{biasCorrected},
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -655,7 +655,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -665,7 +665,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -675,7 +675,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -685,7 +685,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
     @Override
@@ -695,7 +695,7 @@ public class ArrayField implements Field {
                 dimensions,
                 Shape.getReducedShape(input.getShape(),dimensions),
                 null,
-                OpState.OpType.ACCUMULATION);
+               Op.Type.REDUCE);
     }
 
 
@@ -707,7 +707,7 @@ public class ArrayField implements Field {
                 null,
                 shape,
                 null,
-                OpState.OpType.BROADCAST);
+               Op.Type.BROADCAST);
     }
 
 
@@ -719,7 +719,7 @@ public class ArrayField implements Field {
                 null,
                 null,
                 new Object[]{repeat},
-                OpState.OpType.BROADCAST);
+               Op.Type.BROADCAST);
     }
 
 
@@ -729,7 +729,7 @@ public class ArrayField implements Field {
                 new int[]{axis},
                 input.getShape(),
                 null,
-                OpState.OpType.BROADCAST);
+               Op.Type.BROADCAST);
     }
 
 
@@ -740,7 +740,7 @@ public class ArrayField implements Field {
 
     @Override
     public ArrayField broadcast(int[] shape) {
-        return addArrayOp("broadcast",null,shape,null, OpState.OpType.SHAPE);
+        return addArrayOp("broadcast",null,shape,null, Op.Type.SHAPE);
     }
 
 
@@ -894,7 +894,7 @@ public class ArrayField implements Field {
                 .scalarValue(ArrayUtil.prod(getInput().getShape()) == 1 ? getInput().scalar() : null)
                 .arrayField(this)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
+                .opType(Op.Type.SCALAR).result(newVertex.getValue())
                 .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .build();
 
@@ -942,7 +942,7 @@ public class ArrayField implements Field {
                 .scalarValue(scalarValue).arrayField(this)
                 .id(vertex.getValue().getId() + "-> " +
                         name + " " + newVertex.getValue().getId())
-                .opType(OpState.OpType.SCALAR_TRANSFORM)
+                .opType(Op.Type.SCALAR)
                 .result(newVertex.getValue())
                 .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
                 .build();
@@ -999,7 +999,7 @@ public class ArrayField implements Field {
 
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(ops.generateVertexIds(vertex.vertexID(),newVertex.vertexID()))
-                .opType(OpState.OpType.ACCUMULATION).build();
+                .opType(Op.Type.REDUCE).build();
         xToz.setResult(information);
         this.ops.getGraph().addEdge(
                 new int[] {vertex.vertexID()},
@@ -1010,7 +1010,7 @@ public class ArrayField implements Field {
                 .opName(name).extraArgs(extraArgs).arrayField( this)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(ops.generateVertexIds(i_v.getVertex().vertexID(),newVertex.vertexID()))
-                .opType(OpState.OpType.ACCUMULATION).build();
+                .opType(Op.Type.REDUCE).build();
         yToZ.setResult(information);
 
         if(xToz.isInPlace()) {
@@ -1031,7 +1031,7 @@ public class ArrayField implements Field {
      * @return
      */
 
-    private ArrayField addPairTransformOp(String name, ArrayField i_v, OpState.OpType opType,Object[] extraArgs) {
+    private ArrayField addPairTransformOp(String name, ArrayField i_v,Op.Type opType,Object[] extraArgs) {
         if(ArrayUtil.prod(getInput().getShape()) == 1 || ArrayUtil.prod(i_v.getInput().getShape()) == 1) {
             return addFirstScalarTransformOp(name + "_scalar",
                     i_v,extraArgs);
@@ -1101,7 +1101,7 @@ public class ArrayField implements Field {
      */
 
     private ArrayField addGradientOp(String name,ArrayField wrt,Object[] extraArgs) {
-        return addPairTransformOp(name,wrt, OpState.OpType.GRADIENT,extraArgs);
+        return addPairTransformOp(name,wrt,Op.Type.GRADIENT,extraArgs);
     }
     /**
      *
@@ -1112,7 +1112,7 @@ public class ArrayField implements Field {
      */
 
     private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
-      return addPairTransformOp(name,i_v, OpState.OpType.TRANSFORM,extraArgs);
+      return addPairTransformOp(name,i_v,Op.Type.TRANSFORM,extraArgs);
     }
 
     private ArrayField  addPairTransformOp(String name,ArrayField i_v) {
@@ -1126,7 +1126,7 @@ public class ArrayField implements Field {
     private ArrayField addTransformOp(String name,int[] axes,Object[] extraArgs) {
         return addArrayOp(name,
                 axes,extraArgs,
-                OpState.OpType.TRANSFORM);
+               Op.Type.TRANSFORM);
     }
 
 
@@ -1148,7 +1148,7 @@ public class ArrayField implements Field {
     private ArrayField addArrayOp(String name,
                                   int[] axes,
                                   Object[] extraArgs,
-                                  OpState.OpType opType) {
+                                 Op.Type opType) {
         return addArrayOp(name,
                 axes,
                 input.getShape(),
@@ -1160,7 +1160,7 @@ public class ArrayField implements Field {
                                   int[] axes,
                                   int[] shape,
                                   Object[] extraArgs,
-                                  OpState.OpType opType) {
+                                 Op.Type opType) {
         //result
         NDArrayVertex newVertex = getVertex(name,shape);
         //add the result vertex to the graph
@@ -1313,6 +1313,6 @@ public class ArrayField implements Field {
     }
 
     public ArrayField gradientBackwardsMarker(ArrayField value, ArrayField value1) {
-        return addGradientOp(new GradientBackwardsMarker().functionName(),value,new Object[]{value1});
+        return addGradientOp(new org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker().name(),value,new Object[]{value1});
     }
 }

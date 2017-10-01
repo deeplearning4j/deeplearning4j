@@ -1,14 +1,17 @@
-package org.nd4j.autodiff.functions;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Arrays;
 import java.util.List;
 
 @Data
-public class Constant extends DifferentialFunction {
+public class Constant extends BaseTransformOp {
 
     protected ArrayField m_x;
     protected int[] shape;
@@ -17,8 +20,10 @@ public class Constant extends DifferentialFunction {
                        ArrayField i_v,
                        int[] shape,
                        boolean inPlace) {
-        super(sameDiff,new Object[]{i_v,inPlace});
+        super();
         this.shape = shape;
+        this.inPlace = inPlace;
+        this.args = new DifferentialFunction[] {this};
         if (i_v != null) {
             m_x = i_v;
 
@@ -36,7 +41,7 @@ public class Constant extends DifferentialFunction {
 
     }
 
-    protected Constant(SameDiff sameDiff,
+    public Constant(SameDiff sameDiff,
                        ArrayField i_v,
                        int[] shape) {
         this(sameDiff,i_v,shape,false);
@@ -94,11 +99,6 @@ public class Constant extends DifferentialFunction {
         return getValue(true).toString();
     }
 
-    @Override
-    public String functionName() {
-        return "constant";
-    }
-
 
     @Override
     public DifferentialFunction dup() {
@@ -117,4 +117,23 @@ public class Constant extends DifferentialFunction {
     private final void assign(ArrayField i_x) {
     }
 
+    @Override
+    public int opNum() {
+        return 0;
+    }
+
+    @Override
+    public String name() {
+        return "constant";
+    }
+
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        return null;
+    }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        return null;
+    }
 }

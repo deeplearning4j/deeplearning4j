@@ -37,7 +37,7 @@ public class ReturnAppender implements ByteCodeAppender {
                 return new Size(MethodReturn.INTEGER.apply(methodVisitor, implementationContext).getMaximalSize(),
                                 instrumentedMethod.getStackSize());
             default:
-                throw new IllegalStateException("Illegal type");
+                throw new IllegalStateException("Illegal opType");
         }
 
     }

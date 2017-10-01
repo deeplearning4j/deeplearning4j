@@ -20,11 +20,17 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Standard deviation (sqrt of variance)
@@ -32,6 +38,14 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @author Adam Gibson
  */
 public class StandardDeviation extends Variance {
+    public StandardDeviation(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, boolean biasCorrected) {
+        super(sameDiff, i_v, dimensions, biasCorrected);
+    }
+
+    public StandardDeviation(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, boolean biasCorrected) {
+        super(sameDiff, i_v, i_v2, dimensions, biasCorrected);
+    }
+
     public StandardDeviation(INDArray x, boolean biasCorrected) {
         super(x, biasCorrected);
     }
@@ -139,4 +153,25 @@ public class StandardDeviation extends Variance {
     public float calculateFinalResult(float accum, long n) {
         return (float) FastMath.sqrt(super.calculateFinalResult(accum, n));
     }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().std(arg().doGetValue(),
+                biasCorrected ,
+                dimensions);
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        validateDifferentialFunctionsameDiff(i_v1);
+        int inputs = f().getInputLength(i_v1.get(0));
+        DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
+        DifferentialFunction ret = f().div(f().sub(f().mul(g,arg()),f().mean(arg(),dimensions)),f().mul(f()
+                .one(g.getResultShape()),inputs));
+
+        return Collections.singletonList(ret);
+    }
+
 }

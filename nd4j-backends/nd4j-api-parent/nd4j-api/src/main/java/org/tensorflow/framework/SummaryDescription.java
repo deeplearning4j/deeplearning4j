@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Metadata associated with a series of Summary data
  * </pre>
  *
- * Protobuf type {@code tensorflow.SummaryDescription}
+ * Protobuf opType {@code tensorflow.SummaryDescription}
  */
 public  final class SummaryDescription extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -280,7 +280,7 @@ private static final long serialVersionUID = 0L;
    * Metadata associated with a series of Summary data
    * </pre>
    *
-   * Protobuf type {@code tensorflow.SummaryDescription}
+   * Protobuf opType {@code tensorflow.SummaryDescription}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Protocol buffer representing a tensor.
  * </pre>
  *
- * Protobuf type {@code tensorflow.TensorProto}
+ * Protobuf opType {@code tensorflow.TensorProto}
  */
 public  final class TensorProto extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -431,7 +431,7 @@ private static final long serialVersionUID = 0L;
   private java.util.List<Integer> halfVal_;
   /**
    * <pre>
-   * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+   * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
    * pointless zero padding for each value here.
    * </pre>
    *
@@ -443,7 +443,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+   * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
    * pointless zero padding for each value here.
    * </pre>
    *
@@ -454,7 +454,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+   * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
    * pointless zero padding for each value here.
    * </pre>
    *
@@ -1299,7 +1299,7 @@ private static final long serialVersionUID = 0L;
    * Protocol buffer representing a tensor.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.TensorProto}
+   * Protobuf opType {@code tensorflow.TensorProto}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -2003,7 +2003,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *
@@ -2015,7 +2015,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *
@@ -2026,7 +2026,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *
@@ -2037,7 +2037,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *
@@ -2052,7 +2052,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *
@@ -2066,7 +2066,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *
@@ -2082,7 +2082,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+     * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
      * pointless zero padding for each value here.
      * </pre>
      *

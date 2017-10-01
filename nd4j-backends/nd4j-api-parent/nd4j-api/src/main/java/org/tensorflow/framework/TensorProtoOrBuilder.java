@@ -68,7 +68,7 @@ public interface TensorProtoOrBuilder extends
 
   /**
    * <pre>
-   * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+   * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
    * pointless zero padding for each value here.
    * </pre>
    *
@@ -77,7 +77,7 @@ public interface TensorProtoOrBuilder extends
   java.util.List<Integer> getHalfValList();
   /**
    * <pre>
-   * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+   * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
    * pointless zero padding for each value here.
    * </pre>
    *
@@ -86,7 +86,7 @@ public interface TensorProtoOrBuilder extends
   int getHalfValCount();
   /**
    * <pre>
-   * DT_HALF. Note that since protobuf has no int16 type, we'll have some
+   * DT_HALF. Note that since protobuf has no int16 opType, we'll have some
    * pointless zero padding for each value here.
    * </pre>
    *

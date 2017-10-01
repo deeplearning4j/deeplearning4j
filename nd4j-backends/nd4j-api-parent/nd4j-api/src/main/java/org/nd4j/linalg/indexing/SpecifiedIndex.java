@@ -110,7 +110,7 @@ public class SpecifiedIndex implements INDArrayIndex {
      * Iterate over a cross product of the
      * coordinates
      * @param indexes the coordinates to iterate over.
-     *                Each element of the array should be of type {@link SpecifiedIndex}
+     *                Each element of the array should be of opType {@link SpecifiedIndex}
      *                otherwise it will end up throwing an exception
      * @return the generator for iterating over all the combinations of the specified indexes.
      */
@@ -123,7 +123,7 @@ public class SpecifiedIndex implements INDArrayIndex {
      * Iterate over a cross product of the
      * coordinates
      * @param indexes the coordinates to iterate over.
-     *                Each element of the array should be of type {@link SpecifiedIndex}
+     *                Each element of the array should be of opType {@link SpecifiedIndex}
      *                otherwise it will end up throwing an exception
      * @return the generator for iterating over all the combinations of the specified indexes.
      */

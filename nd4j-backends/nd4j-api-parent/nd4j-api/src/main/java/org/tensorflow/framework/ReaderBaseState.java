@@ -9,7 +9,7 @@ package org.tensorflow.framework;
  * reader_base.h for details.
  * </pre>
  *
- * Protobuf type {@code tensorflow.ReaderBaseState}
+ * Protobuf opType {@code tensorflow.ReaderBaseState}
  */
 public  final class ReaderBaseState extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -328,7 +328,7 @@ private static final long serialVersionUID = 0L;
    * reader_base.h for details.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.ReaderBaseState}
+   * Protobuf opType {@code tensorflow.ReaderBaseState}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

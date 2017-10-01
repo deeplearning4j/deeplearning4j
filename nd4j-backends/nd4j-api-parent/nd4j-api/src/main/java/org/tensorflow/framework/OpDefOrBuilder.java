@@ -212,7 +212,7 @@ public interface OpDefOrBuilder extends
   /**
    * <pre>
    * If is_aggregate is true, then this operation accepts N &gt;= 2
-   * inputs and produces 1 output all of the same type.  Should be
+   * inputs and produces 1 output all of the same opType.  Should be
    * associative and commutative, and produce output with the same
    * shape as the input.  The optimizer may replace an aggregate op
    * taking input from multiple devices with a tree of aggregate ops

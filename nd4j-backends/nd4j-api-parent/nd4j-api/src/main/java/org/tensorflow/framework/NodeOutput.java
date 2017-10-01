@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Output sizes recorded for a single execution of a graph node.
  * </pre>
  *
- * Protobuf type {@code tensorflow.NodeOutput}
+ * Protobuf opType {@code tensorflow.NodeOutput}
  */
 public  final class NodeOutput extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -295,7 +295,7 @@ private static final long serialVersionUID = 0L;
    * Output sizes recorded for a single execution of a graph node.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.NodeOutput}
+   * Protobuf opType {@code tensorflow.NodeOutput}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

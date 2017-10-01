@@ -1,5 +1,8 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -7,10 +10,25 @@ import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  *
  */
 public class LogSoftMaxDerivative extends BaseGradientOp  {
+    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public LogSoftMaxDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
@@ -106,4 +124,16 @@ public class LogSoftMaxDerivative extends BaseGradientOp  {
     public void exec(int... dimensions) {
         super.exec(dimensions);
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().softmaxDerivative(larg().getValue(true),rarg().getValue(true));
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        return Arrays.asList(f().sub(i_v.get(0),f().sum(f().exp(larg()),1)));
+    }
+
 }

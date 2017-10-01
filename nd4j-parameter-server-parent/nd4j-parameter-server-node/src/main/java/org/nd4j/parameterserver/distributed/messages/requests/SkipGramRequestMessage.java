@@ -71,12 +71,12 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     @SuppressWarnings("unchecked")
     public void processMessage() {
         /**
-         * This method in reality just delegates training to specific TrainingDriver, based on message type.
+         * This method in reality just delegates training to specific TrainingDriver, based on message opType.
          * In this case - SkipGram training
          */
         //log.info("sI_{} starts SkipGram round...", transport.getShardIndex());
 
-        // FIXME: we might use something better then unchecked type cast here
+        // FIXME: we might use something better then unchecked opType cast here
         TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;
         sgt.startTraining(this);
     }

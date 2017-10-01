@@ -75,7 +75,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     /**
-     * This method checks if any Op operand has data type of INT, and throws exception if any.
+     * This method checks if any Op operand has data opType of INT, and throws exception if any.
      *
      * @param op
      */
@@ -120,7 +120,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
         }
 
-        throw new IllegalArgumentException("Illegal type of op: " + op.getClass());
+        throw new IllegalArgumentException("Illegal opType of op: " + op.getClass());
     }
 
     @Override
@@ -286,7 +286,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             throw new UnsupportedOperationException(
                             "Executing transform ops along a dimension should be done via exec special");
         }
-        throw new UnsupportedOperationException("Unknown op type");
+        throw new UnsupportedOperationException("Unknown op opType");
     }
 
     @Override

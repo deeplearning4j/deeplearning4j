@@ -19,11 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Not equal to function:
@@ -32,6 +38,13 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class NotEqualTo extends BaseTransformOp {
+    public NotEqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public NotEqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
 
     public NotEqualTo() {}
 
@@ -131,4 +144,17 @@ public class NotEqualTo extends BaseTransformOp {
             return new NotEqualTo(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().neq(larg().getValue(true), rarg().getValue(true));
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        return Collections.singletonList(f().neg(i_v.get(0)));
+    }
+
+
 }

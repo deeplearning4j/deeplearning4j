@@ -58,7 +58,7 @@ public class NDArrayFragmentHandler implements FragmentHandler {
         int messageTypeIndex = byteBuffer.getInt();
         if (messageTypeIndex >= NDArrayMessage.MessageType.values().length)
             throw new IllegalStateException(
-                            "Illegal index on message type. Likely corrupt message. Please check the serialization of the bytebuffer. Input was bytebuffer: "
+                            "Illegal index on message opType. Likely corrupt message. Please check the serialization of the bytebuffer. Input was bytebuffer: "
                                             + byteArrayInput);
         NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[messageTypeIndex];
 

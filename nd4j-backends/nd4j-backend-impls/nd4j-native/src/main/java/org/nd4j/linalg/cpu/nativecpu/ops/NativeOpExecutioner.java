@@ -1127,7 +1127,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         for (int x = 0; x < numShapes; x++) {
             if (op.getShapes().get(x).dataType() != DataBuffer.Type.INT)
-                throw new RuntimeException("ShapeBuffers should have INT data type");
+                throw new RuntimeException("ShapeBuffers should have INT data opType");
 
             shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
         }

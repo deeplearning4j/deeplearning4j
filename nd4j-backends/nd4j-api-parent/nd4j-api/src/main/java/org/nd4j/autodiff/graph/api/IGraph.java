@@ -10,8 +10,8 @@ import java.util.Random;
  * any arbitrary object (or, null).<br>
  * IGraph may include directed edges, undirected edges, or a combination of both<br>
  * Note: Every vertex in the graph has an integer index, in range of 0 to numVertices() inclusive<br>
- * @param <V> type for vertex objects
- * @param <E> type for edge objects
+ * @param <V> opType for vertex objects
+ * @param <E> opType for edge objects
  * @author Alex Black
  */
 public interface IGraph<V, E> {

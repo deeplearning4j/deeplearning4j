@@ -20,11 +20,16 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.util.ComplexUtil;
+
+import java.util.List;
 
 /**
  * Log on arbitrary base op
@@ -33,6 +38,21 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class LogX extends BaseTransformOp {
     private double base;
+
+    public LogX(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double base) {
+        super(sameDiff, i_v, inPlace);
+        this.base = base;
+    }
+
+    public LogX(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double base) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.base = base;
+    }
+
+    public LogX(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double base) {
+        super(sameDiff, i_v, extraArgs);
+        this.base = base;
+    }
 
     public LogX() {}
 
@@ -132,5 +152,15 @@ public class LogX extends BaseTransformOp {
         else
             return new LogX(xAlongDimension, z.tensorAlongDimension(index, dimension), base, x.lengthLong());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

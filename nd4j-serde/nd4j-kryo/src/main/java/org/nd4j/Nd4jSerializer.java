@@ -37,7 +37,7 @@ public class Nd4jSerializer extends Serializer<INDArray> {
     }
 
     /**
-     * Reads bytes and returns a new object of the specified concrete type.
+     * Reads bytes and returns a new object of the specified concrete opType.
      * <p>
      * Before Kryo can be used to read child objects, {@link Kryo#reference(Object)} must be called with the parent object to
      * ensure it can be referenced by the child objects. Any serializer that uses {@link Kryo} to read a child object may need to

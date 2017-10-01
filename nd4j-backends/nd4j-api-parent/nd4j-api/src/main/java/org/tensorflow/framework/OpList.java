@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * A collection of OpDefs
  * </pre>
  *
- * Protobuf type {@code tensorflow.OpList}
+ * Protobuf opType {@code tensorflow.OpList}
  */
 public  final class OpList extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -280,7 +280,7 @@ private static final long serialVersionUID = 0L;
    * A collection of OpDefs
    * </pre>
    *
-   * Protobuf type {@code tensorflow.OpList}
+   * Protobuf opType {@code tensorflow.OpList}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

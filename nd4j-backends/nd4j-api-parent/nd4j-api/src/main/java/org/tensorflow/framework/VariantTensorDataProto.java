@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Protocol buffer representing the serialization format of DT_VARIANT tensors.
  * </pre>
  *
- * Protobuf type {@code tensorflow.VariantTensorDataProto}
+ * Protobuf opType {@code tensorflow.VariantTensorDataProto}
  */
 public  final class VariantTensorDataProto extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -105,7 +105,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object typeName_;
   /**
    * <pre>
-   * Name of the type of objects being serialized.
+   * Name of the opType of objects being serialized.
    * </pre>
    *
    * <code>string type_name = 1;</code>
@@ -124,7 +124,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Name of the type of objects being serialized.
+   * Name of the opType of objects being serialized.
    * </pre>
    *
    * <code>string type_name = 1;</code>
@@ -390,7 +390,7 @@ private static final long serialVersionUID = 0L;
    * Protocol buffer representing the serialization format of DT_VARIANT tensors.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.VariantTensorDataProto}
+   * Protobuf opType {@code tensorflow.VariantTensorDataProto}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -577,7 +577,7 @@ private static final long serialVersionUID = 0L;
     private Object typeName_ = "";
     /**
      * <pre>
-     * Name of the type of objects being serialized.
+     * Name of the opType of objects being serialized.
      * </pre>
      *
      * <code>string type_name = 1;</code>
@@ -596,7 +596,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Name of the type of objects being serialized.
+     * Name of the opType of objects being serialized.
      * </pre>
      *
      * <code>string type_name = 1;</code>
@@ -616,7 +616,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Name of the type of objects being serialized.
+     * Name of the opType of objects being serialized.
      * </pre>
      *
      * <code>string type_name = 1;</code>
@@ -633,7 +633,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Name of the type of objects being serialized.
+     * Name of the opType of objects being serialized.
      * </pre>
      *
      * <code>string type_name = 1;</code>
@@ -646,7 +646,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Name of the type of objects being serialized.
+     * Name of the opType of objects being serialized.
      * </pre>
      *
      * <code>string type_name = 1;</code>

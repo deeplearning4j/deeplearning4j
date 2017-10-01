@@ -1,8 +1,10 @@
-package org.nd4j.autodiff.functions;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
 import lombok.Getter;
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.PreEvaluator;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
 
@@ -17,14 +19,14 @@ public class Variable extends DifferentialFunction {
     private String m_name;
     private PreEvaluator preEvaluator;
 
-    protected Variable(SameDiff sameDiff,
+    public Variable(SameDiff sameDiff,
                        String i_name,
                        ArrayField i_v) {
         this(sameDiff,i_name, i_v, null);
         validateFunctionReference(this);
     }
 
-    protected Variable(SameDiff sameDiff,
+    public Variable(SameDiff sameDiff,
                        String i_name,
                        ArrayField i_v,PreEvaluator preEvaluator) {
         super(sameDiff,null);
@@ -132,7 +134,7 @@ public class Variable extends DifferentialFunction {
      */
     @Override
     public int[] getResultShape() {
-        ArrayField arrayField = (ArrayField) m_x;
+        ArrayField arrayField = m_x;
         return arrayField.getInput().getShape();
     }
 
@@ -142,12 +144,6 @@ public class Variable extends DifferentialFunction {
         variables.add(this);
         return getName();
     }
-
-    @Override
-    public String functionName() {
-        return m_name;
-    }
-
 
     @Override
     public DifferentialFunction dup() {

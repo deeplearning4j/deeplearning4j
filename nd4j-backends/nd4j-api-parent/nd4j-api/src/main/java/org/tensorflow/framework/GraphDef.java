@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Represents the graph of operations
  * </pre>
  *
- * Protobuf type {@code tensorflow.GraphDef}
+ * Protobuf opType {@code tensorflow.GraphDef}
  */
 public  final class GraphDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -506,7 +506,7 @@ private static final long serialVersionUID = 0L;
    * Represents the graph of operations
    * </pre>
    *
-   * Protobuf type {@code tensorflow.GraphDef}
+   * Protobuf opType {@code tensorflow.GraphDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

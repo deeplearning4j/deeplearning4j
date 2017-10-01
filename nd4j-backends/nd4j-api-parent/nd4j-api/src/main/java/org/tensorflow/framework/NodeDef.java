@@ -4,7 +4,7 @@
 package org.tensorflow.framework;
 
 /**
- * Protobuf type {@code tensorflow.NodeDef}
+ * Protobuf opType {@code tensorflow.NodeDef}
  */
 public  final class NodeDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -389,8 +389,8 @@ private static final long serialVersionUID = 0L;
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -420,8 +420,8 @@ private static final long serialVersionUID = 0L;
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -442,8 +442,8 @@ private static final long serialVersionUID = 0L;
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -469,8 +469,8 @@ private static final long serialVersionUID = 0L;
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -698,7 +698,7 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * Protobuf type {@code tensorflow.NodeDef}
+   * Protobuf opType {@code tensorflow.NodeDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1452,8 +1452,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *
@@ -1483,8 +1483,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *
@@ -1505,8 +1505,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *
@@ -1532,8 +1532,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *
@@ -1567,8 +1567,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *
@@ -1601,8 +1601,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *
@@ -1628,8 +1628,8 @@ private static final long serialVersionUID = 0L;
      * default will be used.
      * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
      * one of the names from the corresponding OpDef's attr field).
-     * The values must have a type matching the corresponding OpDef
-     * attr's type field.
+     * The values must have a opType matching the corresponding OpDef
+     * attr's opType field.
      * TODO(josh11b): Add some examples here showing best practices.
      * </pre>
      *

@@ -21,6 +21,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,6 +31,8 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
+
+import java.util.List;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 
@@ -41,6 +46,21 @@ public class VectorFFT extends BaseTransformOp {
     protected int fftLength;
     private int originalN = -1;
     protected boolean executed = false;
+
+    public VectorFFT(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, int fftLength) {
+        super(sameDiff, i_v, inPlace);
+        this.fftLength = fftLength;
+    }
+
+    public VectorFFT(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, int fftLength) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.fftLength = fftLength;
+    }
+
+    public VectorFFT(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, int fftLength) {
+        super(sameDiff, i_v, extraArgs);
+        this.fftLength = fftLength;
+    }
 
     public VectorFFT() {}
 
@@ -221,5 +241,15 @@ public class VectorFFT extends BaseTransformOp {
     @Override
     public void setY(INDArray y) {
         this.y = y;
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

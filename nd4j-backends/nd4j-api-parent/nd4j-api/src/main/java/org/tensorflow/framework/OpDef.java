@@ -9,7 +9,7 @@ package org.tensorflow.framework;
  * using the "op" field which should match the name of a OpDef.
  * </pre>
  *
- * Protobuf type {@code tensorflow.OpDef}
+ * Protobuf opType {@code tensorflow.OpDef}
  */
 public  final class OpDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -214,42 +214,42 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * Describes the type of one or more tensors that are accepted/produced
+     * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
-     * * For a single tensor: either the "type" field is set or the
-     *   "type_attr" field is set to the name of an attr with type "type".
-     * * For a sequence of tensors with the same type: the "number_attr"
-     *   field will be set to the name of an attr with type "int", and
-     *   either the "type" or "type_attr" field will be set as for
+     * * For a single tensor: either the "opType" field is set or the
+     *   "type_attr" field is set to the name of an attr with opType "opType".
+     * * For a sequence of tensors with the same opType: the "number_attr"
+     *   field will be set to the name of an attr with opType "int", and
+     *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with type "list(type)".
+     *   to the name of an attr with opType "list(opType)".
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 3;</code>
+     * <code>.tensorflow.DataType opType = 3;</code>
      */
     int getTypeValue();
     /**
      * <pre>
-     * Describes the type of one or more tensors that are accepted/produced
+     * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
-     * * For a single tensor: either the "type" field is set or the
-     *   "type_attr" field is set to the name of an attr with type "type".
-     * * For a sequence of tensors with the same type: the "number_attr"
-     *   field will be set to the name of an attr with type "int", and
-     *   either the "type" or "type_attr" field will be set as for
+     * * For a single tensor: either the "opType" field is set or the
+     *   "type_attr" field is set to the name of an attr with opType "opType".
+     * * For a sequence of tensors with the same opType: the "number_attr"
+     *   field will be set to the name of an attr with opType "int", and
+     *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with type "list(type)".
+     *   to the name of an attr with opType "list(opType)".
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 3;</code>
+     * <code>.tensorflow.DataType opType = 3;</code>
      */
     DataType getType();
 
     /**
      * <pre>
-     * if specified, attr must have type "type"
+     * if specified, attr must have opType "opType"
      * </pre>
      *
      * <code>string type_attr = 4;</code>
@@ -257,7 +257,7 @@ private static final long serialVersionUID = 0L;
     String getTypeAttr();
     /**
      * <pre>
-     * if specified, attr must have type "type"
+     * if specified, attr must have opType "opType"
      * </pre>
      *
      * <code>string type_attr = 4;</code>
@@ -267,7 +267,7 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * if specified, attr must have type "int"
+     * if specified, attr must have opType "int"
      * </pre>
      *
      * <code>string number_attr = 5;</code>
@@ -275,7 +275,7 @@ private static final long serialVersionUID = 0L;
     String getNumberAttr();
     /**
      * <pre>
-     * if specified, attr must have type "int"
+     * if specified, attr must have opType "int"
      * </pre>
      *
      * <code>string number_attr = 5;</code>
@@ -285,8 +285,8 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * If specified, attr must have type "list(type)", and none of
-     * type, type_attr, and number_attr may be specified.
+     * If specified, attr must have opType "list(opType)", and none of
+     * opType, type_attr, and number_attr may be specified.
      * </pre>
      *
      * <code>string type_list_attr = 6;</code>
@@ -294,8 +294,8 @@ private static final long serialVersionUID = 0L;
     String getTypeListAttr();
     /**
      * <pre>
-     * If specified, attr must have type "list(type)", and none of
-     * type, type_attr, and number_attr may be specified.
+     * If specified, attr must have opType "list(opType)", and none of
+     * opType, type_attr, and number_attr may be specified.
      * </pre>
      *
      * <code>string type_list_attr = 6;</code>
@@ -319,7 +319,7 @@ private static final long serialVersionUID = 0L;
    * For describing inputs and outputs.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.OpDef.ArgDef}
+   * Protobuf opType {@code tensorflow.OpDef.ArgDef}
    */
   public  static final class ArgDef extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -521,38 +521,38 @@ private static final long serialVersionUID = 0L;
     private int type_;
     /**
      * <pre>
-     * Describes the type of one or more tensors that are accepted/produced
+     * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
-     * * For a single tensor: either the "type" field is set or the
-     *   "type_attr" field is set to the name of an attr with type "type".
-     * * For a sequence of tensors with the same type: the "number_attr"
-     *   field will be set to the name of an attr with type "int", and
-     *   either the "type" or "type_attr" field will be set as for
+     * * For a single tensor: either the "opType" field is set or the
+     *   "type_attr" field is set to the name of an attr with opType "opType".
+     * * For a sequence of tensors with the same opType: the "number_attr"
+     *   field will be set to the name of an attr with opType "int", and
+     *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with type "list(type)".
+     *   to the name of an attr with opType "list(opType)".
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 3;</code>
+     * <code>.tensorflow.DataType opType = 3;</code>
      */
     public int getTypeValue() {
       return type_;
     }
     /**
      * <pre>
-     * Describes the type of one or more tensors that are accepted/produced
+     * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
-     * * For a single tensor: either the "type" field is set or the
-     *   "type_attr" field is set to the name of an attr with type "type".
-     * * For a sequence of tensors with the same type: the "number_attr"
-     *   field will be set to the name of an attr with type "int", and
-     *   either the "type" or "type_attr" field will be set as for
+     * * For a single tensor: either the "opType" field is set or the
+     *   "type_attr" field is set to the name of an attr with opType "opType".
+     * * For a sequence of tensors with the same opType: the "number_attr"
+     *   field will be set to the name of an attr with opType "int", and
+     *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with type "list(type)".
+     *   to the name of an attr with opType "list(opType)".
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 3;</code>
+     * <code>.tensorflow.DataType opType = 3;</code>
      */
     public DataType getType() {
       DataType result = DataType.valueOf(type_);
@@ -563,7 +563,7 @@ private static final long serialVersionUID = 0L;
     private volatile Object typeAttr_;
     /**
      * <pre>
-     * if specified, attr must have type "type"
+     * if specified, attr must have opType "opType"
      * </pre>
      *
      * <code>string type_attr = 4;</code>
@@ -582,7 +582,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * if specified, attr must have type "type"
+     * if specified, attr must have opType "opType"
      * </pre>
      *
      * <code>string type_attr = 4;</code>
@@ -605,7 +605,7 @@ private static final long serialVersionUID = 0L;
     private volatile Object numberAttr_;
     /**
      * <pre>
-     * if specified, attr must have type "int"
+     * if specified, attr must have opType "int"
      * </pre>
      *
      * <code>string number_attr = 5;</code>
@@ -624,7 +624,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * if specified, attr must have type "int"
+     * if specified, attr must have opType "int"
      * </pre>
      *
      * <code>string number_attr = 5;</code>
@@ -647,8 +647,8 @@ private static final long serialVersionUID = 0L;
     private volatile Object typeListAttr_;
     /**
      * <pre>
-     * If specified, attr must have type "list(type)", and none of
-     * type, type_attr, and number_attr may be specified.
+     * If specified, attr must have opType "list(opType)", and none of
+     * opType, type_attr, and number_attr may be specified.
      * </pre>
      *
      * <code>string type_list_attr = 6;</code>
@@ -667,8 +667,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * If specified, attr must have type "list(type)", and none of
-     * type, type_attr, and number_attr may be specified.
+     * If specified, attr must have opType "list(opType)", and none of
+     * opType, type_attr, and number_attr may be specified.
      * </pre>
      *
      * <code>string type_list_attr = 6;</code>
@@ -919,7 +919,7 @@ private static final long serialVersionUID = 0L;
      * For describing inputs and outputs.
      * </pre>
      *
-     * Protobuf type {@code tensorflow.OpDef.ArgDef}
+     * Protobuf opType {@code tensorflow.OpDef.ArgDef}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1272,38 +1272,38 @@ private static final long serialVersionUID = 0L;
       private int type_ = 0;
       /**
        * <pre>
-       * Describes the type of one or more tensors that are accepted/produced
+       * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
-       * * For a single tensor: either the "type" field is set or the
-       *   "type_attr" field is set to the name of an attr with type "type".
-       * * For a sequence of tensors with the same type: the "number_attr"
-       *   field will be set to the name of an attr with type "int", and
-       *   either the "type" or "type_attr" field will be set as for
+       * * For a single tensor: either the "opType" field is set or the
+       *   "type_attr" field is set to the name of an attr with opType "opType".
+       * * For a sequence of tensors with the same opType: the "number_attr"
+       *   field will be set to the name of an attr with opType "int", and
+       *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with type "list(type)".
+       *   to the name of an attr with opType "list(opType)".
        * </pre>
        *
-       * <code>.tensorflow.DataType type = 3;</code>
+       * <code>.tensorflow.DataType opType = 3;</code>
        */
       public int getTypeValue() {
         return type_;
       }
       /**
        * <pre>
-       * Describes the type of one or more tensors that are accepted/produced
+       * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
-       * * For a single tensor: either the "type" field is set or the
-       *   "type_attr" field is set to the name of an attr with type "type".
-       * * For a sequence of tensors with the same type: the "number_attr"
-       *   field will be set to the name of an attr with type "int", and
-       *   either the "type" or "type_attr" field will be set as for
+       * * For a single tensor: either the "opType" field is set or the
+       *   "type_attr" field is set to the name of an attr with opType "opType".
+       * * For a sequence of tensors with the same opType: the "number_attr"
+       *   field will be set to the name of an attr with opType "int", and
+       *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with type "list(type)".
+       *   to the name of an attr with opType "list(opType)".
        * </pre>
        *
-       * <code>.tensorflow.DataType type = 3;</code>
+       * <code>.tensorflow.DataType opType = 3;</code>
        */
       public Builder setTypeValue(int value) {
         type_ = value;
@@ -1312,19 +1312,19 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Describes the type of one or more tensors that are accepted/produced
+       * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
-       * * For a single tensor: either the "type" field is set or the
-       *   "type_attr" field is set to the name of an attr with type "type".
-       * * For a sequence of tensors with the same type: the "number_attr"
-       *   field will be set to the name of an attr with type "int", and
-       *   either the "type" or "type_attr" field will be set as for
+       * * For a single tensor: either the "opType" field is set or the
+       *   "type_attr" field is set to the name of an attr with opType "opType".
+       * * For a sequence of tensors with the same opType: the "number_attr"
+       *   field will be set to the name of an attr with opType "int", and
+       *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with type "list(type)".
+       *   to the name of an attr with opType "list(opType)".
        * </pre>
        *
-       * <code>.tensorflow.DataType type = 3;</code>
+       * <code>.tensorflow.DataType opType = 3;</code>
        */
       public DataType getType() {
         DataType result = DataType.valueOf(type_);
@@ -1332,19 +1332,19 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Describes the type of one or more tensors that are accepted/produced
+       * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
-       * * For a single tensor: either the "type" field is set or the
-       *   "type_attr" field is set to the name of an attr with type "type".
-       * * For a sequence of tensors with the same type: the "number_attr"
-       *   field will be set to the name of an attr with type "int", and
-       *   either the "type" or "type_attr" field will be set as for
+       * * For a single tensor: either the "opType" field is set or the
+       *   "type_attr" field is set to the name of an attr with opType "opType".
+       * * For a sequence of tensors with the same opType: the "number_attr"
+       *   field will be set to the name of an attr with opType "int", and
+       *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with type "list(type)".
+       *   to the name of an attr with opType "list(opType)".
        * </pre>
        *
-       * <code>.tensorflow.DataType type = 3;</code>
+       * <code>.tensorflow.DataType opType = 3;</code>
        */
       public Builder setType(DataType value) {
         if (value == null) {
@@ -1357,19 +1357,19 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Describes the type of one or more tensors that are accepted/produced
+       * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
-       * * For a single tensor: either the "type" field is set or the
-       *   "type_attr" field is set to the name of an attr with type "type".
-       * * For a sequence of tensors with the same type: the "number_attr"
-       *   field will be set to the name of an attr with type "int", and
-       *   either the "type" or "type_attr" field will be set as for
+       * * For a single tensor: either the "opType" field is set or the
+       *   "type_attr" field is set to the name of an attr with opType "opType".
+       * * For a sequence of tensors with the same opType: the "number_attr"
+       *   field will be set to the name of an attr with opType "int", and
+       *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with type "list(type)".
+       *   to the name of an attr with opType "list(opType)".
        * </pre>
        *
-       * <code>.tensorflow.DataType type = 3;</code>
+       * <code>.tensorflow.DataType opType = 3;</code>
        */
       public Builder clearType() {
         
@@ -1381,7 +1381,7 @@ private static final long serialVersionUID = 0L;
       private Object typeAttr_ = "";
       /**
        * <pre>
-       * if specified, attr must have type "type"
+       * if specified, attr must have opType "opType"
        * </pre>
        *
        * <code>string type_attr = 4;</code>
@@ -1400,7 +1400,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "type"
+       * if specified, attr must have opType "opType"
        * </pre>
        *
        * <code>string type_attr = 4;</code>
@@ -1420,7 +1420,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "type"
+       * if specified, attr must have opType "opType"
        * </pre>
        *
        * <code>string type_attr = 4;</code>
@@ -1437,7 +1437,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "type"
+       * if specified, attr must have opType "opType"
        * </pre>
        *
        * <code>string type_attr = 4;</code>
@@ -1450,7 +1450,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "type"
+       * if specified, attr must have opType "opType"
        * </pre>
        *
        * <code>string type_attr = 4;</code>
@@ -1470,7 +1470,7 @@ private static final long serialVersionUID = 0L;
       private Object numberAttr_ = "";
       /**
        * <pre>
-       * if specified, attr must have type "int"
+       * if specified, attr must have opType "int"
        * </pre>
        *
        * <code>string number_attr = 5;</code>
@@ -1489,7 +1489,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "int"
+       * if specified, attr must have opType "int"
        * </pre>
        *
        * <code>string number_attr = 5;</code>
@@ -1509,7 +1509,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "int"
+       * if specified, attr must have opType "int"
        * </pre>
        *
        * <code>string number_attr = 5;</code>
@@ -1526,7 +1526,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "int"
+       * if specified, attr must have opType "int"
        * </pre>
        *
        * <code>string number_attr = 5;</code>
@@ -1539,7 +1539,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * if specified, attr must have type "int"
+       * if specified, attr must have opType "int"
        * </pre>
        *
        * <code>string number_attr = 5;</code>
@@ -1559,8 +1559,8 @@ private static final long serialVersionUID = 0L;
       private Object typeListAttr_ = "";
       /**
        * <pre>
-       * If specified, attr must have type "list(type)", and none of
-       * type, type_attr, and number_attr may be specified.
+       * If specified, attr must have opType "list(opType)", and none of
+       * opType, type_attr, and number_attr may be specified.
        * </pre>
        *
        * <code>string type_list_attr = 6;</code>
@@ -1579,8 +1579,8 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * If specified, attr must have type "list(type)", and none of
-       * type, type_attr, and number_attr may be specified.
+       * If specified, attr must have opType "list(opType)", and none of
+       * opType, type_attr, and number_attr may be specified.
        * </pre>
        *
        * <code>string type_list_attr = 6;</code>
@@ -1600,8 +1600,8 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * If specified, attr must have type "list(type)", and none of
-       * type, type_attr, and number_attr may be specified.
+       * If specified, attr must have opType "list(opType)", and none of
+       * opType, type_attr, and number_attr may be specified.
        * </pre>
        *
        * <code>string type_list_attr = 6;</code>
@@ -1618,8 +1618,8 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * If specified, attr must have type "list(type)", and none of
-       * type, type_attr, and number_attr may be specified.
+       * If specified, attr must have opType "list(opType)", and none of
+       * opType, type_attr, and number_attr may be specified.
        * </pre>
        *
        * <code>string type_list_attr = 6;</code>
@@ -1632,8 +1632,8 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * If specified, attr must have type "list(type)", and none of
-       * type, type_attr, and number_attr may be specified.
+       * If specified, attr must have opType "list(opType)", and none of
+       * opType, type_attr, and number_attr may be specified.
        * </pre>
        *
        * <code>string type_list_attr = 6;</code>
@@ -1770,20 +1770,20 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * One of the type names from attr_value.proto ("string", "list(string)",
+     * One of the opType names from attr_value.proto ("string", "list(string)",
      * "int", etc.).
      * </pre>
      *
-     * <code>string type = 2;</code>
+     * <code>string opType = 2;</code>
      */
     String getType();
     /**
      * <pre>
-     * One of the type names from attr_value.proto ("string", "list(string)",
+     * One of the opType names from attr_value.proto ("string", "list(string)",
      * "int", etc.).
      * </pre>
      *
-     * <code>string type = 2;</code>
+     * <code>string opType = 2;</code>
      */
     com.google.protobuf.ByteString
         getTypeBytes();
@@ -1836,7 +1836,7 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * For type == "int", this is a minimum value.  For "list(___)"
+     * For opType == "int", this is a minimum value.  For "list(___)"
      * types, this is the minimum length.
      * </pre>
      *
@@ -1851,11 +1851,11 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * The set of allowed values.  Has type that is the "list" version
-     * of the "type" field above (uses the "list" field of AttrValue).
-     * If type == "type" or "list(type)" above, then the "type" field
+     * The set of allowed values.  Has opType that is the "list" version
+     * of the "opType" field above (uses the "list" field of AttrValue).
+     * If opType == "opType" or "list(opType)" above, then the "opType" field
      * of "allowed_values.list" has the set of allowed DataTypes.
-     * If type == "string" or "list(string)", then the "s" field of
+     * If opType == "string" or "list(string)", then the "s" field of
      * "allowed_values.list" has the set of allowed strings.
      * </pre>
      *
@@ -1864,11 +1864,11 @@ private static final long serialVersionUID = 0L;
     boolean hasAllowedValues();
     /**
      * <pre>
-     * The set of allowed values.  Has type that is the "list" version
-     * of the "type" field above (uses the "list" field of AttrValue).
-     * If type == "type" or "list(type)" above, then the "type" field
+     * The set of allowed values.  Has opType that is the "list" version
+     * of the "opType" field above (uses the "list" field of AttrValue).
+     * If opType == "opType" or "list(opType)" above, then the "opType" field
      * of "allowed_values.list" has the set of allowed DataTypes.
-     * If type == "string" or "list(string)", then the "s" field of
+     * If opType == "string" or "list(string)", then the "s" field of
      * "allowed_values.list" has the set of allowed strings.
      * </pre>
      *
@@ -1877,11 +1877,11 @@ private static final long serialVersionUID = 0L;
     AttrValue getAllowedValues();
     /**
      * <pre>
-     * The set of allowed values.  Has type that is the "list" version
-     * of the "type" field above (uses the "list" field of AttrValue).
-     * If type == "type" or "list(type)" above, then the "type" field
+     * The set of allowed values.  Has opType that is the "list" version
+     * of the "opType" field above (uses the "list" field of AttrValue).
+     * If opType == "opType" or "list(opType)" above, then the "opType" field
      * of "allowed_values.list" has the set of allowed DataTypes.
-     * If type == "string" or "list(string)", then the "s" field of
+     * If opType == "string" or "list(string)", then the "s" field of
      * "allowed_values.list" has the set of allowed strings.
      * </pre>
      *
@@ -1896,7 +1896,7 @@ private static final long serialVersionUID = 0L;
    * be specified in the NodeDef.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.OpDef.AttrDef}
+   * Protobuf opType {@code tensorflow.OpDef.AttrDef}
    */
   public  static final class AttrDef extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -2071,11 +2071,11 @@ private static final long serialVersionUID = 0L;
     private volatile Object type_;
     /**
      * <pre>
-     * One of the type names from attr_value.proto ("string", "list(string)",
+     * One of the opType names from attr_value.proto ("string", "list(string)",
      * "int", etc.).
      * </pre>
      *
-     * <code>string type = 2;</code>
+     * <code>string opType = 2;</code>
      */
     public String getType() {
       Object ref = type_;
@@ -2091,11 +2091,11 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * One of the type names from attr_value.proto ("string", "list(string)",
+     * One of the opType names from attr_value.proto ("string", "list(string)",
      * "int", etc.).
      * </pre>
      *
-     * <code>string type = 2;</code>
+     * <code>string opType = 2;</code>
      */
     public com.google.protobuf.ByteString
         getTypeBytes() {
@@ -2193,7 +2193,7 @@ private static final long serialVersionUID = 0L;
     private boolean hasMinimum_;
     /**
      * <pre>
-     * For type == "int", this is a minimum value.  For "list(___)"
+     * For opType == "int", this is a minimum value.  For "list(___)"
      * types, this is the minimum length.
      * </pre>
      *
@@ -2216,11 +2216,11 @@ private static final long serialVersionUID = 0L;
     private AttrValue allowedValues_;
     /**
      * <pre>
-     * The set of allowed values.  Has type that is the "list" version
-     * of the "type" field above (uses the "list" field of AttrValue).
-     * If type == "type" or "list(type)" above, then the "type" field
+     * The set of allowed values.  Has opType that is the "list" version
+     * of the "opType" field above (uses the "list" field of AttrValue).
+     * If opType == "opType" or "list(opType)" above, then the "opType" field
      * of "allowed_values.list" has the set of allowed DataTypes.
-     * If type == "string" or "list(string)", then the "s" field of
+     * If opType == "string" or "list(string)", then the "s" field of
      * "allowed_values.list" has the set of allowed strings.
      * </pre>
      *
@@ -2231,11 +2231,11 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The set of allowed values.  Has type that is the "list" version
-     * of the "type" field above (uses the "list" field of AttrValue).
-     * If type == "type" or "list(type)" above, then the "type" field
+     * The set of allowed values.  Has opType that is the "list" version
+     * of the "opType" field above (uses the "list" field of AttrValue).
+     * If opType == "opType" or "list(opType)" above, then the "opType" field
      * of "allowed_values.list" has the set of allowed DataTypes.
-     * If type == "string" or "list(string)", then the "s" field of
+     * If opType == "string" or "list(string)", then the "s" field of
      * "allowed_values.list" has the set of allowed strings.
      * </pre>
      *
@@ -2246,11 +2246,11 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The set of allowed values.  Has type that is the "list" version
-     * of the "type" field above (uses the "list" field of AttrValue).
-     * If type == "type" or "list(type)" above, then the "type" field
+     * The set of allowed values.  Has opType that is the "list" version
+     * of the "opType" field above (uses the "list" field of AttrValue).
+     * If opType == "opType" or "list(opType)" above, then the "opType" field
      * of "allowed_values.list" has the set of allowed DataTypes.
-     * If type == "string" or "list(string)", then the "s" field of
+     * If opType == "string" or "list(string)", then the "s" field of
      * "allowed_values.list" has the set of allowed strings.
      * </pre>
      *
@@ -2493,7 +2493,7 @@ private static final long serialVersionUID = 0L;
      * be specified in the NodeDef.
      * </pre>
      *
-     * Protobuf type {@code tensorflow.OpDef.AttrDef}
+     * Protobuf opType {@code tensorflow.OpDef.AttrDef}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -2781,11 +2781,11 @@ private static final long serialVersionUID = 0L;
       private Object type_ = "";
       /**
        * <pre>
-       * One of the type names from attr_value.proto ("string", "list(string)",
+       * One of the opType names from attr_value.proto ("string", "list(string)",
        * "int", etc.).
        * </pre>
        *
-       * <code>string type = 2;</code>
+       * <code>string opType = 2;</code>
        */
       public String getType() {
         Object ref = type_;
@@ -2801,11 +2801,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * One of the type names from attr_value.proto ("string", "list(string)",
+       * One of the opType names from attr_value.proto ("string", "list(string)",
        * "int", etc.).
        * </pre>
        *
-       * <code>string type = 2;</code>
+       * <code>string opType = 2;</code>
        */
       public com.google.protobuf.ByteString
           getTypeBytes() {
@@ -2822,11 +2822,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * One of the type names from attr_value.proto ("string", "list(string)",
+       * One of the opType names from attr_value.proto ("string", "list(string)",
        * "int", etc.).
        * </pre>
        *
-       * <code>string type = 2;</code>
+       * <code>string opType = 2;</code>
        */
       public Builder setType(
           String value) {
@@ -2840,11 +2840,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * One of the type names from attr_value.proto ("string", "list(string)",
+       * One of the opType names from attr_value.proto ("string", "list(string)",
        * "int", etc.).
        * </pre>
        *
-       * <code>string type = 2;</code>
+       * <code>string opType = 2;</code>
        */
       public Builder clearType() {
         
@@ -2854,11 +2854,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * One of the type names from attr_value.proto ("string", "list(string)",
+       * One of the opType names from attr_value.proto ("string", "list(string)",
        * "int", etc.).
        * </pre>
        *
-       * <code>string type = 2;</code>
+       * <code>string opType = 2;</code>
        */
       public Builder setTypeBytes(
           com.google.protobuf.ByteString value) {
@@ -3126,7 +3126,7 @@ private static final long serialVersionUID = 0L;
       private boolean hasMinimum_ ;
       /**
        * <pre>
-       * For type == "int", this is a minimum value.  For "list(___)"
+       * For opType == "int", this is a minimum value.  For "list(___)"
        * types, this is the minimum length.
        * </pre>
        *
@@ -3137,7 +3137,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * For type == "int", this is a minimum value.  For "list(___)"
+       * For opType == "int", this is a minimum value.  For "list(___)"
        * types, this is the minimum length.
        * </pre>
        *
@@ -3151,7 +3151,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * For type == "int", this is a minimum value.  For "list(___)"
+       * For opType == "int", this is a minimum value.  For "list(___)"
        * types, this is the minimum length.
        * </pre>
        *
@@ -3195,11 +3195,11 @@ private static final long serialVersionUID = 0L;
           AttrValue, AttrValue.Builder, AttrValueOrBuilder> allowedValuesBuilder_;
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3210,11 +3210,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3229,11 +3229,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3254,11 +3254,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3277,11 +3277,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3304,11 +3304,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3327,11 +3327,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3344,11 +3344,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3364,11 +3364,11 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The set of allowed values.  Has type that is the "list" version
-       * of the "type" field above (uses the "list" field of AttrValue).
-       * If type == "type" or "list(type)" above, then the "type" field
+       * The set of allowed values.  Has opType that is the "list" version
+       * of the "opType" field above (uses the "list" field of AttrValue).
+       * If opType == "opType" or "list(opType)" above, then the "opType" field
        * of "allowed_values.list" has the set of allowed DataTypes.
-       * If type == "string" or "list(string)", then the "s" field of
+       * If opType == "string" or "list(string)", then the "s" field of
        * "allowed_values.list" has the set of allowed strings.
        * </pre>
        *
@@ -3761,7 +3761,7 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * If is_aggregate is true, then this operation accepts N &gt;= 2
-   * inputs and produces 1 output all of the same type.  Should be
+   * inputs and produces 1 output all of the same opType.  Should be
    * associative and commutative, and produce output with the same
    * shape as the input.  The optimizer may replace an aggregate op
    * taking input from multiple devices with a tree of aggregate ops
@@ -4088,7 +4088,7 @@ private static final long serialVersionUID = 0L;
    * using the "op" field which should match the name of a OpDef.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.OpDef}
+   * Protobuf opType {@code tensorflow.OpDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -5733,7 +5733,7 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * If is_aggregate is true, then this operation accepts N &gt;= 2
-     * inputs and produces 1 output all of the same type.  Should be
+     * inputs and produces 1 output all of the same opType.  Should be
      * associative and commutative, and produce output with the same
      * shape as the input.  The optimizer may replace an aggregate op
      * taking input from multiple devices with a tree of aggregate ops
@@ -5750,7 +5750,7 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * If is_aggregate is true, then this operation accepts N &gt;= 2
-     * inputs and produces 1 output all of the same type.  Should be
+     * inputs and produces 1 output all of the same opType.  Should be
      * associative and commutative, and produce output with the same
      * shape as the input.  The optimizer may replace an aggregate op
      * taking input from multiple devices with a tree of aggregate ops
@@ -5770,7 +5770,7 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * If is_aggregate is true, then this operation accepts N &gt;= 2
-     * inputs and produces 1 output all of the same type.  Should be
+     * inputs and produces 1 output all of the same opType.  Should be
      * associative and commutative, and produce output with the same
      * shape as the input.  The optimizer may replace an aggregate op
      * taking input from multiple devices with a tree of aggregate ops

@@ -4,7 +4,7 @@
 package org.tensorflow.framework;
 
 /**
- * Protobuf type {@code tensorflow.TensorDescription}
+ * Protobuf opType {@code tensorflow.TensorDescription}
  */
 public  final class TensorDescription extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -107,7 +107,7 @@ private static final long serialVersionUID = 0L;
   private int dtype_;
   /**
    * <pre>
-   * Data type of tensor elements
+   * Data opType of tensor elements
    * </pre>
    *
    * <code>.tensorflow.DataType dtype = 1;</code>
@@ -117,7 +117,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Data type of tensor elements
+   * Data opType of tensor elements
    * </pre>
    *
    * <code>.tensorflow.DataType dtype = 1;</code>
@@ -376,7 +376,7 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * Protobuf type {@code tensorflow.TensorDescription}
+   * Protobuf opType {@code tensorflow.TensorDescription}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -538,7 +538,7 @@ private static final long serialVersionUID = 0L;
     private int dtype_ = 0;
     /**
      * <pre>
-     * Data type of tensor elements
+     * Data opType of tensor elements
      * </pre>
      *
      * <code>.tensorflow.DataType dtype = 1;</code>
@@ -548,7 +548,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Data type of tensor elements
+     * Data opType of tensor elements
      * </pre>
      *
      * <code>.tensorflow.DataType dtype = 1;</code>
@@ -560,7 +560,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Data type of tensor elements
+     * Data opType of tensor elements
      * </pre>
      *
      * <code>.tensorflow.DataType dtype = 1;</code>
@@ -571,7 +571,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Data type of tensor elements
+     * Data opType of tensor elements
      * </pre>
      *
      * <code>.tensorflow.DataType dtype = 1;</code>
@@ -587,7 +587,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Data type of tensor elements
+     * Data opType of tensor elements
      * </pre>
      *
      * <code>.tensorflow.DataType dtype = 1;</code>

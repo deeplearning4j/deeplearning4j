@@ -63,7 +63,7 @@ public interface ResourceHandleProtoOrBuilder extends
 
   /**
    * <pre>
-   * Hash code for the type of the resource. Is only valid in the same device
+   * Hash code for the opType of the resource. Is only valid in the same device
    * and in the same execution.
    * </pre>
    *
@@ -73,7 +73,7 @@ public interface ResourceHandleProtoOrBuilder extends
 
   /**
    * <pre>
-   * For debug-only, the name of the type pointed to by this handle, if
+   * For debug-only, the name of the opType pointed to by this handle, if
    * available.
    * </pre>
    *
@@ -82,7 +82,7 @@ public interface ResourceHandleProtoOrBuilder extends
   String getMaybeTypeName();
   /**
    * <pre>
-   * For debug-only, the name of the type pointed to by this handle, if
+   * For debug-only, the name of the opType pointed to by this handle, if
    * available.
    * </pre>
    *

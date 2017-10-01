@@ -20,6 +20,9 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
@@ -27,12 +30,21 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Permute function
  *
  * @author Adam Gibson
  */
 public class Permute extends ShapeOp {
+    private int[] permuteDims;
+
+    public Permute(SameDiff sameDiff, DifferentialFunction i_v, int[] permuteDims) {
+        super(sameDiff, i_v, false);
+        this.permuteDims = permuteDims;
+    }
 
     public Permute() {}
 
@@ -64,7 +76,6 @@ public class Permute extends ShapeOp {
 
     @Override
     public void exec() {
-        int[] permuteDims = (int[]) extraArgs[0];
         if(x != z) {
             z.assign(x.permute(permuteDims));
         }
@@ -130,7 +141,7 @@ public class Permute extends ShapeOp {
 
         if (y() != null)
             return new Permute(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Permute(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -147,9 +158,26 @@ public class Permute extends ShapeOp {
 
         if (y() != null)
             return new Permute(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Permute(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        if(dimensions == null && extraArgs != null) {
+            this.dimensions = (int[]) extraArgs[0];
+        }
+
+        return sameDiff.getArrayFactory().permute(arg().getValue(true),dimensions);
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        return Collections.<DifferentialFunction>singletonList(this);
+    }
+
+
 }

@@ -19,10 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Absolute sum the components
@@ -30,6 +35,13 @@ import org.nd4j.linalg.api.ops.Op;
  * @author raver119@gmail.com
  */
 public class ASum extends BaseAccumulation {
+    public ASum(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public ASum(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
 
     public ASum() {}
 
@@ -144,5 +156,15 @@ public class ASum extends BaseAccumulation {
             return new ASum(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ASum(xAlongDimension);
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

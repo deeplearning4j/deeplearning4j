@@ -19,10 +19,19 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.UUID;
 
 /**
  * Base scalar operation
@@ -67,6 +76,105 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         super(x);
         this.complexNumber = num;
         init(x, y, z, n);
+
+    }
+
+
+    public BaseScalarOp(SameDiff sameDiff,DifferentialFunction i_v,Number scalar) {
+        this(sameDiff,i_v,scalar,false,null);
+    }
+
+    public BaseScalarOp(SameDiff sameDiff,DifferentialFunction i_v,Number scalar,boolean inPlace) {
+        this(sameDiff,i_v,scalar,inPlace,null);
+    }
+
+    public BaseScalarOp(SameDiff sameDiff,
+                           DifferentialFunction i_v,
+                           Number scalar,
+                           boolean inPlace,
+                           Object[] extraArgs) {
+        super(sameDiff,inPlace,extraArgs);
+        this.shape = i_v.getResultShape();
+        this.scalarValue = scalar;
+        if (i_v != null) {
+            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
+            validateFunctionReference(i_v);
+            validateDifferentialFunctionsameDiff(i_v);
+            addEdges(sameDiff,this.args[0],name(),shape);
+        } else {
+            throw new IllegalArgumentException("Input not null variable.");
+        }
+    }
+
+
+    public BaseScalarOp(SameDiff sameDiff,
+                           DifferentialFunction i_v,
+                           Number scalar,
+                           Object[] extraArgs) {
+        this(sameDiff,i_v,scalar,false,extraArgs);
+    }
+
+
+
+
+    /**
+     * Add nodes to the graph
+     * @param sameDiff
+     * @param i_v1
+     * @param opName
+     */
+    @Override
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction i_v1,
+                            String opName,
+                            int[] shape) {
+        validateFunctionReference(i_v1);
+        ArrayField v1 = i_v1.getValue(true);
+        validateDifferentialFunctionsameDiff(v1);
+        NDArrayInformation information =   inPlace ? i_v1.getResult() : NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
+                .id(opName + "(" + v1.getInput().getId() + " -> " +
+                        v1.getInput().getId() + ")")
+                .shape(i_v1.getResultShape()).build();
+
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.graph().nextVertexId(),
+                i_v1.getVertex().depth() + 1,
+                information);
+        this.vertexId = newVertex.vertexID();
+        sameDiff.graph().addVertex(newVertex);
+
+
+        OpState owner =  OpState.builder()
+                .opType(Type.SCALAR)
+                .differentialFunction(this).inPlace(inPlace)
+                .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
+                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
+                .n(ArrayUtil.prod(shape)).scalarValue((Number) extraArgs[0])
+                .result(information)
+                .build();
+
+
+        sameDiff.getGraph().addEdge(
+                new int[]{arg().resultVertexId()},
+                new int[]{newVertex.vertexID()},
+                owner,
+                true);
+
+
+        newVertex.setOpState(owner);
+        information.setOwner(owner);
+        owner.setResult(information);
+
+        if(owner.isInPlace()) {
+            information.setArrId(v1.getInput().getArrId());
+        }
+
+        this.opState = owner;
+
 
     }
 

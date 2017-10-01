@@ -19,12 +19,18 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Collections;
+import java.util.List;
 
 /**Leaky Rectified linear unit. Default alpha=0.01, cutoff=0<br>
  * Out(x) = alpha*x if x<0<br>
@@ -38,6 +44,21 @@ import org.nd4j.linalg.factory.Nd4j;
 public class LeakyReLU extends BaseTransformOp {
     public static final double DEFAULT_ALPHA = 0.01;
     private double alpha = DEFAULT_ALPHA;
+
+    public LeakyReLU(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double alpha) {
+        super(sameDiff, i_v, inPlace);
+        this.alpha = alpha;
+    }
+
+    public LeakyReLU(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.alpha = alpha;
+    }
+
+    public LeakyReLU(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double alpha) {
+        super(sameDiff, i_v, extraArgs);
+        this.alpha = alpha;
+    }
 
     public LeakyReLU() {
         super();
@@ -172,5 +193,19 @@ public class LeakyReLU extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {alpha};
+    }
+
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().leakyRelu(arg().getValue(true),alpha);
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().leakyReluDerivative(arg(),i_v.get(0) , alpha);
+
+        return Collections.singletonList(ret);
     }
 }

@@ -47,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Double data buffer tests
  *
- * This tests the double buffer data type
+ * This tests the double buffer data opType
  * Put all buffer related tests here
  *
  * @author Adam Gibson

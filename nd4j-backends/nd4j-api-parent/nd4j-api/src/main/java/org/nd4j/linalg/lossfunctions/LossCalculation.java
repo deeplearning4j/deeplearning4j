@@ -181,7 +181,7 @@ public @Data @Builder @Deprecated class LossCalculation {
                                 new Value(-Integer.MAX_VALUE));
                 break;
             default:
-                throw new RuntimeException("unsupported data type: " + log.data().dataType());
+                throw new RuntimeException("unsupported data opType: " + log.data().dataType());
         }
         return log;
     }

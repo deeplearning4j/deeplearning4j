@@ -1309,7 +1309,7 @@ public abstract class NativeOps extends Pointer {
                     PointerPointer z, PointerPointer zShapeInfo, int N, IntPointer shuffleMap,
                     PointerPointer tadShapeInfo, PointerPointer tadOffsets);
 
-    // type conversion
+    // opType conversion
 
     public abstract void convertTypes(PointerPointer extras, int srcType, Pointer x, long N, int dstType, Pointer z);
 

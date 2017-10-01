@@ -3,24 +3,24 @@ package org.nd4j.autodiff.functions;
 import com.google.common.base.Preconditions;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
-import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
-import org.nd4j.autodiff.functions.impl.binary.transform.*;
-import org.nd4j.autodiff.functions.impl.binary.transform.gradient.*;
-import org.nd4j.autodiff.functions.impl.binary.transform.scalar.*;
-import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
-import org.nd4j.autodiff.functions.impl.unary.transform.*;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.*;
-import org.nd4j.autodiff.functions.mmul.Mmul;
-import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.shape.*;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.EqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.NotEqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -69,7 +69,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
     @Override
-    public Constant  val(ArrayField iX) {
+    public Constant val(ArrayField iX) {
         return sameDiff().setupFunction(new Constant(sameDiff(), iX,
                 iX.getInput().getShape()));
     }
@@ -77,7 +77,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
     @Override
-    public Variable  var(String iName, ArrayField iX, PreEvaluator  preEvaluator) {
+    public Variable var(String iName, ArrayField iX, PreEvaluator  preEvaluator) {
         Preconditions.checkArgument(iX.getOps() == sameDiff(),"Same diff must be the same.");
         return sameDiff().setupFunction(new Variable(sameDiff(),iName, iX, preEvaluator));
     }
@@ -89,13 +89,13 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
     @Override
-    public Zero  zero(int[] shape) {
+    public Zero zero(int[] shape) {
         return sameDiff().setupFunction(new Zero(sameDiff(),shape));
     }
 
     @Override
-    public One  one(int[] shape) {
-        return sameDiff().setupFunction(new One(sameDiff(),shape));
+    public Ones one(int[] shape) {
+        return sameDiff().setupFunction(new Ones(sameDiff(),shape));
     }
 
     @Override
@@ -104,15 +104,11 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
 
-    @Override
-    public DifferentialFunction valueArrayOf(DifferentialFunction iX, int[] shape) {
-        return sameDiff().setupFunction(new ValueArrayOf(sameDiff(),iX,shape,null));
-    }
 
     @Override
     public DifferentialFunction sum(DifferentialFunction i_x,
                                     int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Sum(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new Sum(sameDiff(),i_x,dimensions));
     }
 
     @Override
@@ -122,51 +118,51 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction mean(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Mean(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new Mean(sameDiff(),i_x,dimensions));
     }
 
     @Override
     public DifferentialFunction std(DifferentialFunction i_x,
                                     boolean biasCorrected,
                                     int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.StandardDeviation(sameDiff(),i_x,dimensions,biasCorrected));
+        return sameDiff().setupFunction(new StandardDeviation(sameDiff(),i_x,dimensions,biasCorrected));
     }
 
     @Override
     public DifferentialFunction variance(DifferentialFunction i_x,
                                          boolean biasCorrected,
                                          int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Variance(sameDiff(),i_x,dimensions,biasCorrected));
+        return sameDiff().setupFunction(new  Variance(sameDiff(),i_x,dimensions,biasCorrected));
 
     }
 
     @Override
     public DifferentialFunction max(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Max(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new Max(sameDiff(),i_x,dimensions));
 
     }
 
     @Override
     public DifferentialFunction min(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Min(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new Min(sameDiff(),i_x,dimensions));
 
     }
 
     @Override
     public DifferentialFunction norm1(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Norm1(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new  Norm1(sameDiff(),i_x,dimensions));
 
     }
 
     @Override
     public DifferentialFunction norm2(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.Norm2(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new  Norm2(sameDiff(),i_x,dimensions));
 
     }
 
     @Override
     public DifferentialFunction normmax(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.reduce.NormMax(sameDiff(),i_x,dimensions));
+        return sameDiff().setupFunction(new NormMax(sameDiff(),i_x,dimensions));
 
     }
 
@@ -211,35 +207,35 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction expandDims(DifferentialFunction iX,int axis) {
-        return sameDiff().setupFunction(new ExpandDims(sameDiff(),iX,null,axis));
+        return sameDiff().setupFunction(new ExpandDims(sameDiff(),iX,axis));
     }
 
 
 
     @Override
     public DifferentialFunction abs(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Abs(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Abs(sameDiff(),iX,null));
     }
 
 
     @Override
     public DifferentialFunction neg(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Neg(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Negative(sameDiff(),iX,null));
     }
 
     @Override
     public DifferentialFunction cos(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Cos(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new  Cos(sameDiff(),iX,null));
     }
 
     @Override
     public DifferentialFunction sin(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Sin(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Sin(sameDiff(),iX,null));
     }
 
     @Override
     public DifferentialFunction tan(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Tan(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Tan(sameDiff(),iX,null));
 
     }
 
@@ -251,12 +247,12 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction transpose(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Transpose(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Transpose(sameDiff(),iX));
     }
 
     @Override
     public DifferentialFunction acos(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.ACos(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new  ACos(sameDiff(),iX,null));
     }
 
     @Override
@@ -272,7 +268,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction cosh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Cosh(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Cosh(sameDiff(),iX,null));
 
     }
 
@@ -289,7 +285,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction tanhDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
-        return sameDiff().setupFunction(new TanhDerivative(sameDiff(),iX,wrt));
+        return sameDiff().setupFunction(new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(),iX,wrt));
     }
 
     @Override
@@ -299,7 +295,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction asinh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new  org.nd4j.autodiff.functions.impl.unary.transform.ASinh(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new  ASinh(sameDiff(),iX,null));
     }
 
     @Override
@@ -314,52 +310,53 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction log(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Log(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Log(sameDiff(),iX,null));
     }
 
 
 
     @Override
     public DifferentialFunction or(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.binary.transform.Or(sameDiff(),iX,i_y));
+        return sameDiff().setupFunction(new Or(sameDiff(),iX,i_y));
     }
 
 
     @Override
     public DifferentialFunction eq(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.binary.transform.Eq(sameDiff(),iX,i_y));
+        return sameDiff().setupFunction(new EqualTo(sameDiff(),iX,i_y));
     }
 
     @Override
     public DifferentialFunction neq(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.binary.transform.Neq(sameDiff(),iX,i_y));
+        return sameDiff().setupFunction(new NotEqualTo(sameDiff(),iX,i_y));
 
     }
 
     @Override
     public DifferentialFunction pow(DifferentialFunction iX, double i_y) {
-        return sameDiff().setupFunction(new ScalarPow(sameDiff(),iX,new Object[]{i_y}));
+        return sameDiff().setupFunction(new ScalarMultiplication(  sameDiff(),iX,i_y));
+
     }
 
     @Override
     public DifferentialFunction sqrt(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Sqrt(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Sqrt(sameDiff(),iX,null));
     }
 
     @Override
     public DifferentialFunction square(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Square(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Pow(sameDiff(),iX,false,2.0));
     }
 
     @Override
     public DifferentialFunction floor(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Floor(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Floor(sameDiff(),iX,null));
 
     }
 
     @Override
     public DifferentialFunction relu(DifferentialFunction iX, double cutoff) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Floor(sameDiff(),iX,new Object[]{cutoff}));
+        return sameDiff().setupFunction(new RectifedLinear(sameDiff(),iX,false,cutoff));
 
     }
 
@@ -367,13 +364,13 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction softmax(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Softmax(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new SoftMax(sameDiff(),iX,new Object[]{}));
 
     }
 
     @Override
     public DifferentialFunction hardTanh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.HardTanh(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new HardTanh(sameDiff(),iX,null));
 
     }
 
@@ -390,7 +387,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction sigmoid(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Sigmoid(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Sigmoid(sameDiff(),iX,null));
 
     }
 
@@ -405,25 +402,25 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction sign(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Sign(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new Sign(sameDiff(),iX,null));
 
     }
 
 
     @Override
     public DifferentialFunction broadcast(DifferentialFunction iX, int... shape) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.shape.Broadcast(sameDiff(),iX,shape));
+        return sameDiff().setupFunction(new Broadcast(sameDiff(),iX,shape));
     }
 
     @Override
     public DifferentialFunction repeat(DifferentialFunction iX, int axis) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.shape.Repeat(sameDiff(),iX,axis));
+        return sameDiff().setupFunction(new Repeat(sameDiff(),iX,axis));
 
     }
 
     @Override
     public DifferentialFunction softsign(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.SoftSign(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new SoftSign(sameDiff(),iX,null));
 
     }
 
@@ -439,14 +436,14 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction softplus(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.SoftPlus(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new SoftPlus(sameDiff(),iX,null));
 
     }
 
 
     @Override
     public DifferentialFunction elu(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.Elu(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new ELU(sameDiff(),iX,null));
 
     }
 
@@ -454,7 +451,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction eluDerivative(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new EluDerivative(sameDiff(),iX,null));
+        return sameDiff().setupFunction(new ELUDerivative(sameDiff(),iX,null));
 
     }
 
@@ -463,7 +460,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction leakyRelu(DifferentialFunction iX, double cutoff) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.unary.transform.LeakyRelu(sameDiff(),iX,cutoff));
+        return sameDiff().setupFunction(new LeakyReLU(sameDiff(),iX,false,cutoff));
 
     }
 
@@ -471,7 +468,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction leakyReluDerivative(DifferentialFunction iX, DifferentialFunction iY, double cutoff) {
-        return sameDiff().setupFunction(new LeakyReluDerivative(sameDiff(),iX,iY,cutoff));
+        return sameDiff().setupFunction(new LeakyReLUDerivative(sameDiff(),iX,iY,cutoff));
 
     }
 
@@ -487,7 +484,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     @Override
     public DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        return sameDiff().setupFunction(new org.nd4j.autodiff.functions.impl.binary.reduce.CosineSimilarity(sameDiff(),iX,i_y,dimensions));
+        return sameDiff().setupFunction(new CosineSimilarity(sameDiff(),iX,i_y,dimensions));
     }
 
     @Override
@@ -644,160 +641,160 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     @Override
     public DifferentialFunction rsub(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RSub(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new RSubOp(sameDiff(),differentialFunction,i_v));
     }
 
     @Override
     public DifferentialFunction rdiv(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RDiv(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new RDivOp(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction rdivi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RDiv(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new RDivOp(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction rsubi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RSub(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new RSubOp(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction add(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Add(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new AddOp(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction addi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Add(sameDiff(),differentialFunction,i_v,true));
+        return sameDiff().setupFunction(new AddOp(sameDiff(),differentialFunction,i_v,true));
 
     }
 
     @Override
     public DifferentialFunction sub(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Sub(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new SubOp(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction subi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Sub(sameDiff(),differentialFunction,i_v,true));
+        return sameDiff().setupFunction(new SubOp(sameDiff(),differentialFunction,i_v,true));
 
     }
 
     @Override
     public DifferentialFunction mul(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Mul(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new MulOp(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction muli(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Mul(sameDiff(),differentialFunction,i_v,true));
+        return sameDiff().setupFunction(new MulOp(sameDiff(),differentialFunction,i_v,true));
 
     }
 
     @Override
     public DifferentialFunction div(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Div(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new DivOp(sameDiff(),differentialFunction,i_v));
     }
 
     @Override
     public DifferentialFunction divi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Div(sameDiff(),differentialFunction,i_v,true));
+        return sameDiff().setupFunction(new DivOp(sameDiff(),differentialFunction,i_v,true));
     }
 
     @Override
     public DifferentialFunction rsub(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarRSub(sameDiff(),differentialFunction,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarReverseSubtraction(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction rdiv(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarRDiv(sameDiff(),differentialFunction,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarReverseDivision(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction rdivi(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarRDiv(sameDiff(),differentialFunction,true,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarReverseDivision(sameDiff(),differentialFunction,i_v,true));
     }
 
     @Override
     public DifferentialFunction rsubi(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarRSub(sameDiff(),differentialFunction,true,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarReverseSubtraction(sameDiff(),differentialFunction,i_v,true));
 
     }
 
     @Override
     public DifferentialFunction add(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarAdd(sameDiff(),differentialFunction,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarAdd(sameDiff(),differentialFunction,i_v,false));
     }
 
     @Override
     public DifferentialFunction addi(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarAdd(sameDiff(),differentialFunction,true,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarAdd(sameDiff(),differentialFunction,i_v,true));
     }
 
     @Override
     public DifferentialFunction sub(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarSub(sameDiff(),differentialFunction,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarSubtraction(sameDiff(),differentialFunction,i_v));
     }
 
     @Override
     public DifferentialFunction subi(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarSub(sameDiff(),differentialFunction,true,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarSubtraction(sameDiff(),differentialFunction,i_v,true));
 
     }
 
     @Override
     public DifferentialFunction mul(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarMul(sameDiff(),differentialFunction,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarMultiplication(sameDiff(),differentialFunction,i_v));
 
     }
 
     @Override
     public DifferentialFunction muli(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarMul(sameDiff(),differentialFunction,true,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarMultiplication(sameDiff(),differentialFunction,i_v,true));
 
     }
 
     @Override
     public DifferentialFunction div(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarDiv(sameDiff(),differentialFunction,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarDivision(sameDiff(),differentialFunction,i_v));
     }
 
     @Override
     public DifferentialFunction divi(DifferentialFunction differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarDiv(sameDiff(),differentialFunction,true,new Object[]{i_v}));
+        return sameDiff().setupFunction(new ScalarDivision(sameDiff(),differentialFunction,i_v,true));
     }
 
     /**

@@ -46,7 +46,7 @@ public interface ConvolutionInstance {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @param axes   the axes to do the convolution along
      * @return the convolution of the given input and kernel
      */
@@ -58,7 +58,7 @@ public interface ConvolutionInstance {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @param axes   the axes to do the convolution along
      * @return the convolution of the given input and kernel
      */
@@ -69,7 +69,7 @@ public interface ConvolutionInstance {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     INDArray convn(INDArray input, INDArray kernel, Convolution.Type type);
@@ -79,7 +79,7 @@ public interface ConvolutionInstance {
      *
      * @param input  the input to op
      * @param kernel the kernel to op with
-     * @param type   the type of convolution
+     * @param type   the opType of convolution
      * @return the convolution of the given input and kernel
      */
     IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);

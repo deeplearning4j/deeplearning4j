@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
  *
  * PLEASE NOTE:
  * 1. All pointers are blind, and do NOT care about length/capacity/offsets/strides whatever
- * 2. They are really blind. Even data type is unknown.
+ * 2. They are really blind. Even data opType is unknown.
  *
  * @author raver119@gmail.com
  */

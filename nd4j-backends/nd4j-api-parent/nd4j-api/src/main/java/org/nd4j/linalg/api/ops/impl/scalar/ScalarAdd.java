@@ -19,10 +19,16 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Scalar addition
@@ -51,6 +57,18 @@ public class ScalarAdd extends BaseScalarOp {
 
     public ScalarAdd(INDArray arr) {
         this(arr, 0);
+    }
+
+    public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+        super(sameDiff, i_v, scalar, inPlace);
+    }
+
+    public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, inPlace, extraArgs);
+    }
+
+    public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override
@@ -125,5 +143,29 @@ public class ScalarAdd extends BaseScalarOp {
             return new ScalarAdd(x.tensorAlongDimension(index, dimension), num);
         else
             return new ScalarAdd(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
+
+    /**
+     * Get the value of this function
+     *
+     * @return
+     */
+    @Override
+    public ArrayField doGetValue() {
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
+
+        if(isInPlace())
+            return arg().getValue(true).add(scalarValue.doubleValue());
+        else
+            return arg().getValue(true).addi(scalarValue.doubleValue());
+
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        DifferentialFunction g = i_v1.get(0);
+        return Arrays.asList(g);
     }
 }

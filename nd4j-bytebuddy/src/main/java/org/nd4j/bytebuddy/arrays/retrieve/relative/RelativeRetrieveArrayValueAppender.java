@@ -46,7 +46,7 @@ public class RelativeRetrieveArrayValueAppender implements ByteCodeAppender {
         //initialize the stack with the array access with this as reference 0 and the array (first argument) as reference 1
         StackManipulation compound = assignOperation();
         StackManipulation.Size size = compound.apply(methodVisitor, implementationContext);
-        //resolve the type to store in the array and retrieve the load command
+        //resolve the opType to store in the array and retrieve the load command
         StackManipulation store = ArrayAccess.of(typePool.describe("int").resolve()).load();
         size = size.aggregate(store.apply(methodVisitor, implementationContext));
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
@@ -55,7 +55,7 @@ public class RelativeRetrieveArrayValueAppender implements ByteCodeAppender {
     public StackManipulation assignOperation() {
         //load the index
         StackManipulation indexToAssign = IntegerConstant.forValue(index);
-        //set the return type
+        //set the return opType
         return indexToAssign;
     }
 }

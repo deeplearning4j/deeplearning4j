@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * MultiDataSet is an interface for representing complex data sets, that have (potentially) multiple inputs and outputs
  * For example, some complex neural network architectures may have multiple independent inputs, and multiple independent
- * outputs. These inputs and outputs need not even be the same type of data: for example, images in and sequences out, etc
+ * outputs. These inputs and outputs need not even be the same opType of data: for example, images in and sequences out, etc
  */
 public interface MultiDataSet extends Serializable {
 
@@ -155,7 +155,7 @@ public interface MultiDataSet extends Serializable {
      * Get the example metadata, or null if no metadata has been set<br>
      * Note: this method results in an unchecked cast - care should be taken when using this!
      *
-     * @param metaDataType Class of the metadata (used for type information)
+     * @param metaDataType Class of the metadata (used for opType information)
      * @param <T>          Type of metadata
      * @return List of metadata objects
      */

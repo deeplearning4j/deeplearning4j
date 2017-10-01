@@ -37,7 +37,7 @@ import java.util.*;
 /**
  * Base NDArrayFactory class.
  * <p/>
- * Allows specification or data type and row (c) or column(fortran) major order
+ * Allows specification or data opType and row (c) or column(fortran) major order
  *
  * @author Adam Gibson
  */
@@ -91,9 +91,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     /**
      *
-     * Initialize with the given data type and ordering
+     * Initialize with the given data opType and ordering
      * The ndarray factory will use this for
-     * @param dtype the data type
+     * @param dtype the data opType
      * @param order the ordering in mem
      */
     protected BaseNDArrayFactory(DataBuffer.Type dtype, Character order) {
@@ -105,7 +105,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * @param dtype the data type
+     * @param dtype the data opType
      * @param order the ordering
      */
     protected BaseNDArrayFactory(DataBuffer.Type dtype, char order) {
@@ -159,14 +159,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Sets the data type
+     * Sets the data opType
      *
      * @param dtype
      */
     @Override
     public void setDType(DataBuffer.Type dtype) {
         assert dtype == DataBuffer.Type.DOUBLE || dtype == DataBuffer.Type.FLOAT
-                        || dtype == DataBuffer.Type.INT : "Invalid type passed, must be float or double";
+                        || dtype == DataBuffer.Type.INT : "Invalid opType passed, must be float or double";
         // this.dtype = dtype;
     }
 
@@ -186,9 +186,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
-     * Returns the data type for this ndarray
+     * Returns the data opType for this ndarray
      *
-     * @return the data type for this ndarray
+     * @return the data opType for this ndarray
      */
     @Override
     public DataBuffer.Type dtype() {
@@ -1518,7 +1518,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         else if (Nd4j.dataType() == DataBuffer.Type.INT)
             return createComplex(new int[rows * columns * 2], new int[] {rows, columns}, stride, offset);
 
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
 
@@ -1539,7 +1539,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return create(new float[rows * columns], new int[] {rows, columns}, stride, offset);
         if (Nd4j.dataType() == DataBuffer.Type.INT)
             return create(new int[rows * columns], new int[] {rows, columns}, stride, offset);
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
 
@@ -1556,7 +1556,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return createComplex(new double[ArrayUtil.prod(shape) * 2], shape, stride, offset);
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
             return createComplex(new float[ArrayUtil.prod(shape) * 2], shape, stride, offset);
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
 
     }
 
@@ -1704,7 +1704,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return scalar(value.floatValue(), offset);
         if (Nd4j.dataType() == DataBuffer.Type.INT)
             return scalar(value.intValue(), offset);
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
 
@@ -1723,7 +1723,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                         || Nd4j.dataType() == DataBuffer.Type.HALF)
             return scalar(createFloat(value.floatValue(), 0), offset);
 
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
 
@@ -1790,7 +1790,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return scalar(value.floatValue(), 0);
         if (Nd4j.dataType() == DataBuffer.Type.INT)
             return scalar(value.intValue(), 0);
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
     /**
@@ -1837,7 +1837,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return scalar(value.asDouble(), offset);
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
             return scalar(value.asFloat(), offset);
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
     /**
@@ -1878,7 +1878,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return scalar(value.asDouble(), 0);
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
             return scalar(value.asFloat(), 0);
-        throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
+        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
 
     /**

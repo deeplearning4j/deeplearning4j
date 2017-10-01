@@ -20,10 +20,16 @@
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Euclidean distance
@@ -31,6 +37,14 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class EuclideanDistance extends BaseAccumulation {
+    public EuclideanDistance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public EuclideanDistance(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public EuclideanDistance() {}
 
     public EuclideanDistance(INDArray x, INDArray y, INDArray z, long n) {
@@ -262,4 +276,20 @@ public class EuclideanDistance extends BaseAccumulation {
     public float calculateFinalResult(float accum, long n) {
         return (float) FastMath.sqrt(accum);
     }
+
+    @Override
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().euclideanDistance(larg(),rarg(),dimensions);
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String doGetFormula(List<Variable> variables) {
+        return null;
+    }
+
 }

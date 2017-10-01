@@ -19,12 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
+
+import java.util.List;
 
 /**
  * Absolute sum the components
@@ -33,9 +38,23 @@ import org.nd4j.linalg.indexing.conditions.Condition;
  */
 public class MatchCondition extends BaseAccumulation {
 
-    double compare;
-    double eps;
-    int mode;
+    private double compare;
+    private double eps;
+    private int mode;
+
+    public MatchCondition(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, double compare, double eps, int mode) {
+        super(sameDiff, i_v, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
+
+    public MatchCondition(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, double compare, double eps, int mode) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.compare = compare;
+        this.eps = eps;
+        this.mode = mode;
+    }
 
     public MatchCondition() {}
 
@@ -135,6 +154,16 @@ public class MatchCondition extends BaseAccumulation {
 
     @Override
     public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return null;
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
     }
 }

@@ -145,7 +145,7 @@ public class TensorFlowImport {
                     // value of?
                     AttrValue value = attributes.get("value");
 
-                    //DataType type = value.
+                    //DataType opType = value.
 
                     TensorProto tensor = value.getTensor();
                     log.info("Dtype: {}", tensor.getDtype());

@@ -19,11 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Calculate the index of min value over a vector
@@ -174,5 +178,15 @@ public class IMin extends BaseIndexAccumulation {
             return new IMin(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new IMin(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

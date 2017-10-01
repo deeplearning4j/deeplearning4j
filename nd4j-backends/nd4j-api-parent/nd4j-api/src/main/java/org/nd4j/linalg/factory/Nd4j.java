@@ -1192,7 +1192,7 @@ public class Nd4j {
      * Create a buffer equal of length prod(shape)
      *
      * @param shape the shape of the buffer to create
-     * @param type  the type to create
+     * @param type  the opType to create
      * @return the created buffer
      */
     public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type, long offset) {
@@ -1202,13 +1202,13 @@ public class Nd4j {
     }
 
     /**
-     * Creates a buffer of the specified type
+     * Creates a buffer of the specified opType
      * and length with the given byte buffer.
      *
      * This will wrap the buffer as a reference (no copy)
-     * if the allocation type is the same.
+     * if the allocation opType is the same.
      * @param buffer the buffer to create from
-     * @param type the type of buffer to create
+     * @param type the opType of buffer to create
      * @param length the length of the buffer
      * @return
      */
@@ -1221,13 +1221,13 @@ public class Nd4j {
             case FLOAT:
                 return DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, buffer, length);
             default:
-                throw new IllegalArgumentException("Illegal type " + type);
+                throw new IllegalArgumentException("Illegal opType " + type);
         }
     }
 
 
     /**
-     * Create a buffer based on the data type
+     * Create a buffer based on the data opType
      *
      * @param data the data to create the buffer with
      * @return the created buffer
@@ -1256,7 +1256,7 @@ public class Nd4j {
     }
 
     /**
-     * Creates a buffer of the specified length based on the data type
+     * Creates a buffer of the specified length based on the data opType
      *
      * @param length the length of te buffer
      * @return the buffer to create
@@ -1280,7 +1280,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a double data type buffer
+     * Create a double data opType buffer
      * of the specified length
      * @param doublePointer
      * @param length
@@ -1292,7 +1292,7 @@ public class Nd4j {
 
 
     /**
-     * Create a float type
+     * Create a float opType
      * data buffer of the given length
      * @param floatPointer
      * @param length
@@ -1316,7 +1316,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a buffer based on the data type
+     * Create a buffer based on the data opType
      *
      * @param data the data to create the buffer with
      * @return the created buffer
@@ -1334,7 +1334,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a buffer based on the data type
+     * Create a buffer based on the data opType
      *
      * @param data the data to create the buffer with
      * @return the created buffer
@@ -1357,7 +1357,7 @@ public class Nd4j {
      * Create a buffer equal of length prod(shape)
      *
      * @param shape the shape of the buffer to create
-     * @param type  the type to create
+     * @param type  the opType to create
      * @return the created buffer
      */
     public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type) {
@@ -1382,13 +1382,13 @@ public class Nd4j {
     }
 
     /**
-     * Creates a buffer of the specified type
+     * Creates a buffer of the specified opType
      * and length with the given byte buffer.
      *
      * This will wrap the buffer as a reference (no copy)
-     * if the allocation type is the same.
+     * if the allocation opType is the same.
      * @param buffer the buffer to create from
-     * @param type the type of buffer to create
+     * @param type the opType of buffer to create
      * @param length the length of the buffer
      * @return
      */
@@ -1403,13 +1403,13 @@ public class Nd4j {
             case HALF:
                 return DATA_BUFFER_FACTORY_INSTANCE.createHalf(buffer, length);
             default:
-                throw new IllegalArgumentException("Illegal type " + type);
+                throw new IllegalArgumentException("Illegal opType " + type);
         }
     }
 
 
     /**
-     * Create a buffer based on the data type
+     * Create a buffer based on the data opType
      *
      * @param data the data to create the buffer with
      * @return the created buffer
@@ -1453,7 +1453,7 @@ public class Nd4j {
     }
 
     /**
-     * Creates a buffer of the specified length based on the data type
+     * Creates a buffer of the specified length based on the data opType
      *
      * @param length the length of te buffer
      * @return the buffer to create
@@ -1465,9 +1465,9 @@ public class Nd4j {
     /**
      * Create a data buffer
      * based on a pointer
-     * with the given type and length
+     * with the given opType and length
      * @param pointer the pointer to create the buffer for
-     * @param type the type of pointer
+     * @param type the opType of pointer
      * @param length the length of the buffer
      * @param  indexer the indexer to use
      * @return the data buffer based on the given parameters
@@ -1498,7 +1498,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a buffer based on the data type
+     * Create a buffer based on the data opType
      *
      * @param data the data to create the buffer with
      * @return the created buffer
@@ -1540,7 +1540,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a buffer based on the data type
+     * Create a buffer based on the data opType
      *
      * @param data the data to create the buffer with
      * @return the created buffer
@@ -1576,7 +1576,7 @@ public class Nd4j {
     }
 
     /**
-     * Returns the data type used for the runtime
+     * Returns the data opType used for the runtime
      *
      * @return the datatype used for the runtime
      */
@@ -6398,8 +6398,8 @@ public class Nd4j {
     }
 
     private String[] getMessageForNativeHalfPrecision() {
-        return new String[] {"Half-precision data type isn't support for nd4j-native",
-                "Please, consider using FLOAT or DOUBLE data type instead"};
+        return new String[] {"Half-precision data opType isn't support for nd4j-native",
+                "Please, consider using FLOAT or DOUBLE data opType instead"};
     }
 
     private void updateNd4jContext() throws IOException {

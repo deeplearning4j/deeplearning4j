@@ -31,7 +31,7 @@ public interface NDArrayCompressor {
     void configure(Object... vars);
 
     /**
-     * This method returns compression type provided
+     * This method returns compression opType provided
      * by specific NDArrayCompressor implementation
      * @return
      */

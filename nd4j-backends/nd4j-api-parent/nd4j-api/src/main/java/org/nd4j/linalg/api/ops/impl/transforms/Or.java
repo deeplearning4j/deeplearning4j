@@ -20,10 +20,15 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Boolean AND pairwise transform
@@ -33,6 +38,29 @@ import org.nd4j.linalg.api.ops.Op;
 public class Or extends BaseTransformOp {
 
     protected double comparable;
+
+    public Or(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public Or(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
+
+    public Or(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double comparable) {
+        super(sameDiff, i_v, inPlace);
+        this.comparable = comparable;
+    }
+
+    public Or(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.comparable = comparable;
+    }
+
+    public Or(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double comparable) {
+        super(sameDiff, i_v, extraArgs);
+        this.comparable = comparable;
+    }
 
     public Or() {}
 
@@ -137,5 +165,17 @@ public class Or extends BaseTransformOp {
         else
             return new Or(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().or(larg().getValue(true), rarg().getValue(true));
+    }
+
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        throw new UnsupportedOperationException();
     }
 }

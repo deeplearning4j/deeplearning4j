@@ -8,10 +8,10 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.Constant;
+import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.*;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -2839,7 +2839,7 @@ public class SameDiff {
      * @param opExecAction
      * @return
      */
-    public Op createOp(OpState.OpType opType,
+    public Op createOp(Op.Type opType,
                        OpExecAction opExecAction) {
         OpState opState = opExecAction.getOpState();
         switch (opType) {
@@ -2855,7 +2855,7 @@ public class SameDiff {
                         getX(opExecAction),
                         getZ(opExecAction),
                         opState.getExtraArgs());
-            case SCALAR_TRANSFORM:
+            case SCALAR:
                 return Nd4j.getOpFactory().createScalarTransform(
                         opState.getOpName(),
                         getX(opExecAction),
@@ -2863,7 +2863,7 @@ public class SameDiff {
                         getZ(opExecAction),
                         opState.getExtraArgs(),
                         opState.getScalarValue().doubleValue());
-            case ACCUMULATION:
+            case REDUCE:
                 return Nd4j.getOpFactory().createAccum(
                         opState.getOpName(),
                         getX(opExecAction),
@@ -2885,17 +2885,17 @@ public class SameDiff {
                         getZ(opExecAction),
                         opState.getExtraArgs());
 
-            case INDEX_ACCUMULATION:
+            case INDEXREDUCE:
                 return Nd4j.getOpFactory().createIndexAccum(
                         opState.getOpName(),
                         getX(opExecAction),
                         getY(opExecAction),
                         getZ(opExecAction),
                         opState.getExtraArgs());
-            case AGGREGATE: break;
+            case AGGREGATION: break;
         }
 
-        throw new IllegalStateException("Illegal type specified " + opType);
+        throw new IllegalStateException("Illegal opType specified " + opType);
     }
 
     /**
@@ -3137,7 +3137,8 @@ public class SameDiff {
                                 grad.setVertexId(differentialFunction.resultVertexId());
                                 grad.setDifferentialFunction(differentialFunction);
                                 sameDiff.getVertexIdToVariable().put(differentialFunction.resultVertexId(),grad);
-                                grad.setVarName(sameDiff.generateVariableName(differentialFunction.functionName(),
+                                Op func = (Op) differentialFunction;
+                                grad.setVarName(sameDiff.generateVariableName(func.name(),
                                         true,
                                         differentialFunction));
                             }

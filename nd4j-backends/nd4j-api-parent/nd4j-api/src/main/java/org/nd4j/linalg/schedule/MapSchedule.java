@@ -83,7 +83,7 @@ public class MapSchedule implements ISchedule {
         private Map<Integer, Double> values = new HashMap<>();
 
         /**
-         * @param scheduleType Schedule type to use
+         * @param scheduleType Schedule opType to use
          */
         public Builder(ScheduleType scheduleType) {
             this.scheduleType = scheduleType;

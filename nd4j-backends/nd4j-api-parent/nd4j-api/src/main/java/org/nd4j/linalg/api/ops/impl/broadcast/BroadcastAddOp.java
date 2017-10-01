@@ -1,8 +1,12 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
+
+import java.util.List;
 
 public class BroadcastAddOp extends BaseBroadcastOp {
 
@@ -65,4 +69,13 @@ public class BroadcastAddOp extends BaseBroadcastOp {
     }
 
 
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
+    }
 }

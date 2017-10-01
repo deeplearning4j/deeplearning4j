@@ -19,16 +19,47 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**Leaky ReLU derivative. Default alpha = 0.01. Cutoff = 0
  */
 public class LeakyReLUDerivative extends BaseTransformOp {
     private double alpha = 0.01;
+
+    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, double alpha) {
+        super(sameDiff, i_v1, i_v2);
+        this.alpha = alpha;
+    }
+
+    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, double alpha) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+        this.alpha = alpha;
+    }
+
+    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double alpha) {
+        super(sameDiff, i_v, inPlace);
+        this.alpha = alpha;
+    }
+
+    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.alpha = alpha;
+    }
+
+    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double alpha) {
+        super(sameDiff, i_v, extraArgs);
+        this.alpha = alpha;
+    }
 
     public LeakyReLUDerivative() {}
 
@@ -152,5 +183,18 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {alpha};
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().leakyReluDerivative(larg().getValue(true),rarg().getValue(true) , alpha);
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
+
+        return Arrays.asList(ret);
     }
 }

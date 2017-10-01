@@ -19,11 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Hard tanh elementwise derivative function
@@ -31,6 +37,18 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class HardTanhDerivative extends BaseTransformOp {
+    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public HardTanhDerivative() {}
 
     public HardTanhDerivative(INDArray x, INDArray z) {
@@ -136,6 +154,17 @@ public class HardTanhDerivative extends BaseTransformOp {
             return new HardTanhDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension),
                             xAlongDimension.length());
 
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return a().hardTanhDerivative(larg().getValue(true),rarg().getValue(true));
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().one(getResultShape());
+        return Arrays.asList(ret);
     }
 
 }

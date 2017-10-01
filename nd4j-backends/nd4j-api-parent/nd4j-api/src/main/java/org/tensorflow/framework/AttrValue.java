@@ -6,11 +6,11 @@ package org.tensorflow.framework;
 /**
  * <pre>
  * Protocol buffer representing the value for an attr used to configure an Op.
- * Comment indicates the corresponding attr type.  Only the field matching the
- * attr type may be filled.
+ * Comment indicates the corresponding attr opType.  Only the field matching the
+ * attr opType may be filled.
  * </pre>
  *
- * Protobuf type {@code tensorflow.AttrValue}
+ * Protobuf opType {@code tensorflow.AttrValue}
  */
 public  final class AttrValue extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -270,43 +270,43 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     java.util.List<DataType> getTypeList();
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     int getTypeCount();
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     DataType getType(int index);
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     java.util.List<Integer>
     getTypeValueList();
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     int getTypeValue(int index);
 
@@ -447,7 +447,7 @@ private static final long serialVersionUID = 0L;
    * LINT.IfChange
    * </pre>
    *
-   * Protobuf type {@code tensorflow.AttrValue.ListValue}
+   * Protobuf opType {@code tensorflow.AttrValue.ListValue}
    */
   public  static final class ListValue extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -818,10 +818,10 @@ private static final long serialVersionUID = 0L;
             };
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     public java.util.List<DataType> getTypeList() {
       return new com.google.protobuf.Internal.ListAdapter<
@@ -829,30 +829,30 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     public int getTypeCount() {
       return type_.size();
     }
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     public DataType getType(int index) {
       return type_converter_.convert(type_.get(index));
     }
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     public java.util.List<Integer>
     getTypeValueList() {
@@ -860,10 +860,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "list(type)"
+     * "list(opType)"
      * </pre>
      *
-     * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+     * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
      */
     public int getTypeValue(int index) {
       return type_.get(index);
@@ -1337,7 +1337,7 @@ private static final long serialVersionUID = 0L;
      * LINT.IfChange
      * </pre>
      *
-     * Protobuf type {@code tensorflow.AttrValue.ListValue}
+     * Protobuf opType {@code tensorflow.AttrValue.ListValue}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -2067,10 +2067,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public java.util.List<DataType> getTypeList() {
         return new com.google.protobuf.Internal.ListAdapter<
@@ -2078,30 +2078,30 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public int getTypeCount() {
         return type_.size();
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public DataType getType(int index) {
         return type_converter_.convert(type_.get(index));
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder setType(
           int index, DataType value) {
@@ -2115,10 +2115,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder addType(DataType value) {
         if (value == null) {
@@ -2131,10 +2131,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder addAllType(
           Iterable<? extends DataType> values) {
@@ -2147,10 +2147,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder clearType() {
         type_ = java.util.Collections.emptyList();
@@ -2160,10 +2160,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public java.util.List<Integer>
       getTypeValueList() {
@@ -2171,20 +2171,20 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public int getTypeValue(int index) {
         return type_.get(index);
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder setTypeValue(
           int index, int value) {
@@ -2195,10 +2195,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder addTypeValue(int value) {
         ensureTypeIsMutable();
@@ -2208,10 +2208,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * "list(type)"
+       * "list(opType)"
        * </pre>
        *
-       * <code>repeated .tensorflow.DataType type = 6 [packed = true];</code>
+       * <code>repeated .tensorflow.DataType opType = 6 [packed = true];</code>
        */
       public Builder addAllTypeValue(
           Iterable<Integer> values) {
@@ -3324,10 +3324,10 @@ private static final long serialVersionUID = 0L;
   public static final int TYPE_FIELD_NUMBER = 6;
   /**
    * <pre>
-   * "type"
+   * "opType"
    * </pre>
    *
-   * <code>.tensorflow.DataType type = 6;</code>
+   * <code>.tensorflow.DataType opType = 6;</code>
    */
   public int getTypeValue() {
     if (valueCase_ == 6) {
@@ -3337,10 +3337,10 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * "type"
+   * "opType"
    * </pre>
    *
-   * <code>.tensorflow.DataType type = 6;</code>
+   * <code>.tensorflow.DataType opType = 6;</code>
    */
   public DataType getType() {
     if (valueCase_ == 6) {
@@ -3891,11 +3891,11 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * Protocol buffer representing the value for an attr used to configure an Op.
-   * Comment indicates the corresponding attr type.  Only the field matching the
-   * attr type may be filled.
+   * Comment indicates the corresponding attr opType.  Only the field matching the
+   * attr opType may be filled.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.AttrValue}
+   * Protobuf opType {@code tensorflow.AttrValue}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -4304,10 +4304,10 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * "type"
+     * "opType"
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 6;</code>
+     * <code>.tensorflow.DataType opType = 6;</code>
      */
     public int getTypeValue() {
       if (valueCase_ == 6) {
@@ -4317,10 +4317,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "type"
+     * "opType"
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 6;</code>
+     * <code>.tensorflow.DataType opType = 6;</code>
      */
     public Builder setTypeValue(int value) {
       valueCase_ = 6;
@@ -4330,10 +4330,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "type"
+     * "opType"
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 6;</code>
+     * <code>.tensorflow.DataType opType = 6;</code>
      */
     public DataType getType() {
       if (valueCase_ == 6) {
@@ -4345,10 +4345,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "type"
+     * "opType"
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 6;</code>
+     * <code>.tensorflow.DataType opType = 6;</code>
      */
     public Builder setType(DataType value) {
       if (value == null) {
@@ -4361,10 +4361,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "type"
+     * "opType"
      * </pre>
      *
-     * <code>.tensorflow.DataType type = 6;</code>
+     * <code>.tensorflow.DataType opType = 6;</code>
      */
     public Builder clearType() {
       if (valueCase_ == 6) {

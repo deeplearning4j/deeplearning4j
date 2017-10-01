@@ -12,7 +12,7 @@ package org.tensorflow.framework;
  *   * device spec, etc.
  * </pre>
  *
- * Protobuf type {@code tensorflow.FunctionDef}
+ * Protobuf opType {@code tensorflow.FunctionDef}
  */
 public  final class FunctionDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -655,7 +655,7 @@ private static final long serialVersionUID = 0L;
    *   * device spec, etc.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.FunctionDef}
+   * Protobuf opType {@code tensorflow.FunctionDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

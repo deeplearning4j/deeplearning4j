@@ -4,7 +4,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author Adam Gibson
- */ //static type checking used for checking if an index should be represented as all
+ */ //static opType checking used for checking if an index should be represented as all
 public class NDArrayIndexEmpty implements INDArrayIndex {
     @Override
     public long end() {

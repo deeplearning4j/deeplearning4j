@@ -47,7 +47,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
  * This tool accepts filters on the command line, e.g. for connections only see example below:
  *
  * <code>
- *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-4] identity=12345
+ *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat opType=[1-4] identity=12345
  * </code>
  */
 public class AeronStat {
@@ -58,7 +58,7 @@ public class AeronStat {
      *     <li>1 - 4: Stream Positions</li>
      * </ul>
      */
-    private static final String COUNTER_TYPE_ID = "type";
+    private static final String COUNTER_TYPE_ID = "opType";
 
     /**
      * The identity of each counter that can either be the system counter id or registration id for positions.
@@ -203,7 +203,7 @@ public class AeronStat {
         for (final String arg : args) {
             if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg)) {
                 System.out.format("Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n"
-                                + "\tfilter by optional regex patterns:%n" + "\t[type=<pattern>]%n"
+                                + "\tfilter by optional regex patterns:%n" + "\t[opType=<pattern>]%n"
                                 + "\t[identity=<pattern>]%n" + "\t[sessionId=<pattern>]%n" + "\t[streamId=<pattern>]%n"
                                 + "\t[channel=<pattern>]%n");
 

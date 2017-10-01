@@ -19,10 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Operation for fast INDArrays equality checks
@@ -31,6 +36,16 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class EqualsWithEps extends BaseAccumulation {
     private double eps;
+
+    public EqualsWithEps(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, double eps) {
+        super(sameDiff, i_v, dimensions);
+        this.eps = eps;
+    }
+
+    public EqualsWithEps(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, double eps) {
+        super(sameDiff, i_v, i_v2, dimensions);
+        this.eps = eps;
+    }
 
     public EqualsWithEps() {}
 
@@ -177,5 +192,15 @@ public class EqualsWithEps extends BaseAccumulation {
     @Override
     public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

@@ -4,7 +4,7 @@
 package org.tensorflow.framework;
 
 /**
- * Protobuf type {@code tensorflow.MemoryLogTensorAllocation}
+ * Protobuf opType {@code tensorflow.MemoryLogTensorAllocation}
  */
 public  final class MemoryLogTensorAllocation extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -365,7 +365,7 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * Protobuf type {@code tensorflow.MemoryLogTensorAllocation}
+   * Protobuf opType {@code tensorflow.MemoryLogTensorAllocation}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

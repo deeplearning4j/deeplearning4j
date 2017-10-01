@@ -27,7 +27,7 @@ public class LocalTransport implements Transport {
     }
 
     /**
-     * This method accepts message for delivery, routing is applied according on message type
+     * This method accepts message for delivery, routing is applied according on message opType
      *
      * @param message
      */

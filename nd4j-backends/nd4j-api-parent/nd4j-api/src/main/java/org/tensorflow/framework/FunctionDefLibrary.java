@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * A library is a set of named functions.
  * </pre>
  *
- * Protobuf type {@code tensorflow.FunctionDefLibrary}
+ * Protobuf opType {@code tensorflow.FunctionDefLibrary}
  */
 public  final class FunctionDefLibrary extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -341,7 +341,7 @@ private static final long serialVersionUID = 0L;
    * A library is a set of named functions.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.FunctionDefLibrary}
+   * Protobuf opType {@code tensorflow.FunctionDefLibrary}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

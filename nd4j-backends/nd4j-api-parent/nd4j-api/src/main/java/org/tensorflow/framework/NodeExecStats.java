@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * Time/size stats recorded for a single execution of a graph node.
  * </pre>
  *
- * Protobuf type {@code tensorflow.NodeExecStats}
+ * Protobuf opType {@code tensorflow.NodeExecStats}
  */
 public  final class NodeExecStats extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -730,7 +730,7 @@ private static final long serialVersionUID = 0L;
    * Time/size stats recorded for a single execution of a graph node.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.NodeExecStats}
+   * Protobuf opType {@code tensorflow.NodeExecStats}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

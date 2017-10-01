@@ -4,7 +4,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -22,7 +22,7 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
   attr {
@@ -42,7 +42,7 @@ node {
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      opType: DT_FLOAT
     }
   }
 }

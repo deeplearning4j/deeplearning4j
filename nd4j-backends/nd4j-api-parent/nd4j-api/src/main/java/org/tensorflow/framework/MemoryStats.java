@@ -8,7 +8,7 @@ package org.tensorflow.framework;
  * For memory tracking.
  * </pre>
  *
- * Protobuf type {@code tensorflow.MemoryStats}
+ * Protobuf opType {@code tensorflow.MemoryStats}
  */
 public  final class MemoryStats extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -479,7 +479,7 @@ private static final long serialVersionUID = 0L;
    * For memory tracking.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.MemoryStats}
+   * Protobuf opType {@code tensorflow.MemoryStats}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

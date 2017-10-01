@@ -10,7 +10,7 @@ package org.tensorflow.framework;
  * a single run.
  * </pre>
  *
- * Protobuf type {@code tensorflow.RemoteFusedGraphExecuteInfo}
+ * Protobuf opType {@code tensorflow.RemoteFusedGraphExecuteInfo}
  */
 public  final class RemoteFusedGraphExecuteInfo extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -271,7 +271,7 @@ private static final long serialVersionUID = 0L;
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
+          "EnumValueDescriptor is not for this opType.");
       }
       if (desc.getIndex() == -1) {
         return UNRECOGNIZED;
@@ -315,7 +315,7 @@ private static final long serialVersionUID = 0L;
     TensorShapeProtoOrBuilder getShapeOrBuilder();
   }
   /**
-   * Protobuf type {@code tensorflow.RemoteFusedGraphExecuteInfo.TensorShapeTypeProto}
+   * Protobuf opType {@code tensorflow.RemoteFusedGraphExecuteInfo.TensorShapeTypeProto}
    */
   public  static final class TensorShapeTypeProto extends
       com.google.protobuf.GeneratedMessageV3 implements
@@ -605,7 +605,7 @@ private static final long serialVersionUID = 0L;
       return builder;
     }
     /**
-     * Protobuf type {@code tensorflow.RemoteFusedGraphExecuteInfo.TensorShapeTypeProto}
+     * Protobuf opType {@code tensorflow.RemoteFusedGraphExecuteInfo.TensorShapeTypeProto}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
@@ -1512,7 +1512,7 @@ private static final long serialVersionUID = 0L;
    * a single run.
    * </pre>
    *
-   * Protobuf type {@code tensorflow.RemoteFusedGraphExecuteInfo}
+   * Protobuf opType {@code tensorflow.RemoteFusedGraphExecuteInfo}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

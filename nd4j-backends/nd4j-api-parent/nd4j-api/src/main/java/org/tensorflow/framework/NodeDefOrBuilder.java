@@ -159,8 +159,8 @@ public interface NodeDefOrBuilder extends
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -178,8 +178,8 @@ public interface NodeDefOrBuilder extends
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -204,8 +204,8 @@ public interface NodeDefOrBuilder extends
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -224,8 +224,8 @@ public interface NodeDefOrBuilder extends
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *
@@ -246,8 +246,8 @@ public interface NodeDefOrBuilder extends
    * default will be used.
    * The "names" (keys) must match the regexp "[a-z][a-z0-9_]+" (and
    * one of the names from the corresponding OpDef's attr field).
-   * The values must have a type matching the corresponding OpDef
-   * attr's type field.
+   * The values must have a opType matching the corresponding OpDef
+   * attr's opType field.
    * TODO(josh11b): Add some examples here showing best practices.
    * </pre>
    *

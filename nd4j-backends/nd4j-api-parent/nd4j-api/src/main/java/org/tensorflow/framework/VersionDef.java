@@ -6,7 +6,7 @@ package org.tensorflow.framework;
 /**
  * <pre>
  * Version information for a piece of serialized data
- * There are different types of versions for each type of data
+ * There are different types of versions for each opType of data
  * (GraphDef, etc.), but they all have the same common shape
  * described here.
  * Each consumer has "consumer" and "min_producer" versions (specified
@@ -16,7 +16,7 @@ package org.tensorflow.framework;
  *   consumer not in bad_consumers
  * </pre>
  *
- * Protobuf type {@code tensorflow.VersionDef}
+ * Protobuf opType {@code tensorflow.VersionDef}
  */
 public  final class VersionDef extends
     com.google.protobuf.GeneratedMessageV3 implements
@@ -374,7 +374,7 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * Version information for a piece of serialized data
-   * There are different types of versions for each type of data
+   * There are different types of versions for each opType of data
    * (GraphDef, etc.), but they all have the same common shape
    * described here.
    * Each consumer has "consumer" and "min_producer" versions (specified
@@ -384,7 +384,7 @@ private static final long serialVersionUID = 0L;
    *   consumer not in bad_consumers
    * </pre>
    *
-   * Protobuf type {@code tensorflow.VersionDef}
+   * Protobuf opType {@code tensorflow.VersionDef}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements

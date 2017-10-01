@@ -40,7 +40,7 @@ public class NDArrayMessageChunk implements Serializable {
     private String id;
     //the chunk size (message size over the network)
     private int chunkSize;
-    //the message type, this should be chunked
+    //the message opType, this should be chunked
     private NDArrayMessage.MessageType messageType;
     //the number of chunks for reassembling the message
     private int numChunks;
@@ -77,7 +77,7 @@ public class NDArrayMessageChunk implements Serializable {
      */
     public static ByteBuffer toBuffer(NDArrayMessageChunk chunk) {
         ByteBuffer ret = ByteBuffer.allocateDirect(sizeForMessage(chunk)).order(ByteOrder.nativeOrder());
-        //the messages type enum as an int
+        //the messages opType enum as an int
         ret.putInt(chunk.getMessageType().ordinal());
         //the number of chunks this chunk is apart of
         ret.putInt(chunk.getNumChunks());

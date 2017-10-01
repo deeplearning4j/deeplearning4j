@@ -2,7 +2,7 @@ server:
 #  softNofileLimit: 1000
 #  hardNofileLimit: 1000
   applicationConnectors:
-    - type: http
+    - opType: http
       port: 8080
       acceptorThreads: 5
       selectorThreads: 3
@@ -11,7 +11,7 @@ server:
   adminMinThreads: 3
   adminMaxThreads: 5
   adminConnectors:
-    - type: http
+    - opType: http
       port: 8081
 
 # Logging settings.
@@ -28,5 +28,5 @@ logging:
     org.eclipse.jetty: DEBUG
 
   appenders:
-    - type: console
+    - opType: console
 

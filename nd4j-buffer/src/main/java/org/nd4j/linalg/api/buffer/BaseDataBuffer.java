@@ -70,7 +70,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean attached = false;
     protected transient MemoryWorkspace parentWorkspace;
 
-    // Allocator-related stuff. Moved down here to avoid type casting.
+    // Allocator-related stuff. Moved down here to avoid opType casting.
     protected transient DataBuffer originalBuffer;
     protected transient long originalOffset = 0;
     protected transient Long trackingPoint;
@@ -82,7 +82,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer() {}
 
     /**
-     * Initialize the type of this buffer
+     * Initialize the opType of this buffer
      */
     protected abstract void initTypeAndSize();
 
@@ -792,7 +792,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     /**
      * Create with length
-     * @param length a databuffer of the same type as
+     * @param length a databuffer of the same opType as
      *               this with the given length
      * @return a data buffer with the same length and datatype as this one
      */
@@ -1240,9 +1240,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     /**
-     * The data type of the buffer
+     * The data opType of the buffer
      *
-     * @return the data type of the buffer
+     * @return the data opType of the buffer
      */
     @Override
     public Type dataType() {
@@ -1310,7 +1310,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != Type.HALF && currentType != Type.INT
                             && !(DataTypeUtil.getDtypeFromContext() == Type.DOUBLE)) {
-                log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
+                log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
                 if (DataTypeUtil.getDtypeFromContext() == Type.INT)
                     log.warn("Int to float/double widening UNSUPPORTED!!!");
             }
