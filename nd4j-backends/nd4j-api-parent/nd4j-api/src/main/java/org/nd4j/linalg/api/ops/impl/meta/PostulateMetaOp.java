@@ -1,10 +1,14 @@
 package org.nd4j.linalg.api.ops.impl.meta;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
+
+import java.util.List;
 
 /**
  * You're NOT supposed to directly call this op. Do it on your own risk, only if you're absolutely have to.
@@ -41,5 +45,15 @@ public class PostulateMetaOp extends BaseMetaOp {
     @Override
     public String name() {
         return "meta_postulate";
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

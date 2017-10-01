@@ -1,10 +1,14 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.Data;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.List;
 
 /**
  * This implements a collapsing tad reduction
@@ -370,4 +374,13 @@ public class TadCollapseAccumulation extends BaseOp {
     }
 
 
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
+    }
 }

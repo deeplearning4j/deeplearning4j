@@ -12,6 +12,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -320,7 +322,7 @@ public class TensorFlowImport {
             int opNum = Nd4j.getOpFactory().getOpNumIfExists(lc);
             if (opNum >= 0) {
                 OpState opState = OpState.builder()
-                        .opType(OpState.opTypeFromOp(Nd4j.getOpFactory().getOpByName(lc)))
+                        .opType(BaseOp.getOpType(Nd4j.getOpFactory().getOpByName(lc)))
                         .opNum(opNum)
                         .opName(lc)
                         .build();
@@ -330,7 +332,7 @@ public class TensorFlowImport {
         }
 
         OpState opState = OpState.builder()
-                .opType(OpState.OpType.CUSTOM)
+                .opType(Op.Type.CUSTOM)
                 .opNum(-1)
                 .opName(tfNode.getOp())
                 .build();

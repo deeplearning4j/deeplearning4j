@@ -17,16 +17,12 @@ import java.util.List;
  *
  */
 public class LogSoftMaxDerivative extends BaseGradientOp  {
-    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        super(sameDiff, i_v1, i_v2);
     }
 
-    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public LogSoftMaxDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
     }
 
     public LogSoftMaxDerivative(INDArray x, INDArray z) {

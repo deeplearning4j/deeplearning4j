@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.grid;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -36,5 +38,15 @@ public class FreeGridOp extends BaseGridOp {
     @Override
     public String name() {
         return "grid_free";
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

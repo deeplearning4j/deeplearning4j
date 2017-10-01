@@ -39,6 +39,29 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class EqualTo extends BaseTransformOp {
+
+
+
+    public EqualTo(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs) {
+        super(sameDiff, i_v1, i_v2, extraArgs);
+    }
+
+    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     public EqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
     }

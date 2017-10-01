@@ -1,8 +1,13 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
+
+import java.util.List;
 
 /**
  * Broadcast Min comparison op
@@ -17,6 +22,33 @@ public class BroadcastMin extends BaseBroadcastOp {
         super(x, y, z, dimension);
     }
 
+    public BroadcastMin(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int[] dimension) {
+        super(sameDiff, i_v1, i_v2, dimension);
+    }
+
+    public BroadcastMin(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, int[] dimension) {
+        super(sameDiff, i_v1, i_v2, inPlace, dimension);
+    }
+
+    public BroadcastMin(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public BroadcastMin(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int[] dimension, Object[] extraArgs) {
+        super(sameDiff, i_v1, i_v2, dimension, extraArgs);
+    }
+
+    public BroadcastMin(SameDiff sameDiff, DifferentialFunction i_v, int[] dimension, boolean inPlace) {
+        super(sameDiff, i_v, dimension, inPlace);
+    }
+
+    public BroadcastMin(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
+    }
+
+    public BroadcastMin(SameDiff sameDiff, DifferentialFunction i_v, int[] dimension, Object[] extraArgs) {
+        super(sameDiff, i_v, dimension, extraArgs);
+    }
 
     @Override
     public int opNum() {
@@ -69,4 +101,13 @@ public class BroadcastMin extends BaseBroadcastOp {
     }
 
 
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
+    }
 }

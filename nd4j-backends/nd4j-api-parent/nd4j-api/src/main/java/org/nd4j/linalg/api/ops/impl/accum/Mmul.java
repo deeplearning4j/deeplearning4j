@@ -75,6 +75,17 @@ public class Mmul extends TensorMmul {
         this(sameDiff,i_v1,i_v2,MMulTranspose.allFalse());
     }
 
+    public Mmul(INDArray x, INDArray y, int[][] axes, MMulTranspose mMulTranspose) {
+        super(x, y, axes);
+        this.mMulTranspose = mMulTranspose;
+    }
+
+    public Mmul(INDArray x, INDArray y, INDArray z, MMulTranspose mMulTranspose) {
+        super(x, y, z,  new int[][] {
+                {1},{0}
+        });
+        this.mMulTranspose = mMulTranspose;
+    }
 
     public Mmul() {}
 

@@ -20,11 +20,16 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Calculate the index of the max absolute value over a vector
@@ -32,6 +37,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class IAMax extends BaseIndexAccumulation {
+    public IAMax(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
+
+    public IAMax(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     public IAMax() {}
 
     public IAMax(INDArray x, INDArray y, long n) {
@@ -171,5 +184,15 @@ public class IAMax extends BaseIndexAccumulation {
             return new IAMax(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new IAMax(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }

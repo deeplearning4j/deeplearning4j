@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -8,6 +10,40 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected int finalResult;
+
+
+    public BaseIndexAccumulation(SameDiff sameDiff,
+                            DifferentialFunction i_v,
+                            int[] dimensions) {
+        super(sameDiff,new Object[]{dimensions});
+        if (i_v != null) {
+            this.args = new DifferentialFunction[] {i_v};
+            this.dimensions = dimensions;
+            validateDifferentialFunctionsameDiff(i_v);
+
+            addEdges(sameDiff,args[0],name());
+        } else {
+            throw new IllegalArgumentException("Input not null variable.");
+        }
+    }
+
+    public BaseIndexAccumulation(SameDiff sameDiff,
+                            DifferentialFunction i_v,
+                            DifferentialFunction i_v2,
+                            int[] dimensions) {
+        super(sameDiff,new Object[]{dimensions});
+        if (i_v != null) {
+            this.args = new DifferentialFunction[] {i_v,i_v2};
+            this.dimensions = dimensions;
+            validateDifferentialFunctionsameDiff(i_v);
+            validateDifferentialFunctionsameDiff(i_v2);
+
+            addEdges(sameDiff,args[0],args[1],name());
+        } else {
+            throw new IllegalArgumentException("Input not null variable.");
+        }
+    }
+
 
     public BaseIndexAccumulation() {}
 

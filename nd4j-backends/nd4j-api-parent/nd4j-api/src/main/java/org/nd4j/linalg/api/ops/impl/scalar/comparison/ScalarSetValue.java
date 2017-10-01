@@ -19,10 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
+
+import java.util.List;
 
 /**
  * Scalar value set operation.
@@ -32,6 +37,22 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class ScalarSetValue extends BaseScalarOp {
+    public ScalarSetValue(SameDiff sameDiff, DifferentialFunction i_v, Number scalar) {
+        super(sameDiff, i_v, scalar);
+    }
+
+    public ScalarSetValue(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+        super(sameDiff, i_v, scalar, inPlace);
+    }
+
+    public ScalarSetValue(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, inPlace, extraArgs);
+    }
+
+    public ScalarSetValue(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, extraArgs);
+    }
+
     public ScalarSetValue() {}
 
     public ScalarSetValue(INDArray x, INDArray y, INDArray z, long n, Number num) {
@@ -122,5 +143,15 @@ public class ScalarSetValue extends BaseScalarOp {
             return new ScalarSetValue(x.tensorAlongDimension(index, dimension), num);
         else
             return new ScalarSetValue(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
+
+    @Override
+    public ArrayField doGetValue() {
+        return null;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 }
