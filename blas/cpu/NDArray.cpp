@@ -134,7 +134,7 @@ template <typename T> NDArray<T>::NDArray(const int rows, const int columns, con
 template <typename T> NDArray<T>::NDArray(const int* shapeInfo, nd4j::memory::Workspace* workspace) {
    
     int arrLength = shape::length(const_cast<int*>(shapeInfo));
-    int shapeLength = shape::rank(const_cast<int*>(shapeInfo))*2 + 4;
+    int shapeLength = shape::shapeInfoLength(const_cast<int*>(shapeInfo));
 
     _workspace = workspace;
     if (workspace == nullptr) {
@@ -142,12 +142,12 @@ template <typename T> NDArray<T>::NDArray(const int* shapeInfo, nd4j::memory::Wo
         _shapeInfo = new int[shapeLength];
     } else {
         _buffer = (T*) _workspace->allocateBytes(arrLength * sizeOfT());
-        _shapeInfo = (int*) _workspace->allocateBytes(shapeLength * 4);
+        _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(const_cast<int*>(shapeInfo)));
     }
 
     memset(_buffer, 0, arrLength*sizeOfT());          // set all elements in new array to be zeros
 
-    memcpy(_shapeInfo, shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+    memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(const_cast<int*>(shapeInfo)));     // copy shape information into new array
 
     _isBuffAlloc = true;
     _isShapeAlloc = true;
@@ -444,10 +444,10 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
 // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
     template<typename T>
-    NDArray<T> *NDArray<T>::sum(const std::initializer_list<int> &dimensions) const {
+    NDArray<T> *NDArray<T>::sum(const std::initializer_list<int> &dimensions) const {        
+            
         return reduceAlongDimension<simdOps::Sum<T>>(dimensions);
 //    NativeOpExcutioner<T>::execReduce(1, _buffer, _shapeInfo, nullptr, result->_buffer, result->_shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
-
     }
 
     template<typename T>
@@ -468,68 +468,35 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 // eventually this method reduces this array to 1xN row
     template<typename T>
     template<typename OpName>
-    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int> &dimensions) const {
-		
-		int dimSize = dimensions.size();
-		int rank = rankOf();
-		int newRank = rank - dimSize;
-		if(newRank<=0)
-			throw "NDArray::reduceAlongDimension method: the size of dimensions to reduce along must be < rank of array!";
+    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int>& dimensions) const {
         
-		std::vector<int> copy(dimensions);
-        if (copy.size() > 1)
-            std::sort(copy.begin(), copy.end());
-
-		int* newShape = nullptr; 
-		
-		if (dimSize==1 && copy[0]==INT_MAX) { 			// check whether given dimension is meant for the whole dimension
-			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
-			newShape[0] = 2;
-			newShape[1] = 1;
-			newShape[2] = 1;			
-		}
-		else {
-			ALLOCATE(newShape, _workspace, newRank*2 + 4, int);
-			int* tempShape = shape::removeIndex(shapeOf(), copy.data(), rank, dimSize);
-			for(int i=0; i<newRank; ++i)
-				newShape[i+1] = tempShape[i]; 			// ignore zero index (rank)
-			delete []tempShape;
-		}		
-		//ensure vector is proper shape 
-		if (newRank == 1) {
-			int oldValue = newShape[1];
-			RELEASE(newShape, _workspace);
-			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
-			newShape[0] = 2;
-            if (dimensions[0] == 0) {
-                newShape[1] = 1; 
-				newShape[2] = oldValue;
-			}
-            else {
-                newShape[1] = oldValue;
-				newShape[2] = 1; 				
-			}
-        } 
-		shape::updateStrides(newShape, 'c');
-
-        shape::TAD tad(_shapeInfo, copy.data(), dimSize);
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-
-        auto result = new NDArray<T>(newShape, _workspace);
-
-        functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result->_buffer,
-                                                                    result->_shapeInfo, copy.data(), copy.size(),
-                                                                    tad.tadOnlyShapeInfo, tad.tadOffsets);		
+        std::vector<int> copy(dimensions);
+        
+        int* newShape = evalReduceShapeInfo('c', copy);  
+        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        RELEASE(newShape, _workspace);        
+        
+        if(rankOf() == copy.size())
+            result->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);        
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();        
+            
+            functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result->_buffer,
+                                                                        result->_shapeInfo, copy.data(), copy.size(),
+                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);       
+        }
+        
         return result;
     }
 
 // eventually this method reduces this array to 1xN row
     template<typename T>
     template<typename OpName>
-    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::initializer_list<int> &dimensions) const {
-
-		return reduceAlongDimension<OpName>(std::vector<int>(dimensions));
+    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::initializer_list<int>& dimensions) const {
+		        
+        return reduceAlongDimension<OpName>(std::vector<int>(dimensions));
 	}
 
 
@@ -576,21 +543,16 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
 
     template <typename T>
-    Nd4jIndex NDArray<T>::tensorsAlongDimension(std::initializer_list<int> dimensions) {
-        std::vector<int> vector(dimensions);
-        return tensorsAlongDimension(vector);
+    Nd4jIndex NDArray<T>::tensorsAlongDimension(std::initializer_list<int> dimensions) const {
+
+        return tensorsAlongDimension(std::vector<int>(dimensions));
     }
 
     template <typename T>
-    Nd4jIndex NDArray<T>::tensorsAlongDimension(std::vector<int>& dimensions) {
-        if ((int) dimensions.size() > this->rankOf())
-            throw "TAD can't have dimensions higher then original array";
-
+    Nd4jIndex NDArray<T>::tensorsAlongDimension(const std::vector<int>& dimensions) const {
+        
         std::vector<int> copy(dimensions);
-
-        // we need to sort dimensions (?)
-        if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
+        shape::checkDimensions(rankOf(), copy);
 
         Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
         Nd4jIndex numTads = this->lengthOf() / tadLength;
@@ -599,9 +561,9 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     }
 
     template <typename T>
-    NDArray<T>* NDArray<T>::tensorAlongDimension(int index, std::initializer_list<int> dimensions) {
-        std::vector<int> vector(dimensions);
-        return tensorAlongDimension(index, vector);
+    NDArray<T>* NDArray<T>::tensorAlongDimension(int index, const std::initializer_list<int>& dimensions) const {
+
+        return tensorAlongDimension(index, std::vector<int>(dimensions));
     }
 
 
@@ -622,15 +584,10 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     }
 
     template <typename T>
-    NDArray<T>* NDArray<T>::tensorAlongDimension(int index, std::vector<int>& dimensions) {
-        if ((int) dimensions.size() > this->rankOf())
-            throw "TAD can't have dimensions higher then original array";
-
+    NDArray<T>* NDArray<T>::tensorAlongDimension(int index, const std::vector<int>& dimensions) const {
+        
         std::vector<int> copy(dimensions);
-
-        // we need to sort dimensions (?)
-        if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
+        shape::checkDimensions(rankOf(), copy);
 
         Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
         Nd4jIndex numTads = this->lengthOf() / tadLength;
@@ -1856,6 +1813,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     vt.transposei();
 }
 
+    ////////////////////////////////////////////////////////////////////////
     template<typename T>
     NDArray<T>* NDArray<T>::subarray(IndicesList& idx) {
         if (idx.size() != this->rankOf())
@@ -1890,6 +1848,202 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
 
         return result;
     }
+    
+
+    ////////////////////////////////////////////////////////////////////////
+    // evaluate resulting shape after reduce operation
+    template<typename T>
+    int* NDArray<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions) const {
+        
+        int rank = rankOf();
+        shape::checkDimensions(rank, dimensions);
+        
+		int* newShape = nullptr;
+        int dimSize = dimensions.size();
+		int newRank = rank - dimSize;
+		if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
+			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
+			newShape[0] = 2;
+			newShape[1] = 1;
+			newShape[2] = 1;			
+		}
+        else {
+			ALLOCATE(newShape, _workspace, newRank*2 + 4, int);
+			int* tempShape = shape::removeIndex(shapeOf(), const_cast<int*>(dimensions.data()), rank, dimSize);
+            newShape[0] = newRank;                      // set rank
+			for(int i=0; i<newRank; ++i)
+				newShape[i+1] = tempShape[i]; 			// ignore zero index (rank)
+			delete []tempShape;
+		}		
+		//ensure vector is proper shape 
+		if (newRank == 1) {            
+			int oldValue = newShape[1];
+			RELEASE(newShape, _workspace);
+			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
+			newShape[0] = 2;
+            if (dimensions[0] == 0) {
+                newShape[1] = 1; 
+				newShape[2] = oldValue;
+			}
+            else {
+                newShape[1] = oldValue;
+				newShape[2] = 1; 				
+			}
+        } 
+		shape::updateStrides(newShape, order);
+        
+        return newShape;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // reduce dimensions in this array relying on index operations
+    template<typename T>
+    template<typename OpName>
+    NDArray<T>* NDArray<T>::applyIndexReduce(const std::vector<int>& dimensions, const T* extraParams ) const {
+        
+        std::vector<int> copy(dimensions);
+
+        int* newShape = evalReduceShapeInfo('c', copy);        
+        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size())
+            result->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+        
+            functions::indexreduce::IndexReduce<T>::template exec<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), result->_buffer,
+                                                                    result->_shapeInfo, copy.data(), copy.size(),
+                                                                    tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+        
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // apply reduce3 operations to this and other array, return result in new output array
+    template<typename T>
+    template<typename OpName>
+    NDArray<T>* NDArray<T>::applyReduce3(const NDArray<T>* other, const T* extraParams) const {
+        // check shapes consistency
+        if(!isSameShape(other))
+            throw "NDArray::applyReduce3 method: the shapes of array must be the same !";
+        // create shapeInfo for scalar
+        int* newShape = nullptr;
+        ALLOCATE(newShape, _workspace, 8, int);
+        newShape[0] = 2;    // set rank    
+        newShape[1] = 1;    // set first dimension (scalar)
+        newShape[2] = 1;    // set second dimension (scalar)
+        shape::updateStrides(newShape, 'c');
+        // create output array (scalar)
+        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+        // create temporary array of extra parameters if array extraParams is empty (==nullptr)
+        T* extraParamsVals = nullptr;
+        if(extraParams == nullptr) {
+            extraParamsVals = new T[3] {(T) 0.0, (T) 0.0, (T) 0.0};
+            extraParams = extraParamsVals;  
+        }
+        
+        result->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), other->_buffer, other->_shapeInfo);        
+        
+        delete []extraParamsVals;
+
+        return result;
+    }
+    
+    ////////////////////////////////////////////////////////////////////////
+    // apply reduce3 (execAll) operations to this and other array, return result in new output array
+    template<typename T>
+    template<typename OpName>
+    NDArray<T>*  NDArray<T>::applyAllReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams) const {
+        // be careful, copy array may undergo changes (sort, transformation of negative dimensions to positive, duplicates removing )
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+        shape::checkDimensions(other->rankOf(), copy);               
+        // create tads
+        shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
+        tadX.createTadOnlyShapeInfo();
+        tadX.createOffsets();
+
+        shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
+        tadY.createTadOnlyShapeInfo();
+        tadY.createOffsets();        
+        // check tads shapes
+        if(!shape::equalsSoft(tadX.tadOnlyShapeInfo, tadY.tadOnlyShapeInfo)) 
+            throw "NDArray::applyAllReduce3 method: the shapes of array tads are different !";
+        // evaluate numbers of tads
+        Nd4jIndex tadLengthX = shape::tadLength(_shapeInfo, copy.data(), copy.size());
+        Nd4jIndex numTadsX = lengthOf() / tadLengthX;
+        
+        Nd4jIndex tadLengthY = shape::tadLength(other->_shapeInfo, copy.data(), copy.size());
+        Nd4jIndex numTadsY = other->lengthOf() / tadLengthY;
+        // set newShape for output array        
+        int* newShape = nullptr;
+        ALLOCATE(newShape, _workspace, 8, int);
+        newShape[0] = 2;        // output rank is always equal to 2 for execAll case
+        newShape[1] = numTadsX;
+        newShape[2] = numTadsY;
+        shape::updateStrides(newShape, 'c');
+        // create output array
+        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+        // create temporary array of extra parameters if array extraParams is empty (==nullptr)
+        T* extraParamsVals = nullptr;
+        if(extraParams == nullptr) {
+            extraParamsVals = new T[3] {(T) 0.0, (T) 0.0, (T) 0.0};
+            extraParams = extraParamsVals;  
+        }
+        // perform calculations
+        functions::reduce3::Reduce3<T>::template execAll<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams),
+                                                                 other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo,
+                                                                 copy.data(), copy.size(), tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadY.tadOnlyShapeInfo, tadY.tadOffsets);
+        delete []extraParamsVals;
+        return result;
+    }
+ 
+    ////////////////////////////////////////////////////////////////////////
+    // apply reduce3 (exec) operations to this and other array, return result in new output array
+    template<typename T>
+    template<typename OpName>
+    NDArray<T>* NDArray<T>::applyReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams) const {
+        
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+        shape::checkDimensions(other->rankOf(), copy);               
+
+        int* newShape = evalReduceShapeInfo('c', copy);        
+        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+        // create temporary array of extra parameters if array extraParams is empty (==nullptr)
+        T* extraParamsVals = nullptr;
+        if(extraParams == nullptr) {
+            extraParamsVals = new T[3] {(T) 0.0, (T) 0.0, (T) 0.0};
+            extraParams = extraParamsVals;  
+        }
+        // perform calculations
+        if(rankOf() == copy.size() && other->rankOf() == copy.size())
+            result->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams), other->_buffer, other->_shapeInfo);
+        else {
+            shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
+            tadX.createTadOnlyShapeInfo();
+            tadX.createOffsets();
+
+            shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
+            tadY.createTadOnlyShapeInfo();
+            tadY.createOffsets();        
+        
+            functions::reduce3::Reduce3<T>::template exec<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams),
+                                                                 other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo,
+                                                                 copy.data(), copy.size(), tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadY.tadOnlyShapeInfo, tadY.tadOffsets);
+        }
+        
+        delete []extraParamsVals;
+        return result;
+    }
+
 
     // default destructor
     template<typename T>
