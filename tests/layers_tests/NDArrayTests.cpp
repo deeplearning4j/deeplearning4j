@@ -684,6 +684,24 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
+
+TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
+    int _expS[] = {3, 2, 3, 3, 9, 3, 1, 0, 1, 99};
+    float _expB[] = {70.f, 80.f, 90.f, 158.f, 184.f, 210.f, 246.f, 288.f, 330.f, 1030.f, 1088.f, 1146.f, 1310.f, 1384.f, 1458.f, 1590.f, 1680.f, 1770.f};
+
+    NDArray<float> a('c', {2, 3, 4});
+    NDArray<float> b('c', {2, 4, 3});
+    NDArray<float> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    auto c = NDArrayFactory::mmulHelper<float>(&a, &b);
+
+    ASSERT_TRUE(exp.isSameShape(c));
+    ASSERT_TRUE(exp.equalsTo(c));
+
+    delete c;
+}
+
 //////////////////////////////////////////////////////////////////////
 // not-in-place
 TEST_F(NDArrayTest, Permute1) {  

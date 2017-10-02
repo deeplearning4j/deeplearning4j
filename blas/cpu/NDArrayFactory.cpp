@@ -112,8 +112,11 @@ namespace nd4j {
     nd4j::NDArray<T>* NDArrayFactory::mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , T alpha, T beta) {
         nd4j::NDArray<T>* result = C;
 
-        // dot
-        if (A->isVector() && B->isVector()) {
+        if (A->rankOf() > 2 || B->rankOf() > 2) {
+            // matmul
+
+        } else if (A->isVector() && B->isVector()) {
+            // dot
             if (A->lengthOf() != B->lengthOf())
                 throw "A length != B length";
 
