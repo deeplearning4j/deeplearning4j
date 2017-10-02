@@ -5230,6 +5230,42 @@ __device__ int tadOffset(int *xInfo, int offset) {
             return false;
         }
     }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)    
+    // also sort input array of dimensions, this operation is also necessary for creating TAD object 
+    INLINEDEF void checkDimensions(const int rank, std::vector<int>& dimensions) {
+
+        int dimSize = dimensions.size();
+        if(dimSize == 0)
+            throw "shape::checkDimensions method: array of dimensions is empty!";        
+        // check presence of negative dimensions and if they are present transform them to positive ones -dim -> rank - |dim|                
+        for(auto& dim : dimensions)
+            if(dim < 0)
+                dim += rank;
+		// sort input array of dimensions, this operation is also necessary for creating TAD object in external methods
+        if (dimSize > 1) {
+            std::sort(dimensions.begin(), dimensions.end());		
+            // remove duplicates if they are present
+            dimensions.erase(std::unique(dimensions.begin(), dimensions.end()), dimensions.end());
+        }
+        // check whether number of dimensions is to big (>rank)
+        dimSize = dimensions.size();
+        if(dimSize > rank)
+            throw "shape::checkDimensions method: number of input dimensions is too big ( > rank of array) !";
+        // check if min dimension is still negative and whether max dimension is bigger then rank-1
+        if(dimensions[0] < 0 || dimensions.back() > (rank-1))
+            throw "shape::checkDimensions method: the negative dimension is still present in input array after transform or the too big dimension is present ( > rank of array) !";
+
+        return;
+    }
+
+
+
+
+
 }
 
 
