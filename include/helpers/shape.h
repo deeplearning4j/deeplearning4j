@@ -5232,7 +5232,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     }
 
 #ifdef __CUDACC__
-    __host__ __device__
+    __host__
 #endif
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)    
     // also sort input array of dimensions, this operation is also necessary for creating TAD object 
