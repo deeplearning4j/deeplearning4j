@@ -44,4 +44,23 @@ TEST_F(TadTests, Test4DTad1) {
     }
 }
 
+TEST_F(TadTests, TestNumTads1) {
+    NDArray<float> x(2, 3, 'c');
+    NDArray<float> y(2, 2, 'c');
+
+    std::vector<int> dim({0});
+
+    Nd4jIndex tadLengthX = shape::tadLength(x.getShapeInfo(), dim.data(), dim.size());
+    Nd4jIndex numTadsX = x.lengthOf() / tadLengthX;
+
+    Nd4jIndex tadLengthY = shape::tadLength(y.getShapeInfo(), dim.data(), dim.size());
+    Nd4jIndex numTadsY = y.lengthOf() / tadLengthY;
+
+    ASSERT_EQ(2, tadLengthX);
+    ASSERT_EQ(3, numTadsX);
+
+    ASSERT_EQ(2, tadLengthY);
+    ASSERT_EQ(2, numTadsY);
+}
+
 #endif //LIBND4J_TADTESTS_H
