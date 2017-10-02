@@ -569,14 +569,17 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
 
     template <typename T>
-    void NDArray<T>::printBuffer(const char* msg) {
+    void NDArray<T>::printBuffer(const char* msg, int limit) {
+        if (limit == -1)
+            limit = (int) this->lengthOf();
+
         if (msg != nullptr)
             printf("%s [", msg);
         else
             printf("[");
-        for (Nd4jIndex e = 0; e < lengthOf(); e++) {
+        for (Nd4jIndex e = 0; e < limit; e++) {
             printf("%f", this->getScalar(e));
-            if (e < lengthOf() - 1)
+            if (e < limit - 1)
                 printf(", ");
         }
         printf("]\n");

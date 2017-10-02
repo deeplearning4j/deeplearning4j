@@ -171,14 +171,16 @@ namespace nd4j {
             }
 
             //INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
-            std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
-            std::unique_ptr<NDArray<T>> col2(col.get()->permute({0, 3, 4, 5, 1, 2}));
+            //std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
+            std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX,}));
+            //std::unique_ptr<NDArray<T>> col2(col.get()->permute({0, 3, 4, 5, 1, 2}));
 
             // col2d now has shape of [bS, inDepth, kY, kX, oY, oX]
             std::unique_ptr<T> extrasIm2Col(new T[9]{(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
 
             input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.get());
 
+            col2.get()->printShapeInfo("im2col shape");
 
             /**
                 c_ = self.col.transpose(1, 0, 4, 5, 2, 3).reshape((C, B * IY * IX, KY * KX))
@@ -191,7 +193,7 @@ namespace nd4j {
             c_->reshapei('c', {inDepth, batchSize * oY * oX, kY * kX});
             w_->reshapei('c', {inDepth, kY * kX, outDepth});
 
-            c_->printBuffer("C_ buffer");
+            c_->printBuffer("C_ buffer", 50);
 
             // matmul here
             auto tmp = NDArrayFactory::mmulHelper<T>(c_->dup('c'), w_->dup('c'));
@@ -201,7 +203,7 @@ namespace nd4j {
                 z->addiRowVector(bias);
             }
 
-            tmp->printBuffer("tmp");
+            tmp->printBuffer("tmp", 50);
 
             tmp->reshapei('c', {input->sizeAt(0),outDepth * inDepth, oY, oX });
             z->assign(tmp);

@@ -240,8 +240,8 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
     output->printShapeInfo("Result shape");
     ASSERT_TRUE(exp.isSameShape(output));
 
-        exp.printBuffer("Expctd buffer");
-    output->printBuffer("Result buffer");
+        exp.printBuffer("Expctd buffer", 50);
+    output->printBuffer("Result buffer", 50);
     ASSERT_TRUE(exp.equalsTo(output));
 }
 
