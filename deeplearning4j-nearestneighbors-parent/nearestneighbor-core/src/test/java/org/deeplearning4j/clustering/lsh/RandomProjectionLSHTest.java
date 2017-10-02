@@ -1,5 +1,6 @@
 package org.deeplearning4j.clustering.lsh;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -20,11 +21,17 @@ public class RandomProjectionLSHTest {
 
     RandomProjectionLSH rpLSH;
     INDArray e1 = Nd4j.ones(1, intDimensions);
+    INDArray inputs;
 
     @Before
     public void setUp() {
         rpLSH = new RandomProjectionLSH(hashLength, numTables, intDimensions, 0.1f);
+        inputs = Nd4j.rand(100, intDimensions);
     }
+
+
+    @After
+    public void tearDown() { inputs = null; }
 
     @Test
     public void testEntropyDims(){
@@ -60,13 +67,12 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testGetRawBucketOfDims(){
-        rpLSH.makeIndex(Nd4j.rand(100, intDimensions));
+        rpLSH.makeIndex(inputs);
         assertArrayEquals(new int[]{100, 1}, rpLSH.rawBucketOf(e1).shape());
     }
 
     @Test
     public void testRawBucketOfReflexive(){
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -75,14 +81,12 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testBucketDims(){
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         assertArrayEquals(new int[]{100, 1}, rpLSH.bucket(e1).shape());
     }
 
     @Test
     public void testBucketReflexive(){
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -92,7 +96,6 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testBucketDataReflexiveDimensions() {
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -104,7 +107,6 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testBucketDataReflexive(){
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -121,7 +123,6 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testSearchReflexiveDimensions() {
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -135,7 +136,6 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testSearchReflexive() {
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -155,7 +155,6 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testANNSearchReflexiveDimensions() {
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
@@ -169,7 +168,6 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testANNSearchReflexive() {
-        INDArray inputs = Nd4j.rand(100, intDimensions);
         rpLSH.makeIndex(inputs);
         int idx = (new Random()).nextInt(100);
         INDArray row = inputs.getRow(idx);
