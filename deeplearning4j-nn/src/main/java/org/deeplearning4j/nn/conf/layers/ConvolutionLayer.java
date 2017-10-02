@@ -115,6 +115,13 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
+    public void applyGlobalConfiguration(GlobalConfiguration globalConfiguration){
+        super.applyGlobalConfiguration(globalConfiguration);
+        if(convolutionMode == null)
+            this.convolutionMode = globalConfiguration.getConvolutionMode();
+    }
+
+    @Override
     public ConvolutionLayer clone() {
         ConvolutionLayer clone = (ConvolutionLayer) super.clone();
         if (clone.kernelSize != null)

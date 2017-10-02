@@ -59,9 +59,9 @@ public class TestDropout {
                 .setOutputs("2")
                 .build();
 
-        assertEquals(new Dropout(0.6), ((LayerVertex)conf2.getVertices().get("0")).getLayerConf().getIDropout());
-        assertEquals(new Dropout(0.7), ((LayerVertex)conf2.getVertices().get("1")).getLayerConf().getIDropout());
-        assertEquals(new AlphaDropout(0.5), ((LayerVertex)conf2.getVertices().get("2")).getLayerConf().getIDropout());
+        assertEquals(new Dropout(0.6), conf2.getVertices().get("0").getIDropout());
+        assertEquals(new Dropout(0.7), conf2.getVertices().get("1").getIDropout());
+        assertEquals(new AlphaDropout(0.5), conf2.getVertices().get("2").getIDropout());
     }
 
     @Test

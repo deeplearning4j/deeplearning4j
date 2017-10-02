@@ -343,6 +343,7 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
     @Data
     public static class Builder {
 
+        protected GlobalConfiguration globalConfiguration;
         protected List<Layer> confs = new ArrayList<>();
         protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean pretrain = false;
@@ -355,6 +356,11 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
         protected CacheMode cacheMode = CacheMode.NONE;
+
+        public Builder globalConfiguration(GlobalConfiguration globalConfiguration){
+            this.globalConfiguration = globalConfiguration;
+            return this;
+        }
 
         /**
          * Specify the processors.
@@ -557,6 +563,13 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
                 }
             }
 
+            //Copy the global configuration to the layers:
+            if(globalConfiguration != null) {
+                for (Layer l : confs) {
+                    l.applyGlobalConfiguration(globalConfiguration);
+                }
+            }
+
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
             conf.pretrain = pretrain;
@@ -567,6 +580,15 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             conf.cacheMode = cacheMode;
+
+            //And apply global configuration to ComputationGraphConfiguration:
+            GlobalConfiguration gc = globalConfiguration;
+            conf.seed = gc.getSeed();
+            conf.miniBatch = gc.getMiniBatch();
+            conf.minimize = gc.getMinimize();
+            conf.optimizationAlgo = gc.getOptimizationAlgo();
+            conf.stepFunction = gc.getStepFunction();
+            conf.maxNumLineSearchIterations = gc.getMaxNumLineSearchIterations();
 
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;

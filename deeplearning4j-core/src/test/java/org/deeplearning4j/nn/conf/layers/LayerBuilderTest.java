@@ -216,19 +216,14 @@ public class LayerBuilderTest {
         assertEquals("unequal Java serialization", layer, l2);
 
         // check JSON
-//        String json = layer.toJson();
-//        confActual = NeuralNetConfiguration.fromJson(json);
-//        assertEquals("unequal JSON serialization", layer, l2));
-//
-//        // check YAML
-//        String yaml = confExpected.toYaml();
-//        confActual = NeuralNetConfiguration.fromYaml(yaml);
-//        assertEquals("unequal YAML serialization", layer, l2);
-//
-//        // check the layer's use of callSuper on equals method
-//        confActual.getLayer().setIDropout(new Dropout(new java.util.Random().nextDouble()));
-//        assertNotEquals("broken equals method (missing callSuper?)", layer, l2);
-        throw new UnsupportedOperationException();
+        String json = layer.toJson();
+        l2 = Layer.fromJson(json);
+        assertEquals("unequal JSON serialization", layer, l2);
+
+        // check YAML
+        String yaml = layer.toYaml();
+        l2 = Layer.fromYaml(yaml);
+        assertEquals("unequal YAML serialization", layer, l2);
     }
 
 }

@@ -106,9 +106,9 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
     protected long seed;
     protected boolean miniBatch = true;
     protected boolean minimize = true;
-    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
-    protected org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction = new org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction();
-    protected int maxNumLineSearchIterations = 5;
+    protected OptimizationAlgorithm optimizationAlgo;
+    protected org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction;
+    protected int maxNumLineSearchIterations;
 
     protected ComputationGraphConfiguration(GraphBuilder builder, NeuralNetConfiguration.Builder globalConfiguration){
         this.backprop = builder.backprop;
@@ -140,6 +140,19 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
             this.addPreProcessors(builder.networkInputTypes.toArray(new InputType[networkInputs.size()]));
         }
 
+        //Apply global configuration to each of the layers:
+        for(Layer l : this.vertices.values()){
+            l.applyGlobalConfiguration(globalConfiguration.globalConf);
+        }
+
+        //And apply global configuration to ComputationGraphConfiguration:
+        GlobalConfiguration gc = globalConfiguration.getGlobalConf();
+        this.seed = gc.getSeed();
+        this.miniBatch = gc.getMiniBatch();
+        this.minimize = gc.getMinimize();
+        this.optimizationAlgo = gc.getOptimizationAlgo();
+        this.stepFunction = gc.getStepFunction();
+        this.maxNumLineSearchIterations = gc.getMaxNumLineSearchIterations();
 
         //Perform topological sort
         this.topologicalSortOrder = topologicalSort();
@@ -844,8 +857,14 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
                         String... layerInputs) {
             layer.setPreProcessor(preProcessor);
             layer.setLayerName(layerName);
-            this.vertices.put(layerName, layer);
-            this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
+            vertices.put(layerName, layer);
+            if (layer.maxInputs() == 1 && layerInputs != null && layerInputs.length > 1) {
+                String mergeName = layerName + "-merge";
+                addLayer(mergeName, new MergeVertex(), layerInputs);
+                this.vertexInputs.put(layerName, Collections.singletonList(mergeName));
+            } else if (vertexInputs != null) {
+                this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
+            }
             return this;
         }
 

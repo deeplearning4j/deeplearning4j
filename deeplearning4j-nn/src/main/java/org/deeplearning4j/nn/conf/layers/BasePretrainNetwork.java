@@ -24,6 +24,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.OptimizationConfig;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
+import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -40,14 +42,14 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer implements Op
 
 
     //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected boolean miniBatch = true;
+    protected Boolean miniBatch;
     //number of line search iterations
-    protected int maxNumLineSearchIterations;
-    protected long seed;
+    protected Integer maxNumLineSearchIterations;
+    protected Long seed;
     protected OptimizationAlgorithm optimizationAlgo;
     protected StepFunction stepFunction;
     //minimize or maximize objective
-    protected boolean minimize = true;
+    protected Boolean minimize;
 
     //Counter for the number of parameter updates so far for this layer.
     //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
@@ -65,6 +67,43 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer implements Op
         this.visibleBiasInit = builder.visibleBiasInit;
         this.preTrainIterations = builder.preTrainIterations;
 
+    }
+
+    @Override
+    public int getMaxNumLineSearchIterations(){
+        return maxNumLineSearchIterations;
+    }
+
+    @Override
+    public long getSeed(){
+        return seed;
+    }
+
+    @Override
+    public boolean isMiniBatch(){
+        return miniBatch;
+    }
+
+    @Override
+    public boolean isMinimize(){
+        return minimize;
+    }
+
+    @Override
+    public void applyGlobalConfiguration(GlobalConfiguration c){
+        super.applyGlobalConfiguration(c);
+        if(miniBatch == null)
+            miniBatch = c.getMiniBatch() != null ? c.getMiniBatch() : true;
+        if(maxNumLineSearchIterations == null)
+            maxNumLineSearchIterations = c.getMaxNumLineSearchIterations() != null ? c.getMaxNumLineSearchIterations() : 5;
+        if(seed == null)
+            seed = c.getSeed() == null ? c.getSeed() : System.currentTimeMillis();
+        if(optimizationAlgo == null)
+            optimizationAlgo = c.getOptimizationAlgo() != null ? c.getOptimizationAlgo() : OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
+        if(stepFunction == null)
+            stepFunction = c.getStepFunction() != null ? c.getStepFunction() : new DefaultStepFunction();
+        if(minimize == null)
+            minimize = c.getMinimize() != null ? c.getMinimize() : true;
     }
 
     @Override

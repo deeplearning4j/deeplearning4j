@@ -40,7 +40,9 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -263,6 +265,50 @@ public abstract class Layer implements Serializable, Cloneable {
      * @return Memory report for the layer
      */
     public abstract LayerMemoryReport getMemoryReport(InputType... inputType);
+
+
+    public String toJson(){
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        try {
+            String ret = mapper.writeValueAsString(this);
+            return ret;
+
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Layer fromJson(String json){
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        try {
+            Layer ret = mapper.readValue(json, Layer.class);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toYaml(){
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+
+        try {
+            String ret = mapper.writeValueAsString(this);
+            return ret;
+
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Layer fromYaml(String yaml) {
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+        try {
+            Layer ret = mapper.readValue(yaml, Layer.class);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {

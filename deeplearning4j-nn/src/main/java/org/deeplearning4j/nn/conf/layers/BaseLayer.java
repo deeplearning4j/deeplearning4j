@@ -72,7 +72,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.weightNoise = builder.weightNoise;
     }
 
-
+    @Override
     public void applyGlobalConfiguration(GlobalConfiguration c){
         super.applyGlobalConfiguration(c);
         if(activationFn == null)
@@ -80,17 +80,17 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         if(weightInit == null)
             weightInit = c.getWeightInit();
         if(biasInit == null)
-            biasInit = c.getBiasInit();
+            biasInit = c.getBiasInit() != null ? c.getBiasInit() : 0.0;
         if(dist == null)
             dist = c.getDist();
         if(l1 == null)
-            l1 = c.getL1();
+            l1 = c.getL1() != null ? c.getL1() : 0.0;
         if(l2 == null)
-            l2 = c.getL2();
+            l2 = c.getL2() != null ? c.getL2() : 0.0;
         if(l1Bias == null)
-            l1Bias = c.getL1Bias();
+            l1Bias = c.getL1Bias() != null ? c.getL1Bias() : 0.0;
         if(l2Bias == null)
-            l2Bias = c.getL2Bias();
+            l2Bias = c.getL2Bias() != null ? c.getL2Bias() : 0.0;
         if(iUpdater == null)
             iUpdater = c.getUpdater();
         if(biasUpdater == null)
@@ -147,18 +147,18 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
-        protected IActivation activationFn = null;
-        protected WeightInit weightInit = null;
-        protected double biasInit = Double.NaN;
-        protected Distribution dist = null;
-        protected double l1 = Double.NaN;
-        protected double l2 = Double.NaN;
-        protected double l1Bias = Double.NaN;
-        protected double l2Bias = Double.NaN;
-        protected IUpdater iupdater = null;
-        protected IUpdater biasUpdater = null;
-        protected GradientNormalization gradientNormalization = null;
-        protected double gradientNormalizationThreshold = Double.NaN;
+        protected IActivation activationFn;
+        protected WeightInit weightInit;
+        protected Double biasInit;
+        protected Distribution dist;
+        protected Double l1;
+        protected Double l2;
+        protected Double l1Bias;
+        protected Double l2Bias;
+        protected IUpdater iupdater;
+        protected IUpdater biasUpdater;
+        protected GradientNormalization gradientNormalization;
+        protected Double gradientNormalizationThreshold;
         protected IWeightNoise weightNoise;
         protected InputPreProcessor preProcessor;
 

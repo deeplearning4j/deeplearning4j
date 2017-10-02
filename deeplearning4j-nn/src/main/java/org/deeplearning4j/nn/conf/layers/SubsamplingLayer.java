@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -78,6 +79,13 @@ public class SubsamplingLayer extends Layer {
         }
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
+    }
+
+    @Override
+    public void applyGlobalConfiguration(GlobalConfiguration globalConfiguration){
+        super.applyGlobalConfiguration(globalConfiguration);
+        if(convolutionMode == null)
+            this.convolutionMode = globalConfiguration.getConvolutionMode();
     }
 
     @Override

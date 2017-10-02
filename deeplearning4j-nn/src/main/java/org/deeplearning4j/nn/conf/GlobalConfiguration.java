@@ -25,8 +25,8 @@ public class GlobalConfiguration {
     protected WeightInit weightInit = WeightInit.XAVIER;
     protected Double biasInit;
     protected Distribution dist = null;
-    protected Double l1;
-    protected Double l2;
+    protected Double l1 = 0.0;
+    protected Double l2 = 0.0;
     protected Double l1Bias;
     protected Double l2Bias;
     protected IDropout dropOut;
