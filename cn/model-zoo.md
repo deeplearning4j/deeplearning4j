@@ -141,6 +141,6 @@ zooModel.setInputShape(new int[]{3,28,28});
 
 预训练模型非常适合迁移学习！您可以在[此页](https://deeplearning4j.org/transfer-learning)进一步了解如何使用DL4J进行迁移学习。
 
-### 工作空间
+### 工作区
 
-初始化方法通常有一项名为`workspaceMode`的额外参数。大多数用户不需要使用这项参数；但假如您有一台配置超强的大型计算机，那么可以将该参数设为`WorkspaceMode.SINGLE`。如需进一步了解有关工作空间的信息，请参阅[此页](https://deeplearning4j.org/workspaces)。
+初始化方法通常有一项名为`workspaceMode`的额外参数。大多数用户不需要使用这项参数；但假如您有一台配置超强的大型计算机，那么可以将该参数设为`WorkspaceMode.SINGLE`。如需进一步了解有关工作区的信息，请参阅[此页](https://deeplearning4j.org/cn/workspaces)。
