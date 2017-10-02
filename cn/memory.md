@@ -11,12 +11,12 @@ ND4J使用堆外内存存储N维数组NDArray，以便提升从本机代码（�
 我们用两种方法管理内存分配：
 
 - JVM垃圾处理器（GC）和WeakReference跟踪
-- MemoryWorkspaces－详情请参见[Workspaces指南](https://deeplearning4j.org/workspaces)
+- 内存工作区（MemoryWorkspaces）－详情请参见[工作区指南](https://deeplearning4j.org/cn/workspaces)
 
 尽管这两种方法之间存在差异，其背后思路是一致的：一旦（Java一侧）不再需要某些NDArray，那么与之相关联的堆外内存应当被释放，以供之后重新使用。GC和MemoryWorkspaces方法之间的区别在于内存释放的时间与方式。
 
 - 对JVM/GC内存而言：INDArray一旦被垃圾处理器收集，其堆外内存（假设没有同时用于别处）就会被解除分配
-- 对MemoryWorksaces而言：INDArray一旦离开工作空间范围（例如当一个层完成正向传递/预测后），其内存就可以重新使用，无需解除分配和重新分配。  如此可以提升循环式工作任务的性能表现。
+- 对MemoryWorksaces而言：INDArray一旦离开工作区范围（例如当一个层完成正向传递/预测后），其内存就可以重新使用，无需解除分配和重新分配。  如此可以提升循环式工作任务的性能表现。
 
 
 # 设置内存限制
