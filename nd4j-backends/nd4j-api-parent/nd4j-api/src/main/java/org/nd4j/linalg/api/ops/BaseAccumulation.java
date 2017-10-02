@@ -19,11 +19,13 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -48,7 +50,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             this.dimensions = dimensions;
             validateDifferentialFunctionsameDiff(i_v);
 
-            addEdges(sameDiff,args[0],name());
+            addEdges(sameDiff,args[0],name(), Shape.getReducedShape(i_v.getResultShape(),dimensions));
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -74,6 +76,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
 
     public BaseAccumulation() {}
+
+
 
 
     /**
@@ -111,6 +115,24 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
+    }
+
+
+    @Override
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction i_v1,
+                            DifferentialFunction i_v2,
+                            String opName) {
+        ArrayField arrayField = i_v1.getValue(true);
+        //skip empty dimensions
+        if(dimensions == null)
+            return;
+        addEdges(sameDiff,i_v1,i_v2,opName,
+                Op.Type.REDUCE3,
+                Shape.getReducedShape(arrayField.getInput().getShape(),
+                        dimensions));
+
+
     }
 
     private void init() {

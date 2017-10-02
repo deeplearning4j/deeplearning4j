@@ -114,7 +114,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             validateDifferentialFunctionsameDiff(i_v);
             addEdges(sameDiff,this.args[0],name(),shape);
         } else {
-            throw new IllegalArgumentException("Input not null variable.");
+            throw new IllegalArgumentException("Input must not null variable.");
         }
     }
 

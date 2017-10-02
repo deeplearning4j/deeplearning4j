@@ -47,6 +47,21 @@
 
 
     <profiles>
+        <profile>
+            <id>1.9build</id>
+
+            <activation>
+                <jdk>1.9</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-toolchains-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <!-- If someone knows a better way to do this, please do let me know! -->
         <profile>
@@ -500,13 +515,13 @@
     </licenses>
 
 
+
+
+
     <build>
 
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-toolchains-plugin</artifactId>
-            </plugin>
+
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>

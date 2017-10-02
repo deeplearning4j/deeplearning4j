@@ -12,6 +12,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -511,6 +512,9 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+
+
+
     /**
      * Add nodes to the graph
      * @param sameDiff
@@ -539,16 +543,13 @@ public abstract class DifferentialFunction implements Differential {
         sameDiff.graph().addVertex(newVertex);
         Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
         OpState owner =  OpState.builder()
-                .opType(opState.getOpType()).differentialFunction(this)
+                .opType(resolveType()).differentialFunction(this)
                 .opName(opName).inPlace(inPlace)
                 .extraArgs(extraArgs)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape)).result(information)
                 .build();
-        if(opState.getOpType() == Op.Type.SCALAR) {
-
-        }
 
 
         sameDiff.getGraph().addEdge(

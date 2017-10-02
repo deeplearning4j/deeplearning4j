@@ -15,6 +15,7 @@ import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -179,7 +180,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     extraz,
                     dimensions,
                     -1,
-                    node.getOpExecAction().getOpState().getOpType() == OpState.OpType.SCALAR_TRANSFORM ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f);
+                    node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f);
 
             nodes.add(flatNode);
         }
@@ -453,21 +454,21 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     }
     */
 
-    protected short getOpNum(String name, OpState.OpType type) {
+    protected short getOpNum(String name, Op.Type type) {
         return (short) Nd4j.getOpFactory().getOpNumByName(name);
     }
 
-    protected byte getFlatOpType(OpState.OpType type) {
+    protected byte getFlatOpType(Op.Type type) {
         switch (type) {
-            case SCALAR_TRANSFORM:
+            case SCALAR:
                 return OpType.SCALAR;
             case BROADCAST:
                 return OpType.BROADCAST;
             case TRANSFORM:
                 return OpType.TRANSFORM;
-            case ACCUMULATION:
+            case REDUCE:
                 return OpType.ACCUMULATION;
-            case INDEX_ACCUMULATION:
+            case INDEXREDUCE:
                 return OpType.INDEX_ACCUMULATION;
             default:
                 throw new UnsupportedOperationException();

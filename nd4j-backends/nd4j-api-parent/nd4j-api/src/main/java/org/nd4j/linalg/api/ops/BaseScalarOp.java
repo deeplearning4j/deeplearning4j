@@ -150,10 +150,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         OpState owner =  OpState.builder()
                 .opType(Type.SCALAR)
                 .differentialFunction(this).inPlace(inPlace)
-                .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
+                .opName(opName).extraArgs(extraArgs).scalarValue(scalarValue)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
-                .n(ArrayUtil.prod(shape)).scalarValue((Number) extraArgs[0])
+                .n(ArrayUtil.prod(shape))
                 .result(information)
                 .build();
 

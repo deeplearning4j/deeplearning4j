@@ -101,7 +101,7 @@ public class ExpandDims extends ShapeOp {
 
     @Override
     public String name() {
-        return "broadcast";
+        return "expanddims";
     }
 
     @Override
