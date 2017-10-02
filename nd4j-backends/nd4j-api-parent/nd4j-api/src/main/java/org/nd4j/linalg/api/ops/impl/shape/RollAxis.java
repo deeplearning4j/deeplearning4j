@@ -102,7 +102,7 @@ public class RollAxis extends ShapeOp {
 
     @Override
     public String name() {
-        return "transpose";
+        return "rollaxis";
     }
 
     @Override

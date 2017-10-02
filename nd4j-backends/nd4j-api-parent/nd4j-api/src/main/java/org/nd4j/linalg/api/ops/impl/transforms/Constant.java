@@ -16,6 +16,9 @@ public class Constant extends BaseTransformOp {
     protected ArrayField m_x;
     protected int[] shape;
 
+    public Constant() {
+    }
+
     protected Constant(SameDiff sameDiff,
                        ArrayField i_v,
                        int[] shape,

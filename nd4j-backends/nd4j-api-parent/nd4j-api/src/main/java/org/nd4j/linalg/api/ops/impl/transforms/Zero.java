@@ -6,7 +6,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 
 public class Zero extends Constant {
-
+    public Zero() {
+    }
 
     public Zero(SameDiff sameDiff, int[] shape) {
         super(sameDiff, sameDiff.getArrayFactory().zero(shape),shape);
@@ -15,8 +16,10 @@ public class Zero extends Constant {
     }
 
 
-
-
+    @Override
+    public String name() {
+        return "zero";
+    }
 
     @Override
     public DifferentialFunction dup() {

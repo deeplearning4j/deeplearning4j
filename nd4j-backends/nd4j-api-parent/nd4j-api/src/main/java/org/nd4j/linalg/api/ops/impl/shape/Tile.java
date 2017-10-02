@@ -100,7 +100,7 @@ public class Tile extends ShapeOp {
 
     @Override
     public String name() {
-        return "broadcast";
+        return "tile";
     }
 
     @Override

@@ -2863,6 +2863,7 @@ public class SameDiff {
                         getZ(opExecAction),
                         opState.getExtraArgs(),
                         opState.getScalarValue().doubleValue());
+            case REDUCE3:
             case REDUCE:
                 return Nd4j.getOpFactory().createAccum(
                         opState.getOpName(),
@@ -2870,6 +2871,7 @@ public class SameDiff {
                         getY(opExecAction),
                         getZ(opExecAction),
                         opState.getExtraArgs());
+            case PAIRWISE:
             case TRANSFORM:
                 return Nd4j.getOpFactory().createTransform(
                         opState.getOpName(),
