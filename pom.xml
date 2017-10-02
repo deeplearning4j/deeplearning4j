@@ -53,6 +53,9 @@
             <activation>
                 <jdk>1.9</jdk>
             </activation>
+            <properties>
+                <maven.compiler.release>7</maven.compiler.release>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -456,7 +459,6 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <maven.compiler.release>7</maven.compiler.release>
         <commons-io.version>2.4</commons-io.version>
         <commons-math3.version>3.4.1</commons-math3.version>
         <commons-lang3.version>3.3.1</commons-lang3.version>
