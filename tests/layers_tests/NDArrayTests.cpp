@@ -690,16 +690,34 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
     float _expB[] = {70.f, 80.f, 90.f, 158.f, 184.f, 210.f, 246.f, 288.f, 330.f, 1030.f, 1088.f, 1146.f, 1310.f, 1384.f, 1458.f, 1590.f, 1680.f, 1770.f};
 
     NDArray<float> a('c', {2, 3, 4});
+    for (int e = 0; e < a.lengthOf(); e++)
+        a.putScalar(e, e+1);
+
     NDArray<float> b('c', {2, 4, 3});
+    for (int e = 0; e < b.lengthOf(); e++)
+        b.putScalar(e, e+1);
+
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
     auto c = NDArrayFactory::mmulHelper<float>(&a, &b);
 
-    ASSERT_TRUE(exp.isSameShape(c));
+    ASSERT_TRUE(exp.isSameShapeStrict(c));
+    c->printShapeInfo("Result shape");
+    c->printBuffer("Result buffer");
+
     ASSERT_TRUE(exp.equalsTo(c));
 
     delete c;
+}
+
+
+TEST_F(NDArrayTest, TestNegSize1) {
+    NDArray<float> array('c', {2, 5, 7});
+
+    ASSERT_EQ(7, array.sizeAt(-1));
+    ASSERT_EQ(5, array.sizeAt(-2));
+    ASSERT_EQ(2, array.sizeAt(-3));
 }
 
 //////////////////////////////////////////////////////////////////////
