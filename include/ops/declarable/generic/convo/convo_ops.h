@@ -128,7 +128,7 @@ namespace nd4j {
          * Depthwise convolution2d
          */
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 7) {
+        DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 9) {
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
             NDArray<T> *bias = nullptr;
@@ -164,6 +164,12 @@ namespace nd4j {
                 return c2d.execute(&block);
             }
 
+            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+            if (isSameMode) {
+                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+            }
+
             //INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
             std::unique_ptr<NDArray<T>> col2(col.get()->permute({0, 3, 4, 5, 1, 2}));
@@ -182,22 +188,29 @@ namespace nd4j {
             NDArray<T>* c_ = col2.get()->permute({1, 0, 4, 5, 2, 3});
             NDArray<T>* w_ = weights->permute({1, 2, 3, 0});
 
-            c_->reshapei('c', {inDepth, batchSize * inY * inX, kY * kX});
+            c_->reshapei('c', {inDepth, batchSize * oY * oX, kY * kX});
             w_->reshapei('c', {inDepth, kY * kX, outDepth});
 
+            c_->printBuffer("C_ buffer");
+
             // matmul here
+            auto tmp = NDArrayFactory::mmulHelper<T>(c_->dup('c'), w_->dup('c'));
 
             if (bias != nullptr) {
                 z->reshapei('c', {-1, (int) bias->lengthOf()});
                 z->addiRowVector(bias);
             }
 
-            z->reshapei('c', {input->sizeAt(0),outDepth, oY, oX });
+            tmp->printBuffer("tmp");
+
+            tmp->reshapei('c', {input->sizeAt(0),outDepth * inDepth, oY, oX });
+            z->assign(tmp);
 
             STORE_RESULT(*z);
 
             delete c_;
             delete w_;
+            delete tmp;
 
             return ND4J_STATUS_OK;
         }
@@ -219,6 +232,7 @@ namespace nd4j {
             int oX = 0;
 
             const int batchSize = inShape[1];
+            const int inDepth = inShape[2];
             const int outDepth = wShape[1];
             const int inY = inShape[3];
             const int inX = inShape[4];
@@ -232,7 +246,7 @@ namespace nd4j {
             //z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
-            std::vector<int> shape({batchSize, outDepth, oY, oX});
+            std::vector<int> shape({batchSize, outDepth * inDepth, oY, oX});
             shape::shapeBuffer(4, shape.data(), newShape);
 
             return new ShapeList(newShape);
