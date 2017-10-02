@@ -25,7 +25,7 @@ namespace nd4j {
 
         public:
             Variable(bool placeHolder);
-            Variable(nd4j::NDArray<T> *array = nullptr);
+            Variable(nd4j::NDArray<T> *array = nullptr, const char *name = nullptr);
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
 
@@ -151,12 +151,15 @@ nd4j::graph::Variable<T>::Variable(bool placeholder) {
 }
 
 template <typename T>
-nd4j::graph::Variable<T>::Variable(NDArray<T> *array) {
+nd4j::graph::Variable<T>::Variable(NDArray<T> *array, const char *name ) {
     _ndarray = array;
 
     _external = false;
     _readOnly = false;
     _id = 0;
+    
+    if (name != nullptr)
+        _name = std::string(name);
 }
 
 template <typename T>

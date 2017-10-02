@@ -59,3 +59,45 @@ TEST_F(VariableSpaceTest, SettersGettersTest2) {
 
     delete space1;
 }
+
+TEST_F(VariableSpaceTest, EqualityTest1) {
+    VariableSpace<float> space;
+
+    std::string name("myvar");
+
+    auto arrayA = new NDArray<float>(3, 3, 'c');
+    auto variableA = new Variable<float>(arrayA, name.c_str());
+
+    space.putVariable(1, variableA);
+
+    std::pair<int,int> pair(1,0);
+
+    ASSERT_TRUE(space.hasVariable(1));
+    ASSERT_TRUE(space.hasVariable(pair));
+    ASSERT_TRUE(space.hasVariable(&name));
+
+    auto rV1 = space.getVariable(1);
+    auto rV2 = space.getVariable(pair);
+    auto rV3 = space.getVariable(&name);
+
+    ASSERT_TRUE(rV1 == rV2);
+    ASSERT_TRUE(rV2 == rV3);
+}
+
+TEST_F(VariableSpaceTest, EqualityTest2) {
+    VariableSpace<float> space;
+
+    auto arrayA = new NDArray<float>(3, 3, 'c');
+
+    space.putVariable(1, arrayA);
+
+    std::pair<int,int> pair(1,0);
+
+    ASSERT_TRUE(space.hasVariable(1));
+    ASSERT_TRUE(space.hasVariable(pair));
+
+    auto rV1 = space.getVariable(1);
+    auto rV2 = space.getVariable(pair);
+
+    ASSERT_TRUE(rV1 == rV2);
+}
