@@ -659,11 +659,20 @@ template<typename OpType>
                     return finalVal;
                 }
                 else {
+                    int xCoords[MAX_RANK];
+
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int xRank = shape::rank(xShapeInfo);
+
+
                     for (Nd4jIndex i = 0; i < length; i++) {
+                        shape::ind2subC(xRank, xShape, i, xCoords);
+                        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
+
                         SummaryStatsData<T> curr;
-                        curr.initWithValue(x[i]);
-                        startingIndex = update(startingIndex, curr,
-                                               extraParams);
+                        curr.initWithValue(x[xOffset]);
+                        startingIndex = update(startingIndex, curr, extraParams);
                     }
 
                     T finalVal = OpType::getValue(biasCorrected, startingIndex);

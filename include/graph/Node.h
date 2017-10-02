@@ -17,6 +17,9 @@ namespace nd4j {
     namespace graph {
 
         template <typename T>
+        class Graph;
+
+        template <typename T>
         class Node {
         protected:
             DataType _dataType;
@@ -51,6 +54,7 @@ namespace nd4j {
 
             OpClass _opClass;
 
+            nd4j::graph::Graph<T> * _graph= nullptr;
             nd4j::ops::DeclarableOp<T> *_customOp = nullptr;
 
             bool _active = true;
@@ -112,11 +116,31 @@ namespace nd4j {
             nd4j::ops::DeclarableOp<T>* getCustomOp();
             bool hasCustomOp();
 
+            void setGraph(nd4j::graph::Graph<T>* graph = nullptr);
+            nd4j::graph::Graph<T>* getGraph();
+            bool hasGraphEmbedded();
+
             bool isInplace();
             void markInplace(bool reallyInplace);
             OpClass getOpClass();
         };
     }
+}
+
+
+template <typename T>
+void nd4j::graph::Node<T>::setGraph(nd4j::graph::Graph<T>* graph) {
+    _graph = graph;
+}
+
+template <typename T>
+nd4j::graph::Graph<T>* nd4j::graph::Node<T>::getGraph() {
+    return _graph;
+}
+
+template <typename T>
+bool nd4j::graph::Node<T>::hasGraphEmbedded() {
+    return _graph != nullptr;
 }
 
 template <typename T>
@@ -133,6 +157,8 @@ template <typename T>
 bool nd4j::graph::Node<T>::hasBlockAttached() {
     return _block != nullptr;
 }
+
+
 
 template <typename T>
 bool nd4j::graph::Node<T>::isInplace() {

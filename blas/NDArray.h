@@ -210,6 +210,10 @@ namespace nd4j {
         template<typename OpName>
         NDArray<T> *reduceAlongDimension(const std::initializer_list<int> &dimensions) const;
 
+
+        template<typename OpName>
+        T varianceNumber(bool biasCorrected = true);
+
         // 
         template<typename OpName>
         T reduceNumber(T *extraParams = nullptr);

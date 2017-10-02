@@ -23,13 +23,15 @@ enum OpType:byte {
     SHAPE = 8,
     AGGREGATION = 9, // ???
     CUSTOM = 10, // custom ops
+    GRAPH = 11, // another graph used as op
     VARIABLE = 119,
 }
 
 enum OpClass:byte {
-    TRANSFORM = 0,
-    REDUCTION = 1,
-    MULTIPLICATOR = 2,
+    TRANSFORM = 0, // ops of this class return the same shape as primary input
+    REDUCTION = 1, // ops of this class return accumulation shape
+    MULTIPLICATOR = 2, // ops of this class may return whatever they want
+    GRAPH = 3, // embedded graph
 }
 
 enum DataType:byte {

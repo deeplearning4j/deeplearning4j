@@ -37,7 +37,9 @@ namespace nd4j{
             OpType opType = node->opType();
             int opNum = node->opNum();
 
-            if (opType != OpType_CUSTOM) {
+            if (opType == OpType_GRAPH) {
+                nd4j_debug("Executing embedded graph node_%i", node->id());
+            } else if (opType != OpType_CUSTOM) {
                 nd4j_debug("Executing node_%i{%i}\n", node->id(), opNum);
             } else {
                 nd4j_debug("Executing node_%i{%s}\n", node->id(), node->getCustomOp()->getOpName()->c_str());
@@ -56,9 +58,74 @@ namespace nd4j{
                 fflush(stdout);
             }
 
+            if (node->hasGraphEmbedded()) {
+                auto embedded = node->getGraph();
 
-            fflush(stdout);
-            if (node->hasCustomOp()) {
+                /**
+                 * basically, we should do following things here:
+                 * 1) fill embedded graph with input variables from this graph, if anything should be filled in
+                 * 2) invoke embedded graph
+                 * 3) announce its results as corresponding output variables in current VariableSpace
+                 */
+
+                // enforcing IMPLICIT mode. or not... should we try to be smarter then user?
+                //embedded->getExecutorConfiguration()->_outputMode = OutputMode_IMPLICIT;
+
+                if (node->input()->size() != embedded->numberOfPlaceholders()) {
+                    nd4j_debug("Placeholders amount mismatch: %i expected, and %i available\n",node->input()->size(), embedded->numberOfPlaceholders());
+                    return ND4J_STATUS_BAD_INPUT;
+                }
+
+                int cnt = 0;
+                //for (auto v: *node->input()) {
+                //}
+                for (nd4j::graph::Variable<T>* v: *embedded->getPlaceholders()) {
+                    if (v->getName() != nullptr && v->getName()->size() > 0) {
+                        // trying symbolic lookup
+
+                        if (variableSpace->hasVariable(v->getName())) {
+                            // symbolic feeder
+                            auto array = variableSpace->getVariable(v->getName())->getNDArray();
+                            v->setNDArray(array->dup(array->ordering()));
+                        } else {
+                            nd4j_debug("Can't find variable [%s] in parent graph...", v->getName()->c_str());
+                            return ND4J_STATUS_BAD_INPUT;
+                            //throw "Can't find desired variable";
+                        }
+                    } else {
+                        // if we're not using symbolic lookup - we'll use sequential approach then
+                        auto p = node->input()->at(cnt);
+                        auto array = variableSpace->getVariable(p)->getNDArray();
+                        v->setNDArray(array->dup(array->ordering()));
+                    }
+
+
+                    cnt++;
+                }
+
+
+                Nd4jStatus status = GraphExecutioner<T>::execute(embedded);
+                if (status != ND4J_STATUS_OK)
+                    return status;
+
+                cnt = 0;
+                for (auto v: *embedded->fetchOutputs()){
+                    NDArray<T> *array = v->getNDArray();
+                    v->setNDArray(nullptr);
+
+                    //if (cnt == 0) {
+                        //variableSpace->getVariable(node->id())->setNDArray(array);
+                    //}
+
+                    if (cnt == 0)
+                        variableSpace->getVariable(node->id())->setNDArray(array);
+
+                    std::pair<int,int> pair(node->id(), cnt++);
+                    variableSpace->getVariable(pair)->setNDArray(array);
+                }
+                nd4j_debug("Embedded graph execution finished. %i variable(s) migrated\n", cnt);
+
+            } else if (node->hasCustomOp()) {
 
                 auto status = node->getCustomOp()->execute(node->getBlock());
                 return status;
@@ -480,6 +547,11 @@ namespace nd4j{
 
                     if (status != ND4J_STATUS_OK)
                         return status;
+
+                    if (debug && verbose) {
+                        NDArray<T> * array = __variableSpace->getVariable(node->id())->getNDArray();
+                        nd4j_debug("node_%i finished. result meanNumber: %f\n", node->id(), array->meanNumber());
+                    }
                 }
             }
 

@@ -951,3 +951,31 @@ TEST_F(NDArrayTest, SVD4) {
 	ASSERT_TRUE(expVt.hasOrthonormalBasis(1));
 	ASSERT_TRUE(expVt.isUnitary());	
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestStdDev1) {
+    NDArray<double> array(1, 5, 'c');
+    for (int e = 0; e < array.lengthOf(); e++)
+        array.putScalar(e, e+1);
+
+    auto std = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
+    ASSERT_NEAR(std, 1.58109, 1e-4);
+}
+
+TEST_F(NDArrayTest, TestStdDev2) {
+    NDArray<double> array(5, 6, 'c');
+    auto tad = array.tensorAlongDimension(0, {0});
+
+    ASSERT_EQ(5, tad->lengthOf());
+
+    for (int e = 0; e < tad->lengthOf(); e++)
+        tad->putIndexedScalar(e, e+1);
+
+    ASSERT_NEAR(15, tad->sumNumber(), 1e-5);
+
+    auto std = tad->varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
+    ASSERT_NEAR(std, 1.58109, 1e-4);
+
+    delete tad;
+}

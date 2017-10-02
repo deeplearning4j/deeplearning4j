@@ -13,6 +13,7 @@ public final class OpType {
   public static final byte SHAPE = 8;
   public static final byte AGGREGATION = 9;
   public static final byte CUSTOM = 10;
+  public static final byte GRAPH = 11;
   public static final byte VARIABLE = 119;
 }
 
