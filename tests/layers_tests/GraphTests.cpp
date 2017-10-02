@@ -1026,3 +1026,74 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
 
     ASSERT_NEAR(-11.0, m, 1e-5);
 }
+
+// test for symbolic lookup
+TEST_F(GraphTests, TestGraphInGraph_2) {
+    // this one is external graph
+    Graph<float> graphA;
+
+    // and this ons is embedded
+    Graph<float> graphB;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-5.0);
+
+    auto modifier = new NDArray<float>(5,5, 'c');
+    modifier->assign(3.0);
+
+    std::string nameA1("_nodeA1");
+    
+    graphA.getVariableSpace()->putVariable(-1, x);
+    graphB.getVariableSpace()->putVariable(-2, modifier);
+
+    // this is placeholder variable
+    auto placeHolder = new Variable<float>(true);
+    placeHolder->setName(&nameA1);
+    graphB.getVariableSpace()->putVariable(-1, placeHolder);
+
+    // abs, result is 5
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    // 1-, result -4
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 35, 2, {1}, {3});
+    nodeA1->setName(nameA1);
+
+    // graph should return 12: abs(3.0 x -4)
+    auto nodeA2 = new Node<float>(OpType_GRAPH, -1, 3, {2}, {4});
+
+    // 1 - 12 = -11
+    auto nodeA3 = new Node<float>(OpType_TRANSFORM, 35, 4, {3}, {});
+
+    nodeA2->setGraph(&graphB);
+
+    graphA.addNode(nodeA0);
+    graphA.addNode(nodeA1);
+    graphA.addNode(nodeA2);
+    graphA.addNode(nodeA3);
+
+    // this is going to be PWT
+    auto nodeB0 = new Node<float>(OpType_TRANSFORM, 6, 1, {-1, -2}, {2});
+    auto nodeB1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {});
+
+    graphB.addNode(nodeB0);
+    graphB.addNode(nodeB1);
+
+    graphB.buildGraph();
+    graphA.buildGraph();
+
+    ASSERT_EQ(0, nodeA0->getLayer());
+    ASSERT_EQ(1, nodeA1->getLayer());
+    ASSERT_EQ(2, nodeA2->getLayer());
+    ASSERT_EQ(3, nodeA3->getLayer());
+
+    ASSERT_EQ(0, nodeB0->getLayer());
+    ASSERT_EQ(1, nodeB1->getLayer());
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(&graphA);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber();
+
+    nd4j_printf("OpResult: %f\n", m);
+
+    ASSERT_NEAR(-11.0, m, 1e-5);
+}
