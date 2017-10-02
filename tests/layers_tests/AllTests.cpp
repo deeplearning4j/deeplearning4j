@@ -1,18 +1,18 @@
 //
 // Created by raver119 on 04.08.17.
 //
-
-// #include "testlayers.h"
-// #include "DenseLayerTests.cpp"
+//
+#include "testlayers.h"
+#include "DenseLayerTests.cpp"
 #include "NDArrayTests.cpp"
-// #include "VariableSpaceTests.cpp"
-// #include "DeclarableOpsTests.cpp"
-// #include "HashUtilsTests.cpp"
-// #include "WorkspaceTests.h"
-// #include "ConvolutionTests.h"
-// #include "TadTests.h"
-// #include "GraphTests.cpp"
-// #include "FlatBuffersTests.cpp"
+#include "VariableSpaceTests.cpp"
+#include "DeclarableOpsTests.cpp"
+#include "HashUtilsTests.cpp"
+#include "WorkspaceTests.h"
+#include "ConvolutionTests.h"
+#include "TadTests.h"
+#include "GraphTests.cpp"
+#include "FlatBuffersTests.cpp"
 ///////
 
 //#include "CyclicTests.h"
