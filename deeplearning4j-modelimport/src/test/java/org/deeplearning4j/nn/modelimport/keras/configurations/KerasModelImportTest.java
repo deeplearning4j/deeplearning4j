@@ -84,7 +84,7 @@ public class KerasModelImportTest {
         MultiLayerNetwork model = null;
         try {
             model = KerasModelImport.importKerasSequentialModelAndWeights(modelFile.getAbsolutePath());
-        } catch(IOException e| InvalidKerasConfigurationException e| UnsupportedKerasConfigurationException e) {
+        } catch(IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }
 
