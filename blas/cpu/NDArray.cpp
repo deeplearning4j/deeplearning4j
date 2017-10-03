@@ -1077,27 +1077,38 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
     // remember old values
 
     // we can do this only if there was no permute applied, or it's not a weird strides
-    if (shape::strideDescendingCAscendingF(this->_shapeInfo) && shape::elementWiseStride(this->_shapeInfo) == 1) {
+    if (shape::canReshape(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f')) {
         //int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
         // if rank is different then delete and resize _shapeInfo appropriately
         // also check if current object is _shapeInfo owner
-        if (rank != rankOf() || !_isShapeAlloc) {
-            if (_isShapeAlloc)
-                delete[]_shapeInfo;
-            _shapeInfo = new int[shapeLength];
-            _shapeInfo[0] = rank;
-            _isShapeAlloc = true;
-        }
+
+        int *shapeInfoNew;
+        ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
+
+        shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
+
+        shape::printShapeInfoLinear(shapeInfoNew);
+
+        if (_isShapeAlloc)
+            RELEASE(_shapeInfo, _workspace);
+
+        _shapeInfo = shapeInfoNew;
+        _isShapeAlloc = true;
+
+
         // copy new dimensions to _shapeInfo
-        int i = 1;
-        for (const auto &item : shape)
-            _shapeInfo[i++] = item;                 // exclude first element -> rank
+//        int i = 1;
+//        for (const auto &item : shape)
+//            _shapeInfo[i++] = item;                 // exclude first element -> rank
         // set strides in correspondence to dimensions and order
-        updateStrides(order);
+        //updateStrides(order);
     } else {
         int *shapeInfoNew;
         ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
-        shape::shapeBuffer(shape.size(), shape.data(), shapeInfoNew);
+        if (order == 'c')
+            shape::shapeBuffer(shape.size(), shape.data(), shapeInfoNew);
+        else
+            shape::shapeBufferFortran(shape.size(), shape.data(), shapeInfoNew);
 
         T *newBuffer;
         ALLOCATE(newBuffer, _workspace, this->lengthOf(), T);

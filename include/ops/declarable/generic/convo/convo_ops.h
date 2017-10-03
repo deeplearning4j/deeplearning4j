@@ -61,6 +61,8 @@ namespace nd4j {
             std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
             std::unique_ptr<NDArray<T>> col2(col.get()->permute({0, 3, 4, 5, 1, 2}));
 
+//            std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX }));
+
             std::unique_ptr<T> extrasIm2Col(new T[9]{(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
 
             input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.get());
@@ -71,7 +73,7 @@ namespace nd4j {
 
             output->reshapei('f', {im2col2d.get()->rows(), reshapedW.get()->columns()});
 
-            NDArrayFactory::mmulHelper<T>(im2col2d.get(), reshapedW.get(), output, 1.0f, 0.0f);
+            NDArrayFactory::mmulHelper<T>(im2col2d.get()->dup('c'), reshapedW.get()->dup('f'), output, 1.0f, 0.0f);
 
             // bias addition is optional
             if (bias != nullptr)

@@ -193,6 +193,42 @@ TEST_F(NDArrayTest, TestTad3) {
     delete row2;
 }
 
+
+TEST_F(NDArrayTest, TestPermuteReshape1) {
+    NDArray<float> array('c', {2, 2, 5, 5});
+    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 0, -1, 99};
+    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 0, -1, 99};
+
+    array.permutei({1, 2, 3, 0});
+
+    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
+        ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
+
+
+    array.reshapei('c', {2, 25, 2});
+
+    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
+        ASSERT_EQ(rShape[e], array.getShapeInfo()[e]);
+}
+
+
+TEST_F(NDArrayTest, TestPermuteReshape2) {
+    NDArray<float> array('c', {2, 2, 5, 5, 6, 6});
+    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 0, -1, 99};
+    int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 0, 1, 99};
+
+    array.permutei({1, 0, 4, 5, 2, 3});
+
+    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
+        ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
+
+
+    array.reshapei('c', {2, 72, 25});
+
+    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
+        ASSERT_EQ(rShape[e], array.getShapeInfo()[e]);
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestRepeat1) {
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
@@ -505,13 +541,14 @@ TEST_F(NDArrayTest, TestTile1) {
 
     auto tiled = array1.tile(tileShape1);
 
-    tiled->printShapeInfo();
+    array2.printShapeInfo("Expct shape");
+    tiled->printShapeInfo("Tiled shape");
     tiled->printBuffer();
 
-	ASSERT_TRUE(tiled->isSameShapeStrict(&array2));
+	ASSERT_TRUE(tiled->isSameShape(&array2));
 	ASSERT_TRUE(tiled->equalsTo(&array2));
 
-    ASSERT_TRUE(expA->isSameShapeStrict(&array1));
+    ASSERT_TRUE(expA->isSameShape(&array1));
     ASSERT_TRUE(expA->equalsTo(&array1));
 	
 	delete tiled;
@@ -525,7 +562,7 @@ TEST_F(NDArrayTest, TestTile2) {
 
     NDArray<float>* tiled = array1.tile(tileShape1);
 
-	ASSERT_TRUE(tiled->isSameShapeStrict(&array2));
+	ASSERT_TRUE(tiled->isSameShape(&array2));
 	ASSERT_TRUE(tiled->equalsTo(&array2));
 	delete tiled;
 }

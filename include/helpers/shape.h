@@ -124,6 +124,16 @@ namespace shape {
 #endif
 
     INLINEDEF int tadIndexForLinear(int linearIndex, int tadLength);
+
+#ifdef __CUDACC__
+    __host__
+#endif
+    INLINEDEF bool canReshape(const int oldRank, int* oldShape, const int newRank, int* newShape, bool isFOrder);
+
+#ifdef __CUDACC__
+    __host__
+#endif
+    INLINEDEF bool reshapeCF(const int oldRank, int* oldShape, const int newRank, int* newShape, bool isFOrder, int* target);
 /**
  * Get the shape info buffer
  * for the given rank and shape.
@@ -4915,6 +4925,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             printf("%i, ", shapeInfo[i]);
         }
         printf("]\n");
+        fflush(stdout);
     }
 
 #ifdef __CUDACC__
@@ -5231,8 +5242,228 @@ __device__ int tadOffset(int *xInfo, int offset) {
         }
     }
 
+
 #ifdef __CUDACC__
-    __host__ __device__
+    __host__
+#endif
+    INLINEDEF bool reshapeCF(const int oldRank, int* oldShape, const int newRank, int* newShapeOf, bool isFOrder, int* target) {
+        int oldnd;
+        int* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
+        int* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
+        int np, op, last_stride;
+        int oi, oj, ok, ni, nj, nk;
+        int* newStrides = new int[newRank];
+        oldnd = 0;
+
+        /*
+         * Remove axes with dimension 1 from the old array. They have no effect
+         * but would need special cases since their strides do not matter.
+         */
+        for (oi = 0; oi < oldRank; oi++) {
+            if (shape::shapeOf(oldShape)[oi] != 1) {
+                olddims[oldnd] = shape::shapeOf(oldShape)[oi];
+                oldstrides[oldnd] = shape::stride(oldShape)[oi];
+                oldnd++;
+            }
+        }
+
+        np = 1;
+        for (ni = 0; ni < newRank; ni++) {
+            np *= newShapeOf[ni];
+        }
+        op = 1;
+        for (oi = 0; oi < oldnd; oi++) {
+            op *= olddims[oi];
+        }
+        if (np != op) {
+            /* different total sizes; no hope */
+            return false;
+        }
+
+        if (np == 0) {
+            /* the current code does not handle 0-sized arrays, so give up */
+            return false;
+        }
+
+        /* oi to oj and ni to nj give the axis ranges currently worked with */
+        oi = 0;
+        oj = 1;
+        ni = 0;
+        nj = 1;
+
+        while (ni < newRank && oi < oldnd) {
+            np = newShapeOf[ni];
+            op = olddims[oi];
+
+            while (np != op) {
+                if (np < op) {
+                    /* Misses trailing 1s, these are handled later */
+                    np *= newShapeOf[nj++];
+                } else {
+                    op *= olddims[oj++];
+                }
+            }
+
+            /* Check whether the original axes can be combined */
+            for (ok = oi; ok < oj - 1; ok++) {
+                if (isFOrder) {
+                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+                        /* not contiguous enough */
+                        return false;
+                    }
+                } else {
+                    /* C order */
+                    if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+                        /* not contiguous enough */
+                        return false;
+                    }
+                }
+            }
+
+            /* Calculate new strides for all axes currently worked with */
+            if (isFOrder) {
+                newStrides[ni] = oldstrides[oi];
+                for (nk = ni + 1; nk < nj; nk++) {
+                    newStrides[nk] = newStrides[nk - 1] * newShapeOf[nk - 1];
+                }
+            } else {
+                /* C order */
+                newStrides[nj - 1] = oldstrides[oj - 1];
+                for (nk = nj - 1; nk > ni; nk--) {
+                    newStrides[nk - 1] = newStrides[nk] * newShapeOf[nk];
+                }
+            }
+            ni = nj++;
+            oi = oj++;
+        }
+
+        if (ni >= 1) {
+            last_stride = newStrides[ni - 1];
+        } else {
+            last_stride = shape::elementWiseStride(oldShape);
+        }
+        if (isFOrder && ni >= 1) {
+            last_stride *= newShapeOf[ni - 1];
+        }
+        for (nk = ni; nk < newRank; nk++) {
+            newStrides[nk] = last_stride;
+        }
+
+        target[0] = newRank;
+        int cnt = 1;
+        for (int e = 0; e < newRank; e++)
+            target[cnt++] = newShapeOf[e];
+
+        for (int e = 0; e < newRank; e++)
+            target[cnt++] = newStrides[e];
+
+        target[shape::shapeInfoLength(newRank) - 3] = 0;
+        target[shape::shapeInfoLength(newRank) - 2] = -1;
+        target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
+
+        return true;
+    }
+
+#ifdef __CUDACC__
+    __host__
+#endif
+    INLINEDEF bool canReshape(const int oldRank, int* oldShape, const int newRank, int* newShapeOf, bool isFOrder) {
+        int oldnd;
+        int* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
+        int* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
+        int np, op, last_stride;
+        int oi, oj, ok, ni, nj, nk;
+        int* newStrides = new int[newRank];
+        oldnd = 0;
+
+        /*
+         * Remove axes with dimension 1 from the old array. They have no effect
+         * but would need special cases since their strides do not matter.
+         */
+        for (oi = 0; oi < oldRank; oi++) {
+            if (shape::shapeOf(oldShape)[oi] != 1) {
+                olddims[oldnd] = shape::shapeOf(oldShape)[oi];
+                oldstrides[oldnd] = shape::stride(oldShape)[oi];
+                oldnd++;
+            }
+        }
+
+        np = 1;
+        for (ni = 0; ni < newRank; ni++) {
+            np *= newShapeOf[ni];
+        }
+        op = 1;
+        for (oi = 0; oi < oldnd; oi++) {
+            op *= olddims[oi];
+        }
+        if (np != op) {
+            /* different total sizes; no hope */
+            return false;
+        }
+
+        if (np == 0) {
+            /* the current code does not handle 0-sized arrays, so give up */
+            return false;
+        }
+
+        /* oi to oj and ni to nj give the axis ranges currently worked with */
+        oi = 0;
+        oj = 1;
+        ni = 0;
+        nj = 1;
+
+        while (ni < newRank && oi < oldnd) {
+            np = newShapeOf[ni];
+            op = olddims[oi];
+
+            while (np != op) {
+                if (np < op) {
+                    /* Misses trailing 1s, these are handled later */
+                    np *= newShapeOf[nj++];
+                } else {
+                    op *= olddims[oj++];
+                }
+            }
+
+            /* Check whether the original axes can be combined */
+            for (ok = oi; ok < oj - 1; ok++) {
+                if (isFOrder) {
+                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+                        /* not contiguous enough */
+                        return false;
+                    }
+                } else {
+                    /* C order */
+                    if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+                        /* not contiguous enough */
+                        return false;
+                    }
+                }
+            }
+
+            /* Calculate new strides for all axes currently worked with */
+            if (isFOrder) {
+                newStrides[ni] = oldstrides[oi];
+                for (nk = ni + 1; nk < nj; nk++) {
+                    newStrides[nk] = newStrides[nk - 1] * newShapeOf[nk - 1];
+                }
+            } else {
+                /* C order */
+                newStrides[nj - 1] = oldstrides[oj - 1];
+                for (nk = nj - 1; nk > ni; nk--) {
+                    newStrides[nk - 1] = newStrides[nk] * newShapeOf[nk];
+                }
+            }
+            ni = nj++;
+            oi = oj++;
+        }
+
+
+        return true;
+    }
+
+#ifdef __CUDACC__
+    __host__
 #endif
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)    
     // also sort input array of dimensions, this operation is also necessary for creating TAD object 
