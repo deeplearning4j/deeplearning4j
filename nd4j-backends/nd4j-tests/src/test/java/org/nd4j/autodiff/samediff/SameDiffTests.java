@@ -72,7 +72,6 @@ public class SameDiffTests {
         INDArray arr = Nd4j.linspace(1, 4, 4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable sigmoid = sameDiff.sigmoid(x);
-        assertEquals("sigmoid(x)", sigmoid.getVarName());
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), sigmoid.getShape());
@@ -121,10 +120,10 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.transpose(x);
-        assertEquals("transpose(x)", result.getVarName());
+        sameDiff.exec();
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
-        assertArrayEquals(new int[]{4, 1}, result.getShape());
+        assertArrayEquals(new int[]{4, 1}, result.getArr(true).shape());
 
     }
 

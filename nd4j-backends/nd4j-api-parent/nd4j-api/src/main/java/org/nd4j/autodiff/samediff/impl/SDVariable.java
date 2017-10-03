@@ -131,7 +131,7 @@ public class SDVariable  implements Serializable {
                     .sameDiff(sameDiff)
                     .differentialFunction(differentialFunction.getGradient())
                     .varName(varName + "-grad")
-                    .arr(sameDiff.getNDArray(differentialFunction.getGradient().getOpState().getResult()))
+                    .arr(sameDiff.getNDArray(differentialFunction.getGradient().getResult()))
                     .shape(differentialFunction.getGradient() != null ? differentialFunction.getGradient().getResultShape() : null)
                     .build() : null;
 

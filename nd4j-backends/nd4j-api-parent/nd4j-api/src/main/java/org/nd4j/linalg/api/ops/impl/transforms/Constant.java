@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -98,6 +99,10 @@ public class Constant extends BaseTransformOp {
     }
 
 
+    @Override
+    public NDArrayInformation getResult() {
+        return this.m_x.getInput();
+    }
 
     @Override
     public DifferentialFunction[] args() {
