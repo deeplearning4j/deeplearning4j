@@ -42,8 +42,8 @@
 int tad_threshold = 1;
 int element_threshold = 32;
 
-bool debug = true;
-bool verbose = true;
+bool debug = false;
+bool verbose = false;
 
 
 
