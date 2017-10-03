@@ -237,11 +237,12 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
 
     NDArray<float>* output = variableSpace->getVariable(1)->getNDArray();
 
+    exp.printShapeInfo("Expected shape");
     output->printShapeInfo("Result shape");
     ASSERT_TRUE(exp.isSameShape(output));
 
-        exp.printBuffer("Expctd buffer", 50);
-    output->printBuffer("Result buffer", 50);
+//        exp.printBuffer("Expctd buffer");
+//    output->printBuffer("Result buffer");
     ASSERT_TRUE(exp.equalsTo(output));
 }
 

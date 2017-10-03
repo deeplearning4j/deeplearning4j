@@ -175,6 +175,8 @@ namespace nd4j {
 
         void printBuffer(const char* msg = nullptr, int limit = -1);
 
+        void printIndexedBuffer(const char* msg = nullptr, int limit = -1);
+
         // This method assigns values of given NDArray to this one, wrt order
         void assign(NDArray<T> *other);
 

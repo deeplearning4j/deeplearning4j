@@ -364,8 +364,8 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (other->lengthOf() != lengthOf())
             throw std::invalid_argument("Lengths of arrays are mismatched");
 
-        if (ordering() == other->ordering()) {
-
+        // memcpy is allowed only for same order && same ews (being equal to 1)
+        if (ordering() == other->ordering() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
             memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
         } else {
             // now we invoke dup pwt against target buffer
@@ -579,6 +579,24 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
             printf("[");
         for (Nd4jIndex e = 0; e < limit; e++) {
             printf("%f", this->getScalar(e));
+            if (e < limit - 1)
+                printf(", ");
+        }
+        printf("]\n");
+        fflush(stdout);
+    }
+
+    template <typename T>
+    void NDArray<T>::printIndexedBuffer(const char* msg, int limit) {
+        if (limit == -1)
+            limit = (int) this->lengthOf();
+
+        if (msg != nullptr)
+            printf("%s [", msg);
+        else
+            printf("[");
+        for (Nd4jIndex e = 0; e < limit; e++) {
+            printf("%f", this->getIndexedScalar(e));
             if (e < limit - 1)
                 printf(", ");
         }
@@ -1058,22 +1076,46 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
     int shapeLength = shape::shapeInfoLength(rank);
     // remember old values
 
-    //int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
-    // if rank is different then delete and resize _shapeInfo appropriately
-    // also check if current object is _shapeInfo owner
-    if(rank != rankOf() || !_isShapeAlloc) {
-        if(_isShapeAlloc)
-            delete []_shapeInfo;
-        _shapeInfo = new int[shapeLength];
-        _shapeInfo[0] = rank;
-        _isShapeAlloc = true;
+    // we can do this only if there was no permute applied, or it's not a weird strides
+    if (shape::strideDescendingCAscendingF(this->_shapeInfo) && shape::elementWiseStride(this->_shapeInfo) == 1) {
+        //int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
+        // if rank is different then delete and resize _shapeInfo appropriately
+        // also check if current object is _shapeInfo owner
+        if (rank != rankOf() || !_isShapeAlloc) {
+            if (_isShapeAlloc)
+                delete[]_shapeInfo;
+            _shapeInfo = new int[shapeLength];
+            _shapeInfo[0] = rank;
+            _isShapeAlloc = true;
+        }
+        // copy new dimensions to _shapeInfo
+        int i = 1;
+        for (const auto &item : shape)
+            _shapeInfo[i++] = item;                 // exclude first element -> rank
+        // set strides in correspondence to dimensions and order
+        updateStrides(order);
+    } else {
+        int *shapeInfoNew;
+        ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
+        shape::shapeBuffer(shape.size(), shape.data(), shapeInfoNew);
+
+        T *newBuffer;
+        ALLOCATE(newBuffer, _workspace, this->lengthOf(), T);
+
+        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Copy<T>>(newBuffer, shapeInfoNew, this->_buffer, this->_shapeInfo, newBuffer, shapeInfoNew, nullptr);
+
+        if (_isBuffAlloc) {
+            RELEASE(_buffer, _workspace);
+        }
+
+        if (_isShapeAlloc) {
+            RELEASE(_shapeInfo, _workspace);
+        }
+
+        _buffer = newBuffer;
+        _shapeInfo = shapeInfoNew;
+
     }
-    // copy new dimensions to _shapeInfo
-    int i = 1;
-    for(const auto& item : shape)
-        _shapeInfo[i++] = item;                 // exclude first element -> rank
-    // set strides in correspondence to dimensions and order
-    updateStrides(order);
 
     return true;
 }
@@ -1281,15 +1323,15 @@ bool NDArray<T>::permutei(const int* dimensions, const int rank) {
         return false;
 
     // check if current object is _shapeInfo owner
-    if(!_isShapeAlloc) {             // if _shapeInfo is not its own
-        int* shapeInfoNew = new int[rank*2+4];
-		memcpy(shapeInfoNew, _shapeInfo, (rank*2+4)*sizeof(int));	        
-		shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));	
+    if (!_isShapeAlloc) {             // if _shapeInfo is not its own
+        int *shapeInfoNew;
+        ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
+        memcpy(shapeInfoNew, _shapeInfo, (rank * 2 + 4) * sizeof(int));
+        shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int *>(dimensions));
         _shapeInfo = shapeInfoNew;
         _isShapeAlloc = true;
-    }
-    else        
-		shape::doPermuteShapeBuffer(rank, _shapeInfo, const_cast<int*>(dimensions));	
+    } else
+        shape::doPermuteShapeBuffer(rank, _shapeInfo, const_cast<int *>(dimensions));
 
     return true;
 }

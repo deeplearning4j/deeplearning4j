@@ -133,6 +133,11 @@ namespace nd4j {
             int pRows = A->sizeAt(-2);
             int pCols = B->sizeAt(-1);
 
+            if (A->sizeAt(-1) != B->sizeAt(-2)) {
+                nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead", A->sizeAt(-1), B->sizeAt(-2))
+                throw "Numbers of rows/columns should match";
+            }
+
             newShape.push_back(pRows);
             newShape.push_back(pCols);
 
