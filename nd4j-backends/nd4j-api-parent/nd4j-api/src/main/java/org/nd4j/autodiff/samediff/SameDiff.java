@@ -619,8 +619,9 @@ public class SameDiff {
 
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
+            DifferentialFunction func = functionInstances.get(i);
+
             if(!variableMap.containsKey(info.getId())) {
-                DifferentialFunction func = functionInstances.get(i);
 
                 SDVariable.SDVariableBuilder variableBuilder = SDVariable.builder()
                         .sameDiff(this)
@@ -639,7 +640,7 @@ public class SameDiff {
                 variableBuilder.vertexId(i);
 
                 SDVariable variable = variableBuilder.build();
-                variable.setShape(info.getShape());
+                variable.setShape(func.getResultShape());
                 variableMap.put(info.getId(),variable);
             }
 
@@ -660,7 +661,7 @@ public class SameDiff {
                     reverseArrayLookup.put(arr,info);
                 }
                 else {
-                    INDArray newAlloc =  Nd4j.zeros(info.getShape());
+                    INDArray newAlloc =  Nd4j.zeros(func.getResultShape());
                     vertexToArray.put(info.getArrId(),newAlloc);
                     reverseArrayLookup.put(newAlloc,info);
                 }

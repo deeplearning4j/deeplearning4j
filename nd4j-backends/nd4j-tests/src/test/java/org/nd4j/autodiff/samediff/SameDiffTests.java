@@ -378,7 +378,7 @@ public class SameDiffTests {
         SDVariable varMul = varMulPre.mul("d",sdVariable1);
         SDVariable sum = sameDiff.sum("ret",varMul,Integer.MAX_VALUE);
 
-        sameDiff.execBackwards();
+        Pair<Map<SDVariable, Op>, List<Op>> mapListPair = sameDiff.execBackwards();
 
         SDVariable finalResult = sameDiff.grad(sum.getVarName());
 
