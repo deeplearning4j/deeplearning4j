@@ -400,11 +400,14 @@ namespace nd4j {
 
 
             std::vector<int> newAxesA(list_A);
-            std::vector<int> newAxesB(list_B);
+            std::vector<int> newAxesB;
             for (auto v: axes_0)
                 newAxesA.push_back(v);
 
             for (auto v: axes_1)
+                newAxesB.push_back(v);
+
+            for (auto v: list_B)
                 newAxesB.push_back(v);
 
             int n2 = 1;
@@ -440,15 +443,14 @@ namespace nd4j {
                     oldShapeB[i] = b->sizeAt(oldShapeB[i]);
             }
 
-            // FIXME: when we'll bring proper gemm, this probably won't be needed
-            auto aT = a->ordering() == 'c' ? a : a->dup('c');
-            auto bT = b->ordering() == 'c' ? b : b->dup('c');
+            auto aT = a->permute(newAxesA);
+            auto bT = b->permute(newAxesB);
 
-            aT->permutei(newAxesA);
+            //aT->permutei(newAxesA);
             aT->reshapei('c', newShapeA);
 
-            bT->permutei(newAxesB);
-            bT->reshapei('f', newShapeB);
+            //bT->permutei(newAxesB);
+            bT->reshapei('c', newShapeB);
 
             auto c = nd4j::NDArrayFactory::mmulHelper<T>(aT, bT, nullptr, 1.0, 0.0);
 

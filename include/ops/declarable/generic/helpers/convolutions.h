@@ -57,6 +57,44 @@ namespace nd4j {
 		void calcOutHWpool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode);
 
         void _calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW);
+
+        template <typename T>
+        void _im2col(const T* data_im, const int channels,
+        const int height, const int width, const int kernel_h, const int kernel_w,
+        const int pad_h, const int pad_w,
+        const int stride_h, const int stride_w,
+        const int dilation_h, const int dilation_w,
+                T* data_col);
+    }
+}
+
+template <typename T>
+void nd4j::ops::_im2col(const T* data_im, const int channels,
+             const int height, const int width, const int kernel_h, const int kernel_w,
+             const int pad_h, const int pad_w,
+             const int stride_h, const int stride_w,
+             const int dilation_h, const int dilation_w,
+             T* data_col) {
+    const int height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
+    const int width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
+    const int channels_col = channels * kernel_h * kernel_w;
+
+    for (int c_col = 0; c_col < channels_col; ++c_col) {
+        int w_offset = c_col % kernel_w;
+        int h_offset = (c_col / kernel_w) % kernel_h;
+        int c_im = c_col / kernel_h / kernel_w;
+
+        for (int h_col = 0; h_col < height_col; ++h_col) {
+            for (int w_col = 0; w_col < width_col; ++w_col) {
+                int h_im = h_col * stride_h - pad_h + h_offset * dilation_h;
+                int w_im = w_col * stride_w - pad_w + w_offset * dilation_w;
+
+                data_col[(c_col * height_col + h_col) * width_col + w_col] = (h_im >= (int) 0 && w_im >= (int) 0 && h_im < height &&
+                                                                              w_im < width) ?
+                                                                             data_im[(c_im * height + h_im) * width +
+                                                                                     w_im] : (T) 0.f;
+            }
+        }
     }
 }
 

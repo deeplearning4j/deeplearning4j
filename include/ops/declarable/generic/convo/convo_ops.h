@@ -44,6 +44,8 @@ namespace nd4j {
             const int inY = input->shapeOf()[2];
             const int inX = input->shapeOf()[3];
 
+            REQUIRE_TRUE(weights->shapeOf()[2] == kY && weights->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weights->sizeAt(2), weights->sizeAt(3));
+
             nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
@@ -59,6 +61,8 @@ namespace nd4j {
             std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
             std::unique_ptr<NDArray<T>> col2(col.get()->permute({0, 3, 4, 5, 1, 2}));
 
+//            std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX }));
+
             std::unique_ptr<T> extrasIm2Col(new T[9]{(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
 
             input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.get());
@@ -69,17 +73,17 @@ namespace nd4j {
 
             output->reshapei('f', {im2col2d.get()->rows(), reshapedW.get()->columns()});
 
-            NDArrayFactory::mmulHelper<T>(im2col2d.get(), reshapedW.get(), output, 1.0f, 0.0f);
+            auto res = NDArrayFactory::mmulHelper<T>(im2col2d.get(), reshapedW.get(), output, 1.0, 0.0);
 
             // bias addition is optional
             if (bias != nullptr)
                 output->addiRowVector(bias);
 
-            output->reshapei('c', {input->sizeAt(0),outDepth, oY, oX });
+            output->reshapei('f', {oX, oY, input->sizeAt(0),outDepth});
+            output->permutei({2, 3, 1, 0});
 
             if (debug && verbose)
                 output->printShapeInfo("Conv2D result shape");
-
 
             STORE_RESULT(*output);
 
@@ -122,20 +126,138 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
+        /**
+         * Depthwise convolution2d
+         */
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CONFIGURABLE_OP(conv3d, 3, 1, false, 0, 7) {
+        DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 9) {
+            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *bias = nullptr;
+            if (block.getVariables().size() == 3)
+                bias = block.getVariables().at(2)->getNDArray();
+
+            NDArray<T> *z = this->getZ(block);
+
+            const int kY = block.getIArguments()->at(0);
+            const int kX = block.getIArguments()->at(1);
+            const int sY = block.getIArguments()->at(2);
+            const int sX = block.getIArguments()->at(3);
+            int pY = block.getIArguments()->at(4);
+            int pX = block.getIArguments()->at(5);
+            const int dY = block.getIArguments()->at(6);
+            const int dX = block.getIArguments()->at(7);
+            const bool isSameMode = block.getIArguments()->at(8) != 0;
+
+            int oY = 0;
+            int oX = 0;
+
+            const int batchSize = input->shapeOf()[0];
+            const int outDepth = weights->shapeOf()[0];
+            const int inDepth = weights->shapeOf()[1];
+            const int inY = input->shapeOf()[2];
+            const int inX = input->shapeOf()[3];
+
+            REQUIRE_TRUE(weights->shapeOf()[2] == kY && weights->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weights->sizeAt(2), weights->sizeAt(3));
+
+            if (input->sizeAt(1) == 1) {
+                nd4j_debug("Separable conv2d for 1 channel equals to standard conv2d\n","");
+                nd4j::ops::conv2d<T> c2d;
+                return c2d.execute(&block);
+            }
+
+            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+            if (isSameMode) {
+                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+            }
+
+            std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX}));
+
+            // col2d now has shape of [bS, inDepth, kY, kX, oY, oX]
+            std::unique_ptr<T> extrasIm2Col(new T[9]{(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+
+            input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.get());
+
+            NDArray<T>* c_ = col2.get()->permute({1, 0, 4, 5, 2, 3});
+            NDArray<T>* w_ = weights->permute({1, 2, 3, 0});
+
+            c_->reshapei('c', {inDepth, batchSize * oY * oX, kY * kX});
+            w_->reshapei('c', {inDepth, kY * kX, outDepth});
+
+            // matmul here
+            z->reshapei('c', {inDepth, batchSize * oY * oX, outDepth});
+            NDArrayFactory::mmulHelper<T>(c_, w_, z);
+
+            if (bias != nullptr) {
+                z->reshapei('c', {-1, (int) bias->lengthOf()});
+                z->addiRowVector(bias);
+            }
+
+            z->reshapei('c', {input->sizeAt(0),outDepth * inDepth, oY, oX });
+
+
+            STORE_RESULT(*z);
+
+            delete c_;
+            delete w_;
+
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SHAPE_FN(sconv2d) {
+            auto inShape = inputShape->at(0);
+            auto wShape = inputShape->at(1);
+
+            const int kY = block.getIArguments()->at(0);
+            const int kX = block.getIArguments()->at(1);
+            const int sY = block.getIArguments()->at(2);
+            const int sX = block.getIArguments()->at(3);
+            int pY = block.getIArguments()->at(4);
+            int pX = block.getIArguments()->at(5);
+            const int dY = block.getIArguments()->at(6);
+            const int dX = block.getIArguments()->at(7);
+            const bool isSameMode = block.getIArguments()->at(8) != 0;
+
+            int oY = 0;
+            int oX = 0;
+
+            const int batchSize = inShape[1];
+            const int inDepth = inShape[2];
+            const int outDepth = wShape[1];
+            const int inY = inShape[3];
+            const int inX = inShape[4];
+
+            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+            if (isSameMode) {
+                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+            }
+
+            //z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
+            int *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+            std::vector<int> shape({batchSize, outDepth * inDepth, oY, oX});
+            shape::shapeBuffer(4, shape.data(), newShape);
+
+            return new ShapeList(newShape);
+        }
+
+//////////////////////////////////////////////////////////////////////////
+        DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
-            NDArray<T> *bias = block.getVariables().at(2)->getNDArray();
+            NDArray<T> *bias = nullptr;
+            if (block.getVariables().size() == 3)
+                bias = block.getVariables().at(2)->getNDArray();
 
             if (input->rankOf() != 5)
                 return ND4J_STATUS_BAD_DIMENSIONS;
 
             NDArray<T> *output = this->getZ(block);
 
-            bool biasUsed = block.getIArguments()->at(0) != 0;
+            bool biasUsed = block.getIArguments()->at(0) != 0 && bias != nullptr;
             int dT = block.getIArguments()->at(1);
             int dW = block.getIArguments()->at(2);
             int dH = block.getIArguments()->at(3);
