@@ -595,6 +595,127 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
 }
 
+
+TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
+    NDArray<float> x(6, 3, 'c');
+    NDArray<float> y(3, 6, 'c');
+
+    int _expS[] = {2, 3, 3, 1, 3, 0, 1, 102};
+    float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
+    NDArray<float> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    for (int e = 0; e < x.lengthOf(); e++)
+        x.putScalar(e, e+1);
+
+    for (int e = 0; e < y.lengthOf(); e++)
+        y.putScalar(e, e+1);
+
+    x.permutei({1, 0});
+    y.permutei({1, 0});
+
+    auto z = NDArrayFactory::mmulHelper(&x, &y);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}
+
+TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
+    NDArray<float> x(6, 3, 'c');
+    NDArray<float> y(3, 6, 'c');
+
+    int _expS[] = {2, 3, 3, 1, 3, 0, 1, 102};
+    float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
+    NDArray<float> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    for (int e = 0; e < x.lengthOf(); e++)
+        x.putScalar(e, e+1);
+
+    for (int e = 0; e < y.lengthOf(); e++)
+        y.putScalar(e, e+1);
+
+    auto x_ = x.dup('f');
+    auto y_ = y.dup('f');
+
+    x_->permutei({1, 0});
+    y_->permutei({1, 0});
+
+    auto z = NDArrayFactory::mmulHelper(x_, y_);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+    delete x_;
+    delete y_;
+}
+
+
+TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
+    NDArray<float> x('c', {2, 2, 2, 3, 2, 2});
+    NDArray<float> y('c', {2, 3, 2 ,2});
+
+    int _expS[] = {2, 8, 2, 1, 8, 0, 1, 102};
+    float _expB[] = {1624.0, 1858.0, 2092.0, 2326.0, 5368.0, 5602.0, 5836.0, 6070.0, 4504.0, 5170.0, 5836.0, 6502.0, 15160.0, 15826.0, 16492.0, 17158.0};
+    NDArray<float> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    for (int e = 0; e < x.lengthOf(); e++)
+        x.putScalar(e, e+1);
+
+    for (int e = 0; e < y.lengthOf(); e++)
+        y.putScalar(e, e+1);
+
+    x.permutei({0, 3, 4, 5, 1, 2});
+    y.permutei({3, 2, 1, 0});
+
+    x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
+    y.reshapei('c', {2 * 2 * 3, 2});
+
+    auto z = NDArrayFactory::mmulHelper(&x, &y);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}
+
+TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
+    NDArray<float> x('c', {2, 2, 2, 3, 2, 2});
+    NDArray<float> y('c', {2, 3, 2 ,2});
+
+    int _expS[] = {2, 8, 2, 1, 8, 0, 1, 102};
+    float _expB[] = {1624.0, 1858.0, 2092.0, 2326.0, 5368.0, 5602.0, 5836.0, 6070.0, 4504.0, 5170.0, 5836.0, 6502.0, 15160.0, 15826.0, 16492.0, 17158.0};
+    NDArray<float> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    for (int e = 0; e < x.lengthOf(); e++)
+        x.putScalar(e, e+1);
+
+    for (int e = 0; e < y.lengthOf(); e++)
+        y.putScalar(e, e+1);
+
+    auto y_ = y.dup('f');
+
+    x.permutei({0, 3, 4, 5, 1, 2});
+    y_->permutei({3, 2, 1, 0});
+
+    x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
+    y_->reshapei('c', {2 * 2 * 3, 2});
+
+    auto z = NDArrayFactory::mmulHelper(&x, y_);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+    delete y_;
+}
+
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper2) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
