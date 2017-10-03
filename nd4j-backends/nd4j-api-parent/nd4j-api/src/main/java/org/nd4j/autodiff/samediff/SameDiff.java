@@ -2937,7 +2937,9 @@ public class SameDiff {
             scalarOp.setScalar(differentialFunction.getScalarValue());
 
         }
+
         differentialFunction.fillInArrays();
+        op.setN(op.x().length());
         return op;
     }
 
