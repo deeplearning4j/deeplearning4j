@@ -82,7 +82,6 @@ public class Reshape extends ShapeOp {
 
     @Override
     public void exec() {
-        int[] shape = (int[]) extraArgs[0];
         if(x != z) {
             z.assign(x.reshape(shape));
         }

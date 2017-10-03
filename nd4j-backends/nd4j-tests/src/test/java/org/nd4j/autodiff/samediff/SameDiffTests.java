@@ -94,7 +94,6 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1);
-        assertEquals("sum(x)", result.getVarName());
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), result.getShape());
@@ -107,7 +106,6 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.reshape(x, 2, 2);
-        assertEquals("reshape(x)", result.getVarName());
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(new int[]{2, 2}, result.getShape());
@@ -136,8 +134,7 @@ public class SameDiffTests {
         SDVariable result = sameDiff.cosineSimilarity(x, y, 1);
         SDVariable addResult = result.add(result);
 
-        assertEquals("cosineSimilarity(x,y)", result.getVarName());
-        assertEquals(6, sameDiff.graph().numVertices());
+        assertEquals(5, sameDiff.graph().numVertices());
         assertArrayEquals(new int[]{1, 2}, result.getShape());
     }
 
@@ -149,7 +146,6 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
-        assertEquals("mmul(x,y)", result.getVarName());
         //3 vertices and 1 op result
         assertEquals(5, sameDiff.graph().numVertices()); // XXX: Why 5 instead of 3?
         //2 edges for matrix multiply and 1 op for result
@@ -235,7 +231,6 @@ public class SameDiffTests {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
-        assertEquals("tensorMmul(x,y)", result.getVarName());
         assertEquals(3, sameDiff.graph().numVertices());
         assertEquals(2, sameDiff.graph().getEdges().size());
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2, 2, 2}, new int[]{2, 2, 2}, new int[][]{{0}, {1}}), result.getShape());

@@ -593,7 +593,7 @@ public abstract class DifferentialFunction implements Differential {
         OpState owner =  OpState.builder()
                 .opType(resolveType()).differentialFunction(this)
                 .opName(opName).inPlace(inPlace)
-                .extraArgs(extraArgs)
+                .extraArgs(extraArgs).axes(dimensions)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape)).result(information)
