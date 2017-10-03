@@ -295,7 +295,9 @@ public abstract class DifferentialFunction implements Differential {
         if(this instanceof Op){
             Op op = (Op) this;
             op.setX(getX());
-            op.setY(getY());
+            //y is often optional for many problems
+            if(getY() != null)
+                op.setY(getY());
             op.setZ(getZ());
         }
         else
@@ -307,6 +309,9 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public NDArrayInformation getResult() {
+        if(opState == null || opState.getResult() == null) {
+            return  sameDiff.getVertexIdxToInfo().get(resultVertexId());
+        }
         return opState.getResult();
     }
 

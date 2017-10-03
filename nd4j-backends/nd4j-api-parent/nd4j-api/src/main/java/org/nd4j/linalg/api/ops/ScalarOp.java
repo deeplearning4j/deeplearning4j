@@ -38,4 +38,6 @@ public interface ScalarOp extends BroadcastOp {
      *@return
      */
     IComplexNumber complexScalar();
+
+    void setScalar(Number scalar);
 }

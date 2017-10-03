@@ -2932,6 +2932,11 @@ public class SameDiff {
         Op op = (Op) opExecAction.getOpState().getDifferentialFunction() != null ? (Op) opExecAction.getOpState().getDifferentialFunction()
                 : (Op) opExecAction.getOpState().getArrayField();
         DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        if(op instanceof ScalarOp) {
+            ScalarOp scalarOp = (ScalarOp) op;
+            scalarOp.setScalar(differentialFunction.getScalarValue());
+
+        }
         differentialFunction.fillInArrays();
         return op;
     }

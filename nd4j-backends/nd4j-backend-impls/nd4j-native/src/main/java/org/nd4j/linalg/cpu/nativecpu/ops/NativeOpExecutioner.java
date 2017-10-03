@@ -597,7 +597,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
                         && !op.isExecSpecial()) {
                     loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
+                            op.x().elementWiseStride(),
+                            (DoublePointer) op.z().data().addressPointer(),
                             op.z().elementWiseStride(), op.scalar().doubleValue(),
                             (DoublePointer) getPointerForExtraArgs(op), op.n());
                 } else
