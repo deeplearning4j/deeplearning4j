@@ -6,7 +6,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.HardSigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.HardSigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**

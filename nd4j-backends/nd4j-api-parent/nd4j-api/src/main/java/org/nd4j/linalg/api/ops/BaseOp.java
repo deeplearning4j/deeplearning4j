@@ -115,6 +115,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             } else if (dtype == DataBuffer.Type.DOUBLE) {
                 double extraz[] = new double[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
+                    if(!(extraArgs[i] instanceof Number))
+                        continue;
                     Number arg = (Number) extraArgs[i];
                     if(arg == null)
                         arg = 0.0;

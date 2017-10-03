@@ -174,11 +174,11 @@ public class SigmoidDerivative extends BaseTransformOp {
 
     @Override
     public ArrayField doGetValue() {
-        return null;
+        return a().sigmoidDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+       throw new UnsupportedOperationException();
     }
 }

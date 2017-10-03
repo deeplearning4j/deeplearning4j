@@ -17,8 +17,9 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -30,89 +31,88 @@ import org.nd4j.linalg.api.ops.Op;
 import java.util.List;
 
 /**
- * HardSigmoid derivative
- *
- * @author raver119@gmail.com
+ * Cube derivative, e.g. 3x^2
  */
-public class HardSigmoidDerivative extends BaseTransformOp {
-    public HardSigmoidDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+public class CubeDerivative extends BaseTransformOp {
+    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardSigmoidDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public HardSigmoidDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public HardSigmoidDerivative() {}
+    public CubeDerivative() {}
 
-    public HardSigmoidDerivative(INDArray x, INDArray z) {
+    public CubeDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public HardSigmoidDerivative(INDArray x, INDArray z, long n) {
+    public CubeDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public HardSigmoidDerivative(INDArray x, INDArray y, INDArray z, long n) {
+    public CubeDerivative(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public HardSigmoidDerivative(INDArray x) {
+    public CubeDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 52;
+        return 50;
     }
 
     @Override
     public String name() {
-        return "hard_sigmoidderivative";
+        return "cubederivative";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return sigmoidDeriv(origin);
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return sigmoidDeriv(origin);
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
+
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return sigmoidDeriv(origin);
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
     public float op(float origin, float other) {
-        return (float) hardSigmoidDeriv(origin);
+        return (float) (3 * FastMath.pow(origin, 2));
     }
 
     @Override
     public double op(double origin, double other) {
-        return hardSigmoidDeriv(origin);
+        return 3 * FastMath.pow(origin, 2);
     }
 
     @Override
     public double op(double origin) {
-        return hardSigmoidDeriv(origin);
+        return 3 * FastMath.pow(origin, 2);
     }
 
     @Override
     public float op(float origin) {
-        return (float) hardSigmoidDeriv(origin);
+        return (float) (3 * FastMath.pow(origin, 2));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return sigmoidDeriv(origin);
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
@@ -120,11 +120,11 @@ public class HardSigmoidDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardSigmoidDerivative(x.vectorAlongDimension(index, dimension),
+            return new CubeDerivative(x.vectorAlongDimension(index, dimension),
                             y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
                             xAlongDimension.length());
         else
-            return new HardSigmoidDerivative(x.vectorAlongDimension(index, dimension),
+            return new CubeDerivative(x.vectorAlongDimension(index, dimension),
                             z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
@@ -134,30 +134,22 @@ public class HardSigmoidDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardSigmoidDerivative(x.tensorAlongDimension(index, dimension),
+            return new CubeDerivative(x.tensorAlongDimension(index, dimension),
                             y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
                             xAlongDimension.length());
         else
-            return new HardSigmoidDerivative(x.tensorAlongDimension(index, dimension),
+            return new CubeDerivative(x.tensorAlongDimension(index, dimension),
                             z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
-    private static double hardSigmoidDeriv(double input) {
-        return input < -2.5 || input > 2.5 ? 0.0 : 0.2;
-    }
-
-    private static IComplexNumber sigmoidDeriv(IComplexNumber number) {
-        return null;
-    }
-
     @Override
     public ArrayField doGetValue() {
-        return null;
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 }

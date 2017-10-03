@@ -17,9 +17,8 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -27,109 +26,109 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
-import java.util.Collections;
 import java.util.List;
 
-/**SoftSign derivative.
+/**
+ * Rational Tanh Derivative, as described at as described at https://github.com/deeplearning4j/libnd4j/issues/351
+ *
+ * @author raver119@gmail.com
+ * @author AlexDBlack
  */
-public class SoftSignDerivative extends BaseTransformOp {
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+public class RationalTanhDerivative extends BaseTransformOp {
+    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SoftSignDerivative() {}
+    public RationalTanhDerivative() {}
 
-    public SoftSignDerivative(INDArray x, INDArray z) {
+    public RationalTanhDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public SoftSignDerivative(INDArray x, INDArray z, long n) {
+    public RationalTanhDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SoftSignDerivative(INDArray x, INDArray y, INDArray z, long n) {
+    public RationalTanhDerivative(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public SoftSignDerivative(INDArray x) {
+    public RationalTanhDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 30;
+        return 54;
     }
 
     @Override
     public String name() {
-        return "softsignderivative";
+        return "rational_tanh_derivative";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        return null;
     }
 
     @Override
     public float op(float origin, float other) {
-        return (float) ssderiv(origin);
+        return 0;
     }
 
     @Override
     public double op(double origin, double other) {
-        return ssderiv(origin);
+        return 0;
     }
 
     @Override
     public double op(double origin) {
-        return ssderiv(origin);
+        return 0;
     }
 
     @Override
     public float op(float origin) {
-        return (float) ssderiv(origin);
+        return 0;
     }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+        return null;
+    }
+
 
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension),
+            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension),
                             y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
                             xAlongDimension.length());
         else
-            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension),
+            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension),
                             z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+
     }
 
     @Override
@@ -137,31 +136,22 @@ public class SoftSignDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension),
+            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
                             y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
                             xAlongDimension.length());
         else
-            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension),
+            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
                             z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-    }
 
-    private static double ssderiv(double x) {
-        double y = 1 + FastMath.abs(x);
-        return 1.0 / (y * y);
     }
-
 
     @Override
     public ArrayField doGetValue() {
-        return a().softsignDeriviative(larg().getValue(true),rarg().getValue(true));
+        return null;
     }
-
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().zero(getResultShape());
-
-        return Collections.singletonList(ret);
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
-
 }

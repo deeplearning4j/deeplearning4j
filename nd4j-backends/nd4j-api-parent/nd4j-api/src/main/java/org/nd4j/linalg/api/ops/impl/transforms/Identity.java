@@ -149,7 +149,7 @@ public class Identity extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction grad = sameDiff.setupFunction(new Ones(sameDiff,i_v.get(0),false));
+        DifferentialFunction grad = sameDiff.setupFunction(new Ones(sameDiff,i_v.get(0).getResultShape()));
         return Collections.singletonList(grad);
     }
 

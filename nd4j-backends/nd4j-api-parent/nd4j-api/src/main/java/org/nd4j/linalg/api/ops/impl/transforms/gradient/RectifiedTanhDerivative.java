@@ -17,9 +17,8 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -28,120 +27,131 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
- * SELU Derivative elementwise function
- *
- * https://arxiv.org/pdf/1706.02515.pdf
+ * Rectified Tanh Derivative
  *
  * @author raver119@gmail.com
+ * @author AlexDBlack
  */
-public class SELUDerivative extends BaseTransformOp {
-
-    private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
-    private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
-
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+public class RectifiedTanhDerivative extends BaseTransformOp {
+    public RectifiedTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public RectifiedTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public RectifiedTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SELUDerivative() {}
+    public RectifiedTanhDerivative() {}
 
-    public SELUDerivative(INDArray x, INDArray z) {
+    public RectifiedTanhDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public SELUDerivative(INDArray x, INDArray z, long n) {
+    public RectifiedTanhDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SELUDerivative(INDArray x) {
+    public RectifiedTanhDerivative(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public RectifiedTanhDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 68;
+        return 62;
     }
 
     @Override
     public String name() {
-        return "seluderivative";
+        return "rectified_tanh_derivative";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public float op(float origin, float other) {
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     @Override
     public double op(double origin, double other) {
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     @Override
-    public double op(double d1) {
-        return d1 > 0.0f ? SELU_LAMBDA : SELU_ALPHA * SELU_LAMBDA * FastMath.exp(d1);
+    public double op(double origin) {
+        return 0;
     }
 
     @Override
-    public float op(float d1) {
-        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_ALPHA * (float) SELU_LAMBDA * (float) FastMath.exp(d1);
+    public float op(float origin) {
+        return 0;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        throw new UnsupportedOperationException();
+        return null;
     }
+
 
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        return new SELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+
+        if (y() != null)
+            return new RectifiedTanhDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
+        else
+            return new RectifiedTanhDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        return new SELUDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+        if (y() != null)
+            return new RectifiedTanhDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
+        else
+            return new RectifiedTanhDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
     }
 
     @Override
     public ArrayField doGetValue() {
-        return a().seluDerivative(larg().getValue(true),rarg().getValue(true));
+        return null;
     }
-
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
-
-        return Arrays.asList(ret);
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
-
 }

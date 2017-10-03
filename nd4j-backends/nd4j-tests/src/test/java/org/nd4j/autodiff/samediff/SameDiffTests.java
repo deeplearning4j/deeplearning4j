@@ -1,9 +1,11 @@
 package org.nd4j.autodiff.samediff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -732,20 +734,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testBackwards() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("x",sumInput);
-        SDVariable input = sameDiff.var("x",inputs.get("x"));
-        SDVariable softmax = sameDiff.softmax(input);
-        SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
-        List<Op> backwardsOps = sameDiff.execBackwards().getRight();
-        assertEquals(4,backwardsOps.size());
-        assertEquals(Nd4j.zeros(2,2),backwardsOps.get(backwardsOps.size() - 1).z());
-        System.out.println(backwardsOps);
-    }
+
 
     @Test
     public void testSigmoidBackwards() {
@@ -793,6 +782,22 @@ public class SameDiffTests {
 
     }
 
+
+    @Test
+    public void testResolveArrayReferences() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable var1 = sameDiff.var("x",Nd4j.ones(2));
+        SDVariable var2 = sameDiff.var("y",Nd4j.valueArrayOf(2,3.0));
+        SDVariable result = var1.add(var2);
+        sameDiff.exec();
+        DifferentialFunction resultVarTest = result.getDifferentialFunction();
+        Op op = (Op) resultVarTest;
+        assertEquals(result.getArr(true),op.z());
+        assumeNotNull(sameDiff.getInfoFor(result.getArr(true)));
+        assertEquals(resultVarTest.getResult(),sameDiff.getInfoFor(result.getArr(true)));
+
+
+    }
 
     @Test
     public void testMmulGradient() {

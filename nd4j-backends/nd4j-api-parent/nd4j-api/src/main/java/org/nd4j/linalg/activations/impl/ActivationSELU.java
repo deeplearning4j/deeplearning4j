@@ -6,9 +6,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SELU;
-import org.nd4j.linalg.api.ops.impl.transforms.SELUDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**

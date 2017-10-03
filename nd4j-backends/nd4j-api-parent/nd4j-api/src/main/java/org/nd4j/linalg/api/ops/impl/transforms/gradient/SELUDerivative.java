@@ -17,8 +17,9 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -27,131 +28,120 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * Rational Tanh Derivative, as described at as described at https://github.com/deeplearning4j/libnd4j/issues/351
+ * SELU Derivative elementwise function
+ *
+ * https://arxiv.org/pdf/1706.02515.pdf
  *
  * @author raver119@gmail.com
- * @author AlexDBlack
  */
-public class RationalTanhDerivative extends BaseTransformOp {
-    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+public class SELUDerivative extends BaseTransformOp {
+
+    private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
+    private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
+
+    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public RationalTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public RationalTanhDerivative() {}
+    public SELUDerivative() {}
 
-    public RationalTanhDerivative(INDArray x, INDArray z) {
+    public SELUDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public RationalTanhDerivative(INDArray x, INDArray z, long n) {
+    public SELUDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public RationalTanhDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public RationalTanhDerivative(INDArray x) {
+    public SELUDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 54;
+        return 68;
     }
 
     @Override
     public String name() {
-        return "rational_tanh_derivative";
+        return "seluderivative";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public float op(float origin, float other) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public double op(double origin, double other) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public double op(double origin) {
-        return 0;
+    public double op(double d1) {
+        return d1 > 0.0f ? SELU_LAMBDA : SELU_ALPHA * SELU_LAMBDA * FastMath.exp(d1);
     }
 
     @Override
-    public float op(float origin) {
-        return 0;
+    public float op(float d1) {
+        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_ALPHA * (float) SELU_LAMBDA * (float) FastMath.exp(d1);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return null;
+        throw new UnsupportedOperationException();
     }
-
 
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension),
-                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+        return new SELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
-                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
+        return new SELUDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
     @Override
     public ArrayField doGetValue() {
-        return null;
+        return a().seluDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
+
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
+
+        return Arrays.asList(ret);
     }
+
 }

@@ -34,15 +34,15 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
 
     public BaseTransformOp(SameDiff sameDiff,
-                                  DifferentialFunction i_v1,
-                                  DifferentialFunction i_v2) {
+                           DifferentialFunction i_v1,
+                           DifferentialFunction i_v2) {
         this(sameDiff,i_v1,i_v2,false);
     }
 
     public BaseTransformOp(SameDiff sameDiff,
-                                  DifferentialFunction i_v1,
-                                  DifferentialFunction i_v2,
-                                  boolean inPlace) {
+                           DifferentialFunction i_v1,
+                           DifferentialFunction i_v2,
+                           boolean inPlace) {
         super(sameDiff,inPlace,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
@@ -69,9 +69,9 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     }
 
     public BaseTransformOp(SameDiff sameDiff,
-                                  DifferentialFunction i_v1,
-                                  DifferentialFunction i_v2,
-                                   Object[] extraArgs) {
+                           DifferentialFunction i_v1,
+                           DifferentialFunction i_v2,
+                           Object[] extraArgs) {
         super(sameDiff,extraArgs);
         if (i_v1 != null && i_v2 != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
@@ -101,10 +101,10 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     }
 
     public BaseTransformOp(SameDiff sameDiff,
-                                 DifferentialFunction i_v,
-                                 int[] shape,
-                                 boolean inPlace,
-                                 Object[] extraArgs) {
+                           DifferentialFunction i_v,
+                           int[] shape,
+                           boolean inPlace,
+                           Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         this.shape = shape;
 
@@ -120,8 +120,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
 
     public BaseTransformOp(SameDiff sameDiff,
-                                 DifferentialFunction i_v,
-                                 Object[] extraArgs) {
+                           DifferentialFunction i_v,
+                           Object[] extraArgs) {
         this(sameDiff,i_v,i_v.getResultShape(),false,extraArgs);
     }
 
@@ -153,6 +153,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new Ones(x, y, z, n);
+        throw new UnsupportedOperationException();
     }
 }

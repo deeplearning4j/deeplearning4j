@@ -54,12 +54,13 @@ import java.util.*;
 @Builder
 @Slf4j
 public class SameDiff {
-    private SDGraph graph = new SDGraph();
-    private ArrayFactory arrayFactory = new ArrayFactory(this);
+    private SDGraph graph;
+    private ArrayFactory arrayFactory;
     private DifferentialFunctionFactory functionFactory;
     private Map<String,SDVariable> variableMap;
     private Map<Integer,SDVariable> vertexIdToVariable;
     private Map<String,INDArray> vertexToArray;
+    private IdentityHashMap<INDArray,NDArrayInformation> reverseArrayLookup;
     private Map<Integer,NDArrayInformation> vertexIdxToInfo;
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
@@ -260,9 +261,24 @@ public class SameDiff {
 
         }
 
+        sameDiff.reverseArrayLookup.putAll(reverseArrayLookup);
         sameDiff.vertexToArray.putAll(vertexToArray);
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
 
+    }
+
+    /**
+     * Return the array information
+     * for the given array
+     * (note that array references
+     * are used rather than a clone, so dup() ed arrays
+     * will not work here)
+     * @param arr the array reference to get the information for
+     * @return the {@link NDArrayInformation}
+     * for the given array reference
+     */
+    public NDArrayInformation getInfoFor(INDArray arr) {
+        return reverseArrayLookup.get(arr);
     }
 
     private void ensureSameDiffInstance(SameDiff sameDiff,ArrayField val) {
@@ -382,6 +398,7 @@ public class SameDiff {
         vertexIdToVariable = new HashMap<>();
         forwardBackwardStates = new HashMap<>();
         opsForResult = new HashMap<>();
+        reverseArrayLookup = new IdentityHashMap<>();
     }
 
 
@@ -634,14 +651,19 @@ public class SameDiff {
              * NDArrayInformation should somehow be unique
              * and point to an actual array.
              */
-            if(!vertexToArray.containsKey(info.getArrId())) {
+            if(!vertexToArray.containsKey(info.getArrId()) || vertexToArray.get(info.getArrId()) == null) {
                 //initialize value if it's actually a scalar constant (zero or 1 typically...)
                 if(info.getScalarValue() != null && ArrayUtil.prod(info.getShape()) == 1) {
-                    vertexToArray.put(info.getArrId(), Nd4j.valueArrayOf(info.getShape(),
-                            info.getScalarValue().doubleValue()));
+                    INDArray arr = Nd4j.valueArrayOf(info.getShape(),
+                            info.getScalarValue().doubleValue());
+                    vertexToArray.put(info.getArrId(),arr);
+                    reverseArrayLookup.put(arr,info);
                 }
-                else
-                    vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
+                else {
+                    INDArray newAlloc =  Nd4j.zeros(info.getShape());
+                    vertexToArray.put(info.getArrId(),newAlloc);
+                    reverseArrayLookup.put(newAlloc,info);
+                }
 
             }
         }
@@ -713,7 +735,11 @@ public class SameDiff {
         addVariable(ret);
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
-        vertexToArray.put(ndArrayInformation.getArrId(),arr);
+        if(arr != null) {
+            vertexToArray.put(ndArrayInformation.getArrId(), arr);
+            reverseArrayLookup.put(arr, ndArrayInformation);
+        }
+
         vertexIdxToInfo.put(ndArrayVertex.vertexID(),ndArrayInformation);
         variableMap.put(name,ret);
         return ret;
@@ -2725,8 +2751,13 @@ public class SameDiff {
             throw new IllegalArgumentException("Variable already found with variable name " + variable.getVarName());
         }
 
-        vertexIdToVariable.put(getFunctionInput(variable).getVertexId(),variable);
+        vertexIdToVariable.put(getFunctionInput(variable).resultVertexId(),variable);
         variableMap.put(variable.getVarName(),variable);
+        if(variable.getInfo() != null && variable.getArr() != null) {
+            reverseArrayLookup.put(variable.getArr(),variable.getInfo());
+            vertexToArray.put(variable.getInfo().getArrId(),variable.getArr());
+        }
+
     }
 
 
@@ -2841,7 +2872,7 @@ public class SameDiff {
      */
     public Op createOp(Op.Type opType,
                        OpExecAction opExecAction) {
-        OpState opState = opExecAction.getOpState();
+      /*  OpState opState = opExecAction.getOpState();
         switch (opType) {
             case GRADIENT:
                 return Nd4j.getOpFactory().createGradientOp(
@@ -2897,7 +2928,12 @@ public class SameDiff {
             case AGGREGATION: break;
         }
 
-        throw new IllegalStateException("Illegal opType specified " + opType);
+        throw new IllegalStateException("Illegal opType specified " + opType);*/
+        Op op = (Op) opExecAction.getOpState().getDifferentialFunction() != null ? (Op) opExecAction.getOpState().getDifferentialFunction()
+                : (Op) opExecAction.getOpState().getArrayField();
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        differentialFunction.fillInArrays();
+        return op;
     }
 
     /**

@@ -84,6 +84,7 @@ public class SDVariable  implements Serializable {
                 this.arr = sameDiff.getNDArray(sameDiff.getVertexIdxToInfo().get(vertexId));
             if(this.arr == null && sameDiff.getArrayFieldInstances().get(vertexId) != null) {
                 this.arr = sameDiff.getNDArray(sameDiff.getArrayFieldInstances().get(vertexId).getInput());
+
             }
 
             if(this.arr == null && sameDiff.getFunctionInstances().get(vertexId) != null) {
@@ -169,6 +170,10 @@ public class SDVariable  implements Serializable {
         return gradient;
     }
 
+    /**
+     *
+     * @param gradient
+     */
     public void setGradient(SDVariable gradient) {
         this.gradient = gradient;
         this.gradient.setForwardVariable(this);
@@ -179,8 +184,8 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public NDArrayInformation getInfo() {
-        if(getArrayField() == null)
-            return null;
+        if(differentialFunction != null)
+            return differentialFunction.getResult();
         return getArrayField().getM_x().getInput();
     }
 
