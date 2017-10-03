@@ -73,17 +73,17 @@ namespace nd4j {
 
             output->reshapei('f', {im2col2d.get()->rows(), reshapedW.get()->columns()});
 
-            NDArrayFactory::mmulHelper<T>(im2col2d.get()->dup('c'), reshapedW.get()->dup('f'), output, 1.0f, 0.0f);
+            auto res = NDArrayFactory::mmulHelper<T>(im2col2d.get(), reshapedW.get(), output, 1.0, 0.0);
 
             // bias addition is optional
             if (bias != nullptr)
                 output->addiRowVector(bias);
 
-            output->reshapei('c', {input->sizeAt(0),outDepth, oY, oX });
+            output->reshapei('f', {oX, oY, input->sizeAt(0),outDepth});
+            output->permutei({2, 3, 1, 0});
 
             if (debug && verbose)
                 output->printShapeInfo("Conv2D result shape");
-
 
             STORE_RESULT(*output);
 
