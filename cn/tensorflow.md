@@ -44,7 +44,7 @@ Deeplearning4j有一项模型导入功能。目前该功能主要面向的是用
 
 TensorFlow网站承认，“TensorFlow API的稳定性保证并不适用于TensorFlow Java API。”
 
-如需了解将Java语言用于深度学习的更多信息，请参见我们的[快速入门指南](https://deeplearning4j.org/cn/quickstart)。请与我们一同[抗击博格人](https://vimeo.com/84760450)！;)
+如需了解将Java语言用于深度学习的更多信息，请参见我们的[快速入门指南](https://deeplearning4j.org/cn/quickstart)。请与我们一同[抗击“博格人”](https://vimeo.com/84760450)！;)
 
 Deeplearning4j在[多GPU系统](https://github.com/deeplearning4j/dl4j-benchmark)上的运行速度快于TensorFlow。您可以在[此处](https://deeplearning4j.org/cn/benchmark)了解如何运行优化的DL4J基准测试。
 
