@@ -62,12 +62,16 @@ public class JcublasLevel3 extends BaseLevel3 {
 
             int arch = CudaEnvironment.getInstance().getCurrentDeviceArchitecture();
 
-            if (CUDA_VERSION == 8000 && (arch == 53 || arch == 60)) {
+            if (CUDA_VERSION >= 8000 && (arch == 53 || arch == 60)) {
                 // on these selected archs we run with cublasHgemm
+                __half alphaHalf = new __half();
+                __half betaHalf = new __half();
+                new ShortPointer(alphaHalf).put((short) HalfIndexer.fromFloat(alpha));
+                new ShortPointer(betaHalf).put((short) HalfIndexer.fromFloat(beta));
+
                 cublasHgemm(new cublasContext(handle), convertTranspose(TransA), convertTranspose(TransB), M, N, K,
-                                new __half().x((short) HalfIndexer.fromFloat(alpha)),
-                                new __half(cAPointer.getDevicePointer()), lda, new __half(cBPointer.getDevicePointer()),
-                                ldb, new __half().x((short) HalfIndexer.fromFloat(beta)),
+                                alphaHalf, new __half(cAPointer.getDevicePointer()), lda,
+                                new __half(cBPointer.getDevicePointer()), ldb, betaHalf,
                                 new __half(cCPointer.getDevicePointer()), ldc);
             } else {
                 // CUDA_R_16F == 2 for CUDA 8

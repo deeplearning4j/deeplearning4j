@@ -1577,7 +1577,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         Pointer.memcpy(pointer, oldPointer, this.length() * getElementSize());
-        this.underlyingLength = length;
+        //this.underlyingLength = length;
         return this;
     }
 

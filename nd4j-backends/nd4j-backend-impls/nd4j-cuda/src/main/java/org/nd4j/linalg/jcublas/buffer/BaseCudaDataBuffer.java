@@ -1124,7 +1124,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             pointer.address();
 
             // we need to update length with new value now
-            this.length = length;
+            //this.length = length;
         if(isAttached()){
             // do nothing here, that's workspaces
         } else{
@@ -1132,6 +1132,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         return this;
+    }
+
+    @Override
+    public long capacity() {
+        return pointer.capacity();
     }
 
     /*
