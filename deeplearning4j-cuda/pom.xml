@@ -76,7 +76,7 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda-platform</artifactId>
-            <version>${cuda.version}-${cudnn.version}-1.3.4-SNAPSHOT</version>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
