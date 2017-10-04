@@ -40,7 +40,7 @@ Now clone this repository, and in that directory run the following to build the 
 The CUDA Backend has some additional requirements before it can be built:
 
 * [CUDA SDK](https://developer.nvidia.com/cuda-downloads)
-* [Visual Studio 2012 or 2013](https://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx) (Please note: Visual Studio 2015 is *NOT SUPPORTED* by CUDA 7.5 and below)
+* [Visual Studio 2015 or 2017](https://www.visualstudio.com/) (Please note: Visual Studio 2017 is *NOT SUPPORTED* by CUDA 8.0 and below)
 
 In order to build the CUDA backend you will have to setup some more environment variables first, by calling `vcvars64.bat`.
 But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.
@@ -73,22 +73,22 @@ mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 If you don't want the cuda backend, e.g. because you didn't or can't build it, you can skip it:
 
 ```bash
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5,!org.nd4j:nd4j-cuda-7.5-platform,!org.nd4j:nd4j-tests'
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-9.0,!org.nd4j:nd4j-cuda-9.0-platform,!org.nd4j:nd4j-tests'
 ```
 
 Please notice the single quotes around the last parameter, if you leave them out or use double quotes you will get an error about `event not found` from your shell. If this doesn't work, make sure you have a current version of maven installed.
 
-Also, if you're going to build DeepLearning4j without CUDA available, you'll have to deeplearning4j-cuda-7.5 (or 8.0) artifact as well:
+Also, if you're going to build DeepLearning4j without CUDA available, you'll have to deeplearning4j-cuda-9.0 (or 8.0) artifact as well:
 
 ```bash
-mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true -pl '!org.deeplearning4j:deeplearning4j-cuda-7.5'
+mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true -pl '!org.deeplearning4j:deeplearning4j-cuda-9.0'
 ```
 
 ## Using the Native Backend
 
 In order to use your new shiny backends you will have to switch your application to use the version of ND4J that you just compiled and to use the native backend.
 
-For this you change the version of all your ND4J dependencies to version you've built, i.e: "0.7.1-SNAPSHOT".
+For this you change the version of all your ND4J dependencies to version you've built, i.e: "0.9.2-SNAPSHOT".
 
 
 ### CPU Backend
@@ -98,17 +98,17 @@ Use nd4j-native backend like that:
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-native</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.9.2-SNAPSHOT</version>
     </dependency>
 
 ### CUDA Backend
 
-Exchange nd4j-native for nd4j-cuda-7.5 (or nd4j-cuda-8.0) like that:
+Exchange nd4j-native for nd4j-cuda-9.0 (or nd4j-cuda-8.0) like that:
 
     <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-7.5</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <artifactId>nd4j-cuda-9.0</artifactId>
+        <version>0.9.2-SNAPSHOT</version>
     </dependency>
 
     

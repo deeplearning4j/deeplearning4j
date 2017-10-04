@@ -18,15 +18,67 @@
 
 #ifdef __CUDACC__
 #include <fp16_conversion.hpp>
+
+#ifdef CUDA_9
+
+struct ihalf : public __half {
+    public:
+        ihalf() : half() {
+            //
+        }
+
+        inline unsigned short * getXP() {
+           return &this->__x;
+        }
+
+        inline unsigned short getX() const  {
+            return this->__x;
+        }
+
+        inline void assign(const half f) {
+            this->__x = ((__half_raw *) &f)->x;
+        }
+};
+
 #else
-typedef struct {
+struct ihalf : public __half {
+    public:
+        ihalf() : half() {
+            //
+        }
+
+        unsigned short * getXP() {
+            return &this->x;
+        }
+
+        unsigned short getX() const {
+            return this->x;
+        }
+
+        inline void assign(const half f) {
+            this->x = ((__half *) &f)->x;
+        }
+};
+#endif // CUDA_9
+
+#else
+struct __half {
+public:
     unsigned short x;
-} __half;
+    inline unsigned short * getXP() {
+        return &this->x;
+    }
 
-
+    inline unsigned short getX() const  {
+        return this->x;
+    }
+};
 
 typedef __half half;
-#endif
+typedef __half ihalf;
+
+
+#endif // CUDA
 
 #ifdef __CUDACC__
 #define local_def inline __host__ __device__
@@ -43,14 +95,14 @@ typedef __half half;
 
 #ifdef __INTEL_COMPILER
 //_Pragma("omp declare simd") inline
-local_def  float cpu_half2float(half h) {
-    return _cvtsh_ss(h.x);
+local_def  float cpu_ihalf2float(ihalf h) {
+    return _cvtsh_ss(h.getX());
 }
 #else
-local_def float cpu_half2float(half h) {
-    unsigned sign = ((h.x >> 15) & 1);
-    unsigned exponent = ((h.x >> 10) & 0x1f);
-    unsigned mantissa = ((h.x & 0x3ff) << 13);
+local_def float cpu_ihalf2float(ihalf h) {
+    unsigned sign = ((h.getX() >> 15) & 1);
+    unsigned exponent = ((h.getX() >> 10) & 0x1f);
+    unsigned mantissa = ((h.getX() & 0x3ff) << 13);
 
     if (exponent == 0x1f) {  /* NaN or Inf */
         mantissa = (mantissa ? (sign = 0, 0x7fffff) : 0);
@@ -78,16 +130,16 @@ local_def float cpu_half2float(half h) {
 
 #ifdef __INTEL_COMPILER
 //_Pragma("omp declare simd") inline
-local_def half cpu_float2half_rn(float f) {
-    half ret;
+local_def ihalf cpu_float2ihalf_rn(float f) {
+    ihalf ret;
     ret.x = _cvtss_sh(f, 0);
     return ret;
 }
 
 #else
-local_def half cpu_float2half_rn(float f)
+local_def ihalf cpu_float2ihalf_rn(float f)
 {
-    half ret;
+    ihalf ret;
 
     unsigned x = *((int*)(void*)(&f));
     unsigned u = (x & 0x7fffffff), remainder, shift, lsb, lsb_s1, lsb_m1;
@@ -95,7 +147,7 @@ local_def half cpu_float2half_rn(float f)
 
     // Get rid of +NaN/-NaN case first.
     if (u > 0x7f800000) {
-        ret.x = 0x7fffU;
+        *ret.getXP() = 0x7fffU;
         return ret;
     }
 
@@ -103,11 +155,11 @@ local_def half cpu_float2half_rn(float f)
 
     // Get rid of +Inf/-Inf, +0/-0.
     if (u > 0x477fefff) {
-        ret.x = sign | 0x7c00U;
+        *ret.getXP() = sign | 0x7c00U;
         return ret;
     }
     if (u < 0x33000001) {
-        ret.x = (sign | 0x0000);
+        *ret.getXP() = (sign | 0x0000);
         return ret;
     }
 
@@ -137,7 +189,7 @@ local_def half cpu_float2half_rn(float f)
         }
     }
 
-    ret.x = (sign | (exponent << 10) | mantissa);
+    *ret.getXP() = (sign | (exponent << 10) | mantissa);
 
     return ret;
 }
@@ -148,7 +200,9 @@ local_def half cpu_float2half_rn(float f)
 
   struct float16
   {
-    /* constexpr */ local_def float16() { data.x = 0; }
+  public:
+    ihalf data;
+    /* constexpr */ local_def float16() { *data.getXP() = 0; }
 
     template <class T>
     local_def /*explicit*/ float16(const T& rhs) {
@@ -167,17 +221,17 @@ local_def half cpu_float2half_rn(float f)
 #ifdef __CUDA_ARCH__
       return __half2float(data);
 #else
-      return cpu_half2float(data);
+      return cpu_ihalf2float(data);
 #endif
     }
 
     //    local_def operator double() const { return (float)*this; }
 
     local_def operator half() const { return data; }
-
-    local_def unsigned short getx() const { return data.x; }
-    local_def float16& setx(unsigned short x) { data.x = x; return *this; }
-
+/*
+    local_def unsigned short getx() const { return (const unsigned short)data.getX(); }
+    local_def float16& setx(unsigned short x) { *data.getXP() = x; return *this; }
+*/
     template <class T>
     local_def float16& operator=(const T& rhs) { assign(rhs); return *this; }
 
@@ -203,13 +257,17 @@ local_def half cpu_float2half_rn(float f)
         assign((float)rhs);
     }
 
+    local_def void assign(unsigned short rhs) {
+        *data.getXP() = rhs;
+    }
+
     local_def void assign(long long unsigned int rhs) {
         assign((float)rhs);
     }
 
     local_def void assign(float rhs) {
 #ifdef __CUDA_ARCH__
-      data.x = __float2half_rn(rhs);
+      *data.getXP() = __float2half_rn(rhs);
 #else
   #if defined(DEBUG) && defined (CPU_ONLY)
       if (rhs > HLF_MAX || rhs < -HLF_MAX) {
@@ -218,13 +276,20 @@ local_def half cpu_float2half_rn(float f)
         LOG(WARNING) << "Underflow: " << rhs;
       }
   #endif
-      data = cpu_float2half_rn(rhs);
+      data = cpu_float2ihalf_rn(rhs);
 #endif
     }
 
-    local_def void assign(const half& rhs) {
-      data = rhs;
+    local_def void assign(const ihalf& rhs) {
+        *data.getXP() = ((ihalf) rhs).getX();
     }
+
+#ifdef __CUDACC__
+    local_def void assign(const half& rhs) {
+      //data = rhs;
+      data.assign(rhs);
+    }
+#endif
 
     local_def void assign(const float16& rhs) {
       data = rhs.data;
@@ -254,9 +319,6 @@ local_def half cpu_float2half_rn(float f)
 
     local_def float16 operator--(int i) { assign(*this - (float)i); return *this; }
 
-
-    half data;
-
     // Utility contants
     static const float16 zero;
     static const float16 one;
@@ -266,7 +328,7 @@ local_def half cpu_float2half_rn(float f)
 #ifdef NATIVE_HALFS
     local_def bool  operator==(const float16& a, const float16& b) { return __hequ(a.data, b.data); }
 #else
-    local_def bool  operator==(const float16& a, const float16& b) { return ishequ(a.data, b.data); }
+    local_def bool  operator==(const float16& a, const float16& b) { return ishequ_(((ihalf) a.data).getX(), ((ihalf)b.data).getX()); }
 #endif
 //    template <class T>
 //    local_def bool  operator==(const float16& a, const T& b) { return (a == (float16) b); }
@@ -353,12 +415,15 @@ local_def half cpu_float2half_rn(float f)
 
   local_def float16 /* constexpr */ operator+(const float16& h) { return h; }
 
-  local_def float16 operator - (const float16& h) { return float16(hneg(h.data)); }
+  local_def float16 operator - (const float16& h) {
+    const ihalf * tmp = &h.data;
+    return float16(hneg(tmp->getX()));
+}
 
 #ifdef __CUDACC__
-  local_def int isnan(const float16& h)  { return ishnan(h.data); }
+  local_def int isnan(const float16& h)  { return ishnan_(((ihalf)h.data).getX()); }
 
-  local_def int isinf(const float16& h) { return ishinf(h.data); }
+  local_def int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
 #endif
 
   std::ostream& operator << (std::ostream& s, const float16&);

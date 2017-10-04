@@ -68,6 +68,55 @@ half1 cpu_float2half_rn(float f);
 
 float cpu_half2float(half1 h);
 
+#ifdef CUDA_9
+static local_def int ishnan_(unsigned short h)
+{
+    // When input is NaN, exponent is all ones and mantissa is non-zero.
+    return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) != 0;
+}
+
+static local_def int ishinf_(unsigned short h)
+{
+    // When input is +/- inf, exponent is all ones and mantissa is zero.
+    return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) == 0;
+}
+
+static local_def int ishequ_(unsigned short x, unsigned short y)
+{
+    return ishnan_(x) == 0 && ishnan_(y) == 0 && x == y;
+}
+
+static local_def unsigned short hneg(unsigned short h)
+{
+    h ^= 0x8000U;
+    return h;
+}
+
+#else
+
+static local_def int ishnan_(unsigned short h)
+{
+    // When input is NaN, exponent is all ones and mantissa is non-zero.
+    return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) != 0;
+}
+
+static local_def int ishinf_(unsigned short h)
+{
+    // When input is +/- inf, exponent is all ones and mantissa is zero.
+    return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) == 0;
+}
+
+static local_def int ishequ_(unsigned short x, unsigned short y)
+{
+    return ishnan_(x) == 0 && ishnan_(y) == 0 && x == y;
+}
+
+static local_def unsigned short hneg(unsigned short h)
+{
+    h ^= 0x8000U;
+    return h;
+}
+
 static local_def half1 habs(half1 h)
 {
     h.x &= 0x7fffU;
@@ -86,15 +135,12 @@ static local_def int ishnan(half1 h)
     return (h.x & 0x7c00U) == 0x7c00U && (h.x & 0x03ffU) != 0;
 }
 
+
+
 static local_def int ishinf(half1 h)
 {
     // When input is +/- inf, exponent is all ones and mantissa is zero.
     return (h.x & 0x7c00U) == 0x7c00U && (h.x & 0x03ffU) == 0;
-}
-
-static local_def int ishequ(half1 x, half1 y)
-{
-    return ishnan(x) == 0 && ishnan(y) == 0 && x.x == y.x;
 }
 
 // Returns 0.0000 in FP16 binary form
@@ -138,6 +184,14 @@ static local_def half1 hmin()
     ret.x = 0x0400U;
     return ret;
 }
+
+static local_def int ishequ(half1 x, half1 y)
+{
+    return ishnan(x) == 0 && ishnan(y) == 0 && x.x == y.x;
+}
+
+#endif // CUDA version selector
+
 
 #endif  // _FP16_EMU_H_
 
