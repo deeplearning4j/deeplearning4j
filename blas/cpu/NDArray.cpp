@@ -1156,7 +1156,7 @@ template <typename T> bool NDArray<T>::reshapei(const char order, const std::vec
 
         shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
 
-        shape::printShapeInfoLinear(shapeInfoNew);
+        //shape::printShapeInfoLinear(shapeInfoNew);
 
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
