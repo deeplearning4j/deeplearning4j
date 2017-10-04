@@ -48,9 +48,9 @@ public class NotEqualsCondition extends BaseCondition {
     @Override
     public Boolean apply(Number input) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return input.doubleValue() == value.doubleValue();
+            return input.doubleValue() != value.doubleValue();
         else
-            return input.floatValue() == value.floatValue();
+            return input.floatValue() != value.floatValue();
     }
 
     @Override
