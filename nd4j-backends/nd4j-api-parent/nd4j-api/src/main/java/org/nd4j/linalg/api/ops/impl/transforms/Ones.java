@@ -138,6 +138,16 @@ public class Ones extends Constant {
     }
 
     @Override
+    public INDArray getZ() {
+        return z();
+    }
+
+    @Override
+    public INDArray z() {
+        return Nd4j.ones(shape);
+    }
+
+    @Override
     public ArrayField doGetValue() {
         return a().one(shape);
     }
