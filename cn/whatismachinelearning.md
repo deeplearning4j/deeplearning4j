@@ -1,13 +1,13 @@
 ---
-title: What Is Machine Learning?
-layout: default
+title: 什么是机器学习？
+layout: cn-default
 ---
 
-# What Is Machine Learning?
+# 什么是机器学习？
 
-To define machine learning, we first need to define some of its components. 
+为了明确机器学习的定义，我们首先需要界定机器学习一词所包含的具体概念。 
 
-The *machine* in machine learning refers to an algorithm, or a method of computation. You could say that an algorithm combines math and logic. Here's an example in code of an algorithm that finds the biggest number in a set of numbers:
+机器学习中的*机器*指一种算法，而算法可以说是数学与逻辑的结合。以下是一个在一组数字中找出最大数的算法代码示例：
 
     def find_max (L):
         max = 0
@@ -16,20 +16,19 @@ The *machine* in machine learning refers to an algorithm, or a method of computa
                 max = x
         return max
 
-The algorithm above isn't a learning algorithm. It's static and unchanging. It just sets the variable `max` to zero, traverses the set L looking at each element `x`, and when it stumbles upon an `x` that is larger than the `max` variable, it ratchets `max` up to the new, large `x` value. The algorithm finds the maximum value the same way every time no matter what data it is exposed to. It doesn't modify how it finds the max in response to the dataset.
+上述算法并不是一种学习算法，它是静止不变的。该算法只是将变量`max`设为零，然后遍历整个集合L，检查其中的每项元素`x`，如果`x`大于`max`变量，则将`max`提升至较大的新`x`值。无论给出怎样的数据，它始终会用同一种方法来寻找最大值，而不会根据数据集来调整寻找最大值的方式。
 
-So what does it mean for an alorithm to learn? It means that the algorithm alters itself over time as it is exposed to data. That self-modification is called *training*. The algorithm learns how to make better decisions based on that data, just as a human learn when they start making better decisions based on experience; e.g. don't touch the pot of water boiling on the stove, since last time you burned your hand. (Life lessons... ¯\\\_(ツ)_/¯)
+所以算法的学习是什么意思？学习就是指算法在一段时间内根据所给的数据不断对自身进行调整。这种自我调整称为*训练*。算法根据数据来学习如何作出更好的判定，就像人类会吸取经验教训并作出更好的决定一样，比如你知道一壶水烧开时不该去碰水壶，因为以前碰到之后烫伤了手。（人生经验……¯\\\_(ツ)_/¯）
 
-When humans learn, they alter the way they relate to the world. When algorithms learn, they alter the way they process data. While humans are able to learn to perform many tasks and improve their performance over time, an algorithm usually learns to do one, very specific task well, so we don't need to get nervous about Skynet just yet.
+人类在学习的同时会改变自己与世界互动的方式。算法在学习的同时会改变自己处理数据的方式。人类可以学会许多种不同的任务，并且不断提高自己完成任务的水平，而算法通常只能熟练掌握一项非常具体的任务，所以我们暂时还不用担心“天网”的崛起。
 
-Let's ground that abstract explanation of machine learning in a concrete example. Image recognition is a popular application for machine learning. With image recognition, image files are fed into an algorithm, which attempts to recognize what those images represent and produces a "name" as its output. 
+这样解释机器学习还比较抽象，让我们举一个实际的例子：图像识别是比较流行的一种机器学习应用。我们将图像文件输入算法，算法会尝试辨识图像所代表的事物，然后输出一个“名称”。 
 
-## Parameterized Learning Algorithms
+## 参数化的学习算法
 
-OK, what's a parameter? It's a quantity that helps define a particular process, and it comes from the Greek words *metron* (for measure) and *para* (for side). So it's a side measure, a numerical characteristic of the algorithm. In the equation below, which establishes the relationship with the input `x` and the output `y`, the parameters are 9 and 0.1. 
+什么是参数？参数是帮助界定一项特定流程的量，英语中的parameter一词来自于希腊语的*metron*（度量）和*para*（在旁边）。所以参数是“在旁边的度量”，也就是算法的一项数值属性。下面的等式规定了输入`x`和输出`y`之间的关系，参数分别是9和0.1。 
 
 `y = 9x - 0.1`
 
-But what if we didn't actually know the relationship between `x` and `y`? How could we find the correct parameters that turn each `x` into a `y`? We would start by using variables for the parameters, rather than fixing their amount. 
-
+但假如我们不知道`x`和`y`之间的关系呢？如何才能找到可以把每个`x`转变为`y`的正确参数？所以我们一开始采用的参数是变量，而非固定的数值。 
 
