@@ -41,6 +41,9 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
     protected int mode, method, blurWidth, blurHeight, upperThresh, lowerThresh;
     protected boolean isCanny;
 
+    private int x;
+    private int y;
+
     /** Calls {@code this(null}*/
     public LargestBlobCropTransform() {
         this(null);
@@ -121,8 +124,20 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
         }
 
         //Apply crop and return result
+        x = boundingRect.x();
+        y = boundingRect.y();
         Mat result = original.apply(boundingRect);
 
         return new ImageWritable(converter.convert(result));
+    }
+
+    @Override
+    public float[] query(float... coordinates) {
+        float[] transformed = new float[coordinates.length];
+        for (int i = 0; i < coordinates.length; i += 2) {
+            transformed[i    ] = coordinates[i    ] - x;
+            transformed[i + 1] = coordinates[i + 1] - y;
+        }
+        return transformed;
     }
 }

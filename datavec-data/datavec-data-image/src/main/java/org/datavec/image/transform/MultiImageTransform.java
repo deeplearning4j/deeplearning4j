@@ -33,6 +33,7 @@ public class MultiImageTransform extends BaseImageTransform<Mat> {
         return transform.transform(image);
     }
 
+    @Override
     public float[] query(float... coordinates) {
         return transform.query(coordinates);
     }

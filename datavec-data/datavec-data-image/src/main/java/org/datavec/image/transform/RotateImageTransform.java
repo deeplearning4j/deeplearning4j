@@ -18,12 +18,15 @@ package org.datavec.image.transform;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.nio.FloatBuffer;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -55,6 +58,8 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
     @Getter
     @Setter
     private Scalar borderValue = Scalar.ZERO;
+
+    private Mat M;
 
     /** Calls {@code this(null, 0, 0, angle, 0)}. */
     public RotateImageTransform(float angle) {
@@ -109,9 +114,19 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
         float s = 1 + scale * (random != null ? 2 * random.nextFloat() - 1 : 1);
 
         Mat result = new Mat();
-        Mat M = getRotationMatrix2D(new Point2f(cx, cy), angle, scale);
+        M = getRotationMatrix2D(new Point2f(cx, cy), a, s);
         warpAffine(mat, result, M, mat.size(), interMode, borderMode, borderValue);
         return new ImageWritable(converter.convert(result));
     }
 
+    @Override
+    public float[] query(float... coordinates) {
+        Mat src = new Mat(1, coordinates.length / 2, CV_32FC2, new FloatPointer(coordinates));
+        Mat dst = new Mat();
+        opencv_core.transform(src, dst, M);
+        FloatBuffer buf = dst.createBuffer();
+        float[] transformed = new float[coordinates.length];
+        buf.get(transformed);
+        return transformed;
+    }
 }

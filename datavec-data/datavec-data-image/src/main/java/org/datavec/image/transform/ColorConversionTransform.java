@@ -93,6 +93,7 @@ public class ColorConversionTransform extends BaseImageTransform {
         return new ImageWritable(converter.convert(result));
     }
 
+    @Override
     public float[] query(float... coordinates) {
         return coordinates;
     }

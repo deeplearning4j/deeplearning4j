@@ -15,7 +15,6 @@
  */
 package org.datavec.image.transform;
 
-import java.nio.FloatBuffer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -26,6 +25,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.nio.FloatBuffer;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -131,6 +131,7 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         return new ImageWritable(converter.convert(result));
     }
 
+    @Override
     public float[] query(float... coordinates) {
         Mat src = new Mat(1, coordinates.length / 2, CV_32FC2, new FloatPointer(coordinates));
         Mat dst = new Mat();

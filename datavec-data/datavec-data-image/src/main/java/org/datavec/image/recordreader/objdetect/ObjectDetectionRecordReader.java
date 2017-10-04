@@ -73,6 +73,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     }
 
     /**
+     * When imageTransform != null, object is removed if new center is outside of transformed image bounds.
      *
      * @param height        Height of the output images
      * @param width         Width of the output images

@@ -41,6 +41,9 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
     protected int outputWidth;
     protected org.nd4j.linalg.api.rng.Random rng;
 
+    private int x;
+    private int y;
+
     public RandomCropTransform(@JsonProperty("outputHeight") int height, @JsonProperty("outputWidth") int width) {
         this(1234, height, width);
     }
@@ -85,12 +88,21 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
         int top = rng.nextInt(cropTop + 1);
         int left = rng.nextInt(cropLeft + 1);
 
-        int y = Math.min(top, mat.rows() - 1);
-        int x = Math.min(left, mat.cols() - 1);
+        y = Math.min(top, mat.rows() - 1);
+        x = Math.min(left, mat.cols() - 1);
         Mat result = mat.apply(new Rect(x, y, outputWidth, outputHeight));
 
 
         return new ImageWritable(converter.convert(result));
     }
 
+    @Override
+    public float[] query(float... coordinates) {
+        float[] transformed = new float[coordinates.length];
+        for (int i = 0; i < coordinates.length; i += 2) {
+            transformed[i    ] = coordinates[i    ] - x;
+            transformed[i + 1] = coordinates[i + 1] - y;
+        }
+        return transformed;
+    }
 }
