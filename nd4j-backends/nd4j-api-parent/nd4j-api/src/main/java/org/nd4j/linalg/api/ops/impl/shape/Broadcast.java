@@ -174,6 +174,10 @@ public class Broadcast extends ShapeOp {
 
     }
 
+    @Override
+    public int[] getResultShape() {
+        return shape;
+    }
 
     @Override
     public ArrayField doGetValue() {

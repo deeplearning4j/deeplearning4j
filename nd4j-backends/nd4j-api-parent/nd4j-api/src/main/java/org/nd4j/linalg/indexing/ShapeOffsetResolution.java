@@ -498,7 +498,7 @@ public class ShapeOffsetResolution implements Serializable {
          * When prepend new axes for in the middle is triggered
          * i is already > 0
          */
-        int numAdded = 0;
+       /* int numAdded = 0;
         for (int i = 0; i < prependNewAxes.size(); i++) {
             accumShape.add(prependNewAxes.get(i) - numAdded, 1L);
             //stride for the new axis is zero
@@ -510,7 +510,7 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
         prependAxis = Ints.toArray(prependNewAxes);
-
+*/
         /**
          * Need to post process strides and offsets
          * for trailing ones here

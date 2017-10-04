@@ -7,8 +7,10 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
@@ -166,6 +168,8 @@ public abstract class DifferentialFunction implements Differential {
         ArrayField val = doGetValue();
         ArrayField arrayField = sameDiff.setupArrayField(val);
         val = arrayField;
+        if(opState != null)
+            arrayField.getInput().setShape(getResultShape());
         Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
 
 
@@ -266,11 +270,50 @@ public abstract class DifferentialFunction implements Differential {
 
     }
 
+    private INDArray getX() {
+        INDArray ret =  sameDiff.getVertexToArray().get(args()[0].getResult().getArrId());
+        return ret;
+    }
+
+    private INDArray getY() {
+        if(args().length > 1) {
+            NDArrayInformation opId = args()[1].getResult();
+            INDArray ret = sameDiff.getVertexToArray().get(opId.getArrId());
+            return ret;
+        }
+        return null;
+    }
+
+    private INDArray getZ() {
+        if(this.opState.isInPlace())
+            return getX();
+        NDArrayInformation opId = opState.getResult();
+        INDArray ret =  sameDiff.getVertexToArray().get(opId.getArrId());
+        return ret;
+    }
+
+
+    public void fillInArrays() {
+        if(this instanceof Op){
+            Op op = (Op) this;
+            op.setX(getX());
+            //y is often optional for many problems
+            if(getY() != null)
+                op.setY(getY());
+            op.setZ(getZ());
+        }
+        else
+            throw new IllegalStateException("Unable to fill in arrays. Type must be an operation.");
+    }
+
     /**
      * Get the result
      * @return
      */
     public NDArrayInformation getResult() {
+        if(opState == null || opState.getResult() == null) {
+            return  sameDiff.getVertexIdxToInfo().get(resultVertexId());
+        }
         return opState.getResult();
     }
 
@@ -397,11 +440,18 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    /**
+     * Resolve the type of this
+     * ndarray based on the op.
+     * @return
+     */
     public Op.Type resolveType() {
         if(!(this instanceof  Op))
             throw new IllegalStateException("Unable to resolve type. Must be an op");
         if(this instanceof ScalarOp)
             return Op.Type.SCALAR;
+        else if(this instanceof ShapeOp)
+            return Op.Type.SHAPE;
         else if(this instanceof TransformOp)
             return Op.Type.TRANSFORM;
         else if(this instanceof BroadcastOp)
@@ -545,7 +595,7 @@ public abstract class DifferentialFunction implements Differential {
         OpState owner =  OpState.builder()
                 .opType(resolveType()).differentialFunction(this)
                 .opName(opName).inPlace(inPlace)
-                .extraArgs(extraArgs)
+                .extraArgs(extraArgs).axes(dimensions)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape)).result(information)

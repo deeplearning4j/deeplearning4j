@@ -3,7 +3,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -19,6 +21,7 @@ public class Constant extends BaseTransformOp {
     public Constant() {
     }
 
+
     protected Constant(SameDiff sameDiff,
                        ArrayField i_v,
                        int[] shape,
@@ -26,6 +29,7 @@ public class Constant extends BaseTransformOp {
         super();
         this.shape = shape;
         this.inPlace = inPlace;
+        this.sameDiff = sameDiff;
         this.args = new DifferentialFunction[] {this};
         if (i_v != null) {
             m_x = i_v;
@@ -50,7 +54,29 @@ public class Constant extends BaseTransformOp {
         this(sameDiff,i_v,shape,false);
     }
 
+    public Constant(INDArray x, INDArray z, int[] shape) {
+        super(x, z);
+        this.shape = shape;
+    }
 
+    public Constant(int[] shape) {
+        this.shape = shape;
+    }
+
+    public Constant(INDArray x, INDArray z, long n, int[] shape) {
+        super(x, z, n);
+        this.shape = shape;
+    }
+
+    public Constant(INDArray x, INDArray y, INDArray z, long n, int[] shape) {
+        super(x, y, z, n);
+        this.shape = shape;
+    }
+
+    public Constant(INDArray x, int[] shape) {
+        super(x);
+        this.shape = shape;
+    }
 
     /**
      * Get the result shape for this function
@@ -73,6 +99,10 @@ public class Constant extends BaseTransformOp {
     }
 
 
+    @Override
+    public NDArrayInformation getResult() {
+        return this.m_x.getInput();
+    }
 
     @Override
     public DifferentialFunction[] args() {

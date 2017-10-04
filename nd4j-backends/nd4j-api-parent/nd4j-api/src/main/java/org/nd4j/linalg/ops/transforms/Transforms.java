@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Atan2Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 

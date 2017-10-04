@@ -147,7 +147,9 @@ public class Transpose extends ShapeOp {
 
     @Override
     public INDArray z() {
-        return x().transpose();
+        if(x() != null)
+            return x().transpose();
+        return null;
     }
 
     @Override

@@ -12,10 +12,12 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.EqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.NotEqualTo;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 

@@ -1,9 +1,11 @@
 package org.nd4j.autodiff.samediff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -70,7 +72,6 @@ public class SameDiffTests {
         INDArray arr = Nd4j.linspace(1, 4, 4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable sigmoid = sameDiff.sigmoid(x);
-        assertEquals("sigmoid(x)", sigmoid.getVarName());
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), sigmoid.getShape());
@@ -93,7 +94,6 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1);
-        assertEquals("sum(x)", result.getVarName());
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), result.getShape());
@@ -106,7 +106,6 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.reshape(x, 2, 2);
-        assertEquals("reshape(x)", result.getVarName());
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(new int[]{2, 2}, result.getShape());
@@ -119,10 +118,10 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.transpose(x);
-        assertEquals("transpose(x)", result.getVarName());
+        sameDiff.exec();
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
-        assertArrayEquals(new int[]{4, 1}, result.getShape());
+        assertArrayEquals(new int[]{4, 1}, result.getArr().shape());
 
     }
 
@@ -135,8 +134,7 @@ public class SameDiffTests {
         SDVariable result = sameDiff.cosineSimilarity(x, y, 1);
         SDVariable addResult = result.add(result);
 
-        assertEquals("cosineSimilarity(x,y)", result.getVarName());
-        assertEquals(6, sameDiff.graph().numVertices());
+        assertEquals(5, sameDiff.graph().numVertices());
         assertArrayEquals(new int[]{1, 2}, result.getShape());
     }
 
@@ -148,7 +146,6 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
-        assertEquals("mmul(x,y)", result.getVarName());
         //3 vertices and 1 op result
         assertEquals(5, sameDiff.graph().numVertices()); // XXX: Why 5 instead of 3?
         //2 edges for matrix multiply and 1 op for result
@@ -234,7 +231,6 @@ public class SameDiffTests {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
-        assertEquals("tensorMmul(x,y)", result.getVarName());
         assertEquals(3, sameDiff.graph().numVertices());
         assertEquals(2, sameDiff.graph().getEdges().size());
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2, 2, 2}, new int[]{2, 2, 2}, new int[][]{{0}, {1}}), result.getShape());
@@ -377,7 +373,7 @@ public class SameDiffTests {
         SDVariable varMul = varMulPre.mul("d",sdVariable1);
         SDVariable sum = sameDiff.sum("ret",varMul,Integer.MAX_VALUE);
 
-        sameDiff.execBackwards();
+        Pair<Map<SDVariable, Op>, List<Op>> mapListPair = sameDiff.execBackwards();
 
         SDVariable finalResult = sameDiff.grad(sum.getVarName());
 
@@ -416,9 +412,9 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         SDVariable toAdd = sameDiff.var("arr1",Nd4j.ones(2,2));
         SDVariable add = sameDiff.var("arr2",Nd4j.valueArrayOf(2,2,2.0));
-        toAdd.addi(add);
+        SDVariable result = toAdd.addi(add);
         sameDiff.execAndEndResult();
-        INDArray arr = toAdd.getArr();
+        INDArray arr = result.getArr();
         INDArray assertion = Nd4j.ones(2,2).addi(Nd4j.valueArrayOf(2,2,2.0));
         assertEquals(arr,assertion);
     }
@@ -732,20 +728,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testBackwards() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("x",sumInput);
-        SDVariable input = sameDiff.var("x",inputs.get("x"));
-        SDVariable softmax = sameDiff.softmax(input);
-        SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
-        List<Op> backwardsOps = sameDiff.execBackwards().getRight();
-        assertEquals(4,backwardsOps.size());
-        assertEquals(Nd4j.zeros(2,2),backwardsOps.get(backwardsOps.size() - 1).z());
-        System.out.println(backwardsOps);
-    }
+
 
     @Test
     public void testSigmoidBackwards() {
@@ -795,6 +778,22 @@ public class SameDiffTests {
 
 
     @Test
+    public void testResolveArrayReferences() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable var1 = sameDiff.var("x",Nd4j.ones(2));
+        SDVariable var2 = sameDiff.var("y",Nd4j.valueArrayOf(2,3.0));
+        SDVariable result = var1.add(var2);
+        sameDiff.exec();
+        DifferentialFunction resultVarTest = result.getDifferentialFunction();
+        Op op = (Op) resultVarTest;
+        assertEquals(result.getArr(true),op.z());
+        assumeNotNull(sameDiff.getInfoFor(result.getArr(true)));
+        assertEquals(resultVarTest.getResult(),sameDiff.getInfoFor(result.getArr(true)));
+
+
+    }
+
+    @Test
     public void testMmulGradient() {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
@@ -834,7 +833,6 @@ public class SameDiffTests {
                 {4,4},
                 {6,6}
         });
-
 
         assertEquals(xGradAssertion,gradWrtX.getArr());
         assertEquals(yGradAssertion,gradWrtY.getArr());

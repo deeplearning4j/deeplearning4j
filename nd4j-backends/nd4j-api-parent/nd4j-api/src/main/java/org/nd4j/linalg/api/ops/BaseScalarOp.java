@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -39,6 +41,8 @@ import java.util.UUID;
  * @author Adam Gibson
  */
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
+    @Getter
+    @Setter
     protected Number num;
     protected IComplexNumber complexNumber;
     public int[] opDimension;
@@ -176,6 +180,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         this.opState = owner;
 
 
+    }
+
+    @Override
+    public void setScalar(Number scalar) {
+        this.num = scalar;
     }
 
     @Override

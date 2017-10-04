@@ -6,7 +6,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.ELU;
-import org.nd4j.linalg.api.ops.impl.transforms.ELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;

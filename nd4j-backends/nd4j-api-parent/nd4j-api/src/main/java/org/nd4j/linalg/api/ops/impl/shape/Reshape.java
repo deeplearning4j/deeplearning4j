@@ -82,7 +82,6 @@ public class Reshape extends ShapeOp {
 
     @Override
     public void exec() {
-        int[] shape = (int[]) extraArgs[0];
         if(x != z) {
             z.assign(x.reshape(shape));
         }
@@ -155,10 +154,6 @@ public class Reshape extends ShapeOp {
 
     }
 
-    @Override
-    public INDArray z() {
-        return x().transpose();
-    }
 
     @Override
     public Op opForDimension(int index, int... dimension) {

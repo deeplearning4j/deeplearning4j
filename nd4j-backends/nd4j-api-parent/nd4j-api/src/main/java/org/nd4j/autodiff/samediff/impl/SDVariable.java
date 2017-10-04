@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
@@ -75,7 +76,10 @@ public class SDVariable  implements Serializable {
     }
 
     public INDArray getArr() {
-        return getArr(false);
+        if(differentialFunction == null)
+            return null;
+        Op op = (Op) differentialFunction;
+        return op.z();
     }
 
     public INDArray getArr(boolean requireArray) {
@@ -84,6 +88,7 @@ public class SDVariable  implements Serializable {
                 this.arr = sameDiff.getNDArray(sameDiff.getVertexIdxToInfo().get(vertexId));
             if(this.arr == null && sameDiff.getArrayFieldInstances().get(vertexId) != null) {
                 this.arr = sameDiff.getNDArray(sameDiff.getArrayFieldInstances().get(vertexId).getInput());
+
             }
 
             if(this.arr == null && sameDiff.getFunctionInstances().get(vertexId) != null) {
@@ -113,7 +118,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable gradient() {
-        return getGradient();
+       return getGradient();
     }
 
     /**
@@ -125,12 +130,14 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable getGradient() {
+        Op grad = (Op) (this.getArrayField() != null ? this.getArrayField().getGradient() : this.getDifferentialFunction().getGradient());
+
         if(gradient == null && differentialFunction != null && differentialFunction.getGradient() != null) {
             this.gradient = differentialFunction != null && differentialFunction.getGradient() != null ? SDVariable.builder()
                     .sameDiff(sameDiff)
                     .differentialFunction(differentialFunction.getGradient())
                     .varName(varName + "-grad")
-                    .arr(sameDiff.getNDArray(differentialFunction.getGradient().getOpState().getResult()))
+                    .arr(grad.z())
                     .shape(differentialFunction.getGradient() != null ? differentialFunction.getGradient().getResultShape() : null)
                     .build() : null;
 
@@ -143,7 +150,7 @@ public class SDVariable  implements Serializable {
             this.gradient = arrayField != null && arrayField.getGradient() != null ? SDVariable.builder()
                     .sameDiff(sameDiff)
                     .differentialFunction(arrayField.getGradient())
-                    .varName(varName + "-grad").arr(sameDiff.getNDArray(arrayField.getGradient().getOpState().getResult()))
+                    .varName(varName + "-grad").arr(grad.z())
                     .shape(arrayField.getGradient() != null ? arrayField.getGradient().getResultShape() : null)
                     .build() : null;
 
@@ -169,6 +176,10 @@ public class SDVariable  implements Serializable {
         return gradient;
     }
 
+    /**
+     *
+     * @param gradient
+     */
     public void setGradient(SDVariable gradient) {
         this.gradient = gradient;
         this.gradient.setForwardVariable(this);
@@ -179,8 +190,8 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public NDArrayInformation getInfo() {
-        if(getArrayField() == null)
-            return null;
+        if(differentialFunction != null)
+            return differentialFunction.getResult();
         return getArrayField().getM_x().getInput();
     }
 

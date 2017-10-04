@@ -24,6 +24,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,39 +37,42 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Ones extends BaseTransformOp {
+public class Ones extends Constant {
+
+    public Ones() {
+    }
+
+
     public Ones(SameDiff sameDiff, int[] shape) {
-        super(sameDiff, null,shape, false,null);
+        super(sameDiff,sameDiff.getArrayFactory().one(shape), shape);
     }
 
-    public Ones(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+    public Ones(SameDiff sameDiff, ArrayField i_v, int[] shape, boolean inPlace) {
+        super(sameDiff, i_v, shape, inPlace);
     }
 
-    public Ones(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public Ones(SameDiff sameDiff, ArrayField i_v, int[] shape) {
+        super(sameDiff, i_v, shape);
     }
 
-    public Ones(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public Ones(INDArray x, INDArray z, int[] shape) {
+        super(x, z, shape);
     }
 
-    public Ones() {}
-
-    public Ones(INDArray x, INDArray z) {
-        super(x, z);
+    public Ones(int[] shape) {
+        super(shape);
     }
 
-    public Ones(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public Ones(INDArray x, INDArray z, long n, int[] shape) {
+        super(x, z, n, shape);
     }
 
-    public Ones(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Ones(INDArray x, INDArray y, INDArray z, long n, int[] shape) {
+        super(x, y, z, n, shape);
     }
 
-    public Ones(INDArray x) {
-        super(x);
+    public Ones(INDArray x, int[] shape) {
+        super(x, shape);
     }
 
     @Override
@@ -123,26 +127,24 @@ public class Ones extends BaseTransformOp {
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Ones(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Ones(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+       throw new UnsupportedOperationException();
 
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+        throw new UnsupportedOperationException();
 
-        if (y() != null)
-            return new Ones(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Ones(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+    }
 
+    @Override
+    public INDArray getZ() {
+        return z();
+    }
+
+    @Override
+    public INDArray z() {
+        return Nd4j.ones(shape);
     }
 
     @Override

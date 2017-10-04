@@ -6,7 +6,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.RationalTanh;
-import org.nd4j.linalg.api.ops.impl.transforms.RationalTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
