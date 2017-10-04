@@ -154,10 +154,6 @@ public class Reshape extends ShapeOp {
 
     }
 
-    @Override
-    public INDArray z() {
-        return x().transpose();
-    }
 
     @Override
     public Op opForDimension(int index, int... dimension) {

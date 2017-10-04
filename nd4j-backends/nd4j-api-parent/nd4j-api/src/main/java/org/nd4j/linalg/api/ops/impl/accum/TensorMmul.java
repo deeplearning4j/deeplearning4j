@@ -76,8 +76,8 @@ public class TensorMmul extends BaseAccumulation {
         if(!addedEdges) {
             ArrayField a = i_v1.getValue(true);
             ArrayField b = i_v2.getValue(true);
-            int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(a.getInput().getShape()) : a.getInput().getShape();
-            int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(b.getInput().getShape()) : b.getInput().getShape();
+            int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(i_v1.getResultShape()) : i_v1.getResultShape();
+            int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(i_v2.getResultShape()) : i_v2.getResultShape();
 
 
             addEdges(sameDiff,

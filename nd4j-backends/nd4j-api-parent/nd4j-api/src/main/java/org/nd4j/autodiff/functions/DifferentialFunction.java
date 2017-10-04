@@ -168,6 +168,8 @@ public abstract class DifferentialFunction implements Differential {
         ArrayField val = doGetValue();
         ArrayField arrayField = sameDiff.setupArrayField(val);
         val = arrayField;
+        if(opState != null)
+            arrayField.getInput().setShape(getResultShape());
         Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
 
 

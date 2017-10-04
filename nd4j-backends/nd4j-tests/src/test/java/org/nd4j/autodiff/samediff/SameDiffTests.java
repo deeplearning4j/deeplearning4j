@@ -121,7 +121,7 @@ public class SameDiffTests {
         sameDiff.exec();
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
-        assertArrayEquals(new int[]{4, 1}, result.getArr(true).shape());
+        assertArrayEquals(new int[]{4, 1}, result.getArr().shape());
 
     }
 
@@ -412,9 +412,9 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         SDVariable toAdd = sameDiff.var("arr1",Nd4j.ones(2,2));
         SDVariable add = sameDiff.var("arr2",Nd4j.valueArrayOf(2,2,2.0));
-        toAdd.addi(add);
+        SDVariable result = toAdd.addi(add);
         sameDiff.execAndEndResult();
-        INDArray arr = toAdd.getArr();
+        INDArray arr = result.getArr();
         INDArray assertion = Nd4j.ones(2,2).addi(Nd4j.valueArrayOf(2,2,2.0));
         assertEquals(arr,assertion);
     }
@@ -833,7 +833,6 @@ public class SameDiffTests {
                 {4,4},
                 {6,6}
         });
-
 
         assertEquals(xGradAssertion,gradWrtX.getArr());
         assertEquals(yGradAssertion,gradWrtY.getArr());
