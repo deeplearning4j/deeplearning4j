@@ -4925,7 +4925,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
             printf("%i, ", shapeInfo[i]);
         }
         printf("]\n");
+#ifndef __CUDACC__
         fflush(stdout);
+#endif
     }
 
 #ifdef __CUDACC__
