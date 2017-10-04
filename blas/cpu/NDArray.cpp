@@ -412,7 +412,7 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     newShapeInfo[rankOf() * 2 + 2] = 1;
 
     NDArray<T> *result = new NDArray<T>(newBuffer, newShapeInfo, _workspace);
-    // this value should be set, to avoid memleak
+    // this values should be set, to avoid memleak
     result->_isBuffAlloc = true;
     result->_isShapeAlloc = true;
 
@@ -841,6 +841,22 @@ template <typename T> void NDArray<T>::transposei() {
     }
 
 //////////////////////////////////////////////////////////////////////////
+// accessing operator for matrix, i - absolute index
+// be careful this method doesn't check the boundaries of array
+template<typename T>
+T NDArray<T>::operator()(const Nd4jIndex i) const {    
+    return _buffer[i];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for matrix, i - absolute index
+// be careful this method doesn't check the boundaries of array
+template<typename T>
+T& NDArray<T>::operator()(const Nd4jIndex i) {
+    return _buffer[i];
+}
+
+//////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
 // be careful this method doesn't check the rank of array
 template<typename T>
@@ -878,6 +894,60 @@ template<typename T>
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
 }
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+    void NDArray<T>::subRowVector(const NDArray<T> *row, NDArray<T>* target) {
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::subRowVector: wrong arguments !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        NativeOpExcutioner<T>::execBroadcast(1, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
+                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
+                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+}
+
+//////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void NDArray<T>::mulRowVector(const NDArray<T> *row, NDArray<T>* target) {
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        NativeOpExcutioner<T>::execBroadcast(2, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
+                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
+                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void NDArray<T>::divRowVector(const NDArray<T> *row, NDArray<T>* target) {
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        NativeOpExcutioner<T>::execBroadcast(3, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, target->getBuffer(), target->getShapeInfo(),
+                                             dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
+                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // This method adds given row to all rows in this NDArray, this array becomes affected
     template<typename T>
@@ -913,7 +983,6 @@ template<typename T>
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
-
 
 //////////////////////////////////////////////////////////////////////////
 // This method multiplies each column of this array by given argument-column, this array becomes affected
@@ -2103,7 +2172,35 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    template<typename OpName>
+    NDArray<T>* NDArray<T>::varianceAlongDimension(const bool biasCorrected, const std::vector<int>& dimensions) const {
+    
+        std::vector<int> copy(dimensions);
+            
+        int* newShape = evalReduceShapeInfo('c', copy);  
+        NDArray<T>* result = new NDArray<T>(newShape, _workspace);
+        RELEASE(newShape, _workspace);        
+        
+        if(rankOf() == copy.size())
+            result->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr);
+        else
+            functions::summarystats::SummaryStatsReduce<T>::template exec<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr,
+                                                                              result->_buffer, result->_shapeInfo, copy.data(), copy.size());
+        return result;    
+    
+    }
+    
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    template<typename OpName>
+    NDArray<T>* NDArray<T>::varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+    
+        return varianceAlongDimension<OpName>(biasCorrected, std::vector<int>(dimensions));
+    }
 
+    ////////////////////////////////////////////////////////////////////////
     // default destructor
     template<typename T>
     NDArray<T>::~NDArray() {

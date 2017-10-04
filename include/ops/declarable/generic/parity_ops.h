@@ -1150,8 +1150,130 @@ namespace nd4j {
 
 			return ND4J_STATUS_OK;
 		}
+        
+        //////////////////////////////////////////////////////////////////////////
+        DECLARE_CONFIGURABLE_OP(batchnorm, 1, 1, true, 4, 3) {
 
-		
+            NDArray<T>* x = block.getVariables().at(0)->getNDArray();            
+            NDArray<T> *activations = this->getZ(block);
+            std::vector<int> argI = *(block.getIArguments());
+            std::vector<T> argT = *(block.getTArguments());
+            T eps = argT[0];
+
+            bool training = (bool)argI[0];
+            bool isLockGammaBeta = (bool)argI[1];
+            bool isMinibatch  = (bool)argI[2];            
+        
+            NDArray<T> *mean(nullptr), *var(nullptr);
+            bool deleteX = false;
+            bool deleteMeanVar = false;
+            if (training) {
+                deleteMeanVar = true;
+                switch (x->rankOf()) {
+                    case 2:
+                        mean = x->template reduceAlongDimension<simdOps::Mean<T>>({0});
+                        var = x->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(false, {0});
+                        break;
+                    case 4:
+                        mean = x->template reduceAlongDimension<simdOps::Mean<T>>({0,2,3});                    
+                        var = x->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(false, {0,2,3});
+                        break;
+                    default:
+                        throw "Graph operation batchnorm: the rank of input array must be equal to 2 or 4 !";
+                }                
+                var->template applyScalar<simdOps::Add<T>>(eps, nullptr);
+            }
+            else {
+                mean = block.getVariables().at(1)->getNDArray();
+                var = block.getVariables().at(2)->getNDArray();
+            }
+            
+            NDArray<T> std(var->getShapeInfo(), block.getWorkspace());
+            var->template applyTransform<simdOps::Sqrt<T>>(&std, nullptr);        
+            
+            NDArray<T>* globalMeanView = block.getVariables().at(1)->getNDArray();
+            NDArray<T>* globalVarView = block.getVariables().at(2)->getNDArray();
+            NDArray<T>* gamma = block.getVariables().at(3)->getNDArray();;
+            NDArray<T>* beta = block.getVariables().at(4)->getNDArray();;
+            
+            NDArray<T> xMu(x->getShapeInfo(), block.getWorkspace());            
+            NDArray<T> xHat(x->getShapeInfo(), block.getWorkspace());            
+        
+            if (x->rankOf() == 2) {
+                x->subRowVector(mean, &xMu);
+                xMu.divRowVector(&std, &xHat);
+                
+                if (isLockGammaBeta) {
+                    T g = argT[1];
+                    T b = argT[2];
+                    if (g != (T)1. && b != (T)0.) {
+                        xHat.template applyScalar<simdOps::Multiply<T>>(g, activations, nullptr);
+                        activations->template applyScalar<simdOps::Add<T>>(b, nullptr);
+                    }
+                    else 
+                        *activations = xHat;
+                } 
+                else
+                    xHat.mulRowVector(gamma, activations);            
+        
+            } 
+            else if (x->rankOf() == 4) {
+        
+                if (!shape::strideDescendingCAscendingF(x->getShapeInfo())) {
+                    x = x->dup(x->ordering()); 
+                    deleteX = true;
+                }            
+                
+                x->template applyBroadcast<simdOps::Subtract<T>>({1}, mean, &xMu, nullptr);
+                xMu.template applyBroadcast<simdOps::Divide<T>>({1}, &std, &xHat, nullptr);
+        
+                if (isLockGammaBeta) {
+                    T g = argT[1];
+                    T b = argT[2];
+                    if (g != (T)1. && b != (T)0.) {                
+                        xHat.template applyScalar<simdOps::Multiply<T>>(g, activations, nullptr);
+                        activations->template applyScalar<simdOps::Add<T>>(b, nullptr);
+                    }
+                    else
+                        *activations = xHat;               
+                } 
+                else {
+                    xHat.template applyBroadcast<simdOps::Multiply<T>>({1}, gamma, activations, nullptr);                
+                    activations->template applyBroadcast<simdOps::Add<T>>({1}, beta, activations, nullptr);
+                }
+            } 
+            else            
+                throw "Graph operation batchnorm: the layer prior to BatchNorm in the configuration is not currently supported !";
+            
+            T decay;
+            if (training) {
+                if (isMinibatch) {
+                    decay = argT[3];
+                    
+                    globalMeanView->template  applyScalar<simdOps::Multiply<T>>(decay, nullptr);
+                    mean->template applyScalar<simdOps::Multiply<T>>((T)1. - decay, nullptr);
+                    globalMeanView->template applyPairwiseTransform<simdOps::Add<T>>(mean, nullptr);            
+                
+                    globalVarView->template  applyScalar<simdOps::Multiply<T>>(decay, nullptr);
+                    var->template applyScalar<simdOps::Multiply<T>>((T)1. - decay, nullptr);
+                    globalVarView->template applyPairwiseTransform<simdOps::Add<T>>(var, nullptr);                            
+                } 
+                else {            
+                    globalMeanView->assign(mean);
+                    globalVarView->assign(var);
+                }
+            }
+        
+            STORE_RESULT(*activations);
+   
+            if(deleteX)
+                delete x;
+            if(deleteMeanVar) {
+                delete mean;
+                delete var;
+            }
+            return ND4J_STATUS_OK;
+        }
 
 
     }

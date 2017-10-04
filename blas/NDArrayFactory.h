@@ -30,7 +30,6 @@ namespace nd4j {
         template<typename T>
         static NDArray<T>* tile(NDArray<T> *original, std::vector<int>& dimensions);
 
-
         template<typename T>
         static NDArray<T>* repeat(NDArray<T> *original, std::vector<int>& repeats);
 
@@ -39,8 +38,9 @@ namespace nd4j {
 
         template<typename T>
         static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
-
-
+        
+        template<typename T>
+        static void linspace(T from, NDArray<T>& arr);
     };
 }
 

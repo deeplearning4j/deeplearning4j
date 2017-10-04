@@ -37,11 +37,20 @@ namespace nd4j {
 
 		// forbid assignment operator
 		NDArray<T>& operator=(const NDArray<T>& other);
-        // accessing operator for 2D matrix, i - row, j - column
-        // be careful this method doesn't check the rank of array
-        T operator()(const int i, const int j) const;
+        
+        // accessing operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+        T operator()(const Nd4jIndex i) const;
 
-        // modifying operator for 2D matrix, i - row, j - column
+        // modifying operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+        T& operator()(const Nd4jIndex i);
+    
+        // accessing operator for 2D array, i - row, j - column
+        // be careful this method doesn't check the rank of array
+        T operator()(const int i, const int j) const;        
+
+        // modifying operator for 2D array, i - row, j - column
         // be careful this method doesn't check the rank of array
         T& operator()(const int i, const int j);
 
@@ -300,6 +309,12 @@ namespace nd4j {
         void addiRowVector(const NDArray<T> *row);
 
         void addRowVector(const NDArray<T> *row, NDArray<T>* target);
+        
+        void subRowVector(const NDArray<T> *row, NDArray<T>* target);
+        
+        void mulRowVector(const NDArray<T> *row, NDArray<T>* target);
+
+        void divRowVector(const NDArray<T> *row, NDArray<T>* target);
 
 		// This method adds given column to all columns in this NDArray, that is this array becomes affected
 		void addiColumnVector(const NDArray<T> *column);
@@ -389,7 +404,13 @@ namespace nd4j {
         template<typename OpName>
         NDArray<T>* applyReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
 
-		// default destructor
+        template<typename OpName>
+        NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::vector<int>& dimensions) const;
+
+        template<typename OpName>
+        NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
+		
+        // default destructor
         ~NDArray(); 
 
     };

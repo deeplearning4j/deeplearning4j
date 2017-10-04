@@ -326,6 +326,13 @@ namespace nd4j {
         return result;
     }
 
+    template<typename T>
+    void NDArrayFactory::linspace(T from, NDArray<T>& arr) {
+        
+        int size = arr.lengthOf();
+        for (Nd4jIndex i = 0; i < size; ++i)
+            arr(i) = from++;
+    }
 
     template<typename T>
     NDArray<T>* NDArrayFactory::createUninitialized(NDArray<T>* other) {

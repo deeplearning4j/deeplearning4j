@@ -1970,6 +1970,126 @@ TEST_F(DeclarableOpsTests, PnormPool2dBP) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, BatchNorm2D) {
+
+    const int training = 1;
+    const int isLockGammaBeta = 0;
+    const int isMinibatch  = 0;
+    const int K = 4;
+    const float eps = 1e-5;
+    const float g = 2.;
+    const float b = 1.;
+    const float decay = 1.;
+    NDArray<float> input('c', {bS, K});
+    NDArray<float> gamma('c', {1, K});
+    NDArray<float> beta ('c', {1, K});
+    NDArray<float> xHat ('c', {bS, K});    
+    NDArray<float> globalMeanView('c', {1, K});
+    NDArray<float> globalVarView('c', {1, K});
+    NDArray<float> output('c', {bS, K});
+    NDArray<float> outExpected('c', {bS, K});
+    input(0,0)=1;input(0,1)=2;input(0,2)=3;input(0,3)=4;input(1,0)=5;input(1,1)=6;input(1,2)=7;input(1,3)=8;
+    gamma.assign(1);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &input);
+	variableSpace->putVariable(-2, &globalMeanView);
+    variableSpace->putVariable(-3, &globalVarView);
+    variableSpace->putVariable(-4, &gamma);
+    variableSpace->putVariable(-5, &beta);
+    variableSpace->putVariable(1, &output);
+    
+
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1,-2,-3,-4,-5});	
+	std::vector<int>* argI = block->getIArguments();
+    std::vector<float>* argT = block->getTArguments();
+	*argI = {training, isLockGammaBeta, isMinibatch};  
+    *argT = {eps, g, b, decay};  
+    
+    NDArray<float>* mean = input.template reduceAlongDimension<simdOps::Mean<float>>({0});        
+    NDArray<float>* var  = input.template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0});
+    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
+    var->template applyTransform<simdOps::Sqrt<float>>(var, nullptr);            
+    input.subRowVector(mean, &xHat);    
+    xHat.divRowVector(var, &xHat);    
+    xHat.mulRowVector(&gamma, &outExpected);
+    outExpected.addRowVector(&beta, &outExpected);
+
+    nd4j::ops::batchnorm<float> batchnorm;
+	Nd4jStatus status = batchnorm.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(outExpected.equalsTo(result));
+
+    delete mean;
+    delete var;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, BatchNorm4D) {
+
+    const int training = 1;
+    const int isLockGammaBeta = 0;
+    const int isMinibatch  = 0;
+    const int iD = 4;
+    const int iH = 3;
+    const int iW = 3;
+    const float eps = 1e-5;
+    const float g = 2.;
+    const float b = 3.;
+    const float decay = 1.;
+    NDArray<float> input('c', {bS, iD, iH, iW});
+    NDArray<float> gamma('c', {1, iD});
+    NDArray<float> beta ('c', {1, iD});
+    gamma.assign(1.);
+    nd4j::NDArrayFactory::linspace<float>(1.,input);   
+
+    NDArray<float> xHat ('c', {bS, iD, iH, iW});    
+    NDArray<float> globalMeanView('c', {1, iD});
+    NDArray<float> globalVarView('c', {1, iD});
+    NDArray<float> output('c', {bS, iD, iH, iW});
+    NDArray<float> outExpected('c', {bS, iD, iH, iW});    
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &input);
+	variableSpace->putVariable(-2, &globalMeanView);
+    variableSpace->putVariable(-3, &globalVarView);
+    variableSpace->putVariable(-4, &gamma);
+    variableSpace->putVariable(-5, &beta);
+    variableSpace->putVariable(1, &output);    
+
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1,-2,-3,-4,-5});	
+	std::vector<int>* argI = block->getIArguments();
+    std::vector<float>* argT = block->getTArguments();
+	*argI = {training, isLockGammaBeta, isMinibatch};  
+    *argT = {eps, g, b, decay};  
+    
+    NDArray<float>* mean = input.template reduceAlongDimension<simdOps::Mean<float>>({0,2,3});        
+    NDArray<float>* var  = input.template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0,2,3});
+    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
+    var->template applyTransform<simdOps::Sqrt<float>>(var, nullptr);            
+    input.template applyBroadcast<simdOps::Subtract<float>>({1}, mean, &xHat, nullptr);
+    xHat.template applyBroadcast<simdOps::Divide<float>>({1}, var, &xHat, nullptr);
+    xHat.template applyBroadcast<simdOps::Multiply<float>>({1}, &gamma, &outExpected, nullptr);                
+    outExpected.template applyBroadcast<simdOps::Add<float>>({1}, &beta, &outExpected, nullptr);
+
+    nd4j::ops::batchnorm<float> batchnorm;
+	Nd4jStatus status = batchnorm.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(outExpected.equalsTo(result));
+
+    delete mean;
+    delete var;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests, Sum2) {
 
 	// float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
@@ -1999,3 +2119,5 @@ TEST_F(DeclarableOpsTests, PnormPool2dBP) {
 	// ASSERT_EQ(ND4J_STATUS_OK, status);
 	// ASSERT_TRUE(result->getScalar(0,0) == exp.getScalar(0,0));
 // }
+
+    
