@@ -21,9 +21,11 @@
 
 set -e
 
-VALID_VERSIONS=( 7.5 8.0 )
-CUDA_75_VERSION="7\.5"
+VALID_VERSIONS=( 8.0 9.0 )
 CUDA_80_VERSION="8\.0"
+CUDA_90_VERSION="9\.0"
+CUDNN_60_VERSION="6\.0"
+CUDNN_70_VERSION="7\.0"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>
@@ -49,16 +51,20 @@ check_cuda_version() {
 
 check_cuda_version "$TO_VERSION"
 
-if [ $TO_VERSION = "8.0" ]; then
-  FROM_BINARY="-7\.5"
-  TO_BINARY="-8\.0"
-  FROM_VERSION=$CUDA_75_VERSION
-  TO_VERSION=$CUDA_80_VERSION
-else
+if [ $TO_VERSION = "9.0" ]; then
   FROM_BINARY="-8\.0"
-  TO_BINARY="-7\.5"
+  TO_BINARY="-9\.0"
   FROM_VERSION=$CUDA_80_VERSION
-  TO_VERSION=$CUDA_75_VERSION
+  TO_VERSION=$CUDA_90_VERSION
+  FROM_VERSION2=$CUDNN_60_VERSION
+  TO_VERSION2=$CUDNN_70_VERSION
+else
+  FROM_BINARY="-9\.0"
+  TO_BINARY="-8\.0"
+  FROM_VERSION=$CUDA_90_VERSION
+  TO_VERSION=$CUDA_80_VERSION
+  FROM_VERSION2=$CUDNN_70_VERSION
+  TO_VERSION2=$CUDNN_60_VERSION
 fi
 
 sed_i() {
@@ -71,16 +77,20 @@ echo "Updating CUDA versions in pom.xml files to CUDA $1";
 
 BASEDIR=$(dirname $0)
 
-#Artifact ids, ending with "-7.5" or "-8.0". nd4j-cuda, deeplearning4j-cuda, etc.
+#Artifact ids, ending with "-8.0" or "-9.0". nd4j-cuda, deeplearning4j-cuda, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
 
-#Artifact ids, ending with "-7.5-platform" or "-8.0-platform". nd4j-cuda-platform, etc.
+#Artifact ids, ending with "-8.0-platform" or "-9.0-platform". nd4j-cuda-platform, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'-platform<\/artifactId>/\1'$TO_BINARY'-platform<\/artifactId>/g' {}" \;
 
-#CUDA versions, like <cuda.version>7.5</cuda.version>
+#CUDA versions, like <cuda.version>9.0</cuda.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(cuda.version>\)'$FROM_VERSION'<\/cuda.version>/\1'$TO_VERSION'<\/cuda.version>/g' {}" \;
+
+#cuDNN versions, like <cudnn.version>7.0</cudnn.version>
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(cudnn.version>\)'$FROM_VERSION2'<\/cudnn.version>/\1'$TO_VERSION2'<\/cudnn.version>/g' {}" \;
 
 echo "Done updating CUDA versions.";
