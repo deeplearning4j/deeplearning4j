@@ -70,11 +70,7 @@ public class KerasModelImportTest {
         try {
             network = KerasModelImport.importKerasSequentialModelAndWeights(modelJsonFile.getAbsolutePath(),
                     modelWeightFile.getAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InvalidKerasConfigurationException e) {
-            e.printStackTrace();
-        } catch (UnsupportedKerasConfigurationException e) {
+        } catch(IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }
 
@@ -88,11 +84,7 @@ public class KerasModelImportTest {
         MultiLayerNetwork model = null;
         try {
             model = KerasModelImport.importKerasSequentialModelAndWeights(modelFile.getAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InvalidKerasConfigurationException e) {
-            e.printStackTrace();
-        } catch (UnsupportedKerasConfigurationException e) {
+        } catch(IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }
 
