@@ -5,6 +5,7 @@ import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.zoo.model.Darknet19;
 import org.deeplearning4j.zoo.model.GoogLeNet;
 import org.deeplearning4j.zoo.model.ResNet50;
 import org.deeplearning4j.zoo.model.VGG16;
@@ -31,6 +32,7 @@ public class TestInstantiation {
     @Test
     public void testMultipleCnnTraining() throws Exception {
         Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.VGG19, 10);
+        models.putAll(ModelSelector.select(ZooType.DARKNET19, 10));
 
         for (Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {
             log.info("Testing training on zoo model " + entry.getKey());
@@ -88,6 +90,29 @@ public class TestInstantiation {
 
         initializedModel = (ComputationGraph) model.initPretrained();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = new Darknet19(); //num labels doesn't matter since we're getting pretrained imagenet
+        assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
+
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = new Darknet19(); //num labels doesn't matter since we're getting pretrained imagenet
+        model.setInputShape(new int[][] {{3, 448, 448}});
+        assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
+
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 448, 448}));
         assertArrayEquals(result[0].shape(), new int[] {1, 1000});
     }
 
