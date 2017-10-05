@@ -25,8 +25,8 @@ export LIBND4J_HOME="$(pwd)"
 if [[ -z $(git tag -l "libnd4j-$RELEASE_VERSION") ]]; then
     if [[ "${SKIP_BUILD}" == "0" ]]; then
         bash buildnativeoperations.sh -c cpu
-        bash buildnativeoperations.sh -c cuda -v 7.5
         bash buildnativeoperations.sh -c cuda -v 8.0
+        bash buildnativeoperations.sh -c cuda -v 9.0
     fi
     git tag -s -a -m "libnd4j-$RELEASE_VERSION" "libnd4j-$RELEASE_VERSION"
     git tag -s -a -f -m "libnd4j-$RELEASE_VERSION" "latest_release"
@@ -39,7 +39,7 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
     if [[ -z ${STAGING_REPOSITORY:-} ]]; then
         # create new staging repository with everything in it
         source change-scala-versions.sh 2.10
-        source change-cuda-versions.sh 7.5
+        source change-cuda-versions.sh 8.0
         mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 
         if [[ ! $(grep stagingRepository.id target/nexus-staging/staging/*.properties) =~ ^stagingRepository.id=(.*) ]]; then
@@ -48,7 +48,7 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
         STAGING_REPOSITORY=${BASH_REMATCH[1]}
 
         source change-scala-versions.sh 2.11
-        source change-cuda-versions.sh 8.0
+        source change-cuda-versions.sh 9.0
         mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 
         # build for Android with the NDK
@@ -67,16 +67,16 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
     else
         # build only partially (on other platforms) and deploy to given repository
         source change-scala-versions.sh 2.10
-        source change-cuda-versions.sh 7.5
+        source change-cuda-versions.sh 8.0
         mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 
         source change-scala-versions.sh 2.11
-        source change-cuda-versions.sh 8.0
+        source change-cuda-versions.sh 9.0
         mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
     fi
 
     source change-scala-versions.sh 2.11
-    source change-cuda-versions.sh 8.0
+    source change-cuda-versions.sh 9.0
 fi
 
 git commit -s -a -m "Update to version $RELEASE_VERSION"
