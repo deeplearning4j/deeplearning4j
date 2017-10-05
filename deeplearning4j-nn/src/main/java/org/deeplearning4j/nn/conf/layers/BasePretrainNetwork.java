@@ -71,17 +71,12 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer implements Op
 
     @Override
     public int getMaxNumLineSearchIterations(){
-        return maxNumLineSearchIterations;
-    }
-
-    @Override
-    public long getSeed(){
-        return seed;
+        return maxNumLineSearchIterations == null ? 5 : maxNumLineSearchIterations;
     }
 
     @Override
     public boolean isMiniBatch(){
-        return miniBatch;
+        return miniBatch == null ? true : miniBatch;
     }
 
     @Override
@@ -143,6 +138,13 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer implements Op
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         protected double visibleBiasInit = 0.0;
         protected int preTrainIterations = 1;
+//        protected Boolean miniBatch = true;
+//        protected Integer maxNumLineSearchIterations = 5;
+//        protected Long seed;
+//        protected OptimizationAlgorithm optimizationAlgo;
+//        protected StepFunction stepFunction;
+//        //minimize or maximize objective
+//        protected Boolean minimize;
 
         public Builder() {}
 

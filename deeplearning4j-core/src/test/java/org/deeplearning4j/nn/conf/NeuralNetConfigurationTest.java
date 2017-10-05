@@ -101,32 +101,6 @@ public class NeuralNetConfigurationTest {
     }
 
     @Test
-    public void testRNG() {
-        RBM layer = new RBM.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
-                        .weightInit(WeightInit.UNIFORM).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                        .hiddenUnit(RBM.HiddenUnit.RECTIFIED).activation(Activation.TANH)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build();
-
-        int numParams = layer.initializer().numParams(layer);
-        INDArray params = Nd4j.create(1, numParams);
-        Layer model = layer.instantiate(null, null, 0, 1, params, true);
-        INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-
-        RBM layer2 = new RBM.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
-                        .weightInit(WeightInit.UNIFORM).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                        .hiddenUnit(RBM.HiddenUnit.RECTIFIED).activation(Activation.TANH)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build();
-
-        int numParams2 = layer2.initializer().numParams(layer2);
-        INDArray params2 = Nd4j.create(1, numParams);
-        Layer model2 = layer2.instantiate(null, null, 0, 1, params2, true);
-        INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-        assertEquals(modelWeights, modelWeights2);
-    }
-
-    @Test
     public void testSetSeedSize() {
         Nd4j.getRandom().setSeed(123);
 

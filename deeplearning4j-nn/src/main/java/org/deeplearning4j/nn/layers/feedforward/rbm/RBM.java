@@ -73,11 +73,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
 @Deprecated
 public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.RBM> {
 
-    private long seed;
-
     public RBM(org.deeplearning4j.nn.conf.layers.RBM conf) {
         super(conf);
-        this.seed = conf.getSeed();
     }
 
     /**

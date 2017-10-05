@@ -590,9 +590,7 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
             conf.stepFunction = gc.getStepFunction();
             conf.maxNumLineSearchIterations = gc.getMaxNumLineSearchIterations();
 
-            Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
-
         }
 
 

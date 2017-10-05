@@ -146,9 +146,9 @@ public class DefaultParamInitializer implements ParamInitializer {
         return createBias(layerConf.getNOut(), layerConf.getBiasInit(), biasParamView, initializeParameters);
     }
 
-    protected INDArray createBias(int nOut, double biasInit, INDArray biasParamView, boolean initializeParameters) {
+    protected INDArray createBias(int nOut, Double biasInit, INDArray biasParamView, boolean initializeParameters) {
         if (initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(nOut, biasInit);
+            INDArray ret = Nd4j.valueArrayOf(nOut, (biasInit == null ? 0.0 : biasInit));
             biasParamView.assign(ret);
         }
         return biasParamView;
