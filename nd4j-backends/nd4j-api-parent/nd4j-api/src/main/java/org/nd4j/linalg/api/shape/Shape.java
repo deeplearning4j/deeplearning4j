@@ -33,6 +33,7 @@ import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import javax.xml.crypto.Data;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -1607,7 +1608,8 @@ public class Shape {
      * @return the rank for the shape buffer
      */
     public static int rank(IntBuffer buffer) {
-        IntBuffer ret = (IntBuffer) buffer.position(0);
+        Buffer buffer2 = (Buffer) buffer;
+        IntBuffer ret = (IntBuffer) buffer2.position(0);
         return ret.get(0);
     }
 
@@ -1777,7 +1779,8 @@ public class Shape {
      */
     public static IntBuffer stride(IntBuffer buffer) {
         int rank = rank(buffer);
-        IntBuffer ret = (IntBuffer) buffer.position(1 + rank);
+        Buffer buffer2 = (Buffer) buffer;
+        IntBuffer ret = (IntBuffer) buffer2.position(1 + rank);
         return ret.slice();
     }
 
@@ -1820,7 +1823,8 @@ public class Shape {
      * @return
      */
     public static IntBuffer shapeOf(IntBuffer buffer) {
-        IntBuffer ret = (IntBuffer) buffer.position(1);
+        Buffer buffer2 = (Buffer) buffer;
+        IntBuffer ret = (IntBuffer) buffer2.position(1);
         return ret.slice();
     }
 
@@ -2212,7 +2216,8 @@ public class Shape {
      */
     public static boolean contentEquals(int[] arr, IntBuffer other) {
         for (int i = 0; i < arr.length; i++) {
-            other.position(i);
+            Buffer buffer2 = (Buffer) other;
+            buffer2.position(i);
             if (arr[i] != other.get()) {
                 return false;
             }
@@ -2244,30 +2249,5 @@ public class Shape {
         return Arrays.equals(in.stride(), stridesIfContiguous);
     }
 
-    /**
-     *
-     * Idea: make an matrix compatible for mmul without needing to be copied first<br>
-     * A matrix is compatible for mmul if its values are contiguous in memory. Offset is OK.
-     * Returns the input array if input can be used in mmul without additional copy overhead
-     * Otherwise returns a copy of the input ndarray that can be used in mmul without additional copy overhead<br>
-     * This is useful for example if a matrix is going to be used in multiple mmul operations, so that we only
-     * have the overhead of copying at most once (rather than in every mmul operation)
-     * @param input Input ndarray
-     * @return ndarray that can be used in mmul without copy overhead
-     */
-    public static INDArray toMmulCompatible(INDArray input) {
-        if (input.rank() != 2)
-            throw new IllegalArgumentException("Input must be rank 2 (matrix)");
-        //Same conditions as GemmParams.copyIfNecessary()
-        boolean doCopy = false;
-        if (input.ordering() == 'c' && (input.stride(0) != input.size(1) || input.stride(1) != 1))
-            doCopy = true;
-        else if (input.ordering() == 'f' && (input.stride(0) != 1 || input.stride(1) != input.size(0)))
-            doCopy = true;
 
-        if (doCopy)
-            return Shape.toOffsetZeroCopyAnyOrder(input);
-        else
-            return input;
-    }
 }

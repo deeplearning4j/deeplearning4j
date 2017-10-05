@@ -36,8 +36,23 @@ public class OpState implements Serializable {
     private ArrayField arrayField;
     private boolean inPlace;
 
-
-
+     OpState(long n, Op.Type opType, String opName, int opNum, Number scalarValue, String[] vertexIds, String id, int[] axes, Object[] extraArgs, Integer[] extraBits, Object[] extraArgsWithoutInPlace, NDArrayInformation result, DifferentialFunction differentialFunction, ArrayField arrayField, boolean inPlace) {
+        this.n = n;
+        this.opType = opType;
+        this.opName = opName;
+        this.opNum = opNum;
+        this.scalarValue = scalarValue;
+        this.vertexIds = vertexIds;
+        this.id = id;
+        this.axes = axes;
+        this.extraArgs = extraArgs;
+        this.extraBits = extraBits;
+        this.extraArgsWithoutInPlace = extraArgsWithoutInPlace;
+        this.result = result;
+        this.differentialFunction = differentialFunction;
+        this.arrayField = arrayField;
+        this.inPlace = inPlace;
+    }
 
     public DifferentialFunction getDifferentialFunction() {
         if(differentialFunction != null)

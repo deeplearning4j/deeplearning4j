@@ -3144,6 +3144,7 @@ public class SameDiff {
                         }
 
                         DifferentialFunction currFunction = action.getOpState().getDifferentialFunction();
+                        currFunction.toString();
                         List<DifferentialFunction> backwardResult = currFunction.diff(Arrays.asList(currFunction.getGradient()));
 
                         //clear out all the variables

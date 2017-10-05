@@ -123,7 +123,7 @@ public class CounterMap<F, S> implements Serializable{
             Counter<S> counter = entry.getValue();
             S localMax = counter.argMax();
             if (counter.getCount(localMax) > maxCount || maxKey == null) {
-                maxKey = new Pair<>(entry.getKey(), localMax);
+                maxKey = new Pair<F, S>(entry.getKey(), localMax);
                 maxCount = counter.getCount(localMax);
             }
         }
