@@ -939,7 +939,11 @@
 #define STORE_4_RESULTS(A, B, C, D) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
 #define STORE_5_RESULTS(A, B, C, D, E) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
 
+#define STASH(NAME, ARRAY)  block.getVariableSpace()->getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
+#define CHECK_STASH(NAME)   block.getVariableSpace()->getStash()->checkStash(block.getNodeId(), NAME);
+#define UNSTASH(NAME)       block.getVariableSpace()->getStash()->extractArray(block.getNodeId(), NAME);
 
+#define INPUT_VARIABLE(INDEX)     block.getVariables().at(INDEX)->getNDArray()
 
 
 #endif

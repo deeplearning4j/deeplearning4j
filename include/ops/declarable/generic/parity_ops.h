@@ -20,6 +20,7 @@
 #include <ops/declarable/generic/third_party.h>
 #include <ops/declarable/generic/convo/convo_ops.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -375,98 +376,12 @@ namespace nd4j {
             for (int e = 0; e < axe1_size; e++)
                 axes_1.push_back((int) block.getIArguments()->at(e + axe0_size + 2));
 
+
             nd4j_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
 
-            // validating axes
-            int validationLength = nd4j::math::nd4j_min<int>(axe0_size, axe1_size);
-            for (int i = 0; i < validationLength; i++) {
-                if (a->sizeAt(axes_0[i]) != b->sizeAt(axes_1[i]))
-                    throw "Size of the given axes at each dimension must be the same size.";
-                if (axes_0[i] < 0)
-                    axes_0[i] += a->rankOf();
-                if (axes_1[i] < 0)
-                    axes_1[i] += b->rankOf();
-            }
-
-
-            std::vector<int> list_A, list_B;
-            for (int i = 0; i < a->rankOf(); i++)
-                if (std::find(axes_0.begin(), axes_0.end(), i) == axes_0.end())
-                    list_A.push_back(i);
-
-            for (int i = 0; i < b->rankOf(); i++)
-                if (std::find(axes_1.begin(), axes_1.end(), i) == axes_1.end())
-                    list_B.push_back(i);
-
-
-            std::vector<int> newAxesA(list_A);
-            std::vector<int> newAxesB;
-            for (auto v: axes_0)
-                newAxesA.push_back(v);
-
-            for (auto v: axes_1)
-                newAxesB.push_back(v);
-
-            for (auto v: list_B)
-                newAxesB.push_back(v);
-
-            int n2 = 1;
-            int aLength = nd4j::math::nd4j_min<int>(a->rankOf(), axes_0.size());
-            for (int i = 0; i < aLength; i++)
-                n2 *= a->sizeAt(axes_0[i]);
-
-            std::vector<int> newShapeA({-1, n2});
-            std::vector<int> oldShapeA;
-            if (list_A.size() == 0) {
-                oldShapeA.push_back(1);
-            } else {
-                for (auto v: list_A)
-                    oldShapeA.push_back(v);
-
-                for (int i = 0; i < (int) oldShapeA.size(); i++)
-                    oldShapeA[i] = a->sizeAt(oldShapeA[i]);
-            }
-
-            int n3 = 1;
-            int bNax = nd4j::math::nd4j_min<int>(b->rankOf(), axes_1.size());
-            for (int i = 0; i < bNax; i++)
-                n3 *= b->sizeAt(axes_1[i]);
-
-            std::vector<int> newShapeB({n3, -1});
-            std::vector<int> oldShapeB;
-            if (list_B.size() == 0) {
-                oldShapeB.push_back(1);
-            } else {
-                for (auto v: list_B)
-                    oldShapeB.push_back(v);
-                for (int i = 0; i < (int) oldShapeB.size(); i++)
-                    oldShapeB[i] = b->sizeAt(oldShapeB[i]);
-            }
-
-            auto aT = a->permute(newAxesA);
-            auto bT = b->permute(newAxesB);
-
-            //aT->permutei(newAxesA);
-            aT->reshapei('c', newShapeA);
-
-            //bT->permutei(newAxesB);
-            bT->reshapei('c', newShapeB);
-
-            auto c = nd4j::NDArrayFactory::mmulHelper<T>(aT, bT, nullptr, 1.0, 0.0);
-
-            std::vector<int> aPlusB(oldShapeA);
-            for (auto v: oldShapeB)
-                aPlusB.push_back(v);
-
-            c->reshapei('f', aPlusB);
+            auto c = nd4j::NDArrayFactory::tensorDot<T>(a, b, b, axes_0, axes_1);
 
             STORE_RESULT(*c);
-
-            if (aT != a)
-                delete aT;
-
-            if (bT != b)
-                delete bT;
 
             return ND4J_STATUS_OK;
         }

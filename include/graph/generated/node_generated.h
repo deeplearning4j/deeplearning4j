@@ -9,6 +9,8 @@
 namespace nd4j {
 namespace graph {
 
+struct LongPair;
+
 struct IntPair;
 
 struct IntTriple;
@@ -118,6 +120,56 @@ inline const char **EnumNamesDataType() {
 inline const char *EnumNameDataType(DataType e) {
   const size_t index = static_cast<int>(e);
   return EnumNamesDataType()[index];
+}
+
+struct LongPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_FIRST = 4,
+    VT_SECOND = 6
+  };
+  int64_t first() const {
+    return GetField<int64_t>(VT_FIRST, 0);
+  }
+  int64_t second() const {
+    return GetField<int64_t>(VT_SECOND, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_FIRST) &&
+           VerifyField<int64_t>(verifier, VT_SECOND) &&
+           verifier.EndTable();
+  }
+};
+
+struct LongPairBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_first(int64_t first) {
+    fbb_.AddElement<int64_t>(LongPair::VT_FIRST, first, 0);
+  }
+  void add_second(int64_t second) {
+    fbb_.AddElement<int64_t>(LongPair::VT_SECOND, second, 0);
+  }
+  LongPairBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LongPairBuilder &operator=(const LongPairBuilder &);
+  flatbuffers::Offset<LongPair> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<LongPair>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<LongPair> CreateLongPair(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t first = 0,
+    int64_t second = 0) {
+  LongPairBuilder builder_(_fbb);
+  builder_.add_second(second);
+  builder_.add_first(first);
+  return builder_.Finish();
 }
 
 struct IntPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

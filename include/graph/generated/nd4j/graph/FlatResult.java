@@ -18,8 +18,8 @@ public final class FlatResult extends Table {
   public nd4j.graph.FlatVariable variables(int j) { return variables(new nd4j.graph.FlatVariable(), j); }
   public nd4j.graph.FlatVariable variables(nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public nd4j.graph.IntTriple timing(int j) { return timing(new nd4j.graph.IntTriple(), j); }
-  public nd4j.graph.IntTriple timing(nd4j.graph.IntTriple obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public FlatTiming timing(int j) { return timing(new FlatTiming(), j); }
+  public FlatTiming timing(FlatTiming obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int timingLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createFlatResult(FlatBufferBuilder builder,

@@ -2,10 +2,16 @@ include "node.fbs";
 
 namespace nd4j.graph;
 
+table FlatTiming {
+    id:int; // ID of the node for this time report
+    name:string; // name of the node for this time report (if was specified)
+    timing:LongPair; // outer time, inner time
+}
+
 table FlatResult {
     id:int; // ID of the graph generated this result
     variables:[FlatVariable]; // variables with results
-    timing:[IntTriple]; // timing results
+    timing:[FlatTiming]; // timing results
 }
 
 root_type FlatResult;

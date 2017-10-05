@@ -29,6 +29,7 @@ namespace nd4j {
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
 
+            Variable<T>* clone();
 
             nd4j::NDArray<T> *getNDArray();
             void setNDArray(nd4j::NDArray<T> * array);
@@ -49,6 +50,20 @@ namespace nd4j {
             void setName(std::string *name);
         };
     }
+}
+
+template <typename T>
+nd4j::graph::Variable<T>* nd4j::graph::Variable<T>::clone() {
+    auto result = new Variable<T>(this->isPlaceholder());
+    result->_external = this->_external;
+    result->_id = this->_id;
+    result->_readOnly = this->_readOnly;
+    result->_name = this->_name;
+
+    if (this->_ndarray != nullptr)
+        result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering());
+
+    return result;
 }
 
 template <typename T>

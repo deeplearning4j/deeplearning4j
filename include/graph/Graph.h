@@ -10,6 +10,7 @@
 #include <map>
 //#include <NDArray.h>
 #include <graph/Node.h>
+#include <graph/Stash.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/generated/node_generated.h>
@@ -25,9 +26,11 @@ namespace nd4j {
         protected:
             ExecutorConfiguration *_configuration;
             VariableSpace<T> *_variableSpace;
+            Stash<T>* _stash;
 
             // vector holds ID's of top nodes only
             std::vector<int32_t > *_nodes;
+            std::vector<Node<T> *> _handles;
             std::map<int32_t, nd4j::graph::Node<T> *> *_mapped;
 
             std::map<int, std::vector<nd4j::graph::Node<T> *> *> *_onion;
@@ -115,9 +118,20 @@ namespace nd4j {
              * @param id
              */
             void addOutput(int32_t id);
+
+            /**
+             * This method returns all nodes at once (order is NOT guaranteed)
+             * @return
+             */
+            std::vector<nd4j::graph::Node<T>*> *getAllNodes();
         };
     }
 }
+template <typename T>
+std::vector<nd4j::graph::Node<T>*>* nd4j::graph::Graph<T>::getAllNodes() {
+    return &_handles;
+}
+
 template <typename T>
 std::vector<nd4j::graph::Variable<T>*>* nd4j::graph::Graph<T>::getPlaceholders() {
     return _variableSpace->getPlaceholders();
@@ -379,13 +393,16 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
     if (node->getName() != nullptr)
         nodeState->setName(node->getName());
 
+
+    _handles.push_back(node);
+
     // storing node state now
     _variableSpace->putVariable(node->id(), nodeState);
 
     if (node->hasCustomOp()) {
         // custom ops require Block inside. but we'll set it inside buildGraph
 
-
+        // TODO: we want to change this, to make blocks thread-local/session-local
         Block<T>* block = nullptr;
 
         if (!node->hasBlockAttached()) {

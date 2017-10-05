@@ -11,12 +11,15 @@
 #include <NDArray.h>
 #include <Variable.h>
 #include <Block.h>
+#include <Stash.h>
 #include "OpDescriptor.h"
 #include <helpers/helper_hash.h>
 #include <memory/Workspace.h>
 #include <memory/MemoryRegistrator.h>
 #include <ShapeList.h>
 
+#include <chrono>
+#include <ctime>
 
 using namespace nd4j::graph;
 
@@ -655,7 +658,7 @@ void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, 
     if (outputNumber == 0 && this->getOpDescriptor()->getNumberOfOutputs() == 1) {
         // we're adding this check, to avoid saving in legacy execution mechanism
         if (!block.getVariableSpace()->hasVariable(block.getNodeId())) {
-            nd4j_debug("Skipping storeResult for node_%i:%i", block.getNodeId(), outputNumber);
+            nd4j_debug("Skipping storeResult for node_%i:%i\n", block.getNodeId(), outputNumber);
             return;
         }
 
@@ -737,7 +740,15 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
     // this method will allocate output NDArrays for this op
     this->prepareOutputs(*block);
 
-    return this->validateAndExecute(*block);
+    auto timeStart = std::chrono::system_clock::now();
+
+    Nd4jStatus status = this->validateAndExecute(*block);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+    block->setInnerTime(outerTime);
+
+    return status;
 }
 
 template <typename T>

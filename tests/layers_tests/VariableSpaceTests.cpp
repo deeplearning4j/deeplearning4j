@@ -101,3 +101,66 @@ TEST_F(VariableSpaceTest, EqualityTest2) {
 
     ASSERT_TRUE(rV1 == rV2);
 }
+
+TEST_F(VariableSpaceTest, CloneTests_1) {
+    VariableSpace<float> spaceA;
+
+    auto arrayA = new NDArray<float>(3, 3, 'c');
+    arrayA->assign(1.0);
+
+    spaceA.putVariable(1, arrayA);
+
+    auto spaceB = spaceA.clone();
+
+    std::pair<int,int> pair(1,0);
+
+    ASSERT_TRUE(spaceB->hasVariable(1));
+    ASSERT_TRUE(spaceB->hasVariable(pair));
+
+    auto arrayB = spaceB->getVariable(1)->getNDArray();
+
+    ASSERT_TRUE(arrayA->equalsTo(arrayB));
+
+    arrayB->assign(2.0);
+
+    ASSERT_FALSE(arrayA->equalsTo(arrayB));
+
+    delete spaceB;
+}
+
+TEST_F(VariableSpaceTest, CloneTests_2) {
+    VariableSpace<float> spaceA;
+
+    auto arrayA = new NDArray<float>(3, 3, 'c');
+    arrayA->assign(1.0);
+
+    auto variableA = new Variable<float>(arrayA, "alpha");
+
+    std::string str("alpha");
+    std::pair<int, int> pair(2, 3);
+
+    spaceA.putVariable(pair, variableA);
+
+    ASSERT_TRUE(spaceA.hasVariable(&str));
+    ASSERT_TRUE(spaceA.hasVariable(pair));
+
+    auto spaceB = spaceA.clone();
+
+    ASSERT_FALSE(spaceB->hasVariable(1));
+    ASSERT_FALSE(spaceB->hasVariable(2));
+    ASSERT_TRUE(spaceB->hasVariable(pair));
+    ASSERT_TRUE(spaceB->hasVariable(&str));
+
+    auto arrayB = spaceB->getVariable(pair)->getNDArray();
+
+    ASSERT_TRUE(arrayA->equalsTo(arrayB));
+
+    arrayB->assign(2.0);
+
+    ASSERT_FALSE(arrayA->equalsTo(arrayB));
+
+    delete spaceB;
+
+    ASSERT_TRUE(spaceA.hasVariable(&str));
+    ASSERT_TRUE(spaceA.hasVariable(pair));
+}

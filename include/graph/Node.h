@@ -31,7 +31,7 @@ namespace nd4j {
             std::vector<int> _output;
             std::vector<int> _dimensions;
 
-            int * _dim;
+            int * _dim = nullptr;
             std::string _name;
 
 
@@ -39,7 +39,7 @@ namespace nd4j {
             int _layer = -1;
 
             // many ops require extra parameters to run
-            T *_extraParams;
+            T *_extraParams = nullptr;
 
 
             // optional scalar. used in scalar ops and in summary stats
@@ -123,10 +123,24 @@ namespace nd4j {
             bool isInplace();
             void markInplace(bool reallyInplace);
             OpClass getOpClass();
+
+            void setOuterTime(Nd4jIndex time);
+            void setInnerTime(Nd4jIndex time);
         };
     }
 }
 
+template <typename T>
+void nd4j::graph::Node<T>::setOuterTime(Nd4jIndex time){
+    if (hasBlockAttached())
+        _block->setOuterTime(time);
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setInnerTime(Nd4jIndex time){
+    if (hasBlockAttached())
+        _block->setInnerTime(time);
+}
 
 template <typename T>
 void nd4j::graph::Node<T>::setGraph(nd4j::graph::Graph<T>* graph) {

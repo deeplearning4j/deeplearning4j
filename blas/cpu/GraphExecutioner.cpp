@@ -22,6 +22,9 @@
 
 #include <fcntl.h>
 
+#include <chrono>
+#include <ctime>
+
 namespace nd4j{
     namespace graph {
 
@@ -541,9 +544,18 @@ namespace nd4j{
 
 //#pragma omp parallel for if (layerSize > 1 && pe) schedule(dynamic) proc_bind(spread)
                 for (int n = 0; n < layerSize; n++) {
-                    auto node = graph->getOnion()->at(l)->at(n);
+                    Node<T>* node = graph->getOnion()->at(l)->at(n);
+
+                    auto timeStart = std::chrono::system_clock::now();
 
                     Nd4jStatus status = executeFlatNode(graph, node, __variableSpace);
+
+                    auto timeEnd = std::chrono::system_clock::now();
+
+                    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+                    if (node->getBlock() != nullptr)
+                        node->getBlock()->setOuterTime(outerTime);
 
                     if (status != ND4J_STATUS_OK)
                         return status;
@@ -581,10 +593,29 @@ namespace nd4j{
 
             flatbuffers::FlatBufferBuilder builder(1024);
 
+            // fetching time reports
+            std::vector<flatbuffers::Offset<FlatTiming>> timings_vector;
+            for (int e = 0; e < (int) nativeGraph->getAllNodes()->size(); e++) {
+                nd4j::graph::Node<T> *node = nativeGraph->getAllNodes()->at(e);
+
+                if (node->getBlock() == nullptr)
+                    continue;
+
+                auto pair = CreateLongPair(builder, node->getBlock()->getOuterTime(), node->getBlock()->getInnerTime());
+                if (node->getName() != nullptr) {
+                    auto name = builder.CreateString(node->getName()->c_str());
+                    auto fr = CreateFlatTiming(builder, node->id(), name, pair);
+                    timings_vector.push_back(fr);
+                } else {
+                    auto fr = CreateFlatTiming(builder, node->id(), 0, pair);
+                    timings_vector.push_back(fr);
+                }
+            }
+
+
             // now, we'll prepare output, depending on given outputmode
             auto outputs = nativeGraph->fetchOutputs();
             std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
-
             for (int e = 0; e < (int) outputs->size(); e++) {
                 auto var = outputs->at(e);
 
@@ -599,8 +630,9 @@ namespace nd4j{
 
             nd4j_printf("Returning %i variables back\n", variables_vector.size());
 
+            auto varTimings = builder.CreateVector(timings_vector);
             auto varVectors = builder.CreateVector(variables_vector);
-            auto result = CreateFlatResult(builder, restoredGraph->id(), varVectors);
+            auto result = CreateFlatResult(builder, restoredGraph->id(), varVectors, varTimings);
             builder.Finish(result);
 
             // we might want to keep this graph for future

@@ -35,6 +35,7 @@ namespace nd4j {
             std::vector<int> _inputs;
             std::vector<nd4j::graph::Variable<T> *> _variables;
             nd4j::graph::VariableSpace<T>* _variableSpace;
+            std::pair<Nd4jIndex, Nd4jIndex> _executionTime;
             nd4j::random::RandomBuffer* _rng;
             int _nodeId;
 
@@ -56,6 +57,9 @@ namespace nd4j {
                 _variableSpace = variableSpace;
 				_isInplace = false;
                 _workspace = nullptr;
+
+                _executionTime.first = 0;
+                _executionTime.second = 0;
             }
 
             Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Block(nodeId, variableSpace) {
@@ -65,6 +69,12 @@ namespace nd4j {
             ~Block() {
                 //
             }
+
+            void setOuterTime(Nd4jIndex time);
+            void setInnerTime(Nd4jIndex time);
+
+            Nd4jIndex getOuterTime();
+            Nd4jIndex getInnerTime();
 
             bool hasVariablesFilled();
 
@@ -154,6 +164,26 @@ namespace nd4j {
             std::vector<nd4j::graph::Variable<T> *>& getVariables();
         };
     }
+}
+
+template <typename T>
+Nd4jIndex nd4j::graph::Block<T>::getOuterTime(){
+    return _executionTime.first;
+}
+
+template <typename T>
+Nd4jIndex nd4j::graph::Block<T>::getInnerTime(){
+    return _executionTime.second;
+}
+
+template <typename T>
+void nd4j::graph::Block<T>::setOuterTime(Nd4jIndex time){
+    _executionTime.first = time;
+}
+
+template <typename T>
+void nd4j::graph::Block<T>::setInnerTime(Nd4jIndex time){
+    _executionTime.second = time;
 }
 
 template <typename T>

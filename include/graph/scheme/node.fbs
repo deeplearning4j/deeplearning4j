@@ -1,14 +1,19 @@
 namespace nd4j.graph;
 
+table LongPair {
+    first:long; // first
+    second:long; // second
+}
+
 table IntPair {
-    first:int; // node id
-    second:int; // time spent
+    first:int;
+    second:int;
 }
 
 table IntTriple {
-    first:int; // node id
-    second:int; // time spent
-    third:int; // something else
+    first:int;
+    second:int;
+    third:int;
 }
 
 enum OpType:byte {

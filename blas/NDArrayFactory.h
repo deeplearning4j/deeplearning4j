@@ -37,6 +37,12 @@ namespace nd4j {
         static nd4j::NDArray<T>* mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
 
         template<typename T>
+        static nd4j::NDArray<T>* tensorDot(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, std::initializer_list<int> axesA, std::initializer_list<int> axesB = {});
+
+        template<typename T>
+        static nd4j::NDArray<T>* tensorDot(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, std::vector<int>& axesA, std::vector<int>& axesB);
+
+        template<typename T>
         static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
         
         template<typename T>

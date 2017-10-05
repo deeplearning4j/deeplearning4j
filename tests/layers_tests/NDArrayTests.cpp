@@ -1365,4 +1365,64 @@ TEST_F(NDArrayTest, TestMulRowVector1) {
     ASSERT_TRUE(exp.equalsTo(&target));
 }
 
+TEST_F(NDArrayTest, TestTensorDotAgain_1) {
+    int sY = 1;
+    int sX = 1;
+    int pY = 0;
+    int pX = 0;
+    int iC = 2;
+    int oC = 2;
+    int kY = 3;
+    int kX = 3;
+    int iY = 2;
+    int iX = 2;
+    int oY = 6;
+    int oX = 6;
+    int eD = iC * oC;
+    int B = 2;
 
+    /*
+    input = np.linspace(1, B * iC * iY * iX, B * iC * iY * iX).reshape(B, iC, iY, iX)
+    weights = np.linspace(1, iC * oC * kY * kX, iC * oC * kY * kX).reshape(iC, oC, kY, kX)
+     */
+    double _expB[] = {96.0,  116.0,  136.0,  156.0,  256.0,  276.0,  296.0,  316.0,  102.0,  124.0,  146.0,  168.0,    278.0,  300.0,  322.0,  344.0,  108.0,  132.0,  156.0,  180.0,  300.0,  324.0,  348.0,  372.0,    114.0,  140.0,  166.0,  192.0,  322.0,  348.0,  374.0,  400.0,  120.0,  148.0,  176.0,  204.0,    344.0,  372.0,  400.0,  428.0,  126.0,  156.0,  186.0,  216.0,  366.0,  396.0,  426.0,  456.0,    132.0,  164.0,  196.0,  228.0,  388.0,  420.0,  452.0,  484.0,  138.0,  172.0,  206.0,  240.0,    410.0,  444.0,  478.0,  512.0,  144.0,  180.0,  216.0,  252.0,  432.0,  468.0,  504.0,  540.0,    150.0,  188.0,  226.0,  264.0,  454.0,  492.0,  530.0,  568.0,  156.0,  196.0,  236.0,  276.0,    476.0,  516.0,  556.0,  596.0,  162.0,  204.0,  246.0,  288.0,  498.0,  540.0,  582.0,  624.0,    168.0,  212.0,  256.0,  300.0,  520.0,  564.0,  608.0,  652.0,  174.0,  220.0,  266.0,  312.0,    542.0,  588.0,  634.0,  680.0,  180.0,  228.0,  276.0,  324.0,  564.0,  612.0,  660.0,  708.0,    186.0,  236.0,  286.0,  336.0,  586.0,  636.0,  686.0,  736.0,  192.0,  244.0,  296.0,  348.0,    608.0,  660.0,  712.0,  764.0,  198.0,  252.0,  306.0,  360.0,  630.0,  684.0,  738.0,  792.0};
+
+    int _expS[] = {6, 2, 3, 3, 2, 2, 2, 72, 24, 8, 4, 2, 1, 0, 1, 99};
+    NDArray<double> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    NDArray<double> input('c', {B, iC, iY, iX});
+    NDArray<double> weights('c', {iC, oC, kY, kX});
+
+    NDArrayFactory::linspace<double>(1, input);
+    NDArrayFactory::linspace<double>(1, weights);
+
+    auto result = NDArrayFactory::tensorDot<double>(&weights, &input, nullptr, {0}, {1});
+
+    result->printShapeInfo("result shape");
+    ASSERT_TRUE(exp.isSameShape(result));
+
+        exp.printBuffer("Expctd buffer");
+    result->printBuffer("Result buffer");
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete result;
+}
+
+
+TEST_F(NDArrayTest, TestBroadcast_1) {
+    double _expB[] = {1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000, 1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000};
+    int _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 0, 1, 99};
+    NDArray<double> exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    NDArray<double> input('c',{ 2, 3, 2, 2});
+    NDArray<double> bias('c', {1, 3});
+
+    NDArrayFactory::linspace<double>(1, bias);
+
+    input.template applyBroadcast<simdOps::Add<double>>({1}, &bias);
+
+    //input.printBuffer("result");
+    ASSERT_TRUE(exp.equalsTo(&input));
+}

@@ -914,6 +914,7 @@ TEST_F(DeclarableOpsTests, TestMatMul1) {
 
     ASSERT_TRUE(result->equalsTo(&exp));
 
+    ASSERT_TRUE(block->getInnerTime() > 0);
 
     delete block;
     delete variableSpace;
