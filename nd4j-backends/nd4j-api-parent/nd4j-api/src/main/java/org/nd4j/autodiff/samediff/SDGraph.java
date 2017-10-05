@@ -118,6 +118,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      */
     public OpExecOrder getOpOrder(boolean reverse) {
         int[] order = topologicalSort(reverse);
+        Set<OpState> seenStates = new HashSet<>();
         if(reverse) {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
             Map<Integer,OpExecAction> opExecActionMap = new HashMap<>();
@@ -158,9 +159,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 NDArrayVertex ndArrayVertex = depthQueue.poll();
                 OpExecAction action = opExecActionMap.get(ndArrayVertex.vertexID());
                 //no op means it was a variable
-                if(action != null)
+                if(action != null && !seenStates.contains(action.getOpState())) {
                     ret.add(action);
-
+                    seenStates.add(action.getOpState());
+                }
 
             }
 
@@ -170,6 +172,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         }
         else {
             List<OpExecAction> ret = new ArrayList<>();
+
             //iterate over op execution order skipping
             // nodes that are only inputs
             //the goal is to get all of the needed op executions
@@ -197,15 +200,16 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 Edge<OpState> opStateEdge = inputOpStates.get(0);
                 for(int j = 0; j < inputs.length; j++)
                     Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
-
-                ret.add(OpExecAction.builder()
-                        .output(opStateEdge.getValue().getResult())
-                        .opState(opStateEdge.getValue())
-                        .inputs(inputs)
-                        .inputsIds(inputIds)
-                        .outputId(order[i])
-                        .build());
-
+                if(!seenStates.contains(opStateEdge.getValue())) {
+                    ret.add(OpExecAction.builder()
+                            .output(opStateEdge.getValue().getResult())
+                            .opState(opStateEdge.getValue())
+                            .inputs(inputs)
+                            .inputsIds(inputIds)
+                            .outputId(order[i])
+                            .build());
+                    seenStates.add(opStateEdge.getValue());
+                }
             }
 
 

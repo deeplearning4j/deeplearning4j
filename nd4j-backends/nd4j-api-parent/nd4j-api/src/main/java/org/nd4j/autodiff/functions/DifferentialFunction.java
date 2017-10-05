@@ -616,8 +616,14 @@ public abstract class DifferentialFunction implements Differential {
         if(owner.isInPlace()) {
             information.setArrId(v1.getInput().getArrId());
         }
+
         this.opState = owner;
 
+        if(!sameDiff.getVertexIdxToInfo().containsKey(newVertex.vertexID()))
+            sameDiff.getVertexIdxToInfo().put(newVertex.vertexID(),information);
+
+        else
+            throw new IllegalStateException("Found duplicate vertex information");
 
     }
 

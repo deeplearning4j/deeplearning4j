@@ -36,10 +36,10 @@ public class ImmutableTriple<F, S, T> implements Serializable {
     }
 
     public static <F, S, T> ImmutableTriple<F, S,T> tripleOf(F first, S second, T third) {
-        return new ImmutableTriple<>(first, second, third);
+        return new ImmutableTriple<F, S, T>(first, second, third);
     }
 
     public static <F, S, T> ImmutableTriple<F, S,T> of(F first, S second, T third) {
-        return new ImmutableTriple<>(first, second, third);
+        return new ImmutableTriple<F, S, T>(first, second, third);
     }
 }

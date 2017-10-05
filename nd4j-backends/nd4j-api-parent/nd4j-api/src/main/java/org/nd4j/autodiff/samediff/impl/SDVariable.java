@@ -75,6 +75,21 @@ public class SDVariable  implements Serializable {
 
     }
 
+
+    public void setArr(INDArray arr) {
+        if(arr == null) {
+            return;
+        }
+
+        this.arr = arr;
+        if(differentialFunction instanceof Op) {
+            Op op = (Op) differentialFunction;
+            op.setZ(arr);
+        }
+
+
+    }
+
     public INDArray getArr() {
         if(differentialFunction == null)
             return null;

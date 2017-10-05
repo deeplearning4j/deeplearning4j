@@ -149,13 +149,10 @@ public class Negative extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        return Arrays.asList(f().neg(arg().diff(i_v).get(0)));
+        return Arrays.asList(f().neg(i_v.get(0)));
     }
 
-    @Override
-    public String toString() {
-        return "-" + arg().toString();
-    }
+
 
     @Override
     public String doGetFormula(List<Variable> variables) {
