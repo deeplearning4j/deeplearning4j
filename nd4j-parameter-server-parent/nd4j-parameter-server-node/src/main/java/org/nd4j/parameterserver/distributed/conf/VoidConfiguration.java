@@ -17,6 +17,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Slf4j
