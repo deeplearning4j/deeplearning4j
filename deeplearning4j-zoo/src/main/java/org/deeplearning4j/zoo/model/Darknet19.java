@@ -62,9 +62,9 @@ public class Darknet19 extends ZooModel {
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
             if (inputShape[1] == 448 && inputShape[2] == 448)
-                return "http://blob.deeplearning4j.org/models/darknet19_448_dl4j_inference.zip";
+                return "http://blob.deeplearning4j.org/models/darknet19_448_dl4j_inference.v1.zip";
             else
-                return "http://blob.deeplearning4j.org/models/darknet19_dl4j_inference.zip";
+                return "http://blob.deeplearning4j.org/models/darknet19_dl4j_inference.v1.zip";
         else
             return null;
     }
@@ -151,7 +151,7 @@ public class Darknet19 extends ZooModel {
                 .addInputs("input")
                 .setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
 
-        addLayers(graphBuilder, 1, 3, 3,  32, 2);
+        addLayers(graphBuilder, 1, 3, inputShape[0],  32, 2);
 
         addLayers(graphBuilder, 2, 3, 32, 64, 2);
 
