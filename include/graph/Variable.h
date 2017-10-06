@@ -22,6 +22,7 @@ namespace nd4j {
             bool _external;
             bool _readOnly;
             bool _placeholder = false;
+            bool _removable = true;
 
         public:
             Variable(bool placeHolder);
@@ -42,6 +43,7 @@ namespace nd4j {
 
             void markExternal(bool reallyExternal);
             void markReadOnly(bool reallyReadOnly);
+            void markRemovable(bool reallyRemovable);
 
             int32_t id();
             void setId(int32_t id);
@@ -117,6 +119,11 @@ void nd4j::graph::Variable<T>::markExternal(bool reallyExternal) {
 }
 
 template <typename T>
+void nd4j::graph::Variable<T>::markRemovable(bool reallyRemovable) {
+    this->_removable = reallyRemovable;
+}
+
+template <typename T>
 void nd4j::graph::Variable<T>::markReadOnly(bool reallyReadOnly) {
    this->_readOnly = reallyReadOnly;
 }
@@ -179,7 +186,7 @@ nd4j::graph::Variable<T>::Variable(NDArray<T> *array, const char *name ) {
 
 template <typename T>
 nd4j::graph::Variable<T>::~Variable() {
-    if (_ndarray != nullptr)
+    if (_ndarray != nullptr && _removable)
         delete _ndarray;
 }
 

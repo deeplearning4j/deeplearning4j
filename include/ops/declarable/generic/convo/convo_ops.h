@@ -476,6 +476,125 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
+
+        DECLARE_CUSTOM_OP(deconv2d_bp, 4, 2, false, 0, 9) {
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *weights = INPUT_VARIABLE(1);
+            NDArray<T> *epsilonNext = INPUT_VARIABLE(2);
+            NDArray<T> *bias = nullptr;
+
+            // bias is still optional
+            if (block.getVariables().size() > 3)
+                bias = INPUT_VARIABLE(3);
+
+            //epsilonNext->rankOf() == 4 && weights->rankOf() == 4
+            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should be 4D, but got %iD instead", input->rankOf());
+            REQUIRE_TRUE(weights->rankOf() == 4, 0, "Weights should be 4D, but got %iD instead", weights->rankOf());
+            REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "Epsilon should be 4D, but got %iD instead", epsilonNext->rankOf());
+
+            int kY = block.getIArguments()->at(0);
+            int kX = block.getIArguments()->at(1);
+            int sY = block.getIArguments()->at(2);
+            int sX = block.getIArguments()->at(3);
+            int pY = block.getIArguments()->at(4);
+            int pX = block.getIArguments()->at(5);
+            int dY = block.getIArguments()->at(6);
+            int dX = block.getIArguments()->at(7);
+            const bool isSameMode = block.getIArguments()->at(8) != 0;
+
+            NDArray<T>* epsilon = this->getZ(block);
+            NDArray<T>* gradW = this->getZ(block, 1);
+            NDArray<T>* gradB = nullptr;
+
+            if (bias != nullptr)
+                gradB = this->getZ(block, 2);
+
+            // epsilon for deconv2d is FF conv pass
+
+            nd4j::ops::conv2d<T> op;
+            Nd4jStatus r1 = op.execute({input, weights}, {epsilon}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, block.getIArguments()->at(8)});
+            if (r1 != ND4J_STATUS_OK)
+                return r1;
+
+            // gradW is im2col + tensorDot
+            /*
+              col = conv.im2col_cpu(
+            x, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
+            cover_all=self.cover_all)
+             gW = numpy.tensordot(gy, col, ((0, 2, 3), (0, 4, 5))).
+             */
+
+            int oY = 0;
+            int oX = 0;
+            int inY = epsilonNext->sizeAt(2);
+            int inX = epsilonNext->sizeAt(3);
+
+            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+            if (isSameMode) {
+                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+            }
+
+            std::unique_ptr<T> extrasIm2Col(new T[9]{(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+            auto gcol = new NDArray<T>('c', {input->sizeAt(0), input->sizeAt(1), kY, kX, oY, oX });
+            epsilonNext->template applyTransform<simdOps::Im2col<T>>(gcol, extrasIm2Col.get());
+
+            /*
+            gW = numpy.tensordot(
+                    gy, col, ((0, 2, 3), (0, 4, 5))).
+            */
+
+            auto gW = NDArrayFactory::tensorDot<T>(input, gcol, nullptr, {0, 2, 3}, {0, 4, 5});
+            gradW->assign(gW);
+
+            delete gW;
+            delete gcol;
+
+            if (gradB != nullptr) {
+                auto sum = epsilon->template reduceAlongDimension<simdOps::Sum<T>>({0, 2, 3});
+                gradB->assign(sum);
+                delete sum;
+
+                STORE_3_RESULTS(*epsilon, *gradW, *gradB);
+            } else {
+                STORE_2_RESULTS(*epsilon, *gradW);
+            }
+
+
+
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SHAPE_FN(deconv2d_bp) {
+            auto inShape = inputShape->at(0);
+            auto wShape = inputShape->at(1);
+            auto eShape = inputShape->at(2);
+            int *bShape = nullptr;
+
+            // bias is optional thing, and might be absent
+            if (inputShape->size() == 4)
+                bShape = inputShape->at(3);
+
+            int *newInShape;
+            int *newWShape;
+            ALLOCATE(newInShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
+            ALLOCATE(newWShape, block.getWorkspace(), shape::shapeInfoLength(wShape), int);
+
+            memcpy(newInShape, inShape, shape::shapeInfoByteLength(inShape));
+            memcpy(newWShape, wShape, shape::shapeInfoByteLength(wShape));
+
+            auto shapes = new ShapeList({newInShape, newWShape});
+
+            if (bShape != nullptr) {
+                int *newBShape;
+                ALLOCATE(newBShape, block.getWorkspace(), shape::shapeInfoLength(bShape), int);
+                memcpy(newBShape, bShape, shape::shapeInfoByteLength(bShape));
+
+                shapes->push_back(newBShape);
+            }
+
+            return shapes;
+        }
+
 //////////////////////////////////////////////////////////////////////////
         DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
@@ -564,7 +683,7 @@ namespace nd4j {
          * IArgs map:
          * IArgs[0] - scale factor
          */
-        DECLARE_CONFIGURABLE_OP(upsampling, 1, 1, false, 0, 1) {
+        DECLARE_CONFIGURABLE_OP(upsampling2d, 1, 1, false, 0, 1) {
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* output = this->getZ(block);
             int scale_factor = block.getIArguments()->at(0);
@@ -623,6 +742,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(upsampling, upsampling2d);
 
 //////////////////////////////////////////////////////////////////////////
         /**
@@ -636,7 +756,7 @@ namespace nd4j {
          * IArgs map:
          * IArgs[0] - scale factor
          */
-        DECLARE_CONFIGURABLE_OP(upsampling_bp, 2, 1, false, 0, 1) {
+        DECLARE_CONFIGURABLE_OP(upsampling2d_bp, 2, 1, false, 0, 1) {
             //NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* gradientNext = block.getVariables().at(1)->getNDArray();
             NDArray<T>* output = this->getZ(block);
@@ -704,6 +824,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(upsampling_bp, upsampling2d_bp);
 
 //////////////////////////////////////////////////////////////////////////
         // maxpool2d corresponds to poolingMode=0

@@ -154,9 +154,9 @@ namespace nd4j {
                 }
             }
 
-            void fillInputs(std::vector<int> *inputs) {
-                for (int e = 0; e < inputs->size(); e++) {
-                    auto v = inputs->at(e);
+            void fillInputs(std::vector<int>& inputs) {
+                for (int e = 0; e < inputs.size(); e++) {
+                    auto v = inputs.at(e);
                     pickInput(v);
                 }
             }
