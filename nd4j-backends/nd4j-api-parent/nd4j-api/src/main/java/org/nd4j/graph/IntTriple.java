@@ -16,19 +16,23 @@ public final class IntTriple extends Table {
 
   public int first() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public int second() { int o = __offset(6); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public int third() { int o = __offset(8); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
 
   public static int createIntTriple(FlatBufferBuilder builder,
       int first,
-      int second) {
-    builder.startObject(2);
+      int second,
+      int third) {
+    builder.startObject(3);
+    IntTriple.addThird(builder, third);
     IntTriple.addSecond(builder, second);
     IntTriple.addFirst(builder, first);
     return IntTriple.endIntTriple(builder);
   }
 
-  public static void startIntTriple(FlatBufferBuilder builder) { builder.startObject(2); }
+  public static void startIntTriple(FlatBufferBuilder builder) { builder.startObject(3); }
   public static void addFirst(FlatBufferBuilder builder, int first) { builder.addInt(0, first, 0); }
   public static void addSecond(FlatBufferBuilder builder, int second) { builder.addInt(1, second, 0); }
+  public static void addThird(FlatBufferBuilder builder, int third) { builder.addInt(2, third, 0); }
   public static int endIntTriple(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

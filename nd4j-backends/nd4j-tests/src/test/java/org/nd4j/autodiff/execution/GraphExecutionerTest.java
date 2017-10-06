@@ -1,16 +1,29 @@
 package org.nd4j.autodiff.execution;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.indexer.ByteIndexer;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  * Comparative tests for native executioner vs sequential execution
@@ -25,6 +38,41 @@ public class GraphExecutionerTest {
     @Before
     public void setUp() throws Exception {
         //
+    }
+
+    @Test
+    public void testConversion() throws Exception {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        SDVariable sdVariable = sameDiff.var("ones",ones);
+        SDVariable result = sdVariable.addi(1.0);
+        SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
+
+        val executioner = new NativeGraphExecutioner();
+
+        ByteBuffer buffer = executioner.convertToFlatBuffers(sameDiff, ExecutorConfiguration.builder().profilingMode(OpExecutioner.ProfilingMode.DISABLED).executionMode(ExecutionMode.SEQUENTIAL).outputMode(OutputMode.IMPLICIT).build());
+
+        val offset = buffer.position();
+        val array = buffer.array();
+
+        try (val fos = new FileOutputStream("../../libnd4j/tests/resources/adam_sum.fb"); val dos = new DataOutputStream(fos)) {
+            dos.write(array, offset, array.length - offset);
+        }
+
+
+        //INDArray[] res = executioner.executeGraph(sameDiff);
+        //assertEquals(8.0, res[0].getDouble(0), 1e-5);
+        /*
+        INDArray output = null;
+        for(int i = 0; i < 5; i++) {
+            output = sameDiff.execAndEndResult(ops);
+            System.out.println("Ones " + ones);
+            System.out.println(output);
+        }
+
+        assertEquals(Nd4j.valueArrayOf(4,7),ones);
+        assertEquals(28,output.getDouble(0),1e-1);
+        */
     }
 
 
@@ -92,5 +140,20 @@ public class GraphExecutionerTest {
         //INDArray resA = executionerA.executeGraph(sameDiff)[0];
 
         //assertEquals(resA, resB);
+    }
+
+
+    @Test
+    public void testSums1() throws Exception {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        SDVariable sdVariable = sameDiff.var("ones",ones);
+        SDVariable result = sdVariable.addi(1.0);
+        SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
+
+        val executioner = new NativeGraphExecutioner();
+
+        INDArray[] res = executioner.executeGraph(sameDiff);
+        assertEquals(8.0, res[0].getDouble(0), 1e-5);
     }
 }

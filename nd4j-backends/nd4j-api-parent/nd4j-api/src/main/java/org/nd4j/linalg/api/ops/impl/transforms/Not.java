@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class Not extends BaseTransformOp {
 
-    protected double comparable;
+    protected double comparable = 0.0;
 
     public Not(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double comparable) {
         super(sameDiff, i_v, inPlace);

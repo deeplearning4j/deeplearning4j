@@ -67,7 +67,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public static Type getOpType(Op op) {
         Type type = null;
 
-        if (op instanceof TransformOp) {
+        if (op instanceof CustomOp) {
+            return Type.CUSTOM;
+        } else if (op  instanceof ShapeOp) {
+            return Type.SHAPE;
+        } else if (op instanceof TransformOp) {
             if (op.y() == null) {
                 if (!op.isExecSpecial())
                     type = Op.Type.TRANSFORM;

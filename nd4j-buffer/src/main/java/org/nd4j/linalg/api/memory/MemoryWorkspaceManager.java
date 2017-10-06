@@ -12,6 +12,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @author raver119@gmail.com
  */
 public interface MemoryWorkspaceManager {
+
+    /**
+     * Returns globally unique ID
+     *
+     * @return
+     */
+    String getUUID();
+
     /**
      * This method sets default workspace configuration for this provider instance
      *

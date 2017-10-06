@@ -18,8 +18,8 @@ public final class FlatGraph extends Table {
   public org.nd4j.graph.FlatVariable variables(int j) { return variables(new org.nd4j.graph.FlatVariable(), j); }
   public org.nd4j.graph.FlatVariable variables(org.nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public FlatNode nodes(int j) { return nodes(new FlatNode(), j); }
-  public FlatNode nodes(FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatNode nodes(int j) { return nodes(new org.nd4j.graph.FlatNode(), j); }
+  public org.nd4j.graph.FlatNode nodes(org.nd4j.graph.FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int nodesLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
   public int outputs(int j) { int o = __offset(10); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int outputsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }

@@ -61,6 +61,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private static final String DEBUG_ENABLED = "ND4J_DEBUG";
     private static final String VERBOSE = "ND4J_VERBOSE";
 
+
+    protected Map<String, CustomOpDescriptor> customOps = null;
+
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
 
     /**
@@ -1461,37 +1464,38 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Map<String, CustomOpDescriptor> getCustomOperations() {
-        String list = loop.getAllCustomOps();
+        if (customOps == null) {
+            String list = loop.getAllCustomOps();
 
-        val map = new HashMap<String, CustomOpDescriptor>();
+            customOps = new HashMap<String, CustomOpDescriptor>();
 
 
-        if (list == null || list.isEmpty()) {
-            log.warn("No customs ops available!");
-            return map;
+            if (list == null || list.isEmpty()) {
+                log.warn("No customs ops available!");
+                return customOps;
+            }
+
+            String[] split = list.split(";");
+            for (String op : split) {
+                if (op == null || op.isEmpty())
+                    continue;
+
+                String[] another = op.split(":");
+
+                CustomOpDescriptor descriptor = CustomOpDescriptor.builder()
+                        .hash(Long.valueOf(another[1]))
+                        .numInputs(Integer.valueOf(another[2]))
+                        .numOutputs(Integer.valueOf(another[3]))
+                        .allowsInplace(Integer.valueOf(another[4]) == 1)
+                        .numTArgs(Integer.valueOf(another[5]))
+                        .numIArgs(Integer.valueOf(another[6]))
+                        .build();
+
+                customOps.put(another[0], descriptor);
+            }
         }
 
-        String[] split = list.split(";");
-        for (String op: split) {
-            if (op == null || op.isEmpty())
-                continue;
-
-            String[] another = op.split(":");
-
-            CustomOpDescriptor descriptor = CustomOpDescriptor.builder()
-                    .hash(Long.valueOf(another[1]))
-                    .numInputs(Integer.valueOf(another[2]))
-                    .numOutputs(Integer.valueOf(another[3]))
-                    .allowsInplace(Integer.valueOf(another[4]) == 1)
-                    .numTArgs(Integer.valueOf(another[5]))
-                    .numIArgs(Integer.valueOf(another[6]))
-                    .build();
-
-            map.put(another[0], descriptor);
-        }
-
-
-        return map;
+        return customOps;
     }
 
 

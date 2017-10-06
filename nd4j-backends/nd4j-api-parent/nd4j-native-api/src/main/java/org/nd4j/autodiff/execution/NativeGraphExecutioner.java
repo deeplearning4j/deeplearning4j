@@ -3,9 +3,13 @@ package org.nd4j.autodiff.execution;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
+import org.nd4j.autodiff.execution.conf.OutputMode;
+import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
@@ -16,7 +20,9 @@ import org.nd4j.graph.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -55,17 +61,12 @@ public class NativeGraphExecutioner implements GraphExecutioner {
      */
     @Override
     public INDArray[] executeGraph(SameDiff sd) {
-        return executeGraph(sd, new ExecutorConfiguration());
+        return executeGraph(sd, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).executionMode(ExecutionMode.SEQUENTIAL).profilingMode(OpExecutioner.ProfilingMode.DISABLED).build());
     }
 
-    /**
-     * This method executes given graph and returns results
-     *
-     * @param sd
-     * @return
-     */
-    @Override
-    public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
+    public ByteBuffer convertToFlatBuffers(SameDiff sd, ExecutorConfiguration configuration, Map<Integer, Node> intermediate) {
+        log.info("Configuration: {}", configuration);
+
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(32);
 
         SDGraph graph =  sd.getGraph();
@@ -76,8 +77,6 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         int varId = 0;
         Map<String, Integer> mappedVariables = new HashMap<>();
         Map<Integer, Integer> mappedInputs = new HashMap<>();
-
-        Map<Integer, Node> intermediate = new HashMap<>();
 
         // mapping input variables first
         for (NDArrayInformation input: graph.getInputs()) {
@@ -164,8 +163,10 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             }
 
             int nodesIn = FlatNode.createInputVector(bufferBuilder, Ints.toArray(node.getInput()));
+            int nodesInP = FlatNode.createInputPairedVector(bufferBuilder, new int[]{});
             int nodesOut = FlatNode.createOutputVector(bufferBuilder, Ints.toArray(node.getOutput()));
             int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+            int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, node.getOpExecAction().getOpState().getOpType() == Op.Type.CUSTOM ? node.getOpExecAction().getOpState().getExtraBits() : new int[]{});
             int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpExecAction().getOpState().getAxes() != null ? node.getOpExecAction().getOpState().getAxes() : new int[]{});
             int fname = bufferBuilder.createString(node.getName());
 
@@ -175,9 +176,11 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     getFlatOpType(node.getOpExecAction().getOpState().getOpType()),
                     getOpNum(node.getOpExecAction().getOpState().getOpName(), node.getOpExecAction().getOpState().getOpType()),
                     nodesIn,
+                    nodesInP,
                     (byte) 0,
                     nodesOut,
                     extraz,
+                    integerArgs,
                     dimensions,
                     -1,
                     node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f);
@@ -197,7 +200,27 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
         bufferBuilder.finish(fg);
 
-        ByteBuffer buffer = bufferBuilder.dataBuffer();
+        return bufferBuilder.dataBuffer();
+    }
+
+    @Override
+    public ByteBuffer convertToFlatBuffers(SameDiff sd, ExecutorConfiguration configuration) {
+        return convertToFlatBuffers(sd, configuration, new HashMap<Integer, Node>());
+    }
+
+    /**
+     * This method executes given graph and returns results
+     *
+     * @param sd
+     * @return
+     */
+    @Override
+    public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
+
+        Map<Integer, Node> intermediate = new HashMap<>();
+
+        ByteBuffer buffer = convertToFlatBuffers(sd, configuration, intermediate);
+
         BytePointer bPtr = new BytePointer(buffer);
 
         log.info("Buffer length: {}", buffer.limit());
@@ -212,6 +235,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         log.info("VarMap: {}", sd.getVariableMap());
 
         INDArray[] results = new INDArray[fr.variablesLength()];
+
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
             log.info("Var received: id: {}; name: {}", var.id(), var.name());
@@ -242,12 +266,12 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             } else {
                 int original = intermediate.get(var.id()).getOriginalOutput();
                 //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getInformationFor(original));
-                if (sd.getVariableMap().get(graph.getInformationFor(original).getId()) != null) {
-                    sd.getVariableMap().get(graph.getInformationFor(original).getId()).setArr(val);
+                if (sd.getVariableMap().get(sd.getGraph().getInformationFor(original).getId()) != null) {
+                    sd.getVariableMap().get(sd.getGraph().getInformationFor(original).getId()).setArr(val);
                 } else {
                     SDVariable variable = SDVariable.builder()
                             .arr(val)
-                            .varName(graph.getInformationFor(original).getId())
+                            .varName(sd.getGraph().getInformationFor(original).getId())
                             .shape(val.shape())
                             .sameDiff(sd)
                             .build();
@@ -256,6 +280,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 }
             }
         }
+
 
         return results;
     }
@@ -454,11 +479,14 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     }
     */
 
-    protected short getOpNum(String name, Op.Type type) {
-        return (short) Nd4j.getOpFactory().getOpNumByName(name);
+    public static long getOpNum(String name, Op.Type type) {
+        if (type == Op.Type.CUSTOM)
+            return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+        else
+            return (long) Nd4j.getOpFactory().getOpNumByName(name);
     }
 
-    protected byte getFlatOpType(Op.Type type) {
+    public static byte getFlatOpType(Op.Type type) {
         switch (type) {
             case SCALAR:
                 return OpType.SCALAR;
@@ -470,8 +498,10 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 return OpType.ACCUMULATION;
             case INDEXREDUCE:
                 return OpType.INDEX_ACCUMULATION;
+            case CUSTOM:
+                return OpType.CUSTOM;
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
     }
 

@@ -38,7 +38,7 @@ import java.util.List;
  */
 public class And extends BaseTransformOp {
 
-    protected double comparable;
+    protected double comparable = 0.0;
 
     public And(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

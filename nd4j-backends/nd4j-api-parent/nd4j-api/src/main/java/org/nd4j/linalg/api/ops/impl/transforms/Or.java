@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class Or extends BaseTransformOp {
 
-    protected double comparable;
+    protected double comparable = 0.0;
 
     public Or(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
