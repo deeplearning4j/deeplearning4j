@@ -1,9 +1,9 @@
 ---
-title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow vs. MxNet vs. CNTK"
+title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Caffe vs. TensorFlow vs. MxNet vs. CNTK"
 layout: default
 ---
 
-# Comparing Top Deep Learning Frameworks: Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras & CNTK
+# Comparing Top Deep Learning Frameworks: Deeplearning4j, Torch TensorFlow, Caffe, Paddle, MxNet, Keras & CNTK
 
 Deeplearning4j is distinguished from other frameworks in its API languages, intent and integrations. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** that solves problems involving massive amounts of data in a reasonable amount of time. It integrates with Kafka, Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. 
 
@@ -15,15 +15,12 @@ DL4J is portable and platform neutral, rather than being optimized on a specific
 
 ### Content
 
-Lua
-
-* <a href="#torch">Torch & Pytorch</a>
-
 Python Frameworks
 
-* <a href="#theano">Theano & Ecosystem</a>
+* <a href="#torch">Pytorch & Torch</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
+* <a href="#theano">RIP: Theano & Ecosystem</a>
 * <a href="#caffe2">Caffe2</a>
 * <a href="#chainer">Chainer</a>
 * <a href="#cntk">CNTK</a>
@@ -44,15 +41,13 @@ JVM Considerations
 * <a href="#ml">Machine-Learning Frameworks</a>
 * <a href="#tutorial">Further Reading</a>
 
-## Lua
-
 ### <a name="torch">Torch & Pytorch</a>
+
+A Python version of Torch, known as [Pytorch](https://github.com/pytorch/pytorch), was open-sourced by Facebook in January 2017. PyTorch offers dynamic computation graphs, which let you process variable-length inputs and outputs, which is useful when working with RNNs, for example. In September 2017, Jeremy Howard's and Rachael Thomas's well-known deep-learning course fast.ai adopted [Pytorch](http://www.fast.ai/2017/09/08/introducing-pytorch-for-fastai/). Since it's introduction, PyTorch has quickly become the favorite among machine-learning researchers, because it allows certain complex architectures to be built easily. Other frameworks that support dynamic computation graphs are CMU's DyNet and PFN's Chainer. 
 
 [**Torch**](http://torch.ch/) is a computational framework with an API written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
-
-A Python API for Torch, known as [Pytorch](https://github.com/pytorch/pytorch), was open-sourced by Facebook in January 2017. PyTorch offers dynamic computation graphs, which let you process variable-length inputs and outputs, which is useful when working with RNNs, for example. Other frameworks that support dynamic computation graphs are CMU's DyNet and PFN's Chainer. 
 
 Pros and Cons:
 
@@ -67,28 +62,6 @@ Pros and Cons:
 * (-) Spotty documentation
 
 ## Python Frameworks
-
-### <a name="theano">Theano and Ecosystem</a>
-
-Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in [Python](http://darkf.github.io/posts/problems-i-have-with-python.html). Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
-
-Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
-
-In contrast, Deeplearning4j brings deep learning to production environment to create solutions in JVM languages like Java and Scala. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html).
-
-Pros and Cons
-
-* (+) Python + Numpy
-* (+) Computational graph is nice abstraction
-* (+) RNNs fit nicely in computational graph
-* (-) Raw Theano is somewhat low-level
-* (+) High level wrappers (Keras, Lasagne) ease the pain
-* (-) Error messages can be unhelpful
-* (-) Large models can have long compile times
-* (-) Much “fatter” than Torch
-* (-) Patchy support for pretrained models
-* (-) Buggy on AWS
-* (-) Single GPU
 
 ### <a name="tensorflow">TensorFlow</a>
 
@@ -139,6 +112,32 @@ Pros and Cons:
 * (-) Not extensible, bit of a hairball
 * (-) No commercial support
 * (-) Probably dying; slow development
+
+
+### <a name="theano">RIP: Theano and Ecosystem</a>
+
+Yoshua Bengio announced on Sept. 28, 2017, that [development on Theano would cease](https://groups.google.com/d/msg/theano-users/7Poq8BZutbY/rNCIfvAEAwAJ). Theano is effectively dead.
+
+Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in [Python](http://darkf.github.io/posts/problems-i-have-with-python.html). Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
+
+Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
+
+In contrast, Deeplearning4j brings deep learning to production environment to create solutions in JVM languages like Java and Scala. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html).
+
+Pros and Cons
+
+* (+) Python + Numpy
+* (+) Computational graph is nice abstraction
+* (+) RNNs fit nicely in computational graph
+* (-) Raw Theano is somewhat low-level
+* (+) High level wrappers (Keras, Lasagne) ease the pain
+* (-) Error messages can be unhelpful
+* (-) Large models can have long compile times
+* (-) Much “fatter” than Torch
+* (-) Patchy support for pretrained models
+* (-) Buggy on AWS
+* (-) Single GPU
+
 
 ### <a name="caffe2">Caffe2</a>
 
