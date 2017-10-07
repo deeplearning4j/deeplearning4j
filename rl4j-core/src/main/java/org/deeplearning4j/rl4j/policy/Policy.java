@@ -20,7 +20,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class Policy<O extends Encodable, A> {
 
-    protected abstract NeuralNet getNeuralNet();
+    public abstract NeuralNet getNeuralNet();
 
     public abstract A nextAction(INDArray input);
 

@@ -24,7 +24,7 @@ public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
         return new DQNPolicy<O>(DQN.load(path));
     }
 
-    protected IDQN getNeuralNet() {
+    public IDQN getNeuralNet() {
         return dqn;
     }
 

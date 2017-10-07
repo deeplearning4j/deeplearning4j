@@ -44,7 +44,7 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rd);
     }
 
-    protected IActorCritic getNeuralNet() {
+    public IActorCritic getNeuralNet() {
         return IActorCritic;
     }
 

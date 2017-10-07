@@ -33,7 +33,7 @@ public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extend
     final private float minEpsilon;
     final private StepCountable learning;
 
-    protected NeuralNet getNeuralNet() {
+    public NeuralNet getNeuralNet() {
         return policy.getNeuralNet();
     }
 
