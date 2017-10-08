@@ -4,6 +4,7 @@
 
 #include <helpers/shape.h>
 #include <vector>
+#include <Environment.h>
 
 #define MIN 1e-12
 #define MAX_FLOAT 1e37
@@ -13,8 +14,6 @@
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 #define FLOAT_MAX_VALUE 3.4028235E38
 #define EPS 1e-5
-#define ELEMENT_THRESHOLD element_threshold
-#define TAD_THRESHOLD tad_threshold
 #define AFFINITY close
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {}
@@ -52,8 +51,8 @@
 #define op_def inline
 #define op_def_special inline
 #elif __GNUC__
-#define op_def _Pragma("omp declare simd") inline
-#define op_def_special _Pragma("omp declare simd") inline
+#define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
+#define op_def_special _Pragma("omp declare simd") inline __attribute__((always_inline))
 #endif
 
 #define SELU_ALPHA 1.6732632423543772848170429916717
@@ -260,6 +259,27 @@ namespace simdOps {
 
 	template<typename T>
 	class Copy {
+	public:
+		op_def static T op(T d1, T d2) {
+			return d2;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			return d2;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return params[0];
+		}
+	};
+
+	template<typename T>
+	class Copy2 {
 	public:
 		op_def static T op(T d1, T d2) {
 			return d2;
@@ -2881,33 +2901,75 @@ template<typename T>
             T eps = params[2];
             int mode = (int) params[3];
             if (mode == 0) // equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1 - compare) <= eps)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 1) // not equals eps
-                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1 - compare) > eps)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 2) // less_than eps
-                return d1 < compare? d2 : d1;
+                if (d1 < compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode ==3) // greater_than
-                return d1 > compare? d2 : d1;
+                if (d1 > compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 4) // less_or_equals_than
-                return d1 <= compare? d2 : d1;
+                if (d1 <= compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 5) // greater_or_equals_than
-                return d1 >= compare? d2 : d1;
+                if (d1 >= compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 6) // abs_less_than
-                return nd4j::math::nd4j_abs<T>(d1) < compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) < compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 7) // abs_greater_than
-                return nd4j::math::nd4j_abs<T>(d1) > compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) > compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 8) // is inf
-                return isinf(d1) ? d2 : d1;
+                if (isinf(d1))
+                    return d2;
+                else
+                    return d1;
             else if (mode == 9) // is nan
-                return isnan(d1) ? d2 : d1;
+                if (isnan(d1))
+                    return d2;
+                else
+                    return d1;
             else if (mode == 10)
-                return (d1 == compare) ? d2 : d1;
+                if (d1 == compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 11)
-                return (d1 != compare) ? d2 : d1;
+                if (d1 != compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 12) // abs_greater_or_equals_than
-                return nd4j::math::nd4j_abs<T>(d1) >= compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) >= compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 13) // abs_less_or_equals_than
-                return nd4j::math::nd4j_abs<T>(d1) <= compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) <= compare)
+                    return d2;
+                else
+                    return d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -2929,33 +2991,77 @@ template<typename T>
             // with mode == 0 we do set if d1 equals to compare, and with mode == 1 - we go otherwise
             int mode = (int) params[3];
             if (mode == 0) // equals
-			    return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
+                if (nd4j::math::nd4j_abs<T>(d1 - compare) <= eps)
+                    return set;
+				else
+                    return d1;
+			    //return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
             else if (mode == 1) // not equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
+                if (nd4j::math::nd4j_abs<T>(d1 - compare) > eps)
+                    return set;
+                else
+                    return d1;
+                //return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
             else if (mode == 2) // less_than
-                return d1 < compare? set : d1;
+                if (d1 < compare)
+                    return set;
+                else
+                    return d1;
             else if (mode ==3) // greater_than
-                return d1 > compare? set : d1;
+                if (d1 > compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 4) // less_or_equals_than
-                return d1 <= compare? set : d1;
+                if (d1 <= compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 5) // greater_or_equals_than
-                return d1 >= compare? set : d1;
+                if (d1 >= compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 6) // abs_less_than
-                return nd4j::math::nd4j_abs<T>(d1) < compare? set : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) < compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 7) // abs_greater_than
-                return nd4j::math::nd4j_abs<T>(d1) > compare? set : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) > compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 8) // is inf
-                return isinf(d1) ? set : d1;
+                if (isinf(d1))
+                    return set;
+                else
+                    return d1;
             else if (mode == 9) // is nan
-                return isnan(d1) ? set : d1;
+                if (isnan(d1))
+                    return set;
+                else
+                    return d1;
             else if (mode == 10)
-                return (d1 == compare) ? set : d1;
+                if (d1 == compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 11)
-                return (d1 != compare) ? set : d1;
+                if (d1 != compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 12) // abs_greater_or_equals_than
-                return nd4j::math::nd4j_abs<T>(d1) >= compare? set : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) >= compare)
+                    return set;
+                else
+                    return d1;
             else if (mode == 13) // abs_less_or_equals_than
-                return nd4j::math::nd4j_abs<T>(d1) <= compare? set : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) <= compare)
+                    return set;
+                else
+                    return d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -2967,33 +3073,75 @@ template<typename T>
             T eps = params[2];
             int mode = (int) params[3];
             if (mode == 0) // equals
-                return nd4j::math::nd4j_abs<T>(d2 - compare) <= eps ? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d2 - compare) <= eps)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 1) // not equals
-                return nd4j::math::nd4j_abs<T>(d2 - compare) > eps ? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d2 - compare) > eps)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 2) // less_than
-                return d2 < compare? d2 : d1;
+                if (d2 < compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode ==3) // greater_than
-                return d2 > compare? d2 : d1;
+                if (d2 > compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 4) // less_or_equals_than
-                return d2 <= compare? d2 : d1;
+                if (d2 <= compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 5) // greater_or_equals_than
-                return d2 >= compare? d2 : d1;
+                if (d2 >= compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 6) // abs_less_than
-                return nd4j::math::nd4j_abs<T>(d2) < compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d2) < compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 7) // abs_greater_than
-                return nd4j::math::nd4j_abs<T>(d2) > compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d2) > compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 8) // is inf
-                return isinf(d2) ? d2 : d1;
+                if (isinf(d2))
+                    return d2;
+                else
+                    return d1;
             else if (mode == 9) // is nan
-                return isnan(d2) ? d2 : d1;
+                if (isnan(d2))
+                    return d2;
+                else
+                    return d1;
             else if (mode == 10)
-                return (d2 == compare) ? d2 : d1;
+                if (d2 == compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 11)
-                return (d2 != compare) ? d2 : d1;
+                if (d2 != compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 12) // abs_greater_or_equals_than
-                return nd4j::math::nd4j_abs<T>(d1) >= compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) >= compare)
+                    return d2;
+                else
+                    return d1;
             else if (mode == 13) // abs_less_or_equals_than
-                return nd4j::math::nd4j_abs<T>(d1) <= compare? d2 : d1;
+                if (nd4j::math::nd4j_abs<T>(d1) <= compare)
+                    return d2;
+                else
+                    return d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;

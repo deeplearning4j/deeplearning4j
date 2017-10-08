@@ -7,6 +7,7 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
+#include <NDArrayFactory.h>
 
 class TadTests : public testing::Test {
 public:
@@ -17,7 +18,7 @@ public:
 };
 
 TEST_F(TadTests, Test4DTad1) {
-    std::unique_ptr<NDArray<float>> arraySource(NDArrayFactory::linspace(1.0f, 10000.0f, 10000));
+    std::unique_ptr<NDArray<float>> arraySource(nd4j::NDArrayFactory<float>::linspace(1.0f, 10000.0f, 10000));
 
     std::unique_ptr<NDArray<float>> arrayExp(new NDArray<float>('c', {2, 1, 4, 4}));
     std::unique_ptr<NDArray<float>> arrayBad(new NDArray<float>('c', {2, 1, 4, 4}));

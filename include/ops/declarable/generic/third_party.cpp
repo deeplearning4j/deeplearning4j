@@ -10,10 +10,11 @@
 #include <op_boilerplate.h>
 #include <memory>
 #include <shape.h>
-#include <ops/ops.h>
 #include <loops/random.h>
 #include <NDArray.h>
-#include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/OpRegistrator.h>
+#include <ops/declarable/CustomOperations.h>
 #include <NDArrayFactory.h>
 
 namespace nd4j {
@@ -27,7 +28,7 @@ namespace nd4j {
          *
          * @tparam T
          */
-        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1) {
+        CONFIGURABLE_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *z = this->getZ(block);
 
@@ -44,7 +45,7 @@ namespace nd4j {
                 sparse2dense.insert(pair);
             }
 
-            std::unique_ptr<ArrayList<T>> rows(NDArrayFactory::allTensorsAlongDimension<T>(x, {1}));
+            std::unique_ptr<ArrayList<T>> rows(NDArrayFactory<T>::allTensorsAlongDimension(x, {1}));
 
 #pragma omp parallel for schedule(dynamic) proc_bind(close)
             for (int r = 0; r < batchSize; r++) {

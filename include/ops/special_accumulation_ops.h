@@ -206,7 +206,7 @@ namespace simdOps {
                         shape::ind2subC(tadRank, tadShape, j, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
-                        printf("C I: %i; V: %f; op: %f\n", i, x[xOffset], op(x[xOffset], result[i]));
+                        //printf("C I: %i; V: %f; op: %f\n", i, x[xOffset], op(x[xOffset], (float) result[i]));
 
                         start = update(start, op(x[xOffset], result[i]), extraParams);
                     }

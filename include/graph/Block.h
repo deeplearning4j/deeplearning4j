@@ -52,23 +52,10 @@ namespace nd4j {
             cudaStream_t* _stream;
 #endif
 
-            Block(int nodeId, VariableSpace<T> *variableSpace) {
-                _nodeId = nodeId;
-                _variableSpace = variableSpace;
-				_isInplace = false;
-                _workspace = nullptr;
+            Block(int nodeId, VariableSpace<T> *variableSpace);
+            Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
 
-                _executionTime.first = 0;
-                _executionTime.second = 0;
-            }
-
-            Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Block(nodeId, variableSpace) {
-                _isInplace = isInplace;
-            }
-
-            ~Block() {
-                //
-            }
+            ~Block() = default;
 
             void setOuterTime(Nd4jIndex time);
             void setInnerTime(Nd4jIndex time);
@@ -77,128 +64,39 @@ namespace nd4j {
             Nd4jIndex getInnerTime();
 
             bool hasVariablesFilled();
+            bool hasWorkspaceProvided();
 
-            bool hasWorkspaceProvided() {
-                return _workspace != nullptr;
-            }
+            void attachWorkspace(nd4j::memory::Workspace* workspace);
+            void setVariableSpace(VariableSpace<T> *variableSpace);
+            void forgetWorkspace();
+            nd4j::memory::Workspace* getWorkspace();
+            nd4j::random::RandomBuffer* getRNG();
+            void setRNG(nd4j::random::RandomBuffer* rng);
+            int getNodeId();
+            std::vector<T>* getTArguments();
+            std::vector<int>* getIArguments();
+            bool isInplace();
 
-            void attachWorkspace(nd4j::memory::Workspace* workspace) {
-                _workspace = workspace;
-            }
-
-            void setVariableSpace(VariableSpace<T> *variableSpace) {
-                this->_variableSpace = variableSpace;
-            }
-
-            void forgetWorkspace() {
-                _workspace = nullptr;
-            }
-
-            nd4j::memory::Workspace* getWorkspace() {
-                return _workspace;
-            }
-
-            nd4j::random::RandomBuffer* getRNG() {
-                return _rng;
-            }
-
-            void setRNG(nd4j::random::RandomBuffer* rng) {
-                _rng = rng;
-            }
-
-            int getNodeId() {
-                return _nodeId;
-            }
+            void pickInput(int input);
+            void fillInputs(std::initializer_list<int> inputs);
+            void fillInputs(std::vector<int>& inputs);
 
             /**
              * This method returns number of inputs available in this block
              * @return
              */
-            unsigned long width() {
-                return _inputs.size();
-            };
+            unsigned long width();
 
             /**
-             * This method returns variableSpace used in this block
-             * @return
-             */
-            VariableSpace<T> *getVariableSpace() {
-                return _variableSpace;
-            }
-
-            bool isInplace() {
-                return _isInplace;
-            }
-
-            std::vector<T>* getTArguments() {
-                return &_tArgs;
-            }
-
-            std::vector<int>* getIArguments() {
-                return &_iArgs;
-            }
-
-
-            void pickInput(int input) {
-                _inputs.push_back(input);
-
-                if (!_variableSpace->hasVariable(input))
-                    throw "Unknown variable was referenced";
-
-                _variables.push_back(_variableSpace->getVariable(input));
-            }
-
-            void fillInputs(std::initializer_list<int> inputs) {
-                for (auto v: inputs) {
-                    pickInput(v);
-                }
-            }
-
-            void fillInputs(std::vector<int>& inputs) {
-                for (int e = 0; e < inputs.size(); e++) {
-                    auto v = inputs.at(e);
-                    pickInput(v);
-                }
-            }
+            * This method returns variableSpace used in this block
+            * @return
+            */
+            VariableSpace<T>* getVariableSpace();
 
             std::vector<nd4j::graph::Variable<T> *>& getVariables();
         };
     }
 }
 
-template <typename T>
-Nd4jIndex nd4j::graph::Block<T>::getOuterTime(){
-    return _executionTime.first;
-}
-
-template <typename T>
-Nd4jIndex nd4j::graph::Block<T>::getInnerTime(){
-    return _executionTime.second;
-}
-
-template <typename T>
-void nd4j::graph::Block<T>::setOuterTime(Nd4jIndex time){
-    _executionTime.first = time;
-}
-
-template <typename T>
-void nd4j::graph::Block<T>::setInnerTime(Nd4jIndex time){
-    _executionTime.second = time;
-}
-
-template <typename T>
-bool nd4j::graph::Block<T>::hasVariablesFilled() {
-    return _variables.size() > 0;
-}
-
-
-/**
-* This method returns variables in this block
-* @return
-*/
-template <typename T>
-std::vector<nd4j::graph::Variable<T> *>& nd4j::graph::Block<T>::getVariables() {
-    return _variables;
-}
 
 #endif //LIBND4J_BLOCK_H

@@ -7,7 +7,7 @@
 #ifndef LIBND4J_CUDA_LAUNCHER_H
 #define LIBND4J_CUDA_LAUNCHER_H
 
-#include "../declarable_ops.h"
+#include "ops/declarable/DeclarableOp.h"
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>

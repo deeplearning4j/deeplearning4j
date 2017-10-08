@@ -26,6 +26,8 @@
 #define omp_get_max_threads() 1
 #endif
 
+#include <TAD.h>
+
 
 #include "../pairwise_util.h"
 

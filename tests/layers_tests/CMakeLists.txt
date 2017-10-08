@@ -22,14 +22,14 @@ endif()
 
 set(CMAKE_CXX_FLAGS  " -Wall -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
 if (WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wa,-mbig-obj ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wa,-mbig-obj ")
 endif()
 
 
 if (APPLE)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if ("${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER 6.0 OR "${CMAKE_C_COMPILER_VERSION}" VERSION_EQUAL 6.0)
-            SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wa,-mavx512f ")
+            SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wa,-mavx512f -fmax-errors=1")
         endif()
     endif()
 endif()
@@ -58,7 +58,10 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 message("CPU BLAS")
 add_definitions(-D__CPUBLAS__=true)
-add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h ../../include/ops/declarable/generic/parity_ops.h ../../include/helpers/helper_hash.h ../../include/memory/cpu/Workspace.cpp ../../include/ops/declarable/generic/helpers/convolutions.h ../../include/graph/ShapeList.h ../../include/ops/declarable/generic/convo/convo_ops.h ../../include/helpers/ArrayUtils.h ../../include/indexing/NDIndex.h ../../include/indexing/IndicesList.h ../../include/graph/SessionLocalStorage.h ../../include/graph/Stash.h )
+add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
+        ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp  ../../include/memory/cpu/Workspace.cpp
+        ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h ../../include/ops/declarable/generic/parity_ops.cpp
+        ../../include/ops/declarable/generic/third_party.cpp ../../include/memory/cpu/Workspace.cpp ../../include/ops/declarable/generic/helpers/impl/convolutions.cpp ../../include/ops/declarable/generic/convo/convo_ops.cpp ../../blas/Environment.cpp ../../include/graph/impl/Stash.cpp ../../include/indexing/impl/NDIndex.cpp ../../include/indexing/impl/IndicesList.cpp ../../include/graph/impl/Variable.cpp ../../include/graph/impl/VariableSpace.cpp ../../include/graph/impl/ShapeList.cpp ../../include/graph/impl/SessionLocalStorage.cpp ../../include/graph/impl/Node.cpp ../../include/graph/impl/Graph.cpp ../../include/graph/impl/Block.cpp ../../include/graph/impl/ArrayList.cpp ../../include/helpers/impl/ArrayUtils.cpp ../../include/helpers/impl/helper_hash.cpp ../../include/helpers/impl/TAD.cpp ../../include/ops/impl/specials_sparse.cpp ../../include/helpers/impl/shape.cpp ../../include/ops/declarable/impl/DeclarableOp.cpp ../../include/ops/declarable/impl/OpRegistrator.cpp ../../include/ops/declarable/impl/DeclarableReductionOp.cpp ../../include/ops/declarable/impl/DeclarableCustomOp.cpp ../../include/ops/impl/specials.cpp ../../include/memory/cpu/MemoryRegistrator.cpp ../../include/ops/impl/gemm.cpp)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
     message(FATAL_ERROR "You need at least GCC 4.9")
@@ -81,5 +84,5 @@ elseif(MSYS)
 endif()
 
 
-add_executable(runtests ../../include/memory/cpu/Workspace.cpp AllTests.cpp StashTests.h SessionLocalTests.h)
-target_link_libraries(runtests nd4jcpu  gtest gtest_main)
+add_executable(runtests StashTests.cpp SessionLocalTests.cpp ConvolutionTests.cpp DeclarableOpsTests.cpp DenseLayerTests.cpp FlatBuffersTests.cpp GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp)
+target_link_libraries(runtests nd4jcpu gtest gtest_main)

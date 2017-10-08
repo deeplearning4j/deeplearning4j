@@ -5,14 +5,28 @@
 #ifndef LIBND4J_HELPER_GENERATOR_H
 #define LIBND4J_HELPER_GENERATOR_H
 
-#ifdef __GNUC__
-#include <inttypes.h>
-#endif
 
 #ifdef _MSC_VER
 // include for uint64_t on MSVC
 #include <stdint.h>
+#elif ANDROID
+#include <stdint.h>
+
+#ifndef UINT64_C
+#if defined(__LP64__)
+#define UINT64_C(c)     c ## UL
+#else
+#define UINT64_C(c)     c ## ULL
+#endif //LP64
+#endif // UINT64
+
+#endif // MSVC/ANDROID
+
+
+#ifdef __GNUC__
+#include <inttypes.h>
 #endif
+
 
 #define MAX_UINT 18446744073709551615LLU
 

@@ -126,13 +126,13 @@ namespace aggregateOps {
             T alpha = realArguments[0];
 
             // dot
-#pragma omp simd reduction(+:dot)
+#pragma omp simd reduction(sumT:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += syn0[x] * syn1[x];
             }
 
             // gradient
-            if (dot < - HS_MAX_EXP || dot >= HS_MAX_EXP) {
+            if (dot < (T) - HS_MAX_EXP || dot >= (T) HS_MAX_EXP) {
                 return;
             }
 
@@ -143,7 +143,7 @@ namespace aggregateOps {
             }
 
             f = expTable[idx];
-            g = (1 - code - f) * alpha;
+            g = ((T) 1.0f - code - f) * alpha;
 
             // axpy1
 #pragma omp simd
@@ -258,24 +258,24 @@ namespace aggregateOps {
             T alpha = realArguments[0];
 
             // dot
-#pragma omp simd reduction(+:dot)
+#pragma omp simd reduction(sumT:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += syn0[x] * syn1Neg[x];
             }
 
             if (dot > HS_MAX_EXP)
                 g = (code - 1) * alpha;
-            else if (dot < - HS_MAX_EXP)
+            else if (dot < (T) - HS_MAX_EXP)
                 g = (code - 0) * alpha;
             else {
-                int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
+                int idx = (int) ((dot + (T) HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
                 if (idx >= expLength)
                     return;
 
                 if (idx < 0)
                     return;
 
-                g = (code - expTable[idx]) * alpha;
+                g = ((T) code - expTable[idx]) * alpha;
             }
 
             // axpy1
@@ -390,7 +390,7 @@ namespace aggregateOps {
 
             int vectorLength = indexArguments[0];
 
-#pragma omp simd reduction(+:dot)
+#pragma omp simd reduction(sumT:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += vecX[x] * vecY[x];
             }

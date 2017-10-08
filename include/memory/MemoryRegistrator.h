@@ -14,42 +14,18 @@ namespace nd4j {
             static MemoryRegistrator* _INSTANCE;
             Workspace* _workspace;
 
-            MemoryRegistrator() {
-                _workspace = nullptr;
-            }
+            MemoryRegistrator();
+            ~MemoryRegistrator() = default;
+
 
         public:
-            ~MemoryRegistrator() {
-                //
-            }
-
-            static MemoryRegistrator* getInstance() {
-                if (_INSTANCE == 0) {
-                    _INSTANCE = new MemoryRegistrator();
-                }
-
-                return _INSTANCE;
-            }
-
-            bool hasWorkspaceAttached() {
-                return _workspace != nullptr;
-            }
-
-            Workspace* getWorkspace() {
-                return _workspace;
-            }
-
-            void attachWorkspace(Workspace* workspace) {
-                _workspace = workspace;
-            }
-
-            void forgetWorkspace() {
-                _workspace = nullptr;
-            }
+            static MemoryRegistrator* getInstance();
+            bool hasWorkspaceAttached();
+            Workspace* getWorkspace();
+            void attachWorkspace(Workspace* workspace);
+            void forgetWorkspace();
         };
     }
 }
-
-nd4j::memory::MemoryRegistrator* nd4j::memory::MemoryRegistrator::_INSTANCE = 0;
 
 #endif //LIBND4J_MEMORYREGISTRATOR_H

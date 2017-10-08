@@ -589,7 +589,7 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     auto yShape = new int[8] {2, 1, 3, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = NDArrayFactory::mmulHelper(x, y);
+    auto z = NDArrayFactory<float>::mmulHelper(x, y);
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
@@ -614,7 +614,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
     x.permutei({1, 0});
     y.permutei({1, 0});
 
-    auto z = NDArrayFactory::mmulHelper(&x, &y);
+    auto z = NDArrayFactory<float>::mmulHelper(&x, &y);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -643,7 +643,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
     x_->permutei({1, 0});
     y_->permutei({1, 0});
 
-    auto z = NDArrayFactory::mmulHelper(x_, y_);
+    auto z = NDArrayFactory<float>::mmulHelper(x_, y_);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -675,7 +675,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
     x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
     y.reshapei('c', {2 * 2 * 3, 2});
 
-    auto z = NDArrayFactory::mmulHelper(&x, &y);
+    auto z = NDArrayFactory<float>::mmulHelper(&x, &y);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -706,7 +706,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
     x.reshapei('c', {2 * 2 * 2, 3 * 2 * 2});
     y_->reshapei('c', {2 * 2 * 3, 2});
 
-    auto z = NDArrayFactory::mmulHelper(&x, y_);
+    auto z = NDArrayFactory<float>::mmulHelper(&x, y_);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -733,7 +733,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
-    NDArrayFactory::mmulHelper(x, y, z);
+    NDArrayFactory<float>::mmulHelper(x, y, z);
 
     z->printBuffer();
 
@@ -757,7 +757,7 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
-    NDArrayFactory::mmulHelper(x, y, z);
+    NDArrayFactory<float>::mmulHelper(x, y, z);
 
     z->printBuffer();
 
@@ -779,7 +779,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory::mmulHelper(x, y, z);
+    NDArrayFactory<float>::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
@@ -798,7 +798,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory::mmulHelper(x, y, z);
+    NDArrayFactory<float>::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
@@ -817,7 +817,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory::mmulHelper(x, y, z);
+    NDArrayFactory<float>::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
@@ -836,7 +836,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto expBuffer = new float[9]{110.00,  260.00,  410.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    NDArrayFactory::mmulHelper(y, x, z);
+    NDArrayFactory<float>::mmulHelper(y, x, z);
 
     z->printBuffer();
     ASSERT_TRUE(z->equalsTo(exp));
@@ -858,7 +858,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
-    auto c = NDArrayFactory::mmulHelper<float>(&a, &b);
+    auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
     c->printShapeInfo("Result shape");
@@ -885,7 +885,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
-    auto c = NDArrayFactory::mmulHelper<float>(&a, &b);
+    auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
     c->printShapeInfo("Result shape");
@@ -968,7 +968,7 @@ TEST_F(NDArrayTest, RSubScalarTest1) {
 TEST_F(NDArrayTest, BroadcastOpsTest1) {
 
     NDArray<float> x(5, 5, 'c');
-    auto row = nd4j::NDArrayFactory::linspace(1.0f, 5.0f, 5);
+    auto row = nd4j::NDArrayFactory<float>::linspace(1.0f, 5.0f, 5);
     float *brow = new float[5]{1,2,3,4,5};
     int *bshape = new int[8]{2, 1, 5, 1, 1, 0, 1, 99};
     float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
@@ -1023,7 +1023,7 @@ TEST_F(NDArrayTest, TestIndexedPut5) {
 TEST_F(NDArrayTest, TestAllTensors1) {
     NDArray<float> matrix(3, 5, 'c');
 
-    std::unique_ptr<ArrayList<float>> rows(NDArrayFactory::allTensorsAlongDimension<float>(&matrix, {1}));
+    std::unique_ptr<ArrayList<float>> rows(NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1}));
 
     ASSERT_EQ(3, rows->size());
 }
@@ -1394,10 +1394,10 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
     NDArray<double> input('c', {B, iC, iY, iX});
     NDArray<double> weights('c', {iC, oC, kY, kX});
 
-    NDArrayFactory::linspace<double>(1, input);
-    NDArrayFactory::linspace<double>(1, weights);
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
 
-    auto result = NDArrayFactory::tensorDot<double>(&weights, &input, nullptr, {0}, {1});
+    auto result = NDArrayFactory<double>::tensorDot(&weights, &input, nullptr, {0}, {1});
 
     result->printShapeInfo("result shape");
     ASSERT_TRUE(exp.isSameShape(result));
@@ -1419,7 +1419,7 @@ TEST_F(NDArrayTest, TestBroadcast_1) {
     NDArray<double> input('c',{ 2, 3, 2, 2});
     NDArray<double> bias('c', {1, 3});
 
-    NDArrayFactory::linspace<double>(1, bias);
+    NDArrayFactory<double>::linspace(1, bias);
 
     input.template applyBroadcast<simdOps::Add<double>>({1}, &bias);
 

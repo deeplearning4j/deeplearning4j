@@ -10,8 +10,8 @@
  */
 
 
-#include <helpers/helper_random.h>
 #include <helpers/helper_generator.h>
+#include <helpers/helper_random.h>
 #include <layers/layers.h>
 #include <layers/activations.h>
 #include <layers/activations/ops.h>

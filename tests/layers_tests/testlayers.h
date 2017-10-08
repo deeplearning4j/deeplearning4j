@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 
 // meh
-#include <../blas/cpu/NDArray.cpp>
-#include <../blas/cpu/GraphExecutioner.cpp>
+//#include <../blas/cpu/NDArray.cpp>
+//#include <../blas/cpu/GraphExecutioner.cpp>
 
 #endif //LIBND4J_TESTLAYERS_H

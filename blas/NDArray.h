@@ -468,7 +468,7 @@ namespace nd4j {
 
     template<typename T>
     inline bool NDArray<T>::isSameShape(std::vector<int>& other) {
-        if (this->rankOf() != other.size())
+        if (this->rankOf() != (int) other.size())
             return false;
 
         for (int e = 0; e < this->rankOf(); e++) {

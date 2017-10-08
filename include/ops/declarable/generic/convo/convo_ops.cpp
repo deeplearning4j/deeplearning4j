@@ -5,18 +5,20 @@
 #ifndef LIBND4J_CONVO_OPS_H
 #define LIBND4J_CONVO_OPS_H
 
+#include <op_boilerplate.h>
 #include <memory>
 #include <NDArray.h>
 #include <NDArrayFactory.h>
 #include <op_boilerplate.h>
-#include <declarable/declarable_ops.h>
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/OpRegistrator.h>
 #include <declarable/generic/helpers/convolutions.h>
 #include <helpers/ArrayUtils.h>
 
 namespace nd4j {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
             // basically im2col + gemm
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* weights = block.getVariables().at(1)->getNDArray();
@@ -46,10 +48,10 @@ namespace nd4j {
 
             REQUIRE_TRUE(weights->shapeOf()[2] == kY && weights->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weights->sizeAt(2), weights->sizeAt(3));
 
-            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
-                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
             }
 
             NDArray<T>* output = this->getZ(block);
@@ -73,7 +75,7 @@ namespace nd4j {
 
             output->reshapei('f', {im2col2d.get()->rows(), reshapedW.get()->columns()});
 
-            auto res = NDArrayFactory::mmulHelper<T>(im2col2d.get(), reshapedW.get(), output, 1.0, 0.0);
+            auto res = NDArrayFactory<T>::mmulHelper(im2col2d.get(), reshapedW.get(), output, 1.0, 0.0);
 
             // bias addition is optional
             if (bias != nullptr)
@@ -82,7 +84,7 @@ namespace nd4j {
             output->reshapei('f', {oX, oY, input->sizeAt(0),outDepth});
             output->permutei({2, 3, 1, 0});
 
-            if (debug && verbose)
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 output->printShapeInfo("Conv2D result shape");
 
             STORE_RESULT(*output);
@@ -111,10 +113,10 @@ namespace nd4j {
             const int inY = inShape[3];
             const int inX = inShape[4];
 
-            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
-                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
             }
 
             //z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
@@ -130,7 +132,7 @@ namespace nd4j {
          * Depthwise convolution2d
          */
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
             NDArray<T> *bias = nullptr;
@@ -166,10 +168,10 @@ namespace nd4j {
                 return c2d.execute(&block);
             }
 
-            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
-                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
             }
 
             std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX}));
@@ -187,7 +189,7 @@ namespace nd4j {
 
             // matmul here
             z->reshapei('c', {inDepth, batchSize * oY * oX, outDepth});
-            NDArrayFactory::mmulHelper<T>(c_, w_, z);
+            NDArrayFactory<T>::mmulHelper(c_, w_, z);
 
             if (bias != nullptr) {
                 z->reshapei('c', {-1, (int) bias->lengthOf()});
@@ -227,10 +229,10 @@ namespace nd4j {
             const int inY = inShape[3];
             const int inX = inShape[4];
 
-            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
-                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
             }
 
             //z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
@@ -246,7 +248,7 @@ namespace nd4j {
          *
          *
          */
-        DECLARE_CUSTOM_OP(sconv2d_bp, 4, 2, false, 0, 9) {
+        CUSTOM_OP_IMPL(sconv2d_bp, 4, 2, false, 0, 9) {
             NDArray<T> *input = INPUT_VARIABLE(0);
             NDArray<T> *weights = INPUT_VARIABLE(1);
             NDArray<T> *epsilonNext = INPUT_VARIABLE(2);
@@ -318,7 +320,7 @@ namespace nd4j {
 
             // calculating wieghts gradients here
             //auto gW_ = gradW->reshape('c', {inDepth, outDepth, kY * kX});
-            auto gW_ = NDArrayFactory::mmulHelper(eN_, col_);
+            auto gW_ = NDArrayFactory<T>::mmulHelper(eN_, col_);
 
             gW_->reshapei('c',{inDepth, outDepth, kY, kX});
             gW_->permutei({1, 0, 2, 3});
@@ -333,7 +335,7 @@ namespace nd4j {
             auto w_ = weights->permute({1, 2, 3, 0});
             w_->reshapei('c', {inDepth, kY * kX, outDepth});
 
-            auto gcol = NDArrayFactory::mmulHelper(w_, eN_);
+            auto gcol = NDArrayFactory<T>::mmulHelper(w_, eN_);
             gcol->reshapei('c', {inDepth, kY, kX, batchSize, oY, oX});
             gcol->permutei({3, 0, 1, 2, 4, 5});
 
@@ -396,7 +398,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(deconv2d, 2, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);
             NDArray<T>* bias = nullptr;
@@ -431,7 +433,7 @@ namespace nd4j {
             int oY = z->sizeAt(2);
             int oX = z->sizeAt(3);
 
-            auto gcol = nd4j::NDArrayFactory::tensorDot<T>(weights, input, nullptr, {0}, {1});
+            auto gcol = nd4j::NDArrayFactory<T>::tensorDot(weights, input, nullptr, {0}, {1});
             gcol->permutei({3, 0, 1, 2, 4, 5});
 
             std::unique_ptr<T> extrasCol2Im(new T[9]{(T) sY, (T) sX, (T) pY, (T) pX, (T) oY, (T) oX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
@@ -441,7 +443,7 @@ namespace nd4j {
             delete gcol;
 
             if (bias != nullptr) {
-                z->template applyBroadcast<simdOps::Add<double>>({1}, bias);
+                z->template applyBroadcast<simdOps::Add<T>>({1}, bias);
             }
 
             STORE_RESULT(*z);
@@ -477,7 +479,7 @@ namespace nd4j {
         }
 
 
-        DECLARE_CUSTOM_OP(deconv2d_bp, 4, 2, false, 0, 9) {
+        CUSTOM_OP_IMPL(deconv2d_bp, 4, 2, false, 0, 9) {
             NDArray<T> *input = INPUT_VARIABLE(0);
             NDArray<T> *weights = INPUT_VARIABLE(1);
             NDArray<T> *epsilonNext = INPUT_VARIABLE(2);
@@ -529,10 +531,10 @@ namespace nd4j {
             int inY = epsilonNext->sizeAt(2);
             int inX = epsilonNext->sizeAt(3);
 
-            nd4j::ops::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
-                nd4j::ops::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
             }
 
             std::unique_ptr<T> extrasIm2Col(new T[9]{(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
@@ -544,7 +546,7 @@ namespace nd4j {
                     gy, col, ((0, 2, 3), (0, 4, 5))).
             */
 
-            auto gW = NDArrayFactory::tensorDot<T>(input, gcol, nullptr, {0, 2, 3}, {0, 4, 5});
+            auto gW = NDArrayFactory<T>::tensorDot(input, gcol, nullptr, {0, 2, 3}, {0, 4, 5});
             gradW->assign(gW);
 
             delete gW;
@@ -596,7 +598,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7) {
+        CONFIGURABLE_OP_IMPL(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
@@ -644,8 +646,8 @@ namespace nd4j {
             REQUIRE_TRUE(output->sizeAt(0) == input->sizeAt(0) && output->sizeAt(1) == nOutputPlane && output->sizeAt(2) == outputDepth && output->sizeAt(3) == outputHeight && output->sizeAt(4) == outputWidth, 0,
                          "Expected output shape: [%i, %i, %i, %i, %i] but got [%i, %i, %i, %i, %i] instead", input->sizeAt(0), nOutputPlane, outputDepth, outputHeight, outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            std::unique_ptr<ArrayList<T>> batchIn(NDArrayFactory::allExamples<T>(input));
-            std::unique_ptr<ArrayList<T>> batchOut(NDArrayFactory::allExamples<T>(output));
+            std::unique_ptr<ArrayList<T>> batchIn(NDArrayFactory<T>::allExamples(input));
+            std::unique_ptr<ArrayList<T>> batchOut(NDArrayFactory<T>::allExamples(output));
 
             // TODO: eventually we want OMP being used here
             for (int e = 0; e < batchIn->size(); e++) {
@@ -653,7 +655,7 @@ namespace nd4j {
                 auto tadOut = batchOut->at(e);
 
                 if (biasUsed) {
-                    std::unique_ptr<ArrayList<T>> outputBlock(NDArrayFactory::allExamples<T>(tadOut));
+                    std::unique_ptr<ArrayList<T>> outputBlock(NDArrayFactory<T>::allExamples(tadOut));
                     for (int i = 0; i < bias->lengthOf(); i++) {
                         auto oB = outputBlock->at(i);
                         oB->assign(bias->getScalar(i));
@@ -661,7 +663,7 @@ namespace nd4j {
                 } else
                     output->assign(0.0);
 
-                Nd4jStatus  res = conv3Dmv(tadOut, (T) 1.0f, (T) 1.0f, tadIn, weights, dT, dH, dW, "V", "X");
+                Nd4jStatus  res = ConvolutionUtils<T>::conv3Dmv(tadOut, (T) 1.0f, (T) 1.0f, tadIn, weights, dT, dH, dW, "V", "X");
                 if (res != ND4J_STATUS_OK)
                     throw "Boom";
             }
@@ -671,7 +673,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7) {
+        CONFIGURABLE_OP_IMPL(conv3d_bp, 3, 1, false, 0, 7) {
 
             return ND4J_STATUS_OK;
         }
@@ -683,7 +685,7 @@ namespace nd4j {
          * IArgs map:
          * IArgs[0] - scale factor
          */
-        DECLARE_CONFIGURABLE_OP(upsampling2d, 1, 1, false, 0, 1) {
+        CONFIGURABLE_OP_IMPL(upsampling2d, 1, 1, false, 0, 1) {
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* output = this->getZ(block);
             int scale_factor = block.getIArguments()->at(0);
@@ -756,7 +758,7 @@ namespace nd4j {
          * IArgs map:
          * IArgs[0] - scale factor
          */
-        DECLARE_CONFIGURABLE_OP(upsampling2d_bp, 2, 1, false, 0, 1) {
+        CONFIGURABLE_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 1) {
             //NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* gradientNext = block.getVariables().at(1)->getNDArray();
             NDArray<T>* output = this->getZ(block);
@@ -828,7 +830,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         // maxpool2d corresponds to poolingMode=0
-        DECLARE_CUSTOM_OP(maxpool2d, 1, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
 
@@ -847,7 +849,7 @@ namespace nd4j {
 
             const bool isSameMode = block.getIArguments()->at(8) > 0;
             if (isSameMode)
-                nd4j::ops::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
@@ -892,11 +894,11 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
             const bool bisSameMode = block.getIArguments()->at(8) > 0;
             if (bisSameMode)
-                nd4j::ops::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
+                ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 
             // allocate memory for new shape
             int* newShapeInfo = nullptr;
@@ -913,7 +915,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         // avgpool2d corresponds to poolingMode=1
-        DECLARE_CUSTOM_OP(avgpool2d, 1, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 9) {
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
 
@@ -931,7 +933,7 @@ namespace nd4j {
 
             const bool isSameMode = block.getIArguments()->at(8) > 0;
             if (isSameMode)
-                nd4j::ops::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
             std::vector<T> argT = {(T) argI[0], (T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T)argI[6], (T)argI[7], (T)1.f, (T)1.f, (T)1.f};
@@ -974,11 +976,11 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
             const bool bisSameMode = block.getIArguments()->at(8) > 0;
             if (bisSameMode)
-                nd4j::ops::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
+                ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 
 
             // allocate memory for new shape
@@ -996,7 +998,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 		// pnormpool2d corresponds to poolingMode=2	
-        DECLARE_CUSTOM_OP(pnormpool2d, 1, 1, false, 0, 10) {
+        CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
 
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
@@ -1041,7 +1043,7 @@ namespace nd4j {
 
 			// calculate output Height/Width
 			int oH, oW;
-			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 			// allocate memory for new shape
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
@@ -1056,7 +1058,7 @@ namespace nd4j {
 		}	
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CONFIGURABLE_OP(maxpool3d, 1, 2, true, 0, 13) {
+        CONFIGURABLE_OP_IMPL(maxpool3d, 1, 2, true, 0, 13) {
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
 
@@ -1166,7 +1168,7 @@ namespace nd4j {
             indices_data = indices->getBuffer();
 
             for (int n = 0; n < input->sizeAt(0); n++) {
-                nd4j::ops::_dilatedMaxPool3D(
+                ConvolutionUtils<T>::_dilatedMaxPool3D(
                         input_data   + n * istride,
                         output_data  + n * ostride,
                         indices_data + n * ostride,
@@ -1190,7 +1192,7 @@ namespace nd4j {
         DECLARE_SYN(MaxPool3d, maxpool3d);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(maxpool3d_bp, 3, 1, true, 0, 13) {
+        CUSTOM_OP_IMPL(maxpool3d_bp, 3, 1, true, 0, 13) {
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *gradNext = block.getVariables().at(1)->getNDArray();
@@ -1272,7 +1274,7 @@ namespace nd4j {
             Nd4jIndex ostride = nslices * otime * owidth * oheight;
 
             for (int p = 0; p < nBatch; p++) {
-                nd4j::ops::_dilatedMaxPool3D_bp(
+                ConvolutionUtils<T>::_dilatedMaxPool3D_bp(
                         gradInput_data + p * istride,
                         gradOutput_data + p * ostride,
                         indices_data + p * ostride,
@@ -1298,7 +1300,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(avgpool3d, 1, 1, true, 0, 11) {
+        CUSTOM_OP_IMPL(avgpool3d, 1, 1, true, 0, 11) {
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *output = this->getZ(block);
@@ -1375,7 +1377,7 @@ namespace nd4j {
             for (int p=0; p < nBatch; p++)
             {
 
-                nd4j::ops::_avgPool3D(
+                ConvolutionUtils<T>::_avgPool3D(
                         input_data + p * istride, output_data + p * ostride, nslices,
                         itime, iwidth, iheight,
                         otime, owidth, oheight,
@@ -1464,7 +1466,7 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(avgpool3d_bp, 2, 1, true, 0, 11) {
+        CUSTOM_OP_IMPL(avgpool3d_bp, 2, 1, true, 0, 11) {
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *gradNext = block.getVariables().at(1)->getNDArray();
 
@@ -1521,7 +1523,7 @@ namespace nd4j {
 
             for (int p = 0; p < nBatch; p++)
             {
-                nd4j::ops::_avgPool3D_bp(
+                ConvolutionUtils<T>::_avgPool3D_bp(
                         gradInput_data  + p * istride,
                         gradOutput_data + p * ostride,
                         nslices,
@@ -1548,7 +1550,7 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(fullconv3d, 5, 1, false, 0, 13) {
+        CUSTOM_OP_IMPL(fullconv3d, 5, 1, false, 0, 13) {
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
@@ -1606,8 +1608,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isSameShape({ (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth}), 0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            std::unique_ptr<ArrayList<T>> inputs(NDArrayFactory::allExamples(input));
-            std::unique_ptr<ArrayList<T>> outputs(NDArrayFactory::allExamples(output));
+            std::unique_ptr<ArrayList<T>> inputs(NDArrayFactory<T>::allExamples(input));
+            std::unique_ptr<ArrayList<T>> outputs(NDArrayFactory<T>::allExamples(output));
             for (int e = 0; e < batchSize; e++) {
                 auto tadIn = inputs->at(e);
                 auto tadOut = outputs->at(e);
@@ -1623,7 +1625,7 @@ namespace nd4j {
                                         0.0,
                                         columns->getBuffer(), n);
 
-                nd4j::ops::_col2vol(columns->getBuffer(),
+                ConvolutionUtils<T>::_col2vol(columns->getBuffer(),
                         nOutputPlane, outputDepth, outputHeight, outputWidth,
                         inputDepth, inputHeight, inputWidth,
                         kT, kH, kW,
@@ -1699,7 +1701,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(fullconv3d_bp, 5, 1, false, 0, 13) {
+        CUSTOM_OP_IMPL(fullconv3d_bp, 5, 1, false, 0, 13) {
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *gradNext = block.getVariables().at(1)->getNDArray();
@@ -1753,13 +1755,13 @@ namespace nd4j {
             NDArray<T> *gradColumns;
             //auto gradColumns = finput->reshape('c', {nOutputPlane*kW*kH*kT, inputDepth*inputHeight*inputWidth });
 
-            std::unique_ptr<ArrayList<T>> tadsNext(NDArrayFactory::allExamples<T>(gradNext));
-            std::unique_ptr<ArrayList<T>> tadsOutput(NDArrayFactory::allExamples<T>(output));
+            std::unique_ptr<ArrayList<T>> tadsNext(NDArrayFactory<T>::allExamples(gradNext));
+            std::unique_ptr<ArrayList<T>> tadsOutput(NDArrayFactory<T>::allExamples(output));
             for (int e = 0; e < tadsNext->size(); e++) {
                 auto tadNext = tadsNext->at(e);
                 auto tadOutput = tadsOutput->at(e);
 
-                nd4j::ops::_vol2col<T>(
+                ConvolutionUtils<T>::_vol2col(
                         tadNext->getBuffer(),
                         nOutputPlane, outputDepth, outputHeight, outputWidth,
                         kT, kH, kW,
@@ -1797,7 +1799,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_CUSTOM_OP(fullconv3d_grad, 4, 2, false, 1, 13) {
+        CUSTOM_OP_IMPL(fullconv3d_grad, 4, 2, false, 1, 13) {
 
             NDArray<T> *input = block.getVariables().at(0)->getNDArray();
             NDArray<T> *epsilon = block.getVariables().at(1)->getNDArray();
@@ -1851,14 +1853,14 @@ namespace nd4j {
 
             ones->assign(1.0);
 
-            std::unique_ptr<ArrayList<T>> tadsInput(NDArrayFactory::allExamples<T>(input));
-            std::unique_ptr<ArrayList<T>> tadsEpsilon(NDArrayFactory::allExamples<T>(epsilon));
+            std::unique_ptr<ArrayList<T>> tadsInput(NDArrayFactory<T>::allExamples(input));
+            std::unique_ptr<ArrayList<T>> tadsEpsilon(NDArrayFactory<T>::allExamples(epsilon));
 
             for (int e = 0; e < tadsInput->size(); e++) {
                 auto tadInput = tadsInput->at(e);
                 auto tadEpsilon = tadsEpsilon->at(e);
 
-                nd4j::ops::_vol2col<T>(
+                ConvolutionUtils<T>::_vol2col(
                         tadEpsilon->getBuffer(), nOutputPlane,
                         outputDepth, outputHeight, outputWidth,
                         kT, kH, kW,
@@ -1908,7 +1910,7 @@ namespace nd4j {
         }
 		
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CUSTOM_OP(maxpool2d_bp, 2, 1, false, 0, 9) {
+		CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
 
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
@@ -1934,7 +1936,7 @@ namespace nd4j {
 			
 			// calculate output Height/Width
 			int oH, oW;
-			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);			
+			ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
 			bool cOrderStrides = false;
 			bool isEpsilonDup = false;
@@ -2022,7 +2024,7 @@ namespace nd4j {
 		}	
 
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1) {			
+		CONFIGURABLE_OP_IMPL(ismax, 1, 1, false, 0, -1) {
 
 			REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
@@ -2248,7 +2250,7 @@ namespace nd4j {
         DECLARE_SYN(IsMax, ismax);        
 
 		//////////////////////////////////////////////////////////////////////////        
-        DECLARE_CUSTOM_OP(pooling2d, 1, 1, false, 0, 11) {
+        CUSTOM_OP_IMPL(pooling2d, 1, 1, false, 0, 11) {
 
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();			
 			REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());            
@@ -2406,7 +2408,7 @@ namespace nd4j {
 
 			// calculate output Height/Width
 			int oH, oW;
-			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+			ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 			// allocate memory for new shape
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
@@ -2421,7 +2423,7 @@ namespace nd4j {
 		}
 		
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CUSTOM_OP(avgpool2d_bp, 2, 1, false, 0, 9) {
+		CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 9) {
 			
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
 			REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
@@ -2446,7 +2448,7 @@ namespace nd4j {
 						
 			// calculate output Height/Width
 			int oH, oW;
-			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);			
+			ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
 			bool cOrderStrides = false;
 			bool isEpsilonDup = false;
@@ -2527,7 +2529,7 @@ namespace nd4j {
 		}	
 
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CUSTOM_OP(pnormpool2d_bp, 2, 1, false, 1, 10) {
+		CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
 			
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
 			NDArray<T>* epsilon = block.getVariables().at(1)->getNDArray();
@@ -2554,7 +2556,7 @@ namespace nd4j {
 			
 			// calculate output Height/Width
 			int oH, oW;
-			nd4j::ops::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);			
+            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
 			bool cOrderStrides = false;
 			bool isEpsilonDup = false;
@@ -2611,7 +2613,7 @@ namespace nd4j {
 				col2d->template applyTransform<simdOps::Abs<T>>(absp2, nullptr);
 				T extraParams3[] = {pnorm - 2};
 				absp2->template applyTransform<simdOps::Pow<T>>(extraParams3);
-				nd4j::NDArrayFactory::mmulHelper(col2d, absp2, numerator, (T)1.f, (T)0.f);                
+				nd4j::NDArrayFactory<T>::mmulHelper(col2d, absp2, numerator, (T)1.f, (T)0.f);
 				delete absp2;
             }
 			NDArray<T>* denom = new NDArray<T>(pNorm->getShapeInfo(), block.getWorkspace()); 

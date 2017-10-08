@@ -17,55 +17,12 @@ namespace  nd4j {
 
     public:
         // default constructor
-        ArrayList() {
-            //
-        }
+        ArrayList(const nd4j::graph::FlatResult* result = nullptr);
+        ~ArrayList();
 
-        ArrayList(const nd4j::graph::FlatResult* result) {
-            for (int e = 0; e < result->variables()->size(); e++) {
-                auto var = result->variables()->Get(e);
-
-                std::vector<int> shapeInfo;
-                for (int i = 0; i < var->shape()->size(); i++) {
-                    shapeInfo.push_back(var->shape()->Get(i));
-                }
-
-                std::vector<int> shape;
-                for (int i = 0; i < shapeInfo.at(0); i++) {
-                    shape.push_back(shapeInfo.at(i+1));
-                }
-
-                auto array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
-
-                for (int i = 0; i < var->values()->size(); i++) {
-                    array->putScalar(i, var->values()->Get(i));
-                }
-
-                _content.push_back(array);
-            }
-        }
-
-
-
-        // default destructor
-        ~ArrayList() {
-            for (auto v: _content)
-                delete v;
-        }
-
-
-        int size() {
-            return _content.size();
-        }
-
-        nd4j::NDArray<T> *at(unsigned long idx) {
-            return _content.at(idx);
-        }
-
-
-        void push_back(nd4j::NDArray<T> *array) {
-            _content.push_back(array);
-        }
+        int size();
+        nd4j::NDArray<T> *at(unsigned long idx);
+        void push_back(nd4j::NDArray<T> *array);
     };
 }
 

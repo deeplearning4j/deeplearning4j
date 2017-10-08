@@ -1702,14 +1702,14 @@ namespace simdOps {
 					if (resultEleStide == 1) {
 #pragma omp simd
 						for (int i = 0; i < len; i++) {
-							result[i] = result[i] * (1 - result[i]);
+							result[i] = result[i] * ((T) 1.0f - result[i]);
 						}
 
 					}
 					else {
 #pragma omp simd
 						for (int i = 0; i < len; i++) {
-							result[i * resultEleStide] = result[i * resultEleStide] * (1 - result[i * resultEleStide]);
+							result[i * resultEleStide] = result[i * resultEleStide] * ((T) 1.0f - result[i * resultEleStide]);
 						}
 
 					}
@@ -1724,7 +1724,7 @@ namespace simdOps {
                     for (int i = 0; i < len; i++) {
                         shape::ind2subC(zRank,zShape, i, zCoord);
                         Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-                        result[zOffset] = result[zOffset] * (1 - result[zOffset]);
+                        result[zOffset] = result[zOffset] * ((T) 1.0f - result[zOffset]);
                     }
                 }
 
@@ -1758,7 +1758,7 @@ namespace simdOps {
 
 #pragma omp simd
                     for (int i = 0; i < length; i++) {
-                        result[i] = result[i] * (1 - result[i]);
+                        result[i] = result[i] * ((T) 1.0f - result[i]);
                     }
                 } else if (elementWiseStride >= 1) {
 
@@ -1782,7 +1782,7 @@ namespace simdOps {
 
 #pragma omp simd
 					for (int i = 0; i < length; i++) {
-						result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
+						result[i * elementWiseStride] = result[i * elementWiseStride] * ((T) 1.0f - result[i * elementWiseStride]);
 					}
 				} else {
                     printf("non-ews access on row not implemented yet");

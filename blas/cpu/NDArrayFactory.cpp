@@ -9,12 +9,12 @@
 #include "../NDArray.h"
 #include <memory/Workspace.h>
 #include <ops/gemm.h>
-#include "NDArray.cpp"
+#include <types/float16.h>
 
 namespace nd4j {
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory::allExamples(NDArray<T>* ndArray) {
+    ArrayList<T>* NDArrayFactory<T>::allExamples(NDArray<T>* ndArray) {
         std::vector<int> dimensions;
         for (int e = 1; e < ndArray->rankOf(); e++)
             dimensions.push_back(e);
@@ -23,7 +23,7 @@ namespace nd4j {
     }
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory::multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions) {
+    ArrayList<T>* NDArrayFactory<T>::multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions) {
         auto result = new ArrayList<T>();
 
         if (indices.size() == 0)
@@ -67,13 +67,13 @@ namespace nd4j {
     }
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory::allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions) {
+    ArrayList<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions) {
         std::vector<int> vec(dimensions);
-        return allTensorsAlongDimension<T>(ndArray, vec);
+        return allTensorsAlongDimension(ndArray, vec);
     }
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory::allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions) {
+    ArrayList<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions) {
         auto result = new ArrayList<T>();
 
         std::vector<int> copy(dimensions);
@@ -109,14 +109,14 @@ namespace nd4j {
 
 
     template<typename T>
-    nd4j::NDArray<T>* nd4j::NDArrayFactory::tensorDot(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, std::initializer_list<int> axesA, std::initializer_list<int> axesB) {
+    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, std::initializer_list<int> axesA, std::initializer_list<int> axesB) {
         std::vector<int> aA(axesA);
         std::vector<int> aB(axesB);
         return tensorDot(A, B, C, aA, aB);
     }
 
     template<typename T>
-    nd4j::NDArray<T>* nd4j::NDArrayFactory::tensorDot(nd4j::NDArray<T>* a, nd4j::NDArray<T>* b, nd4j::NDArray<T>* C, std::vector<int>& axes_0, std::vector<int>& axes_1) {
+    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(nd4j::NDArray<T>* a, nd4j::NDArray<T>* b, nd4j::NDArray<T>* C, std::vector<int>& axes_0, std::vector<int>& axes_1) {
 
         int axe0_size = (int) axes_0.size();
         int axe1_size = (int) axes_1.size();
@@ -202,7 +202,7 @@ namespace nd4j {
         bT->reshapei('c', newShapeB);
         //bT->printShapeInfo("bt rshape");
 
-        auto c = nd4j::NDArrayFactory::mmulHelper<T>(aT, bT, nullptr, 1.0, 0.0);
+        auto c = nd4j::NDArrayFactory<T>::mmulHelper(aT, bT, nullptr, 1.0, 0.0);
 
         std::vector<int> aPlusB(oldShapeA);
         for (auto v: oldShapeB)
@@ -222,7 +222,7 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    nd4j::NDArray<T>* NDArrayFactory::mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , T alpha, T beta) {
+    nd4j::NDArray<T>* NDArrayFactory<T>::mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , T alpha, T beta) {
         nd4j::NDArray<T>* result = C;
 
         if (A->rankOf() > 2 || B->rankOf() > 2) {
@@ -232,7 +232,7 @@ namespace nd4j {
                 throw "Ranks of A and B should match";
             }
 
-            int dims = A->rankOf();
+            //int dims = A->rankOf();
 
             std::vector<int> newShape;
             for (int e = 0; e < A->rankOf() - 2; e++)
@@ -254,7 +254,7 @@ namespace nd4j {
             newShape.push_back(pRows);
             newShape.push_back(pCols);
 
-            Nd4jIndex prod = shape::prodLong(newShape.data(), newShape.size());
+            //Nd4jIndex prod = shape::prodLong(newShape.data(), newShape.size());
 
             if (result == nullptr)
                 result = new NDArray<T>('c', newShape);
@@ -417,18 +417,18 @@ namespace nd4j {
 
 
     template<typename T>
-    NDArray<T>* NDArrayFactory::tile(NDArray<T> *original, std::vector<int> &dimensions) {
+    NDArray<T>* NDArrayFactory<T>::tile(NDArray<T> *original, std::vector<int> &dimensions) {
         return nullptr;
     }
 
 
     template<typename T>
-    NDArray<T>* NDArrayFactory::repeat(NDArray<T> *original, std::vector<int> &repeats) {
+    NDArray<T>* NDArrayFactory<T>::repeat(NDArray<T> *original, std::vector<int> &repeats) {
         return nullptr;
     }
 
     template<typename T>
-    NDArray<T>* NDArrayFactory::linspace(T from, T to, Nd4jIndex numElements) {
+    NDArray<T>* NDArrayFactory<T>::linspace(T from, T to, Nd4jIndex numElements) {
         auto result = new NDArray<T>(numElements, 'c');
 
         for (Nd4jIndex e = 0; e < numElements; e++) {
@@ -440,7 +440,7 @@ namespace nd4j {
     }
 
     template<typename T>
-    void NDArrayFactory::linspace(T from, NDArray<T>& arr) {
+    void NDArrayFactory<T>::linspace(T from, NDArray<T>& arr) {
         
         int size = arr.lengthOf();
         for (Nd4jIndex i = 0; i < size; ++i)
@@ -448,7 +448,7 @@ namespace nd4j {
     }
 
     template<typename T>
-    NDArray<T>* NDArrayFactory::createUninitialized(NDArray<T>* other) {
+    NDArray<T>* NDArrayFactory<T>::createUninitialized(NDArray<T>* other) {
         auto workspace = other->getWorkspace();
 
         int* newShape;
@@ -462,6 +462,11 @@ namespace nd4j {
 
         return result;
     }
+
+
+    template class NDArrayFactory<float>;
+    template class NDArrayFactory<float16>;
+    template class NDArrayFactory<double>;
 }
 
 #endif

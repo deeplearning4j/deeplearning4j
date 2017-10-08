@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include <dll.h>
+#include <pointercast.h>
 
 #ifdef __CUDACC__
 #include <types/float16.h>

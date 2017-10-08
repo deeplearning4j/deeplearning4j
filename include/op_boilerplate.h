@@ -46,6 +46,9 @@
  * @author raver119@gmail.com
  */
 
+#define ELEMENT_THRESHOLD nd4j::Environment::getInstance()->elementwiseThreshold()
+#define TAD_THRESHOLD nd4j::Environment::getInstance()->tadThreshold()
+
 #pragma once
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
@@ -186,6 +189,108 @@
 #define FE_97(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_96(WHAT, FN, SIG, __VA_ARGS__))
 #define FE_98(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_97(WHAT, FN, SIG, __VA_ARGS__))
 #define FE_99(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_98(WHAT, FN, SIG, __VA_ARGS__))
+
+
+#define CL1_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
+#define CL1_2(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_1(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_3(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_2(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_4(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_3(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_5(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_4(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_6(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_5(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_7(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_6(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_8(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_7(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_9(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_8(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_10(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_9(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_11(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_10(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_12(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_11(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_13(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_12(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_14(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_13(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_15(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_14(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_16(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_15(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_17(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_16(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_18(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_17(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_19(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_18(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_20(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_19(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_21(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_20(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_22(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_21(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_23(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_22(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_24(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_23(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_25(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_24(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_26(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_25(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_27(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_26(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_28(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_27(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_29(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_28(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_30(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_29(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_31(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_30(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_32(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_31(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_33(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_32(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_34(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_33(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_35(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_34(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_36(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_35(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_37(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_36(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_38(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_37(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_39(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_38(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_40(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_39(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_41(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_40(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_42(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_41(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_43(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_42(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_44(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_43(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_45(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_44(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_46(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_45(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_47(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_46(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_48(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_47(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_49(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_48(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_50(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_49(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_51(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_50(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_52(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_51(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_53(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_52(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_54(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_53(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_55(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_54(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_56(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_55(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_57(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_56(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_58(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_57(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_59(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_58(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_60(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_59(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_61(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_60(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_62(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_61(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_63(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_62(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_64(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_63(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_65(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_64(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_66(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_65(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_67(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_66(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_68(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_67(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_69(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_68(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_70(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_69(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_71(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_70(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_72(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_71(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_73(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_72(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_74(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_73(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_75(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_74(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_76(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_75(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_77(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_76(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_78(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_77(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_79(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_78(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_80(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_79(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_81(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_80(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_82(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_81(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_83(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_82(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_84(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_83(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_85(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_84(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_86(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_85(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_87(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_86(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_88(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_87(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_89(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_88(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_90(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_89(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_91(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_90(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_92(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_91(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_93(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_92(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_94(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_93(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_95(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_94(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_96(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_95(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define CL1_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
 
 #define FZ_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
 #define FZ_2(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_1(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
@@ -731,7 +836,11 @@
 #endif
 #define _EXPAND_OP_SIMPLE(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) else if(opNum == NUM_A) {MIX3(NAME, NUM_A, TYPE) LAUNCH(launchDims.x, launchDims.y, launchDims.z, *stream) PARAMZ;}
 
+#define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
+
 #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
+
+#define _EXPAND_PACKED_CALL_1(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_1(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
 
 #define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, TYPE)INPUTZ {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<TYPE>, TYPE_B<TYPE>>>PARAMZ ;};
 #define _EXPAND_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, NUM_A, TYPE_A) extern "C" __global__ void ARGMIX3(NAME, NUM_A, TYPE)INPUTZ {KERNEL<TYPE, TYPE_A<TYPE>>PARAMZ ;};
@@ -743,7 +852,7 @@
 #define _EXPAND_PACKED_FACTORY_CALL(TYPE, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _FACTORY_CALL (TYPE, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
 //////////////////////////////
 
-
+#define GET_MACROS_1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
 
 #define  GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
 #define GET_MACROS(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
@@ -757,6 +866,8 @@
 #define FOR_EACH_M(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROX(__VA_ARGS__, FM_70, FM_69, FM_68, FM_67, FM_66, FM_65, FM_64, FM_63, FM_62, FM_61, FM_60, FM_59, FM_58, FM_57, FM_56, FM_55, FM_54, FM_53, FM_52, FM_51, FM_50, FM_49, FM_48, FM_47, FM_46, FM_45, FM_44, FM_43, FM_42, FM_41, FM_40, FM_39, FM_38, FM_37, FM_36, FM_35, FM_34, FM_33, FM_32, FM_31, FM_30, FM_29, FM_28, FM_27, FM_26, FM_25, FM_24, FM_23, FM_22, FM_21, FM_20, FM_19, FM_18, FM_17, FM_16, FM_15, FM_14, FM_13, FM_12, FM_11, FM_10, FM_9, FM_8, FM_7, FM_6, FM_5, FM_4, FM_3, FM_2, FM_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
 #define FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROE(__VA_ARGS__, FX_70, FX_69, FX_68, FX_67, FX_66, FX_65, FX_64, FX_63, FX_62, FX_61, FX_60, FX_59, FX_58, FX_57, FX_56, FX_55, FX_54, FX_53, FX_52, FX_51, FX_50, FX_49, FX_48, FX_47, FX_46, FX_45, FX_44, FX_43, FX_42, FX_41, FX_40, FX_39, FX_38, FX_37, FX_36, FX_35, FX_34, FX_33, FX_32, FX_31, FX_30, FX_29, FX_28, FX_27, FX_26, FX_25, FX_24, FX_23, FX_22, FX_21, FX_20, FX_19, FX_18, FX_17, FX_16, FX_15, FX_14, FX_13, FX_12, FX_11, FX_10, FX_9, FX_8, FX_7, FX_6, FX_5, FX_4, FX_3, FX_2, FX_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
 
+#define FOR_EACH_CALL_1(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS_1(__VA_ARGS__,  CL1_99, CL1_98, CL1_97, CL1_96, CL1_95, CL1_94, CL1_93, CL1_92, CL1_91, CL1_90, CL1_89, CL1_88, CL1_87, CL1_86, CL1_85, CL1_84, CL1_83, CL1_82, CL1_81, CL1_80, CL1_79, CL1_78, CL1_77, CL1_76, CL1_75, CL1_74, CL1_73, CL1_72, CL1_71, CL1_70, CL1_69, CL1_68, CL1_67, CL1_66, CL1_65, CL1_64, CL1_63, CL1_62, CL1_61, CL1_60, CL1_59, CL1_58, CL1_57, CL1_56, CL1_55, CL1_54, CL1_53, CL1_52, CL1_51, CL1_50, CL1_49, CL1_48, CL1_47, CL1_46, CL1_45, CL1_44, CL1_43, CL1_42, CL1_41, CL1_40, CL1_39, CL1_38, CL1_37, CL1_36, CL1_35, CL1_34, CL1_33, CL1_32, CL1_31, CL1_30, CL1_29, CL1_28, CL1_27, CL1_26, CL1_25, CL1_24, CL1_23, CL1_22, CL1_21, CL1_20, CL1_19, CL1_18, CL1_17, CL1_16, CL1_15, CL1_14, CL1_13, CL1_12, CL1_11, CL1_10, CL1_9, CL1_8, CL1_7, CL1_6, CL1_5, CL1_4, CL1_3, CL1_2, CL1_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
+
 #define FOR_EACH_Z(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FZ_99, FZ_98, FZ_97, FZ_96, FZ_95, FZ_94, FZ_93, FZ_92, FZ_91, FZ_90, FZ_89, FZ_88, FZ_87, FZ_86, FZ_85, FZ_84, FZ_83, FZ_82, FZ_81, FZ_80, FZ_79, FZ_78, FZ_77, FZ_76, FZ_75, FZ_74, FZ_73, FZ_72, FZ_71, FZ_70, FZ_69, FZ_68, FZ_67, FZ_66, FZ_65, FZ_64, FZ_63, FZ_62, FZ_61, FZ_60, FZ_59, FZ_58, FZ_57, FZ_56, FZ_55, FZ_54, FZ_53, FZ_52, FZ_51, FZ_50, FZ_49, FZ_48, FZ_47, FZ_46, FZ_45, FZ_44, FZ_43, FZ_42, FZ_41, FZ_40, FZ_39, FZ_38, FZ_37, FZ_36, FZ_35, FZ_34, FZ_33, FZ_32, FZ_31, FZ_30, FZ_29, FZ_28, FZ_27, FZ_26, FZ_25, FZ_24, FZ_23, FZ_22, FZ_21, FZ_20, FZ_19, FZ_18, FZ_17, FZ_16, FZ_15, FZ_14, FZ_13, FZ_12, FZ_11, FZ_10, FZ_9, FZ_8, FZ_7, FZ_6, FZ_5, FZ_4, FZ_3, FZ_2, FZ_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
 #define FOR_EACH_S(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FS_99, FS_98, FS_97, FS_96, FS_95, FS_94, FS_93, FS_92, FS_91, FS_90, FS_89, FS_88, FS_87, FS_86, FS_85, FS_84, FS_83, FS_82, FS_81, FS_80, FS_79, FS_78, FS_77, FS_76, FS_75, FS_74, FS_73, FS_72, FS_71, FS_70, FS_69, FS_68, FS_67, FS_66, FS_65, FS_64, FS_63, FS_62, FS_61, FS_60, FS_59, FS_58, FS_57, FS_56, FS_55, FS_54, FS_53, FS_52, FS_51, FS_50, FS_49, FS_48, FS_47, FS_46, FS_45, FS_44, FS_43, FS_42, FS_41, FS_40, FS_39, FS_38, FS_37, FS_36, FS_35, FS_34, FS_33, FS_32, FS_31, FS_30, FS_29, FS_28, FS_27, FS_26, FS_25, FS_24, FS_23, FS_22, FS_21, FS_20, FS_19, FS_18, FS_17, FS_16, FS_15, FS_14, FS_13, FS_12, FS_11, FS_10, FS_9, FS_8, FS_7, FS_6, FS_5, FS_4, FS_3, FS_2, FS_1)(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
 #define FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROI(__VA_ARGS__, FI_70, FI_69, FI_68, FI_67, FI_66, FI_65, FI_64, FI_63, FI_62, FI_61, FI_60, FI_59, FI_58, FI_57, FI_56, FI_55, FI_54, FI_53, FI_52, FI_51, FI_50, FI_49, FI_48, FI_47, FI_46, FI_45, FI_44, FI_43, FI_42, FI_41, FI_40, FI_39, FI_38, FI_37, FI_36, FI_35, FI_34, FI_33, FI_32, FI_31, FI_30, FI_29, FI_28, FI_27, FI_26, FI_25, FI_24, FI_23, FI_22, FI_21, FI_20, FI_19, FI_18, FI_17, FI_16, FI_15, FI_14, FI_13, FI_12, FI_11, FI_10, FI_9, FI_8, FI_7, FI_6, FI_5, FI_4, FI_3, FI_2, FI_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
@@ -768,6 +879,8 @@
 
 #define _EXEC_OPS(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 #define _EXEC_OP_SIMPLE(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_Z(THETA, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+#define _EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_CALL_1(CALL_1, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 
 #define _EXEC_META_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, ...) EVAL(FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, __VA_ARGS__))
 #define _EXEC_META_M(WHAT, NAME, SIGNATURE, OPCLASS, LIST_A, ...) EVAL(FOR_EACH_M(ALPHA, NAME, SIGNATURE, OPCLASS, OPS_A(LIST_A), __VA_ARGS__))
@@ -802,7 +915,7 @@
 
 #define DISPATCH_KERNEL_INTERNAL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, ...) EXPAND(_EXEC_KERNEL_X(_EXPAND_PACKED_KERNEL_CALL, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, __VA_ARGS__))
 
-
+#define BUILD_CALL_1(NAME, TYPE, SIGNATURE, OPS) EVAL(_EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, OPS))
 
 #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
 #define PARAMS(...) __VA_ARGS__
@@ -816,25 +929,35 @@
 #define THETA(A, B, C, D) EXPAND(_EXPAND_PACKED_SIMPLE(A, B, C, D))
 #define PHI(A, B, C) EXPAND(DISPATCH_FACTORY(A, C, UNPAREN(B)))
 
+#define CALL_1(A, B, C, D) EXPAND(_EXPAND_PACKED_CALL_1(A, B, C, D))
+
+
+
 
 /// graph definitions
 #define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return ND4J_STATUS_VALIDATION;
 #define REQUIRE_TRUE(...) if (nd4j::ops::conditionHelper(__FILE__, __LINE__, __VA_ARGS__) != 0) return ND4J_STATUS_VALIDATION;
 
+#define DECLARE_ENTRY(NAME, ...)           template struct __registratorFloat<NAME<float>>; \
+                                      template struct __registratorHalf<NAME<float16>>; \
+                                      template struct __registratorDouble<NAME<double>>; \
+                                      template struct __registratorSynonymHalf<NAME<float16>>; \
+                                      template struct __registratorSynonymDouble<NAME<double>>; \
+                                      template struct __registratorSynonymFloat<NAME<float>>;
 
 #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT, INPLACEABLE)
 #define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT, INPLACEABLE)   template <typename T> \
                                                 class NAME: public nd4j::ops::DeclarableOp<T> { \
                                                 public:\
-                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { } \
+                                                    NAME(); \
                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
                                                 protected: \
-                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
-                                                };\
-                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
-                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
-                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
-                                                                             \
+                                                    Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
+                                                };
+
+
+#define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)   template <typename T>\
+                                                NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { }; \
                                                 template <typename T>\
                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
                                                     int* newshape; \
@@ -843,48 +966,136 @@
                                                     auto shapeList = new nd4j::ShapeList(newshape); \
                                                     return shapeList; \
                                                 } \
+template <typename OpName>  \
+struct __registratorFloat_##NAME {\
+    __registratorFloat_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorHalf_##NAME {\
+    __registratorHalf_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorDouble_##NAME {\
+    __registratorDouble_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+    }\
+};\
+                                                static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
                                                 template <typename T> \
-                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 
-#define DECLARE_SYN(NAME, ORIGINAL)     static nd4j::ops::__registratorSynonymFloat<ORIGINAL<float>> zzz_register_opf_##NAME(#NAME, #ORIGINAL); \
-                                        static nd4j::ops::__registratorSynonymHalf<ORIGINAL<float16>> zzz_register_oph_##NAME(#NAME, #ORIGINAL); \
-                                        static nd4j::ops::__registratorSynonymDouble<ORIGINAL<double>> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
+
+#define DECLARE_SYN(NAME, ORIGINAL)         \
+template <typename OpName>  \
+struct __registratorSynonymFloat_##NAME {\
+    __registratorSynonymFloat_##NAME(const char *name, const char *oname) {\
+        OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationFloat(oname); \
+        if (ptr == nullptr) { \
+            std::string newName(name); \
+            std::string oldName(oname); \
+            OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
+            return;\
+        }\
+        OpRegistrator::getInstance()->registerOperationFloat(name, ptr);\
+    }\
+};\
+template <typename OpName>  \
+struct __registratorSynonymHalf_##NAME {\
+    __registratorSynonymHalf_##NAME(const char *name, const char *oname) {\
+        OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationHalf(oname); \
+        if (ptr == nullptr) { \
+            std::string newName(name); \
+            std::string oldName(oname); \
+            OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
+            return;\
+        }\
+        OpRegistrator::getInstance()->registerOperationHalf(name, ptr);\
+    }\
+};\
+template <typename OpName>  \
+struct __registratorSynonymDouble_##NAME {\
+    __registratorSynonymDouble_##NAME(const char *name, const char *oname) {\
+        OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname); \
+        if (ptr == nullptr) { \
+            std::string newName(name); \
+            std::string oldName(oname); \
+            OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
+            return;\
+        }\
+        OpRegistrator::getInstance()->registerOperationDouble(name, ptr);\
+    }\
+};\
+                                        static nd4j::ops::__registratorSynonymFloat_##NAME<ORIGINAL<float>> zzz_register_opf_##NAME(#NAME, #ORIGINAL); \
+                                        static nd4j::ops::__registratorSynonymHalf_##NAME<ORIGINAL<float16>> zzz_register_oph_##NAME(#NAME, #ORIGINAL); \
+                                        static nd4j::ops::__registratorSynonymDouble_##NAME<ORIGINAL<double>> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
 
 #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  template <typename T> \
-                                                class NAME: public nd4j::ops::DeclarableOp<T> { \
-                                                public:\
-                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { } \
-                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
-                                                protected: \
-                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
-                                                };\
-                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
-                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
-                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
-                                                                             \
-                                                template <typename T>\
-                                                nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
-                                                    int* newshape; \
-                                                    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); \
-                                                    memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); \
-                                                    auto shapeList = new nd4j::ShapeList(newshape); \
-                                                    return shapeList; \
-                                                } \
-                                                template <typename T> \
-                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+                                                            class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                                            public:\
+                                                                NAME(); \
+                                                                nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
+                                                            protected: \
+                                                                Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
+                                                            };
+
+
+#define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)     template <typename T> \
+                                                            NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { }; \
+                                                            template <typename T>\
+                                                            nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
+                                                                int* newshape; \
+                                                                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); \
+                                                                memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); \
+                                                                auto shapeList = new nd4j::ShapeList(newshape); \
+                                                                return shapeList; \
+                                                            } \
+template <typename OpName>  \
+struct __registratorFloat_##NAME {\
+    __registratorFloat_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorHalf_##NAME {\
+    __registratorHalf_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorDouble_##NAME {\
+    __registratorDouble_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+    }\
+};\
+                                                            static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                            static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
+                                                            static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                            template <typename T> \
+                                                            Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 
 #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
                                                                                 class NAME: public nd4j::ops::DeclarableOp<T> { \
                                                                                 public:\
-                                                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
+                                                                                    NAME(); \
                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
                                                                                 protected: \
-                                                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
-                                                                                };\
-                                                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
-                                                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
-                                                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
-                                                                                                                                                             \
+                                                                                    Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
+                                                                                };
+
+#define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>\
+                                                                                NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { }; \
                                                                                 template <typename T>\
                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
                                                                                     int* newshape; \
@@ -893,36 +1104,111 @@
                                                                                     auto shapeList = new nd4j::ShapeList(newshape); \
                                                                                     return shapeList; \
                                                                                 } \
+template <typename OpName>  \
+struct __registratorFloat_##NAME {\
+    __registratorFloat_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorHalf_##NAME {\
+    __registratorHalf_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorDouble_##NAME {\
+    __registratorDouble_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+    }\
+};\
+                                                                                static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                                                static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                                                static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
+                                                                                                                                                             \
                                                                                 template <typename T> \
                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
-#define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
+#define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T> \
                                                                                 class NAME: public nd4j::ops::DeclarableReductionOp<T> { \
                                                                                 public:\
-                                                                                    NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
+                                                                                    NAME(); \
                                                                                 protected: \
                                                                                     Nd4jStatus validateAndExecute(Block<T>& block); \
-                                                                                };\
-                                                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
-                                                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
-                                                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
+                                                                                };
+
+#define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T> \
+                                                                                NAME<T>::NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { }; \
+template <typename OpName>  \
+struct __registratorFloat_##NAME {\
+    __registratorFloat_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorHalf_##NAME {\
+    __registratorHalf_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorDouble_##NAME {\
+    __registratorDouble_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+    }\
+};\
+                                                                                static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                                                static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                                                static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
                                                                                 template <typename T> \
-                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 
 
-#define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
+#define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T> \
                                                                                 class NAME: public nd4j::ops::DeclarableCustomOp<T> { \
-                                                                                public:\
-                                                                                    NAME() : nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
-                                                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
                                                                                 protected: \
                                                                                     Nd4jStatus validateAndExecute(Block<T>& block); \
-                                                                                };\
-                                                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
-                                                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
-                                                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
+                                                                                public:\
+                                                                                    NAME(); \
+                                                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
+                                                                                };
+
+
+#define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)              template <typename T> \
+                                                                                nd4j::ops::NAME<T>::NAME(): nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { }; \
+template <typename OpName>  \
+struct __registratorFloat_##NAME {\
+    __registratorFloat_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorHalf_##NAME {\
+    __registratorHalf_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorDouble_##NAME {\
+    __registratorDouble_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+    }\
+};\
+                                                                                static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                                                static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                                                static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
                                                                                 template <typename T> \
-                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+
 // this declaration MUST follow DECLARE_CUSTOM_OP
 #define DECLARE_SHAPE_FN(NAME)                                              template<typename T>\
                                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block)

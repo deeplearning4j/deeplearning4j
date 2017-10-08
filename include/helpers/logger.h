@@ -5,13 +5,17 @@
 #ifndef LIBND4J_LOGGER_H
 #define LIBND4J_LOGGER_H
 
+#include <vector>
 #include <cstdarg>
+#include <Environment.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifndef __CUDACC__
 
-#define nd4j_debug(FORMAT, ...) if (debug && verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
-#define nd4j_logger(FORMAT, ...) if (debug && verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
-#define nd4j_verbose(FORMAT, ...) if (verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_debug(FORMAT, ...) if (nd4j::Environment::getInstance()->isDebug() && nd4j::Environment::getInstance()->isVerbose()) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_logger(FORMAT, ...) if (nd4j::Environment::getInstance()->isDebug() && nd4j::Environment::getInstance()->isVerbose()) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_verbose(FORMAT, ...) if (nd4j::Environment::getInstance()->isVerbose()) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_printf(FORMAT, ...) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 
 #else

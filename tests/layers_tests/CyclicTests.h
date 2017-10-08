@@ -11,8 +11,8 @@
 #include <Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <ops/declarable/declarable_ops.h>
-#include <ops/declarable/generic/convo/convo_ops.h>
+#include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/generic/convo/convo_ops.cpp>
 
 using namespace nd4j::graph;
 

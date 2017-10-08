@@ -24,6 +24,8 @@
 #include <jni.h>
 #endif
 
+#include <TAD.h>
+
 #define BROADCAST_OPS \
        (0, simdOps::Add), \
        (1, simdOps::Subtract), \

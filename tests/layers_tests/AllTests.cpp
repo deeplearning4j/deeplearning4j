@@ -3,19 +3,21 @@
 //
 //
 #include "testlayers.h"
+/*
 #include "DenseLayerTests.cpp"
 #include "NDArrayTests.cpp"
 #include "VariableSpaceTests.cpp"
-#include "VariableTests.h"
+#include "VariableTests.cpp"
 #include "DeclarableOpsTests.cpp"
 #include "HashUtilsTests.cpp"
-#include "WorkspaceTests.h"
-#include "ConvolutionTests.h"
-#include "TadTests.h"
-#include "StashTests.h"
-#include "SessionLocalTests.h"
+#include "WorkspaceTests.cpp"
+#include "ConvolutionTests.cpp"
+#include "TadTests.cpp"
+#include "StashTests.cpp"
+#include "SessionLocalTests.cpp"
 #include "GraphTests.cpp"
 #include "FlatBuffersTests.cpp"
+ */
 ///////
 
 //#include "CyclicTests.h"

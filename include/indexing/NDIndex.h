@@ -12,17 +12,11 @@ namespace nd4j {
     protected:
         std::vector<int> _indices;
     public:
-        NDIndex() {
-            //
-        }
+        NDIndex() = default;
+        ~NDIndex() = default;
 
-        ~NDIndex() {
-            //
-        }
+        bool isAll();
 
-        bool isAll() {
-            return _indices.size() == 1 && _indices.at(0) == -1;
-        }
         std::vector<int>& getIndices();
 
         static NDIndex* all();
@@ -32,54 +26,27 @@ namespace nd4j {
 
     class NDIndexAll : public NDIndex {
     public:
-        NDIndexAll() : nd4j::NDIndex() {
-            _indices.push_back(-1);
-        }
+        NDIndexAll();
 
-        ~NDIndexAll() {
-            //
-        }
+        ~NDIndexAll() = default;
     };
 
 
     class NDIndexPoint : public NDIndex {
     public:
-        explicit NDIndexPoint(int point): nd4j::NDIndex() {
-            this->_indices.push_back(point);
-        }
+        NDIndexPoint(int point);
 
-        ~NDIndexPoint() {
-            //
-        };
+        ~NDIndexPoint() = default;
     };
 
     class NDIndexInterval : public NDIndex {
     public:
-        explicit NDIndexInterval(int start, int end): nd4j::NDIndex() {
-            for (int e = start; e < end; e++)
-                this->_indices.push_back(e);
-        }
+        NDIndexInterval(int start, int end);
 
-
-        ~NDIndexInterval() {
-            //
-        }
+        ~NDIndexInterval() = default;
     };
 }
 
-std::vector<int>& nd4j::NDIndex::getIndices() {
-    return _indices;
-}
 
-nd4j::NDIndex* nd4j::NDIndex::all() {
-    return new NDIndexAll();
-}
-nd4j::NDIndex* nd4j::NDIndex::point(int pt) {
-    return new NDIndexPoint(pt);
-}
-
-nd4j::NDIndex* nd4j::NDIndex::interval(int start, int end) {
-    return new NDIndexInterval(start, end);
-}
 
 #endif //LIBND4J_NDINDEX_H

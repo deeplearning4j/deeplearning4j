@@ -46,7 +46,7 @@
         (13,simdOps::Max),\
         (14,simdOps::Min),\
         (15,simdOps::NotEqualTo),\
-        (16,simdOps::Copy),\
+        (16,simdOps::Copy2),\
         (17,simdOps::Axpy),\
         (18,simdOps::ReverseDivide),\
         (45,simdOps::CompareAndSet),\

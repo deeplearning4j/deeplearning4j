@@ -11,8 +11,8 @@
 #include <Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <ops/declarable/declarable_ops.h>
-#include <ops/declarable/generic/convo/convo_ops.h>
+#include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/generic/convo/convo_ops.cpp>
 
 using namespace nd4j::graph;
 
@@ -356,8 +356,8 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
     auto input = new NDArray<double>('c', {2, 3, 4, 4});
     auto weights = new NDArray<double>('c', {3, 3, 5, 5});
 
-    nd4j::NDArrayFactory::linspace<double>(1, *input);
-    nd4j::NDArrayFactory::linspace<double>(1, *weights);
+    nd4j::NDArrayFactory<double>::linspace(1, *input);
+    nd4j::NDArrayFactory<double>::linspace(1, *weights);
 
     auto variableSpace = new VariableSpace<double>();
     variableSpace->putVariable(-1, input);

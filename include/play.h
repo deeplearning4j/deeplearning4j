@@ -5,7 +5,7 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-//#include <op_boilerplate.h>
+#include "op_boilerplate.h"
 
 #define ACTIVATIONS \
         (0, nd4j::activations::Identity) ,\
@@ -22,7 +22,44 @@
         (1, double) ,\
         (2, float16)
 
+#define PAIRWISE_TRANSFORM_OPS \
+        (0, simdOps::Add),\
+        (1, simdOps::Copy),\
+        (2, simdOps::Divide),\
+        (3, simdOps::EqualTo),\
+        (4, simdOps::GreaterThan),\
+        (5, simdOps::LessThan),\
+        (6, simdOps::Multiply),\
+        (7, simdOps::Pow),\
+        (8, simdOps::ReverseSubtract),\
+        (9, simdOps::Subtract),\
+        (10,simdOps::Epsilon),\
+        (11,simdOps::GreaterThanOrEqual),\
+        (12,simdOps::LessThanOrEqual),\
+        (13,simdOps::Max),\
+        (14,simdOps::Min),\
+        (15,simdOps::NotEqualTo),\
+        (16,simdOps::Copy),\
+        (17,simdOps::Axpy),\
+        (18,simdOps::ReverseDivide),\
+        (45,simdOps::CompareAndSet),\
+        (46,simdOps::CompareAndReplace),\
+        (56,simdOps::And),\
+        (57,simdOps::Or),\
+        (58,simdOps::Xor),\
+        (59,simdOps::Remainder),\
+        (60,simdOps::FMod),\
+        (69,simdOps::Atan2)
 
+
+
+//BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
+
+BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
+
+//BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target, float16 *extraParams) , ACTIVATIONS);
+
+/*
 #define DECLARE_OP(NAME, NIN, NOUT)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT)
 #define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT)   template <typename T> \
                                                 class NAME: public nd4j::ops::DeclarableOp<T> { \
@@ -33,10 +70,10 @@
                                                 };\
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
-
+*/
 //#define END_OP(NAME) }; static nd4j::ops::__registrator<NAME<float>> register_op##Name;
 
-DECLARE_OP(Concat, -1, 1)
+//#DECLARE_OP(Concat, -1, 1)
 
 //END_OP(Concat)
 
