@@ -5,10 +5,17 @@
 #ifndef LIBND4J_CUSTOMOPERATIONS_H
 #define LIBND4J_CUSTOMOPERATIONS_H
 
+#include <memory>
 #include <op_boilerplate.h>
+#include <NDArray.h>
+#include <NDArrayFactory.h>
+#include <Block.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
 #include <ops/declarable/DeclarableCustomOp.h>
+#include <ops/declarable/OpRegistrator.h>
+#include <helpers/ArrayUtils.h>
+#include <ShapeList.h>
 
 namespace nd4j {
     namespace ops {
