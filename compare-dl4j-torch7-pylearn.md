@@ -75,6 +75,7 @@ Pros and Cons:
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = sigmoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
 * Caveat: Not all operations in Tensorflow work as they do in Numpy. 
+* [A Critique of Tensorflow](http://nicodjimenez.github.io/2017/10/08/tensorflow.html)
 
 Pros and Cons
 
@@ -99,6 +100,7 @@ Pros and Cons
 Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. While it is widely cited in papers, Caffe is chiefly used as a source of pre-trained models hosted on its Model Zoo site. 
 
 * [Caffe's GitHub repository](https://github.com/BVLC/caffe)
+* [Caffe's GitHub issues](https://github.com/BVLC/caffe/issues)
 
 Pros and Cons:
 
@@ -112,7 +114,6 @@ Pros and Cons:
 * (-) Not extensible, bit of a hairball
 * (-) No commercial support
 * (-) Probably dying; slow development
-
 
 ### <a name="theano">RIP: Theano and Ecosystem</a>
 
