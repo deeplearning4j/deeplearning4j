@@ -52,12 +52,15 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #endif
 // #include <dll.h>
 
-public static native int tad_threshold(); public static native void tad_threshold(int tad_threshold);
-public static native int element_threshold(); public static native void element_threshold(int element_threshold);
+/*
+int tad_threshold = 1;
+int element_threshold = 32;
 
-public static native @Cast("bool") boolean debug(); public static native void debug(boolean debug);
-public static native @Cast("bool") boolean verbose(); public static native void verbose(boolean verbose);
+bool debug = false;
+bool verbose = false;
+*/
 
+// #include <graph/ShapeList.h>
 
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
@@ -5063,6 +5066,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native int execCustomOpHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, @Cast("float16*") ShortBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOpHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, @Cast("float16*") short[] tArgs, int numTArgs, int[] iArgs, int numIArgs, @Cast("bool") boolean isInplace);
 
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, FloatBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, float[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, @Cast("float16*") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, @Cast("float16*") ShortBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, @Cast("float16*") short[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
+    public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
 }
 
 

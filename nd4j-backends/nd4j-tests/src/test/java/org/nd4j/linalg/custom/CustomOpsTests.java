@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -229,6 +230,27 @@ public class CustomOpsTests {
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, zF);
+    }
+
+
+    @Test
+    public void testOutputShapes1() {
+        val array0 = Nd4j.rand('f', 5, 2).addi(1); //some random array with +ve numbers
+        val array1 = array0.dup().addi(5);
+        array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
+
+        //expected value of maxmerge
+        val exp = array1.dup();
+        exp.putScalar(0, 0, array0.getDouble(0, 0));
+
+        CustomOp op = DynamicCustomOp.builder("mergemax")
+                .setInputs(array0, array1)
+                .build();
+
+        val shapes = op.calculateOutputShape();
+
+        assertEquals(1, shapes.size());
+        assertArrayEquals(new int[]{5, 2}, shapes.get(0));
     }
 
 

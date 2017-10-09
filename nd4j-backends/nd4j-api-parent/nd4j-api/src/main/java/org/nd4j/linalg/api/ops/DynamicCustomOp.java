@@ -69,6 +69,11 @@ public class DynamicCustomOp implements CustomOp {
         return new Builder(opName, desc.getHash(), desc.getNumInputs(), desc.getNumOutputs(), desc.isAllowsInplace(), desc.getNumTArgs(), desc.getNumIArgs());
     }
 
+    @Override
+    public List<int[]> calculateOutputShape() {
+        return Nd4j.getExecutioner().calculateOutputShape(this);
+    }
+
     public static class Builder {
         protected String opName;
         protected int numInputs;
@@ -240,8 +245,8 @@ public class DynamicCustomOp implements CustomOp {
 
         public DynamicCustomOp build() {
             // Eventually we probably will lift this restriction
-            if (!inplaceCall && outputArguments.size() == 0)
-                throw new ND4JIllegalStateException("If operation is not-inplace, it must have outputs defined");
+            //if (!inplaceCall && outputArguments.size() == 0)
+            //    throw new ND4JIllegalStateException("If operation is not-inplace, it must have outputs defined");
 
             val result = new DynamicCustomOp(opName);
             result.inputArguments = inputArguments;

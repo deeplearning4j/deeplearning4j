@@ -38,4 +38,7 @@ public interface CustomOp {
     List<Integer> getIArguments();
 
     List<Double> getTArguments();
+
+
+    List<int[]> calculateOutputShape();
 }

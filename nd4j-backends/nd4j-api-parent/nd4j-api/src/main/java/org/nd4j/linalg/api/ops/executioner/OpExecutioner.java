@@ -352,4 +352,6 @@ public interface OpExecutioner {
      * @param op
      */
     void exec(CustomOp op);
+
+    List<int[]> calculateOutputShape(CustomOp op);
 }
