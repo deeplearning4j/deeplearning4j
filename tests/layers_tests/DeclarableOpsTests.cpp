@@ -140,7 +140,7 @@ TEST_F(DeclarableOpsTests, TestTensorMmul1) {
     variableSpace->putVariable(-2, &y);
     variableSpace->putVariable(1, new Variable<float>());
     Block<float>* block = new Block<float>(1, variableSpace, false);
-    block->fillInputs({-1, -2});
+    block->fillInputs({-1, -2}); 
     block->getIArguments()->push_back(2);
     block->getIArguments()->push_back(1);
     block->getIArguments()->push_back(2);
@@ -1974,123 +1974,6 @@ TEST_F(DeclarableOpsTests, PnormPool2dBP) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BatchNorm2D) {
-
-    const int training = 1;
-    const int isLockGammaBeta = 0;
-    const int isMinibatch  = 0;
-    const int K = 4;
-    const float eps = 1e-5;
-    const float g = 2.;
-    const float b = 1.;
-    const float decay = 1.;
-    NDArray<float> input('c', {bS, K});
-    NDArray<float> gamma('c', {1, K});
-    NDArray<float> beta ('c', {1, K});
-    NDArray<float> xHat ('c', {bS, K});    
-    NDArray<float> globalMeanView('c', {1, K});
-    NDArray<float> globalVarView('c', {1, K});
-    NDArray<float> output('c', {bS, K});
-    NDArray<float> outExpected('c', {bS, K});
-    input(0,0)=1;input(0,1)=2;input(0,2)=3;input(0,3)=4;input(1,0)=5;input(1,1)=6;input(1,2)=7;input(1,3)=8;
-    gamma.assign(1);
-
-    VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    variableSpace->putVariable(-1, &input);
-	variableSpace->putVariable(-2, &globalMeanView);
-    variableSpace->putVariable(-3, &globalVarView);
-    variableSpace->putVariable(-4, &gamma);
-    variableSpace->putVariable(-5, &beta);
-    variableSpace->putVariable(1, &output);
-    
-
-    Block<float>* block = new Block<float>(1, variableSpace, false);
-    block->fillInputs({-1,-2,-3,-4,-5});	
-	std::vector<int>* argI = block->getIArguments();
-    std::vector<float>* argT = block->getTArguments();
-	*argI = {training, isLockGammaBeta, isMinibatch};  
-    *argT = {eps, g, b, decay};  
-    
-    NDArray<float>* mean = input.template reduceAlongDimension<simdOps::Mean<float>>({0});        
-    NDArray<float>* var  = input.template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0});
-    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
-    var->template applyTransform<simdOps::Sqrt<float>>(var, nullptr);            
-    input.subRowVector(mean, &xHat);    
-    xHat.divRowVector(var, &xHat);    
-    xHat.mulRowVector(&gamma, &outExpected);
-    outExpected.addRowVector(&beta, &outExpected);
-
-    nd4j::ops::batchnorm<float> batchnorm;
-	Nd4jStatus status = batchnorm.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    
-	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(outExpected.equalsTo(result));
-
-    delete mean;
-    delete var;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BatchNorm4D) {
-
-    const int training = 1;
-    const int isLockGammaBeta = 0;
-    const int isMinibatch  = 0;
-    const int iD = 4;
-    const int iH = 3;
-    const int iW = 3;
-    const float eps = 1e-5;
-    const float g = 2.;
-    const float b = 3.;
-    const float decay = 1.;
-    NDArray<float> input('c', {bS, iD, iH, iW});
-    NDArray<float> gamma('c', {1, iD});
-    NDArray<float> beta ('c', {1, iD});
-    gamma.assign(1.);
-    nd4j::NDArrayFactory<float>::linspace(1.,input);
-
-    NDArray<float> xHat ('c', {bS, iD, iH, iW});    
-    NDArray<float> globalMeanView('c', {1, iD});
-    NDArray<float> globalVarView('c', {1, iD});
-    NDArray<float> output('c', {bS, iD, iH, iW});
-    NDArray<float> outExpected('c', {bS, iD, iH, iW});    
-
-    VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    variableSpace->putVariable(-1, &input);
-	variableSpace->putVariable(-2, &globalMeanView);
-    variableSpace->putVariable(-3, &globalVarView);
-    variableSpace->putVariable(-4, &gamma);
-    variableSpace->putVariable(-5, &beta);
-    variableSpace->putVariable(1, &output);    
-
-    Block<float>* block = new Block<float>(1, variableSpace, false);
-    block->fillInputs({-1,-2,-3,-4,-5});	
-	std::vector<int>* argI = block->getIArguments();
-    std::vector<float>* argT = block->getTArguments();
-	*argI = {training, isLockGammaBeta, isMinibatch};  
-    *argT = {eps, g, b, decay};  
-    
-    NDArray<float>* mean = input.template reduceAlongDimension<simdOps::Mean<float>>({0,2,3});        
-    NDArray<float>* var  = input.template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0,2,3});
-    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
-    var->template applyTransform<simdOps::Sqrt<float>>(var, nullptr);            
-    input.template applyBroadcast<simdOps::Subtract<float>>({1}, mean, &xHat, nullptr);
-    xHat.template applyBroadcast<simdOps::Divide<float>>({1}, var, &xHat, nullptr);
-    xHat.template applyBroadcast<simdOps::Multiply<float>>({1}, &gamma, &outExpected, nullptr);                
-    outExpected.template applyBroadcast<simdOps::Add<float>>({1}, &beta, &outExpected, nullptr);
-
-    nd4j::ops::batchnorm<float> batchnorm;
-	Nd4jStatus status = batchnorm.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    
-	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(outExpected.equalsTo(result));
-
-    delete mean;
-    delete var;
-}
-
 TEST_F(DeclarableOpsTests, CompactLaunchTests1) {
     int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
     double _expB[] = {6276.0,   12831.0,   19668.0,   26790.0,   27012.0,   20703.0,   14100.0,    7200.0,    13719.0,   28023.0,   42918.0,   58410.0,   58902.0,   45105.0,   30693.0,   15660.0,    22389.0,   45696.0,   69930.0,   95100.0,   95910.0,   73386.0,   49899.0,   25440.0,    32346.0,   65970.0,  100884.0,  137100.0,  138276.0,  105726.0,   71838.0,   36600.0,    33726.0,   68790.0,  105204.0,  142980.0,  144156.0,  110226.0,   74898.0,   38160.0,    27555.0,   56154.0,   85806.0,  116520.0,  117474.0,   89748.0,   60933.0,   31020.0,    19917.0,   40557.0,   61926.0,   84030.0,   84714.0,   64671.0,   43875.0,   22320.0,    10752.0,   21879.0,   33384.0,   45270.0,   45636.0,   34815.0,   23604.0,   12000.0,    7551.0,   15456.0,   23718.0,   32340.0,   32562.0,   24978.0,   17025.0,    8700.0,    16569.0,   33873.0,   51918.0,   70710.0,   71202.0,   54555.0,   37143.0,   18960.0,    27114.0,   55371.0,   84780.0,  115350.0,  116160.0,   88911.0,   60474.0,   30840.0,    39246.0,   80070.0,  122484.0,  166500.0,  167676.0,  128226.0,   87138.0,   44400.0,    40626.0,   82890.0,  126804.0,  172380.0,  173556.0,  132726.0,   90198.0,   45960.0,    33180.0,   67629.0,  103356.0,  140370.0,  141324.0,  107973.0,   73308.0,   37320.0,    23967.0,   48807.0,   74526.0,  101130.0,  101814.0,   77721.0,   52725.0,   26820.0,    12927.0,   26304.0,   40134.0,   54420.0,   54786.0,   41790.0,   28329.0,   14400.0,    8826.0,   18081.0,   27768.0,   37890.0,   38112.0,   29253.0,   19950.0,   10200.0,    19419.0,   39723.0,   60918.0,   83010.0,   83502.0,   64005.0,   43593.0,   22260.0,    31839.0,   65046.0,   99630.0,  135600.0,  136410.0,  104436.0,   71049.0,   36240.0,    46146.0,   94170.0,  144084.0,  195900.0,  197076.0,  150726.0,  102438.0,   52200.0,    47526.0,   96990.0,  148404.0,  201780.0,  202956.0,  155226.0,  105498.0,   53760.0,    38805.0,   79104.0,  120906.0,  164220.0,  165174.0,  126198.0,   85683.0,   43620.0,    28017.0,   57057.0,   87126.0,  118230.0,  118914.0,   90771.0,   61575.0,   31320.0,    15102.0,   30729.0,   46884.0,   63570.0,   63936.0,   48765.0,   33054.0,   16800.0,    17220.0,   34863.0,   52932.0,   71430.0,   72228.0,   54831.0,   36996.0,   18720.0,    36327.0,   73527.0,  111606.0,  150570.0,  152214.0,  115521.0,   77925.0,   39420.0,    57381.0,  116112.0,  176202.0,  237660.0,  240198.0,  182250.0,  122907.0,   62160.0,    80442.0,  162738.0,  246900.0,  332940.0,  336420.0,  255198.0,  172062.0,   87000.0,    84702.0,  171318.0,  259860.0,  350340.0,  353820.0,  268338.0,  180882.0,   91440.0,    66867.0,  135210.0,  205038.0,  276360.0,  279042.0,  211572.0,  142581.0,   72060.0,    46845.0,   94701.0,  143574.0,  193470.0,  195306.0,  148047.0,   99747.0,   50400.0,    24576.0,   49671.0,   75288.0,  101430.0,  102372.0,   77583.0,   52260.0,   26400.0,    22095.0,   44688.0,   67782.0,   91380.0,   92178.0,   69906.0,   47121.0,   23820.0,    46377.0,   93777.0,  142206.0,  191670.0,  193314.0,  146571.0,   98775.0,   49920.0,    72906.0,  147387.0,  223452.0,  301110.0,  303648.0,  230175.0,  155082.0,   78360.0,    101742.0,  205638.0,  311700.0,  419940.0,  423420.0,  320898.0,  216162.0,  109200.0,    106002.0,  214218.0,  324660.0,  437340.0,  440820.0,  334038.0,  224982.0,  113640.0,    83292.0,  168285.0,  254988.0,  343410.0,  346092.0,  262197.0,  176556.0,   89160.0,    58095.0,  117351.0,  177774.0,  239370.0,  241206.0,  182697.0,  122997.0,   62100.0,    30351.0,   61296.0,   92838.0,  124980.0,  125922.0,   95358.0,   64185.0,   32400.0,    26970.0,   54513.0,   82632.0,  111330.0,  112128.0,   84981.0,   57246.0,   28920.0,    56427.0,  114027.0,  172806.0,  232770.0,  234414.0,  177621.0,  119625.0,   60420.0,    88431.0,  178662.0,  270702.0,  364560.0,  367098.0,  278100.0,  187257.0,   94560.0,    123042.0,  248538.0,  376500.0,  506940.0,  510420.0,  386598.0,  260262.0,  131400.0,    127302.0,  257118.0,  389460.0,  524340.0,  527820.0,  399738.0,  269082.0,  135840.0,    99717.0,  201360.0,  304938.0,  410460.0,  413142.0,  312822.0,  210531.0,  106260.0,    69345.0,  140001.0,  211974.0,  285270.0,  287106.0,  217347.0,  146247.0,   73800.0,    36126.0,   72921.0,  110388.0,  148530.0,  149472.0,  113133.0,   76110.0,   38400.0,};
@@ -2115,7 +1998,7 @@ TEST_F(DeclarableOpsTests, CompactLaunchTests1) {
     delete result;
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, CompactLaunchTests2) {
     int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
     double _expB[] = {6276.0,   12831.0,   19668.0,   26790.0,   27012.0,   20703.0,   14100.0,    7200.0,    13719.0,   28023.0,   42918.0,   58410.0,   58902.0,   45105.0,   30693.0,   15660.0,    22389.0,   45696.0,   69930.0,   95100.0,   95910.0,   73386.0,   49899.0,   25440.0,    32346.0,   65970.0,  100884.0,  137100.0,  138276.0,  105726.0,   71838.0,   36600.0,    33726.0,   68790.0,  105204.0,  142980.0,  144156.0,  110226.0,   74898.0,   38160.0,    27555.0,   56154.0,   85806.0,  116520.0,  117474.0,   89748.0,   60933.0,   31020.0,    19917.0,   40557.0,   61926.0,   84030.0,   84714.0,   64671.0,   43875.0,   22320.0,    10752.0,   21879.0,   33384.0,   45270.0,   45636.0,   34815.0,   23604.0,   12000.0,    7551.0,   15456.0,   23718.0,   32340.0,   32562.0,   24978.0,   17025.0,    8700.0,    16569.0,   33873.0,   51918.0,   70710.0,   71202.0,   54555.0,   37143.0,   18960.0,    27114.0,   55371.0,   84780.0,  115350.0,  116160.0,   88911.0,   60474.0,   30840.0,    39246.0,   80070.0,  122484.0,  166500.0,  167676.0,  128226.0,   87138.0,   44400.0,    40626.0,   82890.0,  126804.0,  172380.0,  173556.0,  132726.0,   90198.0,   45960.0,    33180.0,   67629.0,  103356.0,  140370.0,  141324.0,  107973.0,   73308.0,   37320.0,    23967.0,   48807.0,   74526.0,  101130.0,  101814.0,   77721.0,   52725.0,   26820.0,    12927.0,   26304.0,   40134.0,   54420.0,   54786.0,   41790.0,   28329.0,   14400.0,    8826.0,   18081.0,   27768.0,   37890.0,   38112.0,   29253.0,   19950.0,   10200.0,    19419.0,   39723.0,   60918.0,   83010.0,   83502.0,   64005.0,   43593.0,   22260.0,    31839.0,   65046.0,   99630.0,  135600.0,  136410.0,  104436.0,   71049.0,   36240.0,    46146.0,   94170.0,  144084.0,  195900.0,  197076.0,  150726.0,  102438.0,   52200.0,    47526.0,   96990.0,  148404.0,  201780.0,  202956.0,  155226.0,  105498.0,   53760.0,    38805.0,   79104.0,  120906.0,  164220.0,  165174.0,  126198.0,   85683.0,   43620.0,    28017.0,   57057.0,   87126.0,  118230.0,  118914.0,   90771.0,   61575.0,   31320.0,    15102.0,   30729.0,   46884.0,   63570.0,   63936.0,   48765.0,   33054.0,   16800.0,    17220.0,   34863.0,   52932.0,   71430.0,   72228.0,   54831.0,   36996.0,   18720.0,    36327.0,   73527.0,  111606.0,  150570.0,  152214.0,  115521.0,   77925.0,   39420.0,    57381.0,  116112.0,  176202.0,  237660.0,  240198.0,  182250.0,  122907.0,   62160.0,    80442.0,  162738.0,  246900.0,  332940.0,  336420.0,  255198.0,  172062.0,   87000.0,    84702.0,  171318.0,  259860.0,  350340.0,  353820.0,  268338.0,  180882.0,   91440.0,    66867.0,  135210.0,  205038.0,  276360.0,  279042.0,  211572.0,  142581.0,   72060.0,    46845.0,   94701.0,  143574.0,  193470.0,  195306.0,  148047.0,   99747.0,   50400.0,    24576.0,   49671.0,   75288.0,  101430.0,  102372.0,   77583.0,   52260.0,   26400.0,    22095.0,   44688.0,   67782.0,   91380.0,   92178.0,   69906.0,   47121.0,   23820.0,    46377.0,   93777.0,  142206.0,  191670.0,  193314.0,  146571.0,   98775.0,   49920.0,    72906.0,  147387.0,  223452.0,  301110.0,  303648.0,  230175.0,  155082.0,   78360.0,    101742.0,  205638.0,  311700.0,  419940.0,  423420.0,  320898.0,  216162.0,  109200.0,    106002.0,  214218.0,  324660.0,  437340.0,  440820.0,  334038.0,  224982.0,  113640.0,    83292.0,  168285.0,  254988.0,  343410.0,  346092.0,  262197.0,  176556.0,   89160.0,    58095.0,  117351.0,  177774.0,  239370.0,  241206.0,  182697.0,  122997.0,   62100.0,    30351.0,   61296.0,   92838.0,  124980.0,  125922.0,   95358.0,   64185.0,   32400.0,    26970.0,   54513.0,   82632.0,  111330.0,  112128.0,   84981.0,   57246.0,   28920.0,    56427.0,  114027.0,  172806.0,  232770.0,  234414.0,  177621.0,  119625.0,   60420.0,    88431.0,  178662.0,  270702.0,  364560.0,  367098.0,  278100.0,  187257.0,   94560.0,    123042.0,  248538.0,  376500.0,  506940.0,  510420.0,  386598.0,  260262.0,  131400.0,    127302.0,  257118.0,  389460.0,  524340.0,  527820.0,  399738.0,  269082.0,  135840.0,    99717.0,  201360.0,  304938.0,  410460.0,  413142.0,  312822.0,  210531.0,  106260.0,    69345.0,  140001.0,  211974.0,  285270.0,  287106.0,  217347.0,  146247.0,   73800.0,    36126.0,   72921.0,  110388.0,  148530.0,  149472.0,  113133.0,   76110.0,   38400.0,};
@@ -2140,6 +2023,334 @@ TEST_F(DeclarableOpsTests, CompactLaunchTests2) {
     ASSERT_TRUE(exp.equalsTo(&z));
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, BatchNorm2D) {
+
+    const int training = 1;
+    const int isLockGammaBeta = 0;
+    const int isMinibatch  = 0;
+    const int bS = 2;
+    const int K = 4;
+    const float eps = 1e-5;
+    const float g = 2.;
+    const float b = 1.;
+    const float decay = 1.;
+    NDArray<float> input('c', {bS, K});
+    NDArray<float> gamma('c', {1, K});
+    NDArray<float> beta ('c', {1, K});
+    NDArray<float> xHat ('c', {bS, K});    
+    NDArray<float> globalMeanView('c', {1, K});
+    NDArray<float> globalVarView('c', {1, K});
+    NDArray<float> output('c', {bS, K});
+    NDArray<float> outExpected('c', {bS, K});
+    input(0,0)=1;input(0,1)=2;input(0,2)=3;input(0,3)=4;input(1,0)=5;input(1,1)=6;input(1,2)=7;input(1,3)=8;
+    gamma.assign(1);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &input);
+    variableSpace->putVariable(-2, &globalMeanView);
+    variableSpace->putVariable(-3, &globalVarView);
+    variableSpace->putVariable(-4, &gamma);
+    variableSpace->putVariable(-5, &beta);
+    variableSpace->putVariable(1, &output);
+    
+
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1,-2,-3,-4,-5});    
+    std::vector<int>* argI = block->getIArguments();
+    std::vector<float>* argT = block->getTArguments();
+    *argI = {training, isLockGammaBeta, isMinibatch};  
+    *argT = {eps, g, b, decay};  
+    
+    NDArray<float>* mean = input.template reduceAlongDimension<simdOps::Mean<float>>({0});        
+    NDArray<float>* var  = input.template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0});
+    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
+    NDArray<float>* std = new NDArray<float>(var->getShapeInfo());
+    var->template applyTransform<simdOps::Sqrt<float>>(std, nullptr);            
+    input.subRowVector(mean, &xHat);    
+    xHat.divRowVector(std, &xHat);    
+    xHat.mulRowVector(&gamma, &outExpected);
+    outExpected.addRowVector(&beta, &outExpected);
+
+    nd4j::ops::batchnorm<float> batchnorm;
+    Nd4jStatus status = batchnorm.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    
+    NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(outExpected.equalsTo(result));
+
+    delete mean;
+    delete var;
+    delete std;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, BatchNorm4D) {
+
+    const int training = 1;
+    const int isLockGammaBeta = 0;
+    const int isMinibatch  = 0;
+    const int bS = 2;
+    const int iD = 4;
+    const int iH = 3;
+    const int iW = 3;
+    const float eps = 1e-5;
+    const float g = 2.;
+    const float b = 3.;
+    const float decay = 1.;
+    NDArray<float> input('c', {bS, iD, iH, iW});
+    NDArray<float> gamma('c', {1, iD});
+    NDArray<float> beta ('c', {1, iD});
+    gamma.assign(1.);
+    nd4j::NDArrayFactory<float>::linspace(1.,input);   
+
+    NDArray<float> xHat ('c', {bS, iD, iH, iW});    
+    NDArray<float> globalMeanView('c', {1, iD});
+    NDArray<float> globalVarView('c', {1, iD});
+    NDArray<float> output('c', {bS, iD, iH, iW});
+    NDArray<float> outExpected('c', {bS, iD, iH, iW});    
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &input);
+    variableSpace->putVariable(-2, &globalMeanView);
+    variableSpace->putVariable(-3, &globalVarView);
+    variableSpace->putVariable(-4, &gamma);
+    variableSpace->putVariable(-5, &beta);
+    variableSpace->putVariable(1, &output);    
+
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1,-2,-3,-4,-5});    
+    std::vector<int>* argI = block->getIArguments();
+    std::vector<float>* argT = block->getTArguments();
+    *argI = {training, isLockGammaBeta, isMinibatch};  
+    *argT = {eps, g, b, decay};  
+    
+    NDArray<float>* mean = input.template reduceAlongDimension<simdOps::Mean<float>>({0,2,3});        
+    NDArray<float>* var  = input.template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0,2,3});
+    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
+    var->template applyTransform<simdOps::Sqrt<float>>(var, nullptr);            
+    input.template applyBroadcast<simdOps::Subtract<float>>({1}, mean, &xHat, nullptr);
+    xHat.template applyBroadcast<simdOps::Divide<float>>({1}, var, &xHat, nullptr);
+    xHat.template applyBroadcast<simdOps::Multiply<float>>({1}, &gamma, &outExpected, nullptr);                
+    outExpected.template applyBroadcast<simdOps::Add<float>>({1}, &beta, &outExpected, nullptr);
+
+    nd4j::ops::batchnorm<float> batchnorm;
+    Nd4jStatus status = batchnorm.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    
+    NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(outExpected.equalsTo(result));
+
+    delete mean;
+    delete var;
+}
+
+    
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, BatchNorm2D_BP) {
+    
+    const int isLockGammaBeta = 0;
+    const int bS = 2; 
+    const int K = 4;
+    const double eps = 1e-5;
+    const int effectiveBatchSize = bS;
+    const std::initializer_list<int> dimensions = {0};
+    NDArray<double>* input = new NDArray<double>('c', {bS, K});
+    NDArray<double>* epsilon = new NDArray<double>('c', {bS, K});
+    NDArray<double>* gamma = new NDArray<double>('c', {1, K});    
+    NDArray<double>* dGlobalMeanView = new NDArray<double>('c', {1, K});
+    NDArray<double>* dGlobalVarView = new NDArray<double>('c', {1, K});
+    NDArray<double>* outEpsilon = new NDArray<double>('c', {bS, K});
+
+    VariableSpace<double>* variableSpace = new VariableSpace<double>();
+    variableSpace->putVariable(-1, input);
+    variableSpace->putVariable(-2, epsilon);
+    variableSpace->putVariable(-3, gamma);
+    variableSpace->putVariable(-4, dGlobalMeanView);
+    variableSpace->putVariable(-5, dGlobalVarView);
+    variableSpace->putVariable(1, outEpsilon);
+    Block<double>* block = new Block<double>(1, variableSpace, false);
+    block->fillInputs({-1,-2,-3,-4,-5});    
+    std::vector<int>* argI = block->getIArguments();    
+    *argI = {isLockGammaBeta};       
+
+    nd4j::NDArrayFactory<double>::linspace(10., *input);
+    nd4j::NDArrayFactory<double>::linspace(1., *epsilon);    
+    gamma->assign(1);
+    NDArray<double>* mean = input->template reduceAlongDimension<simdOps::Mean<double>>(dimensions);        
+    NDArray<double>* var  = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(false, dimensions);
+    var->template applyScalar<simdOps::Add<double>>(eps, nullptr);
+    NDArray<double>* std = new NDArray<double>(var->getShapeInfo());
+    var->template applyTransform<simdOps::Sqrt<double>>(std, nullptr);            
+    NDArray<double>* xHat = new NDArray<double>(input->getShapeInfo());    
+    input->subRowVector(mean, xHat);
+    xHat->divRowVector(std, xHat);    
+
+    NDArray<double>* temp1 = new NDArray<double>(input->getShapeInfo());
+    NDArray<double>* temp2 = new NDArray<double>(var->getShapeInfo());
+
+    epsilon->template applyPairwiseTransform<simdOps::Multiply<double>>(xHat, temp1, nullptr);
+    NDArray<double>* dldgammaExp = temp1->sum(dimensions);
+    NDArray<double>* dldbetaExp = epsilon->sum(dimensions);        
+    NDArray<double>* dldxhat = new NDArray<double>(epsilon->getShapeInfo());                
+    epsilon->mulRowVector(gamma, dldxhat);
+        
+    input->subRowVector(mean, temp1);
+    dldxhat->template applyPairwiseTransform<simdOps::Multiply<double>>(temp1, temp1, nullptr);
+    temp1->template applyScalar<simdOps::Multiply<double>>(-0.5);                        
+    double powParams1[] = {-1.5};
+    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams1);
+    temp1->mulRowVector(temp2, temp1);
+    NDArray<double>* dldvar = temp1->sum(dimensions);
+
+    double powParams2[] = {-0.5};
+    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams2);
+    dldxhat->mulRowVector(temp2, temp1);
+    temp1->template applyTransform<simdOps::Neg<double>>();                
+    NDArray<double>* dldmu = temp1->sum(dimensions);
+    input->subRowVector(mean, temp1);
+    temp1->template applyScalar<simdOps::Multiply<double>>(-2.);
+    NDArray<double>* temp3 = temp1->sum(dimensions);
+    temp3->template applyScalar<simdOps::Divide<double>>((double)effectiveBatchSize);
+    dldvar->template applyPairwiseTransform<simdOps::Multiply<double>>(temp3, temp3, nullptr);
+    dldmu->template applyPairwiseTransform<simdOps::Add<double>>(temp3, dldmu, nullptr);
+
+    NDArray<double>* dldinExp = new NDArray<double>(epsilon->getShapeInfo());
+    dldxhat->mulRowVector(temp2, dldinExp);     
+    input->subRowVector(mean, temp1);
+    temp1->template applyScalar<simdOps::Multiply<double>>(2./effectiveBatchSize);
+    temp1->mulRowVector(dldvar, temp1);
+    dldinExp->template applyPairwiseTransform<simdOps::Add<double>>(temp1, nullptr);
+    dldmu->template applyScalar<simdOps::Multiply<double>>(1./effectiveBatchSize, temp2, nullptr);
+    dldinExp->addRowVector(temp2, dldinExp);
+
+    nd4j::ops::batchnorm_bp<double> batchnorm_bp;
+    Nd4jStatus status = batchnorm_bp.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    
+    NDArray<double>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(dldinExp->equalsTo(result));
+    
+    delete temp1;
+    delete temp2;
+    delete temp3;    
+    delete dldbetaExp;
+    delete dldgammaExp;
+    delete dldxhat;
+    delete var;
+    delete mean;
+    delete dldvar;
+    delete dldmu;
+    delete dldinExp;
+    delete xHat;
+    delete std;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, BatchNorm4D_BP) {
+    
+    const int isLockGammaBeta = 0;
+    const int bS = 2; 
+    const int iD = 4;
+    const int iH = 3;
+    const int iW = 3;
+    const double eps = 1e-5;
+    const std::initializer_list<int> dimensions = {0,2,3};
+    const int effectiveBatchSize = bS*iH*iW;
+
+    NDArray<double>* input = new NDArray<double>('c', {bS, iD, iH, iW});
+    NDArray<double>* epsilon = new NDArray<double>('c', {bS, iD, iH, iW});
+    NDArray<double>* gamma = new NDArray<double>('c', {1, iD});    
+    NDArray<double>* dGlobalMeanView = new NDArray<double>('c', {1, iD});
+    NDArray<double>* dGlobalVarView = new NDArray<double>('c', {1, iD});
+    NDArray<double>* outEpsilon = new NDArray<double>('c', {bS, iD, iH, iW});
+    
+    VariableSpace<double>* variableSpace = new VariableSpace<double>();
+    variableSpace->putVariable(-1, input);
+    variableSpace->putVariable(-2, epsilon);
+    variableSpace->putVariable(-3, gamma);
+    variableSpace->putVariable(-4, dGlobalMeanView);
+    variableSpace->putVariable(-5, dGlobalVarView);
+    variableSpace->putVariable(1, outEpsilon);
+    Block<double>* block = new Block<double>(1, variableSpace, false);
+    block->fillInputs({-1,-2,-3,-4,-5});    
+    std::vector<int>* argI = block->getIArguments();    
+    *argI = {isLockGammaBeta};       
+
+    nd4j::NDArrayFactory<double>::linspace(80., *input);
+    nd4j::NDArrayFactory<double>::linspace(1., *epsilon);    
+    gamma->assign(1);
+    NDArray<double>* mean = input->template reduceAlongDimension<simdOps::Mean<double>>(dimensions);        
+    NDArray<double>* var  = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(false, dimensions);
+    var->template applyScalar<simdOps::Add<double>>(eps, nullptr);
+    NDArray<double>* std = new NDArray<double>(var->getShapeInfo());
+    var->template applyTransform<simdOps::Sqrt<double>>(std, nullptr);            
+    NDArray<double>* xHat = new NDArray<double>(input->getShapeInfo());    
+    input->template applyBroadcast<simdOps::Subtract<double>>({1}, mean, xHat, nullptr);
+    xHat->template applyBroadcast<simdOps::Divide<double>>({1}, std, xHat, nullptr);      
+
+    NDArray<double>* temp1 = new NDArray<double>(input->getShapeInfo());
+    NDArray<double>* temp2 = new NDArray<double>(var->getShapeInfo());
+
+    epsilon->template applyPairwiseTransform<simdOps::Multiply<double>>(xHat, temp1, nullptr);
+    NDArray<double>* dldgammaExp = temp1->sum(dimensions);
+    NDArray<double>* dldbetaExp = epsilon->sum(dimensions);        
+    NDArray<double>* dldxhat = new NDArray<double>(epsilon->getShapeInfo());                    
+    epsilon->template applyBroadcast<simdOps::Multiply<double>>({1}, gamma, dldxhat, nullptr);                
+
+    input->template applyBroadcast<simdOps::Subtract<double>>({1}, mean, temp1, nullptr);                
+    dldxhat->template applyPairwiseTransform<simdOps::Multiply<double>>(temp1, temp1, nullptr);
+    temp1->template applyScalar<simdOps::Multiply<double>>(-0.5);                        
+    double powParams1[] = {-1.5};
+    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams1);
+    temp1->template applyBroadcast<simdOps::Multiply<double>>({1}, temp2, temp1, nullptr);
+    NDArray<double>* dldvar = temp1->sum(dimensions);
+
+    double powParams2[] = {-0.5};
+    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams2);
+    dldxhat->applyBroadcast<simdOps::Multiply<double>>({1}, temp2, temp1, nullptr);
+    temp1->template applyTransform<simdOps::Neg<double>>();                
+    NDArray<double>* dldmu = temp1->sum(dimensions);
+    input->applyBroadcast<simdOps::Subtract<double>>({1}, mean, temp1, nullptr);
+    temp1->template applyScalar<simdOps::Multiply<double>>(-2.);
+    NDArray<double>* temp3 = temp1->sum(dimensions);
+    temp3->template applyScalar<simdOps::Divide<double>>((double)effectiveBatchSize);
+    dldvar->template applyPairwiseTransform<simdOps::Multiply<double>>(temp3, temp3, nullptr);
+    dldmu->template applyPairwiseTransform<simdOps::Add<double>>(temp3, dldmu, nullptr);            
+    
+    NDArray<double>* dldinExp = new NDArray<double>(epsilon->getShapeInfo());
+    dldxhat->applyBroadcast<simdOps::Multiply<double>>({1}, temp2, dldinExp, nullptr);
+    input->applyBroadcast<simdOps::Subtract<double>>({1}, mean, temp1, nullptr);
+    temp1->template applyScalar<simdOps::Multiply<double>>(2./effectiveBatchSize);
+    temp1->applyBroadcast<simdOps::Multiply<double>>({1}, dldvar, temp1, nullptr);
+
+    dldinExp->template applyPairwiseTransform<simdOps::Add<double>>(temp1, nullptr);
+    dldmu->template applyScalar<simdOps::Multiply<double>>(1./effectiveBatchSize, temp2, nullptr);
+    dldinExp->applyBroadcast<simdOps::Add<double>>({1}, temp2, dldinExp, nullptr);    
+
+    nd4j::ops::batchnorm_bp<double> batchnorm_bp;
+    Nd4jStatus status = batchnorm_bp.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    
+    NDArray<double>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    // dldinExp->printBuffer();    
+    // result->printBuffer();
+    ASSERT_TRUE(dldinExp->equalsTo(result));
+    
+    delete temp1;
+    delete temp2;
+    delete temp3;    
+    delete dldbetaExp;
+    delete dldgammaExp;
+    delete dldxhat;
+    delete var;
+    delete mean;
+    delete dldvar;
+    delete dldmu;
+    delete dldinExp;
+    delete xHat;
+    delete std;
+}
 
 //////////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests, Sum2) {

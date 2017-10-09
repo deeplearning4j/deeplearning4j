@@ -83,6 +83,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(permute, 1, 1, true, 0, -1);   // MAYBE should become custom :/
         DECLARE_CONFIGURABLE_OP(sum, 1, 1, false, 0, -1);       // should become reduction
         DECLARE_CONFIGURABLE_OP(batchnorm, 1, 1, true, 4, 3);
+        DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);        
         DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7); // make this custom
         DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented
         DECLARE_CONFIGURABLE_OP(upsampling2d, 1, 1, false, 0, 1); // make this one custom
