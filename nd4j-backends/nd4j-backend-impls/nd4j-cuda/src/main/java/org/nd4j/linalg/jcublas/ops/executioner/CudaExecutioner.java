@@ -2479,7 +2479,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val numOutputs = getCustomOperations().get(lc).getNumOutputs();
             for (int e = 0; e < numOutputs; e++ ) {
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
+
+                Pointer.free(ptrptr.get(e));
             }
+
+            Pointer.free(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.getTArguments().size() > 0 ? new DoublePointer(op.getTArguments().size()) : null;
 
@@ -2495,8 +2499,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val numOutputs = getCustomOperations().get(lc).getNumOutputs();
             for (int e = 0; e < numOutputs; e++ ) {
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
+                Pointer.free(ptrptr.get(e));
             }
 
+            Pointer.free(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.getTArguments().size() > 0 ? new ShortPointer(op.getTArguments().size()) : null;
 
@@ -2512,7 +2518,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val numOutputs = getCustomOperations().get(lc).getNumOutputs();
             for (int e = 0; e < numOutputs; e++ ) {
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
+                Pointer.free(ptrptr.get(e));
             }
+
+            Pointer.free(ptrptr);
         }
 
 
