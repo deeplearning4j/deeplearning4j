@@ -46,6 +46,7 @@ bool experimentalSupport = false;
 #include "../Environment.h"
 #include <TAD.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <Block.h>
 
 
 void NativeOps::setElementThreshold(int num) {
@@ -3094,6 +3095,49 @@ Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const 
 
 const char* NativeOps::getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
+}
+
+template<typename T>
+Nd4jPointer* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    Block<T> block(1);
+    ShapeList inShapes;
+
+    for (int e = 0; e < numIArgs; e++)
+        block.getIArguments()->push_back(iArgs[e]);
+
+    for (int e = 0; e < numTArgs; e++)
+        block.getTArguments()->push_back(tArgs[e]);
+
+    for (int e = 0; e < numInputShapes; e++)
+        inShapes.push_back((int *) inputShapes[e]);
+
+    auto shapeList = op->calculateOutputShape(&inShapes, block);
+    auto output = new Nd4jPointer[shapeList->size()];
+
+    for (int e = 0; e < shapeList->size(); e++)
+        output[e] = (Nd4jPointer) shapeList->at(e);
+
+    delete shapeList;
+
+    return output;
+}
+
+Nd4jPointer* NativeOps::calculateOutputShapesFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputShapes, int numInputShapes, float* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
+
+    return _calculateOutputShapes<float>(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+}
+
+Nd4jPointer* NativeOps::calculateOutputShapesHalf(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputShapes, int numInputShapes, float16* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationHalf(hash);
+
+    return _calculateOutputShapes<float16>(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+}
+
+Nd4jPointer* NativeOps::calculateOutputShapesDouble(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+
+    return _calculateOutputShapes<double>(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
 
 

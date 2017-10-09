@@ -1,0 +1,148 @@
+
+#ifndef SCALAR_KERNELS
+#define SCALAR_KERNELS
+
+#ifdef __CUDACC__
+
+template <typename T, typename OpType>
+__device__ void scalarAlongDimensionGeneric(T *x,
+                                            int *xShapeInfo,
+                                            T *extraParams,
+                                            T *z,
+                                            int *zShapeInfo,
+                                            T *scalars,
+                                            int *dimension,
+                                            int dimensionLength,
+                                            int *tadShapeInfo,
+                                            Nd4jIndex *tadOffsets,
+                                            int *tadShapeInfoZ,
+                                            Nd4jIndex *tadOffsetsZ) {
+
+    functions::scalar::ScalarTransform<T>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+}
+
+template <typename T, typename OpClass>
+__device__ void scalarSimpleGeneric(
+        Nd4jIndex n,
+        T dx,
+        T *dy,
+        int incy, T *params,
+        T *result,int resultStride, int *allocationBuffer) {
+
+    functions::scalar::ScalarTransform<T>::template transformCuda<OpClass>(
+            n,
+            dx,
+            dy,
+            incy,
+            params,
+            result,
+            resultStride,
+            allocationBuffer,
+            NULL);
+}
+
+
+template <typename T>
+__device__ void scalarGenericIndexes(
+        int opNum,
+        Nd4jIndex n,
+        T dx,
+        T *dy,
+        T *params,
+        T *result,int *indexes, int *allocationBuffer) {
+
+    __shared__ UnifiedSharedMemory *manager;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
+    }
+    __syncthreads();
+
+    functions::scalar::ScalarTransform<T>::transform(
+            opNum,
+            n,
+            dx,
+            dy,
+            params,
+            result,
+            indexes,
+            allocationBuffer,
+            manager);
+}
+
+__global__ void scalarDoubleIndexes(
+        int opNum,
+        Nd4jIndex n,
+        double dx,
+        double *dy,
+        double *params,
+        double *result,int *indexes, int *allocationBuffer) {
+    scalarGenericIndexes<double>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes, allocationBuffer);
+}
+
+__global__ void scalarFloatIndexes(
+        int opNum,
+        Nd4jIndex n,
+        float dx,
+        float *dy,
+        float *params,
+        float *result,
+        int *indexes, int *allocationBuffer) {
+    scalarGenericIndexes<float>(opNum,
+                                n,
+                                dx,
+                                dy,
+                                params,
+                                result,
+                                indexes, allocationBuffer);
+}
+
+
+template <typename T, typename OpClass>
+__device__ void scalarSimpleGeneric(
+        T dx,
+        T *dy,
+        int *xShapeInfo,
+        T *params,
+        T *result,
+        int *resultShapeInfo,
+        int *allocationBuffer) {
+
+    functions::scalar::ScalarTransform<T>::template transformCuda<OpClass>(
+            dx,
+            dy,
+            xShapeInfo,
+            params,
+            result,
+            resultShapeInfo,
+            allocationBuffer,
+            NULL);
+}
+
+
+
+// ScalarOp Along Dimension kernels
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, float *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, double, INPUT(double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, double *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, float16 *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+// scalar shape
+DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float, INPUT(float dx, float *dy, int *xShapeInfo, float *params, float *result, int *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, double, INPUT(double dx, double *dy, int *xShapeInfo, double *params, double *result, int *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float16, INPUT(float16 dx, float16 *dy, int *xShapeInfo, float16 *params, float16 *result, int *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
+
+// scalar strided
+DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float, INPUT(Nd4jIndex n, float dx, float *dy, int incy, float *params, float *result,int resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, double, INPUT(Nd4jIndex n, double dx, double *dy, int incy, double *params, double *result,int resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float16, INPUT(Nd4jIndex n, float16 dx, float16 *dy, int incy, float16 *params, float16 *result,int resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
+
+#endif // CUDACC
+#endif // SCALAR_KERNELS

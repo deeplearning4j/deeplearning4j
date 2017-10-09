@@ -58,7 +58,10 @@ namespace nd4j {
         void SessionLocalStorage<T>::endSession(Nd4jIndex sessionId) {
             // we should delete specific holders here
             _mutex.lock();
+            auto vs = _threadVariableSpace[sessionId];
             _threadVariableSpace.erase(sessionId);
+
+            delete vs;
             _mutex.unlock();
         }
 

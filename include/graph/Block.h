@@ -52,7 +52,7 @@ namespace nd4j {
             cudaStream_t* _stream;
 #endif
 
-            Block(int nodeId, VariableSpace<T> *variableSpace);
+            Block(int nodeId, VariableSpace<T> *variableSpace = nullptr);
             Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
 
             ~Block() = default;

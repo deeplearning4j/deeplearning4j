@@ -36,7 +36,6 @@
 #endif
 
 #include "../pairwise_util.h"
-#include "../../blas/NativeOps.h"
 namespace shape {
 
 /**
