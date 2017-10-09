@@ -1,22 +1,22 @@
 ---
-title: Machine Learning With Deeplearning4j
-layout: default
+title: 基于Deeplearning4j的机器学习
+layout: cn-default
 ---
 
-# Machine Learning With Deeplearning4j
+# 基于Deeplearning4j的机器学习
 
-While Deeplearning4j and its suite of open-source libraries - [ND4J](http://nd4j.org/), DataVec, Arbiter, etc. - primarily implement scalable, deep artificial neural networks, developers can also work with more traditional machine-learning algorithms using our framework.
+Deeplearning4j及其配套开源库（[ND4J](http://nd4j.org/)、DataVec、Arbiter等）主要用于实现可扩展的深度人工神经网络，但开发者也可以用我们的框架来构建更传统的机器学习算法。
 
-## Algorithms Available on DL4J
+## DL4J提供的算法
 
-* Linear Regression
-* Logistic Regression
-* [K-means clustering](https://deeplearning4j.org/doc/org/deeplearning4j/clustering/kmeans/package-tree.html )
-* K nearest neighbor (k-NN)
-* Optimizations of k-NN with a [VP-tree](https://en.wikipedia.org/wiki/Vantage-point_tree), [t-SNE](https://lvdmaaten.github.io/tsne/) and quad-trees as a side effect
+* 线性回归
+* 逻辑回归
+* [K均值聚类](https://deeplearning4j.org/doc/org/deeplearning4j/clustering/kmeans/package-tree.html )
+* K最近邻（k-NN）
+* 基于[VP树](https://en.wikipedia.org/wiki/Vantage-point_tree)、[t-SNE](https://lvdmaaten.github.io/tsne/)和四叉树的K最近邻优化
 
-## Algorithms Possible on ND4J
+## ND4J可实现的算法
 
-ND4J is a generic tensor library, so the sky's the limit on what can be implemented. 
+ND4J是一个通用张量库，因此在可实现的算法种类上没有任何限制。 
 
-We are integrating with Haifeng Li's SMILE, or [Statistical Machine Intelligence and Learning Engine](http://haifengl.github.io/smile/), which implements more than one hundred different statistical and machine-learning algorithms, including random forests and GBMs. SMILE shows the best performance of any open-source JVM-based machine-learning library we've seen. 
+我们正在与李海峰的SMILE（[Statistical Machine Intelligence and Learning Engine](http://haifengl.github.io/smile/)）进行集成。SMILE可实现包括随机森林和GBM在内的一百多种统计和机器学习算法，是我们所知的性能表现最好的开源JVM机器学习库。 
