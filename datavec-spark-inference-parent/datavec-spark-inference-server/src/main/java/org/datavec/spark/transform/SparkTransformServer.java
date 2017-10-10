@@ -22,7 +22,7 @@ public abstract class SparkTransformServer implements DataVecTransformService {
     private TransformDataType transformDataType = null;
     protected Server server;
     protected static ObjectMapper objectMapper = new ObjectMapper();
-
+    protected static String contentType = "application/json";
 
     public abstract void runMain(String[] args) throws Exception;
 
