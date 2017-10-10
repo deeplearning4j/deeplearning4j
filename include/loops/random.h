@@ -5,21 +5,6 @@
 #ifndef LIBND4J_RANDOM_H
 #define LIBND4J_RANDOM_H
 
-#define RANDOM_OPS \
-        (0, randomOps::UniformDistribution) ,\
-        (1, randomOps::DropOut) ,\
-        (2, randomOps::DropOutInverted) ,\
-        (3, randomOps::ProbablisticMerge) ,\
-        (4, randomOps::Linspace) ,\
-        (5, randomOps::Choice) ,\
-        (6, randomOps::GaussianDistribution) ,\
-        (7, randomOps::BernoulliDistribution) ,\
-        (8, randomOps::BinomialDistribution),\
-        (9, randomOps::BinomialDistributionEx),\
-        (10, randomOps::LogNormalDistribution) ,\
-        (11, randomOps::TruncatedNormalDistribution) ,\
-        (12, randomOps::AlphaDropOut)
-
 
 
 #include <helpers/shape.h>
@@ -27,6 +12,7 @@
 #include <ops/random_ops.h>
 #include <ops/special_random_ops.h>
 
+#include "legacy_ops.h"
 
 
 namespace functions {

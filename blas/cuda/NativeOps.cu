@@ -30,7 +30,8 @@
 #include <stdlib.h>
 #include <loops/type_conversions.h>
 #include <op_boilerplate.h>
-#include <loops/grid.h>
+#include <loops/grid_shaped.h>
+#include <loops/grid_strided.h>
 #include <loops/aggregates.h>
 #include <helpers/threshold.h>
 #include <ShapeList.h>
@@ -699,32 +700,10 @@ void   NativeOps::execPairwiseTransformDouble(
 		double *result,
 		int resultStride,
 		double *extraParams, Nd4jIndex n) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    dim3 launchDims(512, 512, 2048);
 
-	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("D4 opNum:[%i]\n", opNum);
-
-	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[25]);
-
-	pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> (
-			opNum,
-			n,
-			dx,
-			y,
-			xStride,
-			yStride,
-			extraParams,
-			result,
-			resultStride, allocationPointer, deviceTADShapeInfo);
-
-	if (nd4j::Environment::getInstance()->isDebug())
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+    functions::pairwise_transforms::PairWiseTransform<double>::execudaCudaStrided(launchDims, extraPointers, opNum, dx, xStride, y, yStride, result, resultStride, extraParams, n);
 }
 
 /**
@@ -755,7 +734,8 @@ void NativeOps::execPairwiseTransformDouble(
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	/*
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
@@ -786,6 +766,7 @@ void NativeOps::execPairwiseTransformDouble(
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+    */
 }
 /**
  *
@@ -809,33 +790,10 @@ void NativeOps::execPairwiseTransformDouble(
 		double *result,
 		int *resultShapeInfo,
 		double *extraParams) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("D6 opNum:[%i]\n", opNum);
+	dim3 launchDims(512, 512, 2048);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
-
-	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[23]);
-
-	pairWiseTransformDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			y,
-			extraParams,
-			result,
-			xShapeInfo,  shape::rank(hostXShapeInfo),
-			yShapeInfo,  shape::rank(hostYShapeInfo),
-			resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
-
-	if (nd4j::Environment::getInstance()->isDebug())
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+    functions::pairwise_transforms::PairWiseTransform<double>::execudaCudaShaped(launchDims, extraPointers, opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams);;
 }
 
 /**
@@ -1181,10 +1139,8 @@ void   NativeOps::execScalarDouble(
 		double scalar,
 		double *extraParams,
 		Nd4jIndex n) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("D13 opNum:[%i]\n", opNum);
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
@@ -1192,8 +1148,7 @@ void   NativeOps::execScalarDouble(
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[20]);
 
-	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarSimpleStrided, double, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+    functions::scalar::ScalarTransform<double>::executeCudaStrided(launchDims, extraPointers, opNum, x, xStride, result, resultStride, scalar, extraParams, n);
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1224,15 +1179,14 @@ void NativeOps::execScalarDouble(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("D14 opNum:[%i]\n", opNum);
-
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[19]);
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarSimpleShaped, double, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarSimpleShaped, double, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+
+    functions::scalar::ScalarTransform<double>::executeCudaShaped(launchDims, extraPointers, opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1264,6 +1218,11 @@ void NativeOps::execScalarDouble(
 		Nd4jIndex n,
 		int *xIndexes,
 		int *resultIndexes){
+
+
+    printf("Unsupported operation: scalarIndices\n");
+    /*
+}
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
@@ -1287,6 +1246,7 @@ void NativeOps::execScalarDouble(
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+    */
 }
 /**
  *
@@ -2128,35 +2088,9 @@ void   NativeOps::execPairwiseTransformFloat(
 		float *result,
 		int resultStride,
 		float *extraParams, Nd4jIndex n){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 512, 2048);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F4 opNum:[%i]\n", opNum);
-
-	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[11]);
-
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AF4 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
-
-	pairWiseTransformStridedFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-			n,
-			dx,
-			y,
-			xStride,
-			yStride,
-			extraParams,
-			result,
-			resultStride, allocationPointer, deviceTADShapeInfo);
-
-	if (nd4j::Environment::getInstance()->isDebug()) {
-        checkCudaErrors(cudaStreamSynchronize(*stream));
-    }
+    functions::pairwise_transforms::PairWiseTransform<float>::execudaCudaStrided(launchDims, extraPointers, opNum, dx, xStride, y, yStride, result, resultStride, extraParams, n);
 }
 
 void   NativeOps::execPairwiseTransformHalf(
@@ -2169,35 +2103,9 @@ void   NativeOps::execPairwiseTransformHalf(
 		float16 *result,
 		int resultStride,
 		float16 *extraParams, Nd4jIndex n){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 512, 2048);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-
-	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("H4 opNum:[%i]\n", opNum);
-
-	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[11]);
-
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AH4 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
-
-	pairWiseTransformStridedHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-					n,
-					dx,
-					y,
-					xStride,
-					yStride,
-					extraParams,
-					result,
-					resultStride, allocationPointer, deviceTADShapeInfo);
-
-	if (nd4j::Environment::getInstance()->isDebug())
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+    functions::pairwise_transforms::PairWiseTransform<float16>::execudaCudaStrided(launchDims, extraPointers, opNum, dx, xStride, y, yStride, result, resultStride, extraParams, n);
 }
 
 /**
@@ -2228,6 +2136,7 @@ void NativeOps::execPairwiseTransformFloat(
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes){
+    /*
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
@@ -2262,6 +2171,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+    */
 }
 
 
@@ -2278,7 +2188,9 @@ void NativeOps::execPairwiseTransformHalf(
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    /*
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
@@ -2312,6 +2224,7 @@ void NativeOps::execPairwiseTransformHalf(
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+    */
 }
 
 
@@ -2337,38 +2250,10 @@ void NativeOps::execPairwiseTransformFloat(
 		float *result,
 		int *resultShapeInfo,
 		float *extraParams){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 512, 2048);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+    functions::pairwise_transforms::PairWiseTransform<float>::execudaCudaShaped(launchDims, extraPointers, opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams);;
 
-	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F6 opNum:[%i]\n", opNum);
-
-	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[9]);
-
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1) {
-		printf("AF6 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
-		shape::printShapeInfoLinear(hostXShapeInfo);
-	}
-
-	pairWiseTransformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			y,
-			extraParams,
-			result,
-			xShapeInfo, shape::rank(hostXShapeInfo),
-			yShapeInfo, shape::rank(hostYShapeInfo),
-			resultShapeInfo, shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
-
-	if (nd4j::Environment::getInstance()->isDebug())
-		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::execPairwiseTransformHalf(
@@ -2381,38 +2266,10 @@ void NativeOps::execPairwiseTransformHalf(
 		float16 *result,
 		int *resultShapeInfo,
 		float16 *extraParams){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 512, 2048);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+    functions::pairwise_transforms::PairWiseTransform<float16>::execudaCudaShaped(launchDims, extraPointers, opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams);;
 
-	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("H6 opNum:[%i]\n", opNum);
-
-	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[9]);
-
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1) {
-		printf("HF6 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
-		shape::printShapeInfoLinear(hostXShapeInfo);
-	}
-
-	pairWiseTransformHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-					dx,
-					y,
-					extraParams,
-					result,
-					xShapeInfo, shape::rank(hostXShapeInfo),
-					yShapeInfo, shape::rank(hostYShapeInfo),
-					resultShapeInfo, shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
-
-	if (nd4j::Environment::getInstance()->isDebug())
-		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -3070,25 +2927,20 @@ void   NativeOps::execScalarFloat(
 		float scalar,
 		float *extraParams,
 		Nd4jIndex n){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+        int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F13 opNum:[%i]\n", opNum);
+        int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[6]);
+	    dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[6]);
 
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AF13 opNum:[%i]\n", opNum);
+	    // this macro builds bunch of IF/ELSE selectors for kernel launch
+        functions::scalar::ScalarTransform<float>::executeCudaStrided(launchDims, extraPointers, opNum, x, xStride, result, resultStride, scalar, extraParams, n);
 
-	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarSimpleStrided, float, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
-
-	if (nd4j::Environment::getInstance()->isDebug())
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+	    if (nd4j::Environment::getInstance()->isDebug())
+		    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -3108,16 +2960,12 @@ void   NativeOps::execScalarHalf(
 
     int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("F13 opNum:[%i]\n", opNum);
-
     dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[6]);
 
-    if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-        printf("AF13 opNum:[%i]\n", opNum);
-
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+    float16 sc = (float16) scalar;
+    functions::scalar::ScalarTransform<float16>::executeCudaStrided(launchDims, extraPointers, opNum, x, xStride, result, resultStride, sc, extraParams, n);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3143,26 +2991,27 @@ void NativeOps::execScalarFloat(
 		int *resultShapeInfo,
 		float scalar,
 		float *extraParams){
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
 	Nd4jIndex n = shape::length(hostXShapeInfo);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F14 opNum:[%i]\n", opNum);
+//	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+//		printf("F14 opNum:[%i]\n", opNum);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[5]);
 
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AF14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
+	//if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
+	//	printf("AF14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarSimpleShaped, float, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarSimpleShaped, float, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+    functions::scalar::ScalarTransform<float>::executeCudaShaped(launchDims, extraPointers, opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3184,8 +3033,8 @@ void NativeOps::execScalarHalf(
 
 	Nd4jIndex n = shape::length(hostXShapeInfo);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("H14 opNum:[%i]\n", opNum);
+	//if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+	//	printf("H14 opNum:[%i]\n", opNum);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -3193,11 +3042,13 @@ void NativeOps::execScalarHalf(
 
     float16 scalar = (float16) scalarF;
 
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AH14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
+    //if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
+    //		printf("AH14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarSimpleShaped, float16, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarSimpleShaped, float16, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+
+    functions::scalar::ScalarTransform<float16>::executeCudaShaped(launchDims, extraPointers, opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3242,7 +3093,7 @@ void NativeOps::execScalarFloat(
 
 	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
 		printf("AF15 opNum:[%i]\n", opNum);
-
+/*
 	scalarFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
@@ -3251,7 +3102,7 @@ void NativeOps::execScalarFloat(
 			extraParams,
 			result,
 			resultIndexes, allocPointer);
-
+*/
 	if (nd4j::Environment::getInstance()->isDebug())
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -4605,13 +4456,13 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[3], (void *)summaryStatsReduceFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[4], (void *)scalarFloatIndexes);
+	//cudaFuncGetAttributes(&funcAttributes[4], (void *)scalarFloatIndexes);
 
 //	void (*scalarFloatPointer1)(int opNum, float dx,float *dy, int *shapeInfo, int xRank, float *params, float *result,int *resultShapeInfo, int zRank, int *allocPointer) = scalarFloat;
-	cudaFuncGetAttributes(&funcAttributes[5], scalarFloatIndexes);
+//	cudaFuncGetAttributes(&funcAttributes[5], scalarFloatIndexes);
 
 //	void (*scalarFloatPointer2)(int opNum, Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride, int *allocPointer) = scalarFloat;
-	cudaFuncGetAttributes(&funcAttributes[6], scalarFloatIndexes);
+//	cudaFuncGetAttributes(&funcAttributes[6], scalarFloatIndexes);
 
 	cudaFuncGetAttributes(&funcAttributes[7], reduce3Float);
 
@@ -4628,11 +4479,11 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[31], concatKernelFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[9], pairWiseTransformFloat);
+//	cudaFuncGetAttributes(&funcAttributes[9], pairWiseTransformFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[10], pairWiseTransformFloatIndex);
+//  cudaFuncGetAttributes(&funcAttributes[10], pairWiseTransformFloatIndex);
 
-	cudaFuncGetAttributes(&funcAttributes[11], pairWiseTransformStridedFloat);
+//	cudaFuncGetAttributes(&funcAttributes[11], pairWiseTransformStridedFloat);
 
 	cudaFuncGetAttributes(&funcAttributes[12], broadcastSimple_0_float);
 
@@ -4652,24 +4503,24 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[17], summaryStatsReduceDouble);
 
-	cudaFuncGetAttributes(&funcAttributes[18], scalarDoubleIndexes);
+//	cudaFuncGetAttributes(&funcAttributes[18], scalarDoubleIndexes);
 
 	//void (*scalarDoublePointer1)(int opNum, double dx,double *dy, int *shapeInfo, int xRank, double *params, double *result,int *resultShapeInfo, int zRank, int *allocPointer) = scalarDouble;
-	cudaFuncGetAttributes(&funcAttributes[19], scalarDoubleIndexes);
+//	cudaFuncGetAttributes(&funcAttributes[19], scalarDoubleIndexes);
 
 
 	//void (*scalarDoublePointer2)(int opNum, Nd4jIndex n,double dx, double *dy, int incy, double *params, double *result,int resultStride, int *allocPointer) = scalarDouble;
-	cudaFuncGetAttributes(&funcAttributes[20], scalarDoubleIndexes);
+//	cudaFuncGetAttributes(&funcAttributes[20], scalarDoubleIndexes);
 
 	cudaFuncGetAttributes(&funcAttributes[21], reduce3Double);
 
 	cudaFuncGetAttributes(&funcAttributes[22], reduceSimpleGenericXD_0_double);
 
-	cudaFuncGetAttributes(&funcAttributes[23], pairWiseTransformDouble);
+//	cudaFuncGetAttributes(&funcAttributes[23], pairWiseTransformDouble);
 
-	cudaFuncGetAttributes(&funcAttributes[24], pairWiseTransformDoubleIndex);
+//	cudaFuncGetAttributes(&funcAttributes[24], pairWiseTransformDoubleIndex);
 
-	cudaFuncGetAttributes(&funcAttributes[25], pairWiseTransformStridedDouble);
+//	cudaFuncGetAttributes(&funcAttributes[25], pairWiseTransformStridedDouble);
 
 	cudaFuncGetAttributes(&funcAttributes[26], broadcastSimple_0_double);
 
@@ -4711,9 +4562,9 @@ void NativeOps::initializeDevicesAndFunctions() {
 
     //
 
-    cudaFuncGetAttributes(&funcAttributes[47], scalarAlongDimension_0_float);
-    cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_float16);
-    cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
+    //cudaFuncGetAttributes(&funcAttributes[47], scalarAlongDimension_0_float);
+    //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_float16);
+    //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
 }
 
 
@@ -5648,11 +5499,16 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
 
 //    metaPredicateStridedFloat<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 
+    /*
 	if (opTypeA == 2) {
 		if (opTypeB == 0) {
             DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
 		}
 	}
+*/
+    functions::grid::GRIDStrided<float>::execMetaPredicateStrided(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
+
+
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5662,12 +5518,14 @@ void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int op
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
 //    metaPredicateStridedDouble<<<256, 256, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
-
+/*
     if (opTypeA == 2) {
         if (opTypeB == 0) {
             DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
+*/
+    functions::grid::GRIDStrided<double>::execMetaPredicateStrided(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5681,11 +5539,15 @@ void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTy
     float16 scalA = (float16) scalarA;
     float16 scalB = (float16) scalarB;
 
+    /*
     if (opTypeA == 2) {
         if (opTypeB == 0) {
             DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
+    */
+
+    functions::grid::GRIDStrided<float16>::execMetaPredicateStrided(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5715,11 +5577,15 @@ void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTy
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
+    /*
     if (opTypeA == 2) {
         if (opTypeB == 0) {
             DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
+     */
+
+    functions::grid::GRIDShaped<double>::execMetaPredicateShaped(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5734,11 +5600,17 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
     float16 scalA = (float16) scalarA;
     float16 scalB = (float16) scalarB;
 
+    /*
 	if (opTypeA == 2) {
 		if (opTypeB == 0) {
 			DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
 		}
 	}
+     */
+
+    functions::grid::GRIDShaped<float16>::execMetaPredicateShaped(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+
+
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -5748,11 +5620,15 @@ void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTyp
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
+    /*
     if (opTypeA == 2) {
         if (opTypeB == 0) {
             DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
+    */
+
+    functions::grid::GRIDShaped<float>::execMetaPredicateShaped(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5794,19 +5670,16 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
 					 int dimensionLength) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *hostTadShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 
-    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-    Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
-    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-    Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
-
-    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hostXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
+    //dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hostXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
+    dim3 launchDims = dim3(256, 256, 1024);
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launc	h
-    DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    functions::scalar::ScalarTransform<float>::executeCudaAlongDimension(launchDims, extraPointers, opNum, x, xShapeInfo, z, zShapeInfo, scalars, extraParams, dimension, dimensionLength);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5824,13 +5697,10 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     dim3 launchDims = dim3(256, 256, 1024);
 
-    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-    Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
-    int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-    Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
-
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    functions::scalar::ScalarTransform<double>::executeCudaAlongDimension(launchDims, extraPointers, opNum, x, xShapeInfo, z, zShapeInfo, scalars, extraParams, dimension, dimensionLength);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5848,13 +5718,16 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     dim3 launchDims = dim3(256, 256, 1024);
 
+    /*
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
     Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
     Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
-
+*/
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+    //DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    functions::scalar::ScalarTransform<float16>::executeCudaAlongDimension(launchDims, extraPointers, opNum, x, xShapeInfo, z, zShapeInfo, scalars, extraParams, dimension, dimensionLength);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));

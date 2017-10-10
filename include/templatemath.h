@@ -810,17 +810,17 @@ template<typename T>
 #ifdef __CUDACC__
 		namespace atomics {
 template <typename T>
-__device__ T nd4j_atomicAdd(T* address, T val);
+inline __device__ T nd4j_atomicAdd(T* address, T val);
 
 template <typename T>
-__device__ T nd4j_atomicSub(T* address, T val);
+inline __device__ T nd4j_atomicSub(T* address, T val);
 template <typename T>
-__device__ T nd4j_atomicMul(T* address, T val);
+inline __device__ T nd4j_atomicMul(T* address, T val);
 template <typename T>
-__device__ T nd4j_atomicDiv(T* address, T val);
+inline __device__ T nd4j_atomicDiv(T* address, T val);
 
 template <>
-__device__ double nd4j_atomicAdd<double>(double* address, double val)  {
+inline __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
 			(unsigned long long int *) address;
 	unsigned long long int old = *address_as_ull, assumed;
@@ -833,7 +833,7 @@ __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 }
 
 template <>
-__device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
+inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
 	int* address_as_ull = (int*) address;
 
 	long addr = (long) address;
@@ -866,7 +866,7 @@ __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
 }
 
 template <>
-__device__ double nd4j_atomicSub<double>(double* address, double val)  {
+inline __device__ double nd4j_atomicSub<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
 			(unsigned long long int *) address;
 	unsigned long long int old = *address_as_ull, assumed;
@@ -879,7 +879,7 @@ __device__ double nd4j_atomicSub<double>(double* address, double val)  {
 }
 
 template <>
-__device__ double nd4j_atomicMul<double>(double* address, double val)  {
+inline __device__ double nd4j_atomicMul<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
 			(unsigned long long int*) address;
 	unsigned long long int old = *address_as_ull, assumed;
@@ -892,7 +892,7 @@ __device__ double nd4j_atomicMul<double>(double* address, double val)  {
 }
 
 template <>
-__device__ double nd4j_atomicDiv<double>(double* address, double val)  {
+inline __device__ double nd4j_atomicDiv<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
 			(unsigned long long int*) address;
 	unsigned long long int old = *address_as_ull, assumed;
@@ -905,13 +905,13 @@ __device__ double nd4j_atomicDiv<double>(double* address, double val)  {
 }
 
 template <>
-__device__ float nd4j_atomicAdd<float>(float* address, float val)  {
+inline __device__ float nd4j_atomicAdd<float>(float* address, float val)  {
 	return atomicAdd(address,val);
 }
 
 
 template <>
-__device__ float nd4j_atomicSub<float>(float* address, float val) {
+inline __device__ float nd4j_atomicSub<float>(float* address, float val) {
 	int* address_as_ull = (int*) address;
 	int old = *address_as_ull, assumed;
 	do {
@@ -923,7 +923,7 @@ __device__ float nd4j_atomicSub<float>(float* address, float val) {
 }
 
 template <>
-__device__ float nd4j_atomicMul<float>(float* address, float val) {
+inline __device__ float nd4j_atomicMul<float>(float* address, float val) {
 	int* address_as_ull =
 			( int*)address;
 	int old = *address_as_ull, assumed;
@@ -937,7 +937,7 @@ __device__ float nd4j_atomicMul<float>(float* address, float val) {
 
 
 template <>
-__device__ float nd4j_atomicDiv<float>(float* address, float val) {
+inline __device__ float nd4j_atomicDiv<float>(float* address, float val) {
 	int* address_as_ull =
 			(int*)address;
 	int old = *address_as_ull, assumed;

@@ -1333,6 +1333,7 @@ namespace simdOps {
 
 			//divide by the sum
 			functions::scalar::ScalarTransform<T>::template transformCuda<simdOps::Divide<T>>(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+
 		}
 #endif
 
@@ -1483,6 +1484,7 @@ namespace simdOps {
 			__syncthreads();
 
 			functions::transform::Transform<T>::template transformCuda<simdOps::Log<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+
 		}
 #endif
 
@@ -1603,7 +1605,6 @@ namespace simdOps {
 			T *extraParams,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
-
 			int *shape = shape::shapeOf(xShapeBuffer);
 			__shared__ T maxResult;
 			__shared__ int *maxResultShapeBuffer;
@@ -1653,6 +1654,7 @@ namespace simdOps {
 			else {
 				printf("Non element wise stride not supported right now\n");
 			}
+
 		}
 #endif
 
@@ -1695,8 +1697,7 @@ namespace simdOps {
 					1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr,
-                                                                                      nullptr, nullptr);
+				functions::broadcast::Broadcast<T>::template exec<simdOps::Divide<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				if (resultEleStide >= 1) {
 					if (resultEleStide == 1) {

@@ -32,17 +32,7 @@
 #define omp_get_max_threads() 1
 #endif
 
-
-#define REDUCE3_OPS \
-        (0, simdOps::ManhattanDistance), \
-        (1, simdOps::EuclideanDistance), \
-        (2, simdOps::CosineSimilarity), \
-        (3, simdOps::Dot), \
-        (4, simdOps::EqualsWithEps) ,\
-        (5, simdOps::CosineDistance) ,\
-        (6, simdOps::JaccardDistance) ,\
-        (7, simdOps::SimpleHammingDistance)
-
+#include "legacy_ops.h"
 
 namespace functions {
     namespace reduce3 {

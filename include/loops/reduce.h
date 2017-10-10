@@ -28,28 +28,7 @@
 #define omp_get_max_threads() 1
 #endif
 
-
-#define REDUCE_OPS \
-        (0, simdOps::Mean), \
-        (1, simdOps::Sum), \
-        (3, simdOps::Max), \
-        (4, simdOps::Min), \
-        (5, simdOps::Norm1), \
-        (6, simdOps::Norm2), \
-        (7, simdOps::NormMax), \
-        (8, simdOps::Prod), \
-        (9, simdOps::StandardDeviation), \
-        (10, simdOps::Variance), \
-		(11, simdOps::ASum), \
-        (12, simdOps::MatchCondition) ,\
-        (13, simdOps::AMax) ,\
-        (14, simdOps::AMin) ,\
-        (15, simdOps::AMean) ,\
-        (16, simdOps::Entropy) ,\
-        (17, simdOps::LogEntropy) ,\
-        (18, simdOps::ShannonEntropy) ,\
-        (19, simdOps::LogSumExp)
-
+#include "legacy_ops.h"
 
 //an op for the kernel
 namespace functions {

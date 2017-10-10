@@ -26,25 +26,7 @@
 
 #include <TAD.h>
 
-#define BROADCAST_OPS \
-       (0, simdOps::Add), \
-       (1, simdOps::Subtract), \
-       (2, simdOps::Multiply), \
-       (3, simdOps::Divide), \
-       (4, simdOps::ReverseDivide), \
-       (5, simdOps::ReverseSubtract), \
-       (6, simdOps::Copy) ,\
-       (7, simdOps::EqualTo) ,\
-       (8, simdOps::GreaterThan) ,\
-       (9, simdOps::GreaterThanOrEqual) ,\
-       (10, simdOps::LessThan) ,\
-       (11, simdOps::LessThanOrEqual) ,\
-       (12, simdOps::NotEqualTo) ,\
-       (13, simdOps::Min) ,\
-       (14, simdOps::Max) ,\
-       (15, simdOps::AMin) ,\
-       (16, simdOps::AMax)
-
+#include "legacy_ops.h"
 
 namespace functions {
     namespace broadcast {

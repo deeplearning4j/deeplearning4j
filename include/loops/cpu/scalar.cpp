@@ -5,6 +5,8 @@
 #include "../scalar.h"
 #include <op_boilerplate.h>
 
+#include "../legacy_ops.h"
+
 namespace functions {
     namespace scalar {
 

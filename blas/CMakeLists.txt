@@ -92,9 +92,10 @@ if(CUDA_BLAS)
 
     if (CUDA_FOUND)
         message("CUDA found!")
-        set( CUDA_ARCHITECTURE_MINIMUM "3.5" CACHE STRING "Minimum required CUDA compute capability" )
+        set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )
         SET(CUDA_VERBOSE_BUILD ON)
         SET(CUDA_SEPARABLE_COMPILATION OFF)
+        #set(CUDA_COMPUTE_CAPABILITY "61")
         set(CUDA_COMPUTE_CAPABILITY "35")
         if ("${EXPERIMENTAL}" STREQUAL "yes")
             list(APPEND CUDA_NVCC_FLAGS " -DEXPERIMENTAL ")
@@ -141,14 +142,17 @@ if(CUDA_BLAS)
                 endif()
             endif()
         endif()
-        CUDA_ADD_LIBRARY(nd4jcuda SHARED cuda/NativeOps.cu ../include/loops/cpu/scalar.cpp  cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp  ../include/memory/cpu/Workspace.cpp ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h ../include/ops/declarable/generic/parity_ops.cpp ../include/ops/declarable/generic/third_party.cpp ../include/helpers/helper_hash.h ../include/memory/cpu/Workspace.cpp ../include/ops/declarable/generic/helpers/impl/convolutions.cpp ../include/graph/ShapeList.h ../include/ops/declarable/generic/convo/conv2d_ops.cpp ../include/helpers/ArrayUtils.h ../include/graph/SessionLocalStorage.h  Environment.cpp ../include/graph/impl/Stash.cpp ../include/indexing/impl/NDIndex.cpp ../include/indexing/impl/IndicesList.cpp ../include/graph/impl/Variable.cpp ../include/graph/impl/VariableSpace.cpp ../include/graph/impl/ShapeList.cpp ../include/graph/impl/SessionLocalStorage.cpp ../include/graph/impl/Node.cpp ../include/graph/impl/Graph.cpp ../include/graph/impl/Block.cpp ../include/graph/impl/ArrayList.cpp ../include/helpers/impl/ArrayUtils.cpp ../include/helpers/impl/helper_hash.cpp ../include/helpers/impl/TAD.cpp ../include/ops/impl/specials_sparse.cpp ../include/helpers/impl/shape.cpp ../include/ops/declarable/impl/DeclarableOp.cpp ../include/ops/declarable/impl/OpRegistrator.cpp ../include/ops/declarable/DeclarableReductionOp.h ../include/ops/declarable/impl/DeclarableReductionOp.cpp ../include/ops/declarable/impl/DeclarableCustomOp.cpp ../include/ops/impl/specials.cpp ../include/memory/cpu/MemoryRegistrator.cpp ../include/ops/impl/gemm.cpp ../include/ops/declarable/generic/convo/conv3d_ops.cpp ../include/ops/declarable/generic/convo/fullconv3d.cpp ../include/ops/declarable/generic/convo/pooling2d_ops.cpp ../include/ops/declarable/generic/convo/pooling3d_ops.cpp)
+            # ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu
+            #cuda/NativeOps.cu ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/pairwise_transform.cu
+            # ../include/loops/cuda/scalar.cu
+        CUDA_ADD_LIBRARY(nd4jcuda SHARED cuda/NativeOps.cu ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu  ../include/loops/cuda/pairwise_transform.cu ../include/loops/cpu/scalar.cpp cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp  ../include/memory/cpu/Workspace.cpp ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h ../include/ops/declarable/generic/parity_ops.cpp ../include/ops/declarable/generic/third_party.cpp ../include/helpers/helper_hash.h ../include/memory/cpu/Workspace.cpp ../include/ops/declarable/generic/helpers/impl/convolutions.cpp ../include/graph/ShapeList.h ../include/ops/declarable/generic/convo/conv2d_ops.cpp ../include/helpers/ArrayUtils.h ../include/graph/SessionLocalStorage.h  Environment.cpp ../include/graph/impl/Stash.cpp ../include/indexing/impl/NDIndex.cpp ../include/indexing/impl/IndicesList.cpp ../include/graph/impl/Variable.cpp ../include/graph/impl/VariableSpace.cpp ../include/graph/impl/ShapeList.cpp ../include/graph/impl/SessionLocalStorage.cpp ../include/graph/impl/Node.cpp ../include/graph/impl/Graph.cpp ../include/graph/impl/Block.cpp ../include/graph/impl/ArrayList.cpp ../include/helpers/impl/ArrayUtils.cpp ../include/helpers/impl/helper_hash.cpp ../include/helpers/impl/TAD.cpp ../include/ops/impl/specials_sparse.cpp ../include/helpers/impl/shape.cpp ../include/ops/declarable/impl/DeclarableOp.cpp ../include/ops/declarable/impl/OpRegistrator.cpp ../include/ops/declarable/DeclarableReductionOp.h ../include/ops/declarable/impl/DeclarableReductionOp.cpp ../include/ops/declarable/impl/DeclarableCustomOp.cpp ../include/ops/impl/specials.cpp ../include/memory/cpu/MemoryRegistrator.cpp ../include/ops/impl/gemm.cpp ../include/ops/declarable/generic/convo/conv3d_ops.cpp ../include/ops/declarable/generic/convo/fullconv3d.cpp ../include/ops/declarable/generic/convo/pooling2d_ops.cpp ../include/ops/declarable/generic/convo/pooling3d_ops.cpp)
         target_link_libraries(nd4jcuda ${CUDA_LIBRARIES})
+
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
         install(TARGETS nd4jcuda DESTINATION .)
     endif(CUDA_FOUND)
 elseif(CPU_BLAS)
-    message("CPU BLAS")
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
 if(IOS)

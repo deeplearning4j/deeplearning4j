@@ -33,78 +33,7 @@
 #define omp_get_max_threads() 1
 #endif
 
-
-#define TRANSFORM_OPS \
-	(0, simdOps::Abs), \
-        (1, simdOps::Ceiling), \
-        (2, simdOps::Cosine), \
-        (3, simdOps::Exp), \
-        (4, simdOps::Floor), \
-        (5, simdOps::Log), \
-        (6, simdOps::Neg), \
-        (7, simdOps::Pow), \
-        (8, simdOps::Round), \
-        (9, simdOps::SetRange), \
-        (10,simdOps::Sigmoid), \
-        (11,simdOps::Sign), \
-        (12,simdOps::Sin), \
-        (13,simdOps::SoftPlus), \
-        (14,simdOps::Sqrt), \
-        (15,simdOps::Tanh), \
-        (16,simdOps::ACos), \
-        (17,simdOps::ASin), \
-        (18,simdOps::ATan), \
-        (19,simdOps::HardTanh), \
-        (20,simdOps::SoftSign), \
-        (21,simdOps::ELU), \
-        (22,simdOps::ELUDerivative), \
-        (23,simdOps::TanhDerivative), \
-        (24,simdOps::TimesOneMinus), \
-        (25,simdOps::HardTanhDerivative), \
-        (26,simdOps::Ones), \
-        (27,simdOps::Identity), \
-        (28,simdOps::Stabilize), \
-        (29,simdOps::SigmoidDerivative), \
-        (30,simdOps::SoftSignDerivative), \
-        (31,simdOps::LeakyRELU), \
-        (32,simdOps::LeakyRELUDerivative), \
-        (33,simdOps::RELU), \
-        (34,simdOps::Step), \
-        (35,simdOps::OneMinus), \
-        (36,simdOps::Col2Im), \
-        (37,simdOps::Im2col), \
-        (38,simdOps::SoftMax), \
-        (39,simdOps::SoftMaxDerivative), \
-        (40,simdOps::LogSoftMax), \
-        (41,simdOps::IsMax), \
-        (42,simdOps::SpecialDerivative), \
-        (43,simdOps::DropOut), \
-        (44,simdOps::DropOutInverted), \
-        (45,simdOps::CompareAndSet), \
-        (46,simdOps::ReplaceNans) ,\
-        (47,simdOps::StabilizeFP16) ,\
-        (48,simdOps::Histogram), \
-        (49,simdOps::Cube), \
-        (50,simdOps::CubeDerivative) , \
-        (51,simdOps::HardSigmoid), \
-        (52,simdOps::HardSigmoidDerivative) ,\
-        (53,simdOps::RationalTanh) ,\
-        (54,simdOps::RationalTanhDerivative) ,\
-        (55,simdOps::LogX) ,\
-        (59,simdOps::Not) ,\
-        (61,simdOps::RectifiedTanh) ,\
-        (62,simdOps::RectifiedTanhDerivative) ,\
-        (63,simdOps::Sinh) ,\
-        (64,simdOps::Cosh) ,\
-        (65,simdOps::Tan) ,\
-        (66,simdOps::TanDerivative) ,\
-        (67,simdOps::SELU) ,\
-        (68,simdOps::SELUDerivative) ,\
-        (70,simdOps::Reverse) ,\
-        (71,simdOps::Pooling2D) ,\
-        (72,simdOps::MatchCondition) ,\
-        (73,simdOps::ClipByValue)
-
+#include "legacy_ops.h"
 
 
 namespace functions {

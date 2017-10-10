@@ -8,14 +8,7 @@
 #include <ops/aggregate_ops.h>
 #include <helpers/helper_ptrmap.h>
 
-#define AGGREGATE_OPS \
-        (0, aggregateOps::HierarchicSoftmax) ,\
-        (1, aggregateOps::Dot) ,\
-        (2, aggregateOps::Axpy) ,\
-        (3, aggregateOps::SkipGram) ,\
-        (4, aggregateOps::CBOW) ,\
-        (5, aggregateOps::GEMM)
-
+#include "legacy_ops.h"
 
 namespace functions {
     namespace aggregate {

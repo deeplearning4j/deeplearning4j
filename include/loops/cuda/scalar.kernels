@@ -1,11 +1,8 @@
 
-#ifndef SCALAR_KERNELS
-#define SCALAR_KERNELS
 
-#ifdef __CUDACC__
 
 template <typename T, typename OpType>
-__device__ void scalarAlongDimensionGeneric(T *x,
+inline __device__ void scalarAlongDimensionGeneric(T *x,
                                             int *xShapeInfo,
                                             T *extraParams,
                                             T *z,
@@ -22,7 +19,7 @@ __device__ void scalarAlongDimensionGeneric(T *x,
 }
 
 template <typename T, typename OpClass>
-__device__ void scalarSimpleGeneric(
+inline __device__ void scalarSimpleGeneric(
         Nd4jIndex n,
         T dx,
         T *dy,
@@ -41,7 +38,8 @@ __device__ void scalarSimpleGeneric(
             NULL);
 }
 
-
+/*
+// LEGACY KERNELS,
 template <typename T>
 __device__ void scalarGenericIndexes(
         int opNum,
@@ -104,10 +102,10 @@ __global__ void scalarFloatIndexes(
                                 result,
                                 indexes, allocationBuffer);
 }
-
+*/
 
 template <typename T, typename OpClass>
-__device__ void scalarSimpleGeneric(
+inline __device__ void scalarSimpleGeneric(
         T dx,
         T *dy,
         int *xShapeInfo,
@@ -144,5 +142,125 @@ DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float, INPUT(N
 DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, double, INPUT(Nd4jIndex n, double dx, double *dy, int incy, double *params, double *result,int resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
 DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float16, INPUT(Nd4jIndex n, float16 dx, float16 *dy, int incy, float16 *params, float16 *result,int resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
 
-#endif // CUDACC
-#endif // SCALAR_KERNELS
+
+
+
+
+namespace functions {
+    namespace scalar {
+
+        template<>
+        inline void ScalarTransform<float>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, int xStride, float *result, int resultStride, float scalar, float *extraParams, Nd4jIndex n) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+                printf("F13 opNum:[%i]\n", opNum);
+
+            int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+            // this macro builds bunch of IF/ELSE selectors for kernel launch
+            DISPATCH_SIMPLE(scalarSimpleStrided, float, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+        }
+
+
+        template<>
+        inline void ScalarTransform<float16>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, int xStride, float16 *result, int resultStride, float16 scalar, float16 *extraParams, Nd4jIndex n) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+                printf("H13 opNum:[%i]\n", opNum);
+
+            int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+            // this macro builds bunch of IF/ELSE selectors for kernel launch
+            DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+        }
+
+
+        template<>
+        inline void ScalarTransform<double>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, int xStride, double *result, int resultStride, double scalar, double *extraParams, Nd4jIndex n) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+                printf("D13 opNum:[%i]\n", opNum);
+
+            int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+            // this macro builds bunch of IF/ELSE selectors for kernel launch
+            DISPATCH_SIMPLE(scalarSimpleStrided, double, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+        }
+
+
+        template<>
+        inline void ScalarTransform<float16>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, int *xShapeInfo, float16 *result, int *resultShapeInfo, float16 scalar, float16 *extraParams) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+                printf("H14 opNum:[%i]\n", opNum);
+
+            int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+            DISPATCH_SIMPLE(scalarSimpleShaped, float16, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+        }
+
+        template<>
+        inline void ScalarTransform<float>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, int *xShapeInfo, float *result, int *resultShapeInfo, float scalar, float *extraParams) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+                printf("F14 opNum:[%i]\n", opNum);
+
+            int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+            DISPATCH_SIMPLE(scalarSimpleShaped, float, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+        }
+
+        template<>
+        inline void ScalarTransform<double>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, int *xShapeInfo, double *result, int *resultShapeInfo, double scalar, double *extraParams) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+                printf("D14 opNum:[%i]\n", opNum);
+
+            int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+            DISPATCH_SIMPLE(scalarSimpleShaped, double, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+        }
+
+        template<>
+        inline void ScalarTransform<double>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, double *x, int *xShapeInfo, double *z, int *zShapeInfo, double *scalars, double *extraParams, int *dimension, int dimensionLength) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+            Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
+            int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+            Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
+
+            DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+        }
+
+        template<>
+        inline void ScalarTransform<float>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, float *x, int *xShapeInfo, float *z, int *zShapeInfo, float *scalars, float *extraParams, int *dimension, int dimensionLength) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+            Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
+            int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+            Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
+
+            DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+        }
+
+        template<>
+        inline void ScalarTransform<float16>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, float16 *scalars, float16 *extraParams, int *dimension, int dimensionLength) {
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+            Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
+            int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
+            Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
+
+            DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+        }
+    }
+}
