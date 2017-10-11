@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import org.datavec.image.transform.ImageTransform;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
@@ -69,6 +70,26 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
         this.gridH = gridH;
         this.labelProvider = labelProvider;
 
+    }
+
+    /**
+     * When imageTransform != null, object is removed if new center is outside of transformed image bounds.
+     *
+     * @param height        Height of the output images
+     * @param width         Width of the output images
+     * @param channels      Number of channels for the output images
+     * @param gridH         Grid/quantization size (along  height dimension) - Y axis
+     * @param gridW         Grid/quantization size (along  height dimension) - X axis
+     * @param labelProvider ImageObjectLabelProvider - used to look up which objects are in each image
+     * @param imageTransform ImageTransform - used to transform image and coordinates
+     */
+    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW,
+                ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
+        super(height, width, channels, null);
+        this.gridW = gridW;
+        this.gridH = gridH;
+        this.labelProvider = labelProvider;
+        this.imageTransform = imageTransform;
     }
 
     @Override
@@ -147,6 +168,15 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
 
                 //put the label data into the output label array
                 for (ImageObject io : objectsThisImg) {
+                    if (imageTransform != null) {
+                        float[] pts = imageTransform.query(io.getX1(), io.getY1(), io.getX2(), io.getY2());
+                        io = new ImageObject(Math.round(pts[0]), Math.round(pts[1]), Math.round(pts[2]), Math.round(pts[3]), io.getLabel());
+                        double cx = io.getXCenterPixels();
+                        double cy = io.getYCenterPixels();
+                        if (cx < 0 || cx >= oW || cy < 0 || cy >= oH) {
+                            continue;
+                        }
+                    }
                     double cx = io.getXCenterPixels();
                     double cy = io.getYCenterPixels();
 

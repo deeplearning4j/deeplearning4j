@@ -45,4 +45,8 @@ public abstract class BaseImageTransform<F> implements ImageTransform {
         return transform(image, random);
     }
 
+    @Override
+    public float[] query(float... coordinates) {
+        throw new UnsupportedOperationException();
+    }
 }

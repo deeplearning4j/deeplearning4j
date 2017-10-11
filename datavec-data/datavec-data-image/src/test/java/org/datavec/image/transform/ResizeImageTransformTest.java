@@ -29,6 +29,11 @@ public class ResizeImageTransformTest {
         Frame f = dstImg.getFrame();
         assertEquals(f.imageWidth, 200);
         assertEquals(f.imageHeight, 200);
+
+        float[] coordinates = {100, 200};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(200f * 100 / 32, transformed[0], 0);
+        assertEquals(200f * 200 / 32, transformed[1], 0);
     }
 
     @Test
@@ -42,6 +47,11 @@ public class ResizeImageTransformTest {
         Frame f = dstImg.getFrame();
         assertEquals(f.imageWidth, 200);
         assertEquals(f.imageHeight, 200);
+
+        float[] coordinates = {300, 400};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(200f * 300 / 443, transformed[0], 0);
+        assertEquals(200f * 400 / 571, transformed[1], 0);
     }
 
 }

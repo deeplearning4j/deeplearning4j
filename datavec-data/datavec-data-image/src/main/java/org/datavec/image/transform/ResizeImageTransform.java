@@ -15,7 +15,6 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -23,7 +22,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_imgproc.resize;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  * ResizeImageTransform is suited to force the <b>same image size</b> for whole pipeline
@@ -35,10 +35,13 @@ import static org.bytedeco.javacpp.opencv_imgproc.resize;
  * @author raver119@gmail.com
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
+public class ResizeImageTransform extends BaseImageTransform<Mat> {
 
     private int newHeight;
     private int newWidth;
+
+    private int srch;
+    private int srcw;
 
     /**
      * Returns new ResizeImageTransform object
@@ -78,11 +81,21 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
         if (image == null) {
             return null;
         }
-        opencv_core.Mat mat = converter.convert(image.getFrame());
-        opencv_core.Mat result = new opencv_core.Mat();
-        resize(mat, result, new opencv_core.Size(newWidth, newHeight));
+        Mat mat = converter.convert(image.getFrame());
+        Mat result = new Mat();
+        srch = mat.rows();
+        srcw = mat.cols();
+        resize(mat, result, new Size(newWidth, newHeight));
         return new ImageWritable(converter.convert(result));
     }
 
-
+    @Override
+    public float[] query(float... coordinates) {
+        float[] transformed = new float[coordinates.length];
+        for (int i = 0; i < coordinates.length; i += 2) {
+            transformed[i    ] = newWidth * coordinates[i    ] / srcw;
+            transformed[i + 1] = newHeight * coordinates[i + 1] / srch;
+        }
+        return transformed;
+    }
 }

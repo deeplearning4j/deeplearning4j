@@ -38,6 +38,9 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
     private float dx;
     private float dy;
 
+    private int srch, h;
+    private int srcw, w;
+
     /** Calls {@code this(null, delta, delta)}. */
     public ScaleImageTransform(float delta) {
         this(null, delta, delta);
@@ -73,12 +76,23 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
             return null;
         }
         Mat mat = converter.convert(image.getFrame());
-        int h = Math.round(mat.rows() + dy * (random != null ? 2 * random.nextFloat() - 1 : 1));
-        int w = Math.round(mat.cols() + dx * (random != null ? 2 * random.nextFloat() - 1 : 1));
+        srch = mat.rows();
+        srcw = mat.cols();
+        h = Math.round(mat.rows() + dy * (random != null ? 2 * random.nextFloat() - 1 : 1));
+        w = Math.round(mat.cols() + dx * (random != null ? 2 * random.nextFloat() - 1 : 1));
 
         Mat result = new Mat();
         resize(mat, result, new Size(w, h));
         return new ImageWritable(converter.convert(result));
     }
 
+    @Override
+    public float[] query(float... coordinates) {
+        float[] transformed = new float[coordinates.length];
+        for (int i = 0; i < coordinates.length; i += 2) {
+            transformed[i    ] = w * coordinates[i    ] / srcw;
+            transformed[i + 1] = h * coordinates[i + 1] / srch;
+        }
+        return transformed;
+    }
 }

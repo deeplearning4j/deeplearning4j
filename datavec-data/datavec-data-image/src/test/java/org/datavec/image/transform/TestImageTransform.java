@@ -59,6 +59,15 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new CropImageTransform(1, 2, 3, 4);
+        writable = transform.transform(writable);
+        float[] coordinates = {1, 2, 3, 4};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(1 - 2, transformed[0], 0);
+        assertEquals(2 - 1, transformed[1], 0);
+        assertEquals(3 - 2, transformed[2], 0);
+        assertEquals(4 - 1, transformed[3], 0);
     }
 
     @Test
@@ -75,6 +84,30 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new FlipImageTransform(-2);
+        writable = transform.transform(writable);
+        float[] transformed = transform.query(new float[] {10, 20});
+        assertEquals(10, transformed[0], 0);
+        assertEquals(20, transformed[1], 0);
+
+        transform = new FlipImageTransform(0);
+        writable = transform.transform(writable);
+        transformed = transform.query(new float[] {30, 40});
+        assertEquals(30,                         transformed[0], 0);
+        assertEquals(frame.imageHeight - 40 - 1, transformed[1], 0);
+
+        transform = new FlipImageTransform(1);
+        writable = transform.transform(writable);
+        transformed = transform.query(new float[] {50, 60});
+        assertEquals(frame.imageWidth - 50 - 1, transformed[0], 0);
+        assertEquals(60,                        transformed[1], 0);
+
+        transform = new FlipImageTransform(-1);
+        writable = transform.transform(writable);
+        transformed = transform.query(new float[] {70, 80});
+        assertEquals(frame.imageWidth  - 70 - 1, transformed[0], 0);
+        assertEquals(frame.imageHeight - 80 - 1, transformed[1], 0);
     }
 
     @Test
@@ -93,6 +126,15 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new ScaleImageTransform(frame.imageWidth, 2 * frame.imageHeight);
+        writable = transform.transform(writable);
+        float[] coordinates = {5, 7, 11, 13};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(5 * 2,  transformed[0], 0);
+        assertEquals(7 * 3,  transformed[1], 0);
+        assertEquals(11 * 2, transformed[2], 0);
+        assertEquals(13 * 3, transformed[3], 0);
     }
 
     @Test
@@ -110,6 +152,15 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new RotateImageTransform(0, 0, -90, 0);
+        writable = transform.transform(writable);
+        float[] coordinates = {frame.imageWidth / 2, frame.imageHeight / 2, 0, 0};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(frame.imageWidth  / 2, transformed[0], 0);
+        assertEquals(frame.imageHeight / 2, transformed[1], 0);
+        assertEquals((frame.imageHeight + frame.imageWidth) / 2 - 1, transformed[2], 0);
+        assertEquals((frame.imageHeight - frame.imageWidth) / 2,     transformed[3], 0);
     }
 
     @Test
@@ -127,13 +178,27 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new WarpImageTransform(1, 2, 3, 4, 5, 6, 7, 8);
+        writable = transform.transform(writable);
+        float[] coordinates = { 0, 0,                                frame.imageWidth, 0,
+                                frame.imageWidth, frame.imageHeight, 0, frame.imageHeight};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(1,                     transformed[0], 0);
+        assertEquals(2,                     transformed[1], 0);
+        assertEquals(3 + frame.imageWidth,  transformed[2], 0);
+        assertEquals(4,                     transformed[3], 0);
+        assertEquals(5 + frame.imageWidth,  transformed[4], 0);
+        assertEquals(6 + frame.imageHeight, transformed[5], 0);
+        assertEquals(7,                     transformed[6], 0);
+        assertEquals(8 + frame.imageHeight, transformed[7], 0);
     }
 
     @Test
     public void testMultiImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 3);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new PipelineImageTransform(seed, false, new CropImageTransform(10),
+        ImageTransform transform = new MultiImageTransform(rng, new CropImageTransform(10),
                         new FlipImageTransform(), new ScaleImageTransform(10), new WarpImageTransform(10));
 
         for (int i = 0; i < 100; i++) {
@@ -146,6 +211,12 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new MultiImageTransform(new ColorConversionTransform(COLOR_BGR2RGB));
+        writable = transform.transform(writable);
+        float[] transformed = transform.query(new float[] {11, 22});
+        assertEquals(11, transformed[0], 0);
+        assertEquals(22, transformed[1], 0);
     }
 
     @Ignore
@@ -179,6 +250,10 @@ public class TestImageTransform {
         }
 
         assertEquals(null, transform.transform(null));
+
+        float[] transformed = transform.query(new float[] {33, 44});
+        assertEquals(33, transformed[0], 0);
+        assertEquals(44, transformed[1], 0);
     }
 
     @Test
@@ -203,6 +278,10 @@ public class TestImageTransform {
         Frame newframe = w.getFrame();
         assertNotEquals(frame, newframe);
         assertEquals(null, transform.transform(null));
+
+        float[] transformed = transform.query(new float[] {55, 66});
+        assertEquals(55, transformed[0], 0);
+        assertEquals(66, transformed[1], 0);
     }
 
     @Test
@@ -224,6 +303,9 @@ public class TestImageTransform {
         assertNotEquals(frame, newframe);
         assertEquals(null, transform.transform(null));
 
+        float[] transformed = transform.query(new float[] {66, 77});
+        assertEquals(66, transformed[0], 0);
+        assertEquals(77, transformed[1], 0);
     }
 
     @Test
@@ -239,6 +321,15 @@ public class TestImageTransform {
             assertTrue(f.imageWidth == frame.imageWidth / 2);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new RandomCropTransform(frame.imageHeight, frame.imageWidth);
+        writable = transform.transform(writable);
+        float[] coordinates = {2, 4, 6, 8};
+        float[] transformed = transform.query(coordinates);
+        assertEquals(2, transformed[0], 0);
+        assertEquals(4, transformed[1], 0);
+        assertEquals(6, transformed[2], 0);
+        assertEquals(8, transformed[3], 0);
     }
 
     @Test
@@ -261,6 +352,12 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+
+        transform = new PipelineImageTransform(new EqualizeHistTransform());
+        writable = transform.transform(writable);
+        float[] transformed = transform.query(new float[] {88, 99});
+        assertEquals(88, transformed[0], 0);
+        assertEquals(99, transformed[1], 0);
     }
 
     /**
@@ -293,6 +390,10 @@ public class TestImageTransform {
 
         assertEquals(newFrame.imageHeight, 74);
         assertEquals(newFrame.imageWidth, 61);
+
+        float[] transformed = transform.query(new float[] {88, 32});
+        assertEquals(0, transformed[0], 0);
+        assertEquals(0, transformed[1], 0);
     }
 
     public static ImageWritable makeRandomImage(int height, int width, int channels) {

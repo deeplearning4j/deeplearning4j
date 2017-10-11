@@ -60,4 +60,12 @@ public interface ImageTransform {
      */
     ImageWritable transform(ImageWritable image, Random random);
 
+    /**
+     * Transforms the given coordinates using the parameters that were used to transform the last image.
+     *
+     * @param coordinates to transforms (x1, y1, x2, y2, ...)
+     * @return            transformed coordinates
+     */
+    float[] query(float... coordinates);
+
 }

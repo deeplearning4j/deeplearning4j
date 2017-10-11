@@ -38,6 +38,9 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
     private int cropBottom;
     private int cropRight;
 
+    private int x;
+    private int y;
+
     /** Calls {@code this(null, crop, crop, crop, crop)}. */
     public CropImageTransform(int crop) {
         this(null, crop, crop, crop, crop);
@@ -91,8 +94,8 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         int bottom = random != null ? random.nextInt(cropBottom + 1) : cropBottom;
         int right = random != null ? random.nextInt(cropRight + 1) : cropRight;
 
-        int y = Math.min(top, mat.rows() - 1);
-        int x = Math.min(left, mat.cols() - 1);
+        y = Math.min(top, mat.rows() - 1);
+        x = Math.min(left, mat.cols() - 1);
         int h = Math.max(1, mat.rows() - bottom - y);
         int w = Math.max(1, mat.cols() - right - x);
         Mat result = mat.apply(new Rect(x, y, w, h));
@@ -100,4 +103,13 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         return new ImageWritable(converter.convert(result));
     }
 
+    @Override
+    public float[] query(float... coordinates) {
+        float[] transformed = new float[coordinates.length];
+        for (int i = 0; i < coordinates.length; i += 2) {
+            transformed[i    ] = coordinates[i    ] - x;
+            transformed[i + 1] = coordinates[i + 1] - y;
+        }
+        return transformed;
+    }
 }
