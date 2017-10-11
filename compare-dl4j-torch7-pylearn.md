@@ -75,6 +75,7 @@ Pros and Cons:
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
 * Caveat: Not all operations in Tensorflow work as they do in Numpy. 
 * [A Critique of Tensorflow](http://nicodjimenez.github.io/2017/10/08/tensorflow.html)
+* [Keras shoot-out: TensorFlow vs MXNet](https://medium.com/@julsimon/keras-shoot-out-tensorflow-vs-mxnet-51ae2b30a9c0)
 
 Pros and Cons
 
