@@ -116,8 +116,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * same data as the features). Defaults to regression = false - i.e., for classification
      * @param reader SequenceRecordReader with data
      * @param miniBatchSize size of each minibatch
-     * @param numPossibleLabels number of labels/classes for classification (or not used if regression == true)
-     * @param labelIndex index in input of the label index
+     * @param numPossibleLabels number of labels/classes for classification
+     * @param labelIndex index in input of the label index. If in regression mode and numPossibleLabels > 1, labelIndex denotes the
+     *                   first index for labels. Everything before that index will be treated as input(s) and
+     *                   everything from that index (inclusive) to the end will be treated as output(s)
      */
     public SequenceRecordReaderDataSetIterator(SequenceRecordReader reader, int miniBatchSize, int numPossibleLabels,
                     int labelIndex) {
@@ -128,8 +130,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * same data as the features)
      * @param reader SequenceRecordReader with data
      * @param miniBatchSize size of each minibatch
-     * @param numPossibleLabels number of labels/classes for classification (or not used if regression == true)
-     * @param labelIndex index in input of the label index
+     * @param numPossibleLabels number of labels/classes for classification
+     * @param labelIndex index in input of the label index. If in regression mode and numPossibleLabels > 1, labelIndex denotes the
+     *                   first index for labels. Everything before that index will be treated as input(s) and
+     *                   everything from that index (inclusive) to the end will be treated as output(s)
      * @param regression Whether output is for regression or classification
      */
     public SequenceRecordReaderDataSetIterator(SequenceRecordReader reader, int miniBatchSize, int numPossibleLabels,
@@ -193,6 +197,17 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 builder.addInput(READER_KEY, inputFrom, inputTo);
 
                 underlyingIsDisjoint = false;
+            } else if (regression && numPossibleLabels > 1){
+                //Multiple inputs and multiple outputs
+                int inputFrom = 0;
+                int inputTo = labelIndex - 1;
+                int outputFrom = labelIndex;
+                int outputTo = totalSizeF - 1;
+
+                builder.addInput(READER_KEY, inputFrom, inputTo);
+                builder.addOutput(READER_KEY, outputFrom, outputTo);
+
+                underlyingIsDisjoint = false;
             } else {
                 //Multiple inputs (disjoint features case)
                 int firstFrom = 0;
@@ -207,10 +222,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             }
 
 
-            //Labels ONLY (currently) support either single-output regression or classification
-            if (regression) {
+            //Multiple output regression already handled
+            if (regression && numPossibleLabels <= 1) {
                 builder.addOutput(READER_KEY, labelIndex, labelIndex);
-            } else {
+            } else if (!regression) {
                 builder.addOutputOneHot(READER_KEY, labelIndex, numPossibleLabels);
             }
         } else {
@@ -329,10 +344,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
         MultiDataSet mds = underlying.next(num);
         DataSet ds = mdsToDataSet(mds);
-
-        if (preProcessor != null) {
-            preProcessor.preProcess(ds);
-        }
 
         if (totalOutcomes == -1) {
             inputColumns = ds.getFeatures().size(1);

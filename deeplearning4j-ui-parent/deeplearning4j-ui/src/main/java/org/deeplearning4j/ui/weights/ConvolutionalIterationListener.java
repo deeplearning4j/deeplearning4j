@@ -101,29 +101,13 @@ public class ConvolutionalIterationListener implements IterationListener {
     }
 
     /**
-     * Get if listener invoked
-     */
-    @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    /**
-     * Change invoke to true
-     */
-    @Override
-    public void invoke() {
-
-    }
-
-    /**
      * Event listener for each iteration
      *
      * @param model     the model iterating
      * @param iteration the iteration number
      */
     @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         if (iteration % freq == 0) {
 
             List<INDArray> tensors = new ArrayList<>();

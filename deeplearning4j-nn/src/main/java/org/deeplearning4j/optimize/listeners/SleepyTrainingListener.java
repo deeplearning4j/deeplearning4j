@@ -185,7 +185,7 @@ public class SleepyTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         sleep(lastIteration.get(), timerIteration);
 
         if (lastIteration.get() == null)
@@ -202,16 +202,6 @@ public class SleepyTrainingListener implements TrainingListener {
             lastBP.set(new AtomicLong(System.currentTimeMillis()));
         else
             lastBP.get().set(System.currentTimeMillis());
-    }
-
-    @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    @Override
-    public void invoke() {
-        //
     }
 
     @Override

@@ -190,7 +190,7 @@ public class PlayUIServer extends UIServer {
         }
 
         Router router = routingDsl.build();
-        server = Server.forRouter(router, Mode.DEV, port);
+        server = Server.forRouter(router, Mode.PROD, port);
         this.port = port;
 
         log.info("DL4J UI Server started at {}", getAddress());

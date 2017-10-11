@@ -450,9 +450,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, dropout, stateSpace, stateSize,
                         Nd4j.getRandom().getSeed()));
 
-        checkCudnn(cudnnSetRNNDescriptor(cudnnContext.rnnDesc, hiddenLayerSize, numLayers, cudnnContext.dropoutDesc,
-                        CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNNMode,
-                        dataType));
+        checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, hiddenLayerSize, numLayers, cudnnContext.dropoutDesc,
+                         CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNNMode,
+                        CUDNN_RNN_ALGO_STANDARD, dataType));
 
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
         checkCudnn(cudnnGetRNNParamsSize(cudnnContext, cudnnContext.rnnDesc, xDesc0, sizeInBytes, dataType));

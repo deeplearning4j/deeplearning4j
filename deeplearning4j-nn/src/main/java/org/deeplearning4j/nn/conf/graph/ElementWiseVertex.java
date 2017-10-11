@@ -28,8 +28,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
- * For example, the activations may be combined by addition, subtraction or multiplication.
- * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
+ * For example, the activations may be combined by addition, subtraction or multiplication or by selecting the maximum.
+ * Addition, Average, Max and Product may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
  * @author Alex Black
  */
 @Data
@@ -40,7 +40,7 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     public enum Op {
-        Add, Subtract, Product
+        Add, Subtract, Product, Average, Max
     }
 
     protected Op op;
@@ -76,7 +76,9 @@ public class ElementWiseVertex extends GraphVertex {
     public int maxVertexInputs() {
         switch (op) {
             case Add:
+            case Average:
             case Product:
+            case Max:
                 //No upper bound
                 return Integer.MAX_VALUE;
             case Subtract:
@@ -94,11 +96,17 @@ public class ElementWiseVertex extends GraphVertex {
             case Add:
                 op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Add;
                 break;
+            case Average:
+                op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Average;
+                break;
             case Subtract:
                 op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Subtract;
                 break;
             case Product:
                 op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Product;
+                break;
+            case Max:
+                op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Max;
                 break;
             default:
                 throw new RuntimeException();
