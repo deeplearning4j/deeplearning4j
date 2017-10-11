@@ -1,6 +1,7 @@
 ---
 title: 신경망 학습에서 시각화, 모니터링, 디버그 하는 방법
 layout: default
+redirect_from: kr/kr-visualization
 ---
 
 # 네트워크 학습의 시각화, 모니터링 및 디버그
