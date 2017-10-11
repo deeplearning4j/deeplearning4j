@@ -17,6 +17,7 @@ public class CustomIUpdater implements IUpdater {
 
     private double learningRate;
 
+
     public CustomIUpdater() {
         this(DEFAULT_SGD_LR);
     }
@@ -37,5 +38,10 @@ public class CustomIUpdater implements IUpdater {
     @Override
     public CustomIUpdater clone() {
         return new CustomIUpdater(learningRate);
+    }
+
+    @Override
+    public double getLearningRate(int iteration, int epoch) {
+        return learningRate;
     }
 }
