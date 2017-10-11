@@ -103,8 +103,8 @@ namespace nd4j {
              */
             Nd4jStatus execute(Block<T>* block);
 
-            nd4j::ArrayList<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs = {}, std::initializer_list<int> iArgs = {});
-            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs = {}, std::initializer_list<T> tArgs = {}, std::initializer_list<int> iArgs = {});
+            nd4j::ArrayList<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs);
+            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Block<T>& block);

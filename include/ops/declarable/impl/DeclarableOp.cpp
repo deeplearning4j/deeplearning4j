@@ -417,7 +417,9 @@ namespace nd4j {
             for (int e = 0; e < ii.size(); e++)
                 block.getIArguments()->push_back(ii.at(e));
 
-            this->execute(&block);
+            Nd4jStatus status = this->execute(&block);
+            if (status != ND4J_STATUS_OK)
+                return arrayList;
 
             for (int e = 0; e < 65536; e++) {
                 std::pair<int,int> pair(1, e);

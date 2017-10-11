@@ -53,6 +53,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(matmul, 2, 1, false, -2, 0);
         DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 9);
+        DECLARE_CUSTOM_OP(conv2d_bp, 3, 2, false, 0, 9);
         DECLARE_CUSTOM_OP(lrn, 1, 3, true, 4, 0);
         DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -1);
         DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 9);

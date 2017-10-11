@@ -1219,17 +1219,18 @@ struct __registratorDouble_##NAME {\
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
-#define STORE_RESULT(A) this->storeResult(block, 0, A)
-#define STORE_2_RESULTS(A, B) this->storeResult(block, 0, A); this->storeResult(block, 1, B)
-#define STORE_3_RESULTS(A, B, C) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
-#define STORE_4_RESULTS(A, B, C, D) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
-#define STORE_5_RESULTS(A, B, C, D, E) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+#define STORE_RESULT(A)     this->storeResult(block, 0, A)
+#define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
+#define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
+#define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
+#define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
 
 #define STASH(NAME, ARRAY)  block.getVariableSpace()->getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
 #define CHECK_STASH(NAME)   block.getVariableSpace()->getStash()->checkStash(block.getNodeId(), NAME);
 #define UNSTASH(NAME)       block.getVariableSpace()->getStash()->extractArray(block.getNodeId(), NAME);
 
 #define INPUT_VARIABLE(INDEX)     block.getVariables().at(INDEX)->getNDArray()
+#define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
 
 
 #endif

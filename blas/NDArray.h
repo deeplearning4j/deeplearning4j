@@ -73,7 +73,7 @@ namespace nd4j {
 		NDArray(const int* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
-        NDArray(const char order, const std::initializer_list<int> &shape, nd4j::memory::Workspace* workspace = nullptr);
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
         NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)

@@ -341,10 +341,9 @@ TEST_F(NDArrayTest, TestTranspose1) {
 
     auto *arrayT = arrayC->transpose();
 
-
-    for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
-        ASSERT_EQ(expC[e], arrayC->getShapeInfo()[e]);
-        ASSERT_EQ(expT[e], arrayT->getShapeInfo()[e]);
+    for (int e = 0; e < arrayC->rankOf(); e++) {
+        ASSERT_EQ(shape::shapeOf(expC)[e], arrayC->sizeAt(e));
+        ASSERT_EQ(shape::shapeOf(expT)[e], arrayT->sizeAt(e));
     }
 
 }
@@ -359,8 +358,8 @@ TEST_F(NDArrayTest, TestTranspose2) {
     arrayC->transposei();
 
 
-    for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
-        ASSERT_EQ(expT[e], arrayC->getShapeInfo()[e]);
+    for (int e = 0; e < arrayC->rankOf(); e++) {
+        ASSERT_EQ(shape::shapeOf(expT)[e], arrayC->sizeAt(e));
     }
 
 }
@@ -1427,4 +1426,29 @@ TEST_F(NDArrayTest, TestBroadcast_1) {
 
     //input.printBuffer("result");
     ASSERT_TRUE(exp.equalsTo(&input));
+}
+
+TEST_F(NDArrayTest, TestTranspose_11) {
+    NDArray<float> x('c', {2, 3, 4});
+    x.transposei();
+
+    ASSERT_EQ(4, x.sizeAt(0));
+    ASSERT_EQ(3, x.sizeAt(1));
+    ASSERT_EQ(2, x.sizeAt(2));
+}
+
+
+TEST_F(NDArrayTest, TestTranspose_12) {
+    NDArray<float> x('c', {2, 3, 4});
+    auto y = x.transpose();
+
+    ASSERT_EQ(4, y->sizeAt(0));
+    ASSERT_EQ(3, y->sizeAt(1));
+    ASSERT_EQ(2, y->sizeAt(2));
+
+    ASSERT_EQ(2, x.sizeAt(0));
+    ASSERT_EQ(3, x.sizeAt(1));
+    ASSERT_EQ(4, x.sizeAt(2));
+
+    delete y;
 }

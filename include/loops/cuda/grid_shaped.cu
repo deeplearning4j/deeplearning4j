@@ -81,40 +81,16 @@ namespace functions {
             __shared__ int xRank;
             __shared__ int yRank;
             __shared__ int resultRank;
-
-            __shared__ int xEWS;
-            __shared__ int yEWS;
-            __shared__ int zEWS;
-
-            __shared__ char xOrder;
-            __shared__ char yOrder;
-            __shared__ char zOrder;
-
-            __shared__ bool xRow;
-            __shared__ bool yRow;
-            __shared__ bool zRow;
+            __shared__ Nd4jIndex n;
 
             if (threadIdx.x == 0) {
                 xRank = shape::rank(xShapeBuffer);
                 yRank = shape::rank(yShapeBuffer);
                 resultRank = shape::rank(resultShapeBuffer);
-
-                xEWS = shape::elementWiseStride(xShapeBuffer);
-                yEWS = shape::elementWiseStride(yShapeBuffer);
-                zEWS = shape::elementWiseStride(resultShapeBuffer);
-
-                xOrder = shape::order(xShapeBuffer);
-                yOrder = shape::order(yShapeBuffer);
-                zOrder = shape::order(resultShapeBuffer);
-
-                xRow = shape::isRowVector(xShapeBuffer);
-                yRow = shape::isRowVector(yShapeBuffer);
-                zRow = shape::isRowVector(resultShapeBuffer);
-
+                n = shape::length(xShapeBuffer);
             }
             __syncthreads();
 
-            Nd4jIndex n = shape::length(xShapeBuffer);
             int xCoord[MAX_RANK];
             int yCoord[MAX_RANK];
 

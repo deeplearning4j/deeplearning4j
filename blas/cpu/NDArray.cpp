@@ -235,8 +235,9 @@ template <typename T>
 
 ////////////////////////////////////////////////////////////////////////
 // this constructor creates new array using rank information contained in initializer_list argument
+/*
 template <typename T>
-    NDArray<T>::NDArray(const char order, const std::initializer_list<int>& shape, nd4j::memory::Workspace* workspace) {
+    NDArray<T>::NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace) {
     
     int rank = (int) shape.size();
 
@@ -271,6 +272,7 @@ template <typename T>
     _isBuffAlloc = true; 
     _isShapeAlloc = true;
 }
+    */
 
     template<typename T>
     T* NDArray<T>::getBuffer() {
@@ -653,6 +655,20 @@ template <typename T>
 // method makes copy of this array and applies to the copy the transpose operation, this array remains unaffected 
 template <typename T>
     NDArray<T>* NDArray<T>::transpose() const {
+        int shapeInfoLength = shape::shapeInfoLength(rankOf());
+        int* newShapeInfo = nullptr;
+
+        ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, int);
+        memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(int));
+
+        NDArray<T>* newArr = new NDArray<T>(_buffer, newShapeInfo, _workspace);
+        newArr->_isShapeAlloc = true;
+        newArr->_isBuffAlloc  = false;
+
+        newArr->transposei();
+
+        return newArr;
+        /*
     int *rearrange = new int[rankOf()];
     int cnt = 0;
     for (int d = rankOf() - 1; d >= 0; d--) {
@@ -685,13 +701,21 @@ template <typename T>
     delete[] rearrange;
 
     return result;
+        */
 }
 
 ////////////////////////////////////////////////////////////////////////
 // This method applies in-place transpose to this array, so this array becomes transposed 
 template <typename T>
     void NDArray<T>::transposei() {
-    
+        std::vector<int> perm;
+        for (int e = this->rankOf() - 1; e >= 0; e--)
+            perm.push_back(e);
+
+        this->permutei(perm);
+
+
+        /*
     int *rearrange = new int[rankOf()];
     int cnt = 0;
     for (int d = rankOf() - 1; d >= 0; d--) {
@@ -722,6 +746,7 @@ template <typename T>
     newShapeBuffer[sLen - 2] = 1;
     _shapeInfo = newShapeBuffer;
     delete []rearrange;
+        */
 }
 
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
@@ -1464,11 +1489,7 @@ NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
 	// allocate memory for new array - buffer and shapeInfo
 
     int* shapeInfoNew;
-
-    if (_workspace == nullptr)         
-        shapeInfoNew = new int[shapeInfoLength];
-    else         
-        shapeInfoNew = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rankOf()));    
+    ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
 
 	// copy this arrays  _shapeInfo into new array		
 	memcpy(shapeInfoNew, _shapeInfo, shapeInfoLength*sizeof(int));	

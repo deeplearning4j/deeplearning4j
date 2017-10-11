@@ -393,9 +393,106 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
 
     ASSERT_TRUE(exp.isSameShape(output));
 
-        exp.printBuffer("Expctd buffer");
-    output->printBuffer("Result buffer");
+    //    exp.printBuffer("Expctd buffer");
+    //output->printBuffer("Result buffer");
     ASSERT_TRUE(exp.equalsTo(output));
+}
+
+TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
+    printf("\n");
+    double _expWGradB[] = {9312.0, 12580.0, 9528.0, 13168.0, 17712.0, 13360.0, 9960.0, 13348.0, 10032.0, 13344.0, 18148.0, 13848.0, 19312.0, 26160.0, 19888.0, 15144.0, 20452.0, 15504.0};
+    int _expWGradS[] = {4, 2, 1, 3, 3, 9, 9, 3, 1, 0, 1, 99};
+    NDArray<double> expWGrad(_expWGradB, _expWGradS);
+    expWGrad.triggerAllocationFlag(false, false);
+
+    double _expBGradB[] = {784.0, 1296.0};
+    int _expBGradS[] = {2, 2, 1, 1, 1, 0, 1, 99};
+
+    NDArray<double> expBGrad(_expBGradB, _expBGradS);
+    expBGrad.triggerAllocationFlag(false, false);
+
+    NDArray<double> input('c', {2, 1, 4, 4});
+    NDArray<double> weights('c', {2, 1, 3, 3});
+    NDArray<double> bias('c', {2, 1});
+    NDArray<double> epsilonNext('c', {2, 2, 4, 4});
+
+
+    double _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
+    NDArray<double> expEps(_expEpsB, input.getShapeInfo());
+
+    nd4j::NDArrayFactory<double>::linspace(1, input);
+    nd4j::NDArrayFactory<double>::linspace(1, weights);
+    nd4j::NDArrayFactory<double>::linspace(1, epsilonNext);
+
+    nd4j::ops::conv2d_bp<double> op;
+
+    auto results = op.execute({&input, &weights, &bias, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+
+    ASSERT_TRUE(results->size() == 3);
+
+    auto epsilon = results->at(0);
+    auto gradW = results->at(1);
+    auto gradB = results->at(2);
+
+    ASSERT_TRUE(expWGrad.isSameShape(gradW));
+
+    //expWGrad.printBuffer("Expctd buffer");
+    //  gradW->printBuffer("Result buffer");
+    ASSERT_TRUE(expWGrad.equalsTo(gradW));
+
+
+    ASSERT_TRUE(input.isSameShape(epsilon));
+
+    //  expEps.printBuffer("Expctd buffer");
+    //epsilon->printBuffer("Result buffer");
+    ASSERT_TRUE(expEps.equalsTo(epsilon));
+
+    ASSERT_TRUE(expBGrad.isSameShape(gradB));
+
+    ASSERT_TRUE(expBGrad.equalsTo(gradB));
+}
+
+
+TEST_F(ConvolutionTests, conv2D_BP_NoBias_1) {
+    printf("\n");
+    double _expWGradB[] = {9312.0, 12580.0, 9528.0, 13168.0, 17712.0, 13360.0, 9960.0, 13348.0, 10032.0, 13344.0, 18148.0, 13848.0, 19312.0, 26160.0, 19888.0, 15144.0, 20452.0, 15504.0};
+    int _expWGradS[] = {4, 2, 1, 3, 3, 9, 9, 3, 1, 0, 1, 99};
+    NDArray<double> expWGrad(_expWGradB, _expWGradS);
+    expWGrad.triggerAllocationFlag(false, false);
+
+    NDArray<double> input('c', {2, 1, 4, 4});
+    NDArray<double> weights('c', {2, 1, 3, 3});
+    NDArray<double> epsilonNext('c', {2, 2, 4, 4});
+
+
+    double _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
+    NDArray<double> expEps(_expEpsB, input.getShapeInfo());
+
+    nd4j::NDArrayFactory<double>::linspace(1, input);
+    nd4j::NDArrayFactory<double>::linspace(1, weights);
+    nd4j::NDArrayFactory<double>::linspace(1, epsilonNext);
+
+    nd4j::ops::conv2d_bp<double> op;
+
+    auto results = op.execute({&input, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+
+    ASSERT_TRUE(results->size() == 2);
+
+    auto epsilon = results->at(0);
+    auto gradW = results->at(1);
+
+    ASSERT_TRUE(expWGrad.isSameShape(gradW));
+
+    //expWGrad.printBuffer("Expctd buffer");
+    //  gradW->printBuffer("Result buffer");
+    ASSERT_TRUE(expWGrad.equalsTo(gradW));
+
+
+    ASSERT_TRUE(input.isSameShape(epsilon));
+
+    //  expEps.printBuffer("Expctd buffer");
+    //epsilon->printBuffer("Result buffer");
+    ASSERT_TRUE(expEps.equalsTo(epsilon));
 }
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H
