@@ -6,8 +6,10 @@ layout: default
 
 Deep learning encompasses both deep neural networks and deep reinforcement learning, which are subsets of machine learning, which itself is a subset of artifical intelligence. Broadly speaking, deep neural networks perform machine perception that extracts important features from raw data and makes some sort of prediction about each observation. Examples include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data.
 
+<!-- multiple usages of "Although" -->
 Although neural networks were invented in the 20th century, they have only recently been generating excitement. Now that the computing ability to take advantage of the idea of neural networks exists, they have been used to break state of the art results in various fields, such as computer vision, natural language processing, and reinforcement learning. One well known accomplishment of deep learning was achieved by scientists at DeepMind who created a computer program called AlphaGo which beat a world champion Go player in a 5 game match in 2014. Many experts predicted this achievement to have been 10 years away. Thus, there is good reason to be interested in the field of deep learning.
 
+<!-- multiple usages of "Although", this paragraph feels very much like the previous one, suggest we tighten this up -->
 Although there are many different variations of neural networks, the basic notion of how they work is simple. They are loosely based on the human brain and are comprised of one or more layers of neurons. At each layer, computations are applied on the input from neurons in the previous layer and the output is then relayed to the next layer. The output of the last layer will represent some prediction about the data, depending on the task. The challenge in building a successful neural network is finding the right computations to apply at each layer. 
 
 Neural networks can process high dimensional numerical and cateogorical data and perform tasks like regression, classification, clustering, and feature extraction. A neural network is created by first configuring its architecture based on the data and the task and then tuning its hyperparameters to optimize the performance of the neural network. Once the neural network has been trained and tuned sufficiently, it can be used to process new sets of data and return reasonably reliable predictions. 
@@ -24,6 +26,8 @@ There are few reasons why you might be interested in DeepLearning4j.
 
 - You are a data engineer or software developer in an enterprise environment who needs stable data pipelines and scalable and accurate predictions about the data. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs.
 
+
+<!-- now that we've joined Eclipse, are we still pushing IntelliJ as the recommended IDE? -->
 # DeepLearning4j: System Requirements
 
 - **Java** 
@@ -48,7 +52,7 @@ brew install maven
 
 Note that the previous command assumes Homebrew is installed.
 
-## Intellij
+## IntelliJ
 
 [Intellij](https://www.jetbrains.com/idea/download/) is a IDE that is recommended to use for DL4J although an IDE such as Eclipse may be used. Intellij will allow you to easily work with the DL4J API and is well integrated with Maven. Using Intellij will allow you to build neural networks in only a few steps. 
 
@@ -56,9 +60,12 @@ Note that the previous command assumes Homebrew is installed.
 
 Lastly, you should have [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine. Git is a version control system that facilitates coordinating projects between multiple people. It can be used to save a project, keep track of changes, and facilitate distributed, non-linear workflows. You should use Git to build repositories to store your project code.
 
+<!-- is this actually how we want to recommend people update git? should we direct them to git-scm website instead? -->
 To update to the latest version of Git, use the following command: 
 
-git clone git://git.kernel.org/pub/scm/git/git.gi
+```
+git clone git://git.kernel.org/pub/scm/git/git.git
+```
 
 ## CPU's and GPU's
 
@@ -74,15 +81,14 @@ Either Cuda 7.5 or 8.0 can be used to swap CPU's for GPU's.
 
 # DeepLearning4J Components
 
-Deeplearning4J is comprised of multiple components which all have different functionalities
-
-The following are the main components of DL4J
+Deeplearning4j is comprised of multiple libraries which all have different functionalities:
 
 - **DataVec** performs data ingestion, normalization and transformation into feature vectors
 - **Deeplearning4j** provides tools to configure neural networks 
 - **ND4J** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs.
 - **Arbiter** helps search the hyperparameter space to find the best neural net configuration.
 - **RL4J** implements Deep Q Learning, A3C and other reinforcement learning algorithms for the JVM.
+
 
 ## DataVec
 

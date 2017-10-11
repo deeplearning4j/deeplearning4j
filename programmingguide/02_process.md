@@ -5,7 +5,7 @@ layout: default
 
 # DL4J Process Overview
 
-Building a neural network requires the following phases. DeepLearning4j plays a central role in each phase. 
+Building a neural network typically follows several phases, and DeepLearning4j can play a central role in each phase. 
 
 1. Data Preparation
   - Extract raw data from the source such as text files, images or video.
@@ -19,6 +19,8 @@ Building a neural network requires the following phases. DeepLearning4j plays a 
   - Evaluate neural network on new data
   - Deploy neural network if satisfied
 
+
+<!-- some notes on below, using fragments like "to build a neural network" can be awkward and make a sentence longer than necessary. we can clean up some of this -->
 # DeepLearning4j ETL
 
 ## Data Type Overview
@@ -43,6 +45,7 @@ Once data is in the appropriate format, further processing may need to be done. 
 
 Data will also need to be further processed if Spark is used to train a neural network. Spark is often used for this purpose because training a neural network can be computationally heavy. Thus, Spark can be used to train a neural network in parallel. The details of using Spark with DL4J to train neural networks will be covered in a later chapter. For now, it is important to know that the data will also need to be converted into a format that is compatible with Spark if Spark is used.
 
+<!-- nitpick: when we say "should be used" I feel like there's a more compelling way to say this. how about "Datavec was specifically made for this purpose" -->
 To complete the processes outlined above and more, DataVec should be used. DataVec is a vectorization and ETL (Extract, Transform, and Load) library that was built by the Skymind team to make these outlined tasks as user-friendly as possible. DataVec will be delved into more detail in Chapter 3.
 
 # Building and Training the Neural Network
@@ -56,9 +59,12 @@ Common neural networks include feed forward neural networks, convolutional neura
 The difference between MultiLayerNetwork and ComputationGraph is that ComputationGraph is more flexible than MultiLayerNetwork. MultiLayerNetwork can essentially be thought of a stack of neural network layers with a single input and output layer. However, with ComputationGraph, neural networks with multiple inputs and outputs can be created as well as a network in the form of a directed acylic graph. In other words, ComputationGraph can be used to build everything a MultiLayerNetwork can build and more.  However, the configuration using ComputationGraph is more complex as a tradeoff. Thus when building more typical neural network structures, MultiLayerNetwork should be used whenever possible. 
 
 ## Training Neural Networks
+
 Neural networks are typically trained using batches of the training data. Updates to the weights and biases of the neural network, which affect the outputs of each node of the network, are done batch by batch. Usually multiple passes through the training data will be used and each pass is called an epoch. With DL4J the MultiLayerNetwork or ComptuationGraph and the DataSet classes will handle the details behind batch training. All that will need to be done on the user's end is to create loops to iterate through the number of epochs and call on functions from either MultiLayerNetwork or ComputationGraph using the DataSet object. 
 
 Dl4J provides a user interface (UI) for monitoring the neural network training process. This will allow you to visualize the neural network training status in real time on your browser. The UI is mainly used to help tune neural networks or find an optimal or near optimal combination of hyperparameter values for a specific task. 
+
+<!-- code snippets need to be wrapped in triple backticks, and have the preceding tab/indentation removed (unless it's code line continuation) -->
 
 The first thing to set up the UI is to add the following dependency in the project pom.xml file. 
 
@@ -90,6 +96,8 @@ The neural network will then collect information and route it to the UI when you
 The UI is useful because it can help you train the neural network properly. For instance, if the training process is going well, you should be seeing a downward trend in the loss value over time. If not, you should adjust hyperparameters like the learning rate or make sure the data was normalized correctly. On the other hand, if the loss value is going downward but extremeley slowly, it is possible that the learning rate is too small. Furthermore, the UI provides the mean layer activation values over time, which can help you to detect vanishing or exploding activations. More help hints and further reading on this topic can be found [here](https://deeplearning4j.org/visualization).
 
 ## Evaluating Neural Networks
+
+<!-- are we saying enough here about eval? -->
 After the training phase, you will need to evaluate how well a neural network performs on the testing set. Depending on the task, different metrics will be used, such as AUC (area under ROC curve) or MSE (mean squared error). Furthermore, these metrics can be used to evaluate the network after each epoch on the validation set to help set hyperparameters of the network and perform early stopping. These operations can easily be done using the DataSet object and the ComputationGraph or MultiLayerNetwork whether or not the specific architecture is that of a feed forward network, convolutional network, or recurrent network. 
 
 DL4J provides a myriad of evaluation functions which is part of the [eval](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html) class in deeplearning4j. The functionality includes basic accuracy, f1 score using false negative and true and false positive rates, and more. 
