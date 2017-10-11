@@ -76,6 +76,7 @@ Pros and Cons:
 * Caveat: Not all operations in Tensorflow work as they do in Numpy. 
 * [A Critique of Tensorflow](http://nicodjimenez.github.io/2017/10/08/tensorflow.html)
 * [Keras shoot-out: TensorFlow vs MXNet](https://medium.com/@julsimon/keras-shoot-out-tensorflow-vs-mxnet-51ae2b30a9c0)
+* [PyTorch vs. TensorFlow](https://medium.com/towards-data-science/pytorch-vs-tensorflow-1-month-summary-35d138590f9)
 
 Pros and Cons
 
