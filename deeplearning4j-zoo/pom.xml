@@ -11,9 +11,6 @@
 
     <artifactId>deeplearning4j-zoo</artifactId>
     <packaging>jar</packaging>
-    <properties>
-        <hdf5.version>1.10.0-patch1</hdf5.version>
-    </properties>
     <build>
         <pluginManagement>
             <plugins>
