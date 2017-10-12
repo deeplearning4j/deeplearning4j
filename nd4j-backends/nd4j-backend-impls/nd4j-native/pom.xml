@@ -12,7 +12,6 @@
     <properties>
         <openblas.version>0.2.19</openblas.version>
         <mkl.version>2017.3</mkl.version>
-        <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
     <dependencies>

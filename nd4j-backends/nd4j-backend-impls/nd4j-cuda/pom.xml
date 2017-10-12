@@ -12,7 +12,6 @@
     <properties>
         <cuda.version>9.0</cuda.version>
         <cudnn.version>7.0</cudnn.version>
-        <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
     <build>
