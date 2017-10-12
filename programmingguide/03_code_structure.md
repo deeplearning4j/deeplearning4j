@@ -3,6 +3,8 @@ layout: default
 
 ------
 
+<!-- same critique re: markdown backticks on all code snippets -->
+
 # DeepLearning4j: Program Structure
 
 Here we will outline a common structure to be followed for preparing the data and configuring, training, and evaluating a neural network. This structure can be used for various neural network architectures and data.
@@ -14,6 +16,7 @@ Here we will outline a common structure to be followed for preparing the data an
 
 ## ETL and Data Processing
 
+<!-- nitpick re: tone, I suggest changing how we say "datavec is THE library" and instead sound more advocative with "DataVec was primarily designed for"; also, look here for repetitive use of words -->
 DataVec is the library for vectorization and ETL (extract, transform, load). DataVec is used primarily for getting raw data into a format that neural networks can read. DataVec can be used to convert all major types of data such as text, CSV, audio, images, and video and additionally apply scaling, normalization, or other transformations to the vectorized data. Furthermore, the functionality of DataVec can be extended for specialized inputs such as more exotic image formats. 
 
 ### Schemas and TransformProcesses
@@ -70,6 +73,7 @@ Lastly, a RecordReader is needed, which we will go into detail in the next secti
     RecordReader rr = new CSVRecordReader();
     JavaRDD<List<Writable>> parsedInputData = stringData.map(new StringToWritablesFunction(rr));
 
+<!-- grammar, I think this can be phrased better...same feedback for other sections -->
 Finally to execute the transformation on the parsed data, a SparkTransformExecutor is used.
 
     JavaRDD<List<Writable>> processedData = SparkTransformExecutor.execute(parsedInputData, tp);
@@ -101,6 +105,7 @@ Below is an example of initializing a DataSetIterator. The parameters are the Da
 
     DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader,batchSize,1,outputNum)
 
+<!-- you can cut down on wordiness by combining sentence fragments, say something like "a MultiDataSetIterator is used for multiple..." -->
 Other types of DataSetIterators can also be used depending on the data and the neural network. For example, if the neural network has multiple inputs or outputs, a MultiDataSetIterator should be used. This is similar to a DataSetIterator but multiple inputs and outputs can be defined. These inputs and outputs need to be in Record Reader format like before. In the example below, there are one set of inputs and outputs each but more can be added if needed.
 
     MultiDataSetIterator trainData = new RecordReaderMultiDataSetIterator.Builder(BATCH_SIZE)
@@ -197,12 +202,13 @@ Note that the code is slightly different for configuring a ComputationGraph rath
 	   .graphBuilder()
 	   .setInputTypes(InputType.feedForward(100))
 	   // add neural network layers
-        .build();
+       .build();
 
 To create a hidden layer, the addLayer() function is used once graphBuilder() is called. Note that this is different from the layer() function used to add layers in a MultiLayerNetwork. Within addLayer(), DenseLayer.Builder() is used like before and an example of this is shown below. We see that we can also name layers and the name of its input. 
 
     .addLayer("dense1", new DenseLayer.Builder() .nIn(100).nOut(500).build(),"trainFeatures")
 
+<!-- another grammar note: the word "actual" is overused these days, you can omit it in most docs -->
 Once the configuration is defined, we initialize an actual ComputationGraph using 
 
     ComputationGraph model = new ComputationGraph(config);

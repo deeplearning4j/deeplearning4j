@@ -7,15 +7,15 @@ layout: default
 
 Building a neural network typically follows several phases, and DeepLearning4j can play a central role in each phase. 
 
-1. Data Preparation
+1. **Data Preparation**
   - Extract raw data from the source such as text files, images or video.
   - Transform raw data to arrays of numeric values, a format neural networks can understand
   - Apply additional transformations, scaling, or normalization to data
-2. Creating a Neural Network
+2. **Creating a Neural Network**
   - Define neural network architecture
   - Train the neural network
   - Tune neural network hyperparamters
-3. Evaluation and Deployment of Neural Network
+3. **Evaluation and Deployment of Neural Network**
   - Evaluate neural network on new data
   - Deploy neural network if satisfied
 
