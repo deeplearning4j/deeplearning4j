@@ -16,7 +16,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 ## Free Machine- and Deep-learning Courses Online
 
 * [Andrew Ng's Machine-Learning Class on YouTube](https://www.youtube.com/watch?v=qeHZOdmJvFU) 
-* [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) 
+* [Geoff Hinton's Neural Networks Class on YouTube](https://youtu.be/2fRnHVVLf1Y) 
 * [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
 * [ML@B: Machine Learning Crash Course: Part 1](https://ml.berkeley.edu/blog/2016/11/06/tutorial-1/)
