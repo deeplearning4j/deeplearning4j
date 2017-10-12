@@ -18,7 +18,7 @@ namespace nd4j {
         private:
             static OpRegistrator* _INSTANCE;
             OpRegistrator() {};
-            ~OpRegistrator() {};
+            ~OpRegistrator();
 
             std::map<Nd4jIndex, std::string> _msvc;
 

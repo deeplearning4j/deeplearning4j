@@ -193,7 +193,7 @@ namespace nd4j {
 
             _varmap.lock();
 
-            _handles->push_back(variable);
+            _handles->emplace_back(variable);
 
             if (_auto_counter >= id)
                 _auto_counter = id - 1;
@@ -231,7 +231,7 @@ namespace nd4j {
 
         template <typename T>
         void nd4j::graph::VariableSpace<T>::putVariable(int id, NDArray<T> *array) {
-            nd4j::graph::Variable<T> *var = new nd4j::graph::Variable<T>(array);
+            auto *var = new nd4j::graph::Variable<T>(array);
             this->putVariable(id, var);
         }
 
@@ -263,6 +263,10 @@ namespace nd4j {
             }
 
             delete _handles;
+
+            //_internal.clear();
+            //_external.clear();
+            //_temporary.clear();
         }
 
 

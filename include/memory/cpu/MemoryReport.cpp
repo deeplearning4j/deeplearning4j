@@ -2,7 +2,7 @@
 // Created by raver119 on 11.10.2017.
 //
 
-#include "MemoryReport.h"
+#include "../MemoryReport.h"
 
 bool nd4j::memory::MemoryReport::operator<(const nd4j::memory::MemoryReport &other) const {
     return this->_rss < other._rss;

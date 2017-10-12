@@ -82,6 +82,9 @@ namespace nd4j {
 
         template <typename T>
         void nd4j::graph::Node<T>::setBlock(Block<T> *block) {
+            if (_block != nullptr)
+                throw "Block already exists";
+
             _block = block;
         }
 
@@ -379,6 +382,9 @@ namespace nd4j {
 
             if (_dim != nullptr)
                 delete[] _dim;
+
+            if (_block != nullptr)
+                delete _block;
         }
 
         template <typename T>

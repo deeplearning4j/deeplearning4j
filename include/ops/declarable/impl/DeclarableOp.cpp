@@ -351,9 +351,25 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        template<typename T>
+        nd4j::ArrayList<T>*  nd4j::ops::DeclarableOp<T>::execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
+            std::vector<NDArray<T>*> ins(inputs);
+            std::vector<T> tas(tArgs);
+            std::vector<int> ias(iArgs);
+            return this->execute(ins, tas, ias);
+        }
+
+        template<typename T>
+        Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
+            std::vector<NDArray<T>*> ins(inputs);
+            std::vector<NDArray<T>*> ous(outputs);
+            std::vector<T> tas(tArgs);
+            std::vector<int> ias(iArgs);
+            return this->execute(ins, ous, tas, ias);
+        }
 
         template <typename T>
-        Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
+        Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs, std::vector<T>& tArgs, std::vector<int>& iArgs) {
             VariableSpace<T> variableSpace;
 
             int cnt = -1;
@@ -376,14 +392,12 @@ namespace nd4j {
             Block<T> block(1, &variableSpace, false);
             block.fillInputs(in);
 
-            std::vector<T> tt(tArgs);
-            for (int e = 0; e < tt.size(); e++)
-                block.getTArguments()->push_back(tt.at(e));
+            for (int e = 0; e < tArgs.size(); e++)
+                block.getTArguments()->emplace_back(tArgs.at(e));
 
 
-            std::vector<int> ii(iArgs);
-            for (int e = 0; e < ii.size(); e++)
-                block.getIArguments()->push_back(ii.at(e));
+            for (int e = 0; e < iArgs.size(); e++)
+                block.getIArguments()->emplace_back(iArgs.at(e));
 
             Nd4jStatus result = this->execute(&block);
 
@@ -391,7 +405,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        nd4j::ArrayList<T>* nd4j::ops::DeclarableOp<T>::execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
+        nd4j::ArrayList<T>* nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs) {
             VariableSpace<T> variableSpace;
             auto arrayList = new ArrayList<T>();
             //ArrayList<T> arrayList;
@@ -408,14 +422,12 @@ namespace nd4j {
             Block<T> block(1, &variableSpace, false);
             block.fillInputs(in);
 
-            std::vector<T> tt(tArgs);
-            for (int e = 0; e < tt.size(); e++)
-                block.getTArguments()->push_back(tt.at(e));
+            for (int e = 0; e < tArgs.size(); e++)
+                block.getTArguments()->emplace_back(tArgs.at(e));
 
 
-            std::vector<int> ii(iArgs);
-            for (int e = 0; e < ii.size(); e++)
-                block.getIArguments()->push_back(ii.at(e));
+            for (int e = 0; e < iArgs.size(); e++)
+                block.getIArguments()->emplace_back(iArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
             if (status != ND4J_STATUS_OK)

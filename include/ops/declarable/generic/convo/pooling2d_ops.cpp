@@ -155,7 +155,7 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 
-            z->printShapeInfo("MaxPool2D result shape");
+            //z->printShapeInfo("MaxPool2D result shape");
 
             return ND4J_STATUS_OK;
         }

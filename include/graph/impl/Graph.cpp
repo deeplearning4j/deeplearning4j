@@ -183,7 +183,7 @@ namespace nd4j {
         template <typename T>
         void nd4j::graph::Graph<T>::pushToOutputOnce(int32_t id) {
             if (std::find(_output.begin(), _output.end(), id) == _output.end())
-                _output.push_back(id);
+                _output.emplace_back(id);
         }
 
         template <typename T>

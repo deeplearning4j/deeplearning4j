@@ -20,6 +20,12 @@ public:
 
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+
+
+    ~FlatBuffersTest() {
+        delete[] cShape;
+        delete[] fShape;
+    }
 };
 
 /**

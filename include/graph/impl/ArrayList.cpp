@@ -13,12 +13,12 @@ namespace nd4j {
 
                 std::vector<int> shapeInfo;
                 for (int i = 0; i < var->shape()->size(); i++) {
-                    shapeInfo.push_back(var->shape()->Get(i));
+                    shapeInfo.emplace_back(var->shape()->Get(i));
                 }
 
                 std::vector<int> shape;
                 for (int i = 0; i < shapeInfo.at(0); i++) {
-                    shape.push_back(shapeInfo.at(i + 1));
+                    shape.emplace_back(shapeInfo.at(i + 1));
                 }
 
                 auto array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
@@ -40,7 +40,7 @@ namespace nd4j {
 
     template <typename T>
     int ArrayList<T>::size() {
-        return _content.size();
+        return (int) _content.size();
     }
 
     template <typename T>
@@ -50,7 +50,7 @@ namespace nd4j {
 
     template <typename T>
     void ArrayList<T>::push_back(nd4j::NDArray<T> *array) {
-        _content.push_back(array);
+        _content.emplace_back(array);
     }
 
     template class ArrayList<float>;

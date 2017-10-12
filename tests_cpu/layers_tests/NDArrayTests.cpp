@@ -594,6 +594,10 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
+
+    delete z;
+    delete[] xBuffer;
+    delete x;
 }
 
 
@@ -722,15 +726,18 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
     auto xShape = new int[8] {2, 5, 3, 3, 1, 0, 1, 99};
     auto x = new NDArray<float>(xBuffer, xShape);
+    x->triggerAllocationFlag(true, true);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
     auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
+    y->triggerAllocationFlag(true, true);
 
     auto z = new NDArray<float>(5, 1, 'f');
 
     auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
+    exp->triggerAllocationFlag(true, false);
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
@@ -739,6 +746,11 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     z->printBuffer();
 
     ASSERT_TRUE(z->equalsTo(exp));
+
+    delete x;
+    delete y;
+    delete z;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////

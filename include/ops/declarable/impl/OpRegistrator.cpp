@@ -97,6 +97,26 @@ namespace nd4j {
             return os.str() ;
         }
 
+        OpRegistrator::~OpRegistrator() {
+            _msvc.clear();
+
+            for (auto const& x : _declarablesD)
+                delete x.second;
+
+            for (auto const& x : _declarablesF)
+                delete x.second;
+
+            for (auto const& x : _declarablesH)
+                delete x.second;
+
+            _declarablesF.clear();
+            _declarablesD.clear();
+            _declarablesH.clear();
+
+            _declarablesLD.clear();
+            _declarablesLF.clear();
+            _declarablesLH.clear();
+        }
 
         const char * OpRegistrator::getAllCustomOperations() {
             _locker.lock();
@@ -132,33 +152,33 @@ namespace nd4j {
         }
 
         bool OpRegistrator::registerOperationFloat(const char* name, nd4j::ops::DeclarableOp<float>* op) {
-            auto str = new std::string(name);
-            std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(*str, op);
+            std::string str(name);
+            std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(str, op);
             _declarablesF.insert(pair);
 
-            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
+            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
             std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair2(hash, op);
             _declarablesLF.insert(pair2);
             return true;
         }
 
         bool OpRegistrator::registerOperationDouble(const char* name, nd4j::ops::DeclarableOp<double>* op) {
-            auto str = new std::string(name);
-            std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*str, op);
+            std::string str(name);
+            std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(str, op);
             _declarablesD.insert(pair);
 
-            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
+            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
             std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<double>*> pair2(hash, op);
             _declarablesLD.insert(pair2);
             return true;
         }
 
         bool OpRegistrator::registerOperationHalf(const char* name, nd4j::ops::DeclarableOp<float16>* op) {
-            auto str = new std::string(name);
-            std::pair<std::string, nd4j::ops::DeclarableOp<float16>*> pair(*str, op);
+            std::string str(name);
+            std::pair<std::string, nd4j::ops::DeclarableOp<float16>*> pair(str, op);
             _declarablesH.insert(pair);
 
-            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
+            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
             std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float16>*> pair2(hash, op);
             _declarablesLH.insert(pair2);
             return true;

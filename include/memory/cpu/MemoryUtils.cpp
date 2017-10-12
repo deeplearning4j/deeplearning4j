@@ -2,7 +2,7 @@
 // Created by raver119 on 11.10.2017.
 //
 
-#include "MemoryUtils.h"
+#include "../MemoryUtils.h"
 #include <helpers/logger.h>
 
 #if defined(__APPLE__)
@@ -13,6 +13,9 @@
 #else
 // linux
 #include <sys/resource.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <cstring>
 #endif
 
 
@@ -47,14 +50,28 @@ bool nd4j::memory::MemoryUtils::retrieveMemoryStatistics(nd4j::memory::MemoryRep
 
 #else
     nd4j_debug("LINUX route\n", "");
+    int fd = open("/proc/self/statm", O_RDONLY, 0);
+    if (fd >= 0) {
+        char line[256];
+        char* s;
+        int n;
+        lseek(fd, 0, SEEK_SET);
+        if ((n = read(fd, line, sizeof(line))) > 0 && (s = (char*)memchr(line, ' ', n)) != NULL) {
+            report.setRSS((Nd4jIndex)(atoll(s + 1) * getpagesize()));
+        }
+        close(fd);
+    }
 
+    /*
     struct rusage _usage;
 
     auto res = getrusage(RUSAGE_SELF, &_usage);
 
     report.setRSS(_usage.ru_maxrss);
 
-    nd4j_debug("Usage: %lld; %lld; %lld; %lld;\n", _usage.ru_ixrss, _usage.ru_idrss, _usage.ru_isrss, _usage.ru_maxrss);
+    //nd4j_printf("Usage: %lld; %lld; %lld; %lld;\n", _usage.ru_ixrss, _usage.ru_idrss, _usage.ru_isrss, _usage.ru_maxrss);
+     */
+
 
     return true;
 #endif

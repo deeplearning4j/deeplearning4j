@@ -4322,11 +4322,19 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         }
         if (np != op) {
             /* different total sizes; no hope */
+            delete[] olddims;
+            delete[] oldstrides;
+            delete[] newStrides;
+
             return false;
         }
 
         if (np == 0) {
             /* the current code does not handle 0-sized arrays, so give up */
+            delete[] olddims;
+            delete[] oldstrides;
+            delete[] newStrides;
+
             return false;
         }
 
@@ -4354,12 +4362,20 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
                 if (isFOrder) {
                     if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
                         /* not contiguous enough */
+                        delete[] olddims;
+                        delete[] oldstrides;
+                        delete[] newStrides;
+
                         return false;
                     }
                 } else {
                     /* C order */
                     if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
                         /* not contiguous enough */
+                        delete[] olddims;
+                        delete[] oldstrides;
+                        delete[] newStrides;
+
                         return false;
                     }
                 }
@@ -4406,6 +4422,10 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         target[shape::shapeInfoLength(newRank) - 2] = -1;
         target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
 
+        delete[] olddims;
+        delete[] oldstrides;
+        delete[] newStrides;
+
         return true;
     }
 
@@ -4443,11 +4463,19 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         }
         if (np != op) {
             /* different total sizes; no hope */
+            delete[] olddims;
+            delete[] oldstrides;
+            delete[] newStrides;
+
             return false;
         }
 
         if (np == 0) {
             /* the current code does not handle 0-sized arrays, so give up */
+            delete[] olddims;
+            delete[] oldstrides;
+            delete[] newStrides;
+
             return false;
         }
 
@@ -4475,12 +4503,20 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
                 if (isFOrder) {
                     if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
                         /* not contiguous enough */
+                        delete[] olddims;
+                        delete[] oldstrides;
+                        delete[] newStrides;
+
                         return false;
                     }
                 } else {
                     /* C order */
                     if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
                         /* not contiguous enough */
+                        delete[] olddims;
+                        delete[] oldstrides;
+                        delete[] newStrides;
+
                         return false;
                     }
                 }
@@ -4503,6 +4539,9 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
             oi = oj++;
         }
 
+        delete[] olddims;
+        delete[] oldstrides;
+        delete[] newStrides;
 
         return true;
     }

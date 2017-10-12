@@ -36,37 +36,40 @@ namespace nd4j {
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
             NDArray<T> *output = this->getZ(block);
 
-            std::unique_ptr<Nd4jPointer> buffers(new Nd4jPointer[block.getVariables().size()]);
-            std::unique_ptr<Nd4jPointer> shapes(new Nd4jPointer[block.getVariables().size()]);
+            Nd4jPointer* buffers = new Nd4jPointer[block.getVariables().size()];
+            Nd4jPointer* shapes = new Nd4jPointer[block.getVariables().size()];
 
-            buffers.get()[0] = (Nd4jPointer) first->getBuffer();
-            shapes.get()[0] = (Nd4jPointer) first->getShapeInfo();
+            buffers[0] = (Nd4jPointer) first->getBuffer();
+            shapes[0] = (Nd4jPointer) first->getShapeInfo();
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                 printf("Shape %i: ", 0);
-                shape::printShapeInfoLinear((int *) shapes.get()[0]);
+                shape::printShapeInfoLinear((int *) shapes[0]);
             }
 
             for (int e = 1; e < (int) block.getVariables().size(); e++) {
                 Variable<T> *var = block.getVariables().at(e);
 
-                buffers.get()[e] = (Nd4jPointer) var->getNDArray()->getBuffer();
-                shapes.get()[e] = (Nd4jPointer) var->getNDArray()->getShapeInfo();
+                buffers[e] = (Nd4jPointer) var->getNDArray()->getBuffer();
+                shapes[e] = (Nd4jPointer) var->getNDArray()->getShapeInfo();
 
                 if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                     printf("Shape %i: ", e);
-                    shape::printShapeInfoLinear((int *) shapes.get()[e]);
+                    shape::printShapeInfoLinear((int *) shapes[e]);
                 }
             }
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 fflush(stdout);
 
-            nd4j::SpecialMethods<T>::concatCpuGeneric(_dimension, block.getVariables().size(), buffers.get(), shapes.get(), output->getBuffer(), output->getShapeInfo());
+            nd4j::SpecialMethods<T>::concatCpuGeneric(_dimension, block.getVariables().size(), buffers, shapes, output->getBuffer(), output->getShapeInfo());
 
             STORE_RESULT(*output);
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 output->printShapeInfo("Concat result shape");
+
+            delete[] buffers;
+            delete[] shapes;
 
             return ND4J_STATUS_OK;
         }
@@ -408,6 +411,8 @@ namespace nd4j {
         CUSTOM_OP_IMPL(testcustom, 1, 1, false, 0, -1) {
             auto z = this->getZ(block);
 
+            //new NDArray<T>('c', {100, 100});
+
             STORE_RESULT(*z);
             return ND4J_STATUS_OK;
         }
@@ -459,8 +464,8 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
             Nd4jIndex numArgs = block.getVariables().size();
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            auto z = this->getZ(block);
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
 
 #pragma omp parallel for proc_bind(close)
@@ -587,20 +592,33 @@ namespace nd4j {
         }
 
         OP_IMPL(softmax_bp, 2, 1, true) {
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
-            NDArray<T>* epsInput = block.getVariables().at(1)->getNDArray();
+            NDArray<T>* input = INPUT_VARIABLE(0);
+            NDArray<T>* epsInput = INPUT_VARIABLE(1);
 
-            NDArray<T>* z = this->getZ(block);
+            NDArray<T>* z = OUTPUT_VARIABLE(0);
+            /*
+                INDArray out = Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
 
+                INDArray x = out.mul(epsilon).sum(1);
+                INDArray dLdz = out.mul(epsilon.subColumnVector(x));
+            */
+
+            auto tmp_ = new NDArray<T>(input);
             input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
-            z->template applyPairwiseTransform<simdOps::Multiply<T>>(epsInput, z, nullptr);
+            z->template applyPairwiseTransform<simdOps::Multiply<T>>(epsInput, tmp_, nullptr);
 
-            auto sum = z->template reduceAlongDimension<simdOps::Sum<T>>({-1});
-            z->template applyBroadcast<simdOps::Multiply<T>>({1}, sum);
+            auto sum = tmp_->template reduceAlongDimension<simdOps::Sum<T>>({1});
+
+            tmp_->assign(epsInput);
+            tmp_->template applyBroadcast<simdOps::Subtract<T>>({0}, sum);
+
+            z->template applyPairwiseTransform<simdOps::Multiply<T>>(tmp_, z, nullptr);
 
             STORE_RESULT(*z);
 
             delete sum;
+            delete tmp_;
+
             return ND4J_STATUS_OK;
         }
 

@@ -23,18 +23,17 @@ namespace nd4j {
             _isInplace = isInplace;
         }
 
+        template<typename T>
+        Block<T>::~Block() {
+            //_variables.clear();
+            //_inputs.clear();
+        }
+
 
         template <typename T>
         bool Block<T>::hasWorkspaceProvided() {
             return _workspace != nullptr;
         }
-
-        /**
-             * This method returns variableSpace used in this block
-             * @return
-             */
-        template <typename T>
-        VariableSpace<T> *getVariableSpace();
 
 
         template <typename T>
@@ -107,12 +106,12 @@ namespace nd4j {
 
         template <typename T>
         void Block<T>::pickInput(int input) {
-            _inputs.push_back(input);
+            _inputs.emplace_back(input);
 
             if (!_variableSpace->hasVariable(input))
                 throw "Unknown variable was referenced";
 
-            _variables.push_back(_variableSpace->getVariable(input));
+            _variables.emplace_back(_variableSpace->getVariable(input));
         }
 
         template <typename T>

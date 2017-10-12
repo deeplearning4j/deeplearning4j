@@ -55,7 +55,7 @@ namespace nd4j {
             Block(int nodeId, VariableSpace<T> *variableSpace = nullptr);
             Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
 
-            ~Block() = default;
+            ~Block();
 
             void setOuterTime(Nd4jIndex time);
             void setInnerTime(Nd4jIndex time);
