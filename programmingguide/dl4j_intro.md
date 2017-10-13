@@ -38,7 +38,7 @@ Here are some reasons to use DeepLearning4j.
 
 The above tools should be installed for your machine before using DL4J. Java 1.7 or later (64 bit version) is required to run DL4J without any errors. In order to check which version of Java is installed on your computer, simply use the following command:
 
-java -version
+    java -version
 
 To install Java, download the [Java Development Kit here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
 
@@ -72,7 +72,7 @@ By default, CPU's are used with DL4J, but GPU's can be used with minor changes. 
      artifactId: nd4j-cuda-7.5
      version: 0.9.1
 
-Either Cuda 7.5 or 8.0 can be used to swap CPU's for GPU's. 
+Either Cuda 7.5 or 8.0 can be used to swap CPUs for GPUs. 
 
 # <a name="component">DeepLearning4J Components</a>
 
