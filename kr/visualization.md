@@ -65,7 +65,7 @@ UI예제 전체세트는 [여기](https://github.com/deeplearning4j/dl4j-example
 
 ### <a name="overviewpage">Deeplearning4j UI: 개요 페이지</a>
 
-![Overview Page](./img/DL4J_UI_01.png)
+<![Overview Page](https://deeplearning4j.org/img/DL4J_UI_01.png)>
 
 이 개요 페이지(3페이지 중 하나에 해당)는 아래와 같은 정보를 포함하고 있습니다:
 
