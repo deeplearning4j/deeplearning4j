@@ -4,13 +4,13 @@ layout: default
 ---
 
 ------
-# Deep Learning
+# Deep Learning, Defined
 
 Deep learning encompasses both deep neural networks and deep reinforcement learning, which are subsets of machine learning, which itself is a subset of artifical intelligence. Broadly speaking, deep neural networks perform machine perception that extracts important features from raw data and makes some sort of prediction about each observation. Examples include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data.
 
-Although neural networks were invented in the 20th century, they have only recently been generating excitement. Now that the computing ability to take advantage of the idea of neural networks exists, they have been used to break state of the art results in various fields, such as computer vision, natural language processing, and reinforcement learning. One well known accomplishment of deep learning was achieved by scientists at DeepMind who created a computer program called AlphaGo which beat a world champion Go player in a 5 game match in 2014. Many experts predicted this achievement to have been 10 years away. Thus, there is good reason to be interested in the field of deep learning.
+Although neural networks were invented last century, only recently have they generated more excitement. Now that the computing ability to take advantage of the idea of neural networks exists, they have been used to set new, state of the art results in such fields as computer vision, natural language processing, and reinforcement learning. One well known accomplishment of deep learning was achieved by scientists at DeepMind who created a computer program called AlphaGo, which beat both a former world champion Go player and the current champion in 2016 and 2017, respectively. Many experts predicted this achievement would not come for another decade. 
 
-Although there are many different variations of neural networks, the basic notion of how they work is simple. They are loosely based on the human brain and are comprised of one or more layers of neurons. At each layer, computations are applied on the input from neurons in the previous layer and the output is then relayed to the next layer. The output of the last layer will represent some prediction about the data, depending on the task. The challenge in building a successful neural network is finding the right computations to apply at each layer. 
+There are many different kinds of neural networks, but the basic notion of how they work is simple. They are loosely based on the human brain and are comprised of one or more layers of "neurons", which are just mathematical operations that pass on a signal from the previous layer. At each layer, computations are applied on the input from neurons in the previous layer and the output is then relayed to the next layer. The output of the network's final layer will represent some prediction about the input data, depending on the task. The challenge in building a successful neural network is finding the right computations to apply at each layer. 
 
 Neural networks can process high dimensional numerical and cateogorical data and perform tasks like regression, classification, clustering, and feature extraction. A neural network is created by first configuring its architecture based on the data and the task and then tuning its hyperparameters to optimize the performance of the neural network. Once the neural network has been trained and tuned sufficiently, it can be used to process new sets of data and return reasonably reliable predictions. 
 
@@ -18,9 +18,9 @@ To learn more about deep learning, check out these [resources](https://deeplearn
 
 # Where DeepLearning4j Fits In
 
-Deeplearning4j (DL4J) is a open source, JVM-based toolkit for building, training, and deploying neural networks. It was built to serve the Java and Scala communities and is user-friendly, stable, and well integrated with technologies such as Spark, CUDA, and cuDNN. 
+Eclipse Deeplearning4j (DL4J) is an open-source, JVM-based toolkit for building, training, and deploying neural networks. It was built to serve the Java and Scala communities and is user-friendly, stable, and well integrated with technologies such as Spark, CUDA, and cuDNN. Deeplearning4j also integrates with Python tools like Keras and TensorFlow to deploy their models to a production environment on the JVM.
 
-There are few reasons why you might be interested in DeepLearning4j. 
+Here are some reasons to be interested in DeepLearning4j. 
 
 - You are a data scientist in the field, or student with a Java project, and you need to integrate with a JVM stack (Hadoop, Spark, Kafka, ElasticSearch, Cassandra). You need to explore data, conduct and monitor experiments that apply various algorithms to the data and perform training on clusters to quickly obtain an accurate model for that data.  
 
