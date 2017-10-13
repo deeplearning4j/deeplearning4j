@@ -1,5 +1,7 @@
+---
 title: DeepLearning4j Introduction
-layout: default 
+layout: default
+---
 
 ------
 # Deep Learning
@@ -58,7 +60,7 @@ Lastly, you should have [Git](https://git-scm.com/book/en/v2/Getting-Started-Ins
 
 To update to the latest version of Git, use the following command: 
 
-git clone git://git.kernel.org/pub/scm/git/git.gi
+`git clone git://git.kernel.org/pub/scm/git/git.gi`
 
 ## CPU's and GPU's
 
