@@ -60,7 +60,7 @@ Lastly, you should have [Git](https://git-scm.com/book/en/v2/Getting-Started-Ins
 
 To update to the latest version of Git, use the following command: 
 
-`git clone git://git.kernel.org/pub/scm/git/git.gi`
+    git clone git://git.kernel.org/pub/scm/git/git.gi
 
 ## CPU's and GPU's
 
@@ -148,8 +148,8 @@ IntelliJ is our recommended IDE (integrated development environment) to use for 
 
 Here we will go over a quick example of using IntelliJ to run an example program from DL4J. This assumes IntelliJ and Git are already installed. First use the command line to enter the following:
 
-$ git clone https://github.com/deeplearning4j/dl4j-examples.git
-$ cd dl4j-examples/
-$ mvn clean install
+    git clone https://github.com/deeplearning4j/dl4j-examples.git
+    cd dl4j-examples/
+    mvn clean install
 
 Then open IntelliJ and import project and select "dl4j-examples." Next, choose "Import project from external model" and select Maven. The IntelliJ wizard will guide you through the various options. For the SDK select the jdk and choose finish. Once IntelliJ finishes downloading the required dependencies, you can run an example file on the left side.
