@@ -1,6 +1,6 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.linalg.api.ops.impl.transforms.Ones;
@@ -16,12 +16,11 @@ public interface FunctionFactory {
 
     DifferentialFunction invoke(String name, Object[] args);
 
-    Constant val(ArrayField iX);
+    Constant val(NDArrayInformation iX);
 
 
-    Variable var(String iName, ArrayField iX, PreEvaluator preEvaluator);
 
-    Variable var(String iName, ArrayField iX);
+    Variable var(String iName, NDArrayInformation iX);
 
 
 
@@ -140,7 +139,7 @@ public interface FunctionFactory {
 
     DifferentialFunction leakyReluDerivative(DifferentialFunction iX, DifferentialFunction iY, double cutoff);
 
-    DifferentialFunction reshape(DifferentialFunction arrayField, int[] shape);
+    DifferentialFunction reshape(DifferentialFunction NDArrayInformation, int[] shape);
 
 
     DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX);

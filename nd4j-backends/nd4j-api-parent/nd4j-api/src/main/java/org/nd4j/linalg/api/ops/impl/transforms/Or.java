@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -37,7 +36,7 @@ import java.util.List;
  */
 public class Or extends BaseTransformOp {
 
-    protected double comparable;
+    protected double comparable = 0.0;
 
     public Or(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
@@ -166,12 +165,6 @@ public class Or extends BaseTransformOp {
             return new Or(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().or(larg().getValue(true), rarg().getValue(true));
-    }
-
 
 
     @Override

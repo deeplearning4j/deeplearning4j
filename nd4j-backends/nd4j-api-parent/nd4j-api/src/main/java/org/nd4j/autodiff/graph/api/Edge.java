@@ -2,6 +2,8 @@ package org.nd4j.autodiff.graph.api;
 
 import lombok.Data;
 
+import java.util.Arrays;
+
 /** Edge in a graph. 
  * May be a directed or undirected edge.<br>
  * Parametrized,
@@ -27,7 +29,7 @@ public class Edge<T> {
 
     @Override
     public String toString() {
-        return "edge(" + (directed ? "directed" : "undirected") + "," + from + (directed ? "->" : "--") + to + ","
+        return "edge(" + (directed ? "directed" : "undirected") + "," + Arrays.toString(from) + (directed ? "->" : "--") + Arrays.toString(to) + ","
                         + (value != null ? value : "") + ")";
     }
 

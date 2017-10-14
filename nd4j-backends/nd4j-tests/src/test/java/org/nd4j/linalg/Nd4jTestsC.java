@@ -5411,6 +5411,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(sum1_dup, sum1 );
     }
 
+    @Test
+    public void testMatMul1() {
+        val x = 2;
+        val A1 = 3;
+        val A2 = 4;
+        val B1 = 4;
+        val B2 = 3;
+
+        val a = Nd4j.linspace(1, x * A1 * A2, x * A1 * A2).reshape(x, A1, A2);
+        val b = Nd4j.linspace(1, x * B1 * B2, x * B1 * B2).reshape(x, B1, B2);
+
+        //
+
+        //log.info("C shape: {}", Arrays.toString(c.shapeInfoDataBuffer().asInt()));
+    }
+
     @Override
     public char ordering() {
         return 'c';

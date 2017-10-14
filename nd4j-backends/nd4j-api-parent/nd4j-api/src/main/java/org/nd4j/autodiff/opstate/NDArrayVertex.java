@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.opstate;
 
-import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -40,11 +39,7 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
             NDArrayInformation value) {
         super(idx, depth,value);
         this.sameDiff = sameDiff;
-        if(value.getOwner() != null) {
-            if (value.getOwner().getArrayField() != null) {
-                Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getOps(), "Invalid same diff instance passed in.");
-            }
-        }
+
 
     }
 

@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Workspace manager implementation. Please note, this class is supposed to be used via Nd4j.getWorkspaceManager(), to provide consistency between different threads within given JVM process
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
+    protected AtomicLong counter = new AtomicLong();
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
     private ReferenceQueue<MemoryWorkspace> queue;
@@ -44,6 +46,16 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
         thread = new WorkspaceDeallocatorThread(this.queue);
         thread.start();
+    }
+
+    /**
+     * Returns globally unique ID
+     *
+     * @return
+     */
+    @Override
+    public String getUUID() {
+        return "Workspace_" + String.valueOf(counter.incrementAndGet());
     }
 
     /**

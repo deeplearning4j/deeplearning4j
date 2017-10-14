@@ -20,14 +20,12 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -141,12 +139,6 @@ public class ASinh extends BaseTransformOp {
             return new ASinh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().asinh(arg().getValue(true));
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

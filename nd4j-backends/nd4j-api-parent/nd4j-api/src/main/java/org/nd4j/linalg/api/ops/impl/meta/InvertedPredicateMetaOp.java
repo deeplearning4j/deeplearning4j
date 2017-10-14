@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.ops.impl.meta;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -59,11 +58,6 @@ public class InvertedPredicateMetaOp extends BaseMetaOp {
     @Override
     public String name() {
         return "meta_predicate_inverted";
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

@@ -1,268 +1,106 @@
 package org.nd4j.linalg.api.ops.impl.transforms.convolution;
 
-import lombok.Getter;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.convolution.Convolution;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Arrays;
 import java.util.List;
 
 
 /**
- * Pooling2D operation
+ * Pooling3D operation
  */
 @Slf4j
-public class Pooling2D extends BaseTransformOp {
+public class Pooling3D extends DynamicCustomOp {
 
     public enum Pooling2DType {
         MAX, AVG, PNORM,
     }
 
-    private int kh, kw, sy, sx, ph, pw, dh, dw;
+
+    private int kT,kW,kH,dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH;
     private Pooling2DType type;
-    boolean isSameMode;
-    double extra;
-    @Getter protected DataBuffer im2colShape;
+    private boolean ceilingMode;
 
-    public Pooling2D() {}
+    public Pooling3D() {}
 
-    /*
-    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType opType) {
-        this(x, kh, kw, sy, sx, ph, pw, isSameMode, opType, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
-    }
-*/
-
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v1, i_v2);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
+    @Builder(builderMethodName = "sameDiffBuilder")
+    public Pooling3D(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, Pooling2DType type, boolean ceilingMode) {
+        super(null,sameDiff, inputs, inPlace);
+        this.kT = kT;
+        this.kW = kW;
+        this.kH = kH;
+        this.dT = dT;
+        this.dW = dW;
+        this.dH = dH;
+        this.pT = pT;
+        this.pW = pW;
+        this.pH = pH;
+        this.dilationT = dilationT;
+        this.dilationW = dilationW;
+        this.dilationH = dilationH;
         this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
+        this.ceilingMode = ceilingMode;
+        addArgs();
     }
 
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
+    @Builder(builderMethodName = "execBuilder")
+    public Pooling3D(INDArray[] inputs, INDArray[] outputs, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, Pooling2DType type, boolean ceilingMode) {
+        super(null,inputs,outputs);
+        this.kT = kT;
+        this.kW = kW;
+        this.kH = kH;
+        this.dT = dT;
+        this.dW = dW;
+        this.dH = dH;
+        this.pT = pT;
+        this.pW = pW;
+        this.pH = pH;
+        this.dilationT = dilationT;
+        this.dilationW = dilationW;
+        this.dilationH = dilationH;
         this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
+        this.ceilingMode = ceilingMode;
+        addArgs();
     }
 
-    public Pooling2D(SameDiff sameDiff, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
 
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
+    private void addArgs() {
+        getIArguments().add(kT);
+        getIArguments().add(kW);
+        getIArguments().add(kH);
+        getIArguments().add(dT);
+        getIArguments().add(dW);
+        getIArguments().add(dH);
+        getIArguments().add(pT);
+        getIArguments().add(pW);
+        getIArguments().add(pH);
+        getIArguments().add(dilationT);
+        getIArguments().add(dilationW);
+        getIArguments().add(dilationH);
 
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v, inPlace);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
-
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
-
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v, extraArgs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
-
-    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode,
-                     Pooling2DType type, double extra, int virtualHeight, int virtualWidth, INDArray z) {
-        super(x);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.isSameMode = isSameMode;
-        this.type = type;
-        this.z = z;
-        this.extra = extra;
-        this.im2colShape = getNewOutputShape(x, kh, kw, sy, sx, ph, pw, virtualHeight, virtualWidth, false);
-        extraArgs = this.extraArgs();
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
+    public String opName() {
+        return getPoolingPrefix() + "pool3d";
     }
 
-    @Override
-    public int opNum() {
-        return 71;
-    }
-
-    @Override
-    public String name() {
-        return "pooling2d";
-    }
-
-    @Override
-    public Object[] extraArgs() {
-        return new Object[] {kh, kw, sy, sx, ph, pw, dh, dw, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
-    }
-
-    private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-                                                int padHeight, int padWidth, int outHeight, int outWidth,  boolean coverAll) {
-        //number of images
-        int n = img.size(0);
-        //number of channels (depth)
-        int c = img.size(1);
-        //image height
-        int h = img.size(2);
-        //image width
-        int w = img.size(3);
-
-        return Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c').getFirst();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin) {
-        return 0;
-    }
-
-    @Override
-    public float op(float origin) {
-        return 0;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return null;
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        return null;
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        return null;
-    }
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
-
-    @Override
+  @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
+    }
+
+    public String getPoolingPrefix() {
+        switch(type) {
+            case AVG:return "avg";
+            case MAX: return "max";
+            case PNORM: return "pnorm";
+            default: throw new IllegalStateException("No pooling type found.");
+        }
     }
 
 }

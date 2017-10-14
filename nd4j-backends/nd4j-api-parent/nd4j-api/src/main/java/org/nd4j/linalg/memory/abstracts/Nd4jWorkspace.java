@@ -115,7 +115,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.workspaceConfiguration = configuration;
         this.id = workspaceId;
         this.threadId = Thread.currentThread().getId();
-        this.guid = java.util.UUID.randomUUID().toString();
+        this.guid = Nd4j.getWorkspaceManager().getUUID();
         this.memoryManager = Nd4j.getMemoryManager();
         this.deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 

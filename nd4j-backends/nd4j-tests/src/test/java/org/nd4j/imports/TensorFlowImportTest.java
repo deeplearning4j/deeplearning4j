@@ -8,11 +8,18 @@ import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -26,7 +33,7 @@ public class TensorFlowImportTest {
 
     @Test
     public void testHashEquality1() {
-        long hash = HashUtil.getLongHash("Conv2D");
+        long hash = HashUtil.getLongHash("Conv2DDerivative");
         assertEquals(-1637140380760460323L, hash);
     }
 
@@ -119,4 +126,41 @@ public class TensorFlowImportTest {
         assertEquals(6.0, res.meanNumber().doubleValue(), 1e-5);
     }
 
+
+    @Test
+    public void testIntermediate1() throws Exception {
+        Nd4j.create(1);
+        val tg = TensorFlowImport.importIntermediate(new ClassPathResource("tf_graphs/tensorflow_inception_graph.pb").getFile());
+
+        assertTrue(tg.getVariableSpace().hasVariable("input"));
+        assertTrue(tg.getVariableSpace().getVariable("input").isPlaceholder());
+
+        val ipod = Nd4j.read(new DataInputStream(new FileInputStream(new ClassPathResource("tf_graphs/ipod.nd4").getFile())));
+
+        tg.provideArrayForVariable("input", ipod);
+
+        val buffer = tg.asFlatBuffers();
+        assertNotNull(buffer);
+/*
+        val offset = buffer.position();
+
+        log.info("Length: {}; Offset: {};", buffer.capacity(), offset);
+        val array = buffer.array();
+
+        try (val fos = new FileOutputStream("../../libnd4j/tests/resources/inception.fb"); val dos = new DataOutputStream(fos)) {
+            dos.write(array, offset, array.length - offset);
+        }
+        */
+    }
+
+    @Test
+    public void testDefaultArgs() {
+        val op = Nd4j.getOpFactory().getOpByName("relu");
+
+        val extras = op.extraArgs();
+        assertTrue(extras.length == 1);
+        val value = (Double) extras[0];
+
+        assertEquals(0.0f, value.floatValue(), 1e-5f);
+    }
 }

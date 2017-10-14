@@ -19,10 +19,8 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -169,19 +167,11 @@ public class EqualTo extends BaseTransformOp {
     }
 
 
-    @Override
-    public ArrayField doGetValue() {
-        return a().eq(larg().getValue(true), rarg().getValue(true));
-    }
 
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        Constant ym1 = f()
-                .val(rarg().getValue(true).sub(a().one(getResultShape())));
         DifferentialFunction ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
-
-
         return Collections.singletonList(ret);
     }
 

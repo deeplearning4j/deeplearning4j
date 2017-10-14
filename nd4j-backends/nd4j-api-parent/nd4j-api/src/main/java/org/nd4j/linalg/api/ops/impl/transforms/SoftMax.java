@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -250,11 +249,6 @@ public class SoftMax extends BaseTransformOp {
             exp.divi(exp.sumNumber().doubleValue());
             this.z = exp;
         }
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().softmax(arg().getValue(true));
     }
 
 

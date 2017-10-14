@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -205,10 +204,6 @@ public class LastIndex extends BaseIndexAccumulation {
         return new LastIndex(x.tensorAlongDimension(index, dimension), condition, eps);
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

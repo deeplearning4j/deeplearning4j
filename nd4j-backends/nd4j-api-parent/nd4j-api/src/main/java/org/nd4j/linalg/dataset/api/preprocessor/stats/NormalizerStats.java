@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 /**
  * Interface for certain statistics about a population of data.
- * Can be constructed incrementally by using the Builder, which is useful for obtaining these statistics from an
+ * Can be constructed incrementally by using the DynamicCustomOpsBuilder, which is useful for obtaining these statistics from an
  * iterator.
  *
  * @author Ede Meijer
@@ -29,7 +29,7 @@ public interface NormalizerStats extends Serializable {
         Builder<S> add(INDArray data, INDArray mask);
 
         /**
-         * Builder pattern
+         * DynamicCustomOpsBuilder pattern
          * @return
          */
         S build();

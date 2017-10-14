@@ -1,266 +1,117 @@
 package org.nd4j.linalg.api.ops.impl.transforms.convolution;
 
-import lombok.Getter;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.Differential;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
 /**
- * Pooling2D operation
+ * FullConv3D operation
  */
 @Slf4j
-public class Conv2D extends BaseTransformOp {
+public class FullConv3D extends DynamicCustomOp {
 
-    public enum Pooling2DType {
-        MAX, AVG, PNORM,
+    private int dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH,aT,aW,aH;
+    private boolean biasUsed;
+
+    @Builder(builderMethodName = "sameDiffBuilder")
+    public FullConv3D(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
+        super(null,sameDiff, inputs, inPlace);
+        this.dT = dT;
+        this.dW = dW;
+        this.dH = dH;
+        this.pT = pT;
+        this.pW = pW;
+        this.pH = pH;
+        this.dilationT = dilationT;
+        this.dilationW = dilationW;
+        this.dilationH = dilationH;
+        this.aT = aT;
+        this.aW = aW;
+        this.aH = aH;
+        this.biasUsed = biasUsed;
+        addArgs();
     }
 
-    private int kh, kw, sy, sx, ph, pw, dh, dw;
-    private Pooling2DType type;
-    boolean isSameMode;
-    double extra;
-    @Getter protected DataBuffer im2colShape;
-
-    public Conv2D() {}
-
-    /*
-    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType opType) {
-        this(x, kh, kw, sy, sx, ph, pw, isSameMode, opType, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
-    }
-*/
-
-    public Conv2D(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v1, i_v2);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
+    @Builder(builderMethodName = "execBuilder")
+    public FullConv3D(INDArray[] inputs, INDArray[] outputs, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
+        super(null,inputs,outputs);
+        this.dT = dT;
+        this.dW = dW;
+        this.dH = dH;
+        this.pT = pT;
+        this.pW = pW;
+        this.pH = pH;
+        this.dilationT = dilationT;
+        this.dilationW = dilationW;
+        this.dilationH = dilationH;
+        this.aT = aT;
+        this.aW = aW;
+        this.aH = aH;
+        this.biasUsed = biasUsed;
+        addArgs();
     }
 
-    public Conv2D(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
+    public FullConv3D() {}
 
-    public Conv2D(SameDiff sameDiff, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
 
-    public Conv2D(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
 
-    public Conv2D(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v, inPlace);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
+    private void addArgs() {
+        getIArguments().add(dT);
+        getIArguments().add(dW);
+        getIArguments().add(dH);
+        getIArguments().add(pT);
+        getIArguments().add(pW);
+        getIArguments().add(pH);
+        getIArguments().add(dilationT);
+        getIArguments().add(dilationW);
+        getIArguments().add(dilationH);
+        getIArguments().add(aT);
+        getIArguments().add(aW);
+        getIArguments().add(aH);
+        getIArguments().add(fromBoolean(biasUsed));
 
-    public Conv2D(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
 
-    public Conv2D(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, Pooling2DType type, boolean isSameMode, double extra, DataBuffer im2colShape) {
-        super(sameDiff, i_v, extraArgs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.type = type;
-        this.isSameMode = isSameMode;
-        this.extra = extra;
-        this.im2colShape = im2colShape;
-    }
-
-    public Conv2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode,
-                  Pooling2DType type, double extra, int virtualHeight, int virtualWidth, INDArray z) {
-        super(x);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.isSameMode = isSameMode;
-        this.type = type;
-        this.z = z;
-        this.extra = extra;
-        this.im2colShape = getNewOutputShape(x, kh, kw, sy, sx, ph, pw, virtualHeight, virtualWidth, false);
-        extraArgs = this.extraArgs();
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
+    public String opName() {
+        return "fullconv3d";
     }
 
-    @Override
-    public int opNum() {
-        return 71;
-    }
-
-    @Override
-    public String name() {
-        return "pooling2d";
-    }
-
-    @Override
-    public Object[] extraArgs() {
-        return new Object[] {kh, kw, sy, sx, ph, pw, dh, dw, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
-    }
-
-    private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-                                                int padHeight, int padWidth, int outHeight, int outWidth,  boolean coverAll) {
-        //number of images
-        int n = img.size(0);
-        //number of channels (depth)
-        int c = img.size(1);
-        //image height
-        int h = img.size(2);
-        //image width
-        int w = img.size(3);
-
-        return Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c').getFirst();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin) {
-        return 0;
-    }
-
-    @Override
-    public float op(float origin) {
-        return 0;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return null;
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        return null;
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        return null;
-    }
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        List<DifferentialFunction> inputs = new ArrayList<>();
+        inputs.addAll(Arrays.asList(args()));
+        inputs.addAll(f1);
+        List<DifferentialFunction> ret = new ArrayList<>();
+        FullConv3DDerivative fullConv3DDerivative = FullConv3DDerivative.sameDiffDerivativeBuilder()
+                .aH(aH)
+                .aW(aW)
+                .aT(aT)
+                .biasUsed(biasUsed)
+                .dH(dH)
+                .dW(dW)
+                .dT(dT)
+                .dilationH(dilationH)
+                .dilationT(dilationT)
+                .dilationW(dilationW)
+                .pH(pH)
+                .pT(pT)
+                .pW(pW)
+                .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .build();
+        ret.addAll(Arrays.asList(fullConv3DDerivative.getOutputFunctions()));
+        return ret;
     }
 
 }

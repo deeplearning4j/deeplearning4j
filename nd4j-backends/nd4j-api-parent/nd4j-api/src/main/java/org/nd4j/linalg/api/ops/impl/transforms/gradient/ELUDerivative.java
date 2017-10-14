@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -157,10 +156,6 @@ public class ELUDerivative extends BaseTransformOp {
                             xAlongDimension.length());
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().eluDerivative(larg().getValue(true),rarg().getValue(true));
-    }
 
 
     @Override

@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -186,10 +185,6 @@ public class IAMax extends BaseIndexAccumulation {
             return new IAMax(x.tensorAlongDimension(index, dimension));
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

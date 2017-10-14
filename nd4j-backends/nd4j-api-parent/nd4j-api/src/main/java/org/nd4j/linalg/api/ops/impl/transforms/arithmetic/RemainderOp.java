@@ -12,7 +12,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -159,11 +158,6 @@ public class RemainderOp extends BaseTransformOp {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to multiply");
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

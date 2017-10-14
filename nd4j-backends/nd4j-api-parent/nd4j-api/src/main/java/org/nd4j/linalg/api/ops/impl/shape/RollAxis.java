@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -172,13 +171,6 @@ public class RollAxis extends ShapeOp {
         else
             return new RollAxis(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        if(extraArgs != null)
-            axis = (int) extraArgs[0];
-        return sameDiff.getArrayFactory().rollAxis(arg().getValue(true),axis);
     }
 
 

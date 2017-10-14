@@ -75,7 +75,7 @@ public class MapSchedule implements ISchedule {
     }
 
     /**
-     * Builder for conveniently constructing map schedules
+     * DynamicCustomOpsBuilder for conveniently constructing map schedules
      */
     public static class Builder {
 

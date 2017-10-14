@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public abstract class BaseAggregate implements Aggregate {
+public abstract class   BaseAggregate implements Aggregate {
     protected List<INDArray> arguments = new ArrayList<>();
     protected List<DataBuffer> shapes = new ArrayList<>();
     protected List<int[]> intArrayArguments = new ArrayList<>();

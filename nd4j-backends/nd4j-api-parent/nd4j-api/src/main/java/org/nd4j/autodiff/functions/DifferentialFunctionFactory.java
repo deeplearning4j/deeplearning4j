@@ -2,7 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import com.google.common.base.Preconditions;
 import lombok.Data;
-import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -70,34 +70,29 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         }
     }
 
+
+
+
     @Override
-    public Constant val(ArrayField iX) {
+    public Constant val(NDArrayInformation iX) {
         return sameDiff().setupFunction(new Constant(sameDiff(), iX,
-                iX.getInput().getShape()));
+                iX.getShape(),sameDiff().graph().nextVertexId()));
     }
 
 
-
     @Override
-    public Variable var(String iName, ArrayField iX, PreEvaluator  preEvaluator) {
-        Preconditions.checkArgument(iX.getOps() == sameDiff(),"Same diff must be the same.");
-        return sameDiff().setupFunction(new Variable(sameDiff(),iName, iX, preEvaluator));
-    }
-
-    @Override
-    public Variable  var(String iName, ArrayField iX) {
-        Preconditions.checkArgument(iX.getOps() == sameDiff(),"Same diff must be the same.");
-        return sameDiff().setupFunction(new Variable(sameDiff(),iName, iX));
+    public Variable  var(String iName, NDArrayInformation iX) {
+        return sameDiff().setupFunction(new Variable(sameDiff(),iName, iX,sameDiff.graph().nextVertexId()));
     }
 
     @Override
     public Zero zero(int[] shape) {
-        return sameDiff().setupFunction(new Zero(sameDiff(),shape));
+        return sameDiff().setupFunction(new Zero(sameDiff(),shape,sameDiff().graph().nextVertexId()));
     }
 
     @Override
     public Ones one(int[] shape) {
-        return sameDiff().setupFunction(new Ones(sameDiff(),shape));
+        return sameDiff().setupFunction(new Ones(sameDiff(),shape,sameDiff.graph().nextVertexId()));
     }
 
     @Override
@@ -806,8 +801,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      */
     public int getInputLength(DifferentialFunction func) {
         validateDifferentialFunctionsameDiff(func);
-        ArrayField arrayField = func.getValue(true);
-        int[] inputShape = arrayField.getInput().getShape();
+        int[] inputShape = func.arg().shape;
         return ArrayUtil.prod(inputShape);
 
 

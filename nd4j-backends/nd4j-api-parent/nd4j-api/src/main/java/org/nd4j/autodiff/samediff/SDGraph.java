@@ -38,10 +38,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
 
     @Builder
     private SDGraph(boolean allowMultipleEdges,
-                    Map<Integer, List<Edge<OpState>>> edges,
+                    Map<int[], List<Edge<OpState>>> edges,
                     Map<Integer, Vertex<NDArrayInformation>> vertices,
                     boolean frozen,
-                    Map<Integer, List<Edge<OpState>>> incomingEdges,
+                    Map<int[], List<Edge<OpState>>> incomingEdges,
                     SameDiff sameDiff) {
         super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
         this.sameDiff = sameDiff;
@@ -89,7 +89,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
     public List<NDArrayInformation> getOutputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
         for (int i : getVertices().keySet()) {
-            if (getEdgesOut(i).size() < 1)
+            if (getEdgesOut(new int[]{i}).size() < 1)
                 ret.add(getVertex(i).getValue());
         }
 
@@ -103,8 +103,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
     public List<NDArrayInformation> getInputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
         for (int i : getVertices().keySet()) {
-            if (getVertexInDegree(i) < 1)
+            int[] key = {i};
+            if (getVertexInDegree(key) < 1) {
                 ret.add(getVertex(i).getValue());
+            }
         }
 
         return ret;
@@ -178,34 +180,34 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             //the goal is to get all of the needed op executions
             for (int i = 0; i < order.length; i++) {
                 //skip vertices that are only inputs
-                if (getVertexInDegree(order[i]) < 1) {
+                if (getVertexInDegree(new int[]{order[i]}) < 1) {
                     continue;
                 }
 
-                int numInputs = Math.max(1, getVertexInDegree(order[i]));
+                int numInputs = Math.max(1, getVertexInDegree(new int[]{order[i]}));
                 int inputsCount = 0;
-                NDArrayInformation[] inputs = new NDArrayInformation[numInputs];
-                int[] inputIds = new int[numInputs];
-                List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
+                List<Integer> inputIdsList = new ArrayList<>();
+                List<Edge<OpState>> inputOpStates = getIncomingEdges().get(new int[]{order[i]});
+                List<NDArrayInformation> inputInfo = new ArrayList<>();
                 //get the inputs for this this output array
                 for (Edge<OpState> edge : inputOpStates) {
-                    inputIds[inputsCount] = edge.getFrom()[0];
-                    Preconditions.checkNotNull(getInformationFor(edge.getFrom()[0]));
-                    inputs[inputsCount] = getInformationFor(edge.getFrom()[0]);
-                    inputsCount++;
+                    inputIdsList.addAll(Ints.asList(edge.getFrom()));
+                    for(int input : edge.getFrom())  {
+                        Preconditions.checkNotNull(getInformationFor(input));
+                        inputInfo.add(getInformationFor(input));
+                        inputsCount++;
+                    }
                 }
 
                 Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
                 //add edges
                 Edge<OpState> opStateEdge = inputOpStates.get(0);
-                for(int j = 0; j < inputs.length; j++)
-                    Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
                 if(!seenStates.contains(opStateEdge.getValue())) {
                     ret.add(OpExecAction.builder()
-                            .output(opStateEdge.getValue().getResult())
+                            .output(opStateEdge.getValue().getResults()[0])
                             .opState(opStateEdge.getValue())
-                            .inputs(inputs)
-                            .inputsIds(inputIds)
+                            .inputs(inputInfo.toArray(new NDArrayInformation[inputInfo.size()]))
+                            .inputsIds(Ints.toArray(inputIdsList))
                             .outputId(order[i])
                             .build());
                     seenStates.add(opStateEdge.getValue());
@@ -253,9 +255,9 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * @return
      */
     public int[] topologicalSort(boolean reverse) {
-        int[] ret = new int[numVertices()];
         List<Integer> vertices = new ArrayList<>(getVertices().keySet());
         Collections.sort(vertices);
+        List<Integer> retList = new ArrayList<>();
 
         if(reverse) {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
@@ -291,62 +293,63 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 depthQueue.add(vertex);
             }
 
-            for(int i = 0; i < ret.length; i++) {
+            while(!depthQueue.isEmpty()) {
                 NDArrayVertex vertex =  depthQueue.poll();
-                ret[i] = vertex.vertexID();
+                retList.add(vertex.vertexID());
             }
 
 
         }
         else {
-            LinkedList<Integer> noIncoming = new LinkedList<>();
-            Map<Integer, Set<Integer>> inputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
-            Map<Integer, Set<Integer>> outputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
+            LinkedList<int[]> noIncoming = new LinkedList<>();
+            Map<int[], Set<int[]>> inputEdges = new TreeMap<>(Ints.lexicographicalComparator()); //key: vertex. Values: vertices that the key vertex receives input from
+            Map<int[], Set<int[]>> outputEdges = new TreeMap<>(Ints.lexicographicalComparator()); //key: vertex. Values: vertices that the key vertex outputs to
 
 
             for (int i : vertices) {
-                if (getVertexInDegree(i) < 1) {
-                    noIncoming.add(i);
+                int[] key = {i};
+                if (getVertexInDegree(key) < 1) {
+                    noIncoming.add(key);
                 }
 
-                List<Edge<OpState>> edges = getEdgesOut(i);
-                Set<Integer> outVertices = new TreeSet<>();
-                Set<Integer> currInputs = new TreeSet<>();
+                List<Edge<OpState>> edges = getEdgesOut(new int[]{i});
+                Set<int[]> outVertices = new TreeSet<>(Ints.lexicographicalComparator());
+                Set<int[]> currInputs = new TreeSet<>(Ints.lexicographicalComparator());
                 for (Edge<OpState> edge : edges) {
-                    outVertices.add(edge.getTo()[0]);
-                    Set<Integer> outputSetForInputIdx = outputEdges.get(i);
+                    outVertices.add(edge.getTo());
+                    Set<int[]> outputSetForInputIdx = outputEdges.get(new int[]{i});
                     if (outputSetForInputIdx == null) {
-                        outputSetForInputIdx = new TreeSet<>();
-                        outputEdges.put(i, outputSetForInputIdx);
+                        outputSetForInputIdx = new TreeSet<>(Ints.lexicographicalComparator());
+                        outputEdges.put(new int[]{i}, outputSetForInputIdx);
                     }
 
-                    outputSetForInputIdx.add(edge.getTo()[0]); //input vertex outputs to the current vertex
+                    outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
                 }
 
-                if( getIncomingEdges().get(i) != null) {
-                    for (Edge<OpState> edge : getIncomingEdges().get(i)) {
-                        currInputs.add(edge.getFrom()[0]);
+                if( getIncomingEdges().get(new int[]{i}) != null) {
+                    for (Edge<OpState> edge : getIncomingEdges().get(new int[]{i})) {
+                        currInputs.add(edge.getFrom());
 
                     }
 
-                    inputEdges.put(i, currInputs);
+                    inputEdges.put(new int[]{i}, currInputs);
                 }
                 else
-                    inputEdges.put(i, currInputs);
+                    inputEdges.put(new int[]{i}, currInputs);
 
             }
 
-            int outCounter = 0;
-            while (!noIncoming.isEmpty() && outCounter < ret.length) {
-                int next = noIncoming.removeFirst();
-                ret[outCounter++] = next;
-                List<Integer> vertexOutputsTo = outputEdges.containsKey(next) ? new ArrayList<>(outputEdges.get(next)) : null;
+
+            while (!noIncoming.isEmpty()) {
+                int[] next = noIncoming.removeFirst();
+                retList.addAll(Ints.asList(next));
+                List<int[]> vertexOutputsTo = outputEdges.containsKey(next) ? new ArrayList<>(outputEdges.get(next)) : null;
 
                 //Remove edges next -> vertexOuputsTo[...] from graph;
                 if (vertexOutputsTo != null) {
-                    Collections.sort(vertexOutputsTo);
-                    for (Integer v : vertexOutputsTo) {
-                        Set<Integer> set = inputEdges.get(v);
+                    //fCollections.sort(vertexOutputsTo);
+                    for (int[] v : vertexOutputsTo) {
+                        Set<int[]> set = inputEdges.get(v);
                         if (set != null)
                             set.remove(next);
                         if (set == null || set.isEmpty()) {
@@ -357,18 +360,20 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             }
 
             //If any edges remain in the graph: graph has cycles:
-            for (Map.Entry<Integer, Set<Integer>> entry : inputEdges.entrySet()) {
-                Set<Integer> set = entry.getValue();
+            for (Map.Entry<int[], Set<int[]>> entry : inputEdges.entrySet()) {
+                Set<int[]> set = entry.getValue();
                 if (set == null)
                     continue;
                 if (!set.isEmpty())
                     throw new IllegalStateException("Graph has cycles");
             }
 
+            return Ints.toArray(retList);
+
         }
 
 
-        return ret;
+        return Ints.toArray(retList);
     }
 
     /**

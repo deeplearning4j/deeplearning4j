@@ -19,16 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
-import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -79,94 +73,10 @@ public class HardTanh extends BaseTransformOp {
         return "hardtanh";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.hardTanh(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.hardTanh(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.hardTanh(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return hardTanh(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return hardTanh(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return hardTanh(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return hardTanh(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.hardTanh(origin);
-    }
-
-
-    @Override
-    public TransformOp derivative() {
-        return new HardTanhDerivative(x, y, z, n);
-    }
-
-    private static float hardTanh(float num) {
-        return num < -1.0f ? -1.0f : num > 1.0f ? 1.0f : num;
-    }
-
-    private static double hardTanh(double num) {
-        return num < -1.0 ? -1.0 : num > 1.0 ? 1.0 : num;
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new HardTanh(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new HardTanh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new HardTanh(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new HardTanh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().hardTanh(arg().getValue(true));
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().hardTanhDerivative(f().val(getValue(true)));
+        DifferentialFunction ret = f().hardTanhDerivative(f().val(this.opState.getResults()[0]));
 
         return Collections.singletonList(ret);
     }

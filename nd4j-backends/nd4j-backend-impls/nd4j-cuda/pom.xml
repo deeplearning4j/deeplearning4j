@@ -12,7 +12,6 @@
     <properties>
         <cuda.version>9.0</cuda.version>
         <cudnn.version>7.0</cudnn.version>
-        <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
     <build>
@@ -94,7 +93,11 @@
                     <includePaths>
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/helpers</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/memory</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/graph</includePath>
                         <includePath>${env.LIBND4J_HOME}/include/cnpy</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/indexing</includePath>
                     </includePaths>
                     <linkPaths>
                         <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda-${cuda.version}/blas</linkPath>

@@ -10,7 +10,7 @@
     <name>nd4j-native-platform</name>
 
     <properties>
-        <openblas.version>0.2.19</openblas.version>
+        <openblas.version>0.2.20</openblas.version>
         <mkl.version>2017.3</mkl.version>
         <nd4j.backend>nd4j-native</nd4j.backend>
     </properties>

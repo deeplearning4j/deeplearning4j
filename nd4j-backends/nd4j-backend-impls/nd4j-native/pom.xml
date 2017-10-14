@@ -10,9 +10,8 @@
     <name>nd4j-native</name>
 
     <properties>
-        <openblas.version>0.2.19</openblas.version>
+        <openblas.version>0.2.20</openblas.version>
         <mkl.version>2017.3</mkl.version>
-        <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
     <dependencies>
@@ -156,7 +155,11 @@
                     <includePaths>
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/helpers</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/memory</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/graph</includePath>
                         <includePath>${env.LIBND4J_HOME}/include/cnpy</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/indexing</includePath>
                     </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
                 </configuration>

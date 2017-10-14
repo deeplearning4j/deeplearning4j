@@ -37,6 +37,23 @@ public class NDArrayInformation implements Serializable {
                 .build();
     }
 
+
+
+    /**
+     * Create appropriate
+     * {@link NDArrayInformation}
+     * given the ndarray
+     * including the shape
+     * and a new id
+     * @return
+     */
+    public static NDArrayInformation newInfo(int[] shape) {
+        return NDArrayInformation.builder()
+                .shape(shape)
+                .arrId(UUID.randomUUID().toString())
+                .build();
+    }
+
     /**
      * Get the arr id (possibly generating a
      * new one lazily)

@@ -21,7 +21,6 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -133,12 +132,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                             String opName,
                             int[] shape) {
         validateFunctionReference(i_v1);
-        ArrayField v1 = i_v1.getValue(true);
-        validateDifferentialFunctionsameDiff(v1);
         NDArrayInformation information =   inPlace ? i_v1.getResult() : NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
-                .id(opName + "(" + v1.getInput().getId() + " -> " +
-                        v1.getInput().getId() + ")")
+                .id(opName + "(" + i_v1.getResult().getId() + " -> " +
+                        i_v1.getResult().getId() + ")")
                 .shape(i_v1.getResultShape()).build();
 
         //result
@@ -155,10 +152,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                 .opType(Type.SCALAR)
                 .differentialFunction(this).inPlace(inPlace)
                 .opName(opName).extraArgs(extraArgs).scalarValue(scalarValue)
-                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
+                .id(opName + "(" + i_v1.getResult().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(sameDiff.generateVertexIds(i_v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape))
-                .result(information)
+                .results(new NDArrayInformation[]{information})
                 .build();
 
 
@@ -171,10 +168,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
         newVertex.setOpState(owner);
         information.setOwner(owner);
-        owner.setResult(information);
+        owner.setResults(new NDArrayInformation[]{information});
 
         if(owner.isInPlace()) {
-            information.setArrId(v1.getInput().getArrId());
+            information.setArrId(i_v1.getResult().getArrId());
         }
 
         this.opState = owner;

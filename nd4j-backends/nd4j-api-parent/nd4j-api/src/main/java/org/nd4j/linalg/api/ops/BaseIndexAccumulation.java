@@ -2,11 +2,11 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected int finalResult;

@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 
 /**
  * @author raver119@gmail.com
@@ -30,6 +31,15 @@ public class BasicGraphExecutioner implements GraphExecutioner {
     @Override
     public INDArray[] executeGraph(SameDiff graph, ExecutorConfiguration configuration) {
         return new INDArray[]{graph.execAndEndResult()};
+    }
+
+    /**
+     *
+     * @param diff
+     * @return
+     */
+    public ByteBuffer convertToFlatBuffers(SameDiff diff, ExecutorConfiguration configuration) {
+        throw new UnsupportedOperationException();
     }
 
 

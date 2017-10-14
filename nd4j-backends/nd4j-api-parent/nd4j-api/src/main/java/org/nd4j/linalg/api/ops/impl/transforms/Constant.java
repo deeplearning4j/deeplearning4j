@@ -1,9 +1,9 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 public class Constant extends BaseTransformOp {
 
-    protected ArrayField m_x;
+    protected NDArrayInformation m_x;
     protected int[] shape;
 
     public Constant() {
@@ -23,9 +23,9 @@ public class Constant extends BaseTransformOp {
 
 
     protected Constant(SameDiff sameDiff,
-                       ArrayField i_v,
+                       NDArrayInformation i_v,
                        int[] shape,
-                       boolean inPlace) {
+                       boolean inPlace,int vertexId) {
         super();
         this.shape = shape;
         this.inPlace = inPlace;
@@ -38,20 +38,18 @@ public class Constant extends BaseTransformOp {
             throw new IllegalArgumentException("Input not null value.");
         }
 
-        ArrayField arrayField = i_v;
-        validateDifferentialFunctionsameDiff(arrayField);
-        this.vertexId = arrayField.getVertex().vertexID();
+        this.vertexId = vertexId;
         validateFunctionReference(this);
-        if(sameDiff.getGraph().getVertex(this.vertexId) == null)
-            sameDiff.getGraph().addVertex(arrayField.getVertex());
-
+        if(sameDiff.getGraph().getVertex(this.vertexId) == null) {
+            sameDiff.getGraph().addVertex(new NDArrayVertex(sameDiff,vertexId,0,i_v));
+        }
 
     }
 
     public Constant(SameDiff sameDiff,
-                       ArrayField i_v,
-                       int[] shape) {
-        this(sameDiff,i_v,shape,false);
+                    NDArrayInformation i_v,
+                    int[] shape,int vertexId) {
+        this(sameDiff,i_v,shape,false,vertexId);
     }
 
     public Constant(INDArray x, INDArray z, int[] shape) {
@@ -93,15 +91,10 @@ public class Constant extends BaseTransformOp {
         return true;
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return m_x;
-    }
-
 
     @Override
     public NDArrayInformation getResult() {
-        return this.m_x.getInput();
+        return this.m_x;
     }
 
     @Override
@@ -117,38 +110,30 @@ public class Constant extends BaseTransformOp {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        Zero ret = new Zero(sameDiff,shape);
+        Zero ret = new Zero(sameDiff,shape,sameDiff.graph().nextVertexId());
         DifferentialFunction add = ret;
         return Arrays.asList(add);
     }
 
     @Override
     public String toString() {
-        return getValue(true).toString();
+        return m_x.toString();
     }
 
     @Override
     public String doGetFormula(List<Variable> variables) {
-        return getValue(true).toString();
+        return m_x.toString();
     }
 
 
     @Override
     public DifferentialFunction dup() {
-        Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x, shape));
+        Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x, shape,vertexId));
         Constant differentialFunction = ret;
         return differentialFunction;
     }
 
-    // This class must be immutable.
-    // set and assign must not be implemented.
-    @SuppressWarnings("unused")
-    private final void set(ArrayField i_x) {
-    }
 
-    @SuppressWarnings("unused")
-    private final void assign(ArrayField i_x) {
-    }
 
     @Override
     public int opNum() {

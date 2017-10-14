@@ -2,35 +2,26 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
 import lombok.Getter;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.PreEvaluator;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Data
 public class Variable extends DifferentialFunction {
     @Getter
-    private ArrayField m_x;
+    private NDArrayInformation m_x;
     private String m_name;
-    private PreEvaluator preEvaluator;
 
     public Variable(SameDiff sameDiff,
-                       String i_name,
-                       ArrayField i_v) {
-        this(sameDiff,i_name, i_v, null);
-        validateFunctionReference(this);
-    }
-
-    public Variable(SameDiff sameDiff,
-                       String i_name,
-                       ArrayField i_v,PreEvaluator preEvaluator) {
+                    String i_name,
+                    NDArrayInformation i_v,int vertexId) {
         super(sameDiff,null);
-        this.preEvaluator = preEvaluator;
         setName(i_name);
         if (i_v != null) {
             m_x = i_v;
@@ -39,29 +30,39 @@ public class Variable extends DifferentialFunction {
             throw new IllegalArgumentException("Input not null value.");
         }
 
-        ArrayField arrayField = i_v;
-        validateDifferentialFunctionsameDiff(arrayField);
-        this.vertexId = arrayField.getVertex().vertexID();
+        this.vertexId = vertexId;
+        if(sameDiff.graph().getVertex(vertexId) == null) {
+            sameDiff.graph().addVertex(new NDArrayVertex(sameDiff,vertexId,0,i_v));
+        }
 
+        if(sameDiff.getFunctionInstances().get(vertexId) == null) {
+            sameDiff.getFunctionInstances().put(vertexId,this);
+        }
 
     }
 
 
-    /**
-     * Get the value specifying
-     * whether to freeze the graph or not
-     * @param freeze whether to freeze the graph or not,
-     *               this means whether to add nodes to the internal
-     *               computation graph or not
-     * @return the value of this function
-     */
-    @Override
-    public  ArrayField getValue(boolean freeze) {
-        if(freeze) {
-            return m_x;
-        }
+    public Variable(SameDiff sameDiff,
+                    String i_name,
+                    NDArrayInformation i_v) {
+        this(sameDiff,i_name,i_v,sameDiff.graph().nextVertexId());
 
-        return super.getValue(freeze);
+    }
+
+    @Override
+    public int depth() {
+        return sameDiff.graph().getVertex(vertexId).depth();
+    }
+
+    @Override
+    public int[] getOutputVertexIds() {
+        return new int[] {vertexId};
+    }
+
+
+    @Override
+    public List<DifferentialFunction> outputs() {
+        return Collections.singletonList((DifferentialFunction) this);
     }
 
     private void setName(String i_name) {
@@ -76,7 +77,7 @@ public class Variable extends DifferentialFunction {
         return m_name;
     }
 
-    public void set(ArrayField i_v) {
+    public void set(NDArrayInformation i_v) {
         if (i_v != null) {
             m_x = i_v;
         } else {
@@ -88,15 +89,6 @@ public class Variable extends DifferentialFunction {
     public boolean isVariable() {
         return true;
     }
-
-    @Override
-    public ArrayField doGetValue() {
-        if (preEvaluator != null) {
-            preEvaluator.update(this);
-        }
-        return m_x;
-    }
-
 
 
     @Override
@@ -125,7 +117,7 @@ public class Variable extends DifferentialFunction {
 
     @Override
     public NDArrayInformation getResult() {
-        return m_x.getInput();
+        return m_x;
     }
 
     /**
@@ -134,8 +126,8 @@ public class Variable extends DifferentialFunction {
      */
     @Override
     public int[] getResultShape() {
-        ArrayField arrayField = m_x;
-        return arrayField.getInput().getShape();
+        NDArrayInformation arrayField = m_x;
+        return arrayField.getShape();
     }
 
 
@@ -148,7 +140,7 @@ public class Variable extends DifferentialFunction {
     @Override
     public DifferentialFunction dup() {
         return sameDiff.setupFunction(new Variable(sameDiff, getName(),
-                m_x));
+                m_x,vertexId));
     }
 
     @Override

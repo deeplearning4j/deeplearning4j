@@ -3,15 +3,14 @@ package org.nd4j.autodiff.opstate;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.Op;
 
 import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * Describes the opType of
+ * Describes the type of
  * operation that needs to happen
  * @author Adam Gibson
  */
@@ -28,15 +27,14 @@ public class OpState implements Serializable {
     private String id;
     private int[] axes;
     private Object[] extraArgs;
-    private Integer[] extraBits;
+    private int[] extraBits;
     private Object[] extraArgsWithoutInPlace;
-    private NDArrayInformation result;
+    private NDArrayInformation[] results;
     //function handle mainly used for autodiff invocation
     private DifferentialFunction differentialFunction;
-    private ArrayField arrayField;
     private boolean inPlace;
 
-     OpState(long n, Op.Type opType, String opName, int opNum, Number scalarValue, String[] vertexIds, String id, int[] axes, Object[] extraArgs, Integer[] extraBits, Object[] extraArgsWithoutInPlace, NDArrayInformation result, DifferentialFunction differentialFunction, ArrayField arrayField, boolean inPlace) {
+     OpState(long n, Op.Type opType, String opName, int opNum, Number scalarValue, String[] vertexIds, String id, int[] axes, Object[] extraArgs, int[] extraBits, Object[] extraArgsWithoutInPlace, NDArrayInformation[] results, DifferentialFunction differentialFunction, boolean inPlace) {
         this.n = n;
         this.opType = opType;
         this.opName = opName;
@@ -48,9 +46,8 @@ public class OpState implements Serializable {
         this.extraArgs = extraArgs;
         this.extraBits = extraBits;
         this.extraArgsWithoutInPlace = extraArgsWithoutInPlace;
-        this.result = result;
+        this.results = results;
         this.differentialFunction = differentialFunction;
-        this.arrayField = arrayField;
         this.inPlace = inPlace;
     }
 
@@ -112,7 +109,7 @@ public class OpState implements Serializable {
         if(extraArgs != null && opState.extraArgs != null)
             if(extraArgs.length != opState.extraArgs.length)
                 return false;
-        if (result != null ? !result.equals(opState.result) : opState.result != null) return false;
+        if (results != null ? !Arrays.equals(results,opState.results) : opState.results != null) return false;
         return true;
     }
 
@@ -128,7 +125,7 @@ public class OpState implements Serializable {
         result1 = 31 * result1 + Arrays.hashCode(axes);
         result1 = 31 * result1 + Arrays.hashCode(extraArgs);
         result1 = 31 * result1 + Arrays.hashCode(extraArgsWithoutInPlace);
-        result1 = 31 * result1 + (result != null ? result.hashCode() : 0);
+        result1 = 31 * result1 + (results != null ? Arrays.hashCode(results) : 0);
         return result1;
     }
 }

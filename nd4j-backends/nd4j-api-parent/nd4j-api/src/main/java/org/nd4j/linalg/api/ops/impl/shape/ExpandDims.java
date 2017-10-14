@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -33,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Transpose function
+ * ExpandDims function
  *
  * @author Adam Gibson
  */
@@ -171,11 +170,7 @@ public class ExpandDims extends ShapeOp {
     }
 
 
-    @Override
-    public ArrayField doGetValue() {
-        int axis = (int) extraArgs[0];
-        return a().expandDims(arg().getValue(true),axis);
-    }
+
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

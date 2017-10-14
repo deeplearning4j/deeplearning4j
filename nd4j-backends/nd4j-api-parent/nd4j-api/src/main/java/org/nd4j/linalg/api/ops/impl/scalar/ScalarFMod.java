@@ -12,7 +12,6 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -119,19 +118,6 @@ public class ScalarFMod extends BaseScalarOp {
             return new ScalarFMod(x.tensorAlongDimension(index, dimension), complexNumber);
     }
 
-    /**
-     * Get the value of this function
-     *
-     * @return
-     */
-    @Override
-    public ArrayField doGetValue() {
-        if(scalarValue == null) {
-            scalarValue = (Number) extraArgs[0];
-        }
-
-        return arg().getValue(true).fmod(scalarValue.doubleValue());
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {

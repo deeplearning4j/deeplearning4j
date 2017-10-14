@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -139,12 +138,6 @@ public class Negative extends BaseTransformOp {
             return new Negative(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 
     }
-
-    @Override
-    public ArrayField doGetValue() {
-        return arg().getValue(true).negate();
-    }
-
 
 
     @Override

@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +50,9 @@ public class ScatterUpdate implements CustomOp {
                 throw new ND4JIllegalStateException("Can't update index higher then num tensors");
 
         this.op = DynamicCustomOp.builder("scatter_update")
-                .setInputs(original, updates)
+                .addInputs(original, updates)
                 .callInplace(true)
-                .setIntegerArguments(iargs.toArray(new Integer[0]))
+                .addIntegerArguments(iargs.toArray(new Integer[0]))
                 .build();
     }
 
@@ -103,5 +104,10 @@ public class ScatterUpdate implements CustomOp {
     @Override
     public List<Double> getTArguments() {
         return op.getTArguments();
+    }
+
+    @Override
+    public List<int[]> calculateOutputShape() {
+        return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 }

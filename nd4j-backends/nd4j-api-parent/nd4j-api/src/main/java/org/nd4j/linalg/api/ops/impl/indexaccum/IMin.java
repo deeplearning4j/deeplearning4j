@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -187,11 +186,6 @@ public class IMin extends BaseIndexAccumulation {
             return new IMin(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new IMin(x.tensorAlongDimension(index, dimension));
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

@@ -92,7 +92,10 @@ public class SDVariable  implements Serializable {
 
     public INDArray getArr() {
         if(differentialFunction == null)
-            return null;
+            if(arr != null)
+                return arr;
+            else
+                return null;
         Op op = (Op) differentialFunction;
         return op.z();
     }
@@ -101,10 +104,6 @@ public class SDVariable  implements Serializable {
         if(arr == null && requireArray) {
             if(sameDiff.getVertexIdxToInfo().get(vertexId) != null)
                 this.arr = sameDiff.getNDArray(sameDiff.getVertexIdxToInfo().get(vertexId));
-            if(this.arr == null && sameDiff.getArrayFieldInstances().get(vertexId) != null) {
-                this.arr = sameDiff.getNDArray(sameDiff.getArrayFieldInstances().get(vertexId).getInput());
-
-            }
 
             if(this.arr == null && sameDiff.getFunctionInstances().get(vertexId) != null) {
                 this.arr = sameDiff.getNDArray(sameDiff.getFunctionInstances().get(vertexId).getResult());
@@ -133,7 +132,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable gradient() {
-       return getGradient();
+        return getGradient();
     }
 
     /**
@@ -205,9 +204,12 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public NDArrayInformation getInfo() {
-        if(differentialFunction != null)
+        if(differentialFunction == null && arrayField != null)
+            return arrayField.getM_x();
+        else if(differentialFunction !=  null)
             return differentialFunction.getResult();
-        return getArrayField().getM_x().getInput();
+        else
+            throw new IllegalStateException("No ndarray found. Please set either a differential function or a variable");
     }
 
     /**
@@ -235,10 +237,10 @@ public class SDVariable  implements Serializable {
             throw new IllegalStateException("Unable to infer shape. Function is null.");
         OpState opState =  differentialFunction.getOpState();
         if(opState == null) {
-            return differentialFunction.getValue(true).getInput().getShape();
+            return differentialFunction.getResultShape();
         }
 
-        return opState.getResult().getShape();
+        return opState.getResults()[0].getShape();
 
     }
 

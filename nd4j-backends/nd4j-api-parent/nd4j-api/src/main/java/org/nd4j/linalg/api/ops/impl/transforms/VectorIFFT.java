@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -192,10 +191,6 @@ public class VectorIFFT extends BaseTransformOp {
         this.x = this.z;
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

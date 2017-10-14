@@ -19,15 +19,14 @@
 
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -265,14 +264,6 @@ public class CosineSimilarity extends BaseAccumulation {
     public float calculateFinalResult(float accum, long n) {
         throw new UnsupportedOperationException("Not supported for passthrough op");
     }
-
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().cosineSimilarity(larg(), rarg(), dimensions);
-    }
-
-
 
 
     @Override

@@ -20,14 +20,13 @@
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.List;
@@ -229,11 +228,6 @@ public class ManhattanDistance extends BaseAccumulation {
         return ret;
     }
 
-
-    @Override
-    public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().manhattanDistance(larg(),rarg(),dimensions);
-    }
 
 
     @Override

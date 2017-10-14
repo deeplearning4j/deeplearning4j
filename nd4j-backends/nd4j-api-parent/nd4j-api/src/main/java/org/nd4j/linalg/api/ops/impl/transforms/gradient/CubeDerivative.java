@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -141,11 +140,6 @@ public class CubeDerivative extends BaseTransformOp {
             return new CubeDerivative(x.tensorAlongDimension(index, dimension),
                             z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override

@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -192,17 +191,10 @@ public class RectifedLinear extends BaseTransformOp {
         this.extraArgs = new Object[] {cutoff};
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return a().relu(arg().getValue(true));
-    }
-
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().val(a().step(arg().getValue(true)));
-
+        DifferentialFunction ret = new Step(sameDiff,arg(),false,cutoff);
         return Collections.singletonList(ret);
     }
 }

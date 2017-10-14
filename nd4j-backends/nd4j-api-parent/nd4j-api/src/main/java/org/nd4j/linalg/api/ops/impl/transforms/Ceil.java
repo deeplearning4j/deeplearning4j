@@ -19,15 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.List;
 
@@ -77,74 +72,6 @@ public class Ceil extends BaseTransformOp {
         return "ceil";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.ceil(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.ceil(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.ceil(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) FastMath.ceil(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.ceil(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.ceil(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) FastMath.ceil(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.ceil(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Ceil(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Ceil(xAlongDimension, z.vectorAlongDimension(index, dimension));
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Ceil(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Ceil(xAlongDimension, z.tensorAlongDimension(index, dimension));
-
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
