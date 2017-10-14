@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -123,13 +122,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             DifferentialFunction i_v1,
                             DifferentialFunction i_v2,
                             String opName) {
-        ArrayField arrayField = i_v1.getValue(true);
         //skip empty dimensions
         if(dimensions == null)
             return;
         addEdges(sameDiff,i_v1,i_v2,opName,
                 Op.Type.REDUCE3,
-                Shape.getReducedShape(arrayField.getInput().getShape(),
+                Shape.getReducedShape(i_v1.getResultShape(),
                         dimensions));
 
 

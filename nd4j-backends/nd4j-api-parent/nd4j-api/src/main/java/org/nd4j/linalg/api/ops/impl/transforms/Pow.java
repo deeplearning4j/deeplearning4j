@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -37,8 +36,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class
-Pow extends BaseTransformOp {
+public class Pow extends BaseTransformOp {
     private double pow;
 
     public Pow() {}
@@ -165,19 +163,6 @@ Pow extends BaseTransformOp {
         this.extraArgs = new Object[] {pow};
     }
 
-    /**
-     * Get the value of this function
-     *
-     * @return
-     */
-    @Override
-    public ArrayField doGetValue() {
-        if(scalarValue == null) {
-            scalarValue = (Number) extraArgs[0];
-        }
-
-        return arg().getValue(true).pow(scalarValue.doubleValue());
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {

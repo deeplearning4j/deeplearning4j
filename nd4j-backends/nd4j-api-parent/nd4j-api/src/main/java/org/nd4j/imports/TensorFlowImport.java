@@ -175,7 +175,7 @@ public class TensorFlowImport {
                 graph.addVertex(vertex);
 
                 OpState opState = getOpStateFromNodeDef(tfNode, tfNode.getInputCount());
-                opState.setResult(varInformation);
+                opState.setResults(new NDArrayInformation[]{varInformation});
 
                 reverseVertexMap.put(tfNode.getName(), nodesCnt);
 

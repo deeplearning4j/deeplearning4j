@@ -1,6 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.nd4j.autodiff.ArrayField;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
@@ -110,10 +110,6 @@ public class SoftMaxDerivative extends BaseGradientOp  {
         super.exec(dimensions);
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return a().softmaxDerivative(larg().getValue(true),rarg().getValue(true));
-    }
 
 
     @Override

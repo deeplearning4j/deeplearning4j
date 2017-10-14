@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -137,11 +136,6 @@ public class LegacyDropOut extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {p, (double) n};
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

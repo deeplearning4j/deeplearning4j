@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -172,12 +171,7 @@ public class SigmoidDerivative extends BaseTransformOp {
         return sigmoid.mul(oneMinus);
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return a().sigmoidDerivative(larg().getValue(true),rarg().getValue(true));
-    }
-
-    @Override
+       @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
        throw new UnsupportedOperationException();
     }

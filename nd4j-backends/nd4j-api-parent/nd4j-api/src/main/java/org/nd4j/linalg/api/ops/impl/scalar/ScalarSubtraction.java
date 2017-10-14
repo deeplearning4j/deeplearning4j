@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -149,24 +148,6 @@ public class ScalarSubtraction extends BaseScalarOp {
             return new ScalarSubtraction(x.tensorAlongDimension(index, dimension), complexNumber);
     }
 
-
-    /**
-     * Get the value of this function
-     *
-     * @return
-     */
-    @Override
-    public ArrayField doGetValue() {
-        if(scalarValue == null) {
-            scalarValue = (Number) extraArgs[0];
-        }
-
-        if(isInPlace())
-            return arg().getValue(true).sub(scalarValue.doubleValue());
-        else
-            return arg().getValue(true).subi(scalarValue.doubleValue());
-
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {

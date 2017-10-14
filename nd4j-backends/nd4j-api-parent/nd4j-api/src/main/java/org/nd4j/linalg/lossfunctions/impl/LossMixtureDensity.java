@@ -409,7 +409,7 @@ public class LossMixtureDensity implements ILossFunction {
          * Specifies the number of gaussian functions to attempt
          * fitting against the data.
          * @param aGaussians Number of gaussian functions to fit.
-         * @return Builder.
+         * @return DynamicCustomOpsBuilder.
          */
         public Builder gaussians(int aGaussians) {
             mGaussians = aGaussians;
@@ -420,7 +420,7 @@ public class LossMixtureDensity implements ILossFunction {
          * Specifies the width of the labels vector which also corresponds
          * to the width of the 'mean' vector for each of the gaussian functions.
          * @param aLabelWidth Width of the labels vector.
-         * @return Builder.
+         * @return DynamicCustomOpsBuilder.
          */
         public Builder labelWidth(int aLabelWidth) {
             mLabelWidth = aLabelWidth;

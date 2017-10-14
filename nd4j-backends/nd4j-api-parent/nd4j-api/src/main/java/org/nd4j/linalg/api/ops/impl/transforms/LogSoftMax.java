@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -189,11 +188,6 @@ public class LogSoftMax extends BaseTransformOp {
             else
                 this.z = logsoftmax;
         }
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().logSoftmax(arg().getValue(true));
     }
 
 

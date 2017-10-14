@@ -20,12 +20,10 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
@@ -162,11 +160,6 @@ public class Transpose extends ShapeOp {
         else
             return new Transpose(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().transpose(arg().getValue(true));
     }
 
     @Override

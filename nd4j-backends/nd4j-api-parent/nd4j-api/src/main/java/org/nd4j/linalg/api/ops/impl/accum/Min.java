@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -164,12 +163,6 @@ public class Min extends BaseAccumulation {
             return new Min(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Min(x.tensorAlongDimension(index, dimension));
-    }
-
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().max(arg().doGetValue(),dimensions);
     }
 
 

@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -317,12 +316,6 @@ public class Variance extends BaseAccumulation {
 
     public void setBiasCorrected(boolean biasCorrected) {
         this.biasCorrected = biasCorrected;
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().variance(arg().doGetValue(),
-                biasCorrected, dimensions);
     }
 
 

@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
@@ -116,9 +114,9 @@ public class LossBinaryXENT implements ILossFunction {
             INDArray output = activationFn.getActivation(preOutput.dup(), true);
             if (clipEps > 0.0) {
                 CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                        .setInputs(output)
+                        .addInputs(output)
                         .callInplace(true)
-                        .setFloatingPointArguments(clipEps, 1.0-clipEps)
+                        .addFloatingPointArguments(clipEps, 1.0-clipEps)
                         .build();
                 Nd4j.getExecutioner().exec(op);
             }
@@ -179,9 +177,9 @@ public class LossBinaryXENT implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         if (clipEps > 0.0) {
             CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                    .setInputs(output)
+                    .addInputs(output)
                     .callInplace(true)
-                    .setFloatingPointArguments(clipEps, 1.0-clipEps)
+                    .addFloatingPointArguments(clipEps, 1.0-clipEps)
                     .build();
             Nd4j.getExecutioner().exec(op);
         }

@@ -1961,6 +1961,11 @@ public class Nd4j {
      */
     public static INDArray linspace(int lower, int upper, int num) {
         // for now we'll temporarily keep original impl
+        if(lower == upper && num == 1) {
+            return Nd4j.scalar(lower);
+        }
+
+
         double approx = (double) num / ((double) (upper - lower) + 1);
         if (approx % 1 <= EPS_THRESHOLD) {
             return INSTANCE.linspace(lower, upper, num);

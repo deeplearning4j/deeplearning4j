@@ -19,14 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 
@@ -287,16 +284,6 @@ public class Mmul extends TensorMmul {
     }
 
 
-
-    /**
-     * Get the value of this function
-     *
-     * @return
-     */
-    @Override
-    public ArrayField doGetValue() {
-        return a().mmul(larg(),rarg(),mMulTranspose);
-    }
 
 }
 

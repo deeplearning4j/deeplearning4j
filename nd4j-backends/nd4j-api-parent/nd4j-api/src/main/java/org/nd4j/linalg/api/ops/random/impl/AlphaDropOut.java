@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -74,11 +73,6 @@ public class AlphaDropOut extends BaseRandomOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {p, a, b, alphaPrime};
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

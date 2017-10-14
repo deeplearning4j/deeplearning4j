@@ -82,8 +82,18 @@ public class Convolution {
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
-        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w, 1, 1);
-        return Nd4j.getExecutioner().exec(col2Im).z();
+        Col2Im col2Im = Col2Im.execBuilder()
+                .dh(1)
+                .dw(1)
+                .w(w)
+                .h(h)
+                .sx(sx)
+                .sy(sy)
+                .ph(ph)
+                .pw(pw)
+                .build();
+         Nd4j.getExecutioner().exec(col2Im);
+         return col2Im.getOutputArguments().get(0);
     }
 
     public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w, int dh, int dw ) {
@@ -91,8 +101,18 @@ public class Convolution {
             throw new IllegalArgumentException("col2im input array must be rank 6");
         if (z.rank() != 4)
             throw new IllegalArgumentException("col2im output array must be rank 4");
-        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w, dh, dw, false, z);
+        Col2Im col2Im = Col2Im.execBuilder()
+                .dh(dh)
+                .dw(dw)
+                .w(w)
+                .h(h)
+                .sx(sx)
+                .sy(sy)
+                .ph(ph)
+                .pw(pw)
+                .build();
         Nd4j.getExecutioner().exec(col2Im);
+
         return z;
     }
 
@@ -128,27 +148,84 @@ public class Convolution {
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
         Nd4j.getCompressor().autoDecompress(img);
-        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode);
-        return Nd4j.getExecutioner().exec(im2col).z();
+        Im2col im2col = Im2col.execBuilder()
+                .dh(dh)
+                .dw(dw)
+                .kh(kh)
+                .kw(kw)
+                .isSameMode(isSameMode)
+                .arrayInputs(new INDArray[]{img})
+                .sx(sx)
+                .sy(sy)
+                .ph(ph)
+                .pw(pw)
+                .build();
+         Nd4j.getExecutioner().exec(im2col);
+         return im2col.getOutputArguments().get(0);
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
                     INDArray out) {
-        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode, out);
-        return Nd4j.getExecutioner().exec(im2col).z();
+        Im2col im2col =  Im2col.execBuilder()
+                .arrayOutputs(new INDArray[]{out})
+                .arrayInputs(new INDArray[]{img})
+                .kh(kh)
+                .pw(pw)
+                .ph(ph)
+                .sy(sy)
+                .sx(sx)
+                .kw(kw)
+                .kh(kh)
+                .dw(1)
+                .dh(1)
+                .isSameMode(isSameMode)
+                .build();
+         Nd4j.getExecutioner().exec(im2col);
+         return im2col.getOutputArguments().get(0);
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
                                   INDArray out) {
-        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, dH, dW, isSameMode, out);
-        return Nd4j.getExecutioner().exec(im2col).z();
+        Im2col im2col =  Im2col.execBuilder()
+                .arrayOutputs(new INDArray[]{out})
+                .arrayInputs(new INDArray[]{img})
+                .kh(kh)
+                .pw(pw)
+                .ph(ph)
+                .sy(sy)
+                .sx(sx)
+                .kw(kw)
+                .kh(kh)
+                .dw(dW)
+                .dh(dH)
+                .isSameMode(isSameMode)
+                .build();
+        Nd4j.getExecutioner().exec(im2col);
+        return im2col.getOutputArguments().get(0);
     }
 
     public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw,
                                      int dh, int dw, boolean isSameMode, Pooling2D.Pooling2DType type, double extra, int virtualHeight, int virtualWidth,
                                   INDArray out) {
-        Pooling2D pooling = new Pooling2D(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode, type, extra, virtualHeight, virtualWidth, out);
-        return Nd4j.getExecutioner().exec(pooling).z();
+        Pooling2D pooling = Pooling2D.execBuilder()
+                .arrayInputs(new INDArray[]{img})
+                .arrayOutputs(new INDArray[] {out})
+                .dh(dh)
+                .dw(dw)
+                .kh(kh)
+                .kw(kw)
+                .ph(ph)
+                .pw(pw)
+                .sx(sx)
+                .sy(sy)
+                .type(type)
+                .isSameMode(isSameMode)
+                .extra(extra)
+                .virtualHeight(virtualHeight)
+                .virtualWidth(virtualWidth)
+                .build();
+         Nd4j.getExecutioner().exec(pooling);
+         return out;
     }
 
     /**
@@ -167,8 +244,21 @@ public class Convolution {
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval,
                     boolean isSameMode) {
-        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode);
-        return Nd4j.getExecutioner().exec(im2col).z();
+        Im2col im2col =  Im2col.execBuilder()
+                .arrayInputs(new INDArray[]{img})
+                .kh(kh)
+                .pw(pw)
+                .ph(ph)
+                .sy(sy)
+                .sx(sx)
+                .kw(kw)
+                .kh(kh)
+                .dw(1)
+                .dh(1)
+                .isSameMode(isSameMode)
+                .build();
+        Nd4j.getExecutioner().exec(im2col);
+        return im2col.getOutputArguments().get(0);
     }
 
     /**

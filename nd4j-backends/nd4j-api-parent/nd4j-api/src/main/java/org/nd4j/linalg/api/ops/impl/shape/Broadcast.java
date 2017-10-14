@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -32,7 +31,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 import java.util.List;
 
 /**
- * Transpose function
+ * Broadcast function
  *
  * @author Adam Gibson
  */
@@ -177,11 +176,6 @@ public class Broadcast extends ShapeOp {
     @Override
     public int[] getResultShape() {
         return shape;
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().broadcast(arg().getValue(true),shape);
     }
 
 

@@ -17,7 +17,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Adam Gibson
  */
 @Data
-@Builder(builderClassName = "Builder")
+@Builder(builderClassName = "DynamicCustomOpsBuilder")
 public class AdaGrad implements IUpdater {
 
     public static final double DEFAULT_ADAGRAD_LEARNING_RATE = 1e-1;

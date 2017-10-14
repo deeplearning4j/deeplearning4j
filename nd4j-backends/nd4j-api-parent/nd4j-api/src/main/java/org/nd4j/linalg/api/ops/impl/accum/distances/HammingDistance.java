@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -263,11 +262,6 @@ public class HammingDistance extends BaseAccumulation {
     @Override
     public float calculateFinalResult(float accum, long n) {
         throw new UnsupportedOperationException("Not supported for passthrough op");
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

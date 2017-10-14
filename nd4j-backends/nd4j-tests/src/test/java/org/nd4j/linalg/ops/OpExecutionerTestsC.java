@@ -21,7 +21,6 @@
 package org.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,9 +31,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.TadCollapseAccumulation;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -54,8 +51,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -600,31 +597,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(out, exp);
     }
 
-    @Test
-    public void testReductionIndex() {
-        Map<Integer, Integer> assertionMap = new HashMap<>();
-        assertionMap.put(0, 0);
-        assertionMap.put(1, 0);
-        assertionMap.put(2, 0);
-        assertionMap.put(3, 1);
-        assertionMap.put(4, 1);
-        assertionMap.put(5, 1);
-        assertionMap.put(6, 2);
-        assertionMap.put(7, 2);
-        assertionMap.put(8, 2);
-        assertionMap.put(9, 3);
-        assertionMap.put(10, 3);
-        assertionMap.put(11, 3);
-        assertionMap.put(12, 3);
 
-        assertEquals(3, TadCollapseAccumulation.tadsPerReduceIndex(4, 12));
-        for (int i = 0; i < 12; i++) {
-            int val = assertionMap.get(i);
-            assertEquals(val, TadCollapseAccumulation.reductionIndexForTad(i, 4, 12));
-        }
-
-
-    }
 
     @Test
     public void testSubColumnVector() {

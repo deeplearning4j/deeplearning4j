@@ -20,12 +20,10 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
@@ -165,14 +163,7 @@ public class Permute extends ShapeOp {
     }
 
 
-    @Override
-    public ArrayField doGetValue() {
-        if(dimensions == null && extraArgs != null) {
-            this.dimensions = (int[]) extraArgs[0];
-        }
 
-        return sameDiff.getArrayFactory().permute(arg().getValue(true),dimensions);
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

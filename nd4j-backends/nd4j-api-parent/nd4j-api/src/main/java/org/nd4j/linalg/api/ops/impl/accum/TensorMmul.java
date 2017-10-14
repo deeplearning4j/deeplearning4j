@@ -21,9 +21,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import com.google.common.primitives.Ints;
 import lombok.NoArgsConstructor;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -39,10 +37,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
-import static org.nd4j.linalg.util.ArrayUtil.argsort;
 
 /**
- * Dot product
+ * TensorMmul
  * @author Adam Gibson
  */
 @NoArgsConstructor
@@ -74,8 +71,6 @@ public class TensorMmul extends BaseAccumulation {
         validateFunctionReference(i_v2);
 
         if(!addedEdges) {
-            ArrayField a = i_v1.getValue(true);
-            ArrayField b = i_v2.getValue(true);
             int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(i_v1.getResultShape()) : i_v1.getResultShape();
             int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(i_v2.getResultShape()) : i_v2.getResultShape();
 
@@ -101,14 +96,11 @@ public class TensorMmul extends BaseAccumulation {
         if(axes != null
                 && !addedEdges) {
             addedEdges = true;
-            ArrayField arrayField = i_v1.getValue(true);
-            ArrayField secondVal = i_v2.getValue(true);
 
             addEdges(sameDiff,i_v1,i_v2,opName,
                     Type.REDUCE,
-                    getTensorMmulShape(arrayField.getInput()
-                                    .getShape(),
-                            secondVal.getInput().getShape(),
+                    getTensorMmulShape(i_v1.getResultShape(),
+                            i_v2.getResultShape(),
                             axes)
                     ,extraArgs);
 
@@ -116,15 +108,6 @@ public class TensorMmul extends BaseAccumulation {
 
     }
 
-    /**
-     * Get the value of this function
-     *
-     * @return
-     */
-    @Override
-    public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().tensorMmul(larg(),rarg(),axes);
-    }
 
 
 
@@ -173,21 +156,19 @@ public class TensorMmul extends BaseAccumulation {
                                               DifferentialFunction b,
                                               int[][] axes) {
 
-        ArrayField xField = a.getValue(true);
-        ArrayField yField = b.getValue(true);
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
-            if (xField.getInput().getShape()[axes[0][i]] != yField.getInput().getShape()[axes[1][i]])
+            if (a.getResultShape()[axes[0][i]] != b.getResultShape()[axes[1][i]])
                 throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
             if (axes[0][i] < 0)
-                axes[0][i] += xField.getInput().getShape().length;
+                axes[0][i] += a.getResultShape().length;
             if (axes[1][i] < 0)
-                axes[1][i] += yField.getInput().getShape().length;
+                axes[1][i] += b.getResultShape().length;
 
         }
 
         List<Integer> listA = new ArrayList<>();
-        for (int i = 0; i < xField.getInput().getShape().length; i++) {
+        for (int i = 0; i < a.getResultShape().length; i++) {
             if (!Ints.contains(axes[0], i))
                 listA.add(i);
         }
@@ -196,7 +177,7 @@ public class TensorMmul extends BaseAccumulation {
 
 
         List<Integer> listB = new ArrayList<>();
-        for (int i = 0; i < yField.getInput().getShape().length; i++) {
+        for (int i = 0; i < b.getResultShape().length; i++) {
             if (!Ints.contains(axes[1], i))
                 listB.add(i);
         }
@@ -204,9 +185,9 @@ public class TensorMmul extends BaseAccumulation {
         int[] newAxesB = Ints.concat(axes[1], Ints.toArray(listB));
 
         int n2 = 1;
-        int aLength = Math.min(xField.getInput().getShape().length, axes[0].length);
+        int aLength = Math.min(a.getResultShape().length, axes[0].length);
         for (int i = 0; i < aLength; i++) {
-            n2 *= xField.getInput().getShape()[axes[0][i]];
+            n2 *= a.getResultShape()[axes[0][i]];
         }
 
         //if listA and listB are empty these do not initialize.
@@ -218,13 +199,13 @@ public class TensorMmul extends BaseAccumulation {
         } else {
             oldShapeA = Ints.toArray(listA);
             for (int i = 0; i < oldShapeA.length; i++)
-                oldShapeA[i] = xField.getInput().getShape()[oldShapeA[i]];
+                oldShapeA[i] = a.getResultShape()[oldShapeA[i]];
         }
 
         int n3 = 1;
-        int bNax = Math.min(yField.getInput().getShape().length, axes[1].length);
+        int bNax = Math.min(b.getResultShape().length, axes[1].length);
         for (int i = 0; i < bNax; i++) {
-            n3 *= yField.getInput().getShape()[axes[1][i]];
+            n3 *= b.getResultShape()[axes[1][i]];
         }
 
 
@@ -235,7 +216,7 @@ public class TensorMmul extends BaseAccumulation {
         } else {
             oldShapeB = Ints.toArray(listB);
             for (int i = 0; i < oldShapeB.length; i++)
-                oldShapeB[i] = yField.getInput().getShape()[oldShapeB[i]];
+                oldShapeB[i] = b.getResultShape()[oldShapeB[i]];
         }
 
 

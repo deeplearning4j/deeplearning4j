@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -145,11 +144,6 @@ public class Not extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         return new Not(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

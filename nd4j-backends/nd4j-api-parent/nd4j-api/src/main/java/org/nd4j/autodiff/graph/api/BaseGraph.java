@@ -7,5 +7,5 @@ public abstract class BaseGraph<V, E> implements IGraph<V, E> {
         addEdge(new Edge<>(from, to, value, directed));
     }
 
-    public abstract int getVertexInDegree(int vertex);
+    public abstract int getVertexInDegree(int[] vertex);
 }

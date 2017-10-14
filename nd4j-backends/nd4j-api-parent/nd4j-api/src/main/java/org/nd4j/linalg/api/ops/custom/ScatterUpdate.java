@@ -50,9 +50,9 @@ public class ScatterUpdate implements CustomOp {
                 throw new ND4JIllegalStateException("Can't update index higher then num tensors");
 
         this.op = DynamicCustomOp.builder("scatter_update")
-                .setInputs(original, updates)
+                .addInputs(original, updates)
                 .callInplace(true)
-                .setIntegerArguments(iargs.toArray(new Integer[0]))
+                .addIntegerArguments(iargs.toArray(new Integer[0]))
                 .build();
     }
 

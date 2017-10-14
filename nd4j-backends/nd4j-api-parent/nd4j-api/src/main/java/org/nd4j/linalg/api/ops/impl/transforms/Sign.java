@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -159,12 +158,6 @@ public class Sign extends BaseTransformOp {
                             xAlongDimension.length());
 
     }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().sign(arg().getValue(true));
-    }
-
 
 
     @Override

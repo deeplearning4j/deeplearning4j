@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -70,10 +69,6 @@ public class DropOut extends BaseRandomOp {
         this.extraArgs = new Object[] {p, (double) n};
     }
 
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

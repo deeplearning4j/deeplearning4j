@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -155,12 +154,6 @@ public class StandardDeviation extends Variance {
     }
 
 
-    @Override
-    public ArrayField doGetValue() {
-        return a().std(arg().doGetValue(),
-                biasCorrected ,
-                dimensions);
-    }
 
 
     @Override

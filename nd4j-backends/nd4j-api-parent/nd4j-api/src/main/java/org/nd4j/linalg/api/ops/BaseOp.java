@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.Data;
-import org.nd4j.autodiff.functions.Differential;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -278,6 +277,45 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
 
+    @Override
+    public Op opForDimension(int index, int dimension) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        throw new UnsupportedOperationException();
+    }
+
+
+
+    @Override
+    public CustomOp toCustomOp() {
+        DynamicCustomOp.DynamicCustomOpsBuilder customOpBuilder = DynamicCustomOp.builder(name());
+        customOpBuilder.callInplace(x() == z());
+
+        if(y() != null)
+            customOpBuilder.addInputs(x(),y());
+        else
+            customOpBuilder.addInputs(x());
+
+        customOpBuilder.addOutputs(z());
+        if(extraArgs != null) {
+            for(int i = 0; i < extraArgs.length; i++) {
+                if(extraArgs[i] instanceof Integer) {
+                    customOpBuilder.addIntegerArguments((Integer) extraArgs[i]);
+                }
+                else if(extraArgs[i] instanceof Double || extraArgs[i] instanceof Float) {
+                    Double num = (Double) extraArgs[i];
+                    customOpBuilder.addFloatingPointArguments(num);
+                }
+            }
+        }
+
+        return customOpBuilder.build();
+
+    }
+
     /**
      * Pairwise op (applicable with an individual element in y)
      *
@@ -372,7 +410,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
      */
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -149,13 +148,7 @@ public class DivOp extends BaseTransformOp {
     }
 
 
-    @Override
-    public ArrayField doGetValue() {
-        if(!isInPlace())
-            return larg().getValue(true).div(rarg().getValue(true));
-        else
-            return larg().getValue(true).divi(rarg().getValue(true));
-    }
+
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction gradWrtX = f().div(i_v.get(0),rarg());

@@ -16,7 +16,7 @@ import java.io.IOException;
 
 /**
  * Statistics about the normal distribution of values in data (means and standard deviations).
- * Can be constructed incrementally by using the Builder, which is useful for obtaining these statistics from an
+ * Can be constructed incrementally by using the DynamicCustomOpsBuilder, which is useful for obtaining these statistics from an
  * iterator. Can also load and save from files.
  *
  * @author Ede Meijer
@@ -65,7 +65,7 @@ public class DistributionStats implements NormalizerStats {
     }
 
     /**
-     * Builder class that can incrementally update a running mean and variance in order to create statistics for a
+     * DynamicCustomOpsBuilder class that can incrementally update a running mean and variance in order to create statistics for a
      * large set of data
      */
     public static class Builder implements NormalizerStats.Builder<DistributionStats> {

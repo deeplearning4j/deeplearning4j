@@ -38,6 +38,38 @@ public class ArrayUtil {
     private ArrayUtil() {}
 
     /**
+     *
+     * @param arrs
+     * @param check
+     * @return
+     */
+    public static boolean anyLargerThan(int[] arrs, int check) {
+        for(int i = 0; i < arrs.length; i++) {
+            if(arrs[i] > check)
+                return true;
+        }
+
+        return false;
+    }
+
+
+    /**
+     *
+     * @param arrs
+     * @param check
+     * @return
+     */
+    public static boolean anyLessThan(int[] arrs, int check) {
+        for(int i = 0; i < arrs.length; i++) {
+            if(arrs[i] < check)
+                return true;
+        }
+
+        return false;
+    }
+
+
+    /**
      * Repeat a value n times
      * @param n the number of times to repeat
      * @param toReplicate the value to repeat

@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -32,7 +31,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 import java.util.List;
 
 /**
- * Transpose function
+ * Tile function
  *
  * @author Adam Gibson
  */
@@ -167,11 +166,6 @@ public class Tile extends ShapeOp {
         else
             return new Tile(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().tile(arg().getValue(true),axis);
     }
 
 

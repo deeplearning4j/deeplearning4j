@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -56,11 +55,6 @@ public class UniformDistribution extends BaseRandomOp {
     @Override
     public String name() {
         return "distribution_uniform";
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return null;
     }
 
     @Override

@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.nd4j.autodiff.ArrayField;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -154,11 +154,6 @@ public class HardTanhDerivative extends BaseTransformOp {
             return new HardTanhDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension),
                             xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().hardTanhDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
     @Override

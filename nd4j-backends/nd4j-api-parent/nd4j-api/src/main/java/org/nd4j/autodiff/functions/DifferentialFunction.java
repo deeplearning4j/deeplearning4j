@@ -3,21 +3,20 @@ package org.nd4j.autodiff.functions;
 import com.google.common.base.Preconditions;
 import com.rits.cloning.Cloner;
 import lombok.*;
-import org.nd4j.autodiff.ArrayFactory;
-import org.nd4j.autodiff.ArrayField;
+
+import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,6 +46,7 @@ public abstract class DifferentialFunction implements Differential {
     @Setter
     protected boolean gradFunction;
 
+
     @Getter
     @Setter
     protected DifferentialFunction forwardFunction;
@@ -59,6 +59,7 @@ public abstract class DifferentialFunction implements Differential {
     @Setter
     protected DifferentialFunction[] args;
 
+
     @Getter
     @Setter
     protected Number scalarValue;
@@ -70,11 +71,43 @@ public abstract class DifferentialFunction implements Differential {
 
     protected Object[] extraArgs;
 
+
+    public int[] getOutputVertexIds() {
+        NDArrayVertex[] outputs = getVertices();
+        int[] ret = new int[outputs.length];
+        for(int i = 0; i < outputs.length; i++) {
+            ret[i] = outputs[i].vertexID();
+        }
+
+        return ret;
+    }
+
+    /**
+     * Return the output functions for this differential function.
+     * @return
+     */
+    public DifferentialFunction[] outputFunctions() {
+        return new DifferentialFunction[]{this};
+    }
+
+    /**
+     * Get the vertices of the outputs.
+     * @return
+     */
+    public NDArrayVertex[] getVertices() {
+        return new NDArrayVertex[] {getVertex()};
+    }
+
+    /**
+     * Get the vertex of the output.
+     * @return
+     */
     public NDArrayVertex getVertex() {
         if(vertex == null)
             return (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
         return vertex;
     }
+
 
     /**
      *
@@ -98,15 +131,24 @@ public abstract class DifferentialFunction implements Differential {
         this.extraArgs = extraArgs;
     }
 
+    public DifferentialFunction(SameDiff sameDiff, DifferentialFunction[] args) {
+        this(sameDiff,false,args);
+    }
+
+    public DifferentialFunction(SameDiff sameDiff, boolean inPlace, DifferentialFunction[] args) {
+        this.sameDiff = sameDiff;
+        this.inPlace = inPlace;
+        this.args = args;
+    }
 
     /**
      * Get the result shape for this function
      * @return
      */
     public int[] getResultShape() {
-        if(opState == null)
+        if(opState == null || opState.getResults() == null || opState.getResults().length > 1)
             throw new IllegalStateException("Unable to get result shape with null op state");
-        return opState.getResult().getShape();
+        return opState.getResults()[0].getShape();
     }
 
 
@@ -114,15 +156,22 @@ public abstract class DifferentialFunction implements Differential {
         return gradient;
     }
 
+
+    public List<DifferentialFunction> outputs() {
+        List<Edge<OpState>> opStates =  sameDiff.graph().getEdgesOut(new int[]{vertexId});
+        return Arrays.asList(opStates.get(0).getValue().getDifferentialFunction());
+    }
+
     public  boolean isVariable() {
         return false;
     }
 
-    /**
-     * Get the value of this function
-     * @return
-     */
-    public abstract ArrayField doGetValue();
+
+
+
+    public int depth() {
+        return getVertex().getDepth();
+    }
 
 
     /**
@@ -140,60 +189,6 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunctionFactory f() {
         return sameDiff.getFunctionFactory();
     }
-
-    /**
-     * Shortcut for the {@link ArrayFactory}
-     * @return
-     */
-    public ArrayFactory a() {
-        return sameDiff.getArrayFactory();
-    }
-
-
-    /**
-     * Get the value specifying
-     * whether to freeze the graph or not
-     * @param freeze whether to freeze the graph or not,
-     *               this means whether to add nodes to the internal
-     *               computation graph or not
-     * @return the value of this function
-     */
-    public  ArrayField getValue(boolean freeze) {
-        boolean graphAlreadyFrozen = this.sameDiff.getGraph().isFrozen();
-        //if graph is already frozen leave it frozen
-        if(freeze && !graphAlreadyFrozen) {
-            this.sameDiff.getGraph().freeze();
-        }
-
-        ArrayField val = doGetValue();
-        ArrayField arrayField = sameDiff.setupArrayField(val);
-        val = arrayField;
-        if(opState != null)
-            arrayField.getInput().setShape(getResultShape());
-        Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
-
-
-
-        if(!freeze) {
-            Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
-            NDArrayVertex vertex = (NDArrayVertex) getSameDiff().getGraph().getVertex(getVertexId());
-            arrayField.setVertex(vertex);
-            arrayField.setOps(this.sameDiff);
-            Preconditions.checkState(vertex != null,"Vertex " + getVertexId() + " was null.");
-            Preconditions.checkState(vertex.getValue() != null,"Vertex did not have a value set.");
-            arrayField.getInput().setScalarValue(vertex.getValue().getScalarValue());
-            arrayField.setInput(vertex.getValue());
-            Preconditions.checkState(sameDiff == arrayField.getOps(),"Passed in array factory != the passed in graph. Unable to instantiate.");
-
-        }
-
-        if(freeze && !graphAlreadyFrozen) {
-            this.sameDiff.getGraph().unfreeze();
-        }
-
-        return sameDiff.setupArrayField(val);
-    }
-
 
     @Override
     public  String getFormula(List<Variable> variables) {
@@ -245,7 +240,7 @@ public abstract class DifferentialFunction implements Differential {
         return vals;
     }
 
-    private void validateDifferentialFunctionGraph(DifferentialFunction function) {
+    protected void validateDifferentialFunctionGraph(DifferentialFunction function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
 
     }
@@ -287,7 +282,7 @@ public abstract class DifferentialFunction implements Differential {
     private INDArray getZ() {
         if(this.opState.isInPlace())
             return getX();
-        NDArrayInformation opId = opState.getResult();
+        NDArrayInformation opId = opState.getResults()[0];
         INDArray ret =  sameDiff.getVertexToArray().get(opId.getArrId());
         return ret;
     }
@@ -311,10 +306,10 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public NDArrayInformation getResult() {
-        if(opState == null || opState.getResult() == null) {
+        if(opState == null || opState.getResults() == null) {
             return  sameDiff.getVertexIdxToInfo().get(resultVertexId());
         }
-        return opState.getResult();
+        return opState.getResults()[0];
     }
 
     protected void addEdges(SameDiff sameDiff,
@@ -328,7 +323,6 @@ public abstract class DifferentialFunction implements Differential {
 
         validateDifferentialFunctionGraph(i_v1);
         validateDifferentialFunctionGraph(i_v2);
-        validateDifferentialFunctionsameDiff(i_v1.getValue(true));
 
 
         /**
@@ -342,16 +336,11 @@ public abstract class DifferentialFunction implements Differential {
          *
          *
          */
-        ArrayField v1 = i_v1.getValue(true);
         int v1VertexId = i_v1.resultVertexId();
-        ArrayField v2 = i_v2.getValue(true);
         int v2VertexId = i_v2.resultVertexId();
-        validateDifferentialFunctionsameDiff(v1);
-        validateDifferentialFunctionsameDiff(v2);
-
         NDArrayInformation arrInfo = inPlace ?  i_v1.getResult() : NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
-                .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
+                .id(opName +"(" + i_v1.getResult().getId() + "," + i_v2.getResult().getId() + ")")
                 .shape(shape).build();
         //result
         if(vertex == null) {
@@ -388,7 +377,7 @@ public abstract class DifferentialFunction implements Differential {
                     .vertexIds(sameDiff.generateVertexIds(v2VertexId,newVertex.vertexID()))
                     .n(ArrayUtil.prod(shape))
                     .extraArgs(extraArgs)
-                    .result(arrInfo)
+                    .results(new NDArrayInformation[]{arrInfo})
                     .build();
 
 
@@ -398,23 +387,23 @@ public abstract class DifferentialFunction implements Differential {
                     .opType(opType)
                     .opName(opName).inPlace(inPlace)
                     .differentialFunction(this)
-                    .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
+                    .id(opName + "(" + i_v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(sameDiff.generateVertexIds(v2VertexId,newVertex.vertexID()))
                     .n(ArrayUtil.prod(shape))
                     .extraArgs(extraArgs)
-                    .result(arrInfo)
+                    .results(new NDArrayInformation[]{arrInfo})
                     .build();
         }
 
         opState2 = OpState.builder()
                 .opType(opType).inPlace(inPlace)
-                .opName(opName).result(arrInfo)
-                .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .opName(opName)
+                .results(new NDArrayInformation[]{arrInfo})
+                .id(opName + "(" + i_v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(sameDiff.generateVertexIds(v1VertexId,newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape))
                 .extraArgs(extraArgs)
                 .differentialFunction(this)
-                .result(arrInfo)
                 .build();
 
 
@@ -483,13 +472,12 @@ public abstract class DifferentialFunction implements Differential {
         validateFunctionReference(i_v2);
 
 
-        ArrayField arrayField = i_v1.getValue(true);
         addEdges(sameDiff,
                 i_v1,
                 i_v2,
                 opName,
                 resolveType(),
-                arrayField.getInput().getShape());
+               i_v1.getResultShape());
 
 
     }
@@ -542,25 +530,6 @@ public abstract class DifferentialFunction implements Differential {
         return vertexId;
     }
 
-    protected void validateDifferentialFunctionsameDiff(
-            ArrayField function) {
-        if(sameDiff.getGraph().isFrozen())
-            return;
-        Preconditions.checkState(function != null,"Passed in function was null.");
-        Preconditions.checkState(function.getOps() ==
-                        this.getSameDiff(),
-                "Function applications must be contained " +
-                        "in same sameDiff. The left " + function +"" +
-                        " must match this function " + this);
-        Preconditions.checkState(sameDiff ==
-                this.getSameDiff(),"Function applications m" +
-                "ust be " +
-                "contained in same sameDiff. The left " + function +" " +
-                "must " +
-                "match this function " + this);
-
-    }
-
 
 
 
@@ -576,12 +545,10 @@ public abstract class DifferentialFunction implements Differential {
                             String opName,
                             int...shape) {
         validateFunctionReference(i_v1);
-        ArrayField v1 = i_v1.getValue(true);
-        validateDifferentialFunctionsameDiff(v1);
         NDArrayInformation information =   inPlace ? i_v1.getResult() :  NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
-                .id(opName + "(" + v1.getInput().getId() + " -> " +
-                        v1.getInput().getId() + ")")
+                .id(opName + "(" + i_v1.getResult().getId() + " -> " +
+                        i_v1.getResult().getId() + ")")
                 .shape(shape).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
@@ -596,9 +563,9 @@ public abstract class DifferentialFunction implements Differential {
                 .opType(resolveType()).differentialFunction(this)
                 .opName(opName).inPlace(inPlace)
                 .extraArgs(extraArgs).axes(dimensions)
-                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                .vertexIds(sameDiff.generateVertexIds(v1.getVertex().vertexID(),newVertex.vertexID()))
-                .n(ArrayUtil.prod(shape)).result(information)
+                .id(opName + "(" + i_v1.getResult().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(sameDiff.generateVertexIds(i_v1.getVertex().vertexID(),newVertex.vertexID()))
+                .n(ArrayUtil.prod(shape)).results(new NDArrayInformation[] { information })
                 .build();
 
 
@@ -612,9 +579,9 @@ public abstract class DifferentialFunction implements Differential {
 
         newVertex.setOpState(owner);
         information.setOwner(owner);
-        owner.setResult(information);
+        owner.setResults(new NDArrayInformation[]{information});
         if(owner.isInPlace()) {
-            information.setArrId(v1.getInput().getArrId());
+            information.setArrId(i_v1.getResult().getArrId());
         }
 
         this.opState = owner;
@@ -677,9 +644,7 @@ public abstract class DifferentialFunction implements Differential {
             DifferentialFunction function) {
 
         Preconditions.checkState(function != null,"Passed in function was null.");
-        ArrayField a = getValue(true);
-        Preconditions.checkState(a.getOps() == sameDiff);
-        Preconditions.checkState(a.getOps() == function.getSameDiff());
+        Preconditions.checkState(function.getSameDiff() == sameDiff);
 
         Preconditions.checkState(function.getSameDiff() ==
                         this.getSameDiff(),
@@ -694,6 +659,11 @@ public abstract class DifferentialFunction implements Differential {
                 "match this function " + this);
 
     }
+
+    protected int fromBoolean(boolean bool) {
+        return bool ? 1 : 0;
+    }
+
 
 
 }

@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -128,15 +127,6 @@ public class ScalarGreaterThanOrEqual extends BaseScalarOp {
             return new ScalarGreaterThanOrEqual(x.tensorAlongDimension(index, dimension), complexNumber);
     }
 
-    /**
-     * Get the value of this function
-     *
-     * @return
-     */
-    @Override
-    public ArrayField doGetValue() {
-        return null;
-    }
 
 
     @Override

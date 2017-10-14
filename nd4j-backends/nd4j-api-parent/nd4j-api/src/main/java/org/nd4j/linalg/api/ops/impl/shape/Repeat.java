@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -162,12 +161,6 @@ public class Repeat extends ShapeOp {
         else
             return new Repeat(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
-
-    @Override
-    public ArrayField doGetValue() {
-        int axis = (int) extraArgs[0];
-        return sameDiff.getArrayFactory().rollAxis(arg().getValue(true),axis);
     }
 
 

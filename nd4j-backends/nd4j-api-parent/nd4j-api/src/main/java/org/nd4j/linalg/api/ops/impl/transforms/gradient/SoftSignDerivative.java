@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -148,12 +147,6 @@ public class SoftSignDerivative extends BaseTransformOp {
     private static double ssderiv(double x) {
         double y = 1 + FastMath.abs(x);
         return 1.0 / (y * y);
-    }
-
-
-    @Override
-    public ArrayField doGetValue() {
-        return a().softsignDeriviative(larg().getValue(true),rarg().getValue(true));
     }
 
 

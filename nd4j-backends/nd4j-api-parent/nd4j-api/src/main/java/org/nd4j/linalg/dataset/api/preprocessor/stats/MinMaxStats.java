@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 /**
  * Statistics about the lower bounds and upper bounds of values in data.
- * Can be constructed incrementally by using the Builder,
+ * Can be constructed incrementally by using the DynamicCustomOpsBuilder,
  * which is useful for obtaining these statistics from an
  * iterator.
  *
@@ -68,7 +68,7 @@ public class MinMaxStats implements NormalizerStats {
     }
 
     /**
-     * Builder class that can incrementally update a running lower and upper bound in order to create statistics for a
+     * DynamicCustomOpsBuilder class that can incrementally update a running lower and upper bound in order to create statistics for a
      * large set of data
      */
     public static class Builder implements NormalizerStats.Builder<MinMaxStats> {
