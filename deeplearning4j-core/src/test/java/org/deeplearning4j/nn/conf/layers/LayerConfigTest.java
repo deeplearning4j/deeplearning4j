@@ -229,7 +229,7 @@ public class LayerConfigTest {
 
         conf = new NeuralNetConfiguration.Builder().updater(new RmsProp(1.0, 2.0, RmsProp.DEFAULT_RMSPROP_EPSILON)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).updater(new RmsProp(1.0, 1.0, RmsProp.DEFAULT_RMSPROP_EPSILON)).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new AdaDelta.Builder().rho(0.5).build()).build())
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new AdaDelta(0.5,AdaDelta.DEFAULT_ADADELTA_EPSILON)).build())
                         .build();
 
         net = new MultiLayerNetwork(conf);

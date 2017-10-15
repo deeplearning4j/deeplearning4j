@@ -88,9 +88,9 @@ public class MinMaxNormConstraint extends BaseConstraint {
         INDArray norm = param.norm2(dimensions);
         INDArray clipped = norm.unsafeDuplication();
         CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                .setInputs(clipped)
+                .addInputs(clipped)
                 .callInplace(true)
-                .setFloatingPointArguments(min, max)
+                .addFloatingPointArguments(min, max)
                 .build();
         Nd4j.getExecutioner().exec(op);
 

@@ -27,9 +27,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
+/**
+ * An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication or by selecting the maximum.
  * Addition, Average, Max and Product may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
+ *
  * @author Alex Black
  */
 @Data
@@ -90,7 +92,7 @@ public class ElementWiseVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+                                                                      INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op op;
         switch (this.op) {
             case Add:
@@ -124,9 +126,9 @@ public class ElementWiseVertex extends GraphVertex {
             for (int i = 1; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != first.getType()) {
                     throw new InvalidInputTypeException(
-                                    "Invalid input: ElementWise vertex cannot process activations of different types:"
-                                                    + " first type = " + first.getType() + ", input type " + (i + 1)
-                                                    + " = " + vertexInputs[i].getType());
+                            "Invalid input: ElementWise vertex cannot process activations of different types:"
+                                    + " first type = " + first.getType() + ", input type " + (i + 1)
+                                    + " = " + vertexInputs[i].getType());
                 }
             }
         } else {
@@ -139,9 +141,9 @@ public class ElementWiseVertex extends GraphVertex {
             for (int i = 1; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != InputType.Type.CNN) {
                     throw new InvalidInputTypeException(
-                                    "Invalid input: ElementWise vertex cannot process activations of different types:"
-                                                    + " first type = " + InputType.Type.CNN + ", input type " + (i + 1)
-                                                    + " = " + vertexInputs[i].getType());
+                            "Invalid input: ElementWise vertex cannot process activations of different types:"
+                                    + " first type = " + InputType.Type.CNN + ", input type " + (i + 1)
+                                    + " = " + vertexInputs[i].getType());
                 }
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
@@ -152,9 +154,9 @@ public class ElementWiseVertex extends GraphVertex {
 
                 if (fd != od || fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(
-                                    "Invalid input: ElementWise vertex cannot process CNN activations of different sizes:"
-                                                    + "first [depth,width,height] = [" + fd + "," + fw + "," + fh
-                                                    + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
+                            "Invalid input: ElementWise vertex cannot process CNN activations of different sizes:"
+                                    + "first [depth,width,height] = [" + fd + "," + fw + "," + fh
+                                    + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
                 }
             }
         }
@@ -165,6 +167,6 @@ public class ElementWiseVertex extends GraphVertex {
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //No working memory in addition to output activations
         return new LayerMemoryReport.Builder(null, ElementWiseVertex.class, inputTypes[0], inputTypes[0])
-                        .standardMemory(0, 0).workingMemory(0, 0, 0, 0).cacheMemory(0, 0).build();
+                .standardMemory(0, 0).workingMemory(0, 0, 0, 0).cacheMemory(0, 0).build();
     }
 }

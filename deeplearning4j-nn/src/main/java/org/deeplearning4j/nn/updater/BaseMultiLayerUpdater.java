@@ -346,9 +346,9 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             case ClipElementWiseAbsoluteValue:
                 if (layerGradientView != null) {
                     CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                            .setInputs(layerGradientView)
+                            .addInputs(layerGradientView)
                             .callInplace(true)
-                            .setFloatingPointArguments(-threshold, threshold)
+                            .addFloatingPointArguments(-threshold, threshold)
                             .build();
                     Nd4j.getExecutioner().exec(op);
                 }
