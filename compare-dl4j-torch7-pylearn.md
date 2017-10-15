@@ -3,7 +3,7 @@ title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Caffe vs. TensorF
 layout: default
 ---
 
-# Comparing Top Deep Learning Frameworks: Deeplearning4j, PyTorch, TensorFlow, Caffe, Keras, MxNet, Paddle & CNTK
+# Comparing Top Deep Learning Frameworks: Deeplearning4j, PyTorch, TensorFlow, Caffe, Keras, MxNet & CNTK
 
 Deeplearning4j is distinguished from other frameworks in its API languages, intent and integrations. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** that solves problems involving massive amounts of data in a reasonable amount of time. It integrates with Kafka, Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. 
 
@@ -26,6 +26,7 @@ Python Frameworks
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
 * <a href="#dsstne">DyNet</a>
+* <a href="#gluon">Gluon</a>
 * <a href="#keras">Keras</a>
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
@@ -41,7 +42,7 @@ JVM Considerations
 * <a href="#ml">Machine-Learning Frameworks</a>
 * <a href="#tutorial">Further Reading</a>
 
-### <a name="torch">Torch & Pytorch</a>
+### <a name="torch">Pytorch & Torch</a>
 
 A Python version of Torch, known as [Pytorch](https://github.com/pytorch/pytorch), was open-sourced by Facebook in January 2017. PyTorch offers dynamic computation graphs, which let you process variable-length inputs and outputs, which is useful when working with RNNs, for example. In September 2017, Jeremy Howard's and Rachael Thomas's well-known deep-learning course fast.ai adopted [Pytorch](http://www.fast.ai/2017/09/08/introducing-pytorch-for-fastai/). Since it's introduction, PyTorch has quickly become the favorite among machine-learning researchers, because it allows certain complex architectures to be built easily. Other frameworks that support dynamic computation graphs are CMU's DyNet and PFN's Chainer. 
 
@@ -59,8 +60,6 @@ Pros and Cons:
 * (-) You usually write your own training code (Less plug and play)
 * (-) No commercial support
 * (-) Spotty documentation
-
-## Python Frameworks
 
 ### <a name="tensorflow">TensorFlow</a>
 
@@ -174,6 +173,13 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 * (+) Dynamic computation graph
 * (-) Small user community
+
+### <a name="gluon">Gluon</a>
+
+Named after a subatomic particle, Gluon is an API over Amazon's MxNet that was [introduced](http://www.businesswire.com/news/home/20171012005742/en/AWS-Microsoft-Announce-Gluon-Making-Deep-Learning) by Amazon and Microsoft in October 2017. It will also integrate with Microsoft's CNTK. While it is similar to Keras in its intent and place in the stack, it is distinguished by its dynamic computation graph, similar to Pytorch and Chainer, and unlike TensorFlow or Caffe. On a business level, Gluon is an attempt by Amazon and Microsoft to carve out a user base separate from TensorFlow and Keras, as both camps seek to control the API that mediates UX and neural net training.    
+
+* [Gluon API on GitHub](https://github.com/gluon-api/gluon-api/)
+* Zachary Lipton's [MxNet Gluon Tutorial](https://github.com/zackchase/gluon-slides/blob/master/sept18-gluon.pdf) (PDF)
 
 ### <a name="keras">Keras</a>
 
