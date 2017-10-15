@@ -1,18 +1,18 @@
-Deeplearning4J: Neural Networks for Java/JVM
+Eclipse Deeplearning4J: Neural Networks for Java/JVM
 =========================
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.deeplearning4j/deeplearning4j-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.deeplearning4j/deeplearning4j-core)
 [![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.deeplearning4j/deeplearning4j-core/badge.svg)](http://deeplearning4j.org/doc)
 
-Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net library written in Java and Scala. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
+Eclipse Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net library written in Java and Scala. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping.
 
 The most recent stable release in Maven Central is `0.9.1`, and the current master is `0.9.2-SNAPSHOT`.
 
 ---
-## Using Deeplearning4j
+## Using Eclipse Deeplearning4j
 
 To get started using Deeplearning4j, please go to our [Quickstart](http://deeplearning4j.org/quickstart.html). You'll need to be familiar with a Java automated build tool such as Maven and an IDE such as IntelliJ.
 

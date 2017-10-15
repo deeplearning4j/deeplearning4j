@@ -58,14 +58,14 @@ public class Hdf5Archive {
     private hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
 
     public Hdf5Archive(String archiveFilename) {
-        this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY);
+        this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY());
     }
 
     private hdf5.Group[] openGroups(String ... groups) {
         hdf5.Group[] groupArray = new hdf5.Group[groups.length];
-        groupArray[0] = this.file.asCommonFG().openGroup(groups[0]);
+        groupArray[0] = this.file.openGroup(groups[0]);
         for (int i = 1; i < groups.length; i++) {
-            groupArray[i] = groupArray[i - 1].asCommonFG().openGroup(groups[i]);
+            groupArray[i] = groupArray[i - 1].openGroup(groups[i]);
         }
         return groupArray;
     }
@@ -86,9 +86,9 @@ public class Hdf5Archive {
      */
     public INDArray readDataSet(String datasetName, String... groups) throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
-            return readDataSet(this.file.asCommonFG(), datasetName);
+            return readDataSet(this.file, datasetName);
         hdf5.Group[] groupArray = openGroups(groups);
-        INDArray a = readDataSet(groupArray[groupArray.length - 1].asCommonFG(), datasetName);
+        INDArray a = readDataSet(groupArray[groupArray.length - 1], datasetName);
         closeGroups(groupArray);
         return a;
     }
@@ -153,9 +153,9 @@ public class Hdf5Archive {
      */
     public List<String> getDataSets(String... groups) {
         if (groups.length == 0)
-            return getObjects(this.file.asCommonFG(), H5O_TYPE_DATASET);
+            return getObjects(this.file, H5O_TYPE_DATASET);
         hdf5.Group[] groupArray = openGroups(groups);
-        List<String> ls = getObjects(groupArray[groupArray.length - 1].asCommonFG(), H5O_TYPE_DATASET);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1], H5O_TYPE_DATASET);
         closeGroups(groupArray);
         return ls;
     }
@@ -168,9 +168,9 @@ public class Hdf5Archive {
      */
     public List<String> getGroups(String... groups) {
         if (groups.length == 0)
-            return getObjects(this.file.asCommonFG(), H5O_TYPE_GROUP);
+            return getObjects(this.file, H5O_TYPE_GROUP);
         hdf5.Group[] groupArray = openGroups(groups);
-        List<String> ls = getObjects(groupArray[groupArray.length - 1].asCommonFG(), H5O_TYPE_GROUP);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1], H5O_TYPE_GROUP);
         closeGroups(groupArray);
         return ls;
     }
@@ -178,12 +178,12 @@ public class Hdf5Archive {
     /**
      * Read data set as ND4J array from HDF5 group.
      *
-     * @param fileGroup     HDF5 file or group (as CommonFG)
+     * @param fileGroup     HDF5 file or group
      * @param datasetName   Name of data set
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName)
+    private INDArray readDataSet(hdf5.Group fileGroup, String datasetName)
                     throws UnsupportedKerasConfigurationException {
         hdf5.DataSet dataset = fileGroup.openDataSet(datasetName);
         hdf5.DataSpace space = dataset.getSpace();
@@ -252,11 +252,11 @@ public class Hdf5Archive {
     /**
      * Get list of objects with a given type from a file group.
      *
-     * @param fileGroup     HDF5 file or group (as CommonFG)
+     * @param fileGroup     HDF5 file or group
      * @param objType       Type of object as integer
      * @return
      */
-    private List<String> getObjects(hdf5.CommonFG fileGroup, int objType) {
+    private List<String> getObjects(hdf5.Group fileGroup, int objType) {
         List<String> groups = new ArrayList<String>();
         for (int i = 0; i < fileGroup.getNumObjs(); i++) {
             BytePointer objPtr = fileGroup.getObjnameByIdx(i);

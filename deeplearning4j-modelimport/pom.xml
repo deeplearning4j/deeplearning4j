@@ -27,7 +27,7 @@
     </parent>
     <packaging>jar</packaging>
     <properties>
-        <hdf5.version>1.10.0-patch1</hdf5.version>
+        <hdf5.version>1.10.1</hdf5.version>
     </properties>
     <build>
         <pluginManagement>
