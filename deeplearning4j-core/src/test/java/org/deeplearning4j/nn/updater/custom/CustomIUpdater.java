@@ -17,6 +17,7 @@ public class CustomIUpdater implements IUpdater {
 
     private double learningRate;
 
+
     public CustomIUpdater() {
         this(DEFAULT_SGD_LR);
     }

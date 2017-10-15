@@ -103,8 +103,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Max:
                 INDArray max =  Nd4j.createUninitialized(inputs[0].shape(), inputs[0].ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
-                        .setInputs(inputs)
-                        .setOutputs(max)
+                        .addInputs(inputs)
+                        .addOutputs(max)
                         .callInplace(false)
                         .build();
                 Nd4j.getExecutioner().exec(op);
@@ -153,8 +153,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 INDArray[] outMax = new INDArray[nInForwardPass];
                 INDArray maxIndices = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
-                        .setInputs(inputs)
-                        .setOutputs(maxIndices)
+                        .addInputs(inputs)
+                        .addOutputs(maxIndices)
                         .callInplace(false)
                         .build();
                 Nd4j.getExecutioner().exec(op);

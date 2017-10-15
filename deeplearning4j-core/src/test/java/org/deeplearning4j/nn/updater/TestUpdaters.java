@@ -238,7 +238,7 @@ public class TestUpdaters {
         NeuralNetConfiguration conf =
                 new NeuralNetConfiguration.Builder().iterations(iteration)
                         .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
-                                .updater(new Nadam.Builder().learningRate(lr).beta1(beta1)
+                                .updater(Nadam.builder().learningRate(lr).beta1(beta1)
                                         .beta2(beta2).epsilon(epsilon).build())
                                 .build())
                         .build();
