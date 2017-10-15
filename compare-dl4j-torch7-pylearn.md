@@ -142,7 +142,7 @@ Pros and Cons
 
 ### <a name="caffe2">Caffe2</a>
 
-[**Caffe2**](https://caffe2.ai/) is the long-awaited successor to the original Caffe, whose creator now works at Facebook. Caffe2 is the second deep-learning framework to be [backed by Facebook](https://techcrunch.com/2017/04/18/facebook-open-sources-caffe2-its-flexible-deep-learning-framework-of-choice/) after Torch/PyTorch. The main difference seems to be the claim that Caffe2 is more scalable and light-weight. Like Caffe and PyTorch, Caffe2 offers a Python API running on a C++ engine. 
+[**Caffe2**](https://caffe2.ai/) is the long-awaited successor to the original Caffe, whose creator Yangqing Jia now works at Facebook. Caffe2 is the second deep-learning framework to be [backed by Facebook](https://techcrunch.com/2017/04/18/facebook-open-sources-caffe2-its-flexible-deep-learning-framework-of-choice/) after Torch/PyTorch. The main difference seems to be the claim that Caffe2 is more scalable and light-weight. It purports to be deep learning for production environments. Like Caffe and PyTorch, Caffe2 offers a Python API running on a C++ engine. 
 
 * [Caffe2's GitHub repository](https://github.com/caffe2/caffe2)
 
@@ -165,7 +165,7 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 * (+) Handles Sparse encoding
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
-* (-) Amazon has chosen another framework for use on AWS.
+* (-) Amazon has chosen another framework for use on AWS, MxNet
 
 ### <a name="dynet">DyNet</a>
 
