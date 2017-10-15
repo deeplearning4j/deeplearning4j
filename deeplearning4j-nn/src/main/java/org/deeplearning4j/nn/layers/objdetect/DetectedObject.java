@@ -69,7 +69,8 @@ public class DetectedObject {
      */
     public int getPredictedClass(){
         if(predictedClass == -1){
-            predictedClass = classPredictions.argMax(1).getInt(0);
+            // ravel in case we get a column vector
+            predictedClass = classPredictions.ravel().argMax(1).getInt(0);
         }
         return predictedClass;
     }
