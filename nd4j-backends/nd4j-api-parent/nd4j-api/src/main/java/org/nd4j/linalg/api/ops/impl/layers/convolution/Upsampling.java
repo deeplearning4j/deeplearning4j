@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.ops.impl.transforms.convolution;
+package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -8,8 +8,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -49,13 +47,7 @@ public class Upsampling extends DynamicCustomOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        UpsamplingDerivative upsamplingDerivative = UpsamplingDerivative.sameDiffDerivativeBuilder()
-                .scaleFactor(scaleFactor)
-                .inputs(f1.toArray(new DifferentialFunction[f1.size()]))
-                .build();
-        List<DifferentialFunction> ret = new ArrayList<>();
-        ret.addAll(Arrays.asList(upsamplingDerivative.getOutputFunctions()));
-        return ret;
+        return null;
     }
 
 }

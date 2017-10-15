@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.ops.impl.transforms.convolution;
+package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;

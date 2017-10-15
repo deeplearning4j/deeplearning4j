@@ -1,9 +1,8 @@
-package org.nd4j.linalg.api.ops.impl.transforms.convolution;
+package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;

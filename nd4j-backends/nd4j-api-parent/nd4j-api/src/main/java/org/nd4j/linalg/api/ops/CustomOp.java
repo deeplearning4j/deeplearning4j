@@ -31,14 +31,39 @@ public interface CustomOp {
     boolean isInplaceCall();
 
 
+    /**
+     * Input arguments for
+     * this op
+     * @return
+     */
     List<INDArray> getInputArguments();
 
+    /**
+     * Output arguments for this
+     * @return
+     */
     List<INDArray> getOutputArguments();
 
+    /**
+     * Integer input arguments for this
+     * @return
+     */
     List<Integer> getIArguments();
 
+    /**
+     * Floating point arguments
+     * for this op.
+     * The "T" stands for
+     * a generic floating point type
+     * in c++.
+     * @return
+     */
     List<Double> getTArguments();
 
 
+    /**
+     * Calculate the output shape for this op
+     * @return
+     */
     List<int[]> calculateOutputShape();
 }

@@ -44,7 +44,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public DynamicCustomOp(String opName, SameDiff sameDiff, DifferentialFunction[] args) {
         super(sameDiff, args);
         this.opName = opName;
-        addEdges(sameDiff,opName, Op.Type.CUSTOM,extraArgs);
+        if(this.opName == null) {
+            this.opName = opName();
+        }
+
+        addEdges(sameDiff,opName(), Op.Type.CUSTOM,extraArgs);
     }
 
     /**
@@ -63,6 +67,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         this.tArguments = tArguments;
         this.iArguments = iArguments;
+        if(this.opName == null) {
+            this.opName = opName();
+        }
     }
 
 
@@ -93,10 +100,16 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        if(this.opName == null) {
+            this.opName = opName();
+        }
     }
 
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
+        if(this.opName == null) {
+            this.opName = opName();
+        }
     }
 
     /**

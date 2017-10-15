@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.ops.impl.transforms.convolution.config;
+package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
 
 import lombok.AllArgsConstructor;

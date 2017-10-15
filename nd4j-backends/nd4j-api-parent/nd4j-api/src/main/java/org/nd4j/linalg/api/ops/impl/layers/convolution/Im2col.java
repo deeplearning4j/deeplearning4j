@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.ops.impl.transforms.convolution;
+package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -15,7 +15,7 @@ import java.util.List;
 public class Im2col extends DynamicCustomOp {
 
     private int kh, kw, sy, sx, ph, pw, dh, dw;
-    boolean isSameMode;
+    private boolean isSameMode;
 
     @Builder(builderMethodName = "sameDiffBuilder")
     public Im2col(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {

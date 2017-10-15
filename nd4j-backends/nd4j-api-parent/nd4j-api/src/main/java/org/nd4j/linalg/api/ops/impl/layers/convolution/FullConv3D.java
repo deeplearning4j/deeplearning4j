@@ -1,8 +1,8 @@
-package org.nd4j.linalg.api.ops.impl.transforms.convolution;
+package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.Differential;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,31 +14,17 @@ import java.util.List;
 
 
 /**
- * Conv3D operation
+ * FullConv3D operation
  */
 @Slf4j
-@Getter
-public class Conv3D extends DynamicCustomOp {
-   
-     private int dT;
-     private int dW;
-     private int dH;
-     private int pT;
-     private int pW;
-     private int pH;
-     private int dilationT;
-     private int dilationW;
-     private int dilationH;
-     private int aT;
-     private int aW;
-     private int aH;
-     private boolean biasUsed;
+public class FullConv3D extends DynamicCustomOp {
 
-    public Conv3D() {}
+    private int dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH,aT,aW,aH;
+    private boolean biasUsed;
 
     @Builder(builderMethodName = "sameDiffBuilder")
-    public Conv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions,boolean inPlace, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
-        super(null,sameDiff, inputFunctions, inPlace);
+    public FullConv3D(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
+        super(null,sameDiff, inputs, inPlace);
         this.dT = dT;
         this.dW = dW;
         this.dH = dH;
@@ -52,12 +38,11 @@ public class Conv3D extends DynamicCustomOp {
         this.aW = aW;
         this.aH = aH;
         this.biasUsed = biasUsed;
-       addArgs();
-
+        addArgs();
     }
 
     @Builder(builderMethodName = "execBuilder")
-    public Conv3D(INDArray[] inputs, INDArray[] outputs, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
+    public FullConv3D(INDArray[] inputs, INDArray[] outputs, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
         super(null,inputs,outputs);
         this.dT = dT;
         this.dW = dW;
@@ -75,6 +60,10 @@ public class Conv3D extends DynamicCustomOp {
         addArgs();
     }
 
+    public FullConv3D() {}
+
+
+
     private void addArgs() {
         getIArguments().add(dT);
         getIArguments().add(dW);
@@ -90,37 +79,38 @@ public class Conv3D extends DynamicCustomOp {
         getIArguments().add(aH);
         getIArguments().add(fromBoolean(biasUsed));
 
+
     }
 
     @Override
     public String opName() {
-        return "conv3d";
+        return "fullconv3d";
     }
-
 
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
         List<DifferentialFunction> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
-        inputs.add(f1.get(0));
-        Conv3DDerivative conv3DDerivative = Conv3DDerivative.sameDiffDerivativeBuilder()
-                .dH(dH)
-                .dT(dT)
-                .biasUsed(biasUsed)
-                .aT(aT)
+        inputs.addAll(f1);
+        List<DifferentialFunction> ret = new ArrayList<>();
+        FullConv3DDerivative fullConv3DDerivative = FullConv3DDerivative.sameDiffDerivativeBuilder()
                 .aH(aH)
                 .aW(aW)
+                .aT(aT)
+                .biasUsed(biasUsed)
+                .dH(dH)
+                .dW(dW)
+                .dT(dT)
                 .dilationH(dilationH)
                 .dilationT(dilationT)
                 .dilationW(dilationW)
                 .pH(pH)
-                .pW(pW)
                 .pT(pT)
+                .pW(pW)
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv3DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(fullConv3DDerivative.getOutputFunctions()));
         return ret;
     }
 
