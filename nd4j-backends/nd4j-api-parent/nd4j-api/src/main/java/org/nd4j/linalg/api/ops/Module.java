@@ -1,5 +1,8 @@
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * A Module is a {@link CustomOp}
  * with varying input arguments
@@ -13,8 +16,9 @@ public interface Module extends CustomOp {
 
     /**
      *
+     * @param inputs
      */
-    void exec();
+    void exec(INDArray... inputs);
 
 
     Module[] subModules();
@@ -23,7 +27,7 @@ public interface Module extends CustomOp {
     void addModule(Module module);
 
 
-    void execSameDiff();
+    void execSameDiff(DifferentialFunction... input);
 
 
 
