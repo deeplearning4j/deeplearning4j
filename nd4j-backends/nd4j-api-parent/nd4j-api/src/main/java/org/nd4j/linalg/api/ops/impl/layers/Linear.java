@@ -25,13 +25,16 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Linear extends BaseModule {
-
-    private Mmul forward;
+    private DifferentialFunction forward;
     private int nIn,nOut;
     private WeightInitScheme weightInitScheme,biasWeightInitScheme;
 
     @Builder(builderMethodName = "execBuilder")
-    public Linear(INDArray input,int nIn,int nOut,WeightInitScheme weightInitScheme,WeightInitScheme biasWeightInitScheme) {
+    public Linear(INDArray input,
+                  int nIn,
+                  int nOut,
+                  WeightInitScheme weightInitScheme,
+                  WeightInitScheme biasWeightInitScheme) {
         super(null,
                 getParams(nIn,nOut,weightInitScheme,biasWeightInitScheme),
                 new INDArray[]{Nd4j.create(Shape.getMatrixMultiplyShape(input.shape(),
@@ -74,6 +77,8 @@ public class Linear extends BaseModule {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
+        ret.add(Shape.getMatrixMultiplyShape(getInputArguments().get(0).shape(),new int[]{nOut,nIn}));
+
         ret.add(Shape.getMatrixMultiplyShape(getInputArguments().get(0).shape(),getInputArguments().get(1).transpose().shape()));
         if(biasWeightInitScheme != null) {
             ret.add(new int[]{nOut,1});
@@ -105,8 +110,15 @@ public class Linear extends BaseModule {
         }
 
         if(forward == null) {
-            forward =  new Mmul(sameDiff, args()[0], args()[1],
-                    MMulTranspose.builder().transposeA(false).transposeB(true).build());
+            //bias needs to be addeed yet
+            if(args.length > 1)
+                forward =  f().add(new Mmul(sameDiff, args()[0], args()[1],
+                        MMulTranspose.builder().transposeA(false).transposeB(true).build()),args()[1]);
+            else {
+                forward = new Mmul(sameDiff, args()[0], args()[1],
+                        MMulTranspose.builder().transposeA(false).transposeB(true).build();
+            }
+
             this.outputFunctions = forward.outputFunctions();
         }
 
