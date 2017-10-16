@@ -11,7 +11,6 @@ import org.nd4j.linalg.api.ops.Module;
 import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.WeightInitScheme;
 
 import java.util.ArrayList;
@@ -29,15 +28,13 @@ public class Linear extends BaseModule {
     private WeightInitScheme weightInitScheme,biasWeightInitScheme;
 
     @Builder(builderMethodName = "execBuilder")
-    public Linear(INDArray input,
-                  int nIn,
+    public Linear(int nIn,
                   int nOut,
                   WeightInitScheme weightInitScheme,
                   WeightInitScheme biasWeightInitScheme) {
         super(null,
                 getParams(nIn,nOut,weightInitScheme,biasWeightInitScheme),
-                new INDArray[]{Nd4j.create(Shape.getMatrixMultiplyShape(input.shape(),
-                        new int[]{nOut,nIn}))},
+                new INDArray[]{},
                 new ArrayList<Double>(), new ArrayList<Integer>(),new ArrayList<Module>());
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
@@ -49,10 +46,9 @@ public class Linear extends BaseModule {
     public Linear(SameDiff sameDiff,
                   int nIn,
                   int nOut,
-                  DifferentialFunction input,
                   WeightInitScheme weightInitScheme,
                   WeightInitScheme biasWeightInitScheme) {
-        super(null, sameDiff, new DifferentialFunction[]{input}, false, new ArrayList<Module>());
+        super(null, sameDiff, null, false, new ArrayList<Module>());
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
 
@@ -86,28 +82,28 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public void exec() {
+    public void exec(INDArray... inputs) {
         if(this.getInputArguments().isEmpty()) {
             throw new IllegalStateException("No arguments found.");
         }
 
-        INDArray input = getInputArguments().get(0);
+        INDArray weights = getInputArguments().get(0);
         INDArray right = getInputArguments().get(1);
         if(getOutputArguments().isEmpty()) {
             if(getInputArguments().size() == 1)
-                getOutputArguments().add(input.mmul(right.transpose()));
+                getOutputArguments().add(inputs[0].mmul(weights.transpose()));
             else
-                getOutputArguments().add(input.mmul(right.transpose()).addiRowVector(getInputArguments().get(2)));
+                getOutputArguments().add(inputs[0].mmul(weights.transpose()).addiColumnVector(right));
 
         }
         else {
-            input.mmul(right.transpose(),getOutputArguments().get(0));
+            inputs[0].mmul(weights.transpose(),getOutputArguments().get(0));
         }
 
     }
 
     @Override
-    public void execSameDiff() {
+    public void execSameDiff(DifferentialFunction... input) {
         if(args == null || args.length == 0) {
             throw new IllegalStateException("No arguments found");
         }

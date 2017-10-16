@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
@@ -21,6 +22,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.weightinit.impl.UniformInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.util.*;
 
@@ -431,6 +434,22 @@ public class SameDiffTests {
 
 
     @Test
+    public void testLinearModule() {
+        int nIn = 5;
+        Linear linear = Linear.execBuilder()
+                .nIn(nIn)
+                .nOut(4)
+                .weightInitScheme(new UniformInitScheme('f',nIn))
+                .biasWeightInitScheme(new ZeroInitScheme('f'))
+                .build();
+        linear.exec(Nd4j.linspace(1,20,20).reshape(4,5));
+        assertEquals(1,linear.getOutputArguments().size());
+
+    }
+
+
+
+    @Test
     public void testInPlaceAdd() {
         SameDiff sameDiff = SameDiff.create();
         SDVariable toAdd = sameDiff.var("arr1",Nd4j.ones(2,2));
@@ -468,7 +487,7 @@ public class SameDiffTests {
 
     @Test
     public void testAutoBroadcastAddMatrixector() {
-       SameDiff sameDiff = SameDiff.create();
+        SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray row = Nd4j.ones(2);
         INDArray assertion = arr.add(1.0);
