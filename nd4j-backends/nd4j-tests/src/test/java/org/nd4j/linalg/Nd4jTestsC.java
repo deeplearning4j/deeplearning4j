@@ -195,6 +195,33 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testAutoBroadcastShape() {
+        int[] assertion = {2,2,2,5};
+        int[] shapeTest = Shape.broadcastOutputShape(new int[]{2,1,2,1},new int[]{2,1,5});
+        assertArrayEquals(assertion,shapeTest);
+    }
+
+    @Test
+    @Ignore //temporary till libnd4j implements general broadcasting
+    public void testAutoBroadcastAdd() {
+        INDArray left = Nd4j.linspace(1,4,4).reshape(2,1,2,1);
+        INDArray right = Nd4j.linspace(1,10,10).reshape(2,1,5);
+        INDArray assertion = Nd4j.create(new double[]{2,3,4,5,6,3,4,5,6,7,7,8,9,10,11,8,9,10,11,12,4,5,6,7,8,5,6,7,8,9,9,10,11,12,13,10,11,12,13,14}).reshape(2,2,2,5);
+        INDArray test = left.add(right);
+        assertEquals(assertion,test);
+    }
+
+
+    @Test
+    public void testAudoBroadcastAddMatrix() {
+       INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+       INDArray row = Nd4j.ones(2);
+       INDArray assertion = arr.add(1.0);
+       INDArray test = arr.add(row);
+       assertEquals(assertion,test);
+    }
+
+    @Test
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[] {3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);

@@ -17,4 +17,15 @@ public interface Module extends CustomOp {
     void exec();
 
 
+    Module[] subModules();
+
+
+    void addModule(Module module);
+
+
+    void execSameDiff();
+
+
+
+
 }

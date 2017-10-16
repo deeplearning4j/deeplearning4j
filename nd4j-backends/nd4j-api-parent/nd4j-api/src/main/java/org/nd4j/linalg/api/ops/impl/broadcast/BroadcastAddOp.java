@@ -39,46 +39,6 @@ public class BroadcastAddOp extends BaseBroadcastOp {
         return "broadcastadd";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.add(other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.add(other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.add(other);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin + other;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin + other;
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
-
 
 
     @Override

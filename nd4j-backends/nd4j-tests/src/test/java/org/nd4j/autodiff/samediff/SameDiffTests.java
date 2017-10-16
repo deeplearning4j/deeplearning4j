@@ -467,6 +467,19 @@ public class SameDiffTests {
 
 
     @Test
+    public void testAutoBroadcastAddMatrixector() {
+       SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray row = Nd4j.ones(2);
+        INDArray assertion = arr.add(1.0);
+        SDVariable left = sameDiff.var("arr",arr);
+        SDVariable right = sameDiff.var("row",row);
+        SDVariable test = left.add(right);
+        sameDiff.exec();
+        assertEquals(assertion,test.getArr(true));
+    }
+
+    @Test
     public void testRunLogisticRegression() {
         Map<String,INDArray> vars = this.variablesForInput();
         SameDiff outside = SameDiff.create();

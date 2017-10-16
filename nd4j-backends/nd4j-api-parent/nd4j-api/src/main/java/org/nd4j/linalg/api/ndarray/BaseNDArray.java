@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -85,10 +86,10 @@ import static org.nd4j.linalg.factory.Nd4j.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseNDArray implements INDArray, Iterable {
 
 
-    protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
     /**
      *
      */
@@ -3152,6 +3153,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.divi(getDouble(0), result);
         }
 
+
+        if(!Arrays.equals(this.shape(),other.shape())) {
+            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
+            Nd4j.getExecutioner().exec(new BroadcastDivOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            return result;
+        }
+
+
         LinAlgExceptions.assertSameShape(other, result);
         Nd4j.getExecutioner().exec(new DivOp(this, other, result, length()));
 
@@ -3164,7 +3173,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * in place (element wise) multiplication of two matrices
      *
      * @param other the second ndarray to multiply
-     * @return the result of the addition
+     * @return the result of the multiplication
      */
     @Override
     public INDArray muli(INDArray other) {
@@ -3185,6 +3194,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         if (isScalar()) {
             return other.muli(getDouble(0), result);
+        }
+
+
+
+        if(!Arrays.equals(this.shape(),other.shape())) {
+            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            return result;
         }
 
         LinAlgExceptions.assertSameShape(other, result);
@@ -3223,6 +3240,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isScalar()) {
             return other.subi(getDouble(0), result);
         }
+
+
+        if(!Arrays.equals(this.shape(),other.shape())) {
+            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
+            Nd4j.getExecutioner().exec(new BroadcastSubOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            return result;
+        }
+
 
         LinAlgExceptions.assertSameShape(other, result);
 
@@ -3263,6 +3288,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.addi(getDouble(0), result);
         }
 
+        if(!Arrays.equals(this.shape(),other.shape())) {
+            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
+            result = Nd4j.createUninitialized(Shape.broadcastOutputShape(this.shape(),other.shape()));
+            Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            return result;
+        }
 
         LinAlgExceptions.assertSameShape(other, result);
 

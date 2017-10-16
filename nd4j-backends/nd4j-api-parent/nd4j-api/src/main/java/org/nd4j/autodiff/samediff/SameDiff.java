@@ -608,7 +608,7 @@ public class SameDiff {
                     reverseArrayLookup.put(arr,info);
                 }
                 else {
-                    INDArray newAlloc =  Nd4j.zeros(func.getResultShape());
+                    INDArray newAlloc = info.getWeightInitScheme().create(func.getResultShape(),Nd4j.zeros(func.getResultShape(),info.getWeightInitScheme().order()));
                     vertexToArray.put(info.getArrId(),newAlloc);
                     reverseArrayLookup.put(newAlloc,info);
                 }
