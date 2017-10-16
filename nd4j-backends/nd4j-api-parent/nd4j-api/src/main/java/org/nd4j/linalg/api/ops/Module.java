@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.ops;
 
-
 /**
  * A Module is a {@link CustomOp}
  * with varying input arguments

@@ -12,7 +12,6 @@ import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.weightinit.WeightInit;
 import org.nd4j.weightinit.WeightInitScheme;
 
 import java.util.ArrayList;
@@ -116,7 +115,7 @@ public class Linear extends BaseModule {
                         MMulTranspose.builder().transposeA(false).transposeB(true).build()),args()[1]);
             else {
                 forward = new Mmul(sameDiff, args()[0], args()[1],
-                        MMulTranspose.builder().transposeA(false).transposeB(true).build();
+                        MMulTranspose.builder().transposeA(false).transposeB(true).build());
             }
 
             this.outputFunctions = forward.outputFunctions();
@@ -145,7 +144,7 @@ public class Linear extends BaseModule {
         if(biasWeightInitScheme != null) {
             return new DifferentialFunction[] {
                     new Variable(sameDiff,"w", NDArrayInformation.newInfo(new int[]{nOut,nIn}
-                            ,weightInitScheme)),
+                            ,paramsScheme)),
                     new Variable(sameDiff,"b", NDArrayInformation.newInfo(new int[]{nOut,1}
                             ,biasWeightInitScheme))
             };
