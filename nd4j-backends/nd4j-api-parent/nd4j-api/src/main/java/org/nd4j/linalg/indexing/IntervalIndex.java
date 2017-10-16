@@ -82,11 +82,15 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public void setInterval(boolean isInterval) {
-
+       //no-op
     }
 
     @Override
     public void init(INDArray arr, long begin, int dimension) {
+        if(begin < 0) {
+            begin +=  arr.size(dimension);
+        }
+
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
@@ -100,8 +104,29 @@ public class IntervalIndex implements INDArrayIndex {
         init(arr, 0, dimension);
     }
 
+
+    @Override
+    public void init(long begin, long end, long max) {
+        if(begin < 0) {
+            begin +=  max;
+        }
+
+        if(end < 0) {
+            end +=  max;
+        }
+        this.begin = begin;
+        this.index = begin;
+        this.end = inclusive ? end + 1 : end;
+        for (long i = begin; i < this.end; i += stride) {
+            length++;
+        }
+
+    }
+
     @Override
     public void init(long begin, long end) {
+        if(begin < 0 || end < 0)
+            throw new IllegalArgumentException("Please pass in an array for negative indices. Unable to determine size for dimension otherwise");
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? end + 1 : end;

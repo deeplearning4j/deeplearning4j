@@ -72,6 +72,11 @@ public class NewAxis implements INDArrayIndex {
     }
 
     @Override
+    public void init(long begin, long end, long max) {
+
+    }
+
+    @Override
     public void init(long begin, long end) {
 
     }

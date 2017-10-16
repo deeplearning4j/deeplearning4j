@@ -27,6 +27,17 @@ public class IndexingTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testNegativeBounds() {
+       INDArray arr = Nd4j.linspace(1,10,10).reshape(2,5);
+       INDArrayIndex interval = NDArrayIndex.interval(0,1,-2,arr.size(1));
+       INDArray get = arr.get(NDArrayIndex.all(),interval);
+       INDArray assertion = Nd4j.create(new double[][]{
+               {1,2,3},
+               {6,7,8}
+       });
+       assertEquals(assertion,get);
+    }
 
     @Test
     public void testNewAxis() {

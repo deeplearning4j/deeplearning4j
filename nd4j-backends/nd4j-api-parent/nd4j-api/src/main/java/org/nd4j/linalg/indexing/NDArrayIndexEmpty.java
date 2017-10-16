@@ -68,6 +68,11 @@ public class NDArrayIndexEmpty implements INDArrayIndex {
     }
 
     @Override
+    public void init(long begin, long end, long max) {
+
+    }
+
+    @Override
     public void init(long begin, long end) {
 
     }
