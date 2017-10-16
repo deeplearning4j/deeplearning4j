@@ -22,9 +22,9 @@ package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.convolution.Col2Im;
-import org.nd4j.linalg.api.ops.impl.transforms.convolution.Im2col;
-import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

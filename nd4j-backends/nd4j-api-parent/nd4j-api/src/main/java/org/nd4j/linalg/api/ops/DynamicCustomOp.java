@@ -35,7 +35,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Getter
     private NDArrayVertex[] outputs;
     @Getter
-    private DifferentialFunction[] outputFunctions;
+    protected DifferentialFunction[] outputFunctions;
     private List<int[]> outputShapes;
 
     public DynamicCustomOp() {
@@ -44,7 +44,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public DynamicCustomOp(String opName, SameDiff sameDiff, DifferentialFunction[] args) {
         super(sameDiff, args);
         this.opName = opName;
-        addEdges(sameDiff,opName, Op.Type.CUSTOM,extraArgs);
+        if(this.opName == null) {
+            this.opName = opName();
+        }
+
+        addEdges(sameDiff,opName(), Op.Type.CUSTOM,extraArgs);
     }
 
     /**
@@ -63,6 +67,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         this.tArguments = tArguments;
         this.iArguments = iArguments;
+        if(this.opName == null) {
+            this.opName = opName();
+        }
     }
 
 
@@ -93,10 +100,16 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        if(this.opName == null) {
+            this.opName = opName();
+        }
     }
 
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
+        if(this.opName == null) {
+            this.opName = opName();
+        }
     }
 
     /**
@@ -219,11 +232,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.outputFunctions = new DifferentialFunction[outputShapes.size()];
         NDArrayInformation[] resultInfo = new NDArrayInformation[outputShapes.size()];
         for(int i = 0; i < outputShapes.size(); i++) {
-            NDArrayInformation arrInfo =  NDArrayInformation.builder()
-                    .arrId(UUID.randomUUID().toString())
-                    .id(opName)
-                    .shape(outputShapes.get(i)).build();
-
+            NDArrayInformation arrInfo = createOutputInfo(outputShapes.get(i),opName,UUID.randomUUID().toString());
             int nextVertexId = sameDiff.graph().nextVertexId();
             Variable variable = sameDiff.setupFunction(new Variable(sameDiff,opName + "-" +nextVertexId + "-" + i,arrInfo,nextVertexId));
 
@@ -268,6 +277,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
 
+    protected NDArrayInformation createOutputInfo(int[] shape,String id,String arrId) {
+        return NDArrayInformation.builder()
+                .arrId(arrId)
+                .id(id)
+                .shape(shape).build();
+    }
 
 
 

@@ -32,13 +32,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import javax.xml.crypto.Data;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -51,6 +51,91 @@ public class Shape {
 
 
     private Shape() {}
+
+
+    /**
+     * Compute the broadcast rules according to:
+     * https://docs.scipy.org/doc/numpy-1.10.1/user/basics.broadcasting.html
+     *
+     * Note that the array can be null if the arrays are already equal
+     * in shape.
+     *
+     * This function should be used in conjunction with
+     * the shape ops.
+     *
+     * @param left the left array
+     * @param right the right array (the array to be broadcasted
+     * @return the broadcast dimensions if any
+     */
+    public static int[] getBroadcastDimensions(int[] left,int[] right) {
+        if(Arrays.equals(left,right))
+            return null;
+
+        int n = Math.min(left.length,right.length);
+        List<Integer> dims = new ArrayList<>();
+        int leftIdx = left.length - 1;
+        int rightIdx = right.length - 1;
+        for(int i = n - 1; i >= 0; i--) {
+           if(left[leftIdx] != right[rightIdx] && right[rightIdx] == 1 || left[leftIdx] == 1) {
+               dims.add(i);
+           }
+           else if(left[leftIdx] != right[rightIdx]) {
+               throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
+           }
+
+           leftIdx--;
+           rightIdx--;
+        }
+
+        Collections.reverse(dims);
+        return Ints.toArray(dims);
+    }
+
+
+    /**
+     * Get the broadcast output shape
+     * based on the 2 input shapes
+     * Result output shape based on:
+     * https://docs.scipy.org/doc/numpy-1.10.1/user/basics.broadcasting.html
+     *
+     *
+     * @param left the left shape
+     * @param right the right second
+     * @return
+     */
+    public static int[] broadcastOutputShape(int[] left,int[] right) {
+        if(Arrays.equals(left,right))
+            return left;
+        int n = Math.max(left.length,right.length);
+        List<Integer> dims = new ArrayList<>();
+        int leftIdx = left.length - 1;
+        int rightIdx = right.length - 1;
+        for(int i = n - 1; i >= 0; i--) {
+            if(leftIdx < 0) {
+                dims.add(right[rightIdx]);
+            }
+            else if(rightIdx < 0) {
+                dims.add(left[leftIdx]);
+            }
+            else if(left[leftIdx] != right[rightIdx] && right[rightIdx] == 1 || left[leftIdx] == 1) {
+                dims.add(Math.max(left[leftIdx],right[rightIdx]));
+            }
+            else if(left[leftIdx] == right[rightIdx]) {
+                dims.add(left[leftIdx]);
+            }
+            else {
+                throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
+            }
+
+            leftIdx--;
+            rightIdx--;
+        }
+
+        Collections.reverse(dims);
+        return Ints.toArray(dims);
+
+    }
+
 
     /**
      *

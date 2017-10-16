@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.weightinit.impl.OneInitScheme;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,7 +43,7 @@ public class Ones extends Constant {
 
 
     public Ones(SameDiff sameDiff, int[] shape,int vertexId) {
-        super(sameDiff,NDArrayInformation.newInfo(Nd4j.ones(shape)), shape,vertexId);
+        super(sameDiff,NDArrayInformation.newInfo(shape,new OneInitScheme('f')), shape,vertexId);
     }
 
     public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape, boolean inPlace,int vertexId) {

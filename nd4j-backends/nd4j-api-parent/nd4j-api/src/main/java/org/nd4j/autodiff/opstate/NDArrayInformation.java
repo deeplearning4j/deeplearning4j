@@ -3,6 +3,9 @@ package org.nd4j.autodiff.opstate;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.weightinit.WeightInit;
+import org.nd4j.weightinit.WeightInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -19,6 +22,11 @@ public class NDArrayInformation implements Serializable {
     private OpState owner;
     private Number scalarValue;
     private String arrId;
+    @Builder.Default
+    private WeightInitScheme weightInitScheme = new ZeroInitScheme('f');
+
+
+
 
     /**
      * Create appropriate
@@ -26,14 +34,14 @@ public class NDArrayInformation implements Serializable {
      * given the ndarray
      * including the shape
      * and a new id
-     * @param arr the input array
+     * @param shape  the shape of the array
+     *  @param weightInitScheme the init scheme to use
      * @return
      */
-    public static NDArrayInformation newInfo(INDArray arr) {
+    public static NDArrayInformation newInfo(int[] shape,WeightInitScheme weightInitScheme) {
         return NDArrayInformation.builder()
-                .shape(arr.shape())
+                .shape(shape).weightInitScheme(weightInitScheme)
                 .arrId(UUID.randomUUID().toString())
-                .scalarValue(arr.isScalar() ? arr.getDouble(0) : null)
                 .build();
     }
 
@@ -48,10 +56,7 @@ public class NDArrayInformation implements Serializable {
      * @return
      */
     public static NDArrayInformation newInfo(int[] shape) {
-        return NDArrayInformation.builder()
-                .shape(shape)
-                .arrId(UUID.randomUUID().toString())
-                .build();
+        return newInfo(shape,new ZeroInitScheme('f'));
     }
 
     /**
@@ -87,13 +92,15 @@ public class NDArrayInformation implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
         NDArrayInformation that = (NDArrayInformation) o;
 
         if (!Arrays.equals(shape, that.shape)) return false;
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
         if (scalarValue != null ? !scalarValue.equals(that.scalarValue) : that.scalarValue != null) return false;
-        return arrId != null ? arrId.equals(that.arrId) : that.arrId == null;
+        if (arrId != null ? !arrId.equals(that.arrId) : that.arrId != null) return false;
+        return weightInitScheme != null ? weightInitScheme.equals(that.weightInitScheme) : that.weightInitScheme == null;
     }
 
     @Override
@@ -101,9 +108,9 @@ public class NDArrayInformation implements Serializable {
         int result = super.hashCode();
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + (id != null ? id.hashCode() : 0);
-        result = 31 * result + (owner != null ? owner.toString().hashCode() : 0);
         result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
         result = 31 * result + (arrId != null ? arrId.hashCode() : 0);
+        result = 31 * result + (weightInitScheme != null ? weightInitScheme.hashCode() : 0);
         return result;
     }
 

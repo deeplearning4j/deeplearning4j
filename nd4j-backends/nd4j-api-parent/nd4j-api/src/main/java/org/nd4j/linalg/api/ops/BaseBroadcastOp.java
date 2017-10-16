@@ -4,6 +4,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 @NoArgsConstructor
 public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
@@ -38,7 +39,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                     i_v2,
                     name(),
                     Type.BROADCAST,
-                    i_v1.getResultShape(),
+                    Shape.broadcastOutputShape(i_v1.getResultShape(),i_v2.getResultShape()),
                     null);
         } else {
             throw new IllegalArgumentException("Input not null variables.");
@@ -69,7 +70,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                     i_v2,
                     name(),
                     Type.BROADCAST,
-                    i_v1.getResultShape(),
+                    Shape.broadcastOutputShape(i_v1.getResultShape(),i_v2.getResultShape()),
                     null);
         } else {
             throw new IllegalArgumentException("Input not null variables.");
@@ -145,13 +146,4 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         this.dimension = dimension;
     }
 
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        throw new UnsupportedOperationException("opForDimension not supported for BroadcastOps");
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        throw new UnsupportedOperationException("opForDimension not supported for BroadcastOps");
-    }
 }
