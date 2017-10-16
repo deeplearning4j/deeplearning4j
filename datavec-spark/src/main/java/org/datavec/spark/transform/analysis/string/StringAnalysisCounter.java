@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.analysis.string;
 
+import com.clearspring.analytics.stream.quantile.TDigest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.spark.util.StatCounter;
@@ -84,6 +85,7 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
         else if (length > getMaxLengthSeen()) {
             countMaxLength = 1;
         }
+
         counter.merge((double) length);
 
         return this;

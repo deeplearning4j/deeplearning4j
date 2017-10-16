@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.analysis;
 
+import com.tdunning.math.stats.TDigest;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
@@ -77,16 +78,32 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(-1, ia.getMin());
         assertEquals(5, ia.getMax());
         assertEquals(4, ia.getCountTotal());
+        TDigest itd = ia.getDigest();
+        assertEquals(-0.5, itd.quantile(0.25), 1e-9); // right-biased linear approximations w/ few points
+        assertEquals(1.5, itd.quantile(0.5), 1e-9);
+        assertEquals(4.0, itd.quantile(0.75), 1e-9);
+        assertEquals(5.0, itd.quantile(1), 1e-9);
 
         DoubleAnalysis dba = (DoubleAnalysis) ca.get(1);
         assertEquals(-1.0, dba.getMin(), 0.0);
         assertEquals(10.0, dba.getMax(), 0.0);
         assertEquals(4, dba.getCountTotal());
+        TDigest dtd = dba.getDigest();
+        assertEquals(-0.5, dtd.quantile(0.25), 1e-9); // right-biased linear approximations w/ few points
+        assertEquals(0.5, dtd.quantile(0.5), 1e-9);
+        assertEquals(5.5, dtd.quantile(0.75), 1e-9);
+        assertEquals(10.0, dtd.quantile(1), 1e-9);
+
 
         TimeAnalysis ta = (TimeAnalysis) ca.get(2);
         assertEquals(1000, ta.getMin());
         assertEquals(20000, ta.getMax());
         assertEquals(4, ta.getCountTotal());
+        TDigest ttd = ta.getDigest();
+        assertEquals(1500.0, ttd.quantile(0.25), 1e-9); // right-biased linear approximations w/ few points
+        assertEquals(2500.0, ttd.quantile(0.5), 1e-9);
+        assertEquals(11500.0, ttd.quantile(0.75), 1e-9);
+        assertEquals(20000.0, ttd.quantile(1), 1e-9);
 
         CategoricalAnalysis cata = (CategoricalAnalysis) ca.get(3);
         Map<String, Long> map = cata.getMapOfCounts();

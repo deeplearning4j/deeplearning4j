@@ -141,8 +141,14 @@
         <dependency>
             <groupId>net.sf.opencsv</groupId>
             <artifactId>opencsv</artifactId>
-            <version>2.3</version>
+            <version>${opencsv.version}</version>
         </dependency>
+
+        <dependency>
+         <groupId>com.tdunning</groupId>
+         <artifactId>t-digest</artifactId>
+         <version>${tdigest.version}</version>
+     </dependency>
     </dependencies>
 
     <profiles>

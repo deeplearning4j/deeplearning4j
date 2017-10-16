@@ -17,6 +17,10 @@
 package org.datavec.api.transform.analysis.columns;
 
 import lombok.Data;
+import com.tdunning.math.stats.TDigest;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract class for numerical column analysis
@@ -37,6 +41,7 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
     protected long countTotal;
     protected double[] histogramBuckets;
     protected long[] histogramBucketCounts;
+    protected TDigest digest;
 
     protected NumericalColumnAnalysis(Builder builder) {
         this.mean = builder.mean;
@@ -50,6 +55,7 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
         this.countTotal = builder.countTotal;
         this.histogramBuckets = builder.histogramBuckets;
         this.histogramBucketCounts = builder.histogramBucketCounts;
+        this.digest = builder.digest;
     }
 
     protected NumericalColumnAnalysis() {
@@ -58,10 +64,17 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
 
     @Override
     public String toString() {
+        StringBuilder quantiles = new StringBuilder();
+        double[] printReports = new double[]{0.001, 0.01, 0.1, 0.5, 0.9, 0.99, 0.999};
+        for (int i = 0; i < printReports.length; i++){
+            quantiles.append(printReports[i] +" -> " + digest.quantile(printReports[i]));
+            if (i < printReports.length - 1) quantiles.append(",");
+        }
         return "mean=" + mean + ",sampleStDev=" + sampleStdev + ",sampleVariance=" + sampleVariance + ",countZero="
                         + countZero + ",countNegative=" + countNegative + ",countPositive=" + countPositive
                         + ",countMinValue=" + countMinValue + ",countMaxValue=" + countMaxValue + ",count="
-                        + countTotal;
+                        + countTotal + ", quantiles=[" + quantiles.toString() +
+    "]";
     }
 
     public abstract double getMinDouble();
@@ -81,6 +94,7 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
         protected long countTotal;
         protected double[] histogramBuckets;
         protected long[] histogramBucketCounts;
+        protected TDigest digest;
 
         public T mean(double mean) {
             this.mean = mean;
@@ -136,6 +150,12 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
             this.histogramBucketCounts = histogramBucketCounts;
             return (T) this;
         }
+
+        public T digest(TDigest digest){
+            this.digest = digest;
+            return (T) this;
+        }
+
     }
 
 }

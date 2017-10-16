@@ -97,6 +97,8 @@
         <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
         <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
         <jetbrains-annotations.version>13.0</jetbrains-annotations.version>
+        <opencsv.version>2.3</opencsv.version>
+        <tdigest.version>3.2</tdigest.version>
     </properties>
 
     <repositories>

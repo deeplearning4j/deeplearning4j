@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.analysis.columns;
 
+import com.tdunning.math.stats.TDigest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.spark.util.StatCounter;
@@ -37,6 +38,15 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
     private long countMaxValue = 0;
     private long countPositive = 0;
     private long countNegative = 0;
+    /**
+     * A histogram structure that will record a sketch of a distribution.
+     *
+     * The compression argument regulates how accuracy should be traded for size? A value of N here
+     * will give quantile errors almost always less than 3/N with considerably smaller errors expected
+     * for extreme quantiles. Conversely, you should expect to track about 5 N centroids for this
+     * accuracy.
+     */
+    private TDigest digest = TDigest.createDigest(100);
 
     public IntegerAnalysisCounter() {};
 
@@ -93,6 +103,8 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
             countNegative++;
         } ;
 
+        digest.add((double) value);
+
         counter.merge((double) value);
 
         return this;
@@ -123,8 +135,10 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
             newCountMaxValue = countMaxValue;
         }
 
+        digest.add(other.getDigest());
+
         return new IntegerAnalysisCounter(counter.merge(other.getCounter()), countZero + other.getCountZero(),
                         newCountMinValue, newCountMaxValue, countPositive + other.getCountPositive(),
-                        countNegative + other.getCountNegative());
+                        countNegative + other.getCountNegative(), digest);
     }
 }

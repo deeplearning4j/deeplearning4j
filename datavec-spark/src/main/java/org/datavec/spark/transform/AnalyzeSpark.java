@@ -156,7 +156,7 @@ public class AnalyzeSpark {
                                     .sampleVariance(iac.getSampleVariance()).countZero(iac.getCountZero())
                                     .countNegative(iac.getCountNegative()).countPositive(iac.getCountPositive())
                                     .countMinValue(iac.getCountMinValue()).countMaxValue(iac.getCountMaxValue())
-                                    .countTotal(iac.getCountTotal()).build();
+                                    .countTotal(iac.getCountTotal()).digest(iac.getDigest()).build();
                     list.add(ia);
 
                     minsMaxes[i][0] = iac.getMinValueSeen();
@@ -171,7 +171,7 @@ public class AnalyzeSpark {
                                     .sampleVariance(lac.getSampleVariance()).countZero(lac.getCountZero())
                                     .countNegative(lac.getCountNegative()).countPositive(lac.getCountPositive())
                                     .countMinValue(lac.getCountMinValue()).countMaxValue(lac.getCountMaxValue())
-                                    .countTotal(lac.getCountTotal()).build();
+                                    .countTotal(lac.getCountTotal()).digest(lac.getDigest()).build();
 
                     list.add(la);
 
@@ -186,7 +186,7 @@ public class AnalyzeSpark {
                                     .sampleVariance(dac.getSampleVariance()).countZero(dac.getCountZero())
                                     .countNegative(dac.getCountNegative()).countPositive(dac.getCountPositive())
                                     .countMinValue(dac.getCountMinValue()).countMaxValue(dac.getCountMaxValue())
-                                    .countNaN(dac.getCountNaN()).countTotal(dac.getCountTotal()).build();
+                                    .countNaN(dac.getCountNaN()).digest(dac.getDigest()).countTotal(dac.getCountTotal()).build();
                     list.add(da);
 
                     minsMaxes[i][0] = dac.getMinValueSeen();
@@ -207,7 +207,7 @@ public class AnalyzeSpark {
                                     .sampleVariance(lac2.getSampleVariance()).countZero(lac2.getCountZero())
                                     .countNegative(lac2.getCountNegative()).countPositive(lac2.getCountPositive())
                                     .countMinValue(lac2.getCountMinValue()).countMaxValue(lac2.getCountMaxValue())
-                                    .countTotal(lac2.getCountTotal()).build();
+                                    .countTotal(lac2.getCountTotal()).digest(lac2.getDigest()).build();
 
                     list.add(la2);
 
