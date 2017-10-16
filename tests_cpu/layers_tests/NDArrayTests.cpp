@@ -1464,3 +1464,32 @@ TEST_F(NDArrayTest, TestTranspose_12) {
 
     delete y;
 }
+
+
+TEST_F(NDArrayTest, TestMMulMultiDim) {
+    const int bS=2;
+    const int K=3;
+    const int N=4;
+    int expShape[] = {3, 2, 9, 4, 36, 4, 1, 0, 1, 99};
+    double expBuff[] = { 38,   44,   50,   56, 83,   98,  113,  128, 128,  152,  176,  200, 173,  206,  239,  272, 218,  260,  302,  344, 263,  314,  365,  416, 308,  368,  428,  488, 353,  422,  491,  560, 398,  476,  554,  632, 110,  116,  122,  128, 263,  278,  293,  308, 416,  440,  464,  488, 569,  602,  635,  668, 722,  764,  806,  848, 875,  926,  977, 1028, 1028, 1088, 1148, 1208, 1181, 1250, 1319, 1388, 1334, 1412, 1490, 1568};
+
+    NDArray<double> input  ('c', {bS,  K, N});
+    NDArray<double> weights('c', {3*K, K});
+    //NDArray<double>* result(nullptr);
+    NDArray<double> expected ('c', {bS,  3*K, N});
+    expected.setBuffer(expBuff);
+    expected.triggerAllocationFlag(false, true);
+
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
+
+    auto result = NDArrayFactory<double>::mmulHelper(&weights, &input, nullptr, 1., 0.);
+    //  result must have such shape   [bS x 3K x N]
+
+    ASSERT_TRUE(result->isSameShape(&expected));
+
+    //result->printShapeInfo("result shape");
+    //result->printBuffer("result buffer");
+    ASSERT_TRUE(result->equalsTo(&expected));
+    delete result;
+}

@@ -228,57 +228,114 @@ namespace nd4j {
         if (A->rankOf() > 2 || B->rankOf() > 2) {
             // matmul
             if (A->rankOf() != B->rankOf()) {
-                nd4j_printf("Ranks of A and B should match, but got %i/%i instead\n",A->rankOf(), B->rankOf());
-                throw "Ranks of A and B should match";
-            }
+                // FIXME (r119): this is temporary fix for @shyrma, proper impl required here
+                int pRows = A->sizeAt(-2);
+                int pCols = B->sizeAt(-1);
 
-            //int dims = A->rankOf();
-
-            std::vector<int> newShape;
-            for (int e = 0; e < A->rankOf() - 2; e++)
-                if (A->sizeAt(e) != B->sizeAt(e)) {
-                    nd4j_printf("Dimension [%i] differs for A and B: %i vs %i", e, A->sizeAt(e), B->sizeAt(e));
-                    throw "Outer dimensions for A & B should be equal";
-                } else {
-                    newShape.push_back(A->sizeAt(e));
+                if (A->sizeAt(-1) != B->sizeAt(-2)) {
+                    nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead",
+                                A->sizeAt(-1), B->sizeAt(-2))
+                    throw "Numbers of rows/columns should match";
                 }
 
-            int pRows = A->sizeAt(-2);
-            int pCols = B->sizeAt(-1);
+                std::vector<int> newShape;
+                if (A->rankOf() > B->rankOf())
+                    for (int e = 0; e < A->rankOf() - 2; e++)
+                        newShape.emplace_back(A->sizeAt(e));
+                else
+                    for (int e = 0; e < B->rankOf() - 2; e++)
+                        newShape.emplace_back(B->sizeAt(e));
 
-            if (A->sizeAt(-1) != B->sizeAt(-2)) {
-                nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead", A->sizeAt(-1), B->sizeAt(-2))
-                throw "Numbers of rows/columns should match";
-            }
+                newShape.push_back(pRows);
+                newShape.push_back(pCols);
 
-            newShape.push_back(pRows);
-            newShape.push_back(pCols);
-
-            //Nd4jIndex prod = shape::prodLong(newShape.data(), newShape.size());
-
-            if (result == nullptr)
-                result = new NDArray<T>('c', newShape);
-            else
-                if (!result->isSameShape(newShape)) {
-                    nd4j_printf("Bad result shape for MatMul\n","");
+                if (result == nullptr)
+                    result = new NDArray<T>('c', newShape);
+                else if (!result->isSameShape(newShape)) {
+                    nd4j_printf("Bad result shape for MatMul\n", "");
                     throw "Bad result shape";
                 }
 
-            auto aL = allTensorsAlongDimension(A, {A->rankOf() - 2, A->rankOf() - 1});
-            auto bL = allTensorsAlongDimension(B, {B->rankOf() - 2, B->rankOf() - 1});
-            auto cL = allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
 
-            nd4j_debug("NumTads: %i\n", aL->size());
-            for (int e = 0; e < aL->size(); e++) {
-                auto c_ = mmulHelper(aL->at(e), bL->at(e));
+                if (A->rankOf() > B->rankOf()) {
+                    auto aL = allTensorsAlongDimension(A, {A->rankOf() - 2, A->rankOf() - 1});
+                    auto cL = allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
 
-                cL->at(e)->assign(c_);
-                delete c_;
+                    nd4j_debug("NumTads: %i\n", aL->size());
+                    for (int e = 0; e < aL->size(); e++) {
+                        auto c_ = mmulHelper(aL->at(e), B);
+
+                        cL->at(e)->assign(c_);
+                        delete c_;
+                    }
+
+                    delete aL;
+                    delete cL;
+                } else {
+                    auto bL = allTensorsAlongDimension(B, {B->rankOf() - 2, B->rankOf() - 1});
+                    auto cL = allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
+
+                    nd4j_debug("NumTads: %i\n", bL->size());
+                    for (int e = 0; e < bL->size(); e++) {
+                        auto c_ = mmulHelper(A, bL->at(e));
+
+                        cL->at(e)->assign(c_);
+                        delete c_;
+                    }
+
+                    delete bL;
+                    delete cL;
+                }
+
+            } else {
+                //int dims = A->rankOf();
+
+                std::vector<int> newShape;
+                for (int e = 0; e < A->rankOf() - 2; e++)
+                    if (A->sizeAt(e) != B->sizeAt(e)) {
+                        nd4j_printf("Dimension [%i] differs for A and B: %i vs %i", e, A->sizeAt(e), B->sizeAt(e));
+                        throw "Outer dimensions for A & B should be equal";
+                    } else {
+                        newShape.push_back(A->sizeAt(e));
+                    }
+
+                int pRows = A->sizeAt(-2);
+                int pCols = B->sizeAt(-1);
+
+                if (A->sizeAt(-1) != B->sizeAt(-2)) {
+                    nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead",
+                                A->sizeAt(-1), B->sizeAt(-2))
+                    throw "Numbers of rows/columns should match";
+                }
+
+                newShape.push_back(pRows);
+                newShape.push_back(pCols);
+
+                //Nd4jIndex prod = shape::prodLong(newShape.data(), newShape.size());
+
+                if (result == nullptr)
+                    result = new NDArray<T>('c', newShape);
+                else if (!result->isSameShape(newShape)) {
+                    nd4j_printf("Bad result shape for MatMul\n", "");
+                    throw "Bad result shape";
+                }
+
+                auto aL = allTensorsAlongDimension(A, {A->rankOf() - 2, A->rankOf() - 1});
+                auto bL = allTensorsAlongDimension(B, {B->rankOf() - 2, B->rankOf() - 1});
+                auto cL = allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
+
+                nd4j_debug("NumTads: %i\n", aL->size());
+                for (int e = 0; e < aL->size(); e++) {
+                    auto c_ = mmulHelper(aL->at(e), bL->at(e));
+
+                    cL->at(e)->assign(c_);
+                    delete c_;
+                }
+
+                delete aL;
+                delete bL;
+                delete cL;
             }
-
-            delete aL;
-            delete bL;
-            delete cL;
         } else if (A->isVector() && B->isVector()) {
             // dot
             if (A->lengthOf() != B->lengthOf())
