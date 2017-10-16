@@ -1,6 +1,5 @@
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.Data;
 import net.ericaro.neoitertools.Generator;
@@ -92,6 +91,11 @@ public class SpecifiedIndex implements INDArrayIndex {
 
     @Override
     public void init(INDArray arr, int dimension) {
+
+    }
+
+    @Override
+    public void init(long begin, long end, long max) {
 
     }
 

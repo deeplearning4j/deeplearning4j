@@ -582,6 +582,32 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param begin the begin
      * @param stride  the stride at which to increment
      * @param end   the end index
+     * @param max the max length for this domain
+     * @return the interval
+     */
+    public static INDArrayIndex interval(long begin, long stride, long end,long max) {
+        if(begin < 0) {
+            begin += max;
+        }
+
+        if(end < 0) {
+            end += max;
+        }
+
+        if (Math.abs(begin - end) < 1)
+            end++;
+        if (stride > 1 && Math.abs(begin - end) == 1) {
+            end *= stride;
+        }
+        return interval(begin, stride, end, false);
+    }
+
+    /**
+     * Generates an interval from begin (inclusive) to end (exclusive)
+     *
+     * @param begin the begin
+     * @param stride  the stride at which to increment
+     * @param end   the end index
      * @return the interval
      */
     public static INDArrayIndex interval(long begin, long stride, long end) {
@@ -608,6 +634,16 @@ public class NDArrayIndex implements INDArrayIndex {
         index.init(begin, end);
         return index;
     }
+
+
+
+    public static INDArrayIndex interval(long begin, long stride, long end,long max, boolean inclusive) {
+        assert begin <= end : "Beginning index in range must be less than end";
+        INDArrayIndex index = new IntervalIndex(inclusive, stride);
+        index.init(begin, end);
+        return index;
+    }
+
 
     public static INDArrayIndex interval(long begin, long stride, long end, boolean inclusive) {
         assert begin <= end : "Beginning index in range must be less than end";
@@ -735,6 +771,11 @@ public class NDArrayIndex implements INDArrayIndex {
 
     @Override
     public void init(INDArray arr, int dimension) {
+
+    }
+
+    @Override
+    public void init(long begin, long end, long max) {
 
     }
 

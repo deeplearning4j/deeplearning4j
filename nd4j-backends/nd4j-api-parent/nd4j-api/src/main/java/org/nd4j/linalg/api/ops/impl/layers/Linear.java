@@ -56,7 +56,7 @@ public class Linear extends BaseModule {
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
 
-        this.args = getFunctionParams(nIn,nOut,weightInitScheme,biasWeightInitScheme);
+        this.args = getFunctionParams(nIn,nOut);
         this.nIn = nIn;
         this.nOut = nOut;
 
@@ -94,7 +94,11 @@ public class Linear extends BaseModule {
         INDArray input = getInputArguments().get(0);
         INDArray right = getInputArguments().get(1);
         if(getOutputArguments().isEmpty()) {
-            getOutputArguments().add(input.mmul(right.transpose()));
+            if(getInputArguments().size() == 1)
+                getOutputArguments().add(input.mmul(right.transpose()));
+            else
+                getOutputArguments().add(input.mmul(right.transpose()).addiRowVector(getInputArguments().get(2)));
+
         }
         else {
             input.mmul(right.transpose(),getOutputArguments().get(0));
@@ -109,7 +113,7 @@ public class Linear extends BaseModule {
         }
 
         if(forward == null) {
-            //bias needs to be addeed yet
+            //bias needs to be added yet
             if(args.length > 1)
                 forward =  f().add(new Mmul(sameDiff, args()[0], args()[1],
                         MMulTranspose.builder().transposeA(false).transposeB(true).build()),args()[1]);
@@ -138,13 +142,11 @@ public class Linear extends BaseModule {
     }
 
     private DifferentialFunction[] getFunctionParams(int nIn,
-                                                     int nOut,
-                                                     WeightInitScheme paramsScheme,
-                                                     WeightInitScheme biasWeightInitScheme) {
+                                                     int nOut) {
         if(biasWeightInitScheme != null) {
             return new DifferentialFunction[] {
                     new Variable(sameDiff,"w", NDArrayInformation.newInfo(new int[]{nOut,nIn}
-                            ,paramsScheme)),
+                            ,weightInitScheme)),
                     new Variable(sameDiff,"b", NDArrayInformation.newInfo(new int[]{nOut,1}
                             ,biasWeightInitScheme))
             };

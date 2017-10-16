@@ -91,6 +91,8 @@ public interface INDArrayIndex {
      */
     void init(INDArray arr, int dimension);
 
+    void init(long begin, long end, long max);
+
     /**
      * Initiailize based on the specified begin and end
      * @param begin
