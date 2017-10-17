@@ -1,5 +1,7 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
@@ -19,7 +21,7 @@ import java.util.List;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
- *
+ * <p>
  * Mother class for QLearning in the Discrete domain and
  * hopefully one day for the  Continuous domain.
  */
@@ -144,6 +146,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     @AllArgsConstructor
     @Builder
     @EqualsAndHashCode(callSuper = false)
+    @JsonDeserialize(builder = QLConfiguration.QLConfigurationBuilder.class)
     public static class QLConfiguration implements LConfiguration {
 
         int seed;
@@ -160,6 +163,9 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         int epsilonNbStep;
         boolean doubleDQN;
 
+        @JsonPOJOBuilder(withPrefix = "")
+        public static final class QLConfigurationBuilder {
+        }
     }
 
 
