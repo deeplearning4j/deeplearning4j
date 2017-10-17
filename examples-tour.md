@@ -221,7 +221,7 @@ This example trains a neural network to perform various math operations.
 
 A publicly available dataset of time series data of six classes, cyclic, up-trending, etc. Example of an RNN learning to classify the time series. 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqClassification/UCISequenceClassificationExample.java)
+[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqclassification/UCISequenceClassificationExample.java)
 
 ### VideoClassificationExample.java
 
