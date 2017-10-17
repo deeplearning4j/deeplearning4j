@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Comparator;
@@ -440,11 +441,15 @@ public class TestYolo2OutputLayer {
         int gridH = 13;
 
         RecordReader rr = new ObjectDetectionRecordReader(52, 52, 3, gridH, gridW, lp);
-        rr.initialize(new FileSplit(jpg));
+        FileSplit fileSplit = new FileSplit(jpg);
+        rr.initialize(fileSplit);
 
         int nClasses = rr.getLabels().size();
         int depthOut = bbPriors.size(0)*5 + nClasses;
-        int idxCat = rr.getLabels().indexOf("cat");
+        // make sure idxCat is not 0 to test DetectedObject.getPredictedClass()
+        List<String> labels = rr.getLabels();
+        labels.add(labels.remove(labels.indexOf("cat")));
+        int idxCat = labels.size() - 1;
 
 
         DataSetIterator iter = new RecordReaderDataSetIterator(rr,1,1,1,true);
@@ -474,6 +479,11 @@ public class TestYolo2OutputLayer {
 
         int nEpochs = 1500;
         DataSet ds = iter.next();
+        URI[] uris = fileSplit.locations();
+        if (!uris[0].getPath().contains("2007_009346")) {
+            // make sure to get the cat image
+            ds = iter.next();
+        }
         assertEquals(1, ds.getFeatures().size(0));
         for( int i=0; i<=nEpochs; i++ ){
             net.fit(ds);
