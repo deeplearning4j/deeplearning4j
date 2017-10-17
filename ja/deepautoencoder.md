@@ -1,4 +1,4 @@
-- - -
+---
 title:Deep Autoencoders
 layout: default
 ---
