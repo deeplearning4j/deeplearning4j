@@ -68,7 +68,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                 if (transform == null)
                     return badRequest();
                 log.info("Transform process initialized");
-                return ok(objectMapper.writeValueAsString(transform.getTransformProcess()));
+                return ok(objectMapper.writeValueAsString(transform.getTransformProcess())).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -80,7 +80,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                 TransformProcess transformProcess = TransformProcess.fromJson(getJsonText());
                 setCSVTransformProcess(transformProcess);
                 log.info("Transform process initialized");
-                return ok(objectMapper.writeValueAsString(transformProcess));
+                return ok(objectMapper.writeValueAsString(transformProcess)).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -93,7 +93,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     BatchCSVRecord record = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
                     if (record == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(transformSequenceIncremental(record)));
+                    return ok(objectMapper.writeValueAsString(transformSequenceIncremental(record))).as(contentType);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return internalServerError();
@@ -103,7 +103,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     SingleCSVRecord record = objectMapper.readValue(getJsonText(), SingleCSVRecord.class);
                     if (record == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(transformIncremental(record)));
+                    return ok(objectMapper.writeValueAsString(transformIncremental(record))).as(contentType);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return internalServerError();
@@ -117,7 +117,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     SequenceBatchCSVRecord batch = transformSequence(objectMapper.readValue(getJsonText(), SequenceBatchCSVRecord.class));
                     if (batch == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(batch));
+                    return ok(objectMapper.writeValueAsString(batch)).as(contentType);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return internalServerError();
@@ -127,7 +127,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     BatchCSVRecord batch = transform(objectMapper.readValue(getJsonText(), BatchCSVRecord.class));
                     if (batch == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(batch));
+                    return ok(objectMapper.writeValueAsString(batch)).as(contentType);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return internalServerError();
@@ -143,7 +143,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     BatchCSVRecord record = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
                     if (record == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(transformSequenceArrayIncremental(record)));
+                    return ok(objectMapper.writeValueAsString(transformSequenceArrayIncremental(record))).as(contentType);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return internalServerError();
@@ -153,7 +153,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     SingleCSVRecord record = objectMapper.readValue(getJsonText(), SingleCSVRecord.class);
                     if (record == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(transformArrayIncremental(record)));
+                    return ok(objectMapper.writeValueAsString(transformArrayIncremental(record))).as(contentType);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return internalServerError();
@@ -168,7 +168,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     SequenceBatchCSVRecord batchCSVRecord = objectMapper.readValue(getJsonText(), SequenceBatchCSVRecord.class);
                     if (batchCSVRecord == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(transformSequenceArray(batchCSVRecord)));
+                    return ok(objectMapper.writeValueAsString(transformSequenceArray(batchCSVRecord))).as(contentType);
                 } catch (Exception e) {
                     return internalServerError();
                 }
@@ -177,7 +177,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                     BatchCSVRecord batchCSVRecord = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
                     if (batchCSVRecord == null)
                         return badRequest();
-                    return ok(objectMapper.writeValueAsString(transformArray(batchCSVRecord)));
+                    return ok(objectMapper.writeValueAsString(transformArray(batchCSVRecord))).as(contentType);
                 } catch (Exception e) {
                     return internalServerError();
                 }

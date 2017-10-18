@@ -59,7 +59,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 if (transform == null)
                     return badRequest();
                 log.info("Transform process initialized");
-                return ok(objectMapper.writeValueAsString(transform.getImageTransformProcess()));
+                return ok(objectMapper.writeValueAsString(transform.getImageTransformProcess())).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -72,7 +72,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
                 setImageTransformProcess(transformProcess);
                 log.info("Transform process initialized");
-                return ok(objectMapper.writeValueAsString(transformProcess));
+                return ok(objectMapper.writeValueAsString(transformProcess)).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -85,7 +85,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 SingleImageRecord record = objectMapper.readValue(getJsonText(), SingleImageRecord.class);
                 if (record == null)
                     return badRequest();
-                return ok(objectMapper.writeValueAsString(transformIncrementalArray(record)));
+                return ok(objectMapper.writeValueAsString(transformIncrementalArray(record))).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -98,7 +98,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 BatchImageRecord batch = objectMapper.readValue(getJsonText(), BatchImageRecord.class);
                 if (batch == null)
                     return badRequest();
-                return ok(objectMapper.writeValueAsString(transformArray(batch)));
+                return ok(objectMapper.writeValueAsString(transformArray(batch))).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
