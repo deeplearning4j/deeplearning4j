@@ -389,11 +389,20 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
 
-
     @Override
     public DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
         return sameDiff().setupFunction(new SigmoidDerivative(sameDiff(),sameDiff().setupFunction(iX),sameDiff().setupFunction(wrt)));
+    }
 
+    @Override
+    public DifferentialFunction swish(DifferentialFunction iX) {
+        return sameDiff().setupFunction(new Swish(sameDiff(),iX,null));
+
+    }
+
+    @Override
+    public DifferentialFunction swishDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
+        return sameDiff().setupFunction(new SwishDerivative(sameDiff(),sameDiff().setupFunction(iX),sameDiff().setupFunction(wrt)));
     }
 
 

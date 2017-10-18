@@ -119,6 +119,10 @@ public interface FunctionFactory {
 
     DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt);
 
+    DifferentialFunction swish(DifferentialFunction iX);
+
+    DifferentialFunction swishDerivative(DifferentialFunction iX, DifferentialFunction wrt);
+
     DifferentialFunction sign(DifferentialFunction iX);
 
     DifferentialFunction broadcast(DifferentialFunction iX, int... shape);
