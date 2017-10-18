@@ -72,13 +72,21 @@
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
                 <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                            <goal>doc-jar</goal>
-                        </goals>
-                    </execution>
+                  <execution>
+                    <id>scala-compile-first</id>
+                    <phase>process-resources</phase>
+                    <goals>
+                      <goal>add-source</goal>
+                      <goal>compile</goal>
+                    </goals>
+                  </execution>
+                  <execution>
+                    <id>scala-test-compile</id>
+                    <phase>process-test-resources</phase>
+                    <goals>
+                      <goal>testCompile</goal>
+                    </goals>
+                  </execution>
                 </executions>
                 <configuration>
                     <scalaVersion>2.11.8</scalaVersion>
