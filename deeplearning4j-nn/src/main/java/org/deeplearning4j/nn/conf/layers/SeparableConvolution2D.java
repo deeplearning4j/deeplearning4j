@@ -33,16 +33,16 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class SeparableConvolution2d extends ConvolutionLayer {
+public class SeparableConvolution2D extends ConvolutionLayer {
 
     /**
-     * SeparableConvolution2d layer
+     * SeparableConvolution2D layer
      * nIn in the input layer is the number of channels
      * nOut is the number of filters to be used in the net or in other words the depth
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
-    protected SeparableConvolution2d(BaseConvBuilder<?> builder) {
+    protected SeparableConvolution2D(BaseConvBuilder<?> builder) {
         super(builder);
         this.hasBias = builder.hasBias;
         this.convolutionMode = builder.convolutionMode;
@@ -69,8 +69,8 @@ public class SeparableConvolution2d extends ConvolutionLayer {
     }
 
     @Override
-    public SeparableConvolution2d clone() {
-        SeparableConvolution2d clone = (SeparableConvolution2d) super.clone();
+    public SeparableConvolution2D clone() {
+        SeparableConvolution2D clone = (SeparableConvolution2D) super.clone();
         if (clone.kernelSize != null)
             clone.kernelSize = clone.kernelSize.clone();
         if (clone.stride != null)
@@ -83,7 +83,7 @@ public class SeparableConvolution2d extends ConvolutionLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        LayerValidation.assertNInNOutSet("SeparableConvolution2d", getLayerName(), layerIndex, getNIn(), getNOut());
+        LayerValidation.assertNInNOutSet("SeparableConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf);
@@ -325,10 +325,10 @@ public class SeparableConvolution2d extends ConvolutionLayer {
 
         @Override
         @SuppressWarnings("unchecked")
-        public SeparableConvolution2d build() {
+        public SeparableConvolution2D build() {
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
-            return new SeparableConvolution2d(this);
+            return new SeparableConvolution2D(this);
         }
     }
 

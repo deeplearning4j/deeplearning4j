@@ -689,7 +689,7 @@ public class CNNGradientCheckTest {
                                     .activation(Activation.TANH)
                                     .convolutionMode(cm)
                                     .list()
-                                    .layer(new SeparableConvolution2d.Builder().name("Separable conv 2D layer")
+                                    .layer(new SeparableConvolution2D.Builder().name("Separable conv 2D layer")
                                             .kernelSize(k, k)
                                             .stride(s, s)
                                             .dilation(d, d)
@@ -702,7 +702,7 @@ public class CNNGradientCheckTest {
                                         .dilation(d, d)
                                         .build());
                             } else {
-                                b.layer(new SeparableConvolution2d.Builder().nIn(2).nOut(2)
+                                b.layer(new SeparableConvolution2D.Builder().nIn(2).nOut(2)
                                         .kernelSize(k, k)
                                         .stride(s, s)
                                         .dilation(d, d)
