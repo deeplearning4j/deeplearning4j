@@ -395,8 +395,8 @@ namespace nd4j {
             return false;
         }
 
-        template class Node<float>;
-      //  template class Node<float16>;
-      //  template class Node<double>;
+        template class ND4J_EXPORT Node<float>;
+      //  template class ND4J_EXPORT Node<float16>;
+      //  template class ND4J_EXPORT Node<double>;
     }
 }

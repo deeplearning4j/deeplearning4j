@@ -9,7 +9,7 @@
 #include <shape.h>
 
 namespace nd4j {
-    class ShapeList {
+    class ND4J_EXPORT ShapeList {
     protected:
         std::vector<int*> _shapes;
     public:

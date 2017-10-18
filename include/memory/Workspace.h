@@ -11,20 +11,21 @@
 #include <atomic>
 #include <vector>
 #include <mutex>
+#include <dll.h>
 #include <pointercast.h>
 #include <types/float16.h>
 
 namespace nd4j {
     namespace memory {
 
-        void ping();
+//        void ping();
 
         enum MemoryType {
             HOST,
             DEVICE,
         };
 
-        class Workspace {
+        class ND4J_EXPORT Workspace {
         protected:
             char* _ptrHost;
             char* _ptrDevice;
@@ -55,7 +56,7 @@ namespace nd4j {
             Nd4jIndex getCurrentOffset();
             Nd4jIndex getSpilledSize();
 
-            bool resizeSupported();
+//            bool resizeSupported();
 
             void* allocateBytes(Nd4jIndex numBytes);
             void* allocateBytes(MemoryType type, Nd4jIndex numBytes);

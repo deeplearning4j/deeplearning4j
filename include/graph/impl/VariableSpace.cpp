@@ -275,8 +275,8 @@ namespace nd4j {
             _handles = new std::vector<Variable<T> *>;
         }
 
-        template class VariableSpace<float>;
-        template class VariableSpace<float16>;
-        template class VariableSpace<double>;
+        template class ND4J_EXPORT VariableSpace<float>;
+        template class ND4J_EXPORT VariableSpace<float16>;
+        template class ND4J_EXPORT VariableSpace<double>;
     }
 }

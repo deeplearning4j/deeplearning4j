@@ -83,8 +83,8 @@ void nd4j::graph::Stash<T>::storeArray(nd4j::graph::Block<T>& block, const char 
         }
 
 
-        template class Stash<float>;
-        template class Stash<float16>;
-        template class Stash<double>;
+        template class ND4J_EXPORT Stash<float>;
+        template class ND4J_EXPORT Stash<float16>;
+        template class ND4J_EXPORT Stash<double>;
     }
 }

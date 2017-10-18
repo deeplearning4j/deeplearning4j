@@ -14,7 +14,7 @@
 namespace nd4j {
     namespace ops {
 
-        class OpRegistrator {
+        class ND4J_EXPORT OpRegistrator {
         private:
             static OpRegistrator* _INSTANCE;
             OpRegistrator() {};

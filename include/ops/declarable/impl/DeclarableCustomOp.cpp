@@ -17,8 +17,8 @@ namespace nd4j {
             //
         }
 
-        template class DeclarableCustomOp<float>;
-        template class DeclarableCustomOp<float16>;
-        template class DeclarableCustomOp<double>;
+        template class ND4J_EXPORT DeclarableCustomOp<float>;
+        template class ND4J_EXPORT DeclarableCustomOp<float16>;
+        template class ND4J_EXPORT DeclarableCustomOp<double>;
     }
 }

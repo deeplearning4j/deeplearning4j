@@ -5,6 +5,7 @@
 #ifndef LIBND4J_HELPER_GENERATOR_H
 #define LIBND4J_HELPER_GENERATOR_H
 
+#include <dll.h>
 
 #ifdef _MSC_VER
 // include for uint64_t on MSVC
@@ -35,7 +36,7 @@ namespace nd4j {
     namespace random {
 
 #ifdef __CUDACC__
-        class CudaManaged {
+        class ND4J_EXPORT CudaManaged {
         private:
 
         protected:
@@ -53,9 +54,9 @@ namespace nd4j {
             }
         };
 
-        class RandomBuffer : public CudaManaged {
+        class ND4J_EXPORT RandomBuffer : public CudaManaged {
 #else
-        class RandomBuffer {
+        class ND4J_EXPORT RandomBuffer {
 #endif
         private:
             void *devHolder;
@@ -611,7 +612,7 @@ namespace nd4j {
 
         };
 
-        class IGenerator {
+        class ND4J_EXPORT IGenerator {
         protected:
             Nd4jIndex limit;
             Nd4jIndex seed;
@@ -666,7 +667,7 @@ namespace nd4j {
 
 
 
-        class Xoroshiro128 : public IGenerator {
+        class ND4J_EXPORT Xoroshiro128 : public IGenerator {
         protected:
             uint64_t state[2];
 

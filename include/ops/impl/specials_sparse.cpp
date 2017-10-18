@@ -3,6 +3,7 @@
 //
 
 #include <ops/specials_sparse.h>
+#include <dll.h>
 #include <pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,8 +135,8 @@ namespace nd4j {
         }
 
 
-        template class SparseUtils<float>;
-        template class SparseUtils<float16>;
-        template class SparseUtils<double>;
+        template class ND4J_EXPORT SparseUtils<float>;
+        template class ND4J_EXPORT SparseUtils<float16>;
+        template class ND4J_EXPORT SparseUtils<double>;
     }
 }

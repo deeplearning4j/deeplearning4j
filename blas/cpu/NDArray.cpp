@@ -2256,9 +2256,12 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     
 
 
-    template class NDArray<float>;
-    template class NDArray<float16>;
-    template class NDArray<double>;
+
+
+    template class ND4J_EXPORT NDArray<float>;
+    template class ND4J_EXPORT NDArray<float16>;
+    template class ND4J_EXPORT NDArray<double>;
+
 
 
 #include "NDArray.macro"

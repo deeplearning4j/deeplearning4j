@@ -6,9 +6,10 @@
 #define LIBND4J_NDINDEX_H
 
 #include <vector>
+#include <dll.h>
 
 namespace nd4j {
-    class NDIndex {
+    class ND4J_EXPORT NDIndex {
     protected:
         std::vector<int> _indices;
     public:
@@ -24,7 +25,7 @@ namespace nd4j {
         static NDIndex* interval(int start, int end);
     };
 
-    class NDIndexAll : public NDIndex {
+    class ND4J_EXPORT NDIndexAll : public NDIndex {
     public:
         NDIndexAll();
 
@@ -32,14 +33,14 @@ namespace nd4j {
     };
 
 
-    class NDIndexPoint : public NDIndex {
+    class ND4J_EXPORT NDIndexPoint : public NDIndex {
     public:
         NDIndexPoint(int point);
 
         ~NDIndexPoint() = default;
     };
 
-    class NDIndexInterval : public NDIndex {
+    class ND4J_EXPORT NDIndexInterval : public NDIndex {
     public:
         NDIndexInterval(int start, int end);
 

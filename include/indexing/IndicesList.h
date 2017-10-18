@@ -9,7 +9,7 @@
 #include "NDIndex.h"
 
 namespace nd4j {
-    class IndicesList {
+    class ND4J_EXPORT IndicesList {
     protected:
         std::vector<NDIndex *> _indices;
     public:

@@ -263,8 +263,8 @@ namespace functions {
             }
 
 
-        template class ScalarTransform<float>;
-        template class ScalarTransform<float16>;
-        template class ScalarTransform<double>;
+        template class ND4J_EXPORT ScalarTransform<float>;
+        template class ND4J_EXPORT ScalarTransform<float16>;
+        template class ND4J_EXPORT ScalarTransform<double>;
     }
 }

@@ -12,7 +12,7 @@
 namespace nd4j {
     namespace ops {
 
-        class OpDescriptor {
+        class ND4J_EXPORT OpDescriptor {
         protected:
             int _opNum = 0;
             std::string _opName;

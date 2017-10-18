@@ -143,8 +143,8 @@ namespace nd4j {
         }
 
 
-        template class Variable<float>;
-        template class Variable<float16>;
-        template class Variable<double>;
+        template class ND4J_EXPORT Variable<float>;
+        template class ND4J_EXPORT Variable<float16>;
+        template class ND4J_EXPORT Variable<double>;
     }
 }

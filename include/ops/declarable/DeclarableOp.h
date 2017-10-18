@@ -24,7 +24,7 @@ using namespace nd4j::graph;
 namespace nd4j {
     namespace ops {
 
-        Nd4jStatus conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...);
+        Nd4jStatus ND4J_EXPORT conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...);
 
 
         template<typename T>
@@ -89,12 +89,12 @@ namespace nd4j {
             /**
              * This method sets arguments for op
              */
-            void setArguments();
+//            void setArguments();
 
             /**
              * This method returns pointer to results
              */
-            void getResults();
+//            void getResults();
 
             /**
              * This method executes everything

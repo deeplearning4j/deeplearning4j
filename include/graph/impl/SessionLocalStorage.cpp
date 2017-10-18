@@ -107,9 +107,9 @@ namespace nd4j {
             return ntid;
         }
 
-        template class SessionLocalStorage<float>;
-        template class SessionLocalStorage<float16>;
-        template class SessionLocalStorage<double>;
+        template class ND4J_EXPORT SessionLocalStorage<float>;
+        template class ND4J_EXPORT SessionLocalStorage<float16>;
+        template class ND4J_EXPORT SessionLocalStorage<double>;
     }
 }
 

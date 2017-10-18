@@ -938,12 +938,12 @@
 #define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return ND4J_STATUS_VALIDATION;
 #define REQUIRE_TRUE(...) if (nd4j::ops::conditionHelper(__FILE__, __LINE__, __VA_ARGS__) != 0) return ND4J_STATUS_VALIDATION;
 
-#define DECLARE_ENTRY(NAME, ...)           template struct __registratorFloat<NAME<float>>; \
-                                      template struct __registratorHalf<NAME<float16>>; \
-                                      template struct __registratorDouble<NAME<double>>; \
-                                      template struct __registratorSynonymHalf<NAME<float16>>; \
-                                      template struct __registratorSynonymDouble<NAME<double>>; \
-                                      template struct __registratorSynonymFloat<NAME<float>>;
+#define DECLARE_ENTRY(NAME, ...)           template struct ND4J_EXPORT __registratorFloat<NAME<float>>; \
+                                      template struct ND4J_EXPORT __registratorHalf<NAME<float16>>; \
+                                      template struct ND4J_EXPORT __registratorDouble<NAME<double>>; \
+                                      template struct ND4J_EXPORT __registratorSynonymHalf<NAME<float16>>; \
+                                      template struct ND4J_EXPORT __registratorSynonymDouble<NAME<double>>; \
+                                      template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
 #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT, INPLACEABLE)
 #define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT, INPLACEABLE)   template <typename T> \
@@ -966,6 +966,9 @@
                                                     auto shapeList = new nd4j::ShapeList(newshape); \
                                                     return shapeList; \
                                                 } \
+										template class ND4J_EXPORT NAME<float>;\
+										template class ND4J_EXPORT NAME<float16>;\
+										template class ND4J_EXPORT NAME<double>;\
 template <typename OpName>  \
 struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
@@ -1058,6 +1061,9 @@ struct __registratorSynonymDouble_##NAME {\
                                                                 auto shapeList = new nd4j::ShapeList(newshape); \
                                                                 return shapeList; \
                                                             } \
+										template class ND4J_EXPORT NAME<float>;\
+										template class ND4J_EXPORT NAME<float16>;\
+										template class ND4J_EXPORT NAME<double>;\
 template <typename OpName>  \
 struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
@@ -1104,6 +1110,9 @@ struct __registratorDouble_##NAME {\
                                                                                     auto shapeList = new nd4j::ShapeList(newshape); \
                                                                                     return shapeList; \
                                                                                 } \
+										template class ND4J_EXPORT NAME<float>;\
+										template class ND4J_EXPORT NAME<float16>;\
+										template class ND4J_EXPORT NAME<double>;\
 template <typename OpName>  \
 struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
@@ -1142,6 +1151,9 @@ struct __registratorDouble_##NAME {\
 
 #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T> \
                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { }; \
+										template class ND4J_EXPORT NAME<float>;\
+										template class ND4J_EXPORT NAME<float16>;\
+										template class ND4J_EXPORT NAME<double>;\
 template <typename OpName>  \
 struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
@@ -1182,6 +1194,9 @@ struct __registratorDouble_##NAME {\
 
 #define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)              template <typename T> \
                                                                                 nd4j::ops::NAME<T>::NAME(): nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { }; \
+										template class ND4J_EXPORT NAME<float>;\
+										template class ND4J_EXPORT NAME<float16>;\
+										template class ND4J_EXPORT NAME<double>;\
 template <typename OpName>  \
 struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\

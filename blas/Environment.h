@@ -6,9 +6,10 @@
 #define LIBND4J_ENVIRONMENT_H
 
 #include <atomic>
+#include <dll.h>
 
 namespace nd4j{
-    class Environment {
+    class ND4J_EXPORT Environment {
     private:
         std::atomic<int> _tadThreshold;
         std::atomic<int> _elementThreshold;

@@ -165,9 +165,9 @@ namespace nd4j {
         }
 
 
-        template class Block<float>;
-        template class Block<float16>;
-        template class Block<double>;
+        template class ND4J_EXPORT Block<float>;
+        template class ND4J_EXPORT Block<float16>;
+        template class ND4J_EXPORT Block<double>;
     }
 }
 

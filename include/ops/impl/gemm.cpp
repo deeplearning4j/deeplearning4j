@@ -131,12 +131,12 @@ namespace nd4j {
         }
 
 
-        template class GEMM<float>;
-        template class GEMM<float16>;
-        template class GEMM<double>;
+        template class ND4J_EXPORT GEMM<float>;
+        template class ND4J_EXPORT GEMM<float16>;
+        template class ND4J_EXPORT GEMM<double>;
 
-        template class GEMV<float>;
-        template class GEMV<float16>;
-        template class GEMV<double>;
+        template class ND4J_EXPORT GEMV<float>;
+        template class ND4J_EXPORT GEMV<float16>;
+        template class ND4J_EXPORT GEMV<double>;
     }
 }

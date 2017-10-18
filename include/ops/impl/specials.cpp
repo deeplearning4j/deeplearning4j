@@ -642,7 +642,7 @@ namespace nd4j {
         return retVal;
     }
 
-    template class SpecialMethods<float>;
-    template class SpecialMethods<float16>;
-    template class SpecialMethods<double>;
+    template class ND4J_EXPORT SpecialMethods<float>;
+    template class ND4J_EXPORT SpecialMethods<float16>;
+    template class ND4J_EXPORT SpecialMethods<double>;
 }

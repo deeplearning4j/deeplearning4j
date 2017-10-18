@@ -53,8 +53,8 @@ namespace nd4j {
         _content.emplace_back(array);
     }
 
-    template class ArrayList<float>;
-    template class ArrayList<float16>;
-    template class ArrayList<double>;
+    template class ND4J_EXPORT ArrayList<float>;
+    template class ND4J_EXPORT ArrayList<float16>;
+    template class ND4J_EXPORT ArrayList<double>;
 }
 

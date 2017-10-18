@@ -619,9 +619,9 @@ namespace nd4j {
         }
 
 
-        template class Graph<float>;
-        //template class Graph<float16>;
-        //template class Graph<double>;
+        template class ND4J_EXPORT Graph<float>;
+        //template class ND4J_EXPORT Graph<float16>;
+        //template class ND4J_EXPORT Graph<double>;
     }
 }
 

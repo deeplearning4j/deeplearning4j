@@ -521,9 +521,9 @@ namespace nd4j {
     }
 
 
-    template class NDArrayFactory<float>;
-    template class NDArrayFactory<float16>;
-    template class NDArrayFactory<double>;
+    template class ND4J_EXPORT NDArrayFactory<float>;
+    template class ND4J_EXPORT NDArrayFactory<float16>;
+    template class ND4J_EXPORT NDArrayFactory<double>;
 }
 
 #endif

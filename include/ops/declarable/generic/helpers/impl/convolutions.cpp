@@ -668,8 +668,8 @@ namespace nd4j {
         }
 
 
-        template class ConvolutionUtils<float>;
-        template class ConvolutionUtils<float16>;
-        template class ConvolutionUtils<double>;
+        template class ND4J_EXPORT ConvolutionUtils<float>;
+        template class ND4J_EXPORT ConvolutionUtils<float16>;
+        template class ND4J_EXPORT ConvolutionUtils<double>;
     }
 }

@@ -7,12 +7,13 @@
 #define LIBND4J_HELPER_HASH_H
 
 #include <string>
+#include <dll.h>
 #include <pointercast.h>
 #include <mutex>
 
 namespace nd4j {
     namespace ops {
-        class HashHelper {
+        class ND4J_EXPORT HashHelper {
         private:
             static HashHelper* _INSTANCE;
 
