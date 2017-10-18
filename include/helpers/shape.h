@@ -32,8 +32,8 @@
 #ifdef __CUDACC__
 #define INLINEDEF inline
 #else
-#define INLINEDEF ND4J_EXPORT
-
+#define INLINEDEF inline
+#endif
 
 #include "../pairwise_util.h"
 namespace shape {
@@ -75,63 +75,63 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
+    ND4J_EXPORT bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool shapeEquals(int *shapeInfo1,int *shapeInfo2);
+    ND4J_EXPORT bool shapeEquals(int *shapeInfo1,int *shapeInfo2);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool strideEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
+    ND4J_EXPORT bool strideEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool strideEquals(int *shapeInfo1,int *shapeInfo2);
+    ND4J_EXPORT bool strideEquals(int *shapeInfo1,int *shapeInfo2);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool strideEquals(int *stride1,int rank1,int *stride2,int rank2);
+    ND4J_EXPORT bool strideEquals(int *stride1,int rank1,int *stride2,int rank2);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool equalsSoft(int *shapeA, int *shapeB);
+    ND4J_EXPORT bool equalsSoft(int *shapeA, int *shapeB);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool equalsStrict(int *shapeA, int *shapeB);
+    ND4J_EXPORT bool equalsStrict(int *shapeA, int *shapeB);
 
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-    INLINEDEF void traceNew(int id);
+    ND4J_EXPORT void traceNew(int id);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int tadIndexForLinear(int linearIndex, int tadLength);
+    ND4J_EXPORT int tadIndexForLinear(int linearIndex, int tadLength);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int tadLength(int *shapeInfo, int *dimension, int dimensionLength);
+    ND4J_EXPORT int tadLength(int *shapeInfo, int *dimension, int dimensionLength);
 
 #ifdef __CUDACC__
     __host__
 #endif
-    INLINEDEF bool canReshape(const int oldRank, int* oldShape, const int newRank, int* newShape, bool isFOrder);
+    ND4J_EXPORT bool canReshape(const int oldRank, int* oldShape, const int newRank, int* newShape, bool isFOrder);
 
 #ifdef __CUDACC__
     __host__
 #endif
-    INLINEDEF bool reshapeCF(const int oldRank, int* oldShape, const int newRank, int* newShape, bool isFOrder, int* target);
+    ND4J_EXPORT bool reshapeCF(const int oldRank, int* oldShape, const int newRank, int* newShape, bool isFOrder, int* target);
 /**
  * Get the shape info buffer
  * for the given rank and shape.
@@ -139,12 +139,12 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeBuffer(int rank, int *shape);
+    ND4J_EXPORT int *shapeBuffer(int rank, int *shape);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeBuffer(int rank, int *shape, int *buffer);
+    ND4J_EXPORT int *shapeBuffer(int rank, int *shape, int *buffer);
 
     /**
  * Get the shape info buffer
@@ -153,29 +153,29 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeBufferFortran(int rank, int *shape);
+    ND4J_EXPORT int *shapeBufferFortran(int rank, int *shape);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeBufferFortran(int rank, int *shape, int *output);
+    ND4J_EXPORT int *shapeBufferFortran(int rank, int *shape, int *output);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer);
+    ND4J_EXPORT void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer);
+    ND4J_EXPORT void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer);
 
 #ifdef __CUDACC__
     template <typename T>
-    __device__ INLINEDEF int *cuMalloc(int *buffer, long size, UnifiedSharedMemory *manager);
+    __device__ ND4J_EXPORT int *cuMalloc(int *buffer, long size, UnifiedSharedMemory *manager);
 
 
-    __device__ INLINEDEF int *cuMalloc(int *buffer, long size);
+    __device__ ND4J_EXPORT int *cuMalloc(int *buffer, long size);
 #endif
 
 
@@ -190,12 +190,12 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int * calcStridesFortran(int *shape, int rank);
+    ND4J_EXPORT int * calcStridesFortran(int *shape, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int * calcStridesFortran(int *shape, int rank, int* ret);
+    ND4J_EXPORT int * calcStridesFortran(int *shape, int rank, int* ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -207,17 +207,17 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* calcStrides(int *shape, int rank);
+    ND4J_EXPORT int* calcStrides(int *shape, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* calcStrides(int *shape, int rank, int* ret);
+    ND4J_EXPORT int* calcStrides(int *shape, int rank, int* ret);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void updateStrides(int *shape, const char order);
+    ND4J_EXPORT void updateStrides(int *shape, const char order);
 
 
 /**
@@ -230,12 +230,12 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* calcStridesFortran(int *shape, int rank, int startNum);
+    ND4J_EXPORT int* calcStridesFortran(int *shape, int rank, int startNum);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* calcStridesFortran(int *shape, int rank, int startNum, int* ret);
+    ND4J_EXPORT int* calcStridesFortran(int *shape, int rank, int startNum, int* ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -247,12 +247,12 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* calcStrides(int *shape, int rank, int startNum);
+    ND4J_EXPORT int* calcStrides(int *shape, int rank, int startNum);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* calcStrides(int *shape, int rank, int startNum, int* ret);
+    ND4J_EXPORT int* calcStrides(int *shape, int rank, int startNum, int* ret);
 
 /**
  * @param toCopy the shape to copy
@@ -262,13 +262,13 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF ShapeInformation *shapeCopy( ShapeInformation *toCopy);
+    ND4J_EXPORT ShapeInformation *shapeCopy( ShapeInformation *toCopy);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF bool strideDescendingCAscendingF(int *shapeBuffer);
+    ND4J_EXPORT bool strideDescendingCAscendingF(int *shapeBuffer);
 
 /**
  * Compute the element wise stride
@@ -284,7 +284,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder);
+    ND4J_EXPORT int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder);
 
 /**
  * Compute the element wise stride
@@ -300,17 +300,17 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
+    ND4J_EXPORT int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
                                            int *dimension, int dimensionLength);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride);
+    ND4J_EXPORT int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride, int *buffer);
+    ND4J_EXPORT int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride, int *buffer);
 /**
  *
  * @param length
@@ -322,7 +322,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *doPermuteSwap(int length, int *shape, int *rearrange);
+    ND4J_EXPORT int *doPermuteSwap(int length, int *shape, int *rearrange);
 
 
 
@@ -336,32 +336,32 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF void doPermuteSwap(int length, int **shape, int *rearrange);
+    ND4J_EXPORT void doPermuteSwap(int length, int **shape, int *rearrange);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int *permuteShapeBuffer(int *shapeBuffer,int *rearrange);
+    ND4J_EXPORT int *permuteShapeBuffer(int *shapeBuffer,int *rearrange);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out);
+    ND4J_EXPORT void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange);
+    ND4J_EXPORT void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange);
+    ND4J_EXPORT void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange);
     /**
      * Rearrange the permute indexes
      * according to which  dimensions are specified.
@@ -379,12 +379,12 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *createPermuteIndexes(int originalRank,int *dimension,int dimensionLength);
+    ND4J_EXPORT int *createPermuteIndexes(int originalRank,int *dimension,int dimensionLength);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *computeResultShape(int *originalShapeBuffer,int *dimension,int dimensionLength);
+    ND4J_EXPORT int *computeResultShape(int *originalShapeBuffer,int *dimension,int dimensionLength);
 
 
 /**
@@ -399,7 +399,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF char getOrder(int length, int *shape, int *stride, int elementStride);
+    ND4J_EXPORT char getOrder(int length, int *shape, int *stride, int elementStride);
 
 /**
  * Ensure that every value in the re arrange
@@ -414,7 +414,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int checkArrangeArray(int *arr, int arrLength, int shapeLength);
+    ND4J_EXPORT int checkArrangeArray(int *arr, int arrLength, int shapeLength);
 
 /**
  * Permute the shape information
@@ -426,7 +426,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF void permute(ShapeInformation **info, int *rearrange, int rank);
+    ND4J_EXPORT void permute(ShapeInformation **info, int *rearrange, int rank);
 
 /**
  * Returns whether the
@@ -438,7 +438,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int isVector(int *shape, int rank);
+    ND4J_EXPORT int isVector(int *shape, int rank);
 
 
     /**
@@ -449,28 +449,28 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int oneDimEqualToLength(int *shape, int rank);
+    ND4J_EXPORT int oneDimEqualToLength(int *shape, int rank);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int oneDimEqualToLength(int *shapeInfo);
+    ND4J_EXPORT int oneDimEqualToLength(int *shapeInfo);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int isVector(int *shapeInfo);
+    ND4J_EXPORT int isVector(int *shapeInfo);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF bool isRowVector(int *shapeInfo);
+    ND4J_EXPORT bool isRowVector(int *shapeInfo);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF bool isColumnVector(int *shapeInfo);
+    ND4J_EXPORT bool isColumnVector(int *shapeInfo);
     /**
  * Returns whether the
  * given shape is a vector or not
@@ -481,7 +481,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int isMatrix(int *shape, int rank);
+    ND4J_EXPORT int isMatrix(int *shape, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
@@ -496,7 +496,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *shapeOf(int *buffer);
+    ND4J_EXPORT int *shapeOf(int *buffer);
 
 /**
  * Return a copy of a buffer.
@@ -507,13 +507,13 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *copyOf(int length, int *toCopy);
+    ND4J_EXPORT int *copyOf(int length, int *toCopy);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *copyOf(int length, int *toCopy, int *ret);
+    ND4J_EXPORT int *copyOf(int length, int *toCopy, int *ret);
 
     /**
  * Return a copy of a buffer.
@@ -524,7 +524,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF void copyTo(int length, int *from, int *to);
+    ND4J_EXPORT void copyTo(int length, int *from, int *to);
     /**
 * Return a copy of a buffer.
 * This buffer allocates memory
@@ -533,7 +533,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void copyTo(int length, int *from, int *to, int *indexes);
+    ND4J_EXPORT void copyTo(int length, int *from, int *to, int *indexes);
 
 /**
  * Permute the given strides
@@ -548,7 +548,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *permutedStrides(int *toPermute, int shapeRank, int *rearrange);
+    ND4J_EXPORT int *permutedStrides(int *toPermute, int shapeRank, int *rearrange);
 
 /**
  * Return the slice (shape + 1 in pointer arithmetic)
@@ -559,18 +559,18 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *slice(int *shape);
+    ND4J_EXPORT int *slice(int *shape);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int slices(int *shapeBuffer);
+    ND4J_EXPORT int slices(int *shapeBuffer);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int *sliceOfShapeBuffer(int sliceIdx,int *shapeBuffer);
+    ND4J_EXPORT int *sliceOfShapeBuffer(int sliceIdx,int *shapeBuffer);
 /**
  * Returns the length of the
  * shape information buffer:
@@ -583,27 +583,27 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int shapeInfoLength(int rank);
+    ND4J_EXPORT int shapeInfoLength(int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int shapeInfoLength(int* shapeInfo);
-
-
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    INLINEDEF size_t shapeInfoByteLength(int rank);
+    ND4J_EXPORT int shapeInfoLength(int* shapeInfo);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF size_t shapeInfoByteLength(int* shapeInfo);
+    ND4J_EXPORT size_t shapeInfoByteLength(int rank);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    ND4J_EXPORT size_t shapeInfoByteLength(int* shapeInfo);
 
 /**
  * Returns the rank portion of
@@ -613,7 +613,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int rank( int *buffer);
+    ND4J_EXPORT int rank( int *buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -629,7 +629,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF ShapeInformation *infoFromBuffer(int *buffer);
+    ND4J_EXPORT ShapeInformation *infoFromBuffer(int *buffer);
 
 /**
  * Returns the stride portion of an information
@@ -639,7 +639,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *stride(int *buffer);
+    ND4J_EXPORT int *stride(int *buffer);
 
 /**
  * Compute the length of the given shape
@@ -648,12 +648,12 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF Nd4jIndex length(int *shapeInfo);
+    ND4J_EXPORT Nd4jIndex length(int *shapeInfo);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF Nd4jIndex length(std::initializer_list<int>& shape);
+    ND4J_EXPORT Nd4jIndex length(std::initializer_list<int>& shape);
 
 /***
  * Returns the offset portion of an information buffer
@@ -662,7 +662,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int offset(int *buffer);
+    ND4J_EXPORT int offset(int *buffer);
 
 /**
  * Returns the ordering
@@ -672,7 +672,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF char order(int *buffer);
+    ND4J_EXPORT char order(int *buffer);
 
 /**
  * Returns the element wise stride for this information
@@ -682,7 +682,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int elementWiseStride(int *buffer);
+    ND4J_EXPORT int elementWiseStride(int *buffer);
 
 
     /**
@@ -694,7 +694,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int reductionIndexElementWiseStride(int *buffer, int *dimension, int dimensionLength);
+    ND4J_EXPORT int reductionIndexElementWiseStride(int *buffer, int *dimension, int dimensionLength);
 
 /**
  * Returns whether
@@ -704,7 +704,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int isScalar(int *info);
+    ND4J_EXPORT int isScalar(int *info);
 
 /**
  * Returns whether
@@ -716,7 +716,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int isScalar(volatile ShapeInformation *info);
+    ND4J_EXPORT int isScalar(volatile ShapeInformation *info);
 
 /**
  * Return a copy of this array with the
@@ -734,7 +734,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF void removeIndex(int *data, int *indexes, int dataLength, int indexesLength,
+    ND4J_EXPORT void removeIndex(int *data, int *indexes, int dataLength, int indexesLength,
                                int *out);
 
     /**
@@ -753,7 +753,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int * removeIndex(int *data, int *indexes, int dataLength, int indexesLength);
+    ND4J_EXPORT int * removeIndex(int *data, int *indexes, int dataLength, int indexesLength);
 
     /**
      * Iterate over a given set of indexes
@@ -769,7 +769,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* everyIndexBut(int *indexes,int indexesLength,int begin,int end);
+    ND4J_EXPORT int* everyIndexBut(int *indexes,int indexesLength,int begin,int end);
 
 /**
  * Computes the offset for accessing
@@ -779,7 +779,7 @@ __host__ __device__
 //#ifdef __CUDACC__
 //    __device__
 //#endif
-//    INLINEDEF int tadOffset(shape::ShapeInformation *xInfo, int offset);
+//    ND4J_EXPORT int tadOffset(shape::ShapeInformation *xInfo, int offset);
 
 /**
  * Returns a shape
@@ -793,17 +793,17 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int* ensureVectorShape(int *shape);
+    ND4J_EXPORT int* ensureVectorShape(int *shape);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* createScalarShapeInfo();
+    ND4J_EXPORT int* createScalarShapeInfo();
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* createScalarShapeInfo(int *ret);
+    ND4J_EXPORT int* createScalarShapeInfo(int *ret);
 
 /**
  * Generate an int buffer
@@ -815,7 +815,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *range(int from, int to, int increment);
+    ND4J_EXPORT int *range(int from, int to, int increment);
 
 /**
  * Range between from and two with an
@@ -825,7 +825,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *range(int from, int to);
+    ND4J_EXPORT int *range(int from, int to);
 
 /**
  * Keep the given indexes
@@ -835,7 +835,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *keep(volatile int *data, int *index, int indexLength, int dataLength);
+    ND4J_EXPORT int *keep(volatile int *data, int *index, int indexLength, int dataLength);
 
 /**
  * Generate reverse copy of the data
@@ -846,18 +846,18 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *reverseCopy(int *data, int length);
+    ND4J_EXPORT int *reverseCopy(int *data, int length);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF void reverseCopyTo(int *from, int *to, int length);
+    ND4J_EXPORT void reverseCopyTo(int *from, int *to, int length);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF void reverseCopyTo(int *from, int *to, int *indexes,int length);
+    ND4J_EXPORT void reverseCopyTo(int *from, int *to, int *indexes,int length);
 /**
  *
  * @param arr1
@@ -870,7 +870,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length);
+    ND4J_EXPORT int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length);
 
 /**
  *
@@ -884,7 +884,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *concat(int numArrays, int numTotalElements, int **arr, int *lengths);
+    ND4J_EXPORT int *concat(int numArrays, int numTotalElements, int **arr, int *lengths);
 
 /**
  * Get the length per slice of the
@@ -902,7 +902,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength);
+    ND4J_EXPORT int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength);
 
 /**
  * calculates the offset for a tensor
@@ -915,7 +915,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int sliceOffsetForTensor(int rank,
+    ND4J_EXPORT int sliceOffsetForTensor(int rank,
                                        int index,
                                        int *shape,
                                        int *tensorShape,
@@ -934,7 +934,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int sliceOffsetForTensor(int index,int tensorLength,int lengthPerSlice2);
+    ND4J_EXPORT int sliceOffsetForTensor(int index,int tensorLength,int lengthPerSlice2);
 /**
  * Computes the tensor along dimension
  * offset
@@ -947,7 +947,7 @@ __host__ __device__
 //    __host__ __device__
 //#endif
 //
-//    INLINEDEF int offset(int index,
+//    ND4J_EXPORT int offset(int index,
 //                         int rank,
 //                         shape::ShapeInformation *info,
 //                         int *dimension,
@@ -963,7 +963,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int tensorsAlongDimension(int rank,
+    ND4J_EXPORT int tensorsAlongDimension(int rank,
                                         volatile int length,
                                         volatile int *shape,
                                         int *dimension,
@@ -978,7 +978,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength);
+    ND4J_EXPORT int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength);
 
 
 
@@ -994,7 +994,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int tadForBlockIndex(int blockSize, int blockIdx, int i);
+    ND4J_EXPORT int tadForBlockIndex(int blockSize, int blockIdx, int i);
 
 /**
  * Computes the number of tads per block
@@ -1004,13 +1004,13 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int tadsPerBlock(int blockSize, int tads);
+    ND4J_EXPORT int tadsPerBlock(int blockSize, int tads);
 
 //#ifdef __CUDACC__
 //    __host__ __device__
 //#endif
 //
-//    INLINEDEF int *tadShapeInfo(int index, int *xShapeInfo, int *dimension,
+//    ND4J_EXPORT int *tadShapeInfo(int index, int *xShapeInfo, int *dimension,
 //                                int dimensionLength);
 
 /**
@@ -1021,13 +1021,13 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int *toShapeBuffer( ShapeInformation *info);
+    ND4J_EXPORT int *toShapeBuffer( ShapeInformation *info);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    INLINEDEF int *toShapeBuffer( ShapeInformation *info, int* ret);
+    ND4J_EXPORT int *toShapeBuffer( ShapeInformation *info, int* ret);
 
 /**
  * Returns the number of elements per thread
@@ -1081,7 +1081,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
+    ND4J_EXPORT int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
 
 /**
  * Map a tad to a
@@ -1095,7 +1095,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
+    ND4J_EXPORT int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
                              int tadsForOriginal);
 
 /**
@@ -1107,7 +1107,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
+    ND4J_EXPORT int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
 
 /**
  * Maps a linear index to a reduction index
@@ -1121,7 +1121,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
+    ND4J_EXPORT int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
                                 int tadNum, int originalTadNum);
 
 /**
@@ -1132,11 +1132,11 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF int prod(int *data, int length);
+    ND4J_EXPORT int prod(int *data, int length);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF Nd4jIndex prodLong( int *data, int length);
+    ND4J_EXPORT Nd4jIndex prodLong( int *data, int length);
 
     /**
      * Returns the rear most left over item not present in
@@ -1172,16 +1172,16 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF Nd4jIndex getOffset(Nd4jIndex baseOffset,  int *shape,  int *stride,  int *indices,int rank);
+    ND4J_EXPORT Nd4jIndex getOffset(Nd4jIndex baseOffset,  int *shape,  int *stride,  int *indices,int rank);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* createShapeInfo(int *shape, int *stride, int rank);
+    ND4J_EXPORT int* createShapeInfo(int *shape, int *stride, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* createShapeInfo(int *shape, int *stride, int rank, int *buffer);
+    ND4J_EXPORT int* createShapeInfo(int *shape, int *stride, int rank, int *buffer);
 
     /**
  * Convert a linear index to
@@ -1194,13 +1194,13 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* ind2sub(int rank,  int *shape,int index,int numIndices);
+    ND4J_EXPORT int* ind2sub(int rank,  int *shape,int index,int numIndices);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *ind2sub(int rank,  int *shape,int index);
+    ND4J_EXPORT int *ind2sub(int rank,  int *shape,int index);
 
     /**
      * Convert a linear index to
@@ -1213,7 +1213,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void  ind2sub(int rank,int *shape,int index,int numIndices,int *out);
+    ND4J_EXPORT void  ind2sub(int rank,int *shape,int index,int numIndices,int *out);
 
 /**
      * Convert a linear index to
@@ -1227,7 +1227,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void ind2sub(int rank, int *shape, int index, int *out);
+    ND4J_EXPORT void ind2sub(int rank, int *shape, int index, int *out);
 
     /**
   * Convert a linear index to
@@ -1240,7 +1240,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* ind2subC(int rank, int *shape, int index);
+    ND4J_EXPORT int* ind2subC(int rank, int *shape, int index);
     /**
   * Convert a linear index to
   * the equivalent nd index
@@ -1252,7 +1252,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int* ind2subC(int rank, int *shape, int index, int numIndices);
+    ND4J_EXPORT int* ind2subC(int rank, int *shape, int index, int numIndices);
 
     /**
    * Convert a linear index to
@@ -1265,7 +1265,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void  ind2subC(int rank, int *shape, int index, int numIndices, int *out);
+    ND4J_EXPORT void  ind2subC(int rank, int *shape, int index, int numIndices, int *out);
 
 /**
      * Convert a linear index to
@@ -1279,7 +1279,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void ind2subC(int rank, int *shape, int index, int *out);
+    ND4J_EXPORT void ind2subC(int rank, int *shape, int index, int *out);
 
     /**
   * Convert the given index (such as 1,1)
@@ -1292,7 +1292,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int sub2Ind(int rank, int *shape, int *indices);
+    ND4J_EXPORT int sub2Ind(int rank, int *shape, int *indices);
 
     /**
    * Compute the real linear indices for the given shape and stride
@@ -1300,7 +1300,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF Nd4jIndex *computeIndices(int rank,  int *shape,  int *stride);
+    ND4J_EXPORT Nd4jIndex *computeIndices(int rank,  int *shape,  int *stride);
 
     /**
    * Compute the real linear indices for the
@@ -1310,7 +1310,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF Nd4jIndex *computeIndices( int *shapeBuffer);
+    ND4J_EXPORT Nd4jIndex *computeIndices( int *shapeBuffer);
 
     /**
  * Convert a linear index to
@@ -1323,7 +1323,7 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void  ind2subOrder(int *shapeInfo,int index,int numIndices,int *out);
+    ND4J_EXPORT void  ind2subOrder(int *shapeInfo,int index,int numIndices,int *out);
 
     /**
  * Convert a linear index to
@@ -1336,48 +1336,48 @@ __host__ __device__
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void  ind2subOrder(int *shapeInfo,int index,int *out);
+    ND4J_EXPORT void  ind2subOrder(int *shapeInfo,int index,int *out);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void printShapeInfo(int *shapeInfo);
+    ND4J_EXPORT void printShapeInfo(int *shapeInfo);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void printShapeInfoLinear(int *shapeInfo);
+    ND4J_EXPORT void printShapeInfoLinear(int *shapeInfo);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void printIntArray(int *arr,int length);
+    ND4J_EXPORT void printIntArray(int *arr,int length);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF void printArray(float *arr,int length);
-
-
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    INLINEDEF int *shapeBufferOfNpy(int rank, unsigned int *shape,bool fortranOrder);
+    ND4J_EXPORT void printArray(float *arr,int length);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeBufferOfNpy(cnpy::NpyArray arr);
-
-
+    ND4J_EXPORT int *shapeBufferOfNpy(int rank, unsigned int *shape,bool fortranOrder);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer);
+    ND4J_EXPORT int *shapeBufferOfNpy(cnpy::NpyArray arr);
+
+
+
+
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    ND4J_EXPORT int *shapeBufferOfNpyBuffer(char *buffer);
 
 
 #ifdef __CUDACC__
@@ -1385,7 +1385,7 @@ __host__ __device__
 #endif
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
     // also sort input array of dimensions, this operation is also necessary for creating TAD object
-    INLINEDEF void checkDimensions(const int rank, std::vector<int>& dimensions);
+    ND4J_EXPORT void checkDimensions(const int rank, std::vector<int>& dimensions);
 
 //END HEADERS
 
@@ -3817,7 +3817,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    Nd4jIndex getOffset(Nd4jIndex baseOffset,  int *shape,  int *stride,  int *indices, int rank) {
+    INLINEDEF Nd4jIndex getOffset(Nd4jIndex baseOffset,  int *shape,  int *stride,  int *indices, int rank) {
         Nd4jIndex offset = baseOffset;
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i] && shape[i] != 1) {
@@ -4225,18 +4225,18 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
 
 
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer) {
-        unsigned int *shape;
-        unsigned int ndims, wordSize;
-        bool fortranOrder;
-        cnpy::parseNpyHeaderStr(std::string(buffer),wordSize,shape,ndims,fortranOrder);
-        int * ret =  shape::shapeBufferOfNpy(ndims,shape,fortranOrder);
-        delete[] shape;
-        return ret;
-    }
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer) {
+//        unsigned int *shape;
+//        unsigned int ndims, wordSize;
+//        bool fortranOrder;
+//        cnpy::parseNpyHeaderStr(std::string(buffer),wordSize,shape,ndims,fortranOrder);
+//        int * ret =  shape::shapeBufferOfNpy(ndims,shape,fortranOrder);
+//        delete[] shape;
+//        return ret;
+//    }
 
 
 #ifdef __CUDACC__
