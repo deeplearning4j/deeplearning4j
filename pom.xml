@@ -47,6 +47,29 @@
 
 
     <profiles>
+      <profile>
+        <id>libnd4jhome-defined</id>
+        <activation>
+          <property>
+            <name>env.LIBND4J_HOME</name>
+          </property>
+        </activation>
+        <properties>
+          <libnd4jhome>${env.LIBND4J_HOME}</libnd4jhome>
+        </properties>
+      </profile>
+      <profile>
+        <id>libnd4jhome-undefined</id>
+        <activation>
+          <property>
+            <name>!env.LIBND4J_HOME</name>
+          </property>
+        </activation>
+        <properties>
+          <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
+        </properties>
+      </profile>
+
         <profile>
             <id>1.9build</id>
 
@@ -483,7 +506,6 @@
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <spark.version>1.6.3</spark.version>
-        <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
         <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
