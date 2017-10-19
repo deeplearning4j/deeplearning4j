@@ -5,7 +5,7 @@ layout: default
 
 # DeepLearning4j: Convolutional Network Example
 
-In this chapter, you will learn the process of training a convolutional network. This example will be based on the [AnimalClassification.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java) program and associated data is available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/animals).
+In this chapter, you will learn the process of training a convolutional network. This example will be based on the [AnimalClassification.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java) program and associated data is available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/animals). We'll cover the following phases:
 
 - [**Data and ETL**](#ETL) 
 - [**Building a Convolutional Network**](#Building) 
@@ -13,19 +13,19 @@ In this chapter, you will learn the process of training a convolutional network.
 
 ## <a name="ETL">Data and ETL</a>
 
-The data consists of jpeg images of four different types of animals: bears, deer, ducks, and turtles - 4 possible labels. There are 22 bears, 20 deer, 22 ducks, and 20 turtles total. The first process in building a neural network is to prepare the data. 
+The goal of this example is to classify the animal in the photo. The data consists of jpeg images of four different types of animals: bears, deer, ducks, and turtles. There are 22 bears, 20 deer, 22 ducks, and 20 turtles total.
 
 ```
 protected static int numLabels = 4;
 ```
 
-Since each image is located in the directory of its animal type (i.e. images of bears are contained in a directory called bear, images of deer are continaed in a directory called deer, and etc.), the ParentPathLabelGenerator is used. This essentially creates labels from the directories each of the images are contained in. labelMaker will be used later on.
+You can use a `ParentPathLabelGenerator` for label generation since each image is located in the directory of its animal type (i.e. images of bears are contained in a directory called bear, images of deer are contained in a directory called deer, and etc.). We'll reference this in a variable called `labelMaker` and use it momentarily.
 
 ```
 ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 ```
 
-We then obtain the main path of the directory that contains the files and split the files according to a random seed rng. The BalancedPathFilter is used to randomize the paths and removes paths randomly so that there is the same number of paths for each label. After this step we will end up with 80 examples or images with 20 images in each animal class.
+We then obtain the main path of the directory that contains the files and split the files according to a random seed rng. The `BalancedPathFilter` is used to randomize the paths and removes paths randomly so that there is the same number of paths for each label. After this step we will end up with 80 examples or images with 20 images in each animal class.
 
 ```
 protected static int batchSize = 20;
@@ -47,7 +47,7 @@ InputSplit trainData = inputSplit[0];
 InputSplit testData = inputSplit[1];
 ```
 
-Because the dataset is small, we can augment generate a larger dataset from the 80 examples. This is done by transforming the given images with FlipImageTransform and WarpImageTransform. FlipImageTransform randomly flips the image according either the x-axis, y-axis, or both, and WarpImageTransform warps the image deterministically or randomly. Thus, transformed images will still share the label of the original images.
+Because the dataset is small, we can augment generate a larger dataset from the 80 examples. This is done by transforming the given images with `FlipImageTransform` and `WarpImageTransform`. `FlipImageTransform` randomly flips the image according either the x-axis, y-axis, or both, and `WarpImageTransform` warps the image deterministically or randomly. Thus, transformed images will still share the label of the original images.
 
 ```
 ImageTransform flipTransform1 = new FlipImageTransform(rng);
@@ -56,7 +56,7 @@ ImageTransform warpTransform = new WarpImageTransform(rng, 42);
 List<ImageTransform> transforms = Arrays.asList(new ImageTransform[]{flipTransform1, warpTransform, flipTransform2});
 ```
 
-The images still need to be converted in a format that neural networks can read.  Standard RecordReaders and DataSetIterators are used for this purpose. The ImageRecordReader takes in the height, width, and number of channels of the images and the labelMaker as parameters.
+The images still need to be converted in a format that neural networks can read. A standard `RecordReader` and `DataSetIterator` is suitable for this. The `ImageRecordReader` takes in the height, width, and number of channels of the images and the `labelMaker` as parameters.
    
 ```   
 protected static int height = 100;
@@ -74,7 +74,7 @@ recordReader.initialize(trainData);
 dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 ```
 
-Addtionally, if we want to scale our images, we can use an ImagePreProcessingScaler and fit it to our DataSetIterator.
+It's important that you normalize images before feeding them through a neural network. It's common practice to scale the RGB pixel values between 0 and 1. Deeplearning4j's `ImagePreProcessingScaler` does this for us automatically and we "fit" it to the data in case of anomalous values..
 
 ```
 DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
@@ -97,6 +97,9 @@ for (ImageTransform transform : transforms) {
     // above code with DataSetIterator and etc.
 }
 ```
+
+Deeplearning4j also has an advanced [PipelineImageTransform](https://github.com/deeplearning4j/DataVec) class if you want to assign probabilities to different transforms to maximize the amount of dataset augmentation.
+
 ## <a name="Building">Building a Convolutional Neural Network</a>
 
 Now that the data is ready, we can finally build the neural network. In this example, we will use MultiLayerNetwork to build a convolutional network. To start off, we need to set the network configuration using MultiLayerConfiguration. The code chunk needed is shown below.
