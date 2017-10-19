@@ -3,11 +3,9 @@ title: DeepLearning4j Convolutional Network
 layout: default
 ---
 
-------
-
 # DeepLearning4j: Convolutional Network Example
 
-In this chapter, we will show an example for a convolutional network. This example will be based on the [AnimalClassification.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java) program and t the data which available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/animals).
+In this chapter, you will learn the process of training a convolutional network. This example will be based on the [AnimalClassification.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java) program and associated data is available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/animals).
 
 - [**Data and ETL**](#ETL) 
 - [**Building a Convolutional Network**](#Building) 
@@ -15,7 +13,7 @@ In this chapter, we will show an example for a convolutional network. This examp
 
 ## <a name="ETL">Data and ETL</a>
 
-The data consists of jpeg images of four different types of animals: bears, deer, ducks, and turtles. There are 22 bears, 20 deer, 22 ducks, and 20 turtles total. The first process in building a neural network is to prepare the data. Thus, there are 4 possible labels.
+The data consists of jpeg images of four different types of animals: bears, deer, ducks, and turtles - 4 possible labels. There are 22 bears, 20 deer, 22 ducks, and 20 turtles total. The first process in building a neural network is to prepare the data. 
 
 ```
 protected static int numLabels = 4;
