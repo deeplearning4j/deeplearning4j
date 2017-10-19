@@ -108,7 +108,9 @@
         (70,simdOps::Reverse) ,\
         (71,simdOps::Pooling2D) ,\
         (72,simdOps::MatchCondition) ,\
-        (73,simdOps::ClipByValue)
+        (73,simdOps::ClipByValue) ,\
+        (74,simdOps::Swish) ,\
+        (75,simdOps::SwishDerivative)
 
 
 
