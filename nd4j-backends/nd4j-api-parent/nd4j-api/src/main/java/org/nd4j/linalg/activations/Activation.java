@@ -8,7 +8,7 @@ import org.nd4j.linalg.activations.impl.*;
  * Created by susaneraly on 12/8/16.
  */
 public enum Activation {
-    CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU;
+    CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH;
 
     /**
      * Creates an instance of the activation function
@@ -37,6 +37,8 @@ public enum Activation {
                 return new ActivationReLU();
             case SELU:
                 return new ActivationSELU();
+            case SWISH:
+                return new ActivationSwish();
             case RRELU:
                 return new ActivationRReLU();
             case SIGMOID:
