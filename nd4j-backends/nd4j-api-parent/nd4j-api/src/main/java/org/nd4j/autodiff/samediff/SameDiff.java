@@ -3064,10 +3064,10 @@ public class SameDiff {
      */
     public While whileStatement(Variable[] inputVariables,SameDiffConditional sameDiffConditional,SameDiff.SameDiffFunctionDefinition loopBody) {
         return While.builder()
-                .conditional(sameDiffConditional)
-                .loopVars(inputVariables)
-                .loopBody(loopBody)
-                .loopName("while-" + UUID.randomUUID().toString())
+                .predicate(sameDiffConditional)
+                .loopVariables(inputVariables)
+                .trueBody(loopBody).parent(this)
+                .blockName("while-" + UUID.randomUUID().toString())
                 .build();
     }
 
@@ -3082,7 +3082,7 @@ public class SameDiff {
         return If.builder()
                 .falseBody(falseBody)
                 .trueBody(trueBody)
-                .predicate(conditional)
+                .predicate(conditional).parent(this)
                 .blockName("if-" + UUID.randomUUID().toString())
                 .build();
     }

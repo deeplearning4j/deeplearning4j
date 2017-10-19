@@ -59,13 +59,16 @@ public class While extends DifferentialFunction implements CustomOp {
     private SDVariable targetBoolean;
 
     @Getter
-    private String blockName,falseBodyName,trueBodyName;
+    private String blockName,trueBodyName;
 
+    @Getter
+    private Variable[] loopVariables;
 
     @Builder
-    public While(String blockName,SameDiff parent,SameDiff.SameDiffConditional predicate, SameDiff.SameDiffFunctionDefinition trueBody) {
+    public While(String blockName,SameDiff parent, Variable[] loopVariables,SameDiff.SameDiffConditional predicate, SameDiff.SameDiffFunctionDefinition trueBody) {
         this.predicate = predicate;
         this.trueBody = trueBody;
+        this.loopVariables = loopVariables;
         this.blockName = blockName;
         String trueBodyName = "true-body-" + UUID.randomUUID().toString();
         this.trueBodyName = trueBodyName;
