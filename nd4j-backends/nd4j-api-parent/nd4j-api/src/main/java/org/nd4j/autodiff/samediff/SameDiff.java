@@ -3360,6 +3360,20 @@ public class SameDiff {
                     ifOp.getSameDiff().getFunction(ifOp.getFalseBodyName()).invokeGraphOn(this);
                 }
             }
+            else if(op instanceof While) {
+                While whileOp = (While) op;
+                String opName = whileOp.getBlockName();
+                SameDiff execBody = getFunction(opName);
+                //evaluate the result
+                execBody.exec();
+                //depending on the block add the proper graph body to this for persistence
+                //and possible later processing.
+                while(whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                    execBody.exec();
+                    whileOp.getSameDiff().getFunction(whileOp.getTrueBodyName()).invokeGraphOn(this);
+                }
+
+            }
 
             if(debugMode) {
                 opsForResult.put(opExecAction.getOutputId(),op);

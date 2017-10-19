@@ -8,6 +8,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -48,24 +49,33 @@ public class While extends DifferentialFunction implements CustomOp {
     private List<INDArray> outputArrays;
 
 
-    /**
-     * Construct with relevant loop variables,
-     * a loop body, and the proper conditionals.
-     * @param loopVars the variables to use for the loop
-     * @param loopBody the body of the loop
-     * @param conditional the condition of termination for th eloop
-     */
-    @Builder
-    public While(String loopName,Variable[] loopVars, SameDiff.SameDiffFunctionDefinition loopBody, SameDiff.SameDiffConditional conditional) {
-        this.loopBody = loopBody;
-        this.conditional = conditional;
-        this.args = loopVars;
-        this.loopName = loopName;
+    @Getter
+    private SameDiff.SameDiffConditional predicate;
+    @Getter
+    private SameDiff.SameDiffFunctionDefinition trueBody;
+    @Getter
+    private SameDiff trueBlockExecution;
+    @Getter
+    private SDVariable targetBoolean;
 
-        addEdges(loopVars[0].getSameDiff(),
+    @Getter
+    private String blockName,falseBodyName,trueBodyName;
+
+
+    @Builder
+    public While(String blockName,SameDiff parent,SameDiff.SameDiffConditional predicate, SameDiff.SameDiffFunctionDefinition trueBody) {
+        this.predicate = predicate;
+        this.trueBody = trueBody;
+        this.blockName = blockName;
+        String trueBodyName = "true-body-" + UUID.randomUUID().toString();
+        this.trueBodyName = trueBodyName;
+        parent.defineFunction(trueBodyName,trueBody);
+
+        addEdges(parent,
                 opName(),
                 Op.Type.LOOP,
                 null);
+
     }
 
 
