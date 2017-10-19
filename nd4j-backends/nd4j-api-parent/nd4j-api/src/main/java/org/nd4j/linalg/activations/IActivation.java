@@ -22,6 +22,7 @@ import java.io.Serializable;
                 @JsonSubTypes.Type(value = ActivationRationalTanh.class, name = "RationalTanh"),
                 @JsonSubTypes.Type(value = ActivationRectifiedTanh.class, name = "RectifiedTanh"),
                 @JsonSubTypes.Type(value = ActivationSELU.class, name = "SELU"),
+                @JsonSubTypes.Type(value = ActivationSwish.class, name = "SWISH"),
                 @JsonSubTypes.Type(value = ActivationReLU.class, name = "ReLU"),
                 @JsonSubTypes.Type(value = ActivationRReLU.class, name = "RReLU"),
                 @JsonSubTypes.Type(value = ActivationSigmoid.class, name = "Sigmoid"),
