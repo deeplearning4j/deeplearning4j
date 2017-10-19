@@ -5,7 +5,7 @@ layout: default
 
 # DeepLearning4j: Convolutional Network Example
 
-In this chapter, you will learn the process of training a convolutional network. This example will be based on the [AnimalClassification.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java) program and associated data is available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/animals). We'll cover the following phases:
+In this chapter, you will learn the process of training a convolutional network. This example will be based on the [AnimalClassification.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java) program. Associated data is available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/animals). We'll cover the following phases:
 
 - [**Data and ETL**](#ETL) 
 - [**Building a Convolutional Network**](#Building) 
@@ -13,19 +13,19 @@ In this chapter, you will learn the process of training a convolutional network.
 
 ## <a name="ETL">Data and ETL</a>
 
-The goal of this example is to classify the animal in the photo. The data consists of jpeg images of four different types of animals: bears, deer, ducks, and turtles. There are 22 bears, 20 deer, 22 ducks, and 20 turtles total.
+The goal of this example is to classify the animal in the photo. The data consists of `.jpg` images of four different types of animals: bears, deer, ducks, and turtles. There are 22 bears, 20 deer, 22 ducks, and 20 turtles total.
 
 ```
 protected static int numLabels = 4;
 ```
 
-You can use a `ParentPathLabelGenerator` for label generation since each image is located in the directory of its animal type (i.e. images of bears are contained in a directory called bear, images of deer are contained in a directory called deer, and etc.). We'll reference this in a variable called `labelMaker` and use it momentarily.
+You can use a `ParentPathLabelGenerator` for label generation since each image is located in the directory of its animal type (i.e. images of bears are contained in a directory called bear, images of deer are contained in a directory called deer, and etc.). We'll reference this in a variable called `labelMaker`, and use it momentarily.
 
 ```
 ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 ```
 
-We then obtain the main path of the directory that contains the files and split the files according to a random seed rng. The `BalancedPathFilter` is used to randomize the paths and removes paths randomly so that there is the same number of paths for each label. After this step we will end up with 80 examples or images with 20 images in each animal class.
+We then obtain the main path of the directory that contains the files and split the files according to a random seed rng. The `BalancedPathFilter` is used to randomize the paths and removes paths randomly so that there is the same number of paths for each label. After this step, we will end up with 80 examples or images with 20 images in each animal class.
 
 ```
 protected static int batchSize = 20;
@@ -37,7 +37,7 @@ FileSplit fileSplit = new FileSplit(mainPath, NativeImageLoader.ALLOWED_FORMATS,
 BalancedPathFilter pathFilter = new BalancedPathFilter(rng, labelMaker, numExamples, numLabels, batchSize);
 ```
 
-The next step splits the data into train and test sets. The train split contains 80 percent of the data and the test set is comprised of 20 percent of the data. We will later train the neural network on the training set and evaluate the model on the test set.
+The next step splits the data into a training set and test set. The training set contains 80 percent of the data and the test set is comprised of 20 percent of the data. We will later train the neural network on the training set and evaluate the model on the test set.
 
 ```
 protected static double splitTrainTest = 0.8;
@@ -47,7 +47,7 @@ InputSplit trainData = inputSplit[0];
 InputSplit testData = inputSplit[1];
 ```
 
-Because the dataset is small, we can augment generate a larger dataset from the 80 examples. This is done by transforming the given images with `FlipImageTransform` and `WarpImageTransform`. `FlipImageTransform` randomly flips the image according either the x-axis, y-axis, or both, and `WarpImageTransform` warps the image deterministically or randomly. Thus, transformed images will still share the label of the original images.
+Because the dataset is small, we will generate a larger dataset from the 80 examples. This data augmentation is done by transforming the given images with `FlipImageTransform` and `WarpImageTransform`. `FlipImageTransform` randomly flips the image according either the x-axis, y-axis, or both, and `WarpImageTransform` warps the image either deterministically or randomly. Thus, transformed images will still share the label of the original images.
 
 ```
 ImageTransform flipTransform1 = new FlipImageTransform(rng);
@@ -56,7 +56,7 @@ ImageTransform warpTransform = new WarpImageTransform(rng, 42);
 List<ImageTransform> transforms = Arrays.asList(new ImageTransform[]{flipTransform1, warpTransform, flipTransform2});
 ```
 
-The images still need to be converted in a format that neural networks can read. A standard `RecordReader` and `DataSetIterator` is suitable for this. The `ImageRecordReader` takes in the height, width, and number of channels of the images and the `labelMaker` as parameters.
+The images still need to be converted into a format that neural networks can read. A standard `RecordReader` and `DataSetIterator` is suitable for this. The `ImageRecordReader` takes in the height, width, and number of channels of the images and the `labelMaker` as parameters.
    
 ```   
 protected static int height = 100;
@@ -74,7 +74,7 @@ recordReader.initialize(trainData);
 dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 ```
 
-It's important that you normalize images before feeding them through a neural network. It's common practice to scale the RGB pixel values between 0 and 1. Deeplearning4j's `ImagePreProcessingScaler` does this for us automatically and we "fit" it to the data in case of anomalous values..
+It's important that you normalize images before feeding them through a neural network. Common practice is to scale the RGB pixel values between 0 and 1. Deeplearning4j's `ImagePreProcessingScaler` does this for us automatically and we "fit" it to the data in case of anomalous values. 
 
 ```
 DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
@@ -82,14 +82,14 @@ scaler.fit(dataIter);
 dataIter.setPreProcessor(scaler);
 ```
 
-Lastly, if we want DL4J to automatically train the data with multiple epochs and not explicitly do this via loops, we can define a MultipleEpochsIterator which takes in the number of epochs and the DataSetIterator.
+Lastly, if we want DL4J to automatically train on the data over multiple epochs and not explicitly do this via loops, we can define a `MultipleEpochsIterator` which takes in the number of epochs and the `DataSetIterator`.
 
 ```
 protected static int epochs = 50;
 MultipleEpochsIterator trainIter = new MultipleEpochsIterator(epochs, dataIter);
 ```
 
-The above process converts the original data without the transformed images. If the transformations are desired, then simply initialize the RecordReader with the transforms in a loop.
+The above process converts the original data without the transformed images. If the transformations are desired, then simply initialize the `RecordReader` with the transforms in a loop.
 
 ```
 for (ImageTransform transform : transforms) {
@@ -102,7 +102,7 @@ Deeplearning4j also has an advanced [PipelineImageTransform](https://github.com/
 
 ## <a name="Building">Building a Convolutional Neural Network</a>
 
-Now that the data is ready, we can finally build the neural network. In this example, we will use MultiLayerNetwork to build a convolutional network. To start off, we need to set the network configuration using MultiLayerConfiguration. The code chunk needed is shown below.
+Now that the data is ready, we can finally build the neural network. In this example, we will use `MultiLayerNetwork` to build a convolutional network. To start off, we need to set the network configuration using `MultiLayerConfiguration`. The necessary code chunk is shown below.
 
 ```
 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -129,7 +129,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     .build();
 ```
 
-This code depends on a few defined funcions and variables below to help make the code more readable.
+This code depends on a few defined functions and variables below to help make the code more readable.
 
 ```
 protected static int channels = 3;
@@ -147,7 +147,13 @@ private SubsamplingLayer maxPool(String name,  int[] kernel) {
 }
 ```
 
-Thus, we see that the first convolutional layer consists of a kernel of size 5 by 5, stride of 1 by 1, and 0 padding and takes in an input image with 3 channels. The second layer consists of a maxpool layer which has a kernel size of 2 by 2. Thus, the max value of each 2 by 2 block in the output from the convolutional layer will be used for input into the next layer, the second convolutional layer. This second convolutional layer takes has kernel size of 5 by 5, stride of 1 by 1, and pads the input using zeros in each dimension. Another maxpool layer is used, which outputs values into a 500 node dense layer. The final layer is the output layer which uses the negative log likelihood loss, 4 output labels (since there are 4 animal types), and a softmax activation for classification. 
+Thus, we see that the first convolutional layer consists of a kernel of size 5 by 5, stride of 1 by 1, and 0 padding, and takes in an input image with 3 channels. 
+
+The second layer consists of a maxpool layer which has a kernel size of 2 by 2. Thus, the max value of each 2 by 2 block in the output from the convolutional layer will be used for input into the next layer, the second convolutional layer. 
+
+This second convolutional layer takes has kernel size of 5 by 5, stride of 1 by 1, and pads the input using zeros in each dimension. Another maxpool layer is used, which outputs values into a 500 node dense layer. 
+
+The final layer is the output layer which uses the loss function of negative log likelihood, 4 output labels (since there are 4 animal types), and a softmax activation for classification. 
 
 ## <a name="Training">Training and Evaluating a Convolutional Neural Network</a>
 
@@ -158,7 +164,7 @@ MultiLayerNetwork network = new MultiLayerNetwork(conf);
 network.fit(trainIter);
 ```
 
-Since trainIter is a MultiEpochsIterator, the network will automatically be trained using 50 epochs. Once the training is complete, it is easy to evaluate the model on the test data. We assume dataIter consists of the test data. The process is similar to converting the training data to a DataSetIterator.
+Since `trainIter` is a `MultiEpochsIterator`, the network will automatically be trained using 50 epochs. Once the training is complete, it is easy to evaluate the model on the test data. We assume `dataIter` consists of the test data. The process is similar to converting the training data to a `DataSetIterator`.
 
 ```
 Evaluation eval = network.evaluate(dataIter);
