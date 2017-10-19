@@ -31,13 +31,16 @@ import java.util.UUID;
 public class While extends DifferentialFunction implements CustomOp {
 
     @Getter
-    private SameDiff.SameDiffFunctionBody loopBody;
+    private SameDiff.SameDiffFunctionDefinition loopBody;
     @Getter
     private SameDiff.SameDiffConditional conditional;
     @Getter
     private NDArrayVertex[] outputs;
     @Getter
     protected DifferentialFunction[] outputFunctions;
+
+    @Getter
+    private String loopName;
 
     private List<int[]> outputShapes;
 
@@ -53,10 +56,12 @@ public class While extends DifferentialFunction implements CustomOp {
      * @param conditional the condition of termination for th eloop
      */
     @Builder
-    public While(Variable[] loopVars, SameDiff.SameDiffFunctionBody loopBody, SameDiff.SameDiffConditional conditional) {
+    public While(String loopName,Variable[] loopVars, SameDiff.SameDiffFunctionDefinition loopBody, SameDiff.SameDiffConditional conditional) {
         this.loopBody = loopBody;
         this.conditional = conditional;
         this.args = loopVars;
+        this.loopName = loopName;
+
         addEdges(loopVars[0].getSameDiff(),
                 opName(),
                 Op.Type.LOOP,

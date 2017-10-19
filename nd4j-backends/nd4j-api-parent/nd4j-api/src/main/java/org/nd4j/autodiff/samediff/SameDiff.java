@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import org.nd4j.linalg.api.ops.impl.controlflow.If;
+import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
@@ -31,6 +33,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import sun.misc.UUDecoder;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -3030,17 +3033,6 @@ public class SameDiff {
         return ret;
     }
 
-    /**
-     * Execute a loop based on the given condition, body, and inputs
-     * @param inputs the inputs to the loop
-     * @param conditional the conditional
-     * @param sameDiffFunctionBody the loop body
-     */
-    public void execLoop(SDVariable[] inputs,SameDiffConditional conditional,SameDiffFunctionBody sameDiffFunctionBody) {
-        while(conditional.eval(sameDiffFunctionBody,inputs)) {
-            sameDiffFunctionBody.run(inputs);
-        }
-    }
 
 
     /**
@@ -3053,28 +3045,58 @@ public class SameDiff {
         return getNDArray(differentialFunction.getResult());
     }
 
-
-    public interface SameDiffFunctionBody {
-        SDVariable[] run(SDVariable...inputs);
-    }
-
     public interface SameDiffConditional {
         /**
          * The inputs
          * @param inputs
          * @return
          */
-        boolean eval(SameDiffFunctionBody body, SDVariable...inputs);
+        boolean eval(SameDiff context,SameDiffFunctionDefinition body, SDVariable...inputs);
     }
+
+
+    /**
+     * Creates a while statement
+     * @param inputVariables
+     * @param sameDiffConditional
+     * @param loopBody
+     * @return
+     */
+    public While whileStatement(Variable[] inputVariables,SameDiffConditional sameDiffConditional,SameDiff.SameDiffFunctionDefinition loopBody) {
+        return While.builder()
+                .conditional(sameDiffConditional)
+                .loopVars(inputVariables)
+                .loopBody(loopBody)
+                .loopName("while-" + UUID.randomUUID().toString())
+                .build();
+    }
+
+    /**
+     *
+      * @param conditional
+     * @param trueBody
+     * @param falseBody
+     * @return
+     */
+    public If ifStatement(SameDiffConditional conditional, SameDiffFunctionDefinition trueBody, SameDiffFunctionDefinition falseBody) {
+        return If.builder()
+                .falseBody(falseBody)
+                .trueBody(trueBody)
+                .predicate(conditional)
+                .blockName("if-" + UUID.randomUUID().toString())
+                .build();
+    }
+
 
     public interface SameDiffFunctionDefinition {
 
         /**
          *
          * @param inputs
+         * @param variableInputs
          * @return
          */
-        SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs);
+        SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs);
     }
 
     /**
@@ -3112,7 +3134,7 @@ public class SameDiff {
             sub.setWorkspace(workspace);
             //setup subgraph
             //re execute to populate subgraph
-            functionDefinition.define(sub,inputs);
+            functionDefinition.define(sub,inputs, null);
 
             sameDiffFunctionInstances.put(function,sub);
         }
@@ -3170,7 +3192,7 @@ public class SameDiff {
             defineFunction("grad", new SameDiffFunctionDefinition() {
 
                 @Override
-                public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                     //propagate graph to this samediff instance
                     //which wil also contain the backward
                     if(SameDiff.this.debugMode) {
@@ -3266,11 +3288,11 @@ public class SameDiff {
                     }
 
 
-                    return SDVariable.builder()
+                    return new   SDVariable[] {SDVariable.builder()
                             .differentialFunction(opOrder.get(0).getOpState().getDifferentialFunction())
                             .sameDiff(sameDiff)
                             .varName("grad")
-                            .build();
+                            .build()};
                 }
             });
 
@@ -3323,6 +3345,21 @@ public class SameDiff {
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
+            if(op instanceof If) {
+                If ifOp = (If) op;
+                String opName = ifOp.getBlockName();
+                SameDiff execBody = getFunction(opName);
+                 //evaluate the result
+                execBody.exec();
+                //depending on the block add the proper graph body to this for persistence
+                //and possible later processing.
+                if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                   ifOp.getSameDiff().getFunction(ifOp.getTrueBodyName()).invokeGraphOn(this);
+                }
+                else {
+                    ifOp.getSameDiff().getFunction(ifOp.getFalseBodyName()).invokeGraphOn(this);
+                }
+            }
 
             if(debugMode) {
                 opsForResult.put(opExecAction.getOutputId(),op);

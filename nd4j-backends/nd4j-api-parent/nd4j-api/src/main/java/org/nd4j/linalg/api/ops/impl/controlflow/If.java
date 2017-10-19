@@ -6,14 +6,16 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Equivalent to tensorflow's conditional op.
- * Runs one of 2 {@link SameDiff.SameDiffFunctionBody}
+ * Runs one of 2 {@link SameDiff.SameDiffFunctionDefinition}
  * depending on a predicate {@link org.nd4j.autodiff.samediff.SameDiff.SameDiffConditional}
  *
  *
@@ -24,13 +26,28 @@ public class If extends DifferentialFunction implements CustomOp {
     @Getter
     private SameDiff.SameDiffConditional predicate;
     @Getter
-    private SameDiff.SameDiffFunctionBody trueBody,falseBody;
+    private SameDiff.SameDiffFunctionDefinition trueBody,falseBody;
+    @Getter
+    private SameDiff trueBlockExecution,falseBlockExecution;
+    @Getter
+    private SDVariable targetBoolean;
+
+    @Getter
+    private String blockName,falseBodyName,trueBodyName;
+
 
     @Builder
-    public If(SameDiff.SameDiffConditional predicate, SameDiff.SameDiffFunctionBody trueBody, SameDiff.SameDiffFunctionBody falseBody) {
+    public If(String blockName,SameDiff parent,SameDiff.SameDiffConditional predicate, SameDiff.SameDiffFunctionDefinition trueBody, SameDiff.SameDiffFunctionDefinition falseBody) {
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.falseBody = falseBody;
+        this.blockName = blockName;
+        String falseBodyName = "false-body-" + UUID.randomUUID().toString();
+        String trueBodyName = "true-body-" + UUID.randomUUID().toString();
+        this.trueBodyName = trueBodyName;
+        this.falseBodyName = falseBodyName;
+        parent.defineFunction(falseBodyName,falseBody);
+        parent.defineFunction(trueBodyName,trueBody);
     }
 
     @Override
