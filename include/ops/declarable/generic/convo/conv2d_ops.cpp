@@ -325,12 +325,15 @@ namespace nd4j {
             z->reshapei('c', {inDepth, batchSize * oY * oX, outDepth});
             NDArrayFactory<T>::mmulHelper(c_, w_, z);
 
+
             if (bias != nullptr) {
                 z->reshapei('c', {-1, (int) bias->lengthOf()});
                 z->addiRowVector(bias);
             }
 
-            z->reshapei('c', {input->sizeAt(0),outDepth * inDepth, oY, oX });
+            z->reshapei('c', {inDepth, batchSize, oY * oX, outDepth});
+            z->permutei({1, 0, 3, 2});
+            z->reshapei('c', {batchSize, inDepth * outDepth, oY, oX});
 
 
             STORE_RESULT(*z);
