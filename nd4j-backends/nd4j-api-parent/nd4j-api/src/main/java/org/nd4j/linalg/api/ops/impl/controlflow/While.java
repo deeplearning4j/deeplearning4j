@@ -49,14 +49,11 @@ public class While extends DifferentialFunction implements CustomOp {
     private List<INDArray> outputArrays;
 
 
+
     @Getter
     private SameDiff.SameDiffConditional predicate;
     @Getter
     private SameDiff.SameDiffFunctionDefinition trueBody;
-    @Getter
-    private SameDiff trueBlockExecution;
-    @Getter
-    private SDVariable targetBoolean;
 
     @Getter
     private String blockName,trueBodyName;
@@ -64,15 +61,22 @@ public class While extends DifferentialFunction implements CustomOp {
     @Getter
     private Variable[] loopVariables;
 
+    @Getter
+    private SDVariable targetBoolean;
+
     @Builder
-    public While(String blockName,SameDiff parent, Variable[] loopVariables,SameDiff.SameDiffConditional predicate, SameDiff.SameDiffFunctionDefinition trueBody) {
+    public While(String blockName,
+                 SameDiff parent,
+                 Variable[] loopVariables,
+                 SameDiff.SameDiffConditional predicate,
+                 SameDiff.SameDiffFunctionDefinition trueBody) {
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.loopVariables = loopVariables;
         this.blockName = blockName;
         String trueBodyName = "true-body-" + UUID.randomUUID().toString();
         this.trueBodyName = trueBodyName;
-        parent.defineFunction(trueBodyName,trueBody);
+        parent.defineFunction(trueBodyName,trueBody,loopVariables);
 
         addEdges(parent,
                 opName(),
@@ -80,6 +84,8 @@ public class While extends DifferentialFunction implements CustomOp {
                 null);
 
     }
+
+
 
 
 

@@ -20,6 +20,6 @@ public class LogisticPredictions implements SameDiff.SameDiffFunctionDefinition 
         SDVariable preOutput = sameDiff.mmul(input,w);
         SDVariable sigmoid = sameDiff.sigmoid(preOutput);
 
-        return sigmoid;
+        return new SDVariable[]{sigmoid};
     }
 }

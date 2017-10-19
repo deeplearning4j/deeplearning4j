@@ -3112,12 +3112,39 @@ public class SameDiff {
         return ret;
     }
 
+
+    /**
+     *
+     * @param function
+     */
+    public void defineFunction(String function,SameDiffFunctionDefinition functionDefinition,Variable[] variables) {
+        if(!sameDiffFunctionInstances.containsKey(function)) {
+            SameDiff sub = SameDiff.create();
+            sub.setWorkspace(workspace);
+            //setup subgraph
+            //re execute to populate subgraph
+            SDVariable[] ret = new SDVariable[variables.length];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = SDVariable
+                        .builder()
+                        .arrayField(variables[i])
+                        .sameDiff(sub)
+                        .varName(variables[i].getName())
+                        .shape(variables[i].getResultShape())
+                        .build();
+            }
+
+            functionDefinition.define(sub,null, ret);
+            sameDiffFunctionInstances.put(function,sub);
+        }
+    }
+
     /**
      *
      * @param function
      */
     public void defineFunction(String function,SameDiffFunctionDefinition functionDefinition) {
-        defineFunction(function,functionDefinition,null);
+        defineFunction(function,functionDefinition,new HashMap<String, INDArray>());
     }
 
     /**
