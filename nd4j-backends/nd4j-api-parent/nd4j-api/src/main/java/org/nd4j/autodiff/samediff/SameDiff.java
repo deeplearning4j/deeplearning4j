@@ -608,7 +608,7 @@ public class SameDiff {
                     reverseArrayLookup.put(arr,info);
                 }
                 else {
-                    INDArray newAlloc = info.getWeightInitScheme().create(func.getResultShape(),Nd4j.zeros(func.getResultShape(),info.getWeightInitScheme().order()Fexec));
+                    INDArray newAlloc = info.getWeightInitScheme().create(func.getResultShape(),Nd4j.zeros(func.getResultShape(),info.getWeightInitScheme().order()));
                     vertexToArray.put(info.getArrId(),newAlloc);
                     reverseArrayLookup.put(newAlloc,info);
                 }
@@ -682,10 +682,9 @@ public class SameDiff {
         addVariable(ret);
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
-        if(arr != null) {
-            vertexToArray.put(ndArrayInformation.getArrId(), arr);
-            reverseArrayLookup.put(arr, ndArrayInformation);
-        }
+        vertexToArray.put(ndArrayInformation.getArrId(), arr);
+        reverseArrayLookup.put(arr, ndArrayInformation);
+
 
         vertexIdxToInfo.put(ndArrayVertex.vertexID(),ndArrayInformation);
         variableMap.put(name,ret);
@@ -759,7 +758,7 @@ public class SameDiff {
      */
     public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
         Conv3D conv3D = Conv3D.sameDiffBuilder()
-              .aH(conv3DConfig.getAH())
+                .aH(conv3DConfig.getAH())
                 .aT(conv3DConfig.getAT())
                 .aW(conv3DConfig.getAW())
                 .biasUsed(conv3DConfig.isBiasUsed())
