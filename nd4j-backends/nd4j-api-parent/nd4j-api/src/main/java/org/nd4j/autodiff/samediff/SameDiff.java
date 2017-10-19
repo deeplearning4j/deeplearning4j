@@ -608,7 +608,7 @@ public class SameDiff {
                     reverseArrayLookup.put(arr,info);
                 }
                 else {
-                    INDArray newAlloc = info.getWeightInitScheme().create(func.getResultShape(),Nd4j.zeros(func.getResultShape(),info.getWeightInitScheme().order()));
+                    INDArray newAlloc = info.getWeightInitScheme().create(func.getResultShape(),Nd4j.zeros(func.getResultShape(),info.getWeightInitScheme().order()Fexec));
                     vertexToArray.put(info.getArrId(),newAlloc);
                     reverseArrayLookup.put(newAlloc,info);
                 }
@@ -3031,6 +3031,42 @@ public class SameDiff {
         return ret;
     }
 
+    /**
+     * Execute a loop based on the given condition, body, and inputs
+     * @param inputs the inputs to the loop
+     * @param conditional the conditional
+     * @param sameDiffFunctionBody the loop body
+     */
+    public void execLoop(SDVariable[] inputs,SameDiffConditional conditional,SameDiffFunctionBody sameDiffFunctionBody) {
+        while(conditional.eval(sameDiffFunctionBody,inputs)) {
+            sameDiffFunctionBody.run(inputs);
+        }
+    }
+
+
+    /**
+     * Get the ndarray for a particular
+     * variable.
+     * @param differentialFunction
+     * @return
+     */
+    public INDArray getArrayFor(Variable differentialFunction) {
+        return getNDArray(differentialFunction.getResult());
+    }
+
+
+    public interface SameDiffFunctionBody {
+        SDVariable[] run(SDVariable...inputs);
+    }
+
+    public interface SameDiffConditional {
+        /**
+         * The inputs
+         * @param inputs
+         * @return
+         */
+        boolean eval(SameDiffFunctionBody body, SDVariable...inputs);
+    }
 
     public interface SameDiffFunctionDefinition {
 

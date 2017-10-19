@@ -59,7 +59,10 @@ public interface Op {
         AGGREGATION,
         CUSTOM,
         GRADIENT,
-        SHAPE
+        SHAPE,
+        CONDITIONAL,
+        LOOP,
+        IF
     }
 
     /**
