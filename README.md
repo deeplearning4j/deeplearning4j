@@ -1,6 +1,6 @@
 # Arbiter
 
-A tool dedicated to evaluating and tuning machine learning models. Part of the DL4J Suite of Machine Learning / Deep Learning tools for the enterprise.
+A tool dedicated to tuning (hyperparameter optimization) of machine learning models. Part of the DL4J Suite of Machine Learning / Deep Learning tools for the enterprise.
 
 
 ## Modules
