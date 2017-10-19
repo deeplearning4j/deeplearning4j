@@ -267,11 +267,20 @@ namespace nd4j {
          */
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *weightsDepth = INPUT_VARIABLE(1);
+            NDArray<T> *weightsPoint = nullptr;
             NDArray<T> *bias = nullptr;
-            if (block.getVariables().size() == 3)
-                bias = block.getVariables().at(2)->getNDArray();
+            if (block.getVariables().size() == 3) {
+                auto tmp = INPUT_VARIABLE(2);
+                if (tmp->rankOf() == 4)
+                    weightsPoint = tmp;
+                else
+                    bias = tmp;
+            } else if (block.getVariables().size() == 4) {
+                weightsPoint = INPUT_VARIABLE(2);
+                bias = INPUT_VARIABLE(3);
+            }
 
             NDArray<T> *z = this->getZ(block);
 
@@ -289,12 +298,16 @@ namespace nd4j {
             int oX = 0;
 
             const int batchSize = input->shapeOf()[0];
-            const int outDepth = weights->shapeOf()[0];
-            const int inDepth = weights->shapeOf()[1];
+            const int outDepth = weightsDepth->shapeOf()[0];
+            const int inDepth = weightsDepth->shapeOf()[1];
             const int inY = input->shapeOf()[2];
             const int inX = input->shapeOf()[3];
 
-            REQUIRE_TRUE(weights->shapeOf()[2] == kY && weights->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weights->sizeAt(2), weights->sizeAt(3));
+            if (weightsPoint != nullptr) {
+                REQUIRE_TRUE(weightsPoint->sizeAt(2) == 1  && weightsPoint->sizeAt(3) == 1, 0, "For sconv2d point-wise kernelHeight and kernelWidth should be equal to 1");
+            }
+
+            REQUIRE_TRUE(weightsDepth->shapeOf()[2] == kY && weightsDepth->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weightsDepth->sizeAt(2), weightsDepth->sizeAt(3));
 
             if (input->sizeAt(1) == 1) {
                 nd4j_debug("Separable conv2d for 1 channel equals to standard conv2d\n","");
@@ -316,25 +329,45 @@ namespace nd4j {
             input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.data());
 
             NDArray<T>* c_ = col2.get()->permute({1, 0, 4, 5, 2, 3});
-            NDArray<T>* w_ = weights->permute({1, 2, 3, 0});
+            NDArray<T>* w_ = weightsDepth->permute({1, 2, 3, 0});
 
             c_->reshapei('c', {inDepth, batchSize * oY * oX, kY * kX});
             w_->reshapei('c', {inDepth, kY * kX, outDepth});
 
-            // matmul here
-            z->reshapei('c', {inDepth, batchSize * oY * oX, outDepth});
-            NDArrayFactory<T>::mmulHelper(c_, w_, z);
+            // if weightsPoint is null, we'll be doing only depthwise step
+            if (weightsPoint == nullptr) {
+                // matmul here
+                z->reshapei('c', {inDepth, batchSize * oY * oX, outDepth});
+                NDArrayFactory<T>::mmulHelper(c_, w_, z);
 
 
-            if (bias != nullptr) {
-                z->reshapei('c', {-1, (int) bias->lengthOf()});
-                z->addiRowVector(bias);
+                if (bias != nullptr) {
+                    z->reshapei('c', {-1, (int) bias->lengthOf()});
+                    z->addiRowVector(bias);
+                }
+
+                z->reshapei('c', {inDepth, batchSize, oY * oX, outDepth});
+                z->permutei({1, 0, 3, 2});
+                z->reshapei('c', {batchSize, inDepth * outDepth, oY, oX});
+            } else {
+                // if we have weightsPoint, it means we'll be doing point-wise convolution too now
+                auto z_ = NDArrayFactory<T>::mmulHelper(c_, w_);
+
+                z_->reshapei('c', {inDepth, batchSize, oY * oX, outDepth});
+                z_->permutei({1, 0, 3, 2});
+                z_->reshapei('c', {batchSize, inDepth * outDepth, oY, oX});
+
+
+                // now we'll be using conv2d op
+                nd4j::ops::conv2d<T> op;
+                if (bias == nullptr)
+                    op.execute({z_, weightsPoint}, {z}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                else
+                    op.execute({z_, weightsPoint, bias}, {z}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+
+
+                delete z_;
             }
-
-            z->reshapei('c', {inDepth, batchSize, oY * oX, outDepth});
-            z->permutei({1, 0, 3, 2});
-            z->reshapei('c', {batchSize, inDepth * outDepth, oY, oX});
-
 
             STORE_RESULT(*z);
 
@@ -345,7 +378,16 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(sconv2d) {
             auto inShape = inputShape->at(0);
-            auto wShape = inputShape->at(1);
+            auto wdShape = inputShape->at(1);
+            int *wpShape = nullptr;
+            if (inputShape->size() == 3) {
+                auto tmp = inputShape->at(2);
+                if (shape::rank(tmp) == 4)
+                    wpShape = tmp;
+            } else if (inputShape->size() == 4) {
+                wpShape = inputShape->at(2);
+            }
+
 
             const int kY = block.getIArguments()->at(0);
             const int kX = block.getIArguments()->at(1);
@@ -359,24 +401,43 @@ namespace nd4j {
 
             int oY = 0;
             int oX = 0;
+            int *newShape;
 
-            const int batchSize = inShape[1];
-            const int inDepth = inShape[2];
-            const int outDepth = wShape[1];
-            const int inY = inShape[3];
-            const int inX = inShape[4];
+            // just a depth-wise step
+            if (wpShape == nullptr) {
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+                const int batchSize = inShape[1];
+                const int inDepth = inShape[2];
+                const int outDepth = wdShape[1];
+                const int inY = inShape[3];
+                const int inX = inShape[4];
 
-            if (isSameMode) {
-                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+                if (isSameMode)
+                    ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+                std::vector<int> shape({batchSize, outDepth * inDepth, oY, oX});
+                shape::shapeBuffer(4, shape.data(), newShape);
+
+            } else {
+                const int batchSize = inShape[1];
+                const int inDepth = inShape[2];
+                const int outDepth = wpShape[1];
+                const int inY = inShape[3];
+                const int inX = inShape[4];
+
+                ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+                if (isSameMode)
+                    ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+                std::vector<int> shape({batchSize, outDepth, oY, oX});
+                shape::shapeBuffer(4, shape.data(), newShape);
             }
 
-            //z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
-            std::vector<int> shape({batchSize, outDepth * inDepth, oY, oX});
-            shape::shapeBuffer(4, shape.data(), newShape);
 
             return new ShapeList(newShape);
         }
@@ -387,24 +448,52 @@ namespace nd4j {
          */
         CUSTOM_OP_IMPL(sconv2d_bp, 4, 2, false, 0, 9) {
             NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *weights = INPUT_VARIABLE(1);
-            NDArray<T> *epsilonNext = INPUT_VARIABLE(2);
+            NDArray<T> *epsilonNext = INPUT_VARIABLE(1);
+            NDArray<T> *weightsDepth = INPUT_VARIABLE(2);
+            NDArray<T> *weightsPoint = nullptr;
             NDArray<T> *bias = nullptr;
 
             // bias is still optional
-            if (block.getVariables().size() > 3)
-                bias = INPUT_VARIABLE(3);
+            if (block.getVariables().size() == 4) {
+                auto tmp = INPUT_VARIABLE(3);
+                if (tmp->rankOf() == 4)
+                    weightsPoint = tmp;
+                else
+                    bias = tmp;
+            } else if (block.getVariables().size() == 5) {
+                weightsPoint = INPUT_VARIABLE(3);
+                bias = INPUT_VARIABLE(4);
+            }
 
             //epsilonNext->rankOf() == 4 && weights->rankOf() == 4
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should be 4D, but got %iD instead", input->rankOf());
-            REQUIRE_TRUE(weights->rankOf() == 4, 0, "Weights should be 4D, but got %iD instead", weights->rankOf());
-            REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "Epsilon should be 4D, but got %iD instead", epsilonNext->rankOf());
+            REQUIRE_TRUE(weightsDepth->rankOf() == 4, 0, "Weights should be 4D, but got %iD instead",
+                         weightsDepth->rankOf());
+            REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "Epsilon should be 4D, but got %iD instead",
+                         epsilonNext->rankOf());
 
-            NDArray<T> * epsilon = this->getZ(block);
-            NDArray<T> * gradW = this->getZ(block, 1);
-            NDArray<T> * gradB = nullptr;
+            if (weightsPoint != nullptr) {
+                REQUIRE_TRUE(weightsPoint->rankOf() == 4, 0,
+                             "Weights for point-wise convolution should be 4d, but got %D instead",
+                             weightsPoint->rankOf());
+                REQUIRE_TRUE(weightsPoint->sizeAt(2) == 1 && weightsPoint->sizeAt(3) == 1, 1,
+                             "Point-wise weights should be [1, 1], but got [%i, %i] instead", weightsPoint->sizeAt(2),
+                             weightsPoint->sizeAt(3));
+            }
+
+            NDArray<T> *epsilon = OUTPUT_VARIABLE(0);
+            NDArray<T> *gradWD = OUTPUT_VARIABLE(1);
+            NDArray<T> *gradWP = nullptr;
+            NDArray<T> *gradB = nullptr;
+
+            if (weightsPoint != nullptr)
+                gradWP = OUTPUT_VARIABLE(2);
+
             if (bias != nullptr)
-                gradB = this->getZ(block, 2);
+                gradB = OUTPUT_VARIABLE(3);
+
+
+            // now we're just launching depth-wise bp step
 
             const int kY = block.getIArguments()->at(0);
             const int kX = block.getIArguments()->at(1);
@@ -420,22 +509,45 @@ namespace nd4j {
             int oX = epsilonNext->sizeAt(3);
 
             const int batchSize = input->shapeOf()[0];
-            const int outDepth = weights->shapeOf()[0];
-            const int inDepth = weights->shapeOf()[1];
+            const int outDepth = weightsDepth->shapeOf()[0];
+            const int inDepth = weightsDepth->shapeOf()[1];
             const int inY = input->shapeOf()[2];
             const int inX = input->shapeOf()[3];
+
+            // if weightsPont are defiend - then we're going to do point-wise backprop first
+            NDArray<T> *epsilon_;
+            if (weightsPoint != nullptr) {
+                nd4j::ops::sconv2d<T> opFF;
+                auto result = opFF.execute({input, weightsDepth}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                auto depthInput = result->at(0);
+
+                nd4j::ops::conv2d_bp<T> opBP;
+
+                epsilon_ = new NDArray<T>('c', {batchSize, weightsDepth->sizeAt(0) * weightsDepth->sizeAt(1), oY, oX});
+
+                if (bias == nullptr)
+                    opBP.execute({depthInput, weightsPoint, epsilonNext}, {epsilon_, gradWP}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                else
+                    opBP.execute({depthInput, weightsPoint, bias, epsilonNext}, {epsilon_, gradWP, gradB}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+
+                epsilonNext = epsilon_;
+
+                delete result;
+            }
+
 
             bool hasCol = CHECK_STASH("im2col");
             NDArray<T> *col = nullptr;
             if (hasCol)
                 col = UNSTASH("im2col")
             else {
-                std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX}));
+                col = new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX});
 
                 // col2d now has shape of [bS, inDepth, kY, kX, oY, oX]
-                std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+                std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX,
+                                             isSameMode ? (T) 1.0f : (T) 0.0f});
 
-                input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.data());
+                input->template applyTransform<simdOps::Im2col<T>>(col, extrasIm2Col.data());
             }
 
 //            epsilonNext->printShapeInfo("eps next");
@@ -459,9 +571,9 @@ namespace nd4j {
             //auto gW_ = gradW->reshape('c', {inDepth, outDepth, kY * kX});
             auto gW_ = NDArrayFactory<T>::mmulHelper(eN_, col_);
 
-            gW_->reshapei('c',{inDepth, outDepth, kY, kX});
+            gW_->reshapei('c', {inDepth, outDepth, kY, kX});
             gW_->permutei({1, 0, 2, 3});
-            gradW->assign(gW_);
+            gradWD->assign(gW_);
 
             delete gW_;
             delete col_;
@@ -469,14 +581,15 @@ namespace nd4j {
                 delete col;
 
             // calculating epsilon here
-            auto w_ = weights->permute({1, 2, 3, 0});
+            auto w_ = weightsDepth->permute({1, 2, 3, 0});
             w_->reshapei('c', {inDepth, kY * kX, outDepth});
 
             auto gcol = NDArrayFactory<T>::mmulHelper(w_, eN_);
             gcol->reshapei('c', {inDepth, kY, kX, batchSize, oY, oX});
             gcol->permutei({3, 0, 1, 2, 4, 5});
 
-            std::vector<T> extrasCol2Im({(T) sY, (T) sX, (T) pY, (T) pX, (T) inY, (T) inX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+            std::vector<T> extrasCol2Im({(T) sY, (T) sX, (T) pY, (T) pX, (T) inY, (T) inX, (T) dY, (T) dX,
+                                         isSameMode ? (T) 1.0f : (T) 0.0f});
 
             // we're sure that col2im result will have the same size as original image
             //auto rCol = new NDArray<T>('c', {batchSize, inDepth, inY, inX});
@@ -488,40 +601,67 @@ namespace nd4j {
             delete w_;
 
 
+            if (weightsPoint == nullptr) {
+                if (bias != nullptr) {
+                    // calculating gradB, if defined
+                    auto eN_ = epsilonNext->permute({0, 2, 3, 1});
+                    auto sum = eN_->template reduceAlongDimension<simdOps::Sum<T>>({0, 1, 2});
+                    gradB->assign(sum);
+                    delete sum;
 
-            if (bias != nullptr) {
-                // calculating gradB, if defined
-                auto eN_ = epsilonNext->permute({0, 2, 3, 1});
-                auto sum = eN_->template reduceAlongDimension<simdOps::Sum<T>>({0, 1, 2});
-                gradB->assign(sum);
-                delete sum;
-
-                STORE_3_RESULTS(*epsilon, *gradW, *gradB);
+                    STORE_3_RESULTS(*epsilon, *gradWD, *gradB);
+                } else {
+                    STORE_2_RESULTS(*epsilon, *gradWD);
+                }
             } else {
-                STORE_2_RESULTS(*epsilon, *gradW);
+                if (bias != nullptr) {
+                    STORE_4_RESULTS(*epsilon, *gradWD, *gradWP, *gradB);
+                } else {
+                    STORE_3_RESULTS(*epsilon, *gradWD, *gradWP);
+                }
             }
+
+            if (weightsPoint != nullptr)
+                delete epsilonNext;
 
             return ND4J_STATUS_OK;
         }
         DECLARE_SHAPE_FN(sconv2d_bp) {
             auto inShape = inputShape->at(0);
-            auto wShape = inputShape->at(1);
-            auto eShape = inputShape->at(2);
+            auto eShape = inputShape->at(1);
+            auto wdShape = inputShape->at(2);
+            int *wpShape = nullptr;
             int *bShape = nullptr;
 
             // bias is optional thing, and might be absent
-            if (inputShape->size() == 4)
-                bShape = inputShape->at(3);
+            if (inputShape->size() == 5) {
+                wpShape = inputShape->at(3);
+                bShape = inputShape->at(4);
+            } else if (inputShape->size() == 4) {
+                auto tmp = inputShape->at(3);
+                if (shape::rank(tmp) == 4)
+                    wpShape = tmp;
+                else
+                    bShape = tmp;
+            }
 
             int *newInShape;
-            int *newWShape;
+            int *newWdShape;
             ALLOCATE(newInShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            ALLOCATE(newWShape, block.getWorkspace(), shape::shapeInfoLength(wShape), int);
+            ALLOCATE(newWdShape, block.getWorkspace(), shape::shapeInfoLength(wdShape), int);
 
             memcpy(newInShape, inShape, shape::shapeInfoByteLength(inShape));
-            memcpy(newWShape, wShape, shape::shapeInfoByteLength(wShape));
+            memcpy(newWdShape, wdShape, shape::shapeInfoByteLength(wdShape));
 
-            auto shapes = new ShapeList({newInShape, newWShape});
+            auto shapes = new ShapeList({newInShape, newWdShape});
+
+            if (wpShape != nullptr) {
+                int *newWpShape;
+                ALLOCATE(newWpShape, block.getWorkspace(), shape::shapeInfoLength(wpShape), int);
+                memcpy(newWpShape, wpShape, shape::shapeInfoByteLength(wpShape));
+
+                shapes->push_back(newWpShape);
+            }
 
             if (bShape != nullptr) {
                 int *newBShape;
