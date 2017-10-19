@@ -22,7 +22,7 @@ import java.util.Arrays;
  */
 @Data
 @AllArgsConstructor
-@Builder(builderClassName = "DynamicCustomOpsBuilder")
+@Builder(builderClassName = "Builder")
 public class AdaDelta implements IUpdater {
     public static final double DEFAULT_ADADELTA_RHO = 0.95;
     public static final double DEFAULT_ADADELTA_EPSILON = 1e-6;

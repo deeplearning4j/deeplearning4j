@@ -19,7 +19,7 @@ import java.util.Arrays;
  * @author Justin Long
  */
 @Data
-@Builder(builderClassName = "DynamicCustomOpsBuilder")
+@Builder(builderClassName = "Builder")
 public class AdaMax implements IUpdater {
     public static final double DEFAULT_ADAMAX_LEARNING_RATE = 1e-3;
     public static final double DEFAULT_ADAMAX_EPSILON = 1e-8;
