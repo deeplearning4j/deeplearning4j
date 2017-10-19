@@ -17,7 +17,7 @@ import java.util.Arrays;
  * @author Andrey Spiridonov
  */
 @Data
-@Builder(builderClassName = "DynamicCustomOpsBuilder")
+@Builder(builderClassName = "Builder")
 public class Nadam implements IUpdater {
 
     public static final double DEFAULT_NADAM_LEARNING_RATE = 1e-3;

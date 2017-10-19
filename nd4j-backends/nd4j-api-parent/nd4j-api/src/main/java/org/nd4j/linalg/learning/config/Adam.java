@@ -17,7 +17,7 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 @Data
-@Builder(builderClassName = "DynamicCustomOpsBuilder")
+@Builder(builderClassName = "Builder")
 public class Adam implements IUpdater {
 
     public static final double DEFAULT_ADAM_LEARNING_RATE = 1e-3;
