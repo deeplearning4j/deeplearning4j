@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -13,6 +14,8 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -20,9 +23,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 2D Separable convolution layer configuration.
@@ -50,6 +51,8 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class SeparableConvolution2D extends ConvolutionLayer {
 
+    int depthMultiplier;
+
     /**
      * SeparableConvolution2D layer
      * nIn in the input layer is the number of channels
@@ -57,9 +60,10 @@ public class SeparableConvolution2D extends ConvolutionLayer {
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
-    protected SeparableConvolution2D(BaseConvBuilder<?> builder) {
+    protected SeparableConvolution2D(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+        this.depthMultiplier = builder.depthMultiplier;
         this.convolutionMode = builder.convolutionMode;
         this.dilation = builder.dilation;
         if (builder.kernelSize.length != 2)
@@ -77,6 +81,21 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
 
         initializeConstraints(builder);
+    }
+
+    @Override
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+        super.initializeConstraints(builder);
+        if(((Builder)builder).pointWiseConstraints != null){
+            if(constraints == null){
+                constraints = new ArrayList<>();
+            }
+            for (LayerConstraint constraint : ((Builder) builder).pointWiseConstraints) {
+                LayerConstraint clonedConstraint = constraint.clone();
+                clonedConstraint.setParams(Collections.singleton(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY));
+                constraints.add(clonedConstraint);
+            }
+        }
     }
 
     public boolean hasBias(){
@@ -130,6 +149,8 @@ public class SeparableConvolution2D extends ConvolutionLayer {
 
     public static class Builder extends BaseConvBuilder<Builder> {
 
+        public int depthMultiplier = 1;
+
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);
         }
@@ -145,6 +166,35 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         public Builder() {
             super();
         }
+
+        /**
+         * Set depth multiplier of depth-wise step in separable convolution
+         *
+         * @param depthMultiplier integer value, for each input map we get depthMultipler
+         *                        outputs in depth-wise step.
+         * @return Builder
+         */
+        public  Builder depthMultiplier(int depthMultiplier) {
+            this.depthMultiplier = depthMultiplier;
+            return this;
+        }
+
+        protected List<LayerConstraint> pointWiseConstraints;
+
+        /**
+         * Set constraints to be applied to the point-wise convolution weight parameters of this layer.
+         * Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to the point-wise convolution parameters of this layer
+         */
+        public Builder constrainPointWise(LayerConstraint... constraints) {
+            this.pointWiseConstraints = Arrays.asList(constraints);
+            return this;
+        }
+
+
 
         /**
          * Set the convolution mode for the Convolution layer.
