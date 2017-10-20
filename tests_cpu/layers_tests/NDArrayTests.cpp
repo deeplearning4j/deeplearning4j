@@ -1493,3 +1493,43 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
     ASSERT_TRUE(result->equalsTo(&expected));
     delete result;
 }
+
+TEST_F(NDArrayTest, TestMatmMul_Again_1) {
+    NDArray<double> a('c', {3, 4, 1});
+    NDArray<double> b('c', {3, 1, 5});
+
+    NDArrayFactory<double>::linspace(1, a);
+    NDArrayFactory<double>::linspace(1, b);
+
+    double _expB[] = {1.f,    2.f,    3.f,    4.f,    5.f,    2.f,    4.f,    6.f,    8.f,   10.f,    3.f,    6.f,    9.f,   12.f,   15.f,    4.f,    8.f,   12.f,   16.f,   20.f,   30.f,   35.f,   40.f,   45.f,    50.f,   36.f,   42.f,   48.f,   54.f,   60.f,   42.f,   49.f,   56.f,   63.f,   70.f,   48.f,    56.f,   64.f,   72.f,   80.f,   99.f,  108.f,  117.f,  126.f,  135.f,  110.f,  120.f,  130.f,    140.f,  150.f,  121.f,  132.f,  143.f,  154.f,  165.f,  132.f,  144.f,  156.f,  168.f,  180.f};
+    int _expS[] = {3, 3, 4, 5, 20, 5, 1, 0, 1, 99};
+    NDArray<double> c(_expB, _expS);
+    c.triggerAllocationFlag(false, false);
+
+    auto c_ = NDArrayFactory<double>::mmulHelper(&a, &b);
+
+    ASSERT_TRUE(c.isSameShape(c_));
+    ASSERT_TRUE(c.equalsTo(c_));
+}
+
+
+TEST_F(NDArrayTest, TestMatmMul_Again_2) {
+    NDArray<double> a('c', {2, 5, 4});
+    NDArray<double> b('c', {2, 4, 1});
+
+    NDArrayFactory<double>::linspace(1, a);
+    NDArrayFactory<double>::linspace(1, b);
+
+    double _expB[] = {30.f,    70.f,   110.f,   150.f,   190.f,   590.f,   694.f,   798.f,   902.f,  1006.f};
+    int _expS[] = {3, 2, 5, 1, 5, 1, 1, 0, 1, 99};
+    NDArray<double> c(_expB, _expS);
+    c.triggerAllocationFlag(false, false);
+
+    auto c_ = NDArrayFactory<double>::mmulHelper(&a, &b);
+
+    ASSERT_TRUE(c.isSameShape(c_));
+
+    c_->printBuffer("c_");
+
+    ASSERT_TRUE(c.equalsTo(c_));
+}

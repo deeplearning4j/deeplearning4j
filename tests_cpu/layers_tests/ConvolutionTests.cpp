@@ -669,5 +669,30 @@ TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
 }
 
 
+TEST_F(ConvolutionTests, TestSconvCrash_max_2) {
+    NDArray<double> input('c', {3, 3, 16, 16});
+    NDArray<double> weightsD('c', {1, 3, 2, 2});
+    NDArray<double> weightsP('c', {2, 3, 1, 1});
+    NDArray<double> bias('c', {1, 2});
+
+    NDArray<double> epsilonNext('c', {3, 2, 14, 14});
+
+    NDArray<double> epsilon('c', {3, 3, 16, 16});
+
+    nd4j::ops::sconv2d_bp<double> op;
+    auto result = op.execute({&input, &epsilonNext, &weightsD, &weightsP}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
+
+    auto eps = result->at(0);
+    auto gWD = result->at(1);
+    auto gWP = result->at(2);
+
+
+    ASSERT_TRUE(epsilon.isSameShape(eps));
+
+    delete result;
+}
+
+
+
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H

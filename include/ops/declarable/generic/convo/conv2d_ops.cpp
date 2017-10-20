@@ -361,9 +361,9 @@ namespace nd4j {
                 // now we'll be using conv2d op
                 nd4j::ops::conv2d<T> op;
                 if (bias == nullptr)
-                    op.execute({z_, weightsPoint}, {z}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                    op.execute({z_, weightsPoint}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
                 else
-                    op.execute({z_, weightsPoint, bias}, {z}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                    op.execute({z_, weightsPoint, bias}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
 
 
                 delete z_;
@@ -526,9 +526,9 @@ namespace nd4j {
                 epsilon_ = new NDArray<T>('c', {batchSize, weightsDepth->sizeAt(0) * weightsDepth->sizeAt(1), oY, oX});
 
                 if (bias == nullptr)
-                    opBP.execute({depthInput, weightsPoint, epsilonNext}, {epsilon_, gradWP}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                    opBP.execute({depthInput, weightsPoint, epsilonNext}, {epsilon_, gradWP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
                 else
-                    opBP.execute({depthInput, weightsPoint, bias, epsilonNext}, {epsilon_, gradWP, gradB}, {}, {1, 1, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+                    opBP.execute({depthInput, weightsPoint, bias, epsilonNext}, {epsilon_, gradWP, gradB}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
 
                 epsilonNext = epsilon_;
 

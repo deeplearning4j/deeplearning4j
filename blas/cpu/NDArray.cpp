@@ -381,8 +381,10 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
     template<typename T>
     void NDArray<T>::assign(NDArray<T> *other) {
 
-        if (other->lengthOf() != lengthOf())
-            throw std::invalid_argument("Lengths of arrays are mismatched");
+        if (other->lengthOf() != lengthOf()) {
+            nd4j_printf("This length [%i]; Other length: [%i]\n", lengthOf(), other->lengthOf());
+            throw "Lengths of arrays are mismatched";
+        }
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other->ordering() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {

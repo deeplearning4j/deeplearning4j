@@ -324,11 +324,20 @@ namespace nd4j {
                 auto bL = allTensorsAlongDimension(B, {B->rankOf() - 2, B->rankOf() - 1});
                 auto cL = allTensorsAlongDimension(result, {result->rankOf() - 2, result->rankOf() - 1});
 
+                int aL_size = aL->size();
+                int bL_size = bL->size();
+                int cL_size = cL->size();
+
                 nd4j_debug("NumTads: %i\n", aL->size());
                 for (int e = 0; e < aL->size(); e++) {
-                    auto c_ = mmulHelper(aL->at(e), bL->at(e));
+                    auto aLt = aL->at(e);
+                    auto bLt = bL->at(e);
+                    auto cLt = cL->at(e);
 
-                    cL->at(e)->assign(c_);
+                    auto c_ = mmulHelper(aLt, bLt);
+
+                    cLt->assign(c_);
+
                     delete c_;
                 }
 
@@ -336,16 +345,7 @@ namespace nd4j {
                 delete bL;
                 delete cL;
             }
-        } else if (A->isVector() && B->isVector()) {
-            // dot
-            if (A->lengthOf() != B->lengthOf())
-                throw "A length != B length";
-
-            if (result == nullptr)
-                result = new NDArray<T>(1,1, 'c');
-
-            result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
-        } if (A->isMatrix() && B->isVector()) {
+        } else if ((A->isMatrix() && B->isRowVector()) || (A->isMatrix() && B->isColumnVector())) {
             // gemv
             if (A->columns() != B->rows())
                 throw "A columns != B length";
@@ -355,7 +355,16 @@ namespace nd4j {
 
             // TODO: strides!!!
             nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
-        } else if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix())) {
+        } else if ((A->isRowVector() && B->isRowVector()) || (A->isColumnVector() && B->isColumnVector())) {
+            // dot
+            if (A->lengthOf() != B->lengthOf())
+                throw "A length != B length";
+
+            if (result == nullptr)
+                result = new NDArray<T>(1,1, 'c');
+
+            result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
+        } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
             // gemm
             // int[] shape = {rows(), other.columns()};
             if (result == nullptr) {
