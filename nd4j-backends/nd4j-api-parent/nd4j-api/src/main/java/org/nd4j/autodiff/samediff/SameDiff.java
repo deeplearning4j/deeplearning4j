@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import org.nd4j.linalg.api.ops.impl.controlflow.If;
+import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
@@ -31,6 +33,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import sun.misc.UUDecoder;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -682,10 +685,9 @@ public class SameDiff {
         addVariable(ret);
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
-        if(arr != null) {
-            vertexToArray.put(ndArrayInformation.getArrId(), arr);
-            reverseArrayLookup.put(arr, ndArrayInformation);
-        }
+        vertexToArray.put(ndArrayInformation.getArrId(), arr);
+        reverseArrayLookup.put(arr, ndArrayInformation);
+
 
         vertexIdxToInfo.put(ndArrayVertex.vertexID(),ndArrayInformation);
         variableMap.put(name,ret);
@@ -759,7 +761,7 @@ public class SameDiff {
      */
     public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
         Conv3D conv3D = Conv3D.sameDiffBuilder()
-              .aH(conv3DConfig.getAH())
+                .aH(conv3DConfig.getAH())
                 .aT(conv3DConfig.getAT())
                 .aW(conv3DConfig.getAW())
                 .biasUsed(conv3DConfig.isBiasUsed())
@@ -3032,14 +3034,69 @@ public class SameDiff {
     }
 
 
+
+    /**
+     * Get the ndarray for a particular
+     * variable.
+     * @param differentialFunction
+     * @return
+     */
+    public INDArray getArrayFor(Variable differentialFunction) {
+        return getNDArray(differentialFunction.getResult());
+    }
+
+    public interface SameDiffConditional {
+        /**
+         * The inputs
+         * @param inputs
+         * @return
+         */
+        boolean eval(SameDiff context,SameDiffFunctionDefinition body, SDVariable...inputs);
+    }
+
+
+    /**
+     * Creates a while statement
+     * @param inputVariables
+     * @param sameDiffConditional
+     * @param loopBody
+     * @return
+     */
+    public While whileStatement(Variable[] inputVariables,SameDiffConditional sameDiffConditional,SameDiff.SameDiffFunctionDefinition loopBody) {
+        return While.builder()
+                .predicate(sameDiffConditional)
+                .loopVariables(inputVariables)
+                .trueBody(loopBody).parent(this)
+                .blockName("while-" + UUID.randomUUID().toString())
+                .build();
+    }
+
+    /**
+     *
+      * @param conditional
+     * @param trueBody
+     * @param falseBody
+     * @return
+     */
+    public If ifStatement(SameDiffConditional conditional, SameDiffFunctionDefinition trueBody, SameDiffFunctionDefinition falseBody) {
+        return If.builder()
+                .falseBody(falseBody)
+                .trueBody(trueBody)
+                .predicate(conditional).parent(this)
+                .blockName("if-" + UUID.randomUUID().toString())
+                .build();
+    }
+
+
     public interface SameDiffFunctionDefinition {
 
         /**
          *
          * @param inputs
+         * @param variableInputs
          * @return
          */
-        SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs);
+        SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs);
     }
 
     /**
@@ -3055,12 +3112,39 @@ public class SameDiff {
         return ret;
     }
 
+
+    /**
+     *
+     * @param function
+     */
+    public void defineFunction(String function,SameDiffFunctionDefinition functionDefinition,Variable[] variables) {
+        if(!sameDiffFunctionInstances.containsKey(function)) {
+            SameDiff sub = SameDiff.create();
+            sub.setWorkspace(workspace);
+            //setup subgraph
+            //re execute to populate subgraph
+            SDVariable[] ret = new SDVariable[variables.length];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = SDVariable
+                        .builder()
+                        .arrayField(variables[i])
+                        .sameDiff(sub)
+                        .varName(variables[i].getName())
+                        .shape(variables[i].getResultShape())
+                        .build();
+            }
+
+            functionDefinition.define(sub,null, ret);
+            sameDiffFunctionInstances.put(function,sub);
+        }
+    }
+
     /**
      *
      * @param function
      */
     public void defineFunction(String function,SameDiffFunctionDefinition functionDefinition) {
-        defineFunction(function,functionDefinition,null);
+        defineFunction(function,functionDefinition,new HashMap<String, INDArray>());
     }
 
     /**
@@ -3077,7 +3161,7 @@ public class SameDiff {
             sub.setWorkspace(workspace);
             //setup subgraph
             //re execute to populate subgraph
-            functionDefinition.define(sub,inputs);
+            functionDefinition.define(sub,inputs, null);
 
             sameDiffFunctionInstances.put(function,sub);
         }
@@ -3135,7 +3219,7 @@ public class SameDiff {
             defineFunction("grad", new SameDiffFunctionDefinition() {
 
                 @Override
-                public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                     //propagate graph to this samediff instance
                     //which wil also contain the backward
                     if(SameDiff.this.debugMode) {
@@ -3231,11 +3315,11 @@ public class SameDiff {
                     }
 
 
-                    return SDVariable.builder()
+                    return new   SDVariable[] {SDVariable.builder()
                             .differentialFunction(opOrder.get(0).getOpState().getDifferentialFunction())
                             .sameDiff(sameDiff)
                             .varName("grad")
-                            .build();
+                            .build()};
                 }
             });
 
@@ -3288,6 +3372,35 @@ public class SameDiff {
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
+            if(op instanceof If) {
+                If ifOp = (If) op;
+                String opName = ifOp.getBlockName();
+                SameDiff execBody = getFunction(opName);
+                 //evaluate the result
+                execBody.exec();
+                //depending on the block add the proper graph body to this for persistence
+                //and possible later processing.
+                if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                   ifOp.getSameDiff().getFunction(ifOp.getTrueBodyName()).invokeGraphOn(this);
+                }
+                else {
+                    ifOp.getSameDiff().getFunction(ifOp.getFalseBodyName()).invokeGraphOn(this);
+                }
+            }
+            else if(op instanceof While) {
+                While whileOp = (While) op;
+                String opName = whileOp.getBlockName();
+                SameDiff execBody = getFunction(opName);
+                //evaluate the result
+                execBody.exec();
+                //depending on the block add the proper graph body to this for persistence
+                //and possible later processing.
+                while(whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                    execBody.exec();
+                    whileOp.getSameDiff().getFunction(whileOp.getTrueBodyName()).invokeGraphOn(this);
+                }
+
+            }
 
             if(debugMode) {
                 opsForResult.put(opExecAction.getOutputId(),op);

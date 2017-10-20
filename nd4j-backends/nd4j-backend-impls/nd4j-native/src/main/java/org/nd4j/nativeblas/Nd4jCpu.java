@@ -39,6 +39,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_concat.class,
         float_matmul.class,
         float_conv2d.class,
+        float_conv2d_bp.class,
         float_lrn.class,
         float_reshape.class,
         float_sconv2d.class,
@@ -105,6 +106,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_concat.class,
         half_matmul.class,
         half_conv2d.class,
+        half_conv2d_bp.class,
         half_lrn.class,
         half_reshape.class,
         half_sconv2d.class,
@@ -171,6 +173,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_concat.class,
         double_matmul.class,
         double_conv2d.class,
+        double_conv2d_bp.class,
         double_lrn.class,
         double_reshape.class,
         double_sconv2d.class,
@@ -207,6 +210,84 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_maxpool3d.class,
         double_ismax.class,
         double_firas_sparse.class,};
+
+@Name("std::vector<nd4j::NDArray<float>*>") public static class FloatNDArrayVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public FloatNDArrayVector(Pointer p) { super(p); }
+    public FloatNDArrayVector(FloatNDArray ... array) { this(array.length); put(array); }
+    public FloatNDArrayVector()       { allocate();  }
+    public FloatNDArrayVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef FloatNDArrayVector put(@ByRef FloatNDArrayVector x);
+
+    public native long size();
+    public native void resize(@Cast("size_t") long n);
+
+    @Index public native FloatNDArray get(@Cast("size_t") long i);
+    public native FloatNDArrayVector put(@Cast("size_t") long i, FloatNDArray value);
+
+    public FloatNDArrayVector put(FloatNDArray ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            put(i, array[i]);
+        }
+        return this;
+    }
+}
+
+@Name("std::vector<nd4j::NDArray<float16>*>") public static class HalfNDArrayVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HalfNDArrayVector(Pointer p) { super(p); }
+    public HalfNDArrayVector(HalfNDArray ... array) { this(array.length); put(array); }
+    public HalfNDArrayVector()       { allocate();  }
+    public HalfNDArrayVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef HalfNDArrayVector put(@ByRef HalfNDArrayVector x);
+
+    public native long size();
+    public native void resize(@Cast("size_t") long n);
+
+    @Index public native HalfNDArray get(@Cast("size_t") long i);
+    public native HalfNDArrayVector put(@Cast("size_t") long i, HalfNDArray value);
+
+    public HalfNDArrayVector put(HalfNDArray ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            put(i, array[i]);
+        }
+        return this;
+    }
+}
+
+@Name("std::vector<nd4j::NDArray<double>*>") public static class DoubleNDArrayVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public DoubleNDArrayVector(Pointer p) { super(p); }
+    public DoubleNDArrayVector(DoubleNDArray ... array) { this(array.length); put(array); }
+    public DoubleNDArrayVector()       { allocate();  }
+    public DoubleNDArrayVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef DoubleNDArrayVector put(@ByRef DoubleNDArrayVector x);
+
+    public native long size();
+    public native void resize(@Cast("size_t") long n);
+
+    @Index public native DoubleNDArray get(@Cast("size_t") long i);
+    public native DoubleNDArrayVector put(@Cast("size_t") long i, DoubleNDArray value);
+
+    public DoubleNDArrayVector put(DoubleNDArray ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            put(i, array[i]);
+        }
+        return this;
+    }
+}
 
 @NoOffset @Name("std::pair<int,int>") public static class IntIntPair extends Pointer {
     static { Loader.load(); }
@@ -5547,6 +5628,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		private native void allocate(@Const int[] shapeInfo);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
         public FloatNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public FloatNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
@@ -5909,6 +5991,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		private native void allocate(@Const int[] shapeInfo);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
         public HalfNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public HalfNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
@@ -6271,6 +6354,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		private native void allocate(@Const int[] shapeInfo);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
         public DoubleNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
@@ -7812,7 +7896,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #ifdef __CUDACC__
 // #else
-// #define INLINEDEF ND4J_EXPORT
+// #define INLINEDEF inline
 // #endif
 
 // #include "../pairwise_util.h"
@@ -8647,7 +8731,7 @@ public static final int PREALLOC_SIZE = 33554432;
 //#ifdef __CUDACC__
 //    __device__
 //#endif
-//    INLINEDEF int tadOffset(shape::ShapeInformation *xInfo, int offset);
+//    ND4J_EXPORT int tadOffset(shape::ShapeInformation *xInfo, int offset);
 
 /**
  * Returns a shape
@@ -8834,7 +8918,7 @@ public static final int PREALLOC_SIZE = 33554432;
 //    __host__ __device__
 //#endif
 //
-//    INLINEDEF int offset(int index,
+//    ND4J_EXPORT int offset(int index,
 //                         int rank,
 //                         shape::ShapeInformation *info,
 //                         int *dimension,
@@ -8905,7 +8989,7 @@ public static final int PREALLOC_SIZE = 33554432;
 //    __host__ __device__
 //#endif
 //
-//    INLINEDEF int *tadShapeInfo(int index, int *xShapeInfo, int *dimension,
+//    ND4J_EXPORT int *tadShapeInfo(int index, int *xShapeInfo, int *dimension,
 //                                int dimensionLength);
 
 /**
@@ -9286,10 +9370,10 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 
-// #ifdef __CUDACC__
-// #endif
-    @Namespace("shape") public static native IntPointer shapeBufferOfNpyBuffer(@Cast("char*") String buffer);
-    @Namespace("shape") public static native IntBuffer shapeBufferOfNpyBuffer(@Cast("char*") BytePointer buffer);
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    ND4J_EXPORT int *shapeBufferOfNpyBuffer(char *buffer);
 
 
 // #ifdef __CUDACC__
@@ -9305,6 +9389,1005 @@ public static final int PREALLOC_SIZE = 33554432;
 
     //BEGIN IMPLEMENTATIONS
 
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Length of a tad given
+* the shape information
+*/
+// #ifdef __CUDACC__
+// #endif
+
+
+
+/**
+ * Tad element wise stride:
+ * given the inner most dimension (the sorted dimension of the last)
+ * the element wise stride of the tad (disregarding order) is the
+ * last dimension's stride.
+ *
+ * For a given singular dimension this will just be the only entry.
+ * For example, given the following c order shape/stride:
+ * 2,2,3,2
+ * 12,6,2,1
+ *
+ * The tad element wise stride for 3 will be 1.
+ * For zero it wil be 12
+ *
+ * For 2,3 it's 1
+ *
+ * Note here that the multi dimensional 2,3 case
+ * is equivalent to the singular 3 case.
+ *
+ *
+ * Note that this is for the dimension that ultimately
+ * ends up removed.
+ *
+ * Again: this may not preserve ordering of the tad
+ * but maybe used for reductions.
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int tadElementWiseStride(IntPointer shapeInfo,IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native int tadElementWiseStride(IntBuffer shapeInfo,IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native int tadElementWiseStride(int[] shapeInfo,int[] dimension,int dimensionLength);
+
+
+
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * @param toCopy the shape to copy
+ * @return a copy of the original struct
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+     * This is special method, it returns ONLY 2D shapebuffer.
+     *
+     * This method is used only for SoftMax
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Get the shape info buffer
+* for the given rank and shape.
+*/
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Compute the real linear indices for the given shape and stride
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Compute the real linear indices for the given shape and stride
+*/
+// #ifdef __CUDACC__
+// #endif
+
+
+/**
+* Convert the given index (such as 1,1)
+* to a linear index
+* @param shape the shape of the indexes to convert
+* @param indices the index to convert
+* @return the linear index given the shape
+* and indices
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index.
+ * Infers the number of indices from the specified shape.
+ *
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Convert a linear index to
+* the equivalent nd index
+* @param shape the shape of the dimensions
+* @param index the index to map
+* @param numIndices the number of total indices (typically prod of shape(
+* @return the mapped indexes along each dimension
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index.
+ * Infers the number of indices from the specified shape.
+ *
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Convert a linear index to
+* the equivalent nd index
+* @param shape the shape of the dimensions
+* @param index the index to map
+* @param numIndices the number of total indices (typically prod of shape(
+* @return the mapped indexes along each dimension
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Convert a linear index to
+* the equivalent nd index
+* @param shape the shape of the dimensions
+* @param index the index to map
+* @param numIndices the number of total indices (typically prod of shape(
+* @return the mapped indexes along each dimension
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+
+
+
+/**
+ *
+ * @param length
+ * @param shape
+ * @param rearrange
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ *
+ * @param length
+ * @param shape
+ * @param rearrange
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Get the ordering for the device
+ * @param length
+ * @param shape
+ * @param stride
+ * @param elementStride
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+
+/**
+ * Ensure that every value in the re arrange
+ * array is unique
+ * @param arr
+ * @param shape
+ * @param arrLength
+ * @param shapeLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Permute the shape information
+ * @param info the shape information to permute
+ * @param rearrange the order to re arrange
+ * @param rank the rank of the rearrange array
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns whether the
+ * given shape is a vector or not
+ * @param shape the shape of the array
+ * @param rank the rank of the shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Returns whether the
+* given shape is a vector or not
+* @param shape the shape of the array
+* @param rank the rank of the shape
+*/
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the shape portion of an information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Return a copy of a buffer.
+ * This buffer allocates memory
+ * that must be freed elsewhere.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Permute the given strides
+ * in the given rearrange order
+ * @param toPermute the buffer to permute
+ * @param shapeRank the length of the buffer to permute
+ * @param rearrange the rearrange order (must be 0 based indexes
+ * and all must be filled in)
+ * @return the rearranged array
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Return the slice (shape + 1 in pointer arithmetic)
+ * @param shape the shape to take the slice of
+ * @return the shape array - the first entry
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the length of the
+ * shape information buffer:
+ * rank * 2 + 3
+ * @param rank the rank to get the shape
+ * info length for
+ * @return rank * 2 + 4
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the rank portion of
+ * an information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Converts a raw int buffer of the layout:
+ * rank
+ * shape
+ * stride
+ * offset
+ * elementWiseStride
+ *
+ * where shape and stride are both straight int pointers
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the stride portion of an information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+/**
+ * Compute the length of the given shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/***
+ * Returns the offset
+ * portion of an information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the ordering
+ * for this shape information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the element wise stride for this information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Returns the element wise stride for this information
+* buffer relative to a dimension and reduction index
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns whether
+ * the given shape info buffer
+ * represents a scalar shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns whether
+ * the given shape information
+ * represents a scalar
+ * shape or not
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Return a copy of this array with the
+ * given index omitted
+ *
+ * @param data  the data to copy
+ * @param indexes the index of the item to remove
+ * @param dataLength the length of the data array
+ * @param indexesLength the length of the data array
+ * @return the new array with the omitted
+ *
+ * item
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+ * Return a copy of this array with the
+ * given index omitted
+ *
+ * @param data  the data to copy
+ * @param indexes the index of the item to remove
+ * @param dataLength the length of the data array
+ * @param indexesLength the length of the data array
+ * @return the new array with the omitted
+ *
+ * item
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the offset for accessing
+ * a global element given the shape information
+ * and the offset to be read.
+ */
+// #ifdef __CUDACC__
+
+// #endif
+
+/**
+ * Returns a shape
+ * forces the given length to be 2.
+ * @param shape the shape to modify
+ * @param dimension the dimension (row or column)
+ * for the shape to be returned as
+ * @return the new shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer ensureVectorShape(IntPointer shape, int dimension);
+    @Namespace("shape") public static native IntBuffer ensureVectorShape(IntBuffer shape, int dimension);
+    @Namespace("shape") public static native int[] ensureVectorShape(int[] shape, int dimension);
+
+/**
+ * Returns a shape
+ * forces the given length to be 2.
+ * @param shape the shape to modify
+ * @param dimension the dimension (row or column)
+ * for the shape to be returned as
+ * @return the new shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+     * This method does STRICT comparison for two shape buffers
+     *
+     * @param shape
+     * @return
+     */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+     * This method does SOFT comparison for two shape buffers, we compare only rank & shapes
+     *
+     * @param shape
+     * @return
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Generate an int buffer
+ * up to the given length
+ * at the specified increment
+ *
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Generate a range
+ * beginning at from and ending at to
+ * incrementing by 1
+ * @param from the start
+ * @param to the end
+ * @return the int array starting at from and ending at to
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Keep the given indexes in the data
+ * @param data
+ * @param index
+ * @param indexLength
+ * @param dataLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Generate a reverse
+ * copy of the data
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ *
+ * @param arr1
+ * @param arr1Length
+ * @param arr2
+ * @param arr2Length
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ *
+ * @param numArrays
+ * @param numTotalElements
+ * @param arr
+ * @param lengths
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Get the length per slice of the
+ * given shape and the dimension
+ * @param rank the rank of the shape
+ * @param shape the shape of to get
+ * the length per slice for
+ * @param dimension the dimension to
+ * get the length per slice for
+ * @param dimensionLength the length of the dimension array
+ * @return the length per slice of the given shape
+ * along the given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * calculates the offset for a tensor
+ * @param index
+ * @param arr
+ * @param tensorShape
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+ * calculates the offset for a tensor
+ * @param index
+ * @param arr
+ * @param tensorShape
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+
+/**
+ * Computes the number
+ * of tensors along
+ * a given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the number
+ * of tensors along
+ * a given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+/**
+* Get an offset for retrieval
+* from a data buffer
+* based on the given
+* shape stride and given indices
+* @param baseOffset the offset to start from
+* @param shape the shape of the array
+* @param stride the stride of the array
+* @param indices the indices to iterate over
+* @return the double at the specified index
+*/
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+/**
+ * Returns the tensor along dimension
+ * for the given block index
+ * @param blockSize
+ * @param blockIdx
+ * @param i
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the number of tads per block
+ *
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns a shape buffer
+ * for the shape information metadata.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+/**
+ * Given an linear index, element wise stride
+ * and the length of each tad
+ * map a linear index to a tad
+ * @param i the index to map
+ * @param the element wise stride for the tads
+ * @param numElementsPerTad the number of elements
+ * per tad
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Map a tad to a
+ * reduction index.
+ * @param tadIndexForOriginal the original tad index for the
+ * split up problem (eg: split is dimension 3 mapping to a 2,3 problem)
+ * @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
+ * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Tad index for linear
+ * @param linearIndex
+ * @param tadLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the number of tads
+ * per reduce index for the
+ * reduction tad.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Maps a linear index to a reduction index
+ * @param i the linear index to map
+ * @param elementWiseStride the element wise stride
+ * for the multiple problem
+ * @param tadNum the number of tads for the shrunken problem
+ * @param originalTadNum the tad number for the reduced version of the problem
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the prod of the data
+ * up to the given length
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the prod of the data
+ * up to the given length
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int rearMostLeftOverItem(IntPointer data, IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native int rearMostLeftOverItem(IntBuffer data, IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native int rearMostLeftOverItem(int[] data, int[] dimension,int dimensionLength);
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer) {
+//        unsigned int *shape;
+//        unsigned int ndims, wordSize;
+//        bool fortranOrder;
+//        cnpy::parseNpyHeaderStr(std::string(buffer),wordSize,shape,ndims,fortranOrder);
+//        int * ret =  shape::shapeBufferOfNpy(ndims,shape,fortranOrder);
+//        delete[] shape;
+//        return ret;
+//    }
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+    // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
+    // also sort input array of dimensions, this operation is also necessary for creating TAD object
 
 
 
@@ -10599,17 +11682,18 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
 // #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
-// #define STORE_RESULT(A) this->storeResult(block, 0, A)
-// #define STORE_2_RESULTS(A, B) this->storeResult(block, 0, A); this->storeResult(block, 1, B)
-// #define STORE_3_RESULTS(A, B, C) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
-// #define STORE_4_RESULTS(A, B, C, D) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
-// #define STORE_5_RESULTS(A, B, C, D, E) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
+// #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
+// #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
+// #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
+// #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
 
 // #define STASH(NAME, ARRAY)  block.getVariableSpace()->getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
 // #define CHECK_STASH(NAME)   block.getVariableSpace()->getStash()->checkStash(block.getNodeId(), NAME);
 // #define UNSTASH(NAME)       block.getVariableSpace()->getStash()->extractArray(block.getNodeId(), NAME);
 
 // #define INPUT_VARIABLE(INDEX)     block.getVariables().at(INDEX)->getNDArray()
+// #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
 
 
 // #endif
@@ -10750,6 +11834,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(FloatBlock block);
 
+            public native FloatArrayList execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
+            public native FloatArrayList execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native FloatArrayList execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
+
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatBlock block);
             public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef FloatBlock block);
@@ -10800,6 +11891,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(HalfBlock block);
 
+            public native HalfArrayList execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
+            public native HalfArrayList execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native HalfArrayList execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
+
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfBlock block);
             public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef HalfBlock block);
@@ -10849,6 +11947,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              * @return
              */
             public native @Cast("Nd4jStatus") int execute(DoubleBlock block);
+
+            public native DoubleArrayList execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native DoubleArrayList execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native DoubleArrayList execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleBlock block);
@@ -12263,6 +13368,48 @@ private native void allocate();
                 return (double_conv2d)super.position(position);
             }
         public double_conv2d() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                }
+        @Name("nd4j::ops::conv2d_bp<float>") public static class float_conv2d_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_conv2d_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_conv2d_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_conv2d_bp position(long position) {
+                return (float_conv2d_bp)super.position(position);
+            }
+        public float_conv2d_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                }
+        @Name("nd4j::ops::conv2d_bp<float16>") public static class half_conv2d_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_conv2d_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_conv2d_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_conv2d_bp position(long position) {
+                return (half_conv2d_bp)super.position(position);
+            }
+        public half_conv2d_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                }
+        @Name("nd4j::ops::conv2d_bp<double>") public static class double_conv2d_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_conv2d_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_conv2d_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_conv2d_bp position(long position) {
+                return (double_conv2d_bp)super.position(position);
+            }
+        public double_conv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
                                                                                 }

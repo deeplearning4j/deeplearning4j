@@ -1005,8 +1005,8 @@ public class SDVariable  implements Serializable {
         SameDiff exec = sameDiff.dup();
         exec.defineFunction("output", new SameDiff.SameDiffFunctionDefinition() {
             @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                return SDVariable.this;
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                return new SDVariable[] { SDVariable.this};
             }
         });
 

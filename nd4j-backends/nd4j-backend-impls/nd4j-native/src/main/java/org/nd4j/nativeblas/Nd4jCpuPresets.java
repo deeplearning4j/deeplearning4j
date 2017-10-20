@@ -92,6 +92,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
+               .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
                .put(new Info("nd4j::IndicesList").purify());
 
         String classTemplates[] = {

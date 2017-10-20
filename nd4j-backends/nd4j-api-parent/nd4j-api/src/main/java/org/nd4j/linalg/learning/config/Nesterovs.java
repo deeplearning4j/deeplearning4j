@@ -21,7 +21,7 @@ import java.util.Map;
  */
 @AllArgsConstructor
 @Data
-@Builder(builderClassName = "DynamicCustomOpsBuilder")
+@Builder(builderClassName = "Builder")
 public class Nesterovs implements IUpdater {
     public static final double DEFAULT_NESTEROV_MOMENTUM = 0.9;
     public static final double DEFAULT_NESTEROV_LEARNING_RATE = 0.1;

@@ -16,7 +16,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  */
 @Data
 @EqualsAndHashCode
-@Builder(builderClassName = "DynamicCustomOpsBuilder")
+@Builder(builderClassName = "Builder")
 public class Sgd implements IUpdater {
     public static final double DEFAULT_SGD_LR = 1e-3;
 
