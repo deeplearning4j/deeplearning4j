@@ -250,7 +250,6 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
         if (initializeParams) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            int[] kernel = layerConf.getKernelSize();
 
             int inputDepth = layerConf.getNIn();
             int outputDepth = layerConf.getNOut();
@@ -258,14 +257,13 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
             double fanIn = inputDepth * depthMultiplier;
             double fanOut = fanIn;
 
-            int[] weightsShape = new int[] {outputDepth, depthMultiplier * inputDepth, kernel[0], kernel[1]};
+            int[] weightsShape = new int[] {outputDepth, depthMultiplier * inputDepth, 1, 1};
 
             return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
                     weightView);
         } else {
-            int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                    new int[] {layerConf.getNOut(), depthMultiplier * layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                    new int[] {layerConf.getNOut(), depthMultiplier * layerConf.getNIn(), 1, 1}, weightView, 'c');
         }
     }
 }

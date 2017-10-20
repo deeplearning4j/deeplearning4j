@@ -694,20 +694,6 @@ public class CNNGradientCheckTest {
                                             .stride(s, s)
                                             .dilation(d, d)
                                             .nIn(inputDepth).nOut(2).build());
-                            if (subsampling) {
-                                b.layer(new SubsamplingLayer.Builder()
-                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                                        .kernelSize(k, k)
-                                        .stride(s, s)
-                                        .dilation(d, d)
-                                        .build());
-                            } else {
-                                b.layer(new SeparableConvolution2D.Builder().nIn(2).nOut(2)
-                                        .kernelSize(k, k)
-                                        .stride(s, s)
-                                        .dilation(d, d)
-                                        .build());
-                            }
 
                             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nOut(nOut).build())

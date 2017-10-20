@@ -51,6 +51,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         super(conf, input);
     }
 
+
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
