@@ -13,9 +13,9 @@ A feed forward network is the simplest form of neural networks and was also one 
 
 ## <a name="ETL">Data and ETL</a>
 
-Raw data is csv file with 2 numerical features and 2 labels. The training and test sets are in different csv files with 2000 observations in the training set and 1000 observations in the test set. The goal of the task is to predict the label given the two input features. Thus, we are interested in classification.
+The raw data consists of csv files with 2 numerical features and 2 labels. The training and test sets are in different csv files with 2000 observations in the training set and 1000 observations in the test set. The goal of the task is to predict the label given the two input features. Thus, we are interested in classification.
 
-We first initialize the variables needed to build a feed forward neural network. We can see that we set the hyperparameters of the neural network like the learning rate and the batch size, as well as varaibles related to its architecture, such as the number of hidden nodes.
+We first initialize the variables needed to build a feed forward neural network. We set the hyperparameters of the neural network like the learning rate and the batch size, as well as varaibles related to its architecture, such as the number of hidden nodes.
 
 ```
 int seed = 123;
@@ -66,7 +66,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     .pretrain(false).backprop(true).build();
 ```
 
-We see that there is one hidden layer with 20 nodes and an output layer with two nodes using a softmax activation function and a negative log likelihood loss function. We also set how the weights of the neural network are initialized and how the neural network will optimize the weights. To make the results reproducible, we also set its seed.
+There is one hidden layer with 20 nodes and an output layer with two nodes using a softmax activation function and a negative log likelihood loss function. We also set how the weights of the neural network are initialized and how the neural network will optimize the weights. To make the results reproducible, we also set its seed.
 
 ## <a name="Training">Training and Evaluating a Feed Forward Neural Network</a>
 
@@ -97,4 +97,4 @@ while(testIter.hasNext()){
 System.out.println(eval.stats());
 ```
 
-This example covered the basics of using MultiLayerNetwork to create a simple feed forward neural network. Stay tuned for following chapters which will cover more advanced neural network models, such as recurrent neural networks.
+This example covered the basics of using MultiLayerNetwork to create a simple feed forward neural network. Stay tuned for the following chapter which will cover more advanced uses of DL4J like Natural Language Processing (NLP).
