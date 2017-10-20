@@ -649,4 +649,25 @@ TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
     delete resultBP;
 }
 
+
+TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
+    NDArray<double> input('c', {3, 3, 16, 16});
+    NDArray<double> weightsD('c', {1, 3, 2, 2});
+    NDArray<double> weightsP('c', {2, 3, 1, 1});
+    NDArray<double> bias('c', {1, 2});
+
+    NDArray<double> expOutput('c', {3, 2, 14, 14});
+
+    nd4j::ops::sconv2d<double> op;
+    auto result = op.execute({&input, &weightsD, &weightsP, &bias}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(expOutput.isSameShape(z));
+
+    delete result;
+}
+
+
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H

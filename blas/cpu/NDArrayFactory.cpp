@@ -354,7 +354,7 @@ namespace nd4j {
                 result = new NDArray<T>(A->rows(), 1, 'f');
 
             // TODO: strides!!!
-            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, C->getBuffer(), 1);
+            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
         } else if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix())) {
             // gemm
             // int[] shape = {rows(), other.columns()};
