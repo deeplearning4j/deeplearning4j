@@ -350,7 +350,10 @@ public class ConvolutionLayerSetupTest {
     public void testSeparableConv2D() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer( new SeparableConvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer( new SeparableConvolution2D.Builder(2, 2)
+                        .depthMultiplier(2)
+                        .padding(0, 0)
+                        .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
                 .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
                 .layer(2, new OutputLayer.Builder().nOut(3).build())
                 .setInputType(InputType.convolutional(28, 28, 1));

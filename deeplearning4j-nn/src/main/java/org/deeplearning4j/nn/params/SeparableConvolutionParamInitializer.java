@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
@@ -44,7 +43,6 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     public static SeparableConvolutionParamInitializer getInstance() {
         return INSTANCE;
     }
-
 
     public final static String DEPTH_WISE_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
     public final static String POINT_WISE_WEIGHT_KEY = "pW";
@@ -156,8 +154,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)));
 
         params.put(DEPTH_WISE_WEIGHT_KEY, createDepthWiseWeightMatrix(conf, depthWiseWeightView, initializeParams));
-        params.put(POINT_WISE_WEIGHT_KEY, createPointWiseWeightMatrix(conf, pointWiseWeightView, initializeParams));
         conf.addVariable(DEPTH_WISE_WEIGHT_KEY);
+        params.put(POINT_WISE_WEIGHT_KEY, createPointWiseWeightMatrix(conf, pointWiseWeightView, initializeParams));
         conf.addVariable(POINT_WISE_WEIGHT_KEY);
 
         if(layer.hasBias()){
@@ -217,11 +215,12 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
          */
         SeparableConvolution2D layerConf =
                         (SeparableConvolution2D) conf.getLayer();
+        int depthMultiplier = layerConf.getDepthMultiplier();
+
         if (initializeParams) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
-            int depthMultiplier = layerConf.getDepthMultiplier();
 
             int inputDepth = layerConf.getNIn();
 
@@ -235,7 +234,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                            new int[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                            new int[] {depthMultiplier, layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
         }
     }
 
@@ -247,11 +246,11 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
          */
         SeparableConvolution2D layerConf =
                 (SeparableConvolution2D) conf.getLayer();
+        int depthMultiplier = layerConf.getDepthMultiplier();
+
         if (initializeParams) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
             int[] kernel = layerConf.getKernelSize();
-            int[] stride = layerConf.getStride();
-            int depthMultiplier = layerConf.getDepthMultiplier();
 
             int inputDepth = layerConf.getNIn();
             int outputDepth = layerConf.getNOut();
@@ -266,7 +265,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                    new int[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                    new int[] {layerConf.getNOut(), depthMultiplier * layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
         }
     }
 }
