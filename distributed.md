@@ -19,6 +19,11 @@ This thresholding approach reduces the network communication requirements by man
 naive approach of sending the entire dense update, or parameter vector, while maintaining high accuracy. 
 
 For more details on the thresholding approach, see [Strom, 2015 - Scalable Distributed DNN Training using Commodity GPU Cloud Computing](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf) and [Distributed Deep Learning, Part 1: An Introduction to Distributed Training of Neural Networks](http://engineering.skymind.io/distributed-deep-learning-part-1-an-introduction-to-distributed-training-of-neural-networks).
+
+On top of that, few more perks were added to original algorithm proposed by Nikko Strom:
+- Variable threshold: If number of updates per iteration gets too low, threshold gets automatically decreased by configurable step value. 
+- Dense bitmap encoding: If number of updates gets too high - another encoding scheme is used, which provides guarantees of "maximum number of bytes"  being sent over the wire for any given update message.
+- Periodically we send "shake up" messages, encoded with significantly smaller threshold, to share delayed weights that can't get above current threshold.
  
 ![Two phases within the cluster](./img/distributed.png)
 
