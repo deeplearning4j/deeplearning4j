@@ -7,15 +7,15 @@ layout: default
 
 A feed forward network is the simplest form of neural networks and was also one of the first ever created. Here we will outline an example of a feed forward neural network based off an example located [here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierMoon.java) using moon data. The data is located [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/classification). 
 
-- [**Data and ETL**](#ETL) 
+- [**Data & ETL**](#ETL) 
 - [**Building a LSTM Network**](#Building) 
-- [**Training and Evaluating**](#Training) 
+- [**Training & Evaluating**](#Training) 
 
 ## <a name="ETL">Data and ETL</a>
 
-The raw data consists of csv files with 2 numerical features and 2 labels. The training and test sets are in different csv files with 2000 observations in the training set and 1000 observations in the test set. The goal of the task is to predict the label given the two input features. Thus, we are interested in classification.
+The raw data consists of CSV files with two numerical features and two labels. The training and test sets are in different CSV files with 2000 observations in the training set and 1000 observations in the test set. The goal of the task is to predict the label given the two input features. Thus, we are interested in classification.
 
-We first initialize the variables needed to build a feed forward neural network. We set the hyperparameters of the neural network like the learning rate and the batch size, as well as varaibles related to its architecture, such as the number of hidden nodes.
+We first initialize the variables needed to build a feed forward neural network. We set the hyperparameters of the neural network such as the learning rate and the batch size, as well as varaibles related to its architecture, such as the number of hidden nodes.
 
 ```
 int seed = 123;
@@ -31,7 +31,7 @@ final String filenameTrain  = new ClassPathResource("/classification/moon_data_t
 final String filenameTest  = new ClassPathResource("/classification/moon_data_eval.csv").getFile().getPath();
 ```
 
-Because the data is located in two csv files, we initialize two CSVRecordReaders and two DataSetIterators in total. The RecordReaders will parse the data into record format, and the DataSetIterator will feed the data into the neural network in a format it can read.
+Because the data is located in two CSV files, we initialize two `CSVRecordReaders` and two `DataSetIterators` in total. The `RecordReaders` will parse the data into record format, and the `DataSetIterator` will feed the data into the neural network in a format it can read.
 
 ```
 RecordReader rr = new CSVRecordReader();
@@ -45,7 +45,7 @@ DataSetIterator testIter = new RecordReaderDataSetIterator(rrTest,batchSize,0,2)
 
 ## <a name="Building">Building a Feed Forward Network</a>
 
-Now that the data is ready, we can set up the configuration of the neural network using MultiLayerConfiguration.
+Now that the data is ready, we can set up the configuration of the neural network using `MultiLayerConfiguration`.
 
 ```
 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -66,11 +66,11 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     .pretrain(false).backprop(true).build();
 ```
 
-There is one hidden layer with 20 nodes and an output layer with two nodes using a softmax activation function and a negative log likelihood loss function. We also set how the weights of the neural network are initialized and how the neural network will optimize the weights. To make the results reproducible, we also set its seed.
+There is one hidden layer with 20 nodes and an output layer with two nodes using a softmax activation function and a negative log likelihood loss function. We also set how the weights of the neural network are initialized and how the neural network will optimize the weights. To make the results reproducible, we also set its seed; that is, we use randomly initialized weights, but we save their random initialization in case we need to start training from the same point later, to confirm our results.
 
 ## <a name="Training">Training and Evaluating a Feed Forward Neural Network</a>
 
-To actually create the model, a MultiLayerNetwork is initialized using the previously set configuration. We can then fit the data using a training loop; alternatively, if a MultipleEpochsIterator is used, then the fit function only needs to be called only once to train the data with the set amount of epochs.
+To actually create the model, a `MultiLayerNetwork` is initialized using the previously set configuration. We can then fit the data using a training loop; alternatively, if a `MultipleEpochsIterator` is used, then the fit function only needs to be called only once to train the data with the set amount of epochs.
 
 ```
 MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -82,7 +82,7 @@ for ( int n = 0; n < nEpochs; n++) {
 }
 ```
 
-Once the data has finished training, we will use the test set to evaluate our model. Note that testIter creates DataSets according to the previously set batch size of 50. The Evaluation class will handle computing the accuracy using the correct labels and the predictions. We can then print out the results at the end.
+Once the data has finished training, we will use the test set to evaluate our model. Note that `testIter` creates `DataSets` according to the previously set batch size of 50. The `Evaluation` class will handle computing the accuracy using the correct labels and the predictions. At the end, we can print out the results.
 
 ```
 Evaluation eval = new Evaluation(numOutputs);
@@ -97,4 +97,4 @@ while(testIter.hasNext()){
 System.out.println(eval.stats());
 ```
 
-This example covered the basics of using MultiLayerNetwork to create a simple feed forward neural network. Stay tuned for the following chapter which will cover more advanced uses of DL4J like Natural Language Processing (NLP).
+This example covered the basics of using `MultiLayerNetwork` to create a simple feed-forward neural network. Stay tuned for the following chapter, which will cover more advanced uses of DL4J like Natural-Language Processing (NLP).
