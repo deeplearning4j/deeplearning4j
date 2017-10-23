@@ -661,14 +661,13 @@ public class CNNGradientCheckTest {
         int width = 8;
         int height = 8;
         int inputDepth = 3;
-        int[] kernelSizes = new int[]{2, 3};
-        int[] strides = {1, 2};
-        int[] dilation = {2, 3};
-        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same};
+        int[] kernelSizes = new int[]{1};
+        int[] strides = {1};
+        int[] dilation = {1};
+        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate};
 
         Nd4j.getRandom().setSeed(12345);
 
-        for (boolean subsampling : new boolean[]{false, true}) {
             for (int k : kernelSizes) {
                 for (int s : strides) {
                     for (int d : dilation) {
@@ -693,6 +692,7 @@ public class CNNGradientCheckTest {
                                             .kernelSize(k, k)
                                             .stride(s, s)
                                             .dilation(d, d)
+                                            .depthMultiplier(3)
                                             .nIn(inputDepth).nOut(2).build());
 
                             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -706,7 +706,7 @@ public class CNNGradientCheckTest {
                                 System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
                             }
 
-                            String msg = (subsampling ? "subsampling" : "conv") + " - mb=" + minibatchSize + ", k="
+                            String msg = " - mb=" + minibatchSize + ", k="
                                     + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
                             System.out.println(msg);
 
@@ -719,7 +719,6 @@ public class CNNGradientCheckTest {
                 }
             }
         }
-    }
 
 
     @Test

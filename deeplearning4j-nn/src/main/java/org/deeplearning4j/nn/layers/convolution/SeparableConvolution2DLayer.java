@@ -99,8 +99,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray pointWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
 
-        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, outH, outW);
+        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
+        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -108,6 +108,32 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
+
+        System.out.println("Input shape:");
+        System.out.println(Arrays.toString(input.shape()));
+        System.out.println("Epsilon shape:");
+        System.out.println(Arrays.toString(epsilon.shape()));
+        System.out.println("depth weight grad shape:");
+        System.out.println(Arrays.toString(depthWiseweightGradView.shape()));
+        System.out.println("point weight grad shape:");
+        System.out.println(Arrays.toString(pointWiseweightGradView.shape()));
+        System.out.println("bias grad shape:");
+        System.out.println(Arrays.toString(biasGradView.shape()));
+
+        System.out.println("output epsilon shape:");
+        System.out.println(Arrays.toString(reshapedEpsilon.shape()));
+
+        System.out.println("kernel shape:");
+        System.out.println(kH);
+        System.out.println(kW);
+        System.out.println("strides:");
+        System.out.println(Arrays.toString(strides));
+        System.out.println("padding:");
+        System.out.println(Arrays.toString(pad));
+        System.out.println("dilation:");
+        System.out.println(Arrays.toString(dilation));
+        System.out.println("is same mode?");
+        System.out.println(sameMode);
 
         CustomOp op;
         if(layerConf().hasBias()){
@@ -227,7 +253,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         }
 
         int miniBatch = input.size(0);
-        INDArray output = Nd4j.createUninitialized(miniBatch * outDepth * outH * outW);
+        INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);
         INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
@@ -236,6 +262,32 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
+
+        System.out.println("Input shape:");
+        System.out.println(Arrays.toString(input.shape()));
+        System.out.println("depth weight shape:");
+        System.out.println(Arrays.toString(depthWiseWeights.shape()));
+        System.out.println("point weight shape:");
+        System.out.println(Arrays.toString(pointWiseWeights.shape()));
+        System.out.println("bias shape:");
+        System.out.println(Arrays.toString(bias.shape()));
+
+        System.out.println("output shape:");
+        System.out.println(Arrays.toString(reshapedOutput.shape()));
+
+
+        System.out.println("kernel shape:");
+        System.out.println(kH);
+        System.out.println(kW);
+        System.out.println("strides:");
+        System.out.println(Arrays.toString(strides));
+        System.out.println("padding:");
+        System.out.println(Arrays.toString(pad));
+        System.out.println("dilation:");
+        System.out.println(Arrays.toString(dilation));
+        System.out.println("is same mode?");
+        System.out.println(sameMode);
+
 
         CustomOp op;
         if (layerConf().hasBias()) {
@@ -254,6 +306,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 .build();
         }
         Nd4j.getExecutioner().exec(op);
+
+        System.out.println(reshapedOutput);
 
         return new Pair<>(reshapedOutput, null);
     }

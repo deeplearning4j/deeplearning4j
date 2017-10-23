@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -101,7 +102,11 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
             else
                 log.warn("Specifying different initialization for depth- and point-wise  weights not supported.");
 
-        // TODO: Set regularizer
+        this.weightL1Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, LAYER_FIELD_DEPTH_WISE_REGULARIZER, conf.getREGULARIZATION_TYPE_L1());
+        this.weightL2Regularization =  KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, LAYER_FIELD_DEPTH_WISE_REGULARIZER, conf.getREGULARIZATION_TYPE_L2());
+
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
