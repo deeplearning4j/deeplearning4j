@@ -369,8 +369,6 @@ namespace nd4j {
                 delete z_;
             }
 
-            z->printBuffer("z internal");
-
             STORE_RESULT(*z);
 
             delete c_;
