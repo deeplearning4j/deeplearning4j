@@ -41,3 +41,41 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
     ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((int *)shapeList[0])[2]);
     ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((int *)shapeList[0])[3]);
 }
+
+
+TEST_F(JavaInteropTests, TestSconv2d_1) {
+    NDArray<float> input('c', {3, 8, 8, 8});
+    NDArray<float> weightsD('c', {1, 3, 1, 1});
+    NDArray<float> weightsP('c', {2, 3, 1, 1});
+    NDArray<float> bias('c', {1, 2});
+    NDArray<float> output('c', {3, 2, 8, 8});
+    output.assign(0.0);
+
+    NDArrayFactory<float>::linspace(1, input);
+    NDArrayFactory<float>::linspace(1, weightsD);
+    NDArrayFactory<float>::linspace(1, weightsP);
+    NDArrayFactory<float>::linspace(1, bias);
+
+    NDArray<float> expOutput('c', {3, 2, 8, 8});
+
+    nd4j::ops::sconv2d<float> op;
+
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) weightsD.getBuffer(), (Nd4jPointer) weightsP.getBuffer(), (Nd4jPointer) bias.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weightsD.getShapeInfo(), (Nd4jPointer) weightsP.getShapeInfo(), (Nd4jPointer) bias.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+
+    NativeOps nativeOps;
+
+    int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+
+    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
+                                nullptr, 0, exp, 9, false);
+
+    output.printBuffer("output");
+
+    ASSERT_NEAR(17551, output.getScalar(0), 1e-5);
+}

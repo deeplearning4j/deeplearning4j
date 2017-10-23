@@ -3147,10 +3147,10 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
         nd4j_printf("Can't find requested operation: [%lld]\n", hash);
 
     // we're using the same fake nodeId everywhere here
-    int nodeId = 1;
+    int nodeId = 119;
 
     nd4j::graph::VariableSpace<T> variableSpace;
-    nd4j::graph::Block<T> block(1, &variableSpace, isInplace);
+    nd4j::graph::Block<T> block(119, &variableSpace, isInplace);
 
 
     // filling block now
@@ -3180,11 +3180,36 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
     }
 
     // hypothetically at this point we have everything filled
-    return op->execute(&block);
+    Nd4jStatus status = op->execute(&block);
+    if (status != ND4J_STATUS_OK)
+        return status;
+
+
+    for (int e = 0; e < numOutputs; e++) {
+        auto buffer = (T *) outputBuffers[e];
+        auto shape = (int *) outputShapes[e];
+
+
+        if (buffer == nullptr || shape == nullptr)
+            continue;
+
+        NDArray<T> externalRef(buffer, shape);
+
+        std::pair<int, int> pair(nodeId, e);
+        if (!variableSpace.hasVariable(pair))
+            continue;
+
+        auto array = variableSpace.getVariable(pair)->getNDArray();
+
+        if (array->getBuffer() != buffer || array->getShapeInfo() != shape)
+            externalRef.assign(array);
+    }
 
 
     // TODO: we need to destroy vars properly
     // but hopefully c++ will do that for us
+
+    return status;
 }
 
 int NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
