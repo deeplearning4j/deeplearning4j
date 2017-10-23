@@ -26,6 +26,8 @@ Here are some reasons to use DeepLearning4j.
 
 - You are a data engineer or software developer in an enterprise environment who needs stable, reusable data pipelines and scalable and accurate predictions about the data. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs.
 
+
+<!-- now that we've joined Eclipse, are we still pushing IntelliJ as the recommended IDE? -->
 # DeepLearning4j: System Requirements
 
 - [**Java**](#java) 
@@ -50,7 +52,7 @@ Apache Maven, a dependency management and automated build tool for Java projects
 
 Note that the previous command assumes [Homebrew](https://brew.sh/) is installed. For more information on Maven, please see our [Maven deep dive](#mavenoverview) below.
 
-## <a name="ide">Intellij</a>
+## <a name="ide">IntelliJ</a>
 
 [Intellij](https://www.jetbrains.com/idea/download/) is a IDE that is recommended to use for DL4J although an IDE such as Eclipse may be used. Intellij will allow you to easily work with the DL4J API and is well integrated with Maven. Using Intellij will allow you to build neural networks in only a few steps. For more information on IntelliJ, please see our [IntelliJ deep dive](#intellij) below. 
 
@@ -58,9 +60,10 @@ Note that the previous command assumes [Homebrew](https://brew.sh/) is installed
 
 Lastly, you should have [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine. Git is a version control system that facilitates coordinating projects between multiple people. It can be used to save a project, keep track of changes, and facilitate distributed, non-linear workflows. You should use Git to build repositories to store your project code.
 
+<!-- is this actually how we want to recommend people update git? should we direct them to git-scm website instead? -->
 To update to the latest version of Git, use the following command: 
 
-    git clone git://git.kernel.org/pub/scm/git/git.gi
+    git clone git://git.kernel.org/pub/scm/git/git.git
 
 ## <a name="gpu">CPUs and GPUs</a>
 
@@ -76,9 +79,7 @@ Either Cuda 7.5 or 8.0 can be used to swap CPUs for GPUs.
 
 # <a name="component">DeepLearning4J Components</a>
 
-Deeplearning4J is comprised of multiple components which all have different functionalities
-
-The following are the main components of DL4J
+Deeplearning4j is comprised of multiple libraries which all have different functionalities:
 
 - [**DataVec**](#datavec) performs data ingestion, normalization and transformation into feature vectors
 - [**Deeplearning4j**](#dl4j) provides tools to configure neural networks 

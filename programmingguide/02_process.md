@@ -5,20 +5,22 @@ layout: default
 
 # DL4J Process Overview
 
-Building a neural network requires the following phases. DeepLearning4j plays a central role in each phase. 
+Building a neural network typically follows several phases, and DeepLearning4j can play a central role in each phase. 
 
-1. Data Preparation
+1. **Data Preparation**
   - Extract raw data from the source such as text files, images or video.
   - Transform raw data to arrays of numeric values, a format neural networks can understand
   - Apply additional transformations, scaling, or normalization to data
-2. Creating a Neural Network
+2. **Creating a Neural Network**
   - Define neural network architecture
   - Train the neural network
   - Tune neural network hyperparamters
-3. Evaluation and Deployment of Neural Network
+3. **Evaluation and Deployment of Neural Network**
   - Evaluate neural network on new data
   - Deploy neural network if satisfied
 
+
+<!-- some notes on below, using fragments like "to build a neural network" can be awkward and make a sentence longer than necessary. we can clean up some of this -->
 # DeepLearning4j ETL
 
 ## Data Type Overview
@@ -65,7 +67,7 @@ Neural networks are typically trained using batches of the training data. Update
 
 Dl4J provides a user interface (UI) for monitoring the neural network training process. This will allow you to visualize the neural network training status in real time on your browser. The UI is mainly used to help tune neural networks or find an optimal or near optimal combination of hyperparameter values for a specific task. 
 
-The first thing to set up the UI is to add the following dependency in the project `pom.xml` file. 
+The first thing to set up the UI is to add the following dependency in the project `pom.xml` file.
 
 	<dependency>
         	<groupId>org.deeplearning4j</groupId>
@@ -97,6 +99,7 @@ The neural network will then collect information and route it to the UI as you t
 The UI is useful because it can help you train the neural network properly. For instance, if the training process is going well, you should be seeing a downward trend in the loss value over time. If not, you should adjust hyperparameters like the learning rate or make sure the data was normalized correctly. On the other hand, if the loss value is going downward but extremely slowly, the learning rate may be too small. Furthermore, the UI provides the mean layer activation values over time, which can help you to detect vanishing or exploding activations. More help hints and further reading on this topic can be found [here](https://deeplearning4j.org/visualization).
 
 ## Evaluating Neural Networks
-After the training phase, you will need to evaluate how well a neural network performs on the testing set. Depending on the task, different metrics will be used, such as AUC (area under ROC curve) or MSE (mean squared error). Furthermore, these metrics can be used to evaluate the network after each epoch on the validation set to help set hyperparameters of the network and perform early stopping. These operations can easily be done using the `DataSet` object and the `ComputationGraph` or `MultiLayerNetwork`, whether or not the specific architecture is a feed forward network, convolutional network, or recurrent network. 
+
+After the training phase, you will need to evaluate how well a neural network performs on the testing set. Depending on the task, different metrics will be used, such as AUC (area under ROC curve) or MSE (mean squared error). Furthermore, these metrics can be used to evaluate the network after each epoch on the validation set to help set hyperparameters of the network and perform early stopping. These operations can easily be done using the `DataSet` object and the `ComputationGraph` or `MultiLayerNetwork`, whether or not the specific architecture is a feed forward network, convolutional network, or recurrent network.
 
 DL4J provides many evaluation functions as part of the [eval](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html) class in deeplearning4j. The functionality includes basic accuracy, f1 score using false negative and true and false positive rates, and more. 
