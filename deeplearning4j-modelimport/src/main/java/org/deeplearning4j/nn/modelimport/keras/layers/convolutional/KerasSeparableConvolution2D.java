@@ -101,6 +101,8 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
             else
                 log.warn("Specifying different initialization for depth- and point-wise  weights not supported.");
 
+        // TODO: Set regularizer
+
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint depthWiseWeightConstraint = KerasConstraintUtils.getConstraintsFromConfig(

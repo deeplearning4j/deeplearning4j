@@ -132,10 +132,11 @@ public class KerasLayer {
         this.layer = null;
         this.vertex = null;
         this.weights = null;
-        this.weightL1Regularization = KerasRegularizerUtils.getWeightL1RegularizationFromConfig(
-                layerConfig, enforceTrainingConfig, conf);
-        this.weightL2Regularization = KerasRegularizerUtils.getWeightL2RegularizationFromConfig(
-                layerConfig, enforceTrainingConfig, conf);
+
+        this.weightL1Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, conf.getLAYER_FIELD_W_REGULARIZER(), conf.getREGULARIZATION_TYPE_L1());
+        this.weightL2Regularization =  KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, conf.getLAYER_FIELD_W_REGULARIZER(), conf.getREGULARIZATION_TYPE_L2());
         this.dropout = KerasLayerUtils.getDropoutFromConfig(layerConfig, conf);
         KerasLayerUtils.checkForUnsupportedConfigurations(layerConfig, enforceTrainingConfig, conf);
     }
