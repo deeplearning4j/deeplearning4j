@@ -79,9 +79,9 @@ public class SameDiffTests {
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), sigmoid.getShape());
-        assertEquals(1, sameDiff.graph().getVertexInDegree(new int[]{sigmoid.getDifferentialFunction().getVertexId()}));
-        int[] sorted = new int[]{x.getVertexId(), sigmoid.getDifferentialFunction().getVertexId()};
-        assertArrayEquals(sorted, sameDiff.graph().topologicalSort());
+        assertEquals(1, sameDiff.graph().getVertexInDegree(new int[]{sigmoid.getDifferentialFunction().getVertexId()[-1]}));
+        int[] sorted = new int[]{x.getVertexId()[-1], sigmoid.getDifferentialFunction().getVertexId()[-1]};
+        assertArrayEquals(sorted, sameDiff.graph().topologicalSort()[-1]);
         assertEquals(1, sameDiff.graph().getOpOrder().getActions().size());
         OpState opState = sameDiff.graph().getOpOrder().getActions().get(0).getOpState();
         assertEquals("sigmoid", opState.getOpName());
@@ -101,7 +101,7 @@ public class SameDiffTests {
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), result.getShape());
-        assertArrayEquals(new int[]{1, 2}, sameDiff.graph().topologicalSort());
+        assertArrayEquals(new int[]{1, 2}, sameDiff.graph().topologicalSort()[-1]);
     }
 
     @Test
@@ -499,7 +499,7 @@ public class SameDiffTests {
                 //context.getFunction("eval").invokeGraphOn(context);
                 context.allocate();
                 OpExecOrder opExecOrder = context.getGraph().getOpOrder();
-                int finalId = opExecOrder.getActions().get(opExecOrder.getActions().size() - 1).getOutputId();
+                int finalId = opExecOrder.getActions().get(opExecOrder.getActions().size() - 1).getOutputId()[-1];
                 return context.getVertexIdToVariable().get(finalId);
             }
         }, new SameDiff.SameDiffFunctionDefinition() {
@@ -517,13 +517,13 @@ public class SameDiffTests {
                 sameDiff.setupFunction(SDVariable.builder().varName("one")
                         .info(NDArrayInformation.newInfo(new int[]{1,1}))
                         .sameDiff(sameDiff)
-                        .vertexId(sameDiff.graph().nextVertexId())
+                        .vertexId(new int[] {sameDiff.graph().nextVertexId()})
                         .build()),
                 sameDiff.setupFunction(SDVariable.builder()
                         .varName("two")
                         .info(NDArrayInformation.newInfo(new int[]{1,1}))
                         .sameDiff(sameDiff)
-                        .vertexId(sameDiff.graph().nextVertexId())
+                        .vertexId(new int[] {sameDiff.graph().nextVertexId() })
                         .build()),
 
         });
@@ -1182,7 +1182,7 @@ public class SameDiffTests {
             List<String> opNameAssertions = Arrays.asList("mmul", "sigmoid", "mul");
             OpExecOrder opExecOrder = logisticGraph.graph().getOpOrder();
             assertEquals(3, opExecOrder.getActions().size());
-            int[] topoOrder = logisticGraph.graph().topologicalSort();
+            int[][] topoOrder = logisticGraph.graph().topologicalSort();
             for (int i = 0; i < 3; i++) {
                 assertEquals(opNameAssertions.get(i), opExecOrder.getActions().get(i).getOpState().getOpName());
             }
