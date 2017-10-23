@@ -3,7 +3,7 @@ title: DeepLearning4j Feed Forward Network
 layout: default
 ---
 
-# DeepLearning4j: Feed Forward Network Example
+# DeepLearning4j: Feed-Forward Network Example
 
 A feed forward network is the simplest form of neural networks and was also one of the first ever created. Here we will outline an example of a feed forward neural network based off an example located [here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierMoon.java) using moon data. The data is located [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/classification). 
 
