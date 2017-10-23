@@ -37,9 +37,9 @@ public class KerasLayerConfiguration {
 
     /* Basic layer names */
     // Missing Layers: Permute, RepeatVector, Lambda, ActivityRegularization, Masking
-    // Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D,
+    // Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling3D,
     // ZeroPadding3D, LocallyConnected1D-2D
-    // Missing layers from keras 1: AtrousConvolution1D-2D, Highway, MaxoutDense
+    // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
