@@ -20,14 +20,15 @@ naive approach of sending the entire dense update, or parameter vector, while ma
 
 For more details on the thresholding approach, see [Strom, 2015 - Scalable Distributed DNN Training using Commodity GPU Cloud Computing](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf) and [Distributed Deep Learning, Part 1: An Introduction to Distributed Training of Neural Networks](http://engineering.skymind.io/distributed-deep-learning-part-1-an-introduction-to-distributed-training-of-neural-networks).
 
-On top of that, few more perks were added to original algorithm proposed by Nikko Strom:
-- Variable threshold: If number of updates per iteration gets too low, threshold gets automatically decreased by configurable step value. 
-- Dense bitmap encoding: If number of updates gets too high - another encoding scheme is used, which provides guarantees of "maximum number of bytes"  being sent over the wire for any given update message.
-- Periodically we send "shake up" messages, encoded with significantly smaller threshold, to share delayed weights that can't get above current threshold.
+Here are a few more perks were added to original algorithm proposed by Nikko Strom:
+
+- Variable threshold: If the number of updates per iteration gets too low, the threshold is automatically decreased by a configurable step value. 
+- Dense bitmap encoding: If the number of updates gets too high, another encoding scheme is used, which provides guarantees of "maximum number of bytes" being sent over the wire for any given update message.
+- Periodically, we send "shake up" messages, encoded with a significantly smaller threshold, to share delayed weights that can't get above current threshold.
  
 ![Two phases within the cluster](./img/distributed.png)
 
-Note  that using Spark entails overhead. In order to determine whether Spark will help you or not, consider using the [Performance Listener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/PerformanceListener.java) and look at the millisecond iteration time.
+Note that using Spark entails overhead. In order to determine whether Spark will help you or not, consider using the [Performance Listener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/PerformanceListener.java) and look at the millisecond iteration time.
 If it's <= 150ms, Spark may not be worth it.
 
 ## Setting up Your Cluster
@@ -40,11 +41,11 @@ As mentioned above, DeepLearning4j supports both Spark 1.x and Spark 2.x cluster
 
 ### Network Environment
 
-Gradients sharing relies heavily on the UDP protocol for communication between the Master and the Nodes during training. If you're running your cluster in a cloud environment like AWS or Azure, you need to allow one UDP port for Inbound/Outbound connections and you need to specify that port in the `VoidConfiguration.unicastPort(int)` bean that is passed to `SharedTrainingMaster` constructor. 
+Gradient sharing relies heavily on the UDP protocol for communication between the Master and the slave nodes during training. If you're running your cluster in a cloud environment such as AWS or Azure, you need to allow one UDP port for Inbound/Outbound connections, and you have to specify that port in the `VoidConfiguration.unicastPort(int)` bean that is passed to `SharedTrainingMaster` constructor. 
 
-Another option to keep in mind is that in case of YARN use (or any other resource manager that handles Spark networking), you'll have to specify the network mask of the network that'll be used for UDP communications. That could be done using something like this: `VoidConfiguration.setNetworkMask("10.1.1.0/24")`.
+Another option to keep in mind: if you use YARN (or any other resource manager that handles Spark networking), you'll have to specify the network mask of the network that'll be used for UDP communications. That could be done with something like this: `VoidConfiguration.setNetworkMask("10.1.1.0/24")`.
 
-A option of last resort for IP address selection is the `DL4J_VOID_IP` environment variable. Set that variable on each node you're running, with local IP address to be used for comms.
+An option of last resort for IP address selection is the `DL4J_VOID_IP` environment variable. Set that variable on each node you're running, with a local IP address to be used for comms.
 
 ### Netmask
 
