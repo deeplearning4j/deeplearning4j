@@ -79,3 +79,36 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
     ASSERT_NEAR(17551, output.getScalar(0), 1e-5);
 }
+
+TEST_F(JavaInteropTests, TestSconv2d_2) {
+    NDArray<float> input('c', {3, 3, 8, 8});
+    NDArray<float> weightsD('c', {1, 3, 1, 1});
+    NDArray<float> output('c', {3, 3, 8, 8});
+    output.assign(0.0);
+
+    NDArrayFactory<float>::linspace(1, input);
+    NDArrayFactory<float>::linspace(1, weightsD);
+
+    NDArray<float> expOutput('c', {3, 3, 8, 8});
+
+    nd4j::ops::sconv2d<float> op;
+
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) weightsD.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weightsD.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+
+    NativeOps nativeOps;
+
+    int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+
+    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1,
+                                nullptr, 0, exp, 9, false);
+
+    output.printBuffer("output");
+
+    ASSERT_NEAR(1, output.getScalar(0), 1e-5);
+}
