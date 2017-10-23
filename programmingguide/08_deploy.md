@@ -3,18 +3,18 @@ title: DeepLearning4j Deployment
 layout: default
 ---
 
-# DeepLearning4j: Deployment
+# DeepLearning4j: AI Model Deployment
 
 This section is about deploying deep learning models. We will cover using Apache Spark to deploy neural networks, how to save and load previously trained neural networks, and then go over other uses of neural networks such as regression and building more complex models.
 
-- [**Spark**](#spark) 
+- [**Apache Spark**](#spark) 
 - [**Saving & Loading Neural Networks**](#saving) 
 - [**Regression**](#regression)
 - [**More Complex Architectures**](#complex)
 
 ## <a name="spark">Spark</a>
 
-[Apache Spark](https://spark.apache.org/) is a general cluster-computing framework, which was originally developed at the AMP lab at UC Berkeley. Spark is helpful for deep learning because training neural networks is often a computationally heavy task. Spark can be used intelligently to parallelize training and accelerate the process. Fortunately by design, DL4J is well integrated with Spark for distributed training of neural networks. To learn about running Spark jobs, look [here](https://spark.apache.org/docs/latest/quick-start.html).
+[Apache Spark](https://spark.apache.org/) is a general cluster-computing framework, which was originally developed at the AMP lab at UC Berkeley. Spark is helpful for deep learning because training neural networks is often a computationally heavy task. Spark can be used intelligently to parallelize training and accelerate the process. DL4J integrates tightly with Spark for distributed training of neural networks. To learn about running Spark jobs, look [here](https://spark.apache.org/docs/latest/quick-start.html).
 
 The basic notion of how Spark is used to train neural networks is simple. First, the Spark driver (or master) starts with a configuration of the neural network and parameters. The training data is then split up into subsets, which are distributed to the worker nodes along with the neural network configuration and parameters. Thus, each worker node will have a different split of the data. The worker nodes then update the parameters based on their split of the data. The neural networks will now have different parameters across worker nodes. The parameters are then averaged across the workers and the resulting neural network is then sent back to the master node. The process will then repeat for the next data. 
 
