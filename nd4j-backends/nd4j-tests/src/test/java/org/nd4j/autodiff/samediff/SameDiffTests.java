@@ -17,7 +17,6 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -81,7 +80,7 @@ public class SameDiffTests {
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), sigmoid.getShape());
         assertEquals(1, sameDiff.graph().getVertexInDegree(new int[]{sigmoid.getDifferentialFunction().getVertexId()}));
-        int[] sorted = new int[]{x.getArrayField().getVertexId(), sigmoid.getDifferentialFunction().getVertexId()};
+        int[] sorted = new int[]{x.getVertexId(), sigmoid.getDifferentialFunction().getVertexId()};
         assertArrayEquals(sorted, sameDiff.graph().topologicalSort());
         assertEquals(1, sameDiff.graph().getOpOrder().getActions().size());
         OpState opState = sameDiff.graph().getOpOrder().getActions().get(0).getOpState();
@@ -136,10 +135,14 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         DynamicCustomOp dynamicCustomOp = DynamicCustomOp.
                 sameDiffBuilder("testop",sameDiff)
-                .addInputs(
-                        new Variable(sameDiff,"i1",NDArrayInformation.newInfo(new int[]{2,2})),
-                        new Variable(sameDiff,"i2",NDArrayInformation.newInfo(new int[]{2,2})),
-                        new Variable(sameDiff,"i3",NDArrayInformation.newInfo(new int[]{2,2})))
+                .addInputs(SDVariable.builder().sameDiff(sameDiff)
+                                .varName("i1")
+                                .info(NDArrayInformation.newInfo(new int[]{2,2})).build(),
+                        SDVariable.builder().
+                                sameDiff(sameDiff)
+                                .varName("i2")
+                                .info(NDArrayInformation.newInfo(new int[]{2,2}))
+                .build())
                 .addOutputShape(new int[]{2,2})
                 .addOutputShape(new int[]{2,3})
                 .build();
@@ -482,6 +485,52 @@ public class SameDiffTests {
     }
 
 
+
+
+
+    @Test
+    public void testWhileLoop() {
+        SameDiff sameDiff = SameDiff.create();
+        sameDiff.whileStatement(new SameDiff.SameDiffConditional() {
+            @Override
+            public SDVariable eval(SameDiff context, SameDiff.SameDiffFunctionDefinition body, SDVariable[] inputVars) {
+                context.defineFunction("eval",body,inputVars);
+                context.invokeFunctionOn("eval",context);
+                //context.getFunction("eval").invokeGraphOn(context);
+                context.allocate();
+                OpExecOrder opExecOrder = context.getGraph().getOpOrder();
+                int finalId = opExecOrder.getActions().get(opExecOrder.getActions().size() - 1).getOutputId();
+                return context.getVertexIdToVariable().get(finalId);
+            }
+        }, new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable eqResult = sameDiff.neq(variableInputs[0],variableInputs[1]);
+                return new SDVariable[]{eqResult};
+            }
+        }, new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                return new SDVariable[]{variableInputs[0],variableInputs[0]};
+            }
+        },new SDVariable[] {
+                sameDiff.setupFunction(SDVariable.builder().varName("one")
+                        .info(NDArrayInformation.newInfo(new int[]{1,1}))
+                        .sameDiff(sameDiff)
+                        .vertexId(sameDiff.graph().nextVertexId())
+                        .build()),
+                sameDiff.setupFunction(SDVariable.builder()
+                        .varName("two")
+                        .info(NDArrayInformation.newInfo(new int[]{1,1}))
+                        .sameDiff(sameDiff)
+                        .vertexId(sameDiff.graph().nextVertexId())
+                        .build()),
+
+        });
+
+        sameDiff.exec();
+        sameDiff.toString();
+    }
 
 
 

@@ -39,9 +39,11 @@ public class NDArrayInformation implements Serializable {
      * @return
      */
     public static NDArrayInformation newInfo(int[] shape,WeightInitScheme weightInitScheme) {
+        String id = UUID.randomUUID().toString();
         return NDArrayInformation.builder()
                 .shape(shape).weightInitScheme(weightInitScheme)
-                .arrId(UUID.randomUUID().toString())
+                .arrId(id)
+                .id(id)
                 .build();
     }
 
@@ -92,7 +94,6 @@ public class NDArrayInformation implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         NDArrayInformation that = (NDArrayInformation) o;
 

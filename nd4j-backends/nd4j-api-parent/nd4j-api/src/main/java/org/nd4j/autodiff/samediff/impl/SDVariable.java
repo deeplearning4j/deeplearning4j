@@ -6,18 +6,17 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -34,48 +33,52 @@ import java.util.Map;
  *
  */
 @Data
-public class SDVariable  implements Serializable {
+public class SDVariable extends DifferentialFunction implements Serializable {
     private INDArray arr;
-    private Variable arrayField;
+    @Getter
+    @Setter
+    private NDArrayInformation info;
     @Getter
     @Setter
     private String varName;
-    private SameDiff sameDiff;
-    private int[] shape;
     private SDVariable gradient;
     private SDVariable forwardVariable;
-    private int vertexId;
-    private int depth;
     protected DifferentialFunction differentialFunction;
 
     @Builder
     private SDVariable(DifferentialFunction differentialFunction,
                        String varName,
                        INDArray arr,
+                       NDArrayInformation info,
                        SameDiff sameDiff,
-                       Variable arrayField,
                        int[] shape,
-                       int vertexId) {
-        this.shape = shape;
+                       NDArrayVertex ndArrayVertex,
+                       int[] vertexId) {
+        this.shape = info != null ? info.getShape() : shape;
+        this.info = info;
         this.differentialFunction = differentialFunction;
         this.varName = varName;
+        this.vertex = ndArrayVertex;
         this.arr = arr;
         this.vertexId = vertexId;
-        this.arrayField = arrayField;
         this.sameDiff = sameDiff;
         if(differentialFunction != null) {
             this.vertexId = differentialFunction.getVertexId();
-            this.depth = differentialFunction.getVertex().depth();
-        }
-        else if(arrayField != null) {
-            this.vertexId = arrayField.getVertexId();
-            this.depth = arrayField.getVertex().depth();
         }
 
 
 
     }
 
+    @Override
+    public int[] getResultShape() {
+        return getShape();
+    }
+
+    @Override
+    public NDArrayInformation getResult() {
+        return getInfo();
+    }
 
     public void setArr(INDArray arr) {
         if(arr == null) {
@@ -145,7 +148,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable getGradient() {
-        Op grad = (Op) (this.getArrayField() != null ? this.getArrayField().getGradient() : this.getDifferentialFunction().getGradient());
+        Op grad = (Op) (this.getDifferentialFunction() == null ? getGradient() : this.getDifferentialFunction().getGradient());
 
         if(gradient == null && differentialFunction != null && differentialFunction.getGradient() != null) {
             this.gradient = differentialFunction != null && differentialFunction.getGradient() != null ? SDVariable.builder()
@@ -161,18 +164,7 @@ public class SDVariable  implements Serializable {
             }
         }
 
-        else if(gradient == null && arrayField != null && arrayField.getGradient() != null) {
-            this.gradient = arrayField != null && arrayField.getGradient() != null ? SDVariable.builder()
-                    .sameDiff(sameDiff)
-                    .differentialFunction(arrayField.getGradient())
-                    .varName(varName + "-grad").arr(grad.z())
-                    .shape(arrayField.getGradient() != null ? arrayField.getGradient().getResultShape() : null)
-                    .build() : null;
 
-            if(sameDiff.isDebugMode() && this.gradient != null) {
-                sameDiff.addVariable(this.gradient);
-            }
-        }
 
 
         if(this.gradient != null) {
@@ -180,15 +172,16 @@ public class SDVariable  implements Serializable {
         }
 
         if(this.gradient != null && this.gradient.getArr() == null) {
-            if(arrayField != null)
-                this.gradient.setArr(sameDiff.getNDArray(arrayField.getGradient().getResult()));
-            else {
-                this.gradient.setArr(sameDiff.getNDArray(differentialFunction.getGradient().getResult()));
+            this.gradient.setArr(sameDiff.getNDArray(differentialFunction.getGradient().getResult()));
 
-            }
         }
 
         return gradient;
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
     }
 
     /**
@@ -205,26 +198,15 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public NDArrayInformation getInfo() {
-        if(differentialFunction == null && arrayField != null)
-            return arrayField.getM_x();
+        if(differentialFunction == null && info != null)
+            return info;
         else if(differentialFunction !=  null)
             return differentialFunction.getResult();
         else
             throw new IllegalStateException("No ndarray found. Please set either a differential function or a variable");
     }
 
-    /**
-     *
-     * @return
-     */
-    public String getFormula() {
-        List<Variable> ret = new ArrayList<>();
-        if(arrayField != null)
-            return arrayField.getFormula(ret);
-        else {
-            return this.differentialFunction.getFormula(ret);
-        }
-    }
+
 
 
     /**
@@ -234,6 +216,8 @@ public class SDVariable  implements Serializable {
     public int[] getShape() {
         if(shape != null)
             return shape;
+        if(info != null)
+            return info.getShape();
         if(differentialFunction == null)
             throw new IllegalStateException("Unable to infer shape. Function is null.");
         OpState opState =  differentialFunction.getOpState();
@@ -270,7 +254,6 @@ public class SDVariable  implements Serializable {
     public SDVariable dup() {
         return SDVariable.builder()
                 .differentialFunction(differentialFunction)
-                .arrayField(arrayField)
                 .varName(varName)
                 .shape(shape)
                 .sameDiff(sameDiff)
@@ -1035,7 +1018,7 @@ public class SDVariable  implements Serializable {
     public static DifferentialFunction getFunction(SDVariable variable) {
         if(variable == null)
             throw new IllegalArgumentException("Unable to get function for null variable");
-        return variable.getDifferentialFunction() != null ? variable.getDifferentialFunction() : variable.getArrayField();
+        return variable.getDifferentialFunction() != null ? variable.getDifferentialFunction() : variable;
     }
 
     @Override
@@ -1051,9 +1034,7 @@ public class SDVariable  implements Serializable {
         SDVariable variable = (SDVariable) o;
 
         if (arr != null ? !arr.equals(variable.arr) : variable.arr != null) return false;
-        if (arrayField != null ? !arrayField.equals(variable.arrayField) : variable.arrayField != null) return false;
         if (varName != null ? !varName.equals(variable.varName) : variable.varName != null) return false;
-        if (!Arrays.equals(shape, variable.shape)) return false;
         return differentialFunction != null ? differentialFunction.equals(variable.differentialFunction) : variable.differentialFunction == null;
     }
 
@@ -1061,7 +1042,6 @@ public class SDVariable  implements Serializable {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (arr != null ? arr.hashCode() : 0);
-        result = 31 * result + (arrayField != null ? arrayField.hashCode() : 0);
         result = 31 * result + (varName != null ? varName.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + (differentialFunction != null ? differentialFunction.hashCode() : 0);

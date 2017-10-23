@@ -14,13 +14,13 @@ public class Scalar extends Constant {
     protected double value;
 
     public Scalar(SameDiff sameDiff,
-                  double value,int vertexId) {
+                  double value,int[] vertexId) {
         this(sameDiff, value, false,vertexId);
 
     }
 
     public Scalar(SameDiff sameDiff,
-                  double value,boolean inPlace,int vertexId) {
+                  double value,boolean inPlace,int[] vertexId) {
         super(sameDiff, NDArrayInformation.newInfo(new int[]{1,1}),new int[]{1,1},inPlace,vertexId);
         this.value = value;
 

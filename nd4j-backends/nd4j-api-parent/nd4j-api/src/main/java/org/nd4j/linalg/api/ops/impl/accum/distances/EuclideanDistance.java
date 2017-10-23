@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 
 import java.util.List;
 
@@ -282,9 +281,6 @@ public class EuclideanDistance extends BaseAccumulation {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public String doGetFormula(List<Variable> variables) {
-        return null;
-    }
+
 
 }

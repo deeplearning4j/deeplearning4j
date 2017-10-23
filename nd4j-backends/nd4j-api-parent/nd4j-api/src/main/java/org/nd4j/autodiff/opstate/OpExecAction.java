@@ -20,7 +20,7 @@ public class OpExecAction implements Serializable {
     private NDArrayInformation[] inputs;
     private NDArrayInformation output;
     private int[] inputsIds;
-    private int outputId;
+    private int[] outputId;
 
 
     /**
@@ -74,7 +74,7 @@ public class OpExecAction implements Serializable {
         result = 31 * result + Arrays.hashCode(inputs);
         result = 31 * result + (output != null ? output.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(inputsIds);
-        result = 31 * result + outputId;
+        result = 31 * result + Arrays.hashCode(outputId);
         return result;
     }
 }

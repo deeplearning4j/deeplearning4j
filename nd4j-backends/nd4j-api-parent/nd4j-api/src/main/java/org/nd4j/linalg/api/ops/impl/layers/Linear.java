@@ -4,12 +4,12 @@ import lombok.Builder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseModule;
 import org.nd4j.linalg.api.ops.Module;
 import org.nd4j.linalg.api.ops.impl.accum.Mmul;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.weightinit.WeightInitScheme;
 
@@ -141,15 +141,21 @@ public class Linear extends BaseModule {
                                                      int nOut) {
         if(biasWeightInitScheme != null) {
             return new DifferentialFunction[] {
-                    new Variable(sameDiff,"w", NDArrayInformation.newInfo(new int[]{nOut,nIn}
-                            ,weightInitScheme)),
-                    new Variable(sameDiff,"b", NDArrayInformation.newInfo(new int[]{nOut,1}
-                            ,biasWeightInitScheme))
+                   SDVariable.builder().sameDiff(sameDiff).varName("w")
+                    .info(NDArrayInformation.newInfo(new int[]{nOut,nIn}
+                            ,weightInitScheme)).build(),
+                    SDVariable.builder().sameDiff(sameDiff)
+                            .varName("b")
+                    .info(NDArrayInformation.newInfo(new int[]{nOut,1}
+                            ,biasWeightInitScheme)).build()
             };
         }
         else {
             return new DifferentialFunction[] {
-                    new Variable(sameDiff,"w", NDArrayInformation.newInfo(new int[]{nOut,nIn}))
+                   SDVariable.builder().sameDiff(sameDiff)
+                    .varName("w")
+                    .info(NDArrayInformation.newInfo(new int[]{nOut,nIn}))
+                    .build()
             };
         }
     }

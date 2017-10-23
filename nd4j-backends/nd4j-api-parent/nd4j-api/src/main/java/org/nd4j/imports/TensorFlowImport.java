@@ -83,7 +83,7 @@ public class TensorFlowImport {
                 .graph(graph)
                 .vertexToArray(Maps.<String, INDArray>newHashMap())
                 .variableMap(Maps.<String, SDVariable>newHashMap())
-                .vertexIdxToInfo(Maps.<Integer, NDArrayInformation>newHashMap())
+                .vertexIdxToInfo(Maps.<int[], NDArrayInformation>newHashMap())
                 .build();
 
         graph.setSameDiff(diff);

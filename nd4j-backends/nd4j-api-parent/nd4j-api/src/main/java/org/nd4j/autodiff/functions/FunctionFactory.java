@@ -1,10 +1,10 @@
 package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.linalg.api.ops.impl.transforms.Ones;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.ops.impl.transforms.Zero;
 
 /**
@@ -20,7 +20,7 @@ public interface FunctionFactory {
 
 
 
-    Variable var(String iName, NDArrayInformation iX);
+    SDVariable var(String iName, NDArrayInformation iX);
 
 
 
@@ -149,7 +149,7 @@ public interface FunctionFactory {
     DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX);
 
 
-    DifferentialFunction rollAxis(Variable iX, int axis);
+    DifferentialFunction rollAxis(SDVariable iX, int axis);
 
     DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions);
     DifferentialFunction euclideanDistance(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions);
