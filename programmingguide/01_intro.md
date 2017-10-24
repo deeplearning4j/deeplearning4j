@@ -3,7 +3,7 @@ title: DeepLearning4j Introduction
 layout: default
 ---
 
-# Programming Guide for Deeplearning4j
+# Deeplearning4j Programming Guide
 
 ### Table of Contents
 
@@ -16,7 +16,7 @@ layout: default
 7. [Natural Language Processing](07_nlp)
 8. [AI Model Deployment](08_deploy)
 9. [Troubleshooting Neural Networks](09_troubleshooting)
-
+<br>
 
 
 # Introduction to Deep Learning
