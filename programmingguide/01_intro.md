@@ -7,7 +7,7 @@ layout: default
 
 ### Table of Contents
 
-1. [Intro: Deep Learning, Defined](01_intro)
+1. [Introduction to Deep Learning](01_intro)
 2. [Process Overview](02_process)
 3. [Program & Code Structure](03_code_structure)
 4. [Convolutional Network Example](04_convnet)
