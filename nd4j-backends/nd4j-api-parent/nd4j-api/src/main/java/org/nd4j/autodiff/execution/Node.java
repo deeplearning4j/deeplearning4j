@@ -25,5 +25,5 @@ public class Node {
     private List<Integer> output = new ArrayList<>();
     private List<Integer> unresolved = new ArrayList<>();
     private OpExecAction opExecAction;
-    private int originalOutput;
+    private int[] originalOutput;
 }
