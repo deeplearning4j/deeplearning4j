@@ -51,6 +51,9 @@ BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template reduceAlong
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template reduceAlongDimension, float16, (const std::initializer_list<int>& dimensions) const, REDUCE_OPS)
 BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template reduceAlongDimension, double, (const std::initializer_list<int>& dimensions) const, REDUCE_OPS)
 
+BUILD_CALL_1(template void nd4j::NDArray<float>::template reduceAlongDimension, float, (NDArray<float>* target, const std::vector<int>& dimensions) const, REDUCE_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::template reduceAlongDimension, float16, (NDArray<float16>* target, const std::vector<int>& dimensions) const, REDUCE_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::template reduceAlongDimension, double, (NDArray<double>* target, const std::vector<int>& dimensions) const, REDUCE_OPS)
 
 BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template varianceAlongDimension, float, (const bool biasCorrected, const std::initializer_list<int>& dimensions) const, SUMMARY_STATS_OPS)
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template varianceAlongDimension, float16, (const bool biasCorrected, const std::initializer_list<int>& dimensions) const, SUMMARY_STATS_OPS)
@@ -71,5 +74,9 @@ BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template applyInde
 BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template applyAllReduce3, float, (const nd4j::NDArray<float>* alpha, const std::vector<int> & beta, float const* gamma) const, REDUCE3_OPS)
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template applyAllReduce3, float16, (const nd4j::NDArray<float16>* alpha, const std::vector<int> & beta, float16 const* gamma) const, REDUCE3_OPS)
 BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template applyAllReduce3, double, (const nd4j::NDArray<double>* alpha, const std::vector<int> & beta, double const* gamma) const, REDUCE3_OPS)
+
+template NDArray<float> mmul(const NDArray<float>& left, const NDArray<float>& right);
+template NDArray<float16> mmul(const NDArray<float16>& left, const NDArray<float16>& right);
+template NDArray<double> mmul(const NDArray<double>& left, const NDArray<double>& right);
 
 #endif

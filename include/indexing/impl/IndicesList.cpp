@@ -7,8 +7,8 @@
 using namespace nd4j;
 
 nd4j::IndicesList::IndicesList(std::initializer_list<NDIndex *> list) {
-for (auto v: list)
-_indices.push_back(v);
+	for (auto v: list)
+	_indices.emplace_back(v);
 }
 
 nd4j::IndicesList::~IndicesList() {

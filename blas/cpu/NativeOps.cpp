@@ -3185,25 +3185,26 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
         return status;
 
 
-    for (int e = 0; e < numOutputs; e++) {
-        auto buffer = (T *) outputBuffers[e];
-        auto shape = (int *) outputShapes[e];
+    if (!isInplace)
+        for (int e = 0; e < numOutputs; e++) {
+            auto buffer = (T *) outputBuffers[e];
+            auto shape = (int *) outputShapes[e];
 
 
-        if (buffer == nullptr || shape == nullptr)
-            continue;
+            if (buffer == nullptr || shape == nullptr)
+                continue;
 
-        NDArray<T> externalRef(buffer, shape);
+            NDArray<T> externalRef(buffer, shape);
 
-        std::pair<int, int> pair(nodeId, e);
-        if (!variableSpace.hasVariable(pair))
-            continue;
+            std::pair<int, int> pair(nodeId, e);
+            if (!variableSpace.hasVariable(pair))
+                continue;
 
-        auto array = variableSpace.getVariable(pair)->getNDArray();
+            auto array = variableSpace.getVariable(pair)->getNDArray();
 
-        if (array->getBuffer() != buffer || array->getShapeInfo() != shape)
-            externalRef.assign(array);
-    }
+            if (array->getBuffer() != buffer || array->getShapeInfo() != shape)
+                externalRef.assign(array);
+        }
 
 
     // TODO: we need to destroy vars properly
