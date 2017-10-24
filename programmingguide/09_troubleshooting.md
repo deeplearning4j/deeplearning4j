@@ -12,7 +12,7 @@ In this section, we'll talk about troubleshooting neural networks using DL4J. Tr
 - [**Training Epochs**](#training)
 - [**Regularization**](#regularization)
 - [**Activation Functions**](#activation)
-- [**Learning Rate](#learning)
+- [**Learning Rate**](#learning)
 
 ## <a name="data">Data Normalization</a>
 
