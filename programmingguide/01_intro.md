@@ -17,7 +17,7 @@ layout: default
 8. [AI Model Deployment](08_deploy)
 9. [Troubleshooting Neural Networks](09_troubleshooting)
 
-## Introduction
+# Introduction
 
 Deep learning encompasses both deep neural networks and deep reinforcement learning, which are subsets of machine learning, which itself is a subset of artifical intelligence. Broadly speaking, deep neural networks perform machine perception that extracts important features from raw data and makes some sort of prediction about each observation. Examples include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data.
 
