@@ -3,7 +3,7 @@ title: DeepLearning4j Introduction
 layout: default
 ---
 
-# Deeplearning4j Programming Guide
+# Programming Guide for Eclipse Deeplearning4j
 
 ### Table of Contents
 
@@ -31,7 +31,7 @@ Neural networks can process high dimensional numerical and cateogorical data and
 
 To learn more about deep learning, check out these [resources](https://deeplearning4j.org/deeplearningforbeginners.html).
 
-# Where DeepLearning4j Fits In
+# Where Eclipse DeepLearning4j Fits In
 
 Eclipse Deeplearning4j (DL4J) is an open-source, JVM-based toolkit for building, training, and deploying neural networks. It was built to serve the Java and Scala communities and is user-friendly, stable, and well integrated with technologies such as Spark, CUDA, and cuDNN. Deeplearning4j also integrates with Python tools like Keras and TensorFlow to deploy their models to a production environment on the JVM.
 
