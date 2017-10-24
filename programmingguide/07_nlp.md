@@ -3,7 +3,6 @@ title: DeepLearning4j NLP
 layout: default
 ---
 
-
 # DeepLearning4j: Natural Language Processing
 
 In this section, we will learn about Eclipse Deeplearning4j's text processing capabilities. DL4J's natural-language processing (NLP) relies on [ClearTK](https://cleartk.github.io/cleartk/), which is a machine-learning and NLP framework for the Apache [Unstructured Information Management Architecture](https://uima.apache.org/), or UIMA. UIMA provides tools for language identification, language-specific segmentation, sentence-boundary detection and entity detection.
@@ -227,3 +226,15 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
 ```
 
 Overall, BoW produces `wordcounts` and can be effectively used to classify documents as a whole. To identify content or subsets of content instead, Word2Vec should be used.
+
+### DL4J's Programming Guide  
+
+[1. Intro: Deep Learning, Defined](01_intro)
+[2. Process Overview](02_process)
+[3. Program & Code Structure](03_code_structure)
+[4. Convolutional Network Example](04_convnet)
+[5. LSTM Network Example](05_lstm)
+[6. Feed-Forward Network Example](06_feedforwardnet)
+[7. Natural Language Processing](07_nlp)
+[8. AI Model Deployment](08_deploy)
+[9. Troubleshooting Neural Networks](09_troubleshooting)
