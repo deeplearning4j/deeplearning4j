@@ -118,12 +118,12 @@ log.info("FINAL TEST AUC: " + roc.calculateAUC());
 
 ### DL4J's Programming Guide  
 
-* [1. Intro: Deep Learning, Defined](01_intro)
-* [2. Process Overview](02_process)
-* [3. Program & Code Structure](03_code_structure)
-* [4. Convolutional Network Example](04_convnet)
-* [5. LSTM Network Example](05_lstm)
-* [6. Feed-Forward Network Example](06_feedforwardnet)
-* [7. Natural Language Processing](07_nlp)
-* [8. AI Model Deployment](08_deploy)
-* [9. Troubleshooting Neural Networks](09_troubleshooting)
+[1. Intro: Deep Learning, Defined](01_intro)
+[2. Process Overview](02_process)
+[3. Program & Code Structure](03_code_structure)
+[4. Convolutional Network Example](04_convnet)
+[5. LSTM Network Example](05_lstm)
+[6. Feed-Forward Network Example](06_feedforwardnet)
+[7. Natural Language Processing](07_nlp)
+[8. AI Model Deployment](08_deploy)
+[9. Troubleshooting Neural Networks](09_troubleshooting)
