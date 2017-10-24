@@ -33,7 +33,7 @@ With DL4J/ND4J, there are two types of memory limits to be aware of and configur
 
 Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
 
-```-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxPhysicalBytes=8G```
+```-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxphysicalbytes=8G```
 
 **Best practice**: for many applications, you want less RAM to be used in JVM heap, and more RAM to be used in off-heap, since all NDArrays are stored there. If you allocate too much to the JVM heap, there will not be enough memory left for the off-heap memory.
 
