@@ -1,9 +1,9 @@
 ---
-title: DeepLearning4j: Code Structure
+title: DeepLearning4j: Programming & Code Structure
 layout: default
 ---
 
-# DeepLearning4j: Program Structure
+# DeepLearning4j: Program & Code Structure
 
 Below, we outline a common structure to be followed for preparing data and configuring, training, and evaluating a neural network. This structure can be used for various neural network architectures and data.
 
@@ -249,3 +249,15 @@ Specific metrics such as AUC (area under curve) for a ROC (receiving operator ch
     log.info("FINAL TEST AUC: " + roc.calculateAUC());
 
 In the next few chapters, we will see specific examples of this process for convolutional, recurrent, and feed-forward networks.
+
+### DL4J's Programming Guide  
+
+* [1. Intro: Deep Learning, Defined](01_intro)
+* [2. Process Overview](02_process)
+* [3. Program & Code Structure](03_code_structure)
+* [4. Convolutional Network Example](04_convnet)
+* [5. LSTM Network Example](05_lstm)
+* [6. Feed-Forward Network Example](06_feedforwardnet)
+* [7. Natural Language Processing](07_nlp)
+* [8. AI Model Deployment](08_deploy)
+* [9. Troubleshooting Neural Networks](09_troubleshooting)
