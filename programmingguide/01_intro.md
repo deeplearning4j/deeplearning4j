@@ -5,6 +5,20 @@ layout: default
 
 # Deep Learning, Defined
 
+### DL4J Programming Guide  
+
+[1. Intro: Deep Learning, Defined](01_intro)
+[2. Process Overview](02_process)
+[3. Program & Code Structure](03_code_structure)
+[4. Convolutional Network Example](04_convnet)
+[5. LSTM Network Example](05_lstm)
+[6. Feed-Forward Network Example](06_feedforwardnet)
+[7. Natural Language Processing](07_nlp)
+[8. AI Model Deployment](08_deploy)
+[9. Troubleshooting Neural Networks](09_troubleshooting)
+
+## Introduction
+
 Deep learning encompasses both deep neural networks and deep reinforcement learning, which are subsets of machine learning, which itself is a subset of artifical intelligence. Broadly speaking, deep neural networks perform machine perception that extracts important features from raw data and makes some sort of prediction about each observation. Examples include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data.
 
 Although neural networks were invented last century, only recently have they generated more excitement. Now that the computing ability to take advantage of the idea of neural networks exists, they have been used to set new, state of the art results in such fields as computer vision, natural language processing, and reinforcement learning. One well known accomplishment of deep learning was achieved by scientists at DeepMind who created a computer program called AlphaGo, which beat both a former world champion Go player and the current champion in 2016 and 2017, respectively. Many experts predicted this achievement would not come for another decade. 
