@@ -104,14 +104,14 @@ After the training phase, you will need to evaluate how well a neural network pe
 
 DL4J provides many evaluation functions as part of the [eval](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html) class in deeplearning4j. The functionality includes basic accuracy, f1 score using false negative and true and false positive rates, and more. 
 
-### DL4J's Programming Guide  
+### DL4J Programming Guide  
 
-[1. Intro: Deep Learning, Defined](01_intro)
-[2. Process Overview](02_process)
-[3. Program & Code Structure](03_code_structure)
-[4. Convolutional Network Example](04_convnet)
-[5. LSTM Network Example](05_lstm)
-[6. Feed-Forward Network Example](06_feedforwardnet)
-[7. Natural Language Processing](07_nlp)
-[8. AI Model Deployment](08_deploy)
-[9. Troubleshooting Neural Networks](09_troubleshooting)
+1. [Intro: Deep Learning, Defined](01_intro)
+2. [Process Overview](02_process)
+3. [Program & Code Structure](03_code_structure)
+4. [Convolutional Network Example](04_convnet)
+5. [LSTM Network Example](05_lstm)
+6. [Feed-Forward Network Example](06_feedforwardnet)
+7. [Natural Language Processing](07_nlp)
+8. [AI Model Deployment](08_deploy)
+9. [Troubleshooting Neural Networks](09_troubleshooting)
