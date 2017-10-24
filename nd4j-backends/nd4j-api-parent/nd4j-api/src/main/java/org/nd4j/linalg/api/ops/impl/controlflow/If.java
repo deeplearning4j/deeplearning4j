@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.Builder;
 import lombok.Getter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,8 +60,10 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
 
-
-
+    @Override
+    public NDArrayVertex getVertex() {
+        return vertex;
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

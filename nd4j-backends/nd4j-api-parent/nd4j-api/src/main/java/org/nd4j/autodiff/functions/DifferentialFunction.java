@@ -108,8 +108,8 @@ public abstract class DifferentialFunction implements Differential {
      */
     public NDArrayVertex getVertex() {
         if(vertexId == null || vertexId.length > 1)
-            throw new IllegalStateException("Unable to obtain signle vertex. Function has more than 1.");
-        if(vertex == null && getSameDiff().graph().getVertices().containsKey(vertexId))
+            throw new IllegalStateException("Unable to obtain single vertex. Function has more than 1.");
+        if(vertex == null && getSameDiff().graph().getVertices().containsKey(vertexId[0]))
             return (NDArrayVertex) getSameDiff().graph().getVertex(vertexId[0]);
         return vertex;
     }
@@ -329,10 +329,6 @@ public abstract class DifferentialFunction implements Differential {
                 .arrId(UUID.randomUUID().toString())
                 .id(opName +"(" + i_v1.getResult().getId() + "," + i_v2.getResult().getId() + ")")
                 .shape(shape).build();
-        //result
-        if(vertex == null) {
-            vertex = (NDArrayVertex) sameDiff.graph().getVertex(vertexId[0]);
-        }
 
         NDArrayVertex newVertex = new NDArrayVertex(
                 sameDiff,
@@ -343,6 +339,7 @@ public abstract class DifferentialFunction implements Differential {
             throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
                     " Perhaps a mismatched graph call? Another likely cause is applyGraph");
         this.vertexId = new int[]  {newVertex.vertexID()};
+        this.vertex = newVertex;
         //add the result vertex
         sameDiff.getGraph().addVertex(newVertex);
         OpState opState,opState2;

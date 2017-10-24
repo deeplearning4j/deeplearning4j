@@ -70,6 +70,21 @@ public class ArrayUtil {
 
 
     /**
+     * Proper comparison contains for list of int
+     * arrays
+     * @param list the to search
+     * @param target the target int array
+     * @return whether the given target
+     * array is contained in the list
+     */
+    public static boolean listOfIntsContains(List<int[]> list,int[] target) {
+        for(int[] arr : list)
+            if(Arrays.equals(target,arr))
+                return true;
+        return false;
+    }
+
+    /**
      * Repeat a value n times
      * @param n the number of times to repeat
      * @param toReplicate the value to repeat

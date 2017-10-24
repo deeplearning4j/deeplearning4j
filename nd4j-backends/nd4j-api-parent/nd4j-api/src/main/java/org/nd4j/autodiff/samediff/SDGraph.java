@@ -9,6 +9,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -220,7 +221,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                     }
                 }
 
-                Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
+               // Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
                 //add edges
                 Edge<OpState> opStateEdge = inputOpStates.get(0);
                 if(!seenStates.contains(opStateEdge.getValue())) {
@@ -279,9 +280,14 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         List<int[]> vertices = new ArrayList<>();
         for(List<Edge<OpState>> edge : getEdges().values())  {
             for(Edge<OpState> edge1 : edge) {
-                if(!vertices.contains(edge1.getTo())) {
+                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getTo())) {
                     vertices.add(edge1.getTo());
                 }
+
+                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getFrom())) {
+                    vertices.add(edge1.getFrom());
+                }
+
             }
         }
 
@@ -376,7 +382,9 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
 
             }
 
-
+            if(noIncoming.isEmpty()) {
+                throw new IllegalStateException("No ops found. Unable to execute.");
+            }
             while (!noIncoming.isEmpty()) {
                 int[] next = noIncoming.removeFirst();
                 retList.add(next);

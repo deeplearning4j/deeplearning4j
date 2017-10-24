@@ -65,6 +65,10 @@ public class While extends DifferentialFunction implements CustomOp {
         this.trueBody = trueBody;
         this.blockName = blockName;
         this.dummyResult = NDArrayInformation.newInfo(new int[]{1,1});
+        this.vertexId = new int[] {parent.graph().nextVertexId()};
+        NDArrayVertex dummyVertex = new NDArrayVertex(parent,this.vertexId[0],0,dummyResult);
+        parent.graph().addVertex(dummyVertex);
+        this.vertex = dummyVertex;
         int[] inputEdges = new int[inputVars.length];
         int[] outputEdges = new int[inputVars.length];
         String[] opEdgeIds = new String[inputVars.length * 2];
@@ -131,9 +135,12 @@ public class While extends DifferentialFunction implements CustomOp {
 
         parent.graph().addEdge(inputEdges,outputEdges,opState,true);
 
-
     }
 
+    @Override
+    public NDArrayVertex getVertex() {
+        return vertex;
+    }
 
     @Override
     public int[] getResultShape() {
