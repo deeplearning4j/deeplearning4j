@@ -57,7 +57,7 @@ ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(pretrainedNet
     .fineTuneConfiguration(fineTuneConf)
               .setFeatureExtractor("fc2")
               .removeVertexKeepConnections("predictions") 
-              .addLayer(“predictions”, 
+              .addLayer("predictions", 
         new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nIn(4096).nOut(numClasses)
                         .weightInit(WeightInit.XAVIER)
