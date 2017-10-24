@@ -135,7 +135,7 @@ public class TestYolo2OutputLayer {
         int mb = 3;
         int b = 4;
         int c = 3;
-        int depth = 5 * b + c;
+        int depth = b * (5 + c);
         int w = 6;
         int h = 6;
 
@@ -163,8 +163,7 @@ public class TestYolo2OutputLayer {
 
 
         //Check values for x/y, confidence: all should be 0 to 1
-        INDArray out4 = out.get(all(), interval(0,5*b), all(), all()).dup('c');
-        INDArray out5 = out4.reshape(mb, b, 5, h, w);
+        INDArray out5 = out.reshape('c', mb, b, 5+c, h, w);
 
         INDArray predictedXYCenterGrid = out5.get(all(), all(), interval(0,2), all(), all());
         INDArray predictedWH = out5.get(all(), all(), interval(2,4), all(), all());   //Shape: [mb, B, 2, H, W]
@@ -179,11 +178,11 @@ public class TestYolo2OutputLayer {
 
 
         //Check classes:
-        INDArray probs = out.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
+        INDArray probs = out5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
         assertTrue(probs.minNumber().doubleValue() >= 0.0);
         assertTrue(probs.maxNumber().doubleValue() <= 1.0);
 
-        INDArray probsSum = probs.sum(1);
+        INDArray probsSum = probs.sum(2);
         assertEquals(1.0, probsSum.minNumber().doubleValue(), 1e-6);
         assertEquals(1.0, probsSum.maxNumber().doubleValue(), 1e-6);
     }

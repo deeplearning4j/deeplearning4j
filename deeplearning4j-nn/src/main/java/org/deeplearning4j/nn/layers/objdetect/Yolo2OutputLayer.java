@@ -322,12 +322,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int h = input.size(2);
         int w = input.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
-        int c = input.size(1)-5*b;
+        int c = (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
         INDArray output = Nd4j.create(input.shape(), 'c');
-        INDArray output4 = output.get(all(), interval(0,5*b), all(), all());
-        INDArray input4 = input.get(all(), interval(0,5*b), all(), all()).dup('c');
-        INDArray input5 = input4.reshape('c', mb, b, 5, h, w);
+        INDArray output5 = output.reshape('c', mb, b, 5+c, h, w);
+        INDArray output4 = output;  //output.get(all(), interval(0,5*b), all(), all());
+        INDArray input4 = input.dup('c');    //input.get(all(), interval(0,5*b), all(), all()).dup('c');
+        INDArray input5 = input4.reshape('c', mb, b, 5+c, h, w);
 
         //X/Y center in grid: sigmoid
         INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
@@ -346,14 +347,14 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Softmax
         //TODO OPTIMIZE?
-        INDArray inputClasses = input.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
-        INDArray classPredictionsPreSoftmax2d = inputClasses.permute(0,2,3,1).dup('c')  //Shape before reshape: [mb, h, w, c]
-                .reshape(mb*h*w, c);
+        INDArray inputClassesPreSoftmax = input5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
+        INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,1,3,4,2) //[minibatch, b, c, h, w] To [mb, b, h, w, c]
+                .dup('c').reshape('c', new int[]{mb*b*h*w, c});
         Transforms.softmax(classPredictionsPreSoftmax2d, false);
-        INDArray postSoftmax4d = classPredictionsPreSoftmax2d.reshape('c', mb, h, w, c ).permute(0, 3, 1, 2);
+        INDArray postSoftmax5d = classPredictionsPreSoftmax2d.reshape('c', mb, b, h, w, c ).permute(0, 1, 4, 2, 3);
 
-        INDArray outputClasses = output.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
-        outputClasses.assign(postSoftmax4d);
+        INDArray outputClasses = output5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
+        outputClasses.assign(postSoftmax5d);
 
         return output;
     }
