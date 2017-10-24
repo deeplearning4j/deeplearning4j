@@ -17,7 +17,7 @@ layout: default
 8. [AI Model Deployment](08_deploy)
 9. [Troubleshooting Neural Networks](09_troubleshooting)
 <br>
-
+<br>
 
 # Introduction to Deep Learning
 
