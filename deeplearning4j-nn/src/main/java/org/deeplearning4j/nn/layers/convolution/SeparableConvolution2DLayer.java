@@ -98,7 +98,6 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray depthWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
         INDArray pointWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
-
         INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
@@ -109,45 +108,24 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
 
-        System.out.println("Input shape:");
-        System.out.println(Arrays.toString(input.shape()));
-        System.out.println("Epsilon shape:");
-        System.out.println(Arrays.toString(epsilon.shape()));
-        System.out.println("depth weight grad shape:");
-        System.out.println(Arrays.toString(depthWiseweightGradView.shape()));
-        System.out.println("point weight grad shape:");
-        System.out.println(Arrays.toString(pointWiseweightGradView.shape()));
-        System.out.println("bias grad shape:");
-        System.out.println(Arrays.toString(biasGradView.shape()));
-
-        System.out.println("output epsilon shape:");
-        System.out.println(Arrays.toString(reshapedEpsilon.shape()));
-
-        System.out.println("kernel shape:");
-        System.out.println(kH);
-        System.out.println(kW);
-        System.out.println("strides:");
-        System.out.println(Arrays.toString(strides));
-        System.out.println("padding:");
-        System.out.println(Arrays.toString(pad));
-        System.out.println("dilation:");
-        System.out.println(Arrays.toString(dilation));
-        System.out.println("is same mode?");
-        System.out.println(sameMode);
+        INDArray delta;
+        IActivation afn = layerConf().getActivationFn();
+        Pair<INDArray, INDArray> p = preOutput4d(true, true);
+        delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
         CustomOp op;
         if(layerConf().hasBias()){
             bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true);
 
             op = DynamicCustomOp.builder("sconv2d_bp")
-                    .addInputs(input, epsilon, depthWiseWeights, pointWiseWeights, bias)
+                    .addInputs(input, delta, depthWiseWeights, pointWiseWeights, bias)
                     .addIntegerArguments(args)
                     .addOutputs(reshapedEpsilon, depthWiseweightGradView, pointWiseweightGradView, biasGradView)
                     .callInplace(false)
                     .build();
         } else {
             op = DynamicCustomOp.builder("sconv2d_bp")
-                    .addInputs(input, epsilon, depthWiseWeights, pointWiseWeights)
+                    .addInputs(input, delta, depthWiseWeights, pointWiseWeights)
                     .addIntegerArguments(args)
                     .addOutputs(reshapedEpsilon, depthWiseweightGradView, pointWiseweightGradView)
                     .callInplace(false)
@@ -263,32 +241,6 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
 
-        System.out.println("Input shape:");
-        System.out.println(Arrays.toString(input.shape()));
-        System.out.println("depth weight shape:");
-        System.out.println(Arrays.toString(depthWiseWeights.shape()));
-        System.out.println("point weight shape:");
-        System.out.println(Arrays.toString(pointWiseWeights.shape()));
-        System.out.println("bias shape:");
-        System.out.println(Arrays.toString(bias.shape()));
-
-        System.out.println("output shape:");
-        System.out.println(Arrays.toString(reshapedOutput.shape()));
-
-
-        System.out.println("kernel shape:");
-        System.out.println(kH);
-        System.out.println(kW);
-        System.out.println("strides:");
-        System.out.println(Arrays.toString(strides));
-        System.out.println("padding:");
-        System.out.println(Arrays.toString(pad));
-        System.out.println("dilation:");
-        System.out.println(Arrays.toString(dilation));
-        System.out.println("is same mode?");
-        System.out.println(sameMode);
-
-
         CustomOp op;
         if (layerConf().hasBias()) {
             op = DynamicCustomOp.builder("sconv2d")
@@ -306,8 +258,6 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 .build();
         }
         Nd4j.getExecutioner().exec(op);
-
-        System.out.println(reshapedOutput);
 
         return new Pair<>(reshapedOutput, null);
     }

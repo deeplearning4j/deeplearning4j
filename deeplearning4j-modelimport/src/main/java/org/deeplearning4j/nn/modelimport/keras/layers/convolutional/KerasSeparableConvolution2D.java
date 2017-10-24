@@ -34,18 +34,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 @Data
 public class KerasSeparableConvolution2D extends KerasConvolution {
 
-    /* Keras separable convolution types */
-    private final String LAYER_PARAM_NAME_DEPTH_WISE_KERNEL = "depthwise_kernel";
-    private final String LAYER_PARAM_NAME_POINT_WISE_KERNEL = "pointwise_kernel";
-
-    private final String LAYER_FIELD_DEPTH_WISE_INIT = "depthwise_initializer";
-    private final String LAYER_FIELD_POINT_WISE_INIT = "pointwise_initializer";
-
-    private final String LAYER_FIELD_DEPTH_WISE_REGULARIZER = "depthwise_regularizer";
-    private final String LAYER_FIELD_POINT_WISE_REGULARIZER = "pointwise_regularizer";
-
-    private final String LAYER_FIELD_DEPTH_WISE_CONSTRAINT = "depthwise_constraint";
-    private final String LAYER_FIELD_POINT_WISE_CONSTRAINT = "pointwise_constraint";
 
     /**
      * Pass-through constructor from KerasLayer
@@ -85,13 +73,13 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
 
-        Pair<WeightInit, Distribution> depthWiseInit = getWeightInitFromConfig(layerConfig, LAYER_FIELD_DEPTH_WISE_INIT,
-                enforceTrainingConfig, conf, kerasMajorVersion);
+        Pair<WeightInit, Distribution> depthWiseInit = getWeightInitFromConfig(layerConfig,
+                conf.getLAYER_FIELD_DEPTH_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
         WeightInit depthWeightInit = depthWiseInit.getFirst();
         Distribution depthDistribution = depthWiseInit.getSecond();
 
-        Pair<WeightInit, Distribution> pointWiseInit = getWeightInitFromConfig(layerConfig, LAYER_FIELD_POINT_WISE_INIT,
-                enforceTrainingConfig, conf, kerasMajorVersion);
+        Pair<WeightInit, Distribution> pointWiseInit = getWeightInitFromConfig(layerConfig,
+                conf.getLAYER_FIELD_POINT_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
         WeightInit pointWeightInit = pointWiseInit.getFirst();
         Distribution pointDistribution = pointWiseInit.getSecond();
 
@@ -103,17 +91,17 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
                 log.warn("Specifying different initialization for depth- and point-wise  weights not supported.");
 
         this.weightL1Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
-                layerConfig, conf, LAYER_FIELD_DEPTH_WISE_REGULARIZER, conf.getREGULARIZATION_TYPE_L1());
+                layerConfig, conf, conf.getLAYER_FIELD_DEPTH_WISE_REGULARIZER(), conf.getREGULARIZATION_TYPE_L1());
         this.weightL2Regularization =  KerasRegularizerUtils.getWeightRegularizerFromConfig(
-                layerConfig, conf, LAYER_FIELD_DEPTH_WISE_REGULARIZER, conf.getREGULARIZATION_TYPE_L2());
+                layerConfig, conf, conf.getLAYER_FIELD_DEPTH_WISE_REGULARIZER(), conf.getREGULARIZATION_TYPE_L2());
 
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint depthWiseWeightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
-                layerConfig, LAYER_FIELD_DEPTH_WISE_CONSTRAINT, conf, kerasMajorVersion);
+                layerConfig, conf.getLAYER_FIELD_DEPTH_WISE_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint pointWiseWeightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
-                layerConfig, LAYER_FIELD_POINT_WISE_CONSTRAINT, conf, kerasMajorVersion);
+                layerConfig, conf.getLAYER_FIELD_POINT_WISE_CONSTRAINT(), conf, kerasMajorVersion);
 
         SeparableConvolution2D.Builder builder = new SeparableConvolution2D.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
@@ -152,22 +140,22 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         this.weights = new HashMap<>();
 
         INDArray dW;
-        if (weights.containsKey(LAYER_PARAM_NAME_DEPTH_WISE_KERNEL))
-            dW = weights.get(LAYER_PARAM_NAME_DEPTH_WISE_KERNEL);
+        if (weights.containsKey(conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL()))
+            dW = weights.get(conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
         else
             throw new InvalidKerasConfigurationException(
                     "Keras SeparableConvolution2D layer does not contain parameter "
-                            + LAYER_PARAM_NAME_DEPTH_WISE_KERNEL);
+                            + conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
 
         this.weights.put(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, dW);
 
         INDArray pW;
-        if (weights.containsKey(LAYER_PARAM_NAME_POINT_WISE_KERNEL))
-            pW = weights.get(LAYER_PARAM_NAME_POINT_WISE_KERNEL);
+        if (weights.containsKey(conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL()))
+            pW = weights.get(conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL());
         else
             throw new InvalidKerasConfigurationException(
                     "Keras SeparableConvolution2D layer does not contain parameter "
-                            + LAYER_PARAM_NAME_POINT_WISE_KERNEL);
+                            + conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL());
 
         this.weights.put(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, pW);
 

@@ -69,6 +69,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
+    private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
 
 
     /* Partially shared layer configurations. */
@@ -111,6 +112,19 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = ""; // 1: W_constraint, 2: embeddings_constraint
     private final String LAYER_FIELD_MASK_ZERO = "mask_zero";
     private final String LAYER_FIELD_INPUT_LENGTH = "input_length";
+
+    /* Keras separable convolution types */
+    private final String LAYER_PARAM_NAME_DEPTH_WISE_KERNEL = "depthwise_kernel";
+    private final String LAYER_PARAM_NAME_POINT_WISE_KERNEL = "pointwise_kernel";
+
+    private final String LAYER_FIELD_DEPTH_WISE_INIT = "depthwise_initializer";
+    private final String LAYER_FIELD_POINT_WISE_INIT = "pointwise_initializer";
+
+    private final String LAYER_FIELD_DEPTH_WISE_REGULARIZER = "depthwise_regularizer";
+    private final String LAYER_FIELD_POINT_WISE_REGULARIZER = "pointwise_regularizer";
+
+    private final String LAYER_FIELD_DEPTH_WISE_CONSTRAINT = "depthwise_constraint";
+    private final String LAYER_FIELD_POINT_WISE_CONSTRAINT = "pointwise_constraint";
 
     /* Normalisation layers */
     // Missing: keras 2 moving_mean_initializer, moving_variance_initializer

@@ -661,9 +661,9 @@ public class CNNGradientCheckTest {
         int width = 8;
         int height = 8;
         int inputDepth = 3;
-        int[] kernelSizes = new int[]{1};
-        int[] strides = {1};
-        int[] dilation = {1};
+        int[] kernelSizes = new int[]{2, 3};
+        int[] strides = {1, 2};
+        int[] dilation = {1, 2};
         ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate};
 
         Nd4j.getRandom().setSeed(12345);
