@@ -3,7 +3,9 @@ title: DeepLearning4j Introduction
 layout: default
 ---
 
-### Programming Guide Table of Contents
+# Programming Guide
+
+### Table of Contents
 
 1. [Intro: Deep Learning, Defined](01_intro)
 2. [Process Overview](02_process)
