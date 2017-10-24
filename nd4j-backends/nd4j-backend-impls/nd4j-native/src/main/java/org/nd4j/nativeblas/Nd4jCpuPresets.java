@@ -40,6 +40,7 @@ import org.bytedeco.javacpp.tools.Logger;
                                               "graph/ArrayList.h",
                                               "NDArrayFactory.h",
                                               "graph/Variable.h",
+                                              "graph/Intervals.h",
                                               "graph/Stash.h",
                                               "graph/VariableSpace.h",
                                               "helpers/helper_generator.h",
