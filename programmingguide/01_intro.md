@@ -3,7 +3,6 @@ title: DeepLearning4j Introduction
 layout: default
 ---
 
-------
 # Deep Learning, Defined
 
 Deep learning encompasses both deep neural networks and deep reinforcement learning, which are subsets of machine learning, which itself is a subset of artifical intelligence. Broadly speaking, deep neural networks perform machine perception that extracts important features from raw data and makes some sort of prediction about each observation. Examples include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data.
@@ -157,12 +156,12 @@ Then open IntelliJ and import project and select "dl4j-examples." Next, choose "
 
 ### DL4J's Programming Guide Guide 
 
-* [1. Introduction: Deep Learning, Defined](01_intro)
+* [1. Intro: Deep Learning, Defined](01_intro)
 * [2. Process Overview](02_process)
 * [3. Program & Code Structure](03_code_structure)
 * [4. Convolutional Network Example](04_convnet)
 * [5. LSTM Network Example](05_lstm)
 * [6. Feed-Forward Network Example](06_feedforwardnet)
-* [7. Natural Language Processing with DL4J](07_nlp)
-* [8. AI Model Deployment With DL4J](08_deploy)
-* [9. Troubleshooting Neural Networks With DL4J](09_troubleshooting)
+* [7. Natural Language Processing](07_nlp)
+* [8. AI Model Deployment](08_deploy)
+* [9. Troubleshooting Neural Networks](09_troubleshooting)
