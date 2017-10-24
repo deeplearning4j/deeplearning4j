@@ -154,3 +154,15 @@ Here we will go over a quick example of using IntelliJ to run an example program
     mvn clean install
 
 Then open IntelliJ and import project and select "dl4j-examples." Next, choose "Import project from external model" and select Maven. The IntelliJ wizard will guide you through the various options. For the SDK select the jdk and choose finish. Once IntelliJ finishes downloading the required dependencies, you can run an example file on the left side.
+
+### DL4J's Programming Guide Guide 
+
+* [1. Introduction: Deep Learning, Defined](01_intro)
+* [2. Process Overview](02_process)
+* [3. Program & Code Structure](03_code_structure)
+* [4. Convolutional Network Example](04_convnet)
+* [5. LSTM Network Example](05_lstm)
+* [6. Feed-Forward Network Example](06_feedforwardnet)
+* [7. Natural Language Processing with DL4J](07_nlp)
+* [8. AI Model Deployment With DL4J](08_deploy)
+* [9. Troubleshooting Neural Networks With DL4J](09_troubleshooting)
