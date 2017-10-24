@@ -4,7 +4,7 @@ layout: default
 redirect_from: transferlearning
 ---
 
-# DL4J’s transfer learning API
+# DL4J’s Transfer Learning API
 
 ## Overview
 
@@ -34,7 +34,7 @@ As of 0.9.0 (0.8.1-SNAPSHOT) Deeplearning4j has a new native model zoo. Read abo
 
 ```
 ZooModel zooModel = new VGG16();
-ComputationGraph pretrainedNet = zooModel.initPretrained(PretrainedType.IMAGENET);
+ComputationGraph pretrainedNet = (ComputationGraph) zooModel.initPretrained(PretrainedType.IMAGENET);
 ```
 
 #### II.  Set up a fine-tune configuration
@@ -55,13 +55,13 @@ The final layer of VGG16 does a softmax regression on the 1000 classes in ImageN
 ```
 ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(pretrainedNet)
     .fineTuneConfiguration(fineTuneConf)
-              .setFeatureExtractor(“fc2”)
+              .setFeatureExtractor("fc2")
               .removeVertexKeepConnections("predictions") 
               .addLayer(“predictions”, 
         new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nIn(4096).nOut(numClasses)
-                        .weightInit(WeightInit.Xavier)
-                        .activation(Activation.SOFTMAX).build(), ”fc2")
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX).build(), "fc2")
               .build();
 ```
 After a mere thirty iterations, which in this case is exposure to 450 images, the model attains an accuracy > 75% on the test dataset. This is rather remarkable considering the complexity of training an image classifier from scratch.
@@ -76,13 +76,13 @@ ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(pretrainedNet
               .setFeatureExtractor("block5_pool")
               .nOutReplace("fc2",1024, WeightInit.XAVIER)
               .removeVertexAndConnections("predictions") 
-              .addLayer(“fc3",new DenseLayer.Builder()
+              .addLayer("fc3",new DenseLayer.Builder()
          .activation(Activation.RELU)
          .nIn(1024).nOut(256).build(),"fc2") 
-              .addLayer(“newpredictions”,new OutputLayer
+              .addLayer("newpredictions",new OutputLayer
         .Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                 .activation(Activation.SOFTMAX)
-                                .nIn(256).nOut(numClasses).build(),”fc3") 
+                                .nIn(256).nOut(numClasses).build(),"fc3") 
             .setOutputs("newpredictions") 
             .build();
 ```
@@ -106,7 +106,7 @@ Here is how you obtain the featured version of the dataset at the specified laye
 
 ```
 TransferLearningHelper transferLearningHelper = 
-    new TransferLearningHelper(pretrainedNet, “fc2”);
+    new TransferLearningHelper(pretrainedNet, "fc2");
 while(trainIter.hasNext()) {
         DataSet currentFeaturized = transferLearningHelper.featurize(trainIter.next());
         saveToDisk(currentFeaturized,trainDataSaved,true);
