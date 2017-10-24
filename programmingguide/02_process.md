@@ -1,7 +1,7 @@
+---
 title: DeepLearning4j Process Overview
 layout: default 
-
-------
+---
 
 # DL4J Process Overview
 
