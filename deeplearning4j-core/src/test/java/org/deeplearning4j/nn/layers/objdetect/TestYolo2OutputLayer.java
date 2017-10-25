@@ -86,28 +86,28 @@ public class TestYolo2OutputLayer {
 
 
         //Check score method (simple)
-        INDArray labels = Nd4j.zeros(mb, b, 4+c, h, w);
+        int labelDepth = 4 + c;
+        INDArray labels = Nd4j.zeros(mb, labelDepth, h, w);
         //put 1 object per minibatch, at positions (0,0), (1,1) etc.
-        //Positions for label boxes: (1,1) to (2,2), (2,2) to (4,4) etc. For BB 0, 1, 2
-        labels.putScalar(new int[]{0, 0, 4 + 0, 0, 0}, 1);
-        labels.putScalar(new int[]{1, 1, 4 + 1, 0, 0}, 1);
-        labels.putScalar(new int[]{2, 2, 4 + 2, 0, 0}, 1);
+        //Positions for label boxes: (1,1) to (2,2), (2,2) to (4,4) etc
+        labels.putScalar(0, 4 + 0, 0, 0, 1);
+        labels.putScalar(1, 4 + 1, 1, 1, 1);
+        labels.putScalar(2, 4 + 2, 2, 2, 1);
 
-        labels.putScalar(new int[]{0, 0, 0, 0, 0}, 1);
-        labels.putScalar(new int[]{0, 0, 1, 0, 0}, 1);
-        labels.putScalar(new int[]{0, 0, 2, 0, 0}, 2);
-        labels.putScalar(new int[]{0, 0, 3, 0, 0}, 2);
+        labels.putScalar(0, 0, 0, 0, 1);
+        labels.putScalar(0, 1, 0, 0, 1);
+        labels.putScalar(0, 2, 0, 0, 2);
+        labels.putScalar(0, 3, 0, 0, 2);
 
+        labels.putScalar(1, 0, 1, 1, 2);
+        labels.putScalar(1, 1, 1, 1, 2);
+        labels.putScalar(1, 2, 1, 1, 4);
+        labels.putScalar(1, 3, 1, 1, 4);
 
-        labels.putScalar(new int[]{1, 1, 0, 1, 1}, 2);
-        labels.putScalar(new int[]{1, 1, 1, 1, 1}, 2);
-        labels.putScalar(new int[]{1, 1, 2, 1, 1}, 4);
-        labels.putScalar(new int[]{1, 1, 3, 1, 1}, 4);
-
-        labels.putScalar(new int[]{2, 2, 0, 2, 2}, 3);
-        labels.putScalar(new int[]{2, 2, 1, 2, 2}, 3);
-        labels.putScalar(new int[]{2, 2, 2, 2, 2}, 6);
-        labels.putScalar(new int[]{2, 2, 3, 2, 2}, 6);
+        labels.putScalar(2, 0, 2, 2, 3);
+        labels.putScalar(2, 1, 2, 2, 3);
+        labels.putScalar(2, 2, 2, 2, 6);
+        labels.putScalar(2, 3, 2, 2, 6);
 
         y2impl.setInput(input);
         y2impl.setLabels(labels);
@@ -221,7 +221,8 @@ public class TestYolo2OutputLayer {
                 {3, 3}});
 
         VocLabelProvider lp = new VocLabelProvider(dir.getPath());
-        int depthOut = bbPriors.size(0)*5 + 20;
+        int c = 20;
+        int depthOut = bbPriors.size(0) * (bbPriors.size(0) + c);
 
         int origW = 500;
         int origH = 375;
