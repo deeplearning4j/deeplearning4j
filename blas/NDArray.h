@@ -15,9 +15,9 @@ namespace nd4j {
     template<typename T> class ND4J_EXPORT NDArray;
     template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
     // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
-    NDArray<float> operator-(const float, const NDArray<float>&);
-    NDArray<float16> operator-(const float16, const NDArray<float16>&);
-    NDArray<double> operator-(const double, const NDArray<double>&);
+    ND4J_EXPORT NDArray<float> operator-(const float, const NDArray<float>&);
+    ND4J_EXPORT NDArray<float16> operator-(const float16, const NDArray<float16>&);
+    ND4J_EXPORT NDArray<double> operator-(const double, const NDArray<double>&);
     template<typename T> NDArray<T> mmul(const NDArray<T>&, const NDArray<T>&);
 
 
