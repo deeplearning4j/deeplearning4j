@@ -120,8 +120,9 @@ public class LibSvmTest {
     public void testRealData() throws Exception {
         RecordReader rr = new LibSvmRecordReader();
         Configuration conf = new Configuration();
+        conf.setInt(LibSvmRecordReader.NUM_FEATURES, 5);
         conf.set(LineRecordReader.APPEND_LABEL, "true");
-        rr.initialize(conf, new FileSplit(new File("/tmp/sample_libsvm_data.txt")));
+        rr.initialize(conf, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
 
         int count = 0;
         while (rr.hasNext()) {
