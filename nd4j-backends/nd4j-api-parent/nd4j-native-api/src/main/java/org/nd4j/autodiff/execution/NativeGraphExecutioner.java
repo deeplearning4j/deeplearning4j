@@ -183,7 +183,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     integerArgs,
                     dimensions,
                     -1,
-                    node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f);
+                    node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f, 0, 0);
 
             nodes.add(flatNode);
         }
