@@ -40,6 +40,9 @@ public final class FlatNode extends Table {
   public ByteBuffer dimensionsAsByteBuffer() { return __vector_as_bytebuffer(24, 4); }
   public int device() { int o = __offset(26); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public float scalar() { int o = __offset(28); return o != 0 ? bb.getFloat(o + bb_pos) : 0.0f; }
+  public int scopeId() { int o = __offset(30); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public String scopeName() { int o = __offset(32); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer scopeNameAsByteBuffer() { return __vector_as_bytebuffer(32, 1); }
 
   public static int createFlatNode(FlatBufferBuilder builder,
       int id,
@@ -54,9 +57,13 @@ public final class FlatNode extends Table {
       int extraIntegerOffset,
       int dimensionsOffset,
       int device,
-      float scalar) {
-    builder.startObject(13);
+      float scalar,
+      int scope_id,
+      int scope_nameOffset) {
+    builder.startObject(15);
     FlatNode.addOpNum(builder, opNum);
+    FlatNode.addScopeName(builder, scope_nameOffset);
+    FlatNode.addScopeId(builder, scope_id);
     FlatNode.addScalar(builder, scalar);
     FlatNode.addDevice(builder, device);
     FlatNode.addDimensions(builder, dimensionsOffset);
@@ -72,7 +79,7 @@ public final class FlatNode extends Table {
     return FlatNode.endFlatNode(builder);
   }
 
-  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(13); }
+  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(15); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addOpType(FlatBufferBuilder builder, byte opType) { builder.addByte(2, opType, 0); }
@@ -98,6 +105,8 @@ public final class FlatNode extends Table {
   public static void startDimensionsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(11, device, 0); }
   public static void addScalar(FlatBufferBuilder builder, float scalar) { builder.addFloat(12, scalar, 0.0f); }
+  public static void addScopeId(FlatBufferBuilder builder, int scopeId) { builder.addInt(13, scopeId, 0); }
+  public static void addScopeName(FlatBufferBuilder builder, int scopeNameOffset) { builder.addOffset(14, scopeNameOffset, 0); }
   public static int endFlatNode(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

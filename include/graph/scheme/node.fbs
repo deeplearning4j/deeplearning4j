@@ -29,7 +29,9 @@ enum OpType:byte {
     AGGREGATION = 9, // ???
     CUSTOM = 10, // custom ops
     GRAPH = 11, // another graph used as op
-    VARIABLE = 119,
+    VARIABLE = 30,
+    BOOLEAN = 40, // booleanOps, for conditionals
+    LOGIC = 119, //
 }
 
 enum OpClass:byte {
@@ -37,6 +39,8 @@ enum OpClass:byte {
     REDUCTION = 1, // ops of this class return accumulation shape
     MULTIPLICATOR = 2, // ops of this class may return whatever they want
     GRAPH = 3, // embedded graph
+    CONDITIONAL = 4, // IF
+    LOOP = 5, // Various LOOPS
 }
 
 enum DataType:byte {
@@ -56,7 +60,7 @@ table FlatVariable {
 
 table FlatNode {
     id:int; // unique id for this node
-    name: string; // literal id of this node (optional)
+    name:string; // literal id of this node (optional)
     opType:OpType;
     opNum:long;
     input:[int]; // ID's of input nodes for this node !!! only used if inputPaired in unset !!!
@@ -68,6 +72,10 @@ table FlatNode {
     dimensions:[int]; // dimension for this operation
     device:int; // default is -1, which means _auto_
     scalar:float; // optional scalar. used in scalar ops & SummaryStats
+
+    // fields related to Scopes
+    scope_id:int; // unique scope id, where this op belongs to
+    scope_name:string; // literal scope id, where this op belongs to
 }
 
 root_type FlatNode;

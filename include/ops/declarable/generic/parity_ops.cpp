@@ -33,11 +33,11 @@ namespace nd4j {
             int _dimension = block.getIArguments()->at(0);
 
             // we want to ensure that all
-            NDArray<T> *first = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *first = INPUT_VARIABLE(0);
             NDArray<T> *output = this->getZ(block);
 
-            Nd4jPointer* buffers = new Nd4jPointer[block.getVariables().size()];
-            Nd4jPointer* shapes = new Nd4jPointer[block.getVariables().size()];
+            Nd4jPointer* buffers = new Nd4jPointer[block.getVariables()->size()];
+            Nd4jPointer* shapes = new Nd4jPointer[block.getVariables()->size()];
 
             buffers[0] = (Nd4jPointer) first->getBuffer();
             shapes[0] = (Nd4jPointer) first->getShapeInfo();
@@ -47,8 +47,8 @@ namespace nd4j {
                 shape::printShapeInfoLinear((int *) shapes[0]);
             }
 
-            for (int e = 1; e < (int) block.getVariables().size(); e++) {
-                Variable<T> *var = block.getVariables().at(e);
+            for (int e = 1; e < (int) block.getVariables()->size(); e++) {
+                Variable<T> *var = block.getVariables()->at(e);
 
                 buffers[e] = (Nd4jPointer) var->getNDArray()->getBuffer();
                 shapes[e] = (Nd4jPointer) var->getNDArray()->getShapeInfo();
@@ -61,7 +61,7 @@ namespace nd4j {
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 fflush(stdout);
 
-            nd4j::SpecialMethods<T>::concatCpuGeneric(_dimension, block.getVariables().size(), buffers, shapes, output->getBuffer(), output->getShapeInfo());
+            nd4j::SpecialMethods<T>::concatCpuGeneric(_dimension, block.getVariables()->size(), buffers, shapes, output->getBuffer(), output->getShapeInfo());
 
             STORE_RESULT(*output);
 
@@ -73,6 +73,8 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(concat_v2, concat);
+        DECLARE_SYN(concatv2, concat);
         DECLARE_SHAPE_FN(concat) {
             int* inp = inputShape->at(0);
             int _dimension = block.getIArguments()->at(0);
@@ -94,8 +96,8 @@ namespace nd4j {
         OP_IMPL(biasadd, 2, 1, true) {
             //REQUIRE_OK(this->validateInput2D(block));
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *bias = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *bias = INPUT_VARIABLE(1);
 
             REQUIRE_TRUE(bias->isRowVector(), 0, "Bias array should be a vector");
 
@@ -126,8 +128,8 @@ namespace nd4j {
             REQUIRE_OK(this->validateInput2D(block));
 
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
             T alpha = (T) 1.0f;
@@ -211,7 +213,7 @@ namespace nd4j {
         CUSTOM_OP_IMPL(lrn, 1, 3, true, 4, 0) {
             // LocalResponseNormalization
 
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* z = this->getZ(block);
             NDArray<T>* unitScale = this->getZ(block, 1);
             NDArray<T>* scale = this->getZ(block, 2);
@@ -305,7 +307,7 @@ namespace nd4j {
             if (block.getTArguments()->size() != 2)
                 return ND4J_STATUS_BAD_ARGUMENTS;
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
             auto z = x;
             if (!block.isInplace())
                 z = new NDArray<T>(x);
@@ -319,7 +321,7 @@ namespace nd4j {
 
 
         OP_IMPL(floor, 1, 1, true) {
-            NDArray<T> *first = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *first = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
             first->template applyTransform<simdOps::Floor<T>>(z, nullptr);
@@ -339,12 +341,6 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-
-        DIVERGENT_OP_IMPL(Switch, 2, 2, true) {
-            // conditional op !!!
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(switch, Switch);
 
         OP_IMPL(noop, -1, -1, true) {
             // Fastest op ever.
@@ -367,8 +363,8 @@ namespace nd4j {
          * IArgs[1]... axes values for second array
          */
         CONFIGURABLE_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
-            NDArray<T> *a = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *b = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *a = INPUT_VARIABLE(0);
+            NDArray<T> *b = INPUT_VARIABLE(1);
 
             // building axes
             int axe0_size = block.getIArguments()->at(0);
@@ -395,8 +391,8 @@ namespace nd4j {
         // test op, non-divergent
         OP_IMPL(testop2i2o, 2, 2, true) {
             nd4j_printf("CPU op used!\n","");
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
 
             x->template applyScalar<simdOps::Add<T>>(1.0);
             y->template applyScalar<simdOps::Add<T>>(2.0);
@@ -447,8 +443,8 @@ namespace nd4j {
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
 
             x->assign(y);
 
@@ -463,7 +459,7 @@ namespace nd4j {
         OP_IMPL(mergemax, -1, 1, false) {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-            Nd4jIndex numArgs = block.getVariables().size();
+            Nd4jIndex numArgs = block.getVariables()->size();
             NDArray<T> *x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
@@ -472,7 +468,7 @@ namespace nd4j {
             for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
                 T max = -MAX_FLOAT;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
+                    NDArray<T> *o = INPUT_VARIABLE(i);
                     T v = o->getIndexedScalar(e);
                     if (v > max)
                         max = v;
@@ -489,8 +485,8 @@ namespace nd4j {
         OP_IMPL(mergemaxindex, -1, 1, false) {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-            Nd4jIndex numArgs = block.getVariables().size();
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            Nd4jIndex numArgs = block.getVariables()->size();
+            NDArray<T> *x = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
 
@@ -499,7 +495,7 @@ namespace nd4j {
                 T max = -MAX_FLOAT;
                 Nd4jIndex idx = 0;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
+                    NDArray<T> *o = INPUT_VARIABLE(i);
                     T v = o->getIndexedScalar(e);
                     if (v > max) {
                         max = v;
@@ -518,8 +514,8 @@ namespace nd4j {
         OP_IMPL(mergeadd, -1, 1, false) {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-            Nd4jIndex numArgs = block.getVariables().size();
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            Nd4jIndex numArgs = block.getVariables()->size();
+            NDArray<T> *x = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
 
@@ -527,7 +523,7 @@ namespace nd4j {
             for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
                 T sum = (T) 0.0f;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
+                    NDArray<T> *o = INPUT_VARIABLE(i);
                     T v = o->getIndexedScalar(e);
                     sum += v;
                 }
@@ -543,8 +539,8 @@ namespace nd4j {
         OP_IMPL(mergeavg, -1, 1, false) {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-            Nd4jIndex numArgs = block.getVariables().size();
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            Nd4jIndex numArgs = block.getVariables()->size();
+            NDArray<T> *x = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
 
@@ -552,7 +548,7 @@ namespace nd4j {
             for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
                 T sum = (T) 0.0f;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
+                    NDArray<T> *o = INPUT_VARIABLE(i);
                     T v = o->getIndexedScalar(e);
                     sum += v;
                 }
@@ -565,7 +561,7 @@ namespace nd4j {
         }
 
         CONFIGURABLE_OP_IMPL(clipbyvalue, 1, 1, true, 2, 0) {
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* output = this->getZ(block);
 
             input->template applyTransform<simdOps::ClipByValue<T>>(output, block.getTArguments()->data());
@@ -581,7 +577,7 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         OP_IMPL(softmax, 1, 1, true) {
             // YaY
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* z = this->getZ(block);
 
             input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
@@ -636,8 +632,8 @@ namespace nd4j {
          * @tparam T
          */
         CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
-            NDArray<T> *operand = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *updates = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *operand = INPUT_VARIABLE(0);
+            NDArray<T> *updates = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
             int opCode = block.getIArguments()->at(0);
@@ -705,7 +701,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CONFIGURABLE_OP_IMPL(relu, 1, 1, true, 1, 0) {
-            NDArray<T> *first = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *first = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
             first->template applyTransform<simdOps::RELU<T>>(z, &block.getTArguments()->at(0));
@@ -718,7 +714,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         OP_IMPL(identity, 1, 1, true) {
-            NDArray<T> *first = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *first = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
             first->template applyTransform<simdOps::Identity<T>>(z, nullptr);
@@ -730,8 +726,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		OP_IMPL(add, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
@@ -756,8 +752,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 		OP_IMPL(subtract, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
@@ -784,8 +780,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		OP_IMPL(reversesubtract, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
@@ -811,8 +807,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		OP_IMPL(multiply, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
@@ -839,8 +835,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		OP_IMPL(divide, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
@@ -866,8 +862,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////				
 		OP_IMPL(reversedivide, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
@@ -894,8 +890,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 		OP_IMPL(reshapeas, 2, 1, true) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();	
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
 			
 			NDArray<T>* z = this->getZ(block);
 			std::vector<int> shapeNew(y->shapeOf(), y->shapeOf() + y->rankOf());
@@ -919,7 +915,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(argsSize >= 3, 0, "Reshape arguments should have order and at least 2 dimensions");
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
 
 			char order = (char)(*argumets)[0];
             if (order != 'c' && order != 'f')
@@ -1023,7 +1019,7 @@ namespace nd4j {
 			std::vector<int> repeats = *argumets;
 			repeats.pop_back();
 
-			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			NDArray<T> *x = INPUT_VARIABLE(0);
 			NDArray<T>* ret = x->repeat(dimension, repeats);
 			STORE_RESULT(*ret);
 
@@ -1032,7 +1028,7 @@ namespace nd4j {
 		
 		//////////////////////////////////////////////////////////////////////////
 		OP_IMPL(transpose, 1, 1, true) {
-			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			NDArray<T> *x = INPUT_VARIABLE(0);
 			
 			if(block.isInplace()) {
 				x->transposei();
@@ -1049,7 +1045,7 @@ namespace nd4j {
 		// here iArgs is int vector of ordered set of dimensions to be permuted
 		CONFIGURABLE_OP_IMPL(permute, 1, 1, true, 0, -1) {
 			std::vector<int>* argumets = block.getIArguments();
-			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			NDArray<T> *x = INPUT_VARIABLE(0);
 			
 			if(block.isInplace()) {		// in-place
 				x->permutei(*argumets);				
@@ -1069,7 +1065,7 @@ namespace nd4j {
 			std::vector<int> argItrunc(argI.size()-1);
 			for(int i=0; i< (int) argItrunc.size(); ++i)
 				argItrunc[i] = argI[i+1];	
-			NDArray<T>* x = block.getVariables().at(0)->getNDArray();
+			NDArray<T>* x = INPUT_VARIABLE(0);
 			NDArray<T> *z = this->getZ(block);
 
 			if((argItrunc.size()==1 && argItrunc[0]==INT_MAX) || argItrunc.size()==0) {
@@ -1121,8 +1117,8 @@ namespace nd4j {
                 var->template applyScalar<simdOps::Add<T>>(eps, nullptr);
             }
             else {
-                mean = block.getVariables().at(1)->getNDArray();
-                var = block.getVariables().at(2)->getNDArray();
+                mean = block.getVariables()->at(1)->getNDArray();
+                var = block.getVariables()->at(2)->getNDArray();
             }
             
             NDArray<T> std(var->getShapeInfo(), block.getWorkspace());
@@ -1239,16 +1235,16 @@ namespace nd4j {
             mean = input->template reduceAlongDimension<simdOps::Mean<T>>(dimensions);
             var = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(false, dimensions);
             var->template applyScalar<simdOps::Add<T>>(eps, nullptr);
-            NDArray<T>* std = new NDArray<T>(var->getShapeInfo(), block.getWorkspace());
+            auto std = new NDArray<T>(var->getShapeInfo(), block.getWorkspace());
             var->template applyTransform<simdOps::Sqrt<T>>(std, nullptr);            
             
-            NDArray<T>* xMu = new NDArray<T>(input->getShapeInfo(), block.getWorkspace());
-            NDArray<T>* xHat = new NDArray<T>(input->getShapeInfo(), block.getWorkspace());
-            NDArray<T>* temp1 = new NDArray<T>(epsilon->getShapeInfo(), block.getWorkspace());
-            NDArray<T>* temp2 = new NDArray<T>(std->getShapeInfo(), block.getWorkspace());            
-            NDArray<T>* dGammaView = new NDArray<T>('c', {1, epsilonShape[1]}, block.getWorkspace());
-            NDArray<T>* dBetaView = new NDArray<T>('c', {1, epsilonShape[1]}, block.getWorkspace());
-            NDArray<T>* dxhat = new NDArray<T>(epsilon->getShapeInfo(), block.getWorkspace());
+            auto xMu = new NDArray<T>(input->getShapeInfo(), block.getWorkspace());
+            auto xHat = new NDArray<T>(input->getShapeInfo(), block.getWorkspace());
+            auto temp1 = new NDArray<T>(epsilon->getShapeInfo(), block.getWorkspace());
+            auto temp2 = new NDArray<T>(std->getShapeInfo(), block.getWorkspace());
+            auto dGammaView = new NDArray<T>('c', {1, epsilonShape[1]}, block.getWorkspace());
+            auto dBetaView = new NDArray<T>('c', {1, epsilonShape[1]}, block.getWorkspace());
+            auto dxhat = new NDArray<T>(epsilon->getShapeInfo(), block.getWorkspace());
 
             if (rank == 2) {
                 input->subRowVector(mean, xMu);

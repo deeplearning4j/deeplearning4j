@@ -31,6 +31,8 @@ namespace nd4j {
             std::vector<int *> shapes;
             std::map<std::pair<int,int>, int*> shapesMap;
 
+            int cntFD = 0;
+
             // we loop in similar way to execution
             for (int l = 0; l < (int) _onion->size(); l++) {
                 int layerSize = _onion->count(l) == 1 ? _onion->at(l)->size() : 0;
@@ -48,8 +50,12 @@ namespace nd4j {
                      * 4) Op is multiplicator (i.e. im2col)
                      */
                     if (node->hasCustomOp()) {
-                        if (node->isInplace())
-                            continue;
+                        //if (node->isInplace()) {
+                        //    continue;
+                        //}
+
+
+                        nd4j_debug("Trying estimation [%i] on [%s]\n", node->id(), node->getCustomOp()->getOpName()->c_str());
 
                         auto op = node->getCustomOp();
                         auto in = node->input()->at(0);
@@ -58,6 +64,7 @@ namespace nd4j {
                         std::vector<int*> inputShapes;
                         int *oldShape;
                         for (auto v: *node->input()) {
+                            nd4j_debug("     inputs for estimation are are: %i:%i\n", v.first, v.second);
                             if (v.first < 0) {
                                 inputShapes.push_back(_variableSpace->getVariable(v.first)->getNDArray()->getShapeInfo());
                             } else {
@@ -76,7 +83,7 @@ namespace nd4j {
 
                             shapesMap.insert(pairShape);
 
-                            if (!block->isInplace())
+                            if (!block->isInplace() && !node->isInplace())
                                 result += shape::length(newShape) * sizeof(T);
 
                             shape::printShapeInfoLinear(newShape);
@@ -170,6 +177,9 @@ namespace nd4j {
                     } else if (node->getOpClass() == OpClass_MULTIPLICATOR) {
                         // can't be in non-special op
                     }
+
+
+                    cntFD++;
                 }
             }
 
@@ -255,6 +265,9 @@ namespace nd4j {
                 delete v.second;
             }
 
+            for (auto v: _scopes)
+                delete v;
+
             delete _mapped;
             delete _nodes;
             delete _variableSpace;
@@ -269,10 +282,23 @@ namespace nd4j {
         void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
             _built.store(false);
 
-            auto nodeState = new Variable<T>();
+            if (node->opType() == OpType_LOGIC) {
+                nd4j_debug("Adding LogicOp [%i]\n", node->opNum());
+                // SCOPE
+                if (node->opNum() == 10) {
+                    auto scope = new Scope<T>(node->id(), node->getName()->c_str());
+                    _mappedScopes[node->id()] = scope;
+                }
+            }
+
+            auto cname = node->getName() == nullptr ? nullptr : node->getName()->c_str();
+            auto nodeState = new Variable<T>(nullptr, cname, node->id());
             if (node->getName() != nullptr)
                 nodeState->setName(node->getName());
 
+
+            if (node->isInplace());
+                    nodeState->markRemovable(false);
 
             _handles.push_back(node);
 
@@ -298,20 +324,51 @@ namespace nd4j {
                     for (uint32_t e = 0; e < node->input()->size(); e++) {
                         auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                        block->getVariables().push_back(var);
+                        block->getVariables()->push_back(var);
                     }
                 }
 
                 // and might have > 1 output
                 if (node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs() > 1) {
                     for (int e = 1; e < node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs(); e++) {
-                        auto deepVar = new Variable<T>();
-                        //deepVar->setId(node->id(), e);
+                        auto deepVar = new Variable<T>(nullptr, nullptr, node->id());
+                        //deepVar->setId(node->id());
+                        deepVar->setId(node->id(), e);
+                        if (node->isInplace())
+                            deepVar->markRemovable(false);
 
                         std::pair<int,int> id(node->id(), e);
                         _variableSpace->putVariable(id, deepVar);
                     }
+                } else {
+                    // we need to check, if we should propagate output of this variable somewhere
+                    for (int e = 0; e < node->output()->size(); e++) {
+                        auto out = node->output()->at(e);
+                        if (out < 0) {
+                            nd4j_debug("Node [%i] will be propagating its output to Variable [%i]\n", node->id(), out);
+                            auto extVar = _variableSpace->getVariable(out);
+                            if (extVar->hasNDArray()) {
+                                nodeState->setNDArray(extVar->getNDArray());
+                                nodeState->markRemovable(false);
+                            }
+                        }
+                    }
                 }
+
+
+                // adjust possible externals
+                /*
+                for (int e = 0; e < node->output()->size(); e++) {
+                    auto out = node->output()->at(e);
+                    std::pair<int, int> pair(node->id(), e);
+                    if (out < 0) {
+                        auto locVar = _variableSpace->getVariable(pair);
+                        locVar->markRemovable(false);
+                        auto extVar = _variableSpace->getVariable(out);
+                        locVar->setNDArray(extVar->getNDArray());
+                    }
+                }
+                */
             }
 
             // we're saving only ops that have internal outpus here
@@ -356,6 +413,19 @@ namespace nd4j {
 
                     nd4j_logger("Loop finished: %i outputs now\n", this->_output.size());
                 }
+            }
+
+            // ops that are tied to specific scope are never placed into the structure.
+            if (node->isScoped()) {
+                if (_mappedScopes.count(node->scopeId()) < 1) {
+                    nd4j_printf("Requested scope [%i/%s] wasn't created yet\n", node->scopeId(), node->scopeName()->c_str());
+                    throw std::invalid_argument("Unknown scope requested");
+                }
+
+                Scope<T>* scope = _mappedScopes.at(node->scopeId());
+                scope->push_back(node);
+
+                return;
             }
 
             std::pair<int32_t, nd4j::graph::Node<T> *> pair(node->id(), node);
@@ -435,7 +505,7 @@ namespace nd4j {
                                     for (uint32_t e = 0; e < node->input()->size(); e++) {
                                         auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                                        block->getVariables().push_back(var);
+                                        block->getVariables()->emplace_back(var);
                                     }
                                 }
                             }
@@ -484,7 +554,7 @@ namespace nd4j {
                                 for (uint32_t e = 0; e < node->input()->size(); e++) {
                                     auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                                    block->getVariables().push_back(var);
+                                    block->getVariables()->push_back(var);
                                 }
                             }
                         }
@@ -618,6 +688,15 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        template <typename T>
+        Scope<T> *Graph<T>::scopeById(int id) {
+            if (_mappedScopes.count(id) == 0) {
+                nd4j_printf("Requested Scope [%i] doesn't exist\n", id);
+                throw "Non-existent Scope was requested";
+            }
+
+            return _mappedScopes.at(id);
+        }
 
         template class ND4J_EXPORT Graph<float>;
         //template class ND4J_EXPORT Graph<float16>;

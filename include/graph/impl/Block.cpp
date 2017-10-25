@@ -35,6 +35,10 @@ namespace nd4j {
             return _workspace != nullptr;
         }
 
+        template <typename T>
+        void Block<T>::markInplace(bool reallyInplace) {
+            _isInplace = reallyInplace;
+        }
 
         template <typename T>
         void Block<T>::attachWorkspace(nd4j::memory::Workspace* workspace) {
@@ -121,6 +125,17 @@ namespace nd4j {
             }
         }
 
+
+        template <typename T>
+        int Block<T>::getBranch() {
+            return _branch;
+        }
+
+        template <typename T>
+        void Block<T>::setBranch(int branch) {
+            _branch = branch;
+        }
+
         template <typename T>
         void Block<T>::fillInputs(std::vector<int>& inputs) {
             for (int e = 0; e < inputs.size(); e++) {
@@ -160,10 +175,19 @@ namespace nd4j {
         * @return
         */
         template <typename T>
-        std::vector<nd4j::graph::Variable<T> *>& nd4j::graph::Block<T>::getVariables() {
-            return _variables;
+        std::vector<nd4j::graph::Variable<T> *>* nd4j::graph::Block<T>::getVariables() {
+            return &_variables;
         }
 
+        template <typename T>
+        int Block<T>::opNum() {
+            return _opNum;
+        }
+
+        template <typename T>
+        void Block<T>::setOpNum(int opNum) {
+            _opNum = opNum;
+        }
 
         template class ND4J_EXPORT Block<float>;
         template class ND4J_EXPORT Block<float16>;

@@ -130,18 +130,30 @@ namespace nd4j {
 
             _external = false;
             _readOnly = false;
-            _id = 0;
 
             if (name != nullptr)
                 _name = std::string(name);
         }
 
         template <typename T>
+        nd4j::graph::Variable<T>::Variable(NDArray<T> *array, const char *name, int id, int idx) : Variable(array, name) {
+            _id = id;
+            _index = idx;
+        }
+
+        template <typename T>
         nd4j::graph::Variable<T>::~Variable() {
+            nd4j_debug("Removing variable [%i:%i]\n", _id, _index);
+
             if (_ndarray != nullptr && _removable)
                 delete _ndarray;
         }
 
+        template <typename T>
+        void Variable<T>::setId(int id, int idx) {
+            _id = id;
+            _index = idx;
+        }
 
         template class ND4J_EXPORT Variable<float>;
         template class ND4J_EXPORT Variable<float16>;

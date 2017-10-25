@@ -50,17 +50,24 @@ namespace nd4j {
             bool _hasInternalOutputs;
             bool _hasInternalInputs;
 
+            // this field is used to check, if op should be used in-place (so it can/will modify its inputs)
             bool _isInplace = false;
 
             OpClass _opClass;
 
+            // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario
             nd4j::graph::Graph<T> * _graph= nullptr;
             nd4j::ops::DeclarableOp<T> *_customOp = nullptr;
 
+            // each node can be active or inactive, if used with divergents, like IF statements
             bool _active = true;
 
+            // these fields contain information about Scope these ops are related to
+            int _scope_id = 0;
+            std::string _scope_name;
+
         public:
-            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f);
+            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<T> tArgs = {}, std::initializer_list<int> iArgs = {});
             Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
@@ -122,10 +129,21 @@ namespace nd4j {
 
             bool isInplace();
             void markInplace(bool reallyInplace);
+
+
             OpClass getOpClass();
 
+            // these methods are used for internal profiling
             void setOuterTime(Nd4jIndex time);
             void setInnerTime(Nd4jIndex time);
+
+            // methods related to scopes
+            bool isScoped();
+            void setScopeInfo(int id, const char* name = nullptr);
+            int scopeId();
+            std::string* scopeName();
+
+            static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int opNum, T scalar);
         };
     }
 }

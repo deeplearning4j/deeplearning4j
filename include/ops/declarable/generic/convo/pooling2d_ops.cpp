@@ -10,9 +10,9 @@ namespace nd4j {
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
 
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* input = INPUT_VARIABLE(0);
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
-            NDArray<T>* epsilon = block.getVariables().at(1)->getNDArray();
+            NDArray<T>* epsilon = INPUT_VARIABLE(1);
             NDArray<T>* outEpsilon = this->getZ(block);
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
             std::vector<int> argI = *(block.getIArguments());
@@ -126,7 +126,7 @@ namespace nd4j {
         // maxpool2d corresponds to poolingMode=0
         CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
@@ -211,7 +211,7 @@ namespace nd4j {
         // avgpool2d corresponds to poolingMode=1
         CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 9) {
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
@@ -296,7 +296,7 @@ namespace nd4j {
 
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *x = INPUT_VARIABLE(0);
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
             std::vector<int> argI = *(block.getIArguments()); // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - extraParam0 for pnorm case;

@@ -44,6 +44,12 @@ namespace nd4j {
 			
 			bool _isInplace;
 
+            // branch for divergent_op
+            int _branch = 0;
+
+            // opNum for legacy XYZ ops
+            int _opNum = -1;
+
         public:
             // TODO: maybe override new here as well?
 
@@ -75,11 +81,16 @@ namespace nd4j {
             int getNodeId();
             std::vector<T>* getTArguments();
             std::vector<int>* getIArguments();
+
             bool isInplace();
+            void markInplace(bool reallyInplace);
 
             void pickInput(int input);
             void fillInputs(std::initializer_list<int> inputs);
             void fillInputs(std::vector<int>& inputs);
+
+            int getBranch();
+            void setBranch(int branch);
 
             /**
              * This method returns number of inputs available in this block
@@ -93,7 +104,11 @@ namespace nd4j {
             */
             VariableSpace<T>* getVariableSpace();
 
-            std::vector<nd4j::graph::Variable<T> *>& getVariables();
+            std::vector<nd4j::graph::Variable<T> *>* getVariables();
+
+
+            int opNum();
+            void setOpNum(int opNum);
         };
     }
 }

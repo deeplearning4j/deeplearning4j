@@ -6839,7 +6839,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 		auto shape = (int *) inputShapes[e];
 
 		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
-		block.getVariables().push_back(var);
+		block.getVariables()->push_back(var);
 	}
 
 	for (int e = 0; e < numOutputs; e++) {

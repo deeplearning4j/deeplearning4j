@@ -11,6 +11,7 @@
 #include <Variable.h>
 #include <VariableSpace.h>
 #include <Node.h>
+#include <Scope.h>
 #include <GraphExecutioner.h>
 #include <loops/scalar.h>
 #include <loops/pairwise_transform.h>
@@ -24,23 +25,31 @@
 
 #include <chrono>
 #include <ctime>
+#include <graph/execution/LogicExecutor.h>
 
 namespace nd4j{
 namespace graph {
 
 /**
+ * This method executes given Node (as in Op within Node)
  *
- * @param graph
- * @param node
- * @param variableSpace
+ * Basically it just does DeclarableOp::execute(Block<T>), and ops to their job. However, there are some additional functionality.
+ *
+ * @param graph - Graph instance pointer
+ * @param node - Node instance pointer, which will be executed
+ * @param variableSpace - VariableSpace instance pointer - varspace specific to current Thread/Session
  * @return
  */
 template <typename T>
-static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<T> *variableSpace) {
+ Nd4jStatus GraphExecutioner<T>::executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<T> *variableSpace) {
     OpType opType = node->opType();
     int opNum = node->opNum();
 
-    if (opType == OpType_GRAPH) {
+    if (opType == OpType_BOOLEAN) {
+        nd4j_debug("Executing boolean graph node_%i", node->id());
+    } else if (opType == OpType_LOGIC) {
+        nd4j_debug("Executing logic graph node_%i", node->id());
+    } else if (opType == OpType_GRAPH) {
         nd4j_debug("Executing embedded graph node_%i", node->id());
     } else if (opType != OpType_CUSTOM) {
         nd4j_debug("Executing node_%i{%i}\n", node->id(), opNum);
@@ -48,7 +57,7 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
         nd4j_debug("Executing node_%i{%s}\n", node->id(), node->getCustomOp()->getOpName()->c_str());
     }
 
-    if (nd4j::Environment::getInstance()->isDebug() && nd4j::Environment::getInstance()->isVerbose()) {
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
         //nd4j_debug("Input variables: %i\n", node->input()->size());
         printf("       Inputs: {");
         for (int e = 0; e < node->input()->size(); e++) {
@@ -61,6 +70,10 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
         fflush(stdout);
     }
 
+    if (node->id() == 3)
+        nd4j_debug("","");
+
+    // if true - this is special case: Graph-in-Graph. 
     if (node->hasGraphEmbedded()) {
         auto embedded = node->getGraph();
 
@@ -79,13 +92,12 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
             return ND4J_STATUS_BAD_INPUT;
         }
 
+        // we need to propagate required variables to the embedded graph
         int cnt = 0;
-        //for (auto v: *node->input()) {
-        //}
         for (Variable<T>* v: *embedded->getPlaceholders()) {
             if (v->getName() != nullptr && v->getName()->size() > 0) {
-                // trying symbolic lookup
-
+                
+                // trying symbolic lookup first
                 if (variableSpace->hasVariable(v->getName())) {
                     // symbolic feeder
                     auto array = variableSpace->getVariable(v->getName())->getNDArray();
@@ -102,23 +114,19 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
                 v->setNDArray(array->dup(array->ordering()));
             }
 
-
             cnt++;
         }
 
-
+        // executing embedded graph as independent one
         Nd4jStatus status = GraphExecutioner<T>::execute(embedded);
         if (status != ND4J_STATUS_OK)
             return status;
 
+        //  now we should migrate its results to this node, as its own outputs
         cnt = 0;
         for (auto v: *embedded->fetchOutputs()){
             NDArray<T> *array = v->getNDArray();
             v->setNDArray(nullptr);
-
-            //if (cnt == 0) {
-                //variableSpace->getVariable(node->id())->setNDArray(array);
-            //}
 
             if (cnt == 0)
                 variableSpace->getVariable(node->id())->setNDArray(array);
@@ -129,10 +137,12 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
         nd4j_debug("Embedded graph execution finished. %i variable(s) migrated\n", cnt);
 
     } else if (node->hasCustomOp()) {
-
-        auto status = node->getCustomOp()->execute(node->getBlock());
-        return status;
-    } else if (opType == OpType_TRANSFORM) {
+        // if we have something to execute - lets just execute it.
+        return node->getCustomOp()->execute(node->getBlock());
+    }
+  // This is legacy draft code
+  // TODO: TO BE REMOVED
+ /*   } else if (opType == OpType_TRANSFORM) {
         auto in = node->input()->at(0);
 
         auto x = variableSpace->getVariable(in);
@@ -436,7 +446,7 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
         auto z = x;
         // if there's no dimensions set - it's reduceToScalar
         if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-            z = new Variable<T>(new NDArray<T>(1,1, 'c'));
+            z = new Variable<T>(new NDArray<T>(1,1, 'c'), node->getName()->c_str(), node->id());
             z->setName(node->getName());
             z->getNDArray()->getBuffer()[0] = (T) functions::indexreduce::IndexReduce<T>::template execScalar(opNum, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), node->extraParams());
 
@@ -448,7 +458,7 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
 
             int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-            z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
+            z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'), node->getName()->c_str(), node->id());
             z->setName(node->getName());
             functions::indexreduce::IndexReduce<T>::template exec(opNum, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), node->extraParams(), z->getNDArray()->getBuffer(), z->getNDArray()->getShapeInfo(),
                                                                     node->getDimensionsPtr() , node->getDimensions()->size(),
@@ -518,15 +528,16 @@ static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<
             }
         }
     }
-
+*/
     return ND4J_STATUS_OK;
 }
 
 
 /**
+ * This method executes given Graph instance, and returns error code.
  *
  * @param graph
- * @return
+ * @return one of error codes defined in pointercast.h
  */
 template <typename T>
 Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
@@ -546,8 +557,50 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
         for (int n = 0; n < layerSize; n++) {
             Node<T>* node = graph->getOnion()->at(l)->at(n);
 
+            /**
+             * If this LOGIC op, we'll use another execution model here
+             */
+            if (node->opType() == OpType_LOGIC) {
+                auto status = LogicExecutor<T>::processNode(graph, node);
+
+                if (status == ND4J_STATUS_OK)
+                    continue;
+                else
+                    return status;
+            }
+
+            bool shouldSkip = false;
+            // let's check for input nodes, if they are disabled or contain divergents
+            for (int e = 0; e < node->input()->size(); e++) {
+                auto inputId = node->input()->at(e);
+
+                // we're skipping external variables here
+                if (inputId.first < 0)
+                    continue;
+
+                /**
+                 * We can skip current node, in two cases:
+                 * 1) If previous node was disabled
+                 * 2) If previous node was divergent node (i.e. IF op) and code went other way
+                 */
+                Node<T>* prevNode = graph->getMapped()->at(inputId.first);
+                if (!prevNode->isActive()) {
+                    shouldSkip = true;
+                    node->setActive(false);
+                } else if (prevNode->isDivergencePoint()) {
+                    if (prevNode->getBlock()->getBranch() != inputId.second) {
+                        shouldSkip = true;
+                        node->setActive(false);
+                    }
+                }
+            }
+
+            if (shouldSkip)
+                continue;
+
             auto timeStart = std::chrono::system_clock::now();
 
+            // actual node execution happens right here
             Nd4jStatus status = executeFlatNode(graph, node, __variableSpace);
 
             auto timeEnd = std::chrono::system_clock::now();
@@ -560,7 +613,16 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
             if (status != ND4J_STATUS_OK)
                 return status;
 
-            if (nd4j::Environment::getInstance()->isDebug() && nd4j::Environment::getInstance()->isVerbose()) {
+
+            // here we should handle divergent ops, and disable nodes accordingly
+            if (node->isDivergencePoint()) {
+                auto activeBranch = node->getBlock()->getBranch();
+                nd4j_debug("Active branch at node [%i]: %i\n", node->id(), activeBranch);
+
+                // now we skip all branches except of this active one
+            }
+
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                 NDArray<T> * array = __variableSpace->getVariable(node->id())->getNDArray();
                 nd4j_debug("node_%i finished. result meanNumber: %f\n", node->id(), array->meanNumber());
             }
@@ -570,26 +632,34 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
     return ND4J_STATUS_OK;
 }
 
-
+/**
+ * This method is provided for IPC: 
+ * 1) it accepts pointer to FlatBuffers buffer
+ * 2) restores Graph from it
+ * 3) Executes this Graph
+ * 4) Packs execution results into FlatBuffers (FlatResults instance)
+ * 5) Returns pointer to FlatBuffer results buffer
+ *
+ */
 template <typename T>
 Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
 
-    nd4j_printf("Trying to restore graph\n", 0);
+    nd4j_debug("Trying to restore graph\n", 0);
 
     auto restoredGraph = GetFlatGraph(buffer);
 
-    nd4j_printf("Graph restored\n", 0);
+    nd4j_debug("Graph restored\n", 0);
 
     // converting FlatGraph to internal representation
     auto nativeGraph = new Graph<T>(restoredGraph);
 
-    nd4j_printf("Going to execute graph\n", 0);
+    nd4j_debug("Going to execute graph\n", 0);
 
     // executing internal representation
     GraphExecutioner<T>::execute(nativeGraph);
 
-    nd4j_printf("Building output...\n", 0);
+    nd4j_debug("Building output...\n", 0);
 
     flatbuffers::FlatBufferBuilder builder(1024);
 
@@ -628,7 +698,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         variables_vector.push_back(fv);
     }
 
-    nd4j_printf("Returning %i variables back\n", variables_vector.size());
+    nd4j_debug("Returning %i variables back\n", variables_vector.size());
 
     auto varTimings = builder.CreateVector(timings_vector);
     auto varVectors = builder.CreateVector(variables_vector);
@@ -842,18 +912,29 @@ Graph<T>* GraphExecutioner<T>::importFromTensorFlow(const char *fileName) {
     return nullptr;
 }
 
-
+/**
+*   This function returns file size for the given file name, or -1 if something went wrong
+*/
 long getFileSize(const char * filename) {
     struct stat stat_buf;
     int rc = stat(filename, &stat_buf);
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
+/**
+*   Helper function, that loads given filename into uint8_t array
+*
+*/
 uint8_t* readFlatBuffers(const char * filename) {
     long fileLen = getFileSize(filename);
-    uint8_t * data = new uint8_t[fileLen];
+    if (fileLen < 0) {
+        nd4j_printf("File [%s] wasn't found. Please check path and permissions\n", filename);
+        throw "File not found";
+    }
 
-    nd4j_verbose("File length: %i\n", fileLen);
+    nd4j_debug("File length: %i\n", fileLen);
+
+    uint8_t * data = new uint8_t[fileLen];
 
     FILE *in = fopen(filename, "rb");
     int cnt = 0;
@@ -868,6 +949,12 @@ uint8_t* readFlatBuffers(const char * filename) {
     return data;
 }
 
+
+/**
+*   This method reads given FlatBuffers file, and returns Graph instance
+*
+*   PLEASE NOTE: This method is mostly suited for tests and debugging/profiling
+*/
 template <typename T>
 Graph<T>* GraphExecutioner<T>::importFromFlatBuffers(const char *filename) {
     uint8_t* data = readFlatBuffers(filename);

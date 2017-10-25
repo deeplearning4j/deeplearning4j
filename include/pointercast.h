@@ -32,5 +32,10 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_KERNEL_FAILURE      50
 
 
+#define ND4J_STATUS_TRUE    100
+#define ND4J_STATUS_FALSE   101
+#define ND4J_STATUS_MAYBE   119
+
+
 
 #endif //NATIVEOPERATIONS_POINTERCAST_H

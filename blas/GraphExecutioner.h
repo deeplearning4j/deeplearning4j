@@ -29,6 +29,8 @@ protected:
 public:
     //static Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace);
 
+    static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<T> *variableSpace);
+
     /**
      * This method executes given Graph
      * @return

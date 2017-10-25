@@ -4,6 +4,14 @@
 
 #include <graph/Node.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <ops/declarable/LegacyTransformOp.h>
+#include <ops/declarable/LegacyScalarOp.h>
+#include <ops/declarable/LegacyReduceOp.h>
+#include <ops/declarable/LegacyIndexReduceOp.h>
+#include <ops/declarable/LegacyStatsOp.h>
+#include <ops/declarable/LegacyBroadcastOp.h>
+#include <ops/declarable/LegacyReduce3Op.h>
+#include <ops/declarable/LegacyPairwiseTransformOp.h>
 
 namespace nd4j {
     namespace graph {
@@ -38,6 +46,9 @@ namespace nd4j {
         template <typename T>
         void nd4j::graph::Node<T>::markInplace(bool reallyInplace) {
             _isInplace = reallyInplace;
+            if (_block != nullptr) {
+                _block->markInplace(reallyInplace);
+            }
         }
 
         template <typename T>
@@ -101,6 +112,10 @@ namespace nd4j {
         template <typename T>
         void nd4j::graph::Node<T>::setCustomOp(nd4j::ops::DeclarableOp<T> *customOp) {
             _customOp = customOp;
+
+            // divergent ops (Switch etc) are always inplace, they don't allocate anything
+            if (customOp->getOpDescriptor()->isDivergent())
+                _isInplace = true;
         }
 
         template <typename T>
@@ -247,7 +262,30 @@ namespace nd4j {
         }
 
         template <typename T>
-        nd4j::graph::Node<T>::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar) {
+        bool Node<T>::isScoped() {
+            return _scope_id != 0;
+        }
+
+        template <typename T>
+        void Node<T>::setScopeInfo(int id, const char* name) {
+            _scope_id = id;
+
+            if (name != nullptr)
+                _scope_name = name;
+        }
+
+        template <typename T>
+        int Node<T>::scopeId() {
+            return _scope_id;
+        }
+
+        template <typename T>
+        std::string* Node<T>::scopeName() {
+            return &_scope_name;
+        }
+
+        template <typename T>
+        nd4j::graph::Node<T>::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
             this->_id = id;
             this->_opNum = opNum;
@@ -284,6 +322,31 @@ namespace nd4j {
                 _opClass = OpClass_TRANSFORM;
             } else if (opType == OpType_ACCUMULATION || opType == OpType_SUMMARYSTATS) {
                 _opClass = OpClass_REDUCTION;
+            }
+
+
+            if (opType == OpType_BROADCAST ||
+                    opType == OpType_INDEX_ACCUMULATION ||
+                    opType == OpType_SUMMARYSTATS ||
+                    opType == OpType_ACCUMULATION ||
+                    opType == OpType_TRANSFORM ||
+                    opType == OpType_SCALAR) {
+
+                this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), opNum, scalar));
+
+                auto block = new Block<T>(this->id(), nullptr, false);
+
+                // there's no other IArgs in legacy options, actually
+                for (auto v: dimensions)
+                    block->getIArguments()->emplace_back(v);
+
+                for (auto v: iArgs)
+                    block->getIArguments()->emplace_back(v);
+
+                for (auto v: tArgs)
+                    block->getTArguments()->emplace_back(v);
+
+                this->setBlock(block);
             }
         };
 
@@ -342,13 +405,42 @@ namespace nd4j {
 
 
                 // these ops allow in-place execution by design
-                if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST) {
+                if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
                     if (_output.size() <= 1) {
-                        _isInplace = true;
+                        //_isInplace = true;
                     }
-                    _opClass = OpClass_TRANSFORM;
-                } else if (this->_opType == OpType_ACCUMULATION || this->_opType == OpType_SUMMARYSTATS) {
-                    _opClass = OpClass_REDUCTION;
+
+                    if (node->input() != nullptr && node->input()->size() > 0) {
+                        this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->input()->size(), _opNum, _scalar));
+
+                        auto block = new Block<T>(this->id(), nullptr, false);
+
+                        // there's no other IArgs in legacy options, actually
+                        for (auto v: _dimensions)
+                            block->getIArguments()->emplace_back(v);
+
+                        if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
+                            for (int e = 0; e < (int) node->extraParams()->size(); e++) {
+                                block->getTArguments()->emplace_back((T) node->extraParams()->Get(e));
+                            }
+
+                        this->setBlock(block);
+                    } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
+                        this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->inputPaired()->size(), _opNum, _scalar));
+
+                        auto block = new Block<T>(this->id(), nullptr, false);
+
+                        // there's no other IArgs in legacy options, actually
+                        for (auto v: _dimensions)
+                            block->getIArguments()->emplace_back(v);
+
+                        if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
+                            for (int e = 0; e < (int) node->extraParams()->size(); e++) {
+                                block->getTArguments()->emplace_back((T) node->extraParams()->Get(e));
+                            }
+
+                        this->setBlock(block);
+                    }
                 } else if (this->_opType == OpType_CUSTOM) {
                     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(this->opNum());
                     if (op == nullptr) {
@@ -393,6 +485,32 @@ namespace nd4j {
                 return true;
 
             return false;
+        }
+
+        template <typename T>
+        nd4j::ops::DeclarableOp<T>* nd4j::graph::Node<T>::buildOpByType(OpType opType, int numInputs, int opNum, T scalar) {
+            switch (opType) {
+                case OpType_TRANSFORM:
+                    if (numInputs == 2)
+                        return new nd4j::ops::LegacyPairwiseTransformOp<T>(opNum);
+                    else
+                        return new nd4j::ops::LegacyTransformOp<T>(opNum);
+                case OpType_SCALAR:
+                    return new nd4j::ops::LegacyScalarOp<T>(opNum, scalar);
+                case OpType_ACCUMULATION:
+                    if (numInputs == 2)
+                        return new nd4j::ops::LegacyReduce3Op<T>(opNum);
+                    else
+                        return new nd4j::ops::LegacyReduceOp<T>(opNum);
+                case OpType_INDEX_ACCUMULATION:
+                    return new nd4j::ops::LegacyIndexReduceOp<T>(opNum);
+                case OpType_SUMMARYSTATS:
+                    return new nd4j::ops::LegacyStatsOp<T>(opNum);
+                case OpType_BROADCAST:
+                    return new nd4j::ops::LegacyBroadcastOp<T>(opNum);
+                default:
+                    throw "Bad opType passed in";
+            }
         }
 
         template class ND4J_EXPORT Node<float>;

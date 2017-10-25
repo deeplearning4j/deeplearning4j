@@ -29,8 +29,8 @@ namespace nd4j {
          * @tparam T
          */
         CONFIGURABLE_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *z = this->getZ(block);
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             int batchSize = x->sizeAt(0);
             int numColumns = x->sizeAt(1);

@@ -80,8 +80,8 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(avgpool3d_bp, 2, 1, true, 0, 11) {
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *gradNext = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *gradNext = INPUT_VARIABLE(1);
 
             NDArray<T> *output = this->getZ(block);
 
@@ -165,8 +165,8 @@ namespace nd4j {
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(avgpool3d, 1, 1, true, 0, 11) {
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *output = this->getZ(block);
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
@@ -263,10 +263,12 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         CONFIGURABLE_OP_IMPL(maxpool3d, 1, 2, true, 0, 13) {
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
 
-            NDArray<T> *output = this->getZ(block);
-            NDArray<T> *indices = this->getZ(block, 1);
+            NDArray<T> *output = OUTPUT_VARIABLE(0);
+
+            // FIXME: we want to stash this one
+            NDArray<T> *indices = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(input->sizeOfT() > 2, 0, "MaxPool3D can't be used in HALF precision")
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got rank %i instead", input->rankOf());
@@ -397,9 +399,9 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool3d_bp, 3, 1, true, 0, 13) {
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *gradNext = block.getVariables().at(1)->getNDArray();
-            NDArray<T> *indices = block.getVariables().at(2)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *gradNext = INPUT_VARIABLE(1);
+            NDArray<T> *indices = INPUT_VARIABLE(2);
 
             NDArray<T> *output = this->getZ(block);
 

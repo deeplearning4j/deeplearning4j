@@ -12,11 +12,11 @@ namespace nd4j {
         CONFIGURABLE_OP_IMPL(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *weights = INPUT_VARIABLE(1);
             NDArray<T> *bias = nullptr;
-            if (block.getVariables().size() == 3)
-                bias = block.getVariables().at(2)->getNDArray();
+            if (block.getVariables()->size() == 3)
+                bias = INPUT_VARIABLE(2);
 
             if (input->rankOf() != 5)
                 return ND4J_STATUS_BAD_DIMENSIONS;

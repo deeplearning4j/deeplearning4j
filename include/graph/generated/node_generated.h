@@ -30,12 +30,14 @@ enum OpType {
   OpType_AGGREGATION = 9,
   OpType_CUSTOM = 10,
   OpType_GRAPH = 11,
-  OpType_VARIABLE = 119,
+  OpType_VARIABLE = 30,
+  OpType_BOOLEAN = 40,
+  OpType_LOGIC = 119,
   OpType_MIN = OpType_TRANSFORM,
-  OpType_MAX = OpType_VARIABLE
+  OpType_MAX = OpType_LOGIC
 };
 
-inline OpType (&EnumValuesOpType())[11] {
+inline OpType (&EnumValuesOpType())[13] {
   static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
@@ -47,7 +49,9 @@ inline OpType (&EnumValuesOpType())[11] {
     OpType_AGGREGATION,
     OpType_CUSTOM,
     OpType_GRAPH,
-    OpType_VARIABLE
+    OpType_VARIABLE,
+    OpType_BOOLEAN,
+    OpType_LOGIC
   };
   return values;
 }
@@ -57,16 +61,20 @@ enum OpClass {
   OpClass_REDUCTION = 1,
   OpClass_MULTIPLICATOR = 2,
   OpClass_GRAPH = 3,
+  OpClass_CONDITIONAL = 4,
+  OpClass_LOOP = 5,
   OpClass_MIN = OpClass_TRANSFORM,
-  OpClass_MAX = OpClass_GRAPH
+  OpClass_MAX = OpClass_LOOP
 };
 
-inline OpClass (&EnumValuesOpClass())[4] {
+inline OpClass (&EnumValuesOpClass())[6] {
   static OpClass values[] = {
     OpClass_TRANSFORM,
     OpClass_REDUCTION,
     OpClass_MULTIPLICATOR,
-    OpClass_GRAPH
+    OpClass_GRAPH,
+    OpClass_CONDITIONAL,
+    OpClass_LOOP
   };
   return values;
 }
@@ -77,6 +85,8 @@ inline const char **EnumNamesOpClass() {
     "REDUCTION",
     "MULTIPLICATOR",
     "GRAPH",
+    "CONDITIONAL",
+    "LOOP",
     nullptr
   };
   return names;
@@ -395,7 +405,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_EXTRAINTEGER = 22,
     VT_DIMENSIONS = 24,
     VT_DEVICE = 26,
-    VT_SCALAR = 28
+    VT_SCALAR = 28,
+    VT_SCOPE_ID = 30,
+    VT_SCOPE_NAME = 32
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -436,6 +448,12 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   float scalar() const {
     return GetField<float>(VT_SCALAR, 0.0f);
   }
+  int32_t scope_id() const {
+    return GetField<int32_t>(VT_SCOPE_ID, 0);
+  }
+  const flatbuffers::String *scope_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_SCOPE_NAME);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -459,6 +477,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.Verify(dimensions()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
            VerifyField<float>(verifier, VT_SCALAR) &&
+           VerifyField<int32_t>(verifier, VT_SCOPE_ID) &&
+           VerifyOffset(verifier, VT_SCOPE_NAME) &&
+           verifier.Verify(scope_name()) &&
            verifier.EndTable();
   }
 };
@@ -505,13 +526,19 @@ struct FlatNodeBuilder {
   void add_scalar(float scalar) {
     fbb_.AddElement<float>(FlatNode::VT_SCALAR, scalar, 0.0f);
   }
+  void add_scope_id(int32_t scope_id) {
+    fbb_.AddElement<int32_t>(FlatNode::VT_SCOPE_ID, scope_id, 0);
+  }
+  void add_scope_name(flatbuffers::Offset<flatbuffers::String> scope_name) {
+    fbb_.AddOffset(FlatNode::VT_SCOPE_NAME, scope_name);
+  }
   FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FlatNodeBuilder &operator=(const FlatNodeBuilder &);
   flatbuffers::Offset<FlatNode> Finish() {
-    const auto end = fbb_.EndTable(start_, 13);
+    const auto end = fbb_.EndTable(start_, 15);
     auto o = flatbuffers::Offset<FlatNode>(end);
     return o;
   }
@@ -531,9 +558,13 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> extraInteger = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions = 0,
     int32_t device = 0,
-    float scalar = 0.0f) {
+    float scalar = 0.0f,
+    int32_t scope_id = 0,
+    flatbuffers::Offset<flatbuffers::String> scope_name = 0) {
   FlatNodeBuilder builder_(_fbb);
   builder_.add_opNum(opNum);
+  builder_.add_scope_name(scope_name);
+  builder_.add_scope_id(scope_id);
   builder_.add_scalar(scalar);
   builder_.add_device(device);
   builder_.add_dimensions(dimensions);
@@ -563,7 +594,9 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<int32_t> *extraInteger = nullptr,
     const std::vector<int32_t> *dimensions = nullptr,
     int32_t device = 0,
-    float scalar = 0.0f) {
+    float scalar = 0.0f,
+    int32_t scope_id = 0,
+    const char *scope_name = nullptr) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -578,7 +611,9 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       extraInteger ? _fbb.CreateVector<int32_t>(*extraInteger) : 0,
       dimensions ? _fbb.CreateVector<int32_t>(*dimensions) : 0,
       device,
-      scalar);
+      scalar,
+      scope_id,
+      scope_name ? _fbb.CreateString(scope_name) : 0);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {

@@ -11,6 +11,7 @@
 //#include <NDArray.h>
 #include <graph/Node.h>
 #include <graph/Stash.h>
+#include <Scope.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/generated/node_generated.h>
@@ -28,9 +29,11 @@ namespace nd4j {
             VariableSpace<T> *_variableSpace;
             Stash<T>* _stash;
 
+            // this list holds references to Node ptrs, which should be free'd in Graph destructor
+            std::vector<Node<T> *> _handles;
+
             // vector holds ID's of top nodes only
             std::vector<int32_t > *_nodes;
-            std::vector<Node<T> *> _handles;
             std::map<int32_t, nd4j::graph::Node<T> *> *_mapped;
 
             std::map<int, std::vector<nd4j::graph::Node<T> *> *> *_onion;
@@ -39,10 +42,14 @@ namespace nd4j {
             std::mutex _mutexPreprocessing;
             std::atomic<bool> _built;
 
-
             std::vector<int32_t> _output;
             std::vector<int32_t> _autos;
 
+
+            std::map<int, Scope<T> *> _mappedScopes;
+            std::vector<Scope<T> *> _scopes;
+
+////////////////////////////////////////
             Nd4jStatus validateNode(nd4j::graph::Node<T> *node);
 
             void expandOnion(int newLayer);
@@ -124,6 +131,14 @@ namespace nd4j {
              * @return
              */
             std::vector<nd4j::graph::Node<T>*> *getAllNodes();
+
+            /**
+             * This method returns Scope ptr specified with id
+             *
+             * @param id
+             * @return
+             */
+            Scope<T>* scopeById(int id);
         };
     }
 }

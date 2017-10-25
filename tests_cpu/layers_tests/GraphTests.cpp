@@ -42,7 +42,9 @@ TEST_F(GraphTests, SingleInput1) {
 
     GraphExecutioner<float>::execute(graph);
 
-    ASSERT_NEAR(0.4161468, x->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    auto node3 = graph->getVariableSpace()->getVariable(3)->getNDArray();
+
+    ASSERT_NEAR(0.4161468, node3->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(GraphTests, DoubleInput1) {
@@ -74,6 +76,8 @@ TEST_F(GraphTests, DoubleInput1) {
     GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(3.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, SingleInput3) {

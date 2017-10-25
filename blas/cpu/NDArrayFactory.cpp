@@ -529,6 +529,21 @@ namespace nd4j {
         return result;
     }
 
+    template <typename T>
+    NDArray<T>* NDArrayFactory<T>::scalar(T value) {
+        auto res = new NDArray<T>('c', {1, 1});
+        res->putScalar(0, value);
+
+        return res;
+    }
+
+    template <typename T>
+    NDArray<T>* NDArrayFactory<T>::valueOf(std::initializer_list<int> shape, T value, char order) {
+        auto result = new NDArray<T>(order, shape);
+        result->assign(value);
+        return result;
+    }
+
 
     template class ND4J_EXPORT NDArrayFactory<float>;
     template class ND4J_EXPORT NDArrayFactory<float16>;

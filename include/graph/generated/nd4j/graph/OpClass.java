@@ -8,8 +8,10 @@ public final class OpClass {
   public static final byte REDUCTION = 1;
   public static final byte MULTIPLICATOR = 2;
   public static final byte GRAPH = 3;
+  public static final byte CONDITIONAL = 4;
+  public static final byte LOOP = 5;
 
-  public static final String[] names = { "TRANSFORM", "REDUCTION", "MULTIPLICATOR", "GRAPH", };
+  public static final String[] names = { "TRANSFORM", "REDUCTION", "MULTIPLICATOR", "GRAPH", "CONDITIONAL", "LOOP", };
 
   public static String name(int e) { return names[e]; }
 }

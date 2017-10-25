@@ -66,10 +66,10 @@ namespace nd4j {
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
 
-        //constructor, create empty array with at workspace 
+        //constructor, create empty array with at workspace
         NDArray(nd4j::memory::Workspace* workspace);
 
-        // this constructor creates 2D NDArray, memory for array is allocated in constructor 
+        // this constructor creates 2D NDArray, memory for array is allocated in constructor
         NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
@@ -106,12 +106,16 @@ namespace nd4j {
         }
 
         T* getBuffer();
+        T* buffer();
 
+
+        int* shapeInfo();
         int* getShapeInfo() const;
 
         void setShapeInfo(int *shapeInfo) {
             if(_isShapeAlloc && _workspace == nullptr)
                 delete []_shapeInfo;
+
             _shapeInfo = shapeInfo;
             _isShapeAlloc = false;
         }
@@ -119,6 +123,7 @@ namespace nd4j {
         void setBuffer(T* buffer) {
             if(_isBuffAlloc && _workspace == nullptr)
                 delete []_buffer;
+
             _buffer = buffer;
             _isBuffAlloc = false;
         }
@@ -242,7 +247,7 @@ namespace nd4j {
         template<typename OpName>
         NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions) const;
 
-        // this method saves deduced subarray to target row 
+        // this method saves deduced subarray to target row
         template<typename OpName>
         void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions) const;
 
@@ -459,12 +464,12 @@ namespace nd4j {
         friend NDArray<float16> nd4j::operator-(const float16 scalar, const NDArray<float16>& arr);
         friend NDArray<double> nd4j::operator-(const double scalar, const NDArray<double>& arr);
 
-        // negative operator, it makes all array elements = -elements        
+        // negative operator, it makes all array elements = -elements
         NDArray<T> operator-() const;
-               
+
         // multiplication operator array*array
         NDArray<T> operator*(const NDArray<T>& other) const;
-		
+
         // mathematical multiplication of two arrays
         friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);
 
@@ -547,7 +552,7 @@ namespace nd4j {
 		return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
     }
 
-    
+
 
 }
 #endif

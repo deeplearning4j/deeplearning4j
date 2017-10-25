@@ -53,10 +53,12 @@ namespace nd4j {
             std::vector<nd4j::graph::Variable<T>*>* getPlaceholders();
 
             bool hasVariable(int id);
+            bool hasVariable(int id, int idx);
             bool hasVariable(std::pair<int,int>& pair);
             bool hasVariable(std::string *symbol);
 
             nd4j::graph::Variable<T> *getVariable(int id);
+            nd4j::graph::Variable<T> *getVariable(int id, int idx);
             nd4j::graph::Variable<T> *getVariable(std::pair<int,int>& pair);
             nd4j::graph::Variable<T> *getVariable(std::string *symbol);
 
@@ -64,6 +66,7 @@ namespace nd4j {
             void putVariable(std::pair<int,int>& pair, Variable<T> *variable);
             void putVariable(int id, Variable<T> *variable);
             void putVariable(int id, NDArray<T> *array);
+
 
             void putOutputVariable(Variable<T> *variable);
 

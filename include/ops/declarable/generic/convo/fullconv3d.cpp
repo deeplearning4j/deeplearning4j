@@ -10,11 +10,11 @@ namespace nd4j {
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d, 5, 1, false, 0, 13) {
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *weights = block.getVariables().at(1)->getNDArray();
-            NDArray<T> *bias = block.getVariables().at(2)->getNDArray();
-            NDArray<T> *columns = block.getVariables().at(3)->getNDArray();
-            NDArray<T> *ones = block.getVariables().at(4)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *weights = INPUT_VARIABLE(1);
+            NDArray<T> *bias = INPUT_VARIABLE(2);
+            NDArray<T> *columns = INPUT_VARIABLE(3);
+            NDArray<T> *ones = INPUT_VARIABLE(4);
 
             REQUIRE_TRUE(weights->rankOf() == 5, 0, "Weights should be 5D, got %i instead", weights->rankOf());
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
@@ -161,13 +161,13 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d_bp, 5, 1, false, 0, 13) {
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *gradNext = block.getVariables().at(1)->getNDArray();
-            NDArray<T> *weights = block.getVariables().at(2)->getNDArray();
-            NDArray<T> *finput = block.getVariables().at(3)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *gradNext = INPUT_VARIABLE(1);
+            NDArray<T> *weights = INPUT_VARIABLE(2);
+            NDArray<T> *finput = INPUT_VARIABLE(3);
 
             // not used
-            NDArray<T> *fgradInput = block.getVariables().at(4)->getNDArray();
+            NDArray<T> *fgradInput = INPUT_VARIABLE(4);
 
 
             REQUIRE_TRUE(weights->rankOf() == 5, 0, "Weights should be 5D, got %i instead", weights->rankOf());
@@ -259,10 +259,10 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d_grad, 4, 2, false, 1, 13) {
 
-            NDArray<T> *input = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *epsilon = block.getVariables().at(1)->getNDArray();
-            NDArray<T> *columns = block.getVariables().at(2)->getNDArray();
-            NDArray<T> *ones = block.getVariables().at(3)->getNDArray();
+            NDArray<T> *input = INPUT_VARIABLE(0);
+            NDArray<T> *epsilon = INPUT_VARIABLE(1);
+            NDArray<T> *columns = INPUT_VARIABLE(2);
+            NDArray<T> *ones = INPUT_VARIABLE(3);
 
             REQUIRE_TRUE(input->rankOf() == epsilon->rankOf(), 0, "Rank of input (%i) & epsilon (%i) should be equal", input->rankOf(), epsilon->rankOf());
             REQUIRE_TRUE(input->sizeAt(0) == epsilon->sizeAt(0), 1, "Batch size should be equal for input and epsilon");

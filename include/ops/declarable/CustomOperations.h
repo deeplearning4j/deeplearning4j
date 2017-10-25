@@ -7,10 +7,13 @@
 
 #include <memory>
 #include <op_boilerplate.h>
+#include <types/float16.h>
 #include <NDArray.h>
 #include <NDArrayFactory.h>
 #include <Block.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/BooleanOp.h>
+#include <ops/declarable/LogicOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
 #include <ops/declarable/DeclarableCustomOp.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -44,10 +47,16 @@ namespace nd4j {
         DECLARE_OP(reversedivide, 2, 1, true);
         DECLARE_OP(reshapeas, 2, 1, true);      // should become custom
         DECLARE_OP(transpose, 1, 1, true);      // should become custom
-
+        DECLARE_OP(zeros_as, 1, 1, false);
+        DECLARE_OP(maximum, 2, 1, true);
+        DECLARE_OP(minimum, 2, 1, true);
 
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
+
+        DECLARE_LOGIC_OP(While);
+        DECLARE_LOGIC_OP(Scope);
+        DECLARE_LOGIC_OP(Conditional);
 
         DECLARE_CUSTOM_OP(testcustom, 1, 1, false, 0, -1);
         DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 1);
@@ -73,13 +82,18 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(pooling2d, 1, 1, false, 0, 11);
         DECLARE_CUSTOM_OP(avgpool2d_bp, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(pnormpool2d_bp, 2, 1, false, 1, 10);
+        DECLARE_CUSTOM_OP(tear, 1, -1, false, 0, -1);
+        DECLARE_CUSTOM_OP(unstack, 1, -1, false, 0, 1);
+        DECLARE_CUSTOM_OP(im2col, 1, 1, false, 0, 9);
+        DECLARE_CUSTOM_OP(col2im, 1, 1, false, 0, 9);
+        DECLARE_CUSTOM_OP(strided_slice, 1, 1, true, 0, -1); // TODO: new op type needed. that returns VIEW
 
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru1, 5, 2, false, 0, 0);
         DECLARE_CUSTOM_OP(sru2, 5, 2, false, 0, 0);
-        DECLARE_CUSTOM_OP(sru_bp_1, 8, 4, true, 0, 0);        
-        DECLARE_CUSTOM_OP(sru_bp_2, 8, 4, true, 0, 0);        
+        DECLARE_CUSTOM_OP(sru_bp_1, 8, 4, true, 0, 0);
+        DECLARE_CUSTOM_OP(sru_bp_2, 8, 4, true, 0, 0);
 
 
         DECLARE_CONFIGURABLE_OP(tensormmul, 2, 1, false, 0, -1);   // should become custom
@@ -99,8 +113,17 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(maxpool3d, 1, 2, true, 0, 13); // make this one custom
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
 
-        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);        
-        
+
+        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);
+
+
+
+        DECLARE_BOOLEAN_OP(lt_scalar, 2, true);
+        DECLARE_BOOLEAN_OP(gt_scalar, 2, true);
+        DECLARE_BOOLEAN_OP(lte_scalar, 2, true);
+        DECLARE_BOOLEAN_OP(gte_scalar, 2, true);
+        DECLARE_BOOLEAN_OP(eq_scalar, 2, true);
+        DECLARE_BOOLEAN_OP(neq_scalar, 2, true);
     }
 }
 

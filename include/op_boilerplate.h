@@ -955,6 +955,83 @@
                                                     Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
                                                 };
 
+#define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   template <typename T> \
+                                                class NAME: public nd4j::ops::BooleanOp<T> { \
+                                                public:\
+                                                    NAME(); \
+                                                protected: \
+                                                    Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
+                                                };
+
+#define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)   template <typename T>\
+                                                NAME<T>::NAME() : nd4j::ops::BooleanOp<T>(#NAME, NIN, SCALAR) { }; \
+template <typename OpName>  \
+struct __registratorFloat_##NAME {\
+    __registratorFloat_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorHalf_##NAME {\
+    __registratorHalf_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+    }\
+};\
+template <typename OpName>  \
+struct __registratorDouble_##NAME {\
+    __registratorDouble_##NAME() {\
+        OpName *ptr = new OpName(); \
+        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+    }\
+};\
+                                                static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
+                                                template <typename T> \
+                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+
+
+
+#define DECLARE_LOGIC_OP(NAME)   template <typename T> \
+                                                class NAME: public nd4j::ops::LogicOp<T> { \
+                                                public:\
+                                                    NAME(); \
+                                                protected: \
+                                                    Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
+                                                };
+
+#define LOGIC_OP_IMPL(NAME)     template <typename T>\
+                                NAME<T>::NAME() : nd4j::ops::LogicOp<T>(#NAME) { }; \
+                                template <typename OpName>  \
+                                struct __registratorFloat_##NAME {\
+                                    __registratorFloat_##NAME() {\
+                                        OpName *ptr = new OpName(); \
+                                        OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+                                    }\
+                                };\
+                                template <typename OpName>  \
+                                struct __registratorHalf_##NAME {\
+                                    __registratorHalf_##NAME() {\
+                                        OpName *ptr = new OpName(); \
+                                        OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+                                    }\
+                                };\
+                                template <typename OpName>  \
+                                struct __registratorDouble_##NAME {\
+                                    __registratorDouble_##NAME() {\
+                                        OpName *ptr = new OpName(); \
+                                        OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+                                    }\
+                                };\
+                                static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
+                                template <typename T> \
+                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { nd4j::ops::LogicOp<T>::validateAndExecute(block); };
+
+
 
 #define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)   template <typename T>\
                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { }; \
@@ -1244,8 +1321,10 @@ struct __registratorDouble_##NAME {\
 #define CHECK_STASH(NAME)   block.getVariableSpace()->getStash()->checkStash(block.getNodeId(), NAME);
 #define UNSTASH(NAME)       block.getVariableSpace()->getStash()->extractArray(block.getNodeId(), NAME);
 
-#define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariables().at(INDEX)->getNDArray()
+#define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariables()->at(INDEX)->getNDArray()
 #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
 
+#define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
+#define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
 
 #endif
