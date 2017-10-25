@@ -989,6 +989,9 @@ struct __registratorDouble_##NAME {\
                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
+                                                template class ND4J_EXPORT NAME<float>;\
+										        template class ND4J_EXPORT NAME<float16>;\
+										        template class ND4J_EXPORT NAME<double>;\
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 
@@ -1029,7 +1032,10 @@ struct __registratorDouble_##NAME {\
                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
                                 template <typename T> \
-                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
+                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); }; \
+                                template class ND4J_EXPORT NAME<float>;\
+								template class ND4J_EXPORT NAME<float16>;\
+								template class ND4J_EXPORT NAME<double>;
 
 
 
