@@ -7,11 +7,11 @@
 
 #include <vector>
 #include <initializer_list>
-
+#include <dll.h>
 
 namespace  nd4j {
 
-    class Intervals {
+    class ND4J_EXPORT Intervals {
     
     private:
         std::initializer_list<std::vector<int>> _content;

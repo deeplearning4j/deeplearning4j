@@ -12,9 +12,12 @@
 
 namespace nd4j {
 
-    template<typename T> class NDArray;
+    template<typename T> class ND4J_EXPORT NDArray;
     template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
     // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
+    NDArray<float> operator-(const float, const NDArray<float>&);
+    NDArray<float16> operator-(const float16, const NDArray<float16>&);
+    NDArray<double> operator-(const double, const NDArray<double>&);
     template<typename T> NDArray<T> mmul(const NDArray<T>&, const NDArray<T>&);
 
 
@@ -440,10 +443,10 @@ namespace nd4j {
 
         // addition operator array + scalar
         NDArray<T> operator+(const T scalar) const;
-
+#ifndef _MSC_VER
         // addition operator scalar + array
         friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);
-
+#endif
         // subtraction operator array - array
         NDArray<T> operator-(const NDArray<T>& other) const;
 

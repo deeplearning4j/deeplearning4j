@@ -2428,14 +2428,14 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
 
         return result;
     }
-
+#ifndef _MSC_VER
     ////////////////////////////////////////////////////////////////////////
     // addition operator scalar + array
     template<typename T>
     NDArray<T> operator+(const T scalar, const NDArray<T>& arr) {
         return arr + scalar;
     }
-
+#endif
     ////////////////////////////////////////////////////////////////////////
     // subtraction operator array - array
     template<typename T>
