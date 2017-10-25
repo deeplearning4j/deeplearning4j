@@ -81,8 +81,8 @@ namespace nd4j {
         }
 
 
-        template class LegacyReduceOp<float>;
-        template class LegacyReduceOp<float16>;
-        template class LegacyReduceOp<double>;
+        template class ND4J_EXPORT LegacyReduceOp<float>;
+        template class ND4J_EXPORT LegacyReduceOp<float16>;
+        template class ND4J_EXPORT LegacyReduceOp<double>;
     }
 }

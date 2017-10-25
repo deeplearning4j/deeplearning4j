@@ -148,9 +148,9 @@ namespace nd4j {
         }
 
 
-        template class BooleanOp<float>;
-        template class BooleanOp<float16>;
-        template class BooleanOp<double>;
+        template class ND4J_EXPORT BooleanOp<float>;
+        template class ND4J_EXPORT BooleanOp<float16>;
+        template class ND4J_EXPORT BooleanOp<double>;
     }
 }
 

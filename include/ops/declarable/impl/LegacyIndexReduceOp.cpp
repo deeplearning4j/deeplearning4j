@@ -82,8 +82,8 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        template class LegacyIndexReduceOp<float>;
-        template class LegacyIndexReduceOp<double>;
-        template class LegacyIndexReduceOp<float16>;
+        template class ND4J_EXPORT LegacyIndexReduceOp<float>;
+        template class ND4J_EXPORT LegacyIndexReduceOp<double>;
+        template class ND4J_EXPORT LegacyIndexReduceOp<float16>;
     }
 }

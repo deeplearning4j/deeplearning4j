@@ -49,8 +49,8 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
-        template class LegacyPairwiseTransformOp<float>;
-        template class LegacyPairwiseTransformOp<double>;
-        template class LegacyPairwiseTransformOp<float16>;
+        template class ND4J_EXPORT LegacyPairwiseTransformOp<float>;
+        template class ND4J_EXPORT LegacyPairwiseTransformOp<double>;
+        template class ND4J_EXPORT LegacyPairwiseTransformOp<float16>;
     }
 }

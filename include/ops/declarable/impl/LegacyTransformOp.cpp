@@ -50,8 +50,8 @@ namespace nd4j {
         }
 
 
-        template class LegacyTransformOp<float>;
-        template class LegacyTransformOp<double>;
-        template class LegacyTransformOp<float16>;
+        template class ND4J_EXPORT LegacyTransformOp<float>;
+        template class ND4J_EXPORT LegacyTransformOp<double>;
+        template class ND4J_EXPORT LegacyTransformOp<float16>;
     }
 }

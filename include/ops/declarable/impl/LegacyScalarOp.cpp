@@ -60,8 +60,8 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        template class LegacyScalarOp<float>;
-        template class LegacyScalarOp<float16>;
-        template class LegacyScalarOp<double>;
+        template class ND4J_EXPORT LegacyScalarOp<float>;
+        template class ND4J_EXPORT LegacyScalarOp<float16>;
+        template class ND4J_EXPORT LegacyScalarOp<double>;
     }
 }

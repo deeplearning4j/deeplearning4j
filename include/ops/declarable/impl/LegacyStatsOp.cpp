@@ -86,8 +86,8 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
-        template class LegacyStatsOp<float>;
-        template class LegacyStatsOp<double>;
-        template class LegacyStatsOp<float16>;
+        template class ND4J_EXPORT LegacyStatsOp<float>;
+        template class ND4J_EXPORT LegacyStatsOp<double>;
+        template class ND4J_EXPORT LegacyStatsOp<float16>;
     }
 }

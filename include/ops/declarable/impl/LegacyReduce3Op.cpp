@@ -77,8 +77,8 @@ namespace nd4j {
             return new ShapeList(zShape);
         }
 
-        template class LegacyReduce3Op<float>;
-        template class LegacyReduce3Op<float16>;
-        template class LegacyReduce3Op<double>;
+        template class ND4J_EXPORT LegacyReduce3Op<float>;
+        template class ND4J_EXPORT LegacyReduce3Op<float16>;
+        template class ND4J_EXPORT LegacyReduce3Op<double>;
     }
 }

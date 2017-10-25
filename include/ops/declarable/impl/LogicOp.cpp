@@ -24,8 +24,8 @@ namespace nd4j {
             return new ShapeList();
         }
 
-        template class LogicOp<float>;
-        template class LogicOp<float16>;
-        template class LogicOp<double>;
+        template class ND4J_EXPORT LogicOp<float>;
+        template class ND4J_EXPORT LogicOp<float16>;
+        template class ND4J_EXPORT LogicOp<double>;
     }
 }

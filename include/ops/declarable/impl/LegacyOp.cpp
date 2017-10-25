@@ -19,8 +19,8 @@ namespace nd4j {
         }
 
 
-        template class LegacyOp<float>;
-        template class LegacyOp<float16>;
-        template class LegacyOp<double>;
+        template class ND4J_EXPORT LegacyOp<float>;
+        template class ND4J_EXPORT LegacyOp<float16>;
+        template class ND4J_EXPORT LegacyOp<double>;
     }
 }

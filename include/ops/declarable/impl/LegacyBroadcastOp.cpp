@@ -68,8 +68,8 @@ namespace nd4j {
         }
 
 
-        template class LegacyBroadcastOp<float>;
-        template class LegacyBroadcastOp<float16>;
-        template class LegacyBroadcastOp<double>;
+        template class ND4J_EXPORT LegacyBroadcastOp<float>;
+        template class ND4J_EXPORT LegacyBroadcastOp<float16>;
+        template class ND4J_EXPORT LegacyBroadcastOp<double>;
     }
 }
