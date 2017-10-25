@@ -38,7 +38,7 @@ public class TestReductions {
         Text t2 = new Text("41.8781136,-87.6297982");
         Text t3 = new Text("33.7489954,-84.3879824");
 
-        List<Writable> list = Arrays.asList(t1, t1, t1, t2, t2, t3);
+        List<Writable> list = Arrays.<Writable>asList(t1, t1, t1, t2, t2, t3);
 
         GeographicMidpointReduction reduction = new GeographicMidpointReduction(",");
 
@@ -63,8 +63,8 @@ public class TestReductions {
 
 
         //Test multiple reductions
-        list = Arrays.asList(t1, t1, t2);
-        List<Writable> list2 = Arrays.asList(t1, t2, t3);
+        list = Arrays.<Writable>asList(t1, t1, t2);
+        List<Writable> list2 = Arrays.<Writable>asList(t1, t2, t3);
         reduceOp = reduction.reduceOp();
         for(Writable w : list){
             reduceOp.accept(w);

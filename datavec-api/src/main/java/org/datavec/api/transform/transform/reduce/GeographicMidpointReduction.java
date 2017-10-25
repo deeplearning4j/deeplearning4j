@@ -152,7 +152,7 @@ public class GeographicMidpointReduction implements AggregableColumnReduction {
             double longDeg = longRad / PI_180;
 
             String str = latDeg + delim + longDeg;
-            return Collections.singletonList(new Text(str));
+            return Collections.<Writable>singletonList(new Text(str));
         }
     }
 }
