@@ -117,6 +117,21 @@ public class LibSvmTest {
     }
 
     @Test
+    public void testRealData() throws Exception {
+        RecordReader rr = new LibSvmRecordReader();
+        Configuration conf = new Configuration();
+        conf.set(LineRecordReader.APPEND_LABEL, "true");
+        rr.initialize(conf, new FileSplit(new File("/tmp/sample_libsvm_data.txt")));
+
+        int count = 0;
+        while (rr.hasNext()) {
+            count++;
+            System.out.println(rr.next());
+        }
+        System.out.println(count);
+    }
+
+    @Test
     public void testReadZeroIndexed() throws Exception {
         Configuration conf = new Configuration();
         conf.setInt(LibSvmRecordReader.NUM_FEATURES, 5);

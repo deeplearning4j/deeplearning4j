@@ -20,6 +20,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
+import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
@@ -144,6 +145,10 @@ public class NativeImageLoader extends BaseImageLoader {
      * @see #asMatrix(Object)
      */
     public INDArray asRowVector(Object image) throws IOException {
+        return asMatrix(image).ravel();
+    }
+
+    public INDArray asRowVector(Frame image) throws IOException {
         return asMatrix(image).ravel();
     }
 
@@ -420,6 +425,10 @@ public class NativeImageLoader extends BaseImageLoader {
         transformImage(image, view);
     }
 
+    public INDArray asMatrix(Frame image) throws IOException {
+        return asMatrix(converter.convert(image));
+    }
+
     public INDArray asMatrix(Mat image) throws IOException {
         INDArray ret = transformImage(image, null);
 
@@ -577,5 +586,98 @@ public class NativeImageLoader extends BaseImageLoader {
     public INDArray asMatrix(ImageWritable writable) throws IOException {
         Mat image = converter.convert(writable.getFrame());
         return asMatrix(image);
+    }
+
+    /** Returns {@code asFrame(array, -1)}. */
+    public Frame asFrame(INDArray array) {
+        return converter.convert(asMat(array));
+    }
+
+    /**
+     * Converts an INDArray to a JavaCV Frame. Only intended for images with rank 3.
+     *
+     * @param array to convert
+     * @param dataType from JavaCV (DEPTH_FLOAT, DEPTH_UBYTE, etc), or -1 to use same type as the INDArray
+     * @return data copied to a Frame
+     */
+    public Frame asFrame(INDArray array, int dataType) {
+        return converter.convert(asMat(array, OpenCVFrameConverter.getMatDepth(dataType)));
+    }
+
+    /** Returns {@code asMat(array, -1)}. */
+    public Mat asMat(INDArray array) {
+        return asMat(array, -1);
+    }
+
+    /**
+     * Converts an INDArray to an OpenCV Mat. Only intended for images with rank 3.
+     *
+     * @param array to convert
+     * @param dataType from OpenCV (CV_32F, CV_8U, etc), or -1 to use same type as the INDArray
+     * @return data copied to a Mat
+     */
+    public Mat asMat(INDArray array, int dataType) {
+        if (array.rank() > 4 || (array.rank() > 3 && array.size(0) != 1)) {
+            throw new UnsupportedOperationException("Only rank 3 (or rank 4 with size(0) == 1) arrays supported");
+        }
+        int rank = array.rank();
+        int[] stride = array.stride();
+        long offset = array.data().offset();
+        Pointer pointer = array.data().pointer().position(offset);
+
+        int rows = array.size(rank == 3 ? 1 : 2);
+        int cols = array.size(rank == 3 ? 2 : 3);
+        int channels = array.size(rank == 3 ? 0 : 1);
+        boolean done = false;
+
+        if (dataType < 0) {
+            dataType = pointer instanceof DoublePointer ? CV_64F : CV_32F;
+        }
+        Mat mat = new Mat(rows, cols, CV_MAKETYPE(dataType, channels));
+        Indexer matidx = mat.createIndexer();
+
+        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
+
+        if (pointer instanceof FloatPointer && dataType == CV_32F) {
+            FloatIndexer ptridx = FloatIndexer.create((FloatPointer)pointer, new long[] {channels, rows, cols},
+                    new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]});
+            FloatIndexer idx = (FloatIndexer)matidx;
+            for (int k = 0; k < channels; k++) {
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        idx.put(i, j, k, ptridx.get(k, i, j));
+                    }
+                }
+            }
+            done = true;
+        } else if (pointer instanceof DoublePointer && dataType == CV_64F) {
+            DoubleIndexer ptridx = DoubleIndexer.create((DoublePointer)pointer, new long[] {channels, rows, cols},
+                    new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]});
+            DoubleIndexer idx = (DoubleIndexer)matidx;
+            for (int k = 0; k < channels; k++) {
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        idx.put(i, j, k, ptridx.get(k, i, j));
+                    }
+                }
+            }
+            done = true;
+        }
+
+        if (!done) {
+            for (int k = 0; k < channels; k++) {
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        if (rank == 3) {
+                            matidx.putDouble(new long[] {i, j, k}, array.getDouble(k, i, j));
+                        } else {
+                            matidx.putDouble(new long[] {i, j, k}, array.getDouble(0, k, i, j));
+                        }
+                    }
+                }
+            }
+        }
+
+        return mat;
     }
 }

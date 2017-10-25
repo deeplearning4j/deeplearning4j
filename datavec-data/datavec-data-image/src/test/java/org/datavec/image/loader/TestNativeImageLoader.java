@@ -16,6 +16,7 @@
 package org.datavec.image.loader;
 
 import org.bytedeco.javacpp.indexer.UByteIndexer;
+import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.api.util.ClassPathResource;
@@ -30,6 +31,7 @@ import java.util.Random;
 import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -178,6 +180,18 @@ public class TestNativeImageLoader {
         assertEquals(3, array5.size(1));
         assertEquals(h3, array5.size(2));
         assertEquals(w3, array5.size(3));
+
+        Mat mat = loader3.asMat(array5);
+        assertEquals(w3, mat.cols());
+        assertEquals(h3, mat.rows());
+        assertEquals(ch3, mat.channels());
+        assertTrue(mat.type() == CV_32FC(ch3) || mat.type() == CV_64FC(ch3));
+
+        Frame frame = loader3.asFrame(array5, Frame.DEPTH_UBYTE);
+        assertEquals(w3, frame.imageWidth);
+        assertEquals(h3, frame.imageHeight);
+        assertEquals(ch3, frame.imageChannels);
+        assertEquals(Frame.DEPTH_UBYTE, frame.imageDepth);
     }
 
     @Test

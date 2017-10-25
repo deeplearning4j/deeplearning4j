@@ -16,6 +16,9 @@
 
 package org.datavec.image.recordreader;
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaDataImageURI;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
@@ -24,12 +27,18 @@ import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.objdetect.ImageObject;
 import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
+import org.datavec.image.transform.ImageTransform;
+import org.datavec.image.transform.ResizeImageTransform;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.functions.Value;
 
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -113,6 +122,52 @@ public class TestObjectDetectionRecordReader {
             INDArray lArr = ((NDArrayWritable) next.get(1)).get();
             assertArrayEquals(new int[]{1, 4 + 2, gH, gW}, lArr.shape());
             assertEquals(expLabels, lArr);
+        }
+
+        rr.reset();
+        Record record = rr.nextRecord();
+        RecordMetaDataImageURI metadata = (RecordMetaDataImageURI)record.getMetaData();
+        assertEquals(new File(path, "000012.jpg"), new File(metadata.getURI()));
+        assertEquals(3, metadata.getOrigC());
+        assertEquals((int)origH[0], metadata.getOrigH());
+        assertEquals((int)origW[0], metadata.getOrigW());
+
+        List<Record> out = new ArrayList<>();
+        List<RecordMetaData> meta = new ArrayList<>();
+        out.add(record);
+        meta.add(metadata);
+        record = rr.nextRecord();
+        metadata = (RecordMetaDataImageURI)record.getMetaData();
+        out.add(record);
+        meta.add(metadata);
+
+        List<Record> fromMeta = rr.loadFromMetaData(meta);
+        assertEquals(out, fromMeta);
+
+        // make sure we don't lose objects just by explicitly resizing
+        int i = 0;
+        int[] nonzeroCount = {5, 10};
+
+        ImageTransform transform = new ResizeImageTransform(37, 42);
+        RecordReader rrTransform = new ObjectDetectionRecordReader(42, 37, c, gH, gW, lp, transform);
+        rrTransform.initialize(new FileSplit(new File(path)));
+        i = 0;
+        while (rrTransform.hasNext()) {
+            List<Writable> next = rrTransform.next();
+            INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
+            BooleanIndexing.applyWhere(labelArray, Conditions.notEquals(0), new Value(1));
+            assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
+        }
+
+        ImageTransform transform2 = new ResizeImageTransform(1024, 2048);
+        RecordReader rrTransform2 = new ObjectDetectionRecordReader(2048, 1024, c, gH, gW, lp, transform2);
+        rrTransform2.initialize(new FileSplit(new File(path)));
+        i = 0;
+        while (rrTransform2.hasNext()) {
+            List<Writable> next = rrTransform2.next();
+            INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
+            BooleanIndexing.applyWhere(labelArray, Conditions.notEquals(0), new Value(1));
+            assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
         }
     }
 
