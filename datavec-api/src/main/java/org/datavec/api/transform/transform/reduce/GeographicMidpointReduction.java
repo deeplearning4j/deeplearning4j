@@ -28,12 +28,22 @@ import org.datavec.api.writable.Writable;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Given a set of latitude/longitude coordinates, encoded in {@link Text} writables with format "lat,long" (the
+ * delimiter is configurable), determine the geographic midpoint.
+ * See "geographic midpoint" at: http://www.geomidpoint.com/methods.html
+ *
+ * @author Alex Black
+ */
 public class GeographicMidpointReduction implements AggregableColumnReduction {
 
     private String delim;
     @Getter @Setter
     private Schema inputSchema;
 
+    /**
+     * @param delim Delimiter for the coordinates in text format. For example, if format is "lat,long" use ","
+     */
     public GeographicMidpointReduction(String delim){
         this.delim = delim;
     }
