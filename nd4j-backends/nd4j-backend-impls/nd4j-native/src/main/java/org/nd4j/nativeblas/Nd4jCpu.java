@@ -6824,10 +6824,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         // addition operator array + scalar
         public native @ByVal @Name("operator +") DoubleNDArray add(double scalar);
+
 // #ifndef _MSC_VER
         // addition operator scalar + array
-        
+
 // #endif
+
         // subtraction operator array - array
         public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
 
@@ -11771,6 +11773,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
 //                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                 template class ND4J_EXPORT NAME<float>;
+// 										        template class ND4J_EXPORT NAME<float16>;
+// 										        template class ND4J_EXPORT NAME<double>;
 //                                                 template <typename T>
 //                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 

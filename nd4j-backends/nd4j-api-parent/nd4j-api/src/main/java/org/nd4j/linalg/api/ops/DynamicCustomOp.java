@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +81,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @param outputs the outputs of the op
      */
     public DynamicCustomOp(String opName,INDArray[] inputs,INDArray[] outputs) {
-        this(opName,inputs,outputs, Collections.<Double>emptyList(),Collections.<Integer>emptyList());
+        this(opName,inputs,outputs, Lists.<Double>newArrayList(), Lists.<Integer>newArrayList());
     }
 
     /**
@@ -151,6 +152,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      */
     @Override
     public long opHash() {
+        if (hash == 0) {
+            val map = Nd4j.getExecutioner().getCustomOperations();
+            val lcName = opName.toLowerCase();
+            val desc = map.get(lcName);
+
+            hash = desc.getHash();
+        }
+
         return hash;
     }
 
