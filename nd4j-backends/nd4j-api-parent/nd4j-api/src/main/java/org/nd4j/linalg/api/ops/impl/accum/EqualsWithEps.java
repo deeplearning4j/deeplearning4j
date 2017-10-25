@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -195,6 +196,6 @@ public class EqualsWithEps extends BaseAccumulation {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
     }
 }

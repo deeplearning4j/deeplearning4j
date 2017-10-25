@@ -5615,6 +5615,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <indexing/IndicesList.h>
 // #include <graph/Intervals.h>
     // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(float arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short arg0, @Const @ByRef HalfNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") DoubleNDArray subtract(double arg0, @Const @ByRef DoubleNDArray arg1);
 
 
     @Name("nd4j::NDArray<float>") @NoOffset public static class FloatNDArray extends Pointer {
@@ -5997,10 +6000,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         // addition operator array + scalar
         public native @ByVal @Name("operator +") FloatNDArray add(float scalar);
-
+// #ifndef _MSC_VER
         // addition operator scalar + array
         
-
+// #endif
         // subtraction operator array - array
         public native @ByVal @Name("operator -") FloatNDArray subtract(@Const @ByRef FloatNDArray other);
 
@@ -6409,10 +6412,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         // addition operator array + scalar
         public native @ByVal @Name("operator +") HalfNDArray add(@Cast("const float16") short scalar);
-
+// #ifndef _MSC_VER
         // addition operator scalar + array
         
-
+// #endif
         // subtraction operator array - array
         public native @ByVal @Name("operator -") HalfNDArray subtract(@Const @ByRef HalfNDArray other);
 
@@ -6821,10 +6824,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         // addition operator array + scalar
         public native @ByVal @Name("operator +") DoubleNDArray add(double scalar);
-
+// #ifndef _MSC_VER
         // addition operator scalar + array
         
-
+// #endif
         // subtraction operator array - array
         public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
 
@@ -7298,6 +7301,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 // #include <vector>
 // #include <initializer_list>
+// #include <dll.h>
 
     @Namespace("nd4j") public static class Intervals extends Pointer {
         static { Loader.load(); }
@@ -11807,7 +11811,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                 template <typename T>
-//                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { nd4j::ops::LogicOp<T>::validateAndExecute(block); };
+//                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
 
 
 

@@ -83,6 +83,22 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         return super.hashCode();
     }
 
+
+    /**
+     * Get the output vertices
+     * @return
+     */
+    public List<int[]> getOutputIds() {
+        List<int[]> ret = new ArrayList<>();
+        for (int i : getVertices().keySet()) {
+            if (getEdgesOut(new int[]{i}).size() < 1)
+                ret.add(new int[]{i});
+        }
+
+        return ret;
+    }
+
+
     /**
      * Get the output vertices
      * @return

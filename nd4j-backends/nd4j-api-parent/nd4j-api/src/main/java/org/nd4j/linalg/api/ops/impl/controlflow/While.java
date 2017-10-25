@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -51,6 +52,13 @@ public class While extends DifferentialFunction implements CustomOp {
 
     private NDArrayInformation dummyResult;
 
+    @Getter
+    @Setter
+    private SDVariable[] outputVars;
+
+    @Getter
+    private int numLooped = 0;
+
     @Builder
     public While(String blockName,
                  SameDiff parent,
@@ -88,6 +96,7 @@ public class While extends DifferentialFunction implements CustomOp {
                             .shape(inputVars[i].getShape())
                             .varName(inputVars[i].getVarName() + "-output")
                             .sameDiff(parent)
+                            .arr(inputVars[i].getArr())
                             .info(outputInfo)
                             .vertexId(new int[]{ndArrayVertex.vertexID()})
                             .ndArrayVertex(ndArrayVertex)
@@ -135,6 +144,11 @@ public class While extends DifferentialFunction implements CustomOp {
 
         parent.graph().addEdge(inputEdges,outputEdges,opState,true);
 
+    }
+
+
+    public void incrementLoopCounter() {
+        numLooped++;
     }
 
     @Override

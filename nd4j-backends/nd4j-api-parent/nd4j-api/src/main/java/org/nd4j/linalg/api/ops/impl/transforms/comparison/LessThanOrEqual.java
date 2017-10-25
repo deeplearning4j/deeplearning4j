@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -166,8 +167,9 @@ public class LessThanOrEqual extends BaseTransformOp {
     }
 
 
+
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
     }
 }

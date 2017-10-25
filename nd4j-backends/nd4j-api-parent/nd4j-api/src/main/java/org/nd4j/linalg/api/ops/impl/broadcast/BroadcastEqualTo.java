@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class BroadcastEqualTo extends BaseBroadcastOp {
@@ -97,6 +98,6 @@ public class BroadcastEqualTo extends BaseBroadcastOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
     }
 }

@@ -570,7 +570,7 @@ public abstract class DifferentialFunction implements Differential {
 
         this.opState = owner;
 
-        if(!sameDiff.getVertexIdxToInfo().containsKey(newVertex.vertexID()))
+        if(!sameDiff.getVertexIdxToInfo().containsKey(new int[]{newVertex.vertexID()}))
             sameDiff.getVertexIdxToInfo().put(new int[]{newVertex.vertexID()},information);
 
         else
