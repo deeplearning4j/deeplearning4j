@@ -741,7 +741,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray linearView() {
-        return this;
+        return reshape(this.ordering(), 1, this.length());
     }
 
     @Override
