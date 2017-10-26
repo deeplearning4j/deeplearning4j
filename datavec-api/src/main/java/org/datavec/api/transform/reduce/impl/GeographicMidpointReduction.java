@@ -14,16 +14,17 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.transform.reduce;
+package org.datavec.api.transform.reduce.impl;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.reduce.AggregableColumnReduction;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,20 +33,28 @@ import java.util.List;
  * Given a set of latitude/longitude coordinates, encoded in {@link Text} writables with format "lat,long" (the
  * delimiter is configurable), determine the geographic midpoint.
  * See "geographic midpoint" at: http://www.geomidpoint.com/methods.html
+ * For implementation algorithm, see: http://www.geomidpoint.com/calculation.html
  *
  * @author Alex Black
  */
+@Data
 public class GeographicMidpointReduction implements AggregableColumnReduction {
 
+    public static final double EDGE_CASE_EPS = 1e-9;
+
     private String delim;
-    @Getter @Setter
-    private Schema inputSchema;
+    private String newColumnName;
 
     /**
      * @param delim Delimiter for the coordinates in text format. For example, if format is "lat,long" use ","
      */
-    public GeographicMidpointReduction(String delim){
+    public GeographicMidpointReduction(String delim) {
+        this(delim, null);
+    }
+
+    public GeographicMidpointReduction(@JsonProperty("delim") String delim, @JsonProperty("newColumnName") String newColumnName){
         this.delim = delim;
+        this.newColumnName = newColumnName;
     }
 
     @Override
@@ -55,18 +64,31 @@ public class GeographicMidpointReduction implements AggregableColumnReduction {
 
     @Override
     public List<String> getColumnsOutputName(String columnInputName) {
-        return null;
+        if(newColumnName != null){
+            return Collections.singletonList(newColumnName);
+        }
+        return Collections.singletonList("midpoint(" + columnInputName + ")");
     }
 
     @Override
     public List<ColumnMetaData> getColumnOutputMetaData(List<String> newColumnName, ColumnMetaData columnInputMeta) {
-        return null;
+        return Collections.<ColumnMetaData>singletonList(new StringMetaData(newColumnName.get(0)));
     }
 
     @Override
     public Schema transform(Schema inputSchema) {
         //No change
         return inputSchema;
+    }
+
+    @Override
+    public void setInputSchema(Schema inputSchema) {
+        //No op
+    }
+
+    @Override
+    public Schema getInputSchema() {
+        return null;
     }
 
     @Override
@@ -144,6 +166,15 @@ public class GeographicMidpointReduction implements AggregableColumnReduction {
             double x = sumx / count;
             double y = sumy / count;
             double z = sumz / count;
+
+            if(count == 0){
+                throw new IllegalStateException("Cannot calculate geographic midpoint: no datapoints were added to be reduced");
+            }
+
+            if(Math.abs(x) < EDGE_CASE_EPS && Math.abs(y) < EDGE_CASE_EPS && Math.abs(z) < EDGE_CASE_EPS ){
+                throw new IllegalStateException("No Geographic midpoint exists: midpoint is center of the earth");
+            }
+
             double longRad = Math.atan2(y,x);
             double hyp = Math.sqrt(x*x + y*y);
             double latRad = Math.atan2(z, hyp);

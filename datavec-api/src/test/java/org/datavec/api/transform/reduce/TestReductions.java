@@ -17,7 +17,7 @@
 package org.datavec.api.transform.reduce;
 
 import org.datavec.api.transform.ops.IAggregableReduceOp;
-import org.datavec.api.transform.transform.reduce.GeographicMidpointReduction;
+import org.datavec.api.transform.reduce.impl.GeographicMidpointReduction;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
