@@ -297,7 +297,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
 
-        INDArray output = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
+        INDArray output = Nd4j.create(miniBatch, inDepth, outH, outW);
 
 
         switch (layerConf().getPoolingType()) {
@@ -342,7 +342,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                                 + " " + layerId());
         }
 
-        return output.reshape('c', miniBatch, inDepth, outH, outW);
+        return output;
     }
 
     @Override
