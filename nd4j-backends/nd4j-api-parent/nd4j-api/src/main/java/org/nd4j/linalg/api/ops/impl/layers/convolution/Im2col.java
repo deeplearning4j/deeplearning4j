@@ -5,6 +5,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
 import java.util.List;
 
@@ -14,41 +15,34 @@ import java.util.List;
  */
 public class Im2col extends DynamicCustomOp {
 
-    private int kh, kw, sy, sx, ph, pw, dh, dw;
-    private boolean isSameMode;
+    protected Conv2DConfig conv2DConfig;
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public Im2col(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        super("im2col",sameDiff, inputs, inPlace);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.isSameMode = isSameMode;
+    @Builder(builderMethodName = "builder")
+    public Im2col(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
+        super(null,inputArrays,outputs);
+        this.sameDiff = sameDiff;
+        this.args = inputFunctions;
+        this.conv2DConfig = conv2DConfig;
+
         addArgs();
     }
 
     public Im2col() {}
 
+    protected void addArgs() {
+        getIArguments().add(conv2DConfig.getKh());
+        getIArguments().add(conv2DConfig.getKw());
+        getIArguments().add(conv2DConfig.getSy());
+        getIArguments().add(conv2DConfig.getSx());
+        getIArguments().add(conv2DConfig.getPh());
+        getIArguments().add(conv2DConfig.getPw());
+        getIArguments().add(conv2DConfig.getDh());
+        getIArguments().add(conv2DConfig.getDw());
+        getIArguments().add(fromBoolean(conv2DConfig.isSameMode()));
 
-    @Builder(builderMethodName = "execBuilder")
-    public Im2col(INDArray[] arrayInputs,INDArray[] arrayOutputs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        super("im2col",arrayInputs,arrayOutputs );
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.isSameMode = isSameMode;
-        addArgs();
     }
+
+
 
     @Override
     public String opName() {
@@ -56,22 +50,10 @@ public class Im2col extends DynamicCustomOp {
     }
 
 
-    private void addArgs() {
-        getIArguments().add(kh);
-        getIArguments().add(kw);
-        getIArguments().add(sy);
-        getIArguments().add(sx);
-        getIArguments().add(ph);
-        getIArguments().add(pw);
-        getIArguments().add(dh);
-        getIArguments().add(dw);
-        getIArguments().add(fromBoolean(isSameMode));
-
-    }
 
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        throw new UnsupportedOperationException("Unable to run derivative on im2col op");
     }
 }

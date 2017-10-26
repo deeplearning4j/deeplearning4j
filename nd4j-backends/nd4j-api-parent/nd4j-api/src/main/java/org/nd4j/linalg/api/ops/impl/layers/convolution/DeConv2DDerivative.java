@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 
 import java.util.List;
 
@@ -17,16 +18,10 @@ public class DeConv2DDerivative extends DeConv2D {
 
     public DeConv2DDerivative() {}
 
-    @Builder(builderMethodName = "sameDiffDerivativeBuilder")
-    public DeConv2DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kY, int kX, int sY, int sX, int pY, int pX, int dY, int dX, boolean isSameMode) {
-        super(sameDiff, inputs, inPlace, kY, kX, sY, sX, pY, pX, dY, dX, isSameMode);
+    @Builder(builderMethodName = "derivativeBuilder")
+    public DeConv2DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs, INDArray[] inputArrays, INDArray[] outputs, boolean inPlace, DeConv2DConfig config) {
+        super(sameDiff, inputs, inputArrays, outputs, inPlace, config);
     }
-
-    @Builder(builderMethodName = "execDerivativeBuilder")
-    public DeConv2DDerivative(INDArray[] inputs, INDArray[] outputs, int kY, int kX, int sY, int sX, int pY, int pX, int dY, int dX, boolean isSameMode) {
-        super(inputs,outputs, kY, kX, sY, sX, pY, pX, dY, dX, isSameMode);
-    }
-
 
     @Override
     public String opName() {

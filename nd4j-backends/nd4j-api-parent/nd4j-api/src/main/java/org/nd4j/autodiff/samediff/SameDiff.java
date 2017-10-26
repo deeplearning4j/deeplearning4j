@@ -845,18 +845,12 @@ public class SameDiff {
      * @return
      */
     public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        Conv2D conv2D = Conv2D.sameDiffBuilder()
-                .dh(conv2DConfig.getDh())
-                .dw(conv2DConfig.getDw())
-                .kh(conv2DConfig.getKh())
-                .kw(conv2DConfig.getKw())
-                .isSameMode(conv2DConfig.isSameMode())
-                .ph(conv2DConfig.getPh())
-                .pw(conv2DConfig.getPw())
-                .sx(conv2DConfig.getSx())
-                .sy(conv2DConfig.getSy())
+        Conv2D conv2D = Conv2D.builder()
                 .inputFunctions(getInputs(inputs))
+                .sameDiff(this)
+                .conv2DConfig(conv2DConfig)
                 .build();
+
 
         SDVariable ret = SDVariable.builder()
                 .differentialFunction(conv2D)
@@ -874,20 +868,10 @@ public class SameDiff {
      * @return
      */
     public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        Conv3D conv3D = Conv3D.sameDiffBuilder()
-                .aH(conv3DConfig.getAH())
-                .aT(conv3DConfig.getAT())
-                .aW(conv3DConfig.getAW())
-                .biasUsed(conv3DConfig.isBiasUsed())
-                .dH(conv3DConfig.getDH())
-                .dW(conv3DConfig.getDW())
-                .pH(conv3DConfig.getPH())
-                .pW(conv3DConfig.getPW())
-                .pT(conv3DConfig.getPT())
-                .dilationH(conv3DConfig.getDilationH())
-                .dilationT(conv3DConfig.getDilationT())
-                .dilationW(conv3DConfig.getDilationW())
+        Conv3D conv3D = Conv3D.builder()
                 .inputFunctions(getInputs(inputs))
+                .conv3DConfig(conv3DConfig)
+                .sameDiff(this)
                 .build();
 
         SDVariable ret = SDVariable.builder()
@@ -3400,8 +3384,9 @@ public class SameDiff {
     }
 
 
-
-
+    /**
+     * An interface for representing a conditional statement
+     */
     public interface SameDiffConditional {
 
 
@@ -3779,9 +3764,12 @@ public class SameDiff {
                 //and possible later processing.
                 if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
                     ifOp.getLoopBodyExecution().exec();
+                    ifOp.exectedTrueOrFalse(true);
                 }
                 else {
                     ifOp.getFalseBodyExecution().exec();
+                    ifOp.exectedTrueOrFalse(false);
+
                 }
 
                 ops.add(differentialFunction);

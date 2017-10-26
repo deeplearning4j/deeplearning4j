@@ -6824,12 +6824,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         // addition operator array + scalar
         public native @ByVal @Name("operator +") DoubleNDArray add(double scalar);
-
 // #ifndef _MSC_VER
         // addition operator scalar + array
-
+        
 // #endif
-
         // subtraction operator array - array
         public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
 
@@ -6914,6 +6912,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native int size();
         public native FloatNDArray at(@Cast("unsigned long") long idx);
         public native void push_back(FloatNDArray array);
+
+        public native @Cast("Nd4jStatus") int status();
+        public native void setStatus(@Cast("Nd4jStatus") int status);
     }
     @Name("nd4j::ArrayList<float16>") @NoOffset public static class HalfArrayList extends Pointer {
         static { Loader.load(); }
@@ -6933,6 +6934,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native int size();
         public native HalfNDArray at(@Cast("unsigned long") long idx);
         public native void push_back(HalfNDArray array);
+
+        public native @Cast("Nd4jStatus") int status();
+        public native void setStatus(@Cast("Nd4jStatus") int status);
     }
     @Name("nd4j::ArrayList<double>") @NoOffset public static class DoubleArrayList extends Pointer {
         static { Loader.load(); }
@@ -6952,6 +6956,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native int size();
         public native DoubleNDArray at(@Cast("unsigned long") long idx);
         public native void push_back(DoubleNDArray array);
+
+        public native @Cast("Nd4jStatus") int status();
+        public native void setStatus(@Cast("Nd4jStatus") int status);
     }
 
 
@@ -11817,6 +11824,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                 template <typename T>
 //                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
+//                                 template class ND4J_EXPORT NAME<float>;
+// 								template class ND4J_EXPORT NAME<float16>;
+// 								template class ND4J_EXPORT NAME<double>;
 
 
 

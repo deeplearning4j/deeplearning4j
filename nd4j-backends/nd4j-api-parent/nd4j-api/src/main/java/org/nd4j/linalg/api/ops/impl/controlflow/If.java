@@ -13,6 +13,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,6 +43,8 @@ public class If extends DifferentialFunction implements CustomOp {
     @Getter
     private SDVariable[] inputVars;
 
+
+    private Boolean trueBodyExecuted = null;
 
     @Getter
     private SDVariable targetBoolean;
@@ -148,6 +152,18 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
 
+    /**
+     * Toggle whether the true body was executed
+     * or the false body
+     * @param trueBodyExecuted
+     */
+    public void exectedTrueOrFalse(boolean trueBodyExecuted)  {
+        if(trueBodyExecuted)
+            this.trueBodyExecuted = true;
+        else
+            this.trueBodyExecuted = false;
+    }
+
     @Override
     public NDArrayVertex getVertex() {
         return vertex;
@@ -155,7 +171,14 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        List<DifferentialFunction> ret = new ArrayList<>();
+        if(trueBodyExecuted != null) {
+
+        }
+        else {
+
+        }
+        return ret;
     }
 
     @Override
@@ -180,26 +203,27 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<INDArray> getInputArguments() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public List<INDArray> getOutputArguments() {
-        return null;
+        return Collections.emptyList();
+
     }
 
     @Override
     public List<Integer> getIArguments() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public List<Double> getTArguments() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public List<int[]> calculateOutputShape() {
-        return null;
+        return Collections.emptyList();
     }
 }

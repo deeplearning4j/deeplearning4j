@@ -168,6 +168,9 @@ public class While extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        for(int i = 0; i < numLooped; i++) {
+            loopBodyExecution.execBackwards();
+        }
         return null;
     }
 

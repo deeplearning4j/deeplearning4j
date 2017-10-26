@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class Convolution {
 
-    private static Logger log = LoggerFactory.getLogger(Convolution.class);
 
     public enum Type {
         FULL, VALID, SAME
@@ -68,7 +69,7 @@ public class Convolution {
     /**
      * Rearrange matrix
      * columns into blocks
-    
+
      * @param col the column
      *            transposed image to convert
      * @param sy stride y
@@ -82,18 +83,22 @@ public class Convolution {
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
-        Col2Im col2Im = Col2Im.execBuilder()
-                .dh(1)
-                .dw(1)
-                .w(w)
-                .h(h)
-                .sx(sx)
-                .sy(sy)
-                .ph(ph)
-                .pw(pw)
+        Col2Im col2Im = Col2Im.builder()
+                .inputArrays(new  INDArray[]{col})
+                .conv2DConfig(Conv2DConfig.builder()
+                        .sy(sy)
+                        .sx(sx)
+                        .dw(1)
+                        .dh(1)
+                        .kh(h)
+                        .kw(w)
+                        .ph(ph)
+                        .pw(pw)
+                        .build())
                 .build();
-         Nd4j.getExecutioner().exec(col2Im);
-         return col2Im.getOutputArguments().get(0);
+
+        Nd4j.getExecutioner().exec(col2Im);
+        return col2Im.getOutputArguments().get(0);
     }
 
     public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w, int dh, int dw ) {
@@ -101,16 +106,21 @@ public class Convolution {
             throw new IllegalArgumentException("col2im input array must be rank 6");
         if (z.rank() != 4)
             throw new IllegalArgumentException("col2im output array must be rank 4");
-        Col2Im col2Im = Col2Im.execBuilder()
-                .dh(dh)
-                .dw(dw)
-                .w(w)
-                .h(h)
-                .sx(sx)
-                .sy(sy)
-                .ph(ph)
-                .pw(pw)
+        Col2Im col2Im = Col2Im.builder()
+                .inputArrays(new  INDArray[]{col})
+                .outputs(new INDArray[]{z})
+                .conv2DConfig(Conv2DConfig.builder()
+                        .sy(sy)
+                        .sx(sx)
+                        .dw(dw)
+                        .dh(dh)
+                        .kh(h)
+                        .kw(w)
+                        .ph(ph)
+                        .pw(pw)
+                        .build())
                 .build();
+
         Nd4j.getExecutioner().exec(col2Im);
 
         return z;
@@ -148,84 +158,112 @@ public class Convolution {
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
         Nd4j.getCompressor().autoDecompress(img);
-        Im2col im2col = Im2col.execBuilder()
-                .dh(dh)
-                .dw(dw)
-                .kh(kh)
-                .kw(kw)
-                .isSameMode(isSameMode)
-                .arrayInputs(new INDArray[]{img})
-                .sx(sx)
-                .sy(sy)
-                .ph(ph)
-                .pw(pw)
-                .build();
-         Nd4j.getExecutioner().exec(im2col);
-         return im2col.getOutputArguments().get(0);
-    }
+        Im2col im2col =  Im2col.builder()
+                .inputArrays(new INDArray[]{img})
+                .conv2DConfig(Conv2DConfig.builder()
+                        .kh(kh)
+                        .pw(pw)
+                        .ph(ph)
+                        .sy(sy)
+                        .sx(sx)
+                        .kw(kw)
+                        .kh(kh)
+                        .dw(1)
+                        .dh(1)
+                        .isSameMode(isSameMode)
+                        .build()).build();
 
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
-                    INDArray out) {
-        Im2col im2col =  Im2col.execBuilder()
-                .arrayOutputs(new INDArray[]{out})
-                .arrayInputs(new INDArray[]{img})
-                .kh(kh)
-                .pw(pw)
-                .ph(ph)
-                .sy(sy)
-                .sx(sx)
-                .kw(kw)
-                .kh(kh)
-                .dw(1)
-                .dh(1)
-                .isSameMode(isSameMode)
-                .build();
-         Nd4j.getExecutioner().exec(im2col);
-         return im2col.getOutputArguments().get(0);
-    }
-
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
-                                  INDArray out) {
-        Im2col im2col =  Im2col.execBuilder()
-                .arrayOutputs(new INDArray[]{out})
-                .arrayInputs(new INDArray[]{img})
-                .kh(kh)
-                .pw(pw)
-                .ph(ph)
-                .sy(sy)
-                .sx(sx)
-                .kw(kw)
-                .kh(kh)
-                .dw(dW)
-                .dh(dH)
-                .isSameMode(isSameMode)
-                .build();
         Nd4j.getExecutioner().exec(im2col);
         return im2col.getOutputArguments().get(0);
     }
 
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
+                                  INDArray out) {
+        Im2col im2col =  Im2col.builder()
+                .outputs(new INDArray[]{out})
+                .inputArrays(new INDArray[]{img})
+                .conv2DConfig(Conv2DConfig.builder()
+                        .kh(kh)
+                        .pw(pw)
+                        .ph(ph)
+                        .sy(sy)
+                        .sx(sx)
+                        .kw(kw)
+                        .kh(kh)
+                        .dw(1)
+                        .dh(1)
+                        .isSameMode(isSameMode)
+                        .build()).build();
+
+        Nd4j.getExecutioner().exec(im2col);
+        return im2col.getOutputArguments().get(0);
+    }
+
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
+                                  INDArray out) {
+        Im2col im2col =  Im2col.builder()
+                .outputs(new INDArray[]{out})
+                .inputArrays(new INDArray[]{img})
+                .conv2DConfig(Conv2DConfig.builder()
+                        .kh(kh)
+                        .pw(pw)
+                        .ph(ph)
+                        .sy(sy)
+                        .sx(sx)
+                        .kw(kw)
+                        .kh(kh)
+                        .dw(dH)
+                        .dh(dW)
+                        .isSameMode(isSameMode)
+                        .build()).build();
+
+        Nd4j.getExecutioner().exec(im2col);
+        return im2col.getOutputArguments().get(0);
+    }
+
+    /**
+     * Pooling 2d implementation
+     * @param img
+     * @param kh
+     * @param kw
+     * @param sy
+     * @param sx
+     * @param ph
+     * @param pw
+     * @param dh
+     * @param dw
+     * @param isSameMode
+     * @param type
+     * @param extra optional argument. I.e. used in pnorm pooling.
+     * @param virtualHeight
+     * @param virtualWidth
+     * @param out
+     * @return
+     */
     public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw,
                                      int dh, int dw, boolean isSameMode, Pooling2D.Pooling2DType type, double extra, int virtualHeight, int virtualWidth,
-                                  INDArray out) {
-        Pooling2D pooling = Pooling2D.execBuilder()
+                                     INDArray out) {
+        Pooling2D pooling = Pooling2D.builder()
                 .arrayInputs(new INDArray[]{img})
                 .arrayOutputs(new INDArray[] {out})
-                .dh(dh)
-                .dw(dw)
-                .kh(kh)
-                .kw(kw)
-                .ph(ph)
-                .pw(pw)
-                .sx(sx)
-                .sy(sy)
-                .type(type)
-                .isSameMode(isSameMode)
-                .extra(extra)
-                .virtualHeight(virtualHeight)
-                .virtualWidth(virtualWidth)
+                .config(Pooling2DConfig.builder()
+                        .dh(dh)
+                        .dw(dw)
+                        .extra(extra)
+                        .kh(kh)
+                        .kw(kw)
+                        .ph(ph)
+                        .pw(pw)
+                        .isSameMode(isSameMode)
+                        .sx(sx)
+                        .sy(sy)
+                        .virtualHeight(virtualHeight)
+                        .virtualWidth(virtualWidth)
+                        .type(type)
+                        .build())
                 .build();
-         Nd4j.getExecutioner().exec(pooling);
-         return out;
+        Nd4j.getExecutioner().exec(pooling);
+        return out;
     }
 
     /**
@@ -243,20 +281,22 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval,
-                    boolean isSameMode) {
-        Im2col im2col =  Im2col.execBuilder()
-                .arrayInputs(new INDArray[]{img})
-                .kh(kh)
-                .pw(pw)
-                .ph(ph)
-                .sy(sy)
-                .sx(sx)
-                .kw(kw)
-                .kh(kh)
-                .dw(1)
-                .dh(1)
-                .isSameMode(isSameMode)
-                .build();
+                                  boolean isSameMode) {
+        Im2col im2col =  Im2col.builder()
+                .inputArrays(new INDArray[]{img})
+                .conv2DConfig(Conv2DConfig.builder()
+                        .kh(kh)
+                        .pw(pw)
+                        .ph(ph)
+                        .sy(sy)
+                        .sx(sx)
+                        .kw(kw)
+                        .kh(kh)
+                        .dw(1)
+                        .dh(1)
+                        .isSameMode(isSameMode)
+                        .build()).build();
+
         Nd4j.getExecutioner().exec(im2col);
         return im2col.getOutputArguments().get(0);
     }

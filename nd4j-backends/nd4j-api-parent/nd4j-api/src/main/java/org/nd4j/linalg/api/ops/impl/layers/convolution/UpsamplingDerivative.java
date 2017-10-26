@@ -17,16 +17,10 @@ public class UpsamplingDerivative extends Upsampling {
 
     public UpsamplingDerivative() {}
 
-    @Builder(builderMethodName = "sameDiffDerivativeBuilder")
-    public UpsamplingDerivative(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int scaleFactor) {
-        super(sameDiff, inputs, inPlace, scaleFactor);
+    @Builder(builderMethodName = "derivativeBuilder")
+    public UpsamplingDerivative(SameDiff sameDiff, DifferentialFunction[] inputs, INDArray[] inputArrays, INDArray[] outputs, boolean inPlace, int scaleFactor) {
+        super(sameDiff, inputs, inputArrays, outputs, inPlace, scaleFactor);
     }
-
-    @Builder(builderMethodName = "execDerivativeBuilder")
-    public UpsamplingDerivative(INDArray[] inputs, INDArray[] outputs, int scaleFactor) {
-        super(inputs,outputs, scaleFactor);
-    }
-
 
     @Override
     public String opName() {

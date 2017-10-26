@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,73 +21,44 @@ import java.util.List;
 @Getter
 public class Pooling2D extends DynamicCustomOp {
 
+    protected Pooling2DConfig config;
+
     public enum Pooling2DType {
         MAX, AVG, PNORM,
     }
 
-
-
-    private int kh, kw, sy, sx, ph, pw, dh, dw,virtualHeight,virtualWidth;
-    private double extra;
-    private Pooling2DType type;
-    private boolean isSameMode;
-
     public Pooling2D() {}
 
-    @Builder(builderMethodName = "sameDiffBuilder")
+    @Builder(builderMethodName = "builder")
     @SuppressWarnings("Used in lombok")
-    public Pooling2D(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, int virtualHeight,int virtualWidth,double extra,Pooling2DType type, boolean isSameMode) {
-        super(null,sameDiff, inputs, inPlace);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.virtualHeight = virtualHeight;
-        this.virtualWidth = virtualWidth;
-        this.type = type;
-        this.extra = extra;
-        this.isSameMode = isSameMode;
-        addArgs();
-    }
+    public Pooling2D(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] arrayInputs, INDArray[] arrayOutputs,Pooling2DConfig config) {
+        super(null,sameDiff, inputs, false);
+       if(arrayInputs != null) {
+           getInputArguments().addAll(Arrays.asList(arrayInputs));
+       }
 
-    @Builder(builderMethodName = "execBuilder")
-    @SuppressWarnings("Used in lombok")
-    public Pooling2D(INDArray[] arrayInputs, INDArray[] arrayOutputs,int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw,  int virtualHeight,int virtualWidth, double extra,Pooling2DType type, boolean isSameMode) {
-        super(null,arrayInputs,arrayOutputs);
-        this.kh = kh;
-        this.kw = kw;
-        this.sy = sy;
-        this.sx = sx;
-        this.ph = ph;
-        this.pw = pw;
-        this.dh = dh;
-        this.dw = dw;
-        this.virtualWidth = virtualWidth;
-        this.virtualHeight = virtualHeight;
-        this.extra = extra;
-        this.type = type;
-        this.isSameMode = isSameMode;
+       if(arrayOutputs != null) {
+           getOutputArguments().addAll(Arrays.asList(arrayOutputs));
+       }
+
+       this.config = config;
+
+
         addArgs();
     }
 
 
     private void addArgs() {
-        getIArguments().add(kh);
-        getIArguments().add(kw);
-        getIArguments().add(sy);
-        getIArguments().add(sx);
-        getIArguments().add(ph);
-        getIArguments().add(pw);
-        getIArguments().add(dh);
-        getIArguments().add(virtualHeight);
-        getIArguments().add(virtualWidth);
-        getIArguments().add(fromBoolean(isSameMode));
-
-        getTArguments().add(extra);
+        getIArguments().add(config.getKh());
+        getIArguments().add(config.getKw());
+        getIArguments().add(config.getSy());
+        getIArguments().add(config.getSx());
+        getIArguments().add(config.getPh());
+        getIArguments().add(config.getPw());
+        getIArguments().add(config.getDh());
+        getIArguments().add(config.getDw());
+        getIArguments().add(fromBoolean(config.isSameMode()));
+        getIArguments().add((int) config.getExtra());
 
     }
 
@@ -102,28 +74,17 @@ public class Pooling2D extends DynamicCustomOp {
         List<DifferentialFunction> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
-        Pooling2DDerivative pooling2DDerivative = Pooling2DDerivative.sameDiffDerivativeBuilder()
-                .dh(dh)
-                .dw(dw)
-                .extra(extra)
-                .isSameMode(isSameMode)
-                .kh(kh)
-                .kw(kw)
-                .ph(ph)
-                .pw(pw)
-                .type(type)
-                .sx(sx)
-                .sy(sy)
-                .virtualHeight(virtualHeight)
-                .virtualWidth(virtualWidth)
+        Pooling2DDerivative pooling2DDerivative = Pooling2DDerivative.derivativeBuilder()
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .sameDiff(sameDiff)
+                .config(config)
                 .build();
         ret.addAll(Arrays.asList(pooling2DDerivative.getOutputFunctions()));
         return ret;
     }
 
     public String getPoolingPrefix() {
-        switch(type) {
+        switch(config.getType()) {
             case AVG:return "avg";
             case MAX: return "max";
             case PNORM: return "pnorm";

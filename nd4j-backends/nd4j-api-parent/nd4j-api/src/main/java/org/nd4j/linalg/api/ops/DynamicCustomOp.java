@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -26,10 +27,10 @@ import java.util.*;
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private String opName;
-    @Getter private List<INDArray> inputArguments;
-    @Getter private List<INDArray> outputArguments;
-    @Getter private List<Double> tArguments = new ArrayList<>();
-    @Getter private List<Integer> iArguments = new ArrayList<>();
+    @Getter @Builder.Default private List<INDArray> inputArguments = new ArrayList<>();
+    @Getter @Builder.Default private List<INDArray> outputArguments = new ArrayList<>();
+    @Getter @Builder.Default private List<Double> tArguments = new ArrayList<>();
+    @Getter @Builder.Default  private List<Integer> iArguments = new ArrayList<>();
     @Getter private boolean inplaceCall;
     @Getter private long hash;
     @Getter
@@ -39,17 +40,18 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     private List<int[]> outputShapes;
 
     public DynamicCustomOp() {
+        iArguments = new ArrayList<>();
+        tArguments = new ArrayList<>();
     }
 
     public DynamicCustomOp(String opName, SameDiff sameDiff, DifferentialFunction[] args) {
         super(sameDiff, args);
         this.opName = opName;
-        if(this.opName == null) {
-            this.opName = opName();
-        }
-
+        iArguments = new ArrayList<>();
+        tArguments = new ArrayList<>();
         addEdges(sameDiff,opName(), Op.Type.CUSTOM,extraArgs);
     }
+
 
     /**
      * Initialize this custom op with all of the
@@ -67,9 +69,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         this.tArguments = tArguments;
         this.iArguments = iArguments;
-        if(this.opName == null) {
-            this.opName = opName();
-        }
     }
 
 
@@ -100,17 +99,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
-        if(this.opName == null) {
-            this.opName = opName();
-        }
     }
 
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
-        if(this.opName == null) {
-            this.opName = opName();
-        }
+        iArguments = new ArrayList<>();
+        tArguments = new ArrayList<>();
     }
+
+
 
     /**
      * This method returns op name as string
@@ -154,7 +151,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public long opHash() {
         if (hash == 0) {
             val map = Nd4j.getExecutioner().getCustomOperations();
-            val lcName = opName.toLowerCase();
+            val lcName = opName().toLowerCase();
             val desc = map.get(lcName);
 
             hash = desc.getHash();

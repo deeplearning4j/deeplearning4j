@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 
 import java.util.List;
 
@@ -15,14 +16,9 @@ import java.util.List;
 @Slf4j
 public class Pooling3DDerivative extends Pooling3D {
 
-    @Builder(builderMethodName = "sameDiffDerivativeBuilder")
-    public Pooling3DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs, boolean inPlace, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, Pooling2DType type, boolean ceilingMode) {
-        super(sameDiff, inputs, inPlace, kT, kW, kH, dT, dW, dH, pT, pW, pH, dilationT, dilationW, dilationH, type, ceilingMode);
-    }
-
-    @Builder(builderMethodName = "execDerivativeBuilder")
-    public Pooling3DDerivative(INDArray[] inputs, INDArray[] outputs, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, Pooling2DType type, boolean ceilingMode) {
-        super(inputs, outputs, kT, kW, kH, dT, dW, dH, pT, pW, pH, dilationT, dilationW, dilationH, type, ceilingMode);
+    @Builder(builderMethodName = "derivativeBuilder")
+    public Pooling3DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs, INDArray[] inputArrays, INDArray[] outputs, boolean inPlace, Pooling3DConfig pooling3DConfig) {
+        super(sameDiff, inputs, inputArrays, outputs, inPlace, pooling3DConfig);
     }
 
     public Pooling3DDerivative() {}

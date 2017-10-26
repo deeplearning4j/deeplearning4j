@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,53 +22,39 @@ import java.util.List;
 public class DeConv2D extends DynamicCustomOp {
 
 
-    private int kY,kX,sY,sX,pY,pX,dY,dX;
-    private boolean isSameMode;
+    protected DeConv2DConfig config;
 
     public DeConv2D() {}
 
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public DeConv2D(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kY, int kX, int sY, int sX, int pY, int pX, int dY, int dX, boolean isSameMode) {
+    @Builder(builderMethodName = "builder")
+    public DeConv2D(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace, DeConv2DConfig config) {
         super(null,sameDiff, inputs, inPlace);
-        this.kY = kY;
-        this.kX = kX;
-        this.sY = sY;
-        this.sX = sX;
-        this.pY = pY;
-        this.pX = pX;
-        this.dY = dY;
-        this.dX = dX;
-        this.isSameMode = isSameMode;
+        this.config = config;
+        if(inputArrays != null) {
+            getInputArguments().addAll(Arrays.asList(inputArrays));
+        }
+
+        if(outputs != null) {
+            getOutputArguments().addAll(Arrays.asList(outputs));
+        }
+
+
         addArgs();
     }
 
-    @Builder(builderMethodName = "execBuilder")
-    public DeConv2D(INDArray[] inputs, INDArray[] outputs, int kY, int kX, int sY, int sX, int pY, int pX, int dY, int dX, boolean isSameMode) {
-        super(null,inputs,outputs);
-        this.kY = kY;
-        this.kX = kX;
-        this.sY = sY;
-        this.sX = sX;
-        this.pY = pY;
-        this.pX = pX;
-        this.dY = dY;
-        this.dX = dX;
-        this.isSameMode = isSameMode;
-        addArgs();
-    }
 
 
     private void addArgs() {
-        getIArguments().add(kY);
-        getIArguments().add(kX);
-        getIArguments().add(sY);
-        getIArguments().add(sX);
-        getIArguments().add(pY);
-        getIArguments().add(pX);
-        getIArguments().add(dY);
-        getIArguments().add(dX);
-        getIArguments().add(fromBoolean(isSameMode));
+        getIArguments().add(config.getKY());
+        getIArguments().add(config.getKX());
+        getIArguments().add(config.getSY());
+        getIArguments().add(config.getSX());
+        getIArguments().add(config.getPY());
+        getIArguments().add(config.getPX());
+        getIArguments().add(config.getDY());
+        getIArguments().add(config.getDX());
+        getIArguments().add(fromBoolean(config.isSameMode()));
 
     }
 
@@ -85,16 +72,9 @@ public class DeConv2D extends DynamicCustomOp {
         List<DifferentialFunction> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.addAll(f1);
-        DeConv2DDerivative deConv2DDerivative = DeConv2DDerivative.sameDiffDerivativeBuilder()
-                .dX(dX)
-                .dY(dY)
-                 .isSameMode(isSameMode)
-                .kX(kX)
-                .kY(kY)
-                .pX(pX)
-                .pY(pY)
-                .sX(sX)
-                .sY(sY)
+        DeConv2DDerivative deConv2DDerivative = DeConv2DDerivative.derivativeBuilder()
+                .sameDiff(sameDiff)
+                .config(config)
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
         ret.addAll(Arrays.asList(deConv2DDerivative.getOutputFunctions()));

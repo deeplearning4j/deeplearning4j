@@ -6,7 +6,10 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -15,72 +18,44 @@ import java.util.List;
  */
 @Slf4j
 public class Pooling3D extends DynamicCustomOp {
+    protected Pooling3DConfig config;
 
     public enum Pooling2DType {
         MAX, AVG, PNORM,
     }
 
 
-    private int kT,kW,kH,dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH;
-    private Pooling2DType type;
-    private boolean ceilingMode;
-
     public Pooling3D() {}
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public Pooling3D(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, Pooling2DType type, boolean ceilingMode) {
+    @Builder(builderMethodName = "builder")
+    public Pooling3D(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,Pooling3DConfig pooling3DConfig) {
         super(null,sameDiff, inputs, inPlace);
-        this.kT = kT;
-        this.kW = kW;
-        this.kH = kH;
-        this.dT = dT;
-        this.dW = dW;
-        this.dH = dH;
-        this.pT = pT;
-        this.pW = pW;
-        this.pH = pH;
-        this.dilationT = dilationT;
-        this.dilationW = dilationW;
-        this.dilationH = dilationH;
-        this.type = type;
-        this.ceilingMode = ceilingMode;
-        addArgs();
-    }
+        this.config = pooling3DConfig;
 
-    @Builder(builderMethodName = "execBuilder")
-    public Pooling3D(INDArray[] inputs, INDArray[] outputs, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, Pooling2DType type, boolean ceilingMode) {
-        super(null,inputs,outputs);
-        this.kT = kT;
-        this.kW = kW;
-        this.kH = kH;
-        this.dT = dT;
-        this.dW = dW;
-        this.dH = dH;
-        this.pT = pT;
-        this.pW = pW;
-        this.pH = pH;
-        this.dilationT = dilationT;
-        this.dilationW = dilationW;
-        this.dilationH = dilationH;
-        this.type = type;
-        this.ceilingMode = ceilingMode;
+        if(inputArrays != null) {
+            getInputArguments().addAll(Arrays.asList(inputArrays));
+        }
+
+        if(outputs != null) {
+            getOutputArguments().addAll(Arrays.asList(outputs));
+        }
         addArgs();
     }
 
 
     private void addArgs() {
-        getIArguments().add(kT);
-        getIArguments().add(kW);
-        getIArguments().add(kH);
-        getIArguments().add(dT);
-        getIArguments().add(dW);
-        getIArguments().add(dH);
-        getIArguments().add(pT);
-        getIArguments().add(pW);
-        getIArguments().add(pH);
-        getIArguments().add(dilationT);
-        getIArguments().add(dilationW);
-        getIArguments().add(dilationH);
+        getIArguments().add(config.getKT());
+        getIArguments().add(config.getKW());
+        getIArguments().add(config.getKH());
+        getIArguments().add(config.getDT());
+        getIArguments().add(config.getDW());
+        getIArguments().add(config.getDH());
+        getIArguments().add(config.getPT());
+        getIArguments().add(config.getPW());
+        getIArguments().add(config.getPH());
+        getIArguments().add(config.getDilationT());
+        getIArguments().add(config.getDilationW());
+        getIArguments().add(config.getDilationH());
 
     }
 
@@ -89,13 +64,25 @@ public class Pooling3D extends DynamicCustomOp {
         return getPoolingPrefix() + "pool3d";
     }
 
-  @Override
+    @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        List<DifferentialFunction> ret = new ArrayList<>();
+        List<DifferentialFunction> inputs = new ArrayList<>();
+        inputs.addAll(Arrays.asList(args()));
+        inputs.add(f1.get(0));
+        Pooling3DDerivative pooling3DDerivative = Pooling3DDerivative.derivativeBuilder()
+                .inPlace(inPlace)
+                .sameDiff(sameDiff)
+                .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .pooling3DConfig(config)
+                .build();
+        ret.addAll(Arrays.asList(pooling3DDerivative.getOutputFunctions()));
+
+        return ret;
     }
 
     public String getPoolingPrefix() {
-        switch(type) {
+        switch(config.getType()) {
             case AVG:return "avg";
             case MAX: return "max";
             case PNORM: return "pnorm";
