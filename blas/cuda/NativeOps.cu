@@ -6856,17 +6856,19 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 	if (result->status() != ND4J_STATUS_OK)
 		return result->status();
 
-	if (result->size() != numOutputs) {
-		return ND4J_STATUS_BAD_OUTPUT;
-	}
+    if (!isInplace) {
+        if (result->size() != numOutputs) {
+            return ND4J_STATUS_BAD_OUTPUT;
+        }
 
-	for (int e = 0; e < numOutputs; e++) {
-		auto buffer = (T *) outputBuffers[e];
-		auto shape = (int *) outputShapes[e];
-		NDArray<T> tmp(buffer, shape);
+        for (int e = 0; e < numOutputs; e++) {
+            auto buffer = (T *) outputBuffers[e];
+            auto shape = (int *) outputShapes[e];
+            NDArray <T> tmp(buffer, shape);
 
-		tmp.assign(result->at(e));
-	}
+            tmp.assign(result->at(e));
+        }
+    }
 
 	delete result;
 
