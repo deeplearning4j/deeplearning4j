@@ -3184,7 +3184,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
         for (int e = 0; e < numOutputs; e++) {
             auto buffer = (T *) outputBuffers[e];
             auto shape = (int *) outputShapes[e];
-            NDArray<T> tmp(buffer, shape);
+            nd4j::NDArray<T> tmp(buffer, shape);
 
             tmp.assign(result->at(e));
         }
