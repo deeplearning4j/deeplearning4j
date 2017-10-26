@@ -53,6 +53,16 @@ namespace nd4j {
         _content.emplace_back(array);
     }
 
+    template <typename T>
+    Nd4jStatus ArrayList<T>::status() {
+        return _status;
+    }
+
+    template <typename T>
+    void ArrayList<T>::setStatus(Nd4jStatus status) {
+        _status = status;
+    }
+
     template class ND4J_EXPORT ArrayList<float>;
     template class ND4J_EXPORT ArrayList<float16>;
     template class ND4J_EXPORT ArrayList<double>;

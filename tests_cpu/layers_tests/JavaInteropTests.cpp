@@ -105,10 +105,40 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
 
-    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1,
-                                nullptr, 0, exp, 9, false);
+    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
 
     output.printBuffer("output");
 
     ASSERT_NEAR(1, output.getScalar(0), 1e-5);
+}
+
+TEST_F(JavaInteropTests, TestCol2Im_1) {
+    /*
+        o.d.n.l.c.ConvolutionLayer - eps shape: [6, 1, 2, 2, 2, 4, 5, 160, 4, 2, 1, 40, 8, 0, -1, 99]
+        o.d.n.l.c.ConvolutionLayer - epsNext shape: [4, 1, 2, 4, 5, 20, 20, 5, 1, 0, 1, 99]
+        o.d.n.l.c.ConvolutionLayer - Strides: [1, 1]
+        o.d.n.l.c.ConvolutionLayer - Padding: [0, 0]
+        o.d.n.l.c.ConvolutionLayer - Input: [4,5]
+        o.d.n.l.c.ConvolutionLayer - Dilation: [1, 1]
+     */
+    NDArray<float> input('c', {1, 2, 2, 2, 4, 5});
+    NDArray<float> output('c', {1, 2, 4, 5});
+    NDArrayFactory<float>::linspace(1, input);
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+
+    nd4j::ops::col2im<float> op;
+
+    NativeOps nativeOps;
+
+    int exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
+
+    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
+
+    ASSERT_TRUE(output.meanNumber() > 0.0);
 }

@@ -6827,44 +6827,57 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 		nd4j_printf("Can't find requested operation: [%lld]\n", hash);
 
 	// we're using the same fake nodeId everywhere here
-	int nodeId = 1;
 
-	nd4j::graph::VariableSpace<T> variableSpace;
-	nd4j::graph::Block<T> block(1, &variableSpace, isInplace);
-
+	std::vector<nd4j::NDArray<T>*> inputs;
+	std::vector<T> ttArgs;
+	std::vector<int> iiArgs;
 
 	// filling block now
 	for (int e = 0; e < numInputs; e++) {
 		auto buffer = (T *) inputBuffers[e];
 		auto shape = (int *) inputShapes[e];
 
-		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
-		block.getVariables()->push_back(var);
+		// auto var = new Variable<T>(new NDArray<T>(buffer, shape));
+		// block.getVariables()->emplace_back(var);
+		inputs.push_back(new nd4j::NDArray<T>(buffer, shape));
+	}
+
+	for (int e = 0; e < numIArgs; e++) {
+		iiArgs.push_back(iArgs[e]);
+	}
+
+	for (int e = 0; e < numTArgs; e++) {
+		ttArgs.push_back(tArgs[e]);
+	}
+
+	// hypothetically at this point we have everything filled
+	auto result = op->execute(inputs, ttArgs, iiArgs);
+
+	if (result->status() != ND4J_STATUS_OK)
+		return result->status();
+
+	if (result->size() != numOutputs) {
+		return ND4J_STATUS_BAD_OUTPUT;
 	}
 
 	for (int e = 0; e < numOutputs; e++) {
 		auto buffer = (T *) outputBuffers[e];
 		auto shape = (int *) outputShapes[e];
+		NDArray<T> tmp(buffer, shape);
 
-		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
-		std::pair<int, int> pair(nodeId, e);
-		variableSpace.putVariable(pair, var);
+		tmp.assign(result->at(e));
 	}
 
-	for (int e = 0; e < numIArgs; e++) {
-		block.getIArguments()->push_back(iArgs[e]);
+	delete result;
+
+
+	for (int e = 0; e < inputs.size(); e++) {
+		auto ptr = inputs.at(e);
+		delete ptr;
 	}
 
-	for (int e = 0; e < numTArgs; e++) {
-		block.getTArguments()->push_back(tArgs[e]);
-	}
 
-	// hypothetically at this point we have everything filled
-	return op->execute(&block);
-
-
-	// TODO: we need to destroy vars properly
-	// but hopefully c++ will do that for us
+	return ND4J_STATUS_OK;
 }
 
 int NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {

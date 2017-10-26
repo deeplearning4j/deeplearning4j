@@ -448,8 +448,10 @@ namespace nd4j {
                 block.getIArguments()->emplace_back(iArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
+            arrayList->setStatus(status);
             if (status != ND4J_STATUS_OK)
                 return arrayList;
+
 
             for (int e = 0; e < 65536; e++) {
                 std::pair<int,int> pair(1, e);

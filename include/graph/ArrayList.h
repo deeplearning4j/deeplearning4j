@@ -14,6 +14,7 @@ namespace  nd4j {
     class ArrayList {
     private:
         std::vector<nd4j::NDArray<T> *> _content;
+        Nd4jStatus _status = ND4J_STATUS_OK;
 
     public:
         // default constructor
@@ -23,6 +24,9 @@ namespace  nd4j {
         int size();
         nd4j::NDArray<T> *at(unsigned long idx);
         void push_back(nd4j::NDArray<T> *array);
+
+        Nd4jStatus status();
+        void setStatus(Nd4jStatus status);
     };
 }
 
