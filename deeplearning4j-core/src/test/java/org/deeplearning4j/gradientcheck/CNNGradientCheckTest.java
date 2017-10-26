@@ -653,6 +653,73 @@ public class CNNGradientCheckTest {
         }
     }
 
+    @Test
+    public void testSeparableConv2D() {
+        int nOut = 2;
+
+        int minibatchSize = 3;
+        int width = 8;
+        int height = 8;
+        int inputDepth = 3;
+        int[] kernelSizes = new int[]{2, 3};
+        int[] strides = {1, 2};
+        int[] dilation = {1, 2};
+        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate};
+
+        Nd4j.getRandom().setSeed(12345);
+
+            for (int k : kernelSizes) {
+                for (int s : strides) {
+                    for (int d : dilation) {
+                        for (ConvolutionMode cm : cModes) {
+
+                            //Use larger input with larger dilation values (to avoid invalid config)
+                            int w = d * width;
+                            int h = d * height;
+
+                            INDArray input = Nd4j.rand(minibatchSize, w * h * inputDepth);
+                            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                            for (int i = 0; i < minibatchSize; i++) {
+                                labels.putScalar(new int[]{i, i % nOut}, 1.0);
+                            }
+
+                            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                                    .updater(new NoOp())
+                                    .activation(Activation.TANH)
+                                    .convolutionMode(cm)
+                                    .list()
+                                    .layer(new SeparableConvolution2D.Builder().name("Separable conv 2D layer")
+                                            .kernelSize(k, k)
+                                            .stride(s, s)
+                                            .dilation(d, d)
+                                            .depthMultiplier(3)
+                                            .nIn(inputDepth).nOut(2).build());
+
+                            MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
+                                    .setInputType(InputType.convolutionalFlat(h, w, inputDepth)).build();
+
+                            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                            net.init();
+
+                            for (int i = 0; i < net.getLayers().length; i++) {
+                                System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
+                            }
+
+                            String msg = " - mb=" + minibatchSize + ", k="
+                                    + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
+                            System.out.println(msg);
+
+                            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                            assertTrue(msg, gradOK);
+                        }
+                    }
+                }
+            }
+        }
+
 
     @Test
     public void testCnnDilated() {

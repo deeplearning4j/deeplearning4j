@@ -187,6 +187,8 @@ public class KerasLayerUtils {
             layer = new KerasAtrousConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ATROUS_CONVOLUTION_1D())) {
             layer = new KerasAtrousConvolution1D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D())) {
+            layer = new KerasSeparableConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
             layer = new KerasPooling2D(layerConfig, enforceTrainingConfig);
