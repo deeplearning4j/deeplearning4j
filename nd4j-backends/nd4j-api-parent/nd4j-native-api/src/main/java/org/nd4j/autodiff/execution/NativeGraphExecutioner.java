@@ -75,8 +75,8 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         log.info("Graph inputs: {}", graph.getInputs());
 
         int varId = 0;
-        Map<String, Integer> mappedVariables = new HashMap<>();
-        Map<Integer, Integer> mappedInputs = new HashMap<>();
+        Map<String, int[]> mappedVariables = new HashMap<>();
+        Map<int[], int[]> mappedInputs = new HashMap<>();
 
         // mapping input variables first
         for (NDArrayInformation input: graph.getInputs()) {
@@ -94,7 +94,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, varId, name, shape, values, -1);
             variables.add(flatVariable);
 
-            mappedVariables.put(input.getId(), varId);
+            mappedVariables.put(input.getId(), new int[]{varId});
         }
 
 
@@ -108,16 +108,16 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             node.setId(nodesCount);
             node.setName(action.getOpState().getId());
             node.setOpExecAction(action);
-            node.setOriginalOutput(action.getOutputId());
+            //node.setOriginalOutput(action.getOutputId());
 
 
-            mappedInputs.put(action.getOutputId(), nodesCount);
+            mappedInputs.put(action.getOutputId(), new int[]{nodesCount});
 
             // each of inputs can be either external variable, or another node
             for (int in: ins) {
                 NDArrayInformation state = sd.getVertexIdxToInfo().get(in);
 
-                int realIn;
+                int[] realIn;
                 if (state != null && mappedVariables.containsKey(state.getId())) {
                     // this means it's external variable, already available at mappedInputs
                     log.info("External input: {}", mappedVariables.get(state.getId()));
@@ -130,7 +130,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 }
 
                 // updating intermediate representation with mapped input
-                node.getInput().add(realIn);
+                node.getInput().addAll(Ints.asList(realIn));
             }
 
             intermediate.put(nodesCount, node);
@@ -183,7 +183,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     integerArgs,
                     dimensions,
                     -1,
-                    node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f);
+                    node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f, 0, 0);
 
             nodes.add(flatNode);
         }
@@ -264,14 +264,14 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.name(), sd.getVariableMap().containsKey(var.name()), sd.getVertexToArray().containsKey(var.name()));
                 sd.getVariableMap().get(var.name()).setArr(val);
             } else {
-                int original = intermediate.get(var.id()).getOriginalOutput();
+                int[] original = intermediate.get(var.id()).getOriginalOutput();
                 //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getInformationFor(original));
-                if (sd.getVariableMap().get(sd.getGraph().getInformationFor(original).getId()) != null) {
-                    sd.getVariableMap().get(sd.getGraph().getInformationFor(original).getId()).setArr(val);
+                if (sd.getVariableMap().get(sd.getGraph().getInformationFor(original[0]).getId()) != null) {
+                    sd.getVariableMap().get(sd.getGraph().getInformationFor(original[0]).getId()).setArr(val);
                 } else {
                     SDVariable variable = SDVariable.builder()
                             .arr(val)
-                            .varName(sd.getGraph().getInformationFor(original).getId())
+                            .varName(sd.getGraph().getInformationFor(original[0]).getId())
                             .shape(val.shape())
                             .sameDiff(sd)
                             .build();

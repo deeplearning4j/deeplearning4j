@@ -25,7 +25,7 @@ public class Constant extends BaseTransformOp {
     protected Constant(SameDiff sameDiff,
                        NDArrayInformation i_v,
                        int[] shape,
-                       boolean inPlace,int vertexId) {
+                       boolean inPlace,int[] vertexId) {
         super();
         this.shape = shape;
         this.inPlace = inPlace;
@@ -40,15 +40,15 @@ public class Constant extends BaseTransformOp {
 
         this.vertexId = vertexId;
         validateFunctionReference(this);
-        if(sameDiff.getGraph().getVertex(this.vertexId) == null) {
-            sameDiff.getGraph().addVertex(new NDArrayVertex(sameDiff,vertexId,0,i_v));
+        if(sameDiff.getGraph().getVertex(this.vertexId[0]) == null) {
+            sameDiff.getGraph().addVertex(new NDArrayVertex(sameDiff,vertexId[0],0,i_v));
         }
 
     }
 
     public Constant(SameDiff sameDiff,
                     NDArrayInformation i_v,
-                    int[] shape,int vertexId) {
+                    int[] shape,int[] vertexId) {
         this(sameDiff,i_v,shape,false,vertexId);
     }
 
@@ -110,7 +110,7 @@ public class Constant extends BaseTransformOp {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        Zero ret = new Zero(sameDiff,shape,sameDiff.graph().nextVertexId());
+        Zero ret = new Zero(sameDiff,shape,new int[]{sameDiff.graph().nextVertexId()});
         DifferentialFunction add = ret;
         return Arrays.asList(add);
     }
@@ -120,10 +120,6 @@ public class Constant extends BaseTransformOp {
         return m_x.toString();
     }
 
-    @Override
-    public String doGetFormula(List<Variable> variables) {
-        return m_x.toString();
-    }
 
 
     @Override

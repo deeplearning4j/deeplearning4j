@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -266,11 +265,6 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
 
-    @Override
-    public String doGetFormula(List<Variable > variables) {
-        return larg().doGetFormula(variables) + " * " + rarg().doGetFormula(variables) + "/" +
-                "sqrt(pow(" + larg().doGetFormula(variables) + ", 2) * pow(" + rarg().doGetFormula(variables) + ", 2))";
-    }
 
 
     @Override

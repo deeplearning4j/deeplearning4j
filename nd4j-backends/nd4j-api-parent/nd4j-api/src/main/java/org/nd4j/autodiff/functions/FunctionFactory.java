@@ -1,10 +1,10 @@
 package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.linalg.api.ops.impl.transforms.Ones;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.api.ops.impl.transforms.Zero;
 
 /**
@@ -20,7 +20,7 @@ public interface FunctionFactory {
 
 
 
-    Variable var(String iName, NDArrayInformation iX);
+    SDVariable var(String iName, NDArrayInformation iX);
 
 
 
@@ -97,6 +97,12 @@ public interface FunctionFactory {
 
     DifferentialFunction eq(DifferentialFunction iX, DifferentialFunction i_y);
 
+    DifferentialFunction neq(DifferentialFunction iX, double i_y);
+
+    DifferentialFunction neqi(DifferentialFunction iX, double i_y);
+
+    DifferentialFunction neqi(DifferentialFunction iX, DifferentialFunction i_y);
+
     DifferentialFunction neq(DifferentialFunction iX, DifferentialFunction i_y);
 
     DifferentialFunction pow(DifferentialFunction iX, double i_y);
@@ -149,7 +155,7 @@ public interface FunctionFactory {
     DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX);
 
 
-    DifferentialFunction rollAxis(Variable iX, int axis);
+    DifferentialFunction rollAxis(SDVariable iX, int axis);
 
     DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions);
     DifferentialFunction euclideanDistance(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions);
@@ -218,4 +224,35 @@ public interface FunctionFactory {
     DifferentialFunction div(DifferentialFunction xDifferentialFunction, double i_v);
     DifferentialFunction divi(DifferentialFunction xDifferentialFunction, double i_v);
 
+    DifferentialFunction gt(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+    DifferentialFunction lt(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+
+    DifferentialFunction gti(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+    DifferentialFunction lti(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+
+    DifferentialFunction gte(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+    DifferentialFunction lte(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+
+    DifferentialFunction gtei(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+    DifferentialFunction ltOrEqi(DifferentialFunction functionInput, DifferentialFunction functionInput1);
+
+    DifferentialFunction gt(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction lt(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction gti(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction lti(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction gte(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction lte(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction gtei(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction ltei(DifferentialFunction functionInput, double functionInput1);
+
+    DifferentialFunction eq(DifferentialFunction iX, double i_y);
+
+    DifferentialFunction eqi(DifferentialFunction iX, double i_y);
 }

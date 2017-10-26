@@ -1453,7 +1453,7 @@ public interface INDArray extends Serializable {
      * in place (element wise) multiplication of two NDArrays
      *
      * @param other the second ndarray to multiply
-     * @return the result of the addition
+     * @return the result of the multiplication
      */
     INDArray muli(INDArray other);
 
@@ -1470,7 +1470,7 @@ public interface INDArray extends Serializable {
      * in place (element wise) subtraction of two NDArrays
      *
      * @param other the second ndarray to subtract
-     * @return the result of the addition
+     * @return the result of the subtraction
      */
     INDArray subi(INDArray other);
 

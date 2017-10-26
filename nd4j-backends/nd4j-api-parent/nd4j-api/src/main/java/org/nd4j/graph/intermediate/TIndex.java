@@ -1,6 +1,10 @@
 package org.nd4j.graph.intermediate;
 
+import lombok.val;
 import org.nd4j.linalg.primitives.ImmutablePair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class is used as index for TNodes
@@ -52,5 +56,14 @@ public class TIndex {
     @Override
     public String toString() {
         return "TIndex{" + pair.getFirst() + ":" + pair.getSecond() + '}';
+    }
+
+    public static List<TIndex> indices(TIndex... indices) {
+        val list = new ArrayList<TIndex>();
+
+        for (val idx: indices)
+            list.add(idx);
+
+        return list;
     }
 }

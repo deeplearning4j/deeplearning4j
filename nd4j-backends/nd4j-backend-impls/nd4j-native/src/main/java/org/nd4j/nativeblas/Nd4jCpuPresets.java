@@ -40,6 +40,7 @@ import org.bytedeco.javacpp.tools.Logger;
                                               "graph/ArrayList.h",
                                               "NDArrayFactory.h",
                                               "graph/Variable.h",
+                                              "graph/Intervals.h",
                                               "graph/Stash.h",
                                               "graph/VariableSpace.h",
                                               "helpers/helper_generator.h",
@@ -51,6 +52,8 @@ import org.bytedeco.javacpp.tools.Logger;
                                               "ops/declarable/DeclarableOp.h",
                                               "ops/declarable/DeclarableReductionOp.h",
                                               "ops/declarable/DeclarableCustomOp.h",
+                                              "ops/declarable/BooleanOp.h",
+                                              "ops/declarable/LogicOp.h",
                                               "ops/declarable/OpRegistrator.h",
                                               "ops/declarable/CustomOperations.h"},
                                 compiler = "cpp11", library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
@@ -107,7 +110,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 "nd4j::graph::Block",
                 "nd4j::ops::DeclarableOp",
                 "nd4j::ops::DeclarableReductionOp",
-                "nd4j::ops::DeclarableCustomOp"};
+                "nd4j::ops::DeclarableCustomOp",
+                "nd4j::ops::BooleanOp",
+                "nd4j::ops::LogicOp"};
         for (String t : classTemplates) {
             String s = t.substring(t.lastIndexOf(':') + 1);
             infoMap.put(new Info(t + "<float>").pointerTypes("Float" + s))
@@ -130,8 +135,17 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
                 if (line.startsWith("DECLARE_")) {
-                    String name = line.substring(line.indexOf('(') + 1, line.indexOf(',')).trim();
-                    opTemplates.add(name);
+                    try {
+                        int start = line.indexOf('(') + 1;
+                        int end = line.indexOf(',');
+                        if (end < start) {
+                            end = line.indexOf(')');
+                        }
+                        String name = line.substring(start, end).trim();
+                        opTemplates.add(name);
+                    } catch(Exception e) {
+                        throw new RuntimeException("Could not parse line from CustomOperations.h: \"" + line + "\"", e);
+                    }
                 }
             }
         } catch (IOException e) {

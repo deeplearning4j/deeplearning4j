@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -9,11 +10,10 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Variable;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -81,7 +81,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @param outputs the outputs of the op
      */
     public DynamicCustomOp(String opName,INDArray[] inputs,INDArray[] outputs) {
-        this(opName,inputs,outputs, Collections.<Double>emptyList(),Collections.<Integer>emptyList());
+        this(opName,inputs,outputs, Lists.<Double>newArrayList(), Lists.<Integer>newArrayList());
     }
 
     /**
@@ -123,8 +123,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public int getVertexId() {
-        return getVertex().vertexID();
+    public int[] getVertexId() {
+        return new int[] {getVertex().vertexID()};
     }
 
     @Override
@@ -152,6 +152,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      */
     @Override
     public long opHash() {
+        if (hash == 0) {
+            val map = Nd4j.getExecutioner().getCustomOperations();
+            val lcName = opName.toLowerCase();
+            val desc = map.get(lcName);
+
+            hash = desc.getHash();
+        }
+
         return hash;
     }
 
@@ -234,7 +242,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         for(int i = 0; i < outputShapes.size(); i++) {
             NDArrayInformation arrInfo = createOutputInfo(outputShapes.get(i),opName,UUID.randomUUID().toString());
             int nextVertexId = sameDiff.graph().nextVertexId();
-            Variable variable = sameDiff.setupFunction(new Variable(sameDiff,opName + "-" +nextVertexId + "-" + i,arrInfo,nextVertexId));
+            SDVariable variable = sameDiff.setupFunction(SDVariable.builder()
+                    .info(arrInfo)
+                    .shape(arrInfo.getShape())
+                    .vertexId(new int[]{nextVertexId})
+                    .varName(sameDiff.generateVariableName(opName,false))
+                    .build());
 
             outputVertexIds[i] = variable.getVertex().vertexID();
             resultInfo[i] = arrInfo;
@@ -386,10 +399,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             // if we have positive value as numInputs - we should ensure equal amount of arguments
             if (numInputs >= 0) {
                 if (inputs == null)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numInputs + " arguments. Null was passed instead.");
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numInputs + " arguments. Null was passed instead.");
 
-                if (numInputs != inputs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numInputs + " arguments, but " + inputs.length + " was passed to constructor");
+                if (numInputs > inputs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numInputs + " arguments, but " + inputs.length + " was passed to constructor");
             }
 
             for (val in: inputs)
@@ -411,10 +424,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         public DynamicCustomOpsBuilder addOutputs(INDArray... outputs) {
             if (numOutputs >= 0) {
                 if (outputs == null)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numOutputs + " arguments. Null was passed instead.");
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numOutputs + " arguments. Null was passed instead.");
 
-                if (numOutputs != outputs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numOutputs + " arguments, but " + outputs.length + " was passed to constructor");
+                if (numOutputs > outputs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numOutputs + " arguments, but " + outputs.length + " was passed to constructor");
             }
 
             for (val in: outputs)
@@ -450,8 +463,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 if (iargs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
 
-                if (numIArguments != iargs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
+                if (numIArguments > iargs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
             }
 
             for (val in: iargs)
@@ -490,10 +503,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         public DynamicCustomOpsBuilder addIntegerArguments(int... iargs) {
             if (numIArguments >= 0) {
                 if (iargs == null)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments. Null was passed instead.");
 
-                if (numIArguments != iargs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
+                if (numIArguments > iargs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
             }
 
             for (val in: iargs)
@@ -513,10 +526,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         public DynamicCustomOpsBuilder addFloatingPointArguments(Double... targs) {
             if (numTArguments >= 0) {
                 if (targs == null)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments. Null was passed instead.");
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numTArguments + " integer arguments. Null was passed instead.");
 
-                if (numTArguments != targs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments, but " + targs.length + " was passed to constructor");
+                if (numTArguments > targs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numTArguments + " integer arguments, but " + targs.length + " was passed to constructor");
             }
 
             for (val in: targs)

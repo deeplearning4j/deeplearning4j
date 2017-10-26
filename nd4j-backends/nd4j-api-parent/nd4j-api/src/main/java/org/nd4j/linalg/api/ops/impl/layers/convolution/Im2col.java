@@ -19,7 +19,7 @@ public class Im2col extends DynamicCustomOp {
 
     @Builder(builderMethodName = "sameDiffBuilder")
     public Im2col(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        super(null,sameDiff, inputs, inPlace);
+        super("im2col",sameDiff, inputs, inPlace);
         this.kh = kh;
         this.kw = kw;
         this.sy = sy;
@@ -37,7 +37,7 @@ public class Im2col extends DynamicCustomOp {
 
     @Builder(builderMethodName = "execBuilder")
     public Im2col(INDArray[] arrayInputs,INDArray[] arrayOutputs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        super(null,arrayInputs,arrayOutputs );
+        super("im2col",arrayInputs,arrayOutputs );
         this.kh = kh;
         this.kw = kw;
         this.sy = sy;

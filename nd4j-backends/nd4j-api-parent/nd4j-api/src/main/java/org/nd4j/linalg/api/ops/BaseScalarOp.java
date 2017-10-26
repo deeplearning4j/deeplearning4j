@@ -144,7 +144,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                 sameDiff.graph().nextVertexId(),
                 i_v1.getVertex().depth() + 1,
                 information);
-        this.vertexId = newVertex.vertexID();
+        this.vertexId = new int[] {newVertex.vertexID()};
         sameDiff.graph().addVertex(newVertex);
 
 
@@ -160,7 +160,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
         sameDiff.getGraph().addEdge(
-                new int[]{arg().resultVertexId()},
+                arg().resultVertexId(),
                 new int[]{newVertex.vertexID()},
                 owner,
                 true);

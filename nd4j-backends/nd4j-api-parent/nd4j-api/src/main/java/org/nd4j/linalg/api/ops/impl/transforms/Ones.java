@@ -42,15 +42,15 @@ public class Ones extends Constant {
     }
 
 
-    public Ones(SameDiff sameDiff, int[] shape,int vertexId) {
+    public Ones(SameDiff sameDiff, int[] shape,int[] vertexId) {
         super(sameDiff,NDArrayInformation.newInfo(shape,new OneInitScheme('f')), shape,vertexId);
     }
 
-    public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape, boolean inPlace,int vertexId) {
+    public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape, boolean inPlace,int[] vertexId) {
         super(sameDiff, i_v, shape, inPlace,vertexId);
     }
 
-    public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape,int vertexId) {
+    public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape,int[] vertexId) {
         super(sameDiff, i_v, shape,vertexId);
     }
 

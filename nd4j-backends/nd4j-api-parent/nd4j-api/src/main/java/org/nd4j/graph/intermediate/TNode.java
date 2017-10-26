@@ -25,7 +25,7 @@ public class TNode {
     @Builder.Default private List<Integer> outputs = new ArrayList<>();
 
     // may be set externally, i.e. in TF graph
-    private String name;
+    @Builder.Default private String name = "";
 
     // exists only after mapping
     private int id;
@@ -39,7 +39,14 @@ public class TNode {
     // op group basically
     private OpClass opClass;
 
-    // parameters for op
+    // this value defines, if this Node belongs to some scope
+    @Builder.Default private boolean scoped = false;
+
+
+    @Builder.Default private int scopeId = 0;
+    @Builder.Default private String scopeName = "";
+
+    // parameters for opd
     private OpState opState;
 
     public TNode(int id) {

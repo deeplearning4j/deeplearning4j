@@ -20,12 +20,14 @@
 package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -35,6 +37,22 @@ import java.util.List;
  */
 public class ScalarGreaterThan extends BaseScalarOp {
     public ScalarGreaterThan() {}
+
+    public ScalarGreaterThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar) {
+        super(sameDiff, i_v, scalar);
+    }
+
+    public ScalarGreaterThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+        super(sameDiff, i_v, scalar, inPlace);
+    }
+
+    public ScalarGreaterThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, inPlace, extraArgs);
+    }
+
+    public ScalarGreaterThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, extraArgs);
+    }
 
     public ScalarGreaterThan(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -47,6 +65,8 @@ public class ScalarGreaterThan extends BaseScalarOp {
     public ScalarGreaterThan(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
+
+
 
     public ScalarGreaterThan(INDArray x, IComplexNumber num) {
         super(x, num);
@@ -127,9 +147,8 @@ public class ScalarGreaterThan extends BaseScalarOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        return null;
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
     }
-
 
 }

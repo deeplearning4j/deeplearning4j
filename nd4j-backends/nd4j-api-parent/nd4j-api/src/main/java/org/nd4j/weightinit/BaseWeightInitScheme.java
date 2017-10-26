@@ -1,5 +1,6 @@
 package org.nd4j.weightinit;
 
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -13,6 +14,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
+@EqualsAndHashCode
 public abstract class BaseWeightInitScheme implements WeightInitScheme {
     private char order;
 
@@ -52,4 +54,6 @@ public abstract class BaseWeightInitScheme implements WeightInitScheme {
 
         return paramView.reshape(order(), outputArray.shape());
     }
+
+
 }

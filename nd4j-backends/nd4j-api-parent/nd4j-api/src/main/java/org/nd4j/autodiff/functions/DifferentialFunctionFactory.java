@@ -4,18 +4,21 @@ import com.google.common.base.Preconditions;
 import lombok.Data;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
+import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.EqualTo;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.NotEqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.shape.Shape;
@@ -76,23 +79,29 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     @Override
     public Constant val(NDArrayInformation iX) {
         return sameDiff().setupFunction(new Constant(sameDiff(), iX,
-                iX.getShape(),sameDiff().graph().nextVertexId()));
+                iX.getShape(),new int[]{sameDiff().graph().nextVertexId()}));
     }
 
 
     @Override
-    public Variable  var(String iName, NDArrayInformation iX) {
-        return sameDiff().setupFunction(new Variable(sameDiff(),iName, iX,sameDiff.graph().nextVertexId()));
+    public SDVariable var(String iName, NDArrayInformation iX) {
+        return sameDiff().setupFunction(SDVariable.builder()
+                .info(iX)
+                .shape(iX.getShape())
+                .varName(iName)
+                .sameDiff(sameDiff())
+                .vertexId(new int[]{sameDiff().graph().nextVertexId()})
+                .build());
     }
 
     @Override
     public Zero zero(int[] shape) {
-        return sameDiff().setupFunction(new Zero(sameDiff(),shape,sameDiff().graph().nextVertexId()));
+        return sameDiff().setupFunction(new Zero(sameDiff(),shape,new int[]{sameDiff().graph().nextVertexId()}));
     }
 
     @Override
     public Ones one(int[] shape) {
-        return sameDiff().setupFunction(new Ones(sameDiff(),shape,sameDiff.graph().nextVertexId()));
+        return sameDiff().setupFunction(new Ones(sameDiff(),shape,new int[]{ sameDiff.graph().nextVertexId()}));
     }
 
     @Override
@@ -323,6 +332,25 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         return sameDiff().setupFunction(new EqualTo(sameDiff(),iX,i_y));
     }
 
+
+    @Override
+    public DifferentialFunction neq(DifferentialFunction iX, double i_y) {
+        return sameDiff().setupFunction(new ScalarNotEquals(sameDiff(),iX,i_y));
+
+    }
+
+    @Override
+    public DifferentialFunction neqi(DifferentialFunction iX, double i_y) {
+        return sameDiff().setupFunction(new ScalarNotEquals(sameDiff(),iX,i_y,true));
+
+    }
+
+
+    @Override
+    public DifferentialFunction neqi(DifferentialFunction iX, DifferentialFunction i_y) {
+        return sameDiff().setupFunction(new NotEqualTo(sameDiff(),iX,i_y,true));
+
+    }
     @Override
     public DifferentialFunction neq(DifferentialFunction iX, DifferentialFunction i_y) {
         return sameDiff().setupFunction(new NotEqualTo(sameDiff(),iX,i_y));
@@ -484,7 +512,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
     @Override
-    public DifferentialFunction rollAxis(Variable  iX, int axis) {
+    public DifferentialFunction rollAxis(SDVariable iX, int axis) {
         return sameDiff().setupFunction(new RollAxis(sameDiff(),iX,axis));
     }
 
@@ -803,6 +831,123 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         return sameDiff().setupFunction(new ScalarDivision(sameDiff(),differentialFunction,i_v,true));
     }
 
+    @Override
+    public DifferentialFunction gt(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new GreaterThan(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction lt(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new LessThan(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction gti(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new GreaterThan(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction lti(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new LessThan(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction gte(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new GreaterThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction lte(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new LessThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction gtei(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new GreaterThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction ltOrEqi(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        validateDifferentialFunctionsameDiff(functionInput1);
+        return sameDiff().setupFunction(new LessThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+    }
+
+
+
+    @Override
+    public DifferentialFunction gt(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarGreaterThan(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction lt(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarLessThan(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction gti(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarGreaterThan(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction lti(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarLessThan(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction gte(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarGreaterThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction lte(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarLessThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+    }
+
+    @Override
+    public DifferentialFunction gtei(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarGreaterThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction ltei(DifferentialFunction functionInput, double functionInput1) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return sameDiff().setupFunction(new ScalarLessThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+    }
+
+    @Override
+    public DifferentialFunction eq(DifferentialFunction iX, double i_y) {
+        return sameDiff().setupFunction(new ScalarEquals(sameDiff(),iX,i_y));
+    }
+
+    @Override
+    public DifferentialFunction eqi(DifferentialFunction iX, double i_y) {
+        return sameDiff().setupFunction(new ScalarEquals(sameDiff(),iX,i_y,true));
+    }
+
+
     /**
      *
      * @param func
@@ -812,9 +957,6 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         validateDifferentialFunctionsameDiff(func);
         int[] inputShape = func.arg().shape;
         return ArrayUtil.prod(inputShape);
-
-
-
     }
 
 

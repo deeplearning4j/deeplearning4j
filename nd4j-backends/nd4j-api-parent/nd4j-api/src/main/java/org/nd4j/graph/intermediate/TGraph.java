@@ -36,9 +36,14 @@ public class TGraph {
     protected Map<Integer, List<TNode>> onionMap = new HashMap<>();
 
     protected Map<Integer, TNode> outputMap = new HashMap<>();
+    protected Map<String, TNode> symbolicMap = new HashMap<>();
 
     // here we're storing unmapped nodes
     protected List<TNode> unmapped = new ArrayList<>();
+
+    // storage for Scopes
+    protected Map<Integer, TScope> numericScopes = new HashMap<>();
+    protected Map<String, TScope> symbolicScopes = new HashMap<>();
 
     protected void expandOnion(int layer) {
         onionMap.put(layer, new ArrayList<TNode>());
@@ -48,9 +53,18 @@ public class TGraph {
         return outputMap.get(index);
     }
 
+    public TNode getNode(@NonNull String name) {
+        return symbolicMap.get(name);
+    }
+
     public void addNode(@NonNull TNode node) {
         unmapped.add(node);
         outputMap.put(node.getId(), node);
+
+        if (node.getName() != null && !node.getName().isEmpty()) {
+            log.info("Adding node by name: [{}]", node.getName());
+            symbolicMap.put(node.getName(), node);
+        }
     }
 
     protected int getTailSize() {
@@ -63,6 +77,41 @@ public class TGraph {
         }
     }
 
+    /**
+     * This mehtod adds Scope to this graph
+     * @param scope
+     */
+    public void addScope(@NonNull TScope scope) {
+        numericScopes.put(scope.getId(), scope);
+        symbolicScopes.put(scope.getName(), scope);
+    }
+
+    /**
+     * This method returns Scope by symbolic name
+     *
+     * @param name
+     * @return
+     */
+    public TScope getScope(@NonNull String name) {
+        if (!symbolicScopes.containsKey(name))
+            throw new ND4JIllegalStateException("No scope with given name found: [" + name + "]");
+
+        return symbolicScopes.get(name);
+    }
+
+    /**
+     * This method returns Scope by id
+     *
+     * @param id
+     * @return
+     */
+    public TScope getScope(int id) {
+        if (!numericScopes.containsKey(id))
+            throw new ND4JIllegalStateException("No scope with given name found: [" + id + "]");
+
+        return numericScopes.get(id);
+    }
+
     public TGraph provideArrayForVariable(String id, INDArray array) {
         if (!variableSpace.hasVariable(id))
             throw new ND4JIllegalStateException("Unknown variable provided: [" + id + "]");
@@ -70,6 +119,53 @@ public class TGraph {
         variableSpace.getVariable(id).setArray(array);
 
         return this;
+    }
+
+    protected int asFlatNode(@NonNull TScope scope, @NonNull FlatBufferBuilder bufferBuilder) {
+        return 0;
+    }
+
+    protected int asFlatNode(@NonNull TNode node, @NonNull FlatBufferBuilder bufferBuilder) {
+        log.info("Exporting node: [{}]", node.getOpName());
+
+        float[] extras = node.getOpState().getExtraArgs() != null ? new float[node.getOpState().getExtraArgs().length] : new float[0];
+        for (int e = 0; e < extras.length; e++) {
+            extras[e] = ((Number) node.getOpState().getExtraArgs()[e]).floatValue();
+        }
+
+        val inPaired = new ArrayList<Integer>();
+        int e = 0;
+        for (val index: node.getInputs())
+            inPaired.add(IntPair.createIntPair(bufferBuilder, index.getNode(), index.getIndex()));
+
+        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
+        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
+        int nodesOut = FlatNode.createOutputVector(bufferBuilder, Ints.toArray(node.getOutputs()));
+        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+        int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, node.getOpState().getOpType() == Op.Type.CUSTOM && node.getOpState().getExtraBits() != null ? node.getOpState().getExtraBits() : new int[]{});
+        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpState().getAxes() != null ? node.getOpState().getAxes() : new int[]{});
+        int fname = bufferBuilder.createString(node.getName());
+        int scopeName = bufferBuilder.createString(node.getScopeName());
+
+        if (node.getOpState().getOpType() == null)
+            log.warn("Null-op node: {}", node);
+
+        int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                node.getId(),
+                fname,
+                getFlatOpType(node.getOpState().getOpType()),
+                getOpNum(node.getOpState().getOpName(), node.getOpState().getOpType()),
+                nodesIn,
+                nodesInPaired,
+                (byte) 0,
+                nodesOut,
+                extraz,
+                integerArgs,
+                dimensions,
+                -1,
+                node.getOpState().getOpType() == Op.Type.SCALAR ? node.getOpState().getScalarValue().floatValue() : 0.0f, node.getScopeId(), scopeName);
+
+        return flatNode;
     }
 
     public ByteBuffer asFlatBuffers() {
@@ -110,47 +206,21 @@ public class TGraph {
             }
         }
 
+        // we're dumping scopes now
+        for (val scope: numericScopes.values()) {
+            flatNodes.add(asFlatNode(scope, bufferBuilder));
+
+            // converting all ops from node
+            for (val node: scope.getNodes()) {
+                flatNodes.add(asFlatNode(node, bufferBuilder));
+            }
+        }
+
+
+
         // and now we're dumping unmapped nodes, just in case of...
         for (val node: unmapped) {
-            log.debug("Exporting node: [{}]", node.getOpName());
-
-            float[] extras = node.getOpState().getExtraArgs() != null ? new float[node.getOpState().getExtraArgs().length] : new float[0];
-            for (int e = 0; e < extras.length; e++) {
-                extras[e] = ((Number) node.getOpState().getExtraArgs()[e]).floatValue();
-            }
-
-            val inPaired = new ArrayList<Integer>();
-            int e = 0;
-            for (val index: node.getInputs())
-                inPaired.add(IntPair.createIntPair(bufferBuilder, index.getNode(), index.getIndex()));
-
-            int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
-            int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
-            int nodesOut = FlatNode.createOutputVector(bufferBuilder, Ints.toArray(node.getOutputs()));
-            int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
-            int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, node.getOpState().getOpType() == Op.Type.CUSTOM && node.getOpState().getExtraBits() != null ? node.getOpState().getExtraBits() : new int[]{});
-            int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpState().getAxes() != null ? node.getOpState().getAxes() : new int[]{});
-            int fname = bufferBuilder.createString(node.getName());
-
-            if (node.getOpState().getOpType() == null)
-                log.warn("Null-op node: {}", node);
-
-            int flatNode = FlatNode.createFlatNode(bufferBuilder,
-                    node.getId(),
-                    fname,
-                    getFlatOpType(node.getOpState().getOpType()),
-                    getOpNum(node.getOpState().getOpName(), node.getOpState().getOpType()),
-                    nodesIn,
-                    nodesInPaired,
-                    (byte) 0,
-                    nodesOut,
-                    extraz,
-                    integerArgs,
-                    dimensions,
-                    -1,
-                    node.getOpState().getOpType() == Op.Type.SCALAR ? node.getOpState().getScalarValue().floatValue() : 0.0f);
-
-            flatNodes.add(flatNode);
+            flatNodes.add(asFlatNode(node, bufferBuilder));
         }
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
@@ -171,7 +241,7 @@ public class TGraph {
     }
 
     public static long getOpNum(String name, Op.Type type) {
-        if (type == Op.Type.CUSTOM)
+        if (type == Op.Type.CUSTOM || type == Op.Type.LOOP || type == Op.Type.IF || type == Op.Type.CONDITIONAL)
             return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
         else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
@@ -191,6 +261,8 @@ public class TGraph {
                 return OpType.ACCUMULATION;
             case INDEXREDUCE:
                 return OpType.INDEX_ACCUMULATION;
+            case LOOP:
+                return OpType.LOGIC;
             case CUSTOM:
                 return OpType.CUSTOM;
             default:

@@ -20,12 +20,14 @@
 package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -54,6 +56,22 @@ public class ScalarEquals extends BaseScalarOp {
 
     public ScalarEquals(INDArray x) {
         this(x, 0);
+    }
+
+    public ScalarEquals(SameDiff sameDiff, DifferentialFunction i_v, Number scalar) {
+        super(sameDiff, i_v, scalar);
+    }
+
+    public ScalarEquals(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+        super(sameDiff, i_v, scalar, inPlace);
+    }
+
+    public ScalarEquals(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, inPlace, extraArgs);
+    }
+
+    public ScalarEquals(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override
@@ -139,13 +157,11 @@ public class ScalarEquals extends BaseScalarOp {
 
     }
 
-
-
-
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        return null;
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
     }
+
 
 
 }

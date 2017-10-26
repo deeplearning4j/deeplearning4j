@@ -9,6 +9,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -82,6 +83,22 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         return super.hashCode();
     }
 
+
+    /**
+     * Get the output vertices
+     * @return
+     */
+    public List<int[]> getOutputIds() {
+        List<int[]> ret = new ArrayList<>();
+        for (int i : getVertices().keySet()) {
+            if (getEdgesOut(new int[]{i}).size() < 1)
+                ret.add(new int[]{i});
+        }
+
+        return ret;
+    }
+
+
     /**
      * Get the output vertices
      * @return
@@ -119,14 +136,14 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * @return
      */
     public OpExecOrder getOpOrder(boolean reverse) {
-        int[] order = topologicalSort(reverse);
+        int[][] order = topologicalSort(reverse);
         Set<OpState> seenStates = new HashSet<>();
         if(reverse) {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
-            Map<Integer,OpExecAction> opExecActionMap = new HashMap<>();
+            Map<int[],OpExecAction> opExecActionMap = new HashMap<>();
             //size the vertex id relative to where it would be encountered
             //in a reverse order traversal
-            final Map<Integer,Integer> normalForwardOrderMap = new HashMap<>();
+            final Map<int[],Integer> normalForwardOrderMap = new HashMap<>();
             for(int i = forwardActions.size() - 1,j = 0; i >= 0; i--,j++) {
                 OpExecAction currAction = forwardActions.get(i);
                 normalForwardOrderMap.put(currAction.getOutputId(),j);
@@ -134,32 +151,53 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             }
 
 
-            PriorityQueue<NDArrayVertex> depthQueue = new PriorityQueue<>(numVertices(), new Comparator<NDArrayVertex>() {
+            Set<Edge<OpState>> allEdges = new HashSet<>();
+            Collection<List<Edge<OpState>>> outgoingEdges = getEdges().values();
+            for(List<Edge<OpState>> edge : outgoingEdges) {
+                allEdges.addAll(edge);
+            }
+
+
+
+            PriorityQueue<int[]> depthQueue = new PriorityQueue<>(allEdges.size(), new Comparator<int[]>() {
                 @Override
-                public int compare(NDArrayVertex o1, NDArrayVertex o2) {
-                    if(o1.depth() == o2.depth()) {
-                        Integer o1Compare = normalForwardOrderMap.get(o1.vertexID());
-                        Integer o2Compare = normalForwardOrderMap.get(o2.vertexID());
-                        if(o1Compare != null && o2Compare != null) {
-                            return Ints.compare(o1Compare, o2Compare);
-                        }
-                        else {
-                            System.out.println(o1.vertexID() + " was null or " + o2.vertexID() + " was null during comparison");
-                        }
-                    }
-                    return Ints.compare(-o1.depth(),-o2.depth());
+                public int compare(int[] o1, int[] o2) {
+                    int o1MaxDepth = getMaxDepth(o1);
+                    int o2MaxDepth = getMaxDepth(o2);
+                    return Ints.compare(-o1MaxDepth,-o2MaxDepth);
                 }
             });
 
-            for(int i : order) {
-                NDArrayVertex vertex = (NDArrayVertex) getVertex(i);
-                depthQueue.add(vertex);
+
+            List<int[]> vertices = new ArrayList<>();
+            for(List<Edge<OpState>> edge : getEdges().values())  {
+                for(Edge<OpState> edge1 : edge) {
+                    if(!vertices.contains(edge1.getTo())) {
+                        vertices.add(edge1.getTo());
+                    }
+                }
             }
+
+            Collections.sort(vertices, new Comparator<int[]>() {
+                @Override
+                public int compare(int[] ints, int[] t1) {
+                    return Ints.compare(Ints.max(ints),Ints.max(t1));
+                }
+            });
+
+
+
+            for(int[] i : vertices) {
+                depthQueue.add(i);
+
+            }
+
+
 
             List<OpExecAction> ret = new ArrayList<>();
             while(!depthQueue.isEmpty()) {
-                NDArrayVertex ndArrayVertex = depthQueue.poll();
-                OpExecAction action = opExecActionMap.get(ndArrayVertex.vertexID());
+                int[] ndArrayVertex = depthQueue.poll();
+                OpExecAction action = opExecActionMap.get(ndArrayVertex);
                 //no op means it was a variable
                 if(action != null && !seenStates.contains(action.getOpState())) {
                     ret.add(action);
@@ -180,14 +218,14 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             //the goal is to get all of the needed op executions
             for (int i = 0; i < order.length; i++) {
                 //skip vertices that are only inputs
-                if (getVertexInDegree(new int[]{order[i]}) < 1) {
+                if (getVertexInDegree(order[i]) < 1) {
                     continue;
                 }
 
-                int numInputs = Math.max(1, getVertexInDegree(new int[]{order[i]}));
+                int numInputs = Math.max(1, getVertexInDegree(order[i]));
                 int inputsCount = 0;
                 List<Integer> inputIdsList = new ArrayList<>();
-                List<Edge<OpState>> inputOpStates = getIncomingEdges().get(new int[]{order[i]});
+                List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
                 List<NDArrayInformation> inputInfo = new ArrayList<>();
                 //get the inputs for this this output array
                 for (Edge<OpState> edge : inputOpStates) {
@@ -199,7 +237,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                     }
                 }
 
-                Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
+               // Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
                 //add edges
                 Edge<OpState> opStateEdge = inputOpStates.get(0);
                 if(!seenStates.contains(opStateEdge.getValue())) {
@@ -218,7 +256,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             Collections.sort(ret, new Comparator<OpExecAction>() {
                 @Override
                 public int compare(OpExecAction o1, OpExecAction o2) {
-                    return Integer.compare(o1.getOutputId(),o2.getOutputId());
+                    return Ints.compare(Ints.max(o1.getOutputId()),Ints.max(o2.getOutputId()));
                 }
             });
 
@@ -254,48 +292,69 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * Topological sort over vertex ids
      * @return
      */
-    public int[] topologicalSort(boolean reverse) {
-        List<Integer> vertices = new ArrayList<>(getVertices().keySet());
-        Collections.sort(vertices);
-        List<Integer> retList = new ArrayList<>();
+    public int[][] topologicalSort(boolean reverse) {
+        List<int[]> vertices = new ArrayList<>();
+        for(List<Edge<OpState>> edge : getEdges().values())  {
+            for(Edge<OpState> edge1 : edge) {
+                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getTo())) {
+                    vertices.add(edge1.getTo());
+                }
+
+                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getFrom())) {
+                    vertices.add(edge1.getFrom());
+                }
+
+            }
+        }
+
+        Collections.sort(vertices, new Comparator<int[]>() {
+            @Override
+            public int compare(int[] ints, int[] t1) {
+                return Ints.compare(Ints.max(ints),Ints.max(t1));
+            }
+        });
+
+
+        List<int[]> retList = new ArrayList<>();
 
         if(reverse) {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
             //size the vertex id relative to where it would be encountered
             //in a reverse order traversal
-            final Map<Integer,Integer> normalForwardOrderMap = new HashMap<>();
+            final Map<int[],Integer> normalForwardOrderMap = new HashMap<>();
             for(int i = forwardActions.size() - 1,j = 0; i >= 0; i--,j++) {
                 OpExecAction currAction = forwardActions.get(i);
                 normalForwardOrderMap.put(currAction.getOutputId(),j);
             }
 
+
             Collections.reverse(vertices);
 
-            PriorityQueue<NDArrayVertex> depthQueue = new PriorityQueue<>(numVertices(), new Comparator<NDArrayVertex>() {
+
+            Set<Edge<OpState>> allEdges = new HashSet<>();
+            Collection<List<Edge<OpState>>> outgoingEdges = getEdges().values();
+            for(List<Edge<OpState>> edge : outgoingEdges) {
+                allEdges.addAll(edge);
+            }
+
+
+            PriorityQueue<int[]> depthQueue = new PriorityQueue<>(allEdges.size(), new Comparator<int[]>() {
                 @Override
-                public int compare(NDArrayVertex o1, NDArrayVertex o2) {
-                    if(o1.depth() == o2.depth()) {
-                        Integer o1Compare = normalForwardOrderMap.get(o1.vertexID());
-                        Integer o2Compare = normalForwardOrderMap.get(o2.vertexID());
-                        if(o1Compare != null && o2Compare != null) {
-                            return Ints.compare(o1Compare, o2Compare);
-                        }
-                        else {
-                            System.out.println(o1.vertexID() + " was null or " + o2.vertexID() + " was null during comparison");
-                        }
-                    }
-                    return Ints.compare(-o1.depth(),-o2.depth());
+                public int compare(int[] o1, int[] o2) {
+                    int o1MaxDepth = getMaxDepth(o1);
+                    int o2MaxDepth = getMaxDepth(o2);
+                    return Ints.compare(-o1MaxDepth,-o2MaxDepth);
                 }
             });
 
-            for(int i : vertices) {
-                NDArrayVertex vertex = (NDArrayVertex) getVertex(i);
-                depthQueue.add(vertex);
+            for(int[] i : vertices) {
+                depthQueue.add(i);
+
             }
 
             while(!depthQueue.isEmpty()) {
-                NDArrayVertex vertex =  depthQueue.poll();
-                retList.add(vertex.vertexID());
+                int[] vertex =  depthQueue.poll();
+                retList.add(vertex);
             }
 
 
@@ -306,43 +365,45 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             Map<int[], Set<int[]>> outputEdges = new TreeMap<>(Ints.lexicographicalComparator()); //key: vertex. Values: vertices that the key vertex outputs to
 
 
-            for (int i : vertices) {
-                int[] key = {i};
+            for (int[] i : vertices) {
+                int[] key = i;
                 if (getVertexInDegree(key) < 1) {
                     noIncoming.add(key);
                 }
 
-                List<Edge<OpState>> edges = getEdgesOut(new int[]{i});
+                List<Edge<OpState>> edges = getEdgesOut(i);
                 Set<int[]> outVertices = new TreeSet<>(Ints.lexicographicalComparator());
                 Set<int[]> currInputs = new TreeSet<>(Ints.lexicographicalComparator());
                 for (Edge<OpState> edge : edges) {
                     outVertices.add(edge.getTo());
-                    Set<int[]> outputSetForInputIdx = outputEdges.get(new int[]{i});
+                    Set<int[]> outputSetForInputIdx = outputEdges.get(i);
                     if (outputSetForInputIdx == null) {
                         outputSetForInputIdx = new TreeSet<>(Ints.lexicographicalComparator());
-                        outputEdges.put(new int[]{i}, outputSetForInputIdx);
+                        outputEdges.put(i, outputSetForInputIdx);
                     }
 
                     outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
                 }
 
-                if( getIncomingEdges().get(new int[]{i}) != null) {
-                    for (Edge<OpState> edge : getIncomingEdges().get(new int[]{i})) {
+                if( getIncomingEdges().get(i) != null) {
+                    for (Edge<OpState> edge : getIncomingEdges().get(i)) {
                         currInputs.add(edge.getFrom());
 
                     }
 
-                    inputEdges.put(new int[]{i}, currInputs);
+                    inputEdges.put(i, currInputs);
                 }
                 else
-                    inputEdges.put(new int[]{i}, currInputs);
+                    inputEdges.put(i, currInputs);
 
             }
 
-
+            if(noIncoming.isEmpty()) {
+                throw new IllegalStateException("No ops found. Unable to execute.");
+            }
             while (!noIncoming.isEmpty()) {
                 int[] next = noIncoming.removeFirst();
-                retList.addAll(Ints.asList(next));
+                retList.add(next);
                 List<int[]> vertexOutputsTo = outputEdges.containsKey(next) ? new ArrayList<>(outputEdges.get(next)) : null;
 
                 //Remove edges next -> vertexOuputsTo[...] from graph;
@@ -368,19 +429,35 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                     throw new IllegalStateException("Graph has cycles");
             }
 
-            return Ints.toArray(retList);
+            int[][] ret = new int[retList.size()][];
+            for(int i = 0; i < retList.size(); i++)
+                ret[i] = retList.get(i);
+            return ret;
 
         }
 
 
-        return Ints.toArray(retList);
+        int[][] ret = new int[retList.size()][];
+        for(int i = 0; i < retList.size(); i++)
+            ret[i] = retList.get(i);
+        return ret;
+
     }
 
+
+
+    private int getMaxDepth(int[] vertexIdx) {
+        int ret = -1;
+        for(int vertexId : vertexIdx)
+            if(getVertex(vertexId).depth() > ret)
+                ret = getVertex(vertexId).depth();
+        return ret;
+    }
     /**
      * Topological sort over vertex ids
      * @return
      */
-    public int[] topologicalSort() {
+    public int[][] topologicalSort() {
         return topologicalSort(false);
     }
 }

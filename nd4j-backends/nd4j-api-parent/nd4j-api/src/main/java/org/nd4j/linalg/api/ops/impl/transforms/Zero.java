@@ -9,7 +9,7 @@ public class Zero extends Constant {
     public Zero() {
     }
 
-    public Zero(SameDiff sameDiff, int[] shape,int vertexId) {
+    public Zero(SameDiff sameDiff, int[] shape,int[] vertexId) {
         super(sameDiff, NDArrayInformation.newInfo(shape),shape,vertexId);
     }
 

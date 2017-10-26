@@ -147,10 +147,4 @@ public class Negative extends BaseTransformOp {
 
 
 
-    @Override
-    public String doGetFormula(List<Variable> variables) {
-        return "-" + arg().doGetFormula(variables);
-    }
-
-
 }
