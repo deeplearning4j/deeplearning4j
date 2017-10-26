@@ -296,13 +296,13 @@ namespace nd4j {
 
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
-            NDArray<T> *x = INPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
+
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
             std::vector<int> argI = *(block.getIArguments()); // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - extraParam0 for pnorm case;
-            std::vector<T> argT = {(T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T)2.f, (T)2.f, (T)argI[9]};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - extraParam0 for pnorm case;
-
-            auto z = this->getZ(block);
+            std::vector<T> argT = {(T) argI[0], (T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T) 2.f, (T)argI[9]};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - extraParam0 for pnorm case;
             x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
 
             STORE_RESULT(*z);
