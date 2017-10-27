@@ -66,7 +66,6 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer implements Op
         this.lossFunction = builder.lossFunction;
         this.visibleBiasInit = builder.visibleBiasInit;
         this.preTrainIterations = builder.preTrainIterations;
-
     }
 
     @Override

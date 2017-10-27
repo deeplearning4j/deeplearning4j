@@ -555,7 +555,7 @@ public class VariationalAutoencoder implements Model {
             }
         }
         this.optimizer = solver.getOptimizer();
-        solver.optimize();
+        solver.optimize(true);
     }
 
     @Override

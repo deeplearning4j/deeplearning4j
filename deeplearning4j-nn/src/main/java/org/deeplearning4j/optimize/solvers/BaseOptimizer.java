@@ -152,7 +152,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels) {
+    public Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels, boolean isPretrain) {
         oldScore = score;
         Pair<Gradients, Double> pair = model.computeGradientAndScore(input, labels);
 
@@ -167,7 +167,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         }
 
         score = pair.getSecond();
-        updateGradientAccordingToParams(pair.getFirst().getParameterGradients(), model, model.getInputMiniBatchSize());
+        updateGradientAccordingToParams(pair.getFirst().getParameterGradients(), model, model.getInputMiniBatchSize(), isPretrain);
         return new Pair<>(pair.getFirst().getParameterGradients(), score);
     }
 
@@ -175,9 +175,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * Optimize call. This runs the optimizer.
      * @return whether it converged or not
      */
-    // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
-    public boolean optimize() {
+    public boolean optimize(boolean isPretrain) {
         //validate the input before training
         INDArray gradient;
         INDArray searchDirection;
@@ -187,7 +186,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Activations input = model.getInput();
         Activations labels = model.getLabels();
 
-        Pair<Gradient, Double> pair = gradientAndScore(input, labels);
+        Pair<Gradient, Double> pair = gradientAndScore(input, labels, isPretrain);
         if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
             setupSearchState(pair); //Only do this once
@@ -229,7 +228,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             log.debug("Step size returned by line search is 0.0.");
         }
 
-        pair = gradientAndScore(input, labels);
+        pair = gradientAndScore(input, labels, isPretrain);
 
         //updates searchDirection
         postStep(pair.getFirst().gradient());
@@ -298,7 +297,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, boolean isPretrain) {
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
             if (computationGraphUpdater == null) {
@@ -306,7 +305,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     computationGraphUpdater = new ComputationGraphUpdater(graph);
                 }
             }
-            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize);
+            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize, isPretrain);
         } else {
             if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -315,7 +314,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
             Layer layer = (Layer) model;
 
-            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize);
+            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize, isPretrain);
         }
     }
 

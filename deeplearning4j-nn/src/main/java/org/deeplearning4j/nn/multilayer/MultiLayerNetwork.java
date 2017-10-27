@@ -1031,7 +1031,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
                     try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                            solver.optimize();
+                            solver.optimize(false);
                         }
                     }
                 }
@@ -1245,7 +1245,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                             solver = new Solver.Builder().configure(configuration).model(this).build();
                         }
                     }
-                    solver.optimize();
+                    solver.optimize(false);
 
                     //Finally, update the state of the RNN layers:
                     updateRnnStateWithTBPTTState();
@@ -1460,7 +1460,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
                 try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                     try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                        solver.optimize(false);
                     }
                 }
             }

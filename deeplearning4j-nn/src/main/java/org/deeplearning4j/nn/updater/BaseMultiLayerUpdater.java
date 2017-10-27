@@ -205,8 +205,8 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
     }
 
     @Override
-    public void update(Layer layer, Gradient gradient, int iteration, int epoch, int batchSize) {
-        update(gradient, iteration, epoch, batchSize);
+    public void update(Layer layer, Gradient gradient, int iteration, int epoch, int batchSize, boolean isPretrain) {
+        update(gradient, iteration, epoch, batchSize, isPretrain);
     }
 
     /**
@@ -220,7 +220,7 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
      * @param iteration The current iteration (i.e., number of parameter updates so far)
      * @param batchSize The current minibatch size (number of examples)
      */
-    public void update(Gradient gradient, int iteration, int epoch, int batchSize) {
+    public void update(Gradient gradient, int iteration, int epoch, int batchSize, boolean isPretrain) {
         if(batchSize <= 0){
             throw new IllegalArgumentException("Cannot update gradients: minibatch size must be >= 1. Got: " + batchSize);
         }
@@ -268,7 +268,7 @@ public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         //
         for (UpdaterBlock ub : updaterBlocks) {
-            if (ub.skipDueToPretrainConfig()) {
+            if (ub.skipDueToPretrainConfig(isPretrain)) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;

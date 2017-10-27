@@ -1099,7 +1099,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                            solver.optimize();
+                            solver.optimize(false);
                         }
                     }
                 }
@@ -1205,7 +1205,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                            solver.optimize();
+                            solver.optimize(false);
                         }
                     }
 
@@ -1319,7 +1319,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                     try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                        solver.optimize(false);
                     }
                 }
             }
@@ -2931,7 +2931,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                     .build();
                         }
                     }
-                    solver.optimize();
+                    solver.optimize(false);
 
                     //Finally, update the state of the RNN layers:
                     rnnUpdateStateWithTBPTTState();

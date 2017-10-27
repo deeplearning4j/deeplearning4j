@@ -268,7 +268,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
             solver = new Solver.Builder().model(this).configure(layerConf()).build();
         }
         this.optimizer = solver.getOptimizer();
-        solver.optimize();
+        solver.optimize(true);
     }
 
     @Override

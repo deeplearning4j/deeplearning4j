@@ -29,9 +29,11 @@ public interface Updater extends Serializable {
     /**
      * Updater: updates the model
      *
-     * @param layer
-     * @param gradient
-     * @param iteration
+     * @param layer      Layer (model) to update. May be a single Layer, a MultiLayerNetwork or ComputationGraph
+     * @param gradient   Gradient for model
+     * @param iteration  Current iteration count
+     * @param epoch      Current epoch count
+     * @param isPretrain True if currently doing layerwise pretraining, false otherwise
      */
-    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize);
+    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize, boolean isPretrain);
 }

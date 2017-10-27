@@ -214,7 +214,7 @@ public class TestOptimizers {
         ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
 
         opt.setupSearchState(new Pair<>(p.getFirst().getParameterGradients(), p.getSecond()));
-        opt.optimize();
+        opt.optimize(false);
         m.computeGradientAndScore(m.getInput(), m.getLabels());
         double scoreAfter = m.score();
 
@@ -295,7 +295,7 @@ public class TestOptimizers {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
-                opt.optimize();
+                opt.optimize(false);
                 Pair<Gradients,Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
@@ -499,7 +499,7 @@ public class TestOptimizers {
             } else {
                 ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
                 opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
-                opt.optimize();
+                opt.optimize(false);
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
@@ -750,7 +750,7 @@ public class TestOptimizers {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
-                opt.optimize();
+                opt.optimize(false);
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i],

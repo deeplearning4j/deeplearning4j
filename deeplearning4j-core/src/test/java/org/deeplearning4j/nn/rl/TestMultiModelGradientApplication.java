@@ -86,7 +86,7 @@ public class TestMultiModelGradientApplication {
                 Gradient g = p1.getFirst().getParameterGradients();
                 INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
                 INDArray net2GradBefore = p2.getFirst().getParameterGradients().gradient().dup(); //But net 2 gradient should not be
-                net2GradUpd.getUpdater().update(net2GradUpd, g, 0, 0, minibatch);
+                net2GradUpd.getUpdater().update(net2GradUpd, g, 0, 0, minibatch, false);
                 INDArray gAfter = g.gradient().dup();
                 INDArray net2GradAfter = p2.getFirst().getParameterGradients().gradient().dup();
 
@@ -173,7 +173,7 @@ public class TestMultiModelGradientApplication {
                 Gradient g = p1.getFirst().getParameterGradients();
                 INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
                 INDArray net2GradBefore = p2.getFirst().getParameterGradients().gradient().dup(); //But net 2 gradient should not be
-                net2GradUpd.getUpdater().update(g, 0, 0, minibatch);
+                net2GradUpd.getUpdater().update(g, 0, 0, minibatch, false);
                 INDArray gAfter = g.gradient().dup();
                 INDArray net2GradAfter = p2.getFirst().getParameterGradients().gradient().dup();
 

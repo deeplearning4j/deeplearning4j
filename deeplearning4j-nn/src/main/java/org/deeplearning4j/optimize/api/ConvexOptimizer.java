@@ -71,14 +71,14 @@ public interface ConvexOptimizer extends Serializable {
      * The gradient and score for this optimizer
      * @return the gradient and score for this optimizer
      */
-    Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels);
+    Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels, boolean isPretrain);
 
     /**
      * Calls optimize
      * @return whether the convex optimizer
      * converted or not
      */
-    boolean optimize();
+    boolean optimize(boolean isPretrain);
 
 
     /**
@@ -118,7 +118,7 @@ public interface ConvexOptimizer extends Serializable {
      * @param batchSize batchSize for update
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize);
+    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, boolean isPretrain);
 
     /**
      * Check termination conditions

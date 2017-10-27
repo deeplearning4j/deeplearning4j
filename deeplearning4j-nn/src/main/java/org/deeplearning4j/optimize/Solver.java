@@ -39,10 +39,10 @@ public class Solver {
     private ConvexOptimizer optimizer;
     private StepFunction stepFunction;
 
-    public void optimize() {
+    public void optimize(boolean isPretrain) {
         initOptimizer();
 
-        optimizer.optimize();
+        optimizer.optimize(isPretrain);
     }
 
     public void initOptimizer() {

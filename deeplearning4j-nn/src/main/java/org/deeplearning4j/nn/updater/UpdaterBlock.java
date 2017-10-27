@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -83,14 +84,10 @@ public class UpdaterBlock {
         return vs.getLayer().conf().isPretrainParam(vs.getParamName());
     }
 
-    public boolean skipDueToPretrainConfig() {
+    public boolean skipDueToPretrainConfig(boolean isPretrain) {
         if (!isPretrainUpdaterBlock())
             return false;
-        ParamState vs = layersAndVariablesInBlock.get(0);
-//        if(vs.getLayer() instanceof Model){
-//            return !((Model)vs.getLayer()).getOptimizationConfig().isPretrain(); //Skip if not pretrain
-//        }
-        throw new UnsupportedOperationException();
+        return !isPretrain;
     }
 
     public GradientUpdater getGradientUpdater() {
