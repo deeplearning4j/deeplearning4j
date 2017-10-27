@@ -6851,7 +6851,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 	}
 
 	// hypothetically at this point we have everything filled
-	auto result = op->execute(inputs, ttArgs, iiArgs);
+	auto result = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
 	if (result->status() != ND4J_STATUS_OK)
 		return result->status();

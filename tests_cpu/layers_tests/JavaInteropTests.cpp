@@ -202,3 +202,26 @@ TEST_F(JavaInteropTests, TestUpsampling_1) {
 
     ASSERT_TRUE(output.meanNumber() > 0.0);
 }
+
+
+TEST_F(JavaInteropTests, TestInplace_1) {
+    NDArray<float> input('c', {10, 10});
+    //NDArray<float> exp('c', {10, 10});
+    NDArrayFactory<float>::linspace(1, input);
+
+    NativeOps nativeOps;
+
+    nd4j::ops::clipbyvalue<float> op;
+
+    float extras[] = {-1.0f, 1.0f};
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+
+
+    Nd4jStatus result = nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras, 2, nullptr, 0, true);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    ASSERT_NEAR(1.0, input.meanNumber(), 1e-5);
+}
