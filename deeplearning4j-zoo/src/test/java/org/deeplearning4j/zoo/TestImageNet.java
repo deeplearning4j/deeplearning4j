@@ -62,7 +62,7 @@ public class TestImageNet {
     @Test
     public void testDarknetLabels() throws IOException {
         // set up model
-        ZooModel model = new Darknet19(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new Darknet19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -84,7 +84,7 @@ public class TestImageNet {
         System.gc();
 
         // set up model
-        model = new TinyYOLO(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        model = new TinyYOLO(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward

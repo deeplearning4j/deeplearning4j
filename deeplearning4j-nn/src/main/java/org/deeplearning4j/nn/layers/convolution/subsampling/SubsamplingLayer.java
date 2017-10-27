@@ -327,7 +327,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                                 + " " + layerId());
         }
 
-        return return ActivationsFactory.getInstance().create(output);
+        return ActivationsFactory.getInstance().create(output);
     }
 
     @Override

@@ -54,7 +54,6 @@ public class ModelSelector {
      *
      * @param numLabels
      * @param seed
-     * @param iterations
      * @param workspaceMode
      * @param zooTypes
      * @return A hashmap of zoo types and models.
