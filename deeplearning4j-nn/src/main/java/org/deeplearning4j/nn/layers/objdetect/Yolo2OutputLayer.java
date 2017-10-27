@@ -57,7 +57,11 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  * y2 = as above y axis<br>
  * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right<br>
  * <br>
- * Input format: [minibatch, 5B+C, H, W]    ->      Reshape (subset 1) to [minibatch, B, 5, H, W] with subset 2 being [minibatch, C, H, W]<br>
+ * Input format: [minibatch, B*(5+C), H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]<br>
+ * B = number of bounding boxes (determined by config)<br>
+ * C = number of classes<br>
+ * H = output/label height<br>
+ * W = output/label width<br>
  * <br>
  * Note that mask arrays are not required - this implementation infers the presence or absence of objects in each grid
  * cell from the class labels (which should be 1-hot if an object is present, or all 0s otherwise).
@@ -99,23 +103,24 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Various shape arrays, to reuse
         int[] nhw = new int[]{mb, h, w};
+        int[] nbhw = new int[]{mb, b, h, w};
 
-        //Labels shape: [mb, 4B+C, H, W]
+        //Labels shape: [mb, 4+C, H, W]
         //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
         // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
         // all 0s if no class label is present
         int size1 = labels.size(1);
-        INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());
+        INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
         INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1); //Shape: [minibatch, H, W]
 
         // ----- Step 1: Labels format conversion -----
         //First: Convert labels/ground truth (x1,y1,x2,y2) from "coordinates (grid box units)" format to "center position in grid box" format
-        //0.5 * ([x1,y1]+[x2,y2])   ->      shape: [mb, 2, H, W]
-        INDArray labelTLXY = labels.get(all(),interval(0,2), all(), all());
-        INDArray labelBRXY = labels.get(all(),interval(2,4), all(), all());
+        //0.5 * ([x1,y1]+[x2,y2])   ->      shape: [mb, B, 2, H, W]
+        INDArray labelTLXY = labels.get(all(), interval(0,2), all(), all());
+        INDArray labelBRXY = labels.get(all(), interval(2,4), all(), all());
 
         INDArray labelCenterXY = labelTLXY.add(labelBRXY).muli(0.5);  //In terms of grid units
-        INDArray labelsCenterXYInGridBox = labelCenterXY.dup(labelCenterXY.ordering());  //Nd4j.createUninitialized(labelCenterXY.shape(), labelCenterXY.ordering());
+        INDArray labelsCenterXYInGridBox = labelCenterXY.dup(labelCenterXY.ordering());         //[mb, 2, H, W]
         labelsCenterXYInGridBox.subi(Transforms.floor(labelsCenterXYInGridBox,true));
 
         //Also infer size/scale (label w/h) from (x1,y1,x2,y2) format to (w,h) format
@@ -125,9 +130,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         // ----- Step 2: apply activation functions to network output activations -----
-        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, 5B, H, W] to [minibatch, B, 5, H, W]
-        INDArray input5 = input.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
-        INDArray inputClassesPreSoftmax = input.get(all(), interval(5*b, 5*b+c), all(), all());
+        //Reshape from [minibatch, B*(5+C), H, W] to [minibatch, B, 5+C, H, W]
+        INDArray input5 = input.dup('c').reshape('c', mb, b, 5+c, h, w);
+        INDArray inputClassesPreSoftmax = input5.get(all(), all(), interval(5, 5+c), all(), all());
 
         // Sigmoid for x/y centers
         INDArray preSigmoidPredictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
@@ -174,7 +179,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.reshape(mb*b*h*w, 1);  //Must be C order before reshaping
         INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
-        INDArray mask2d = maskObjectPresent.reshape('c', new int[]{mb*h*w, 1});
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
                 .dup('c').reshape('c', mb*b*h*w, 2);
@@ -186,7 +190,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             labelsCenterXYInGridBroadcast.get(all(), point(i), all(), all(), all()).assign(labelsCenterXYInGridBox);
         }
         INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', mb*b*h*w, 2);    //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
-
 
         //Width/height (sqrt)
         INDArray predictedWHSqrt2d = predictedWHSqrt.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c'); //from [mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
@@ -204,9 +207,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         //Class prediction loss
-        INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,2,3,1) //[minibatch, c, h, w] To [mb, h, w, c]
-                .dup('c').reshape('c', new int[]{mb*h*w, c});
-        INDArray classLabels2d = classLabels.permute(0,2,3,1).dup('c').reshape('c', new int[]{mb*h*w, c});
+        INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,1,3,4,2) //[minibatch, b, c, h, w] To [mb, b, h, w, c]
+                .dup('c').reshape('c', new int[]{mb*b*h*w, c});
+        INDArray classLabelsBroadcast = Nd4j.createUninitialized(new int[]{mb, b, c, h, w}, 'c');
+        for(int i=0; i<b; i++ ){
+            classLabelsBroadcast.get(all(), point(i), all(), all(), all()).assign(classLabels); //[mb, c, h, w] to [mb, b, c, h, w]
+        }
+        INDArray classLabels2d = classLabelsBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', new int[]{mb*b*h*w, c});
 
         //Calculate the loss:
         ILossFunction lossConfidence = new LossL2();
@@ -215,7 +222,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
         double confidenceLoss = lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
                 + lambdaNoObj * lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
-        double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
+        double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask1_ij_obj_2d, false);
 
         this.score = lambdaCoord * (positionLoss + sizeScaleLoss) +
                 confidenceLoss  +
@@ -230,8 +237,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // ----- Gradient Calculation (specifically: return dL/dIn -----
 
         INDArray epsOut = Nd4j.create(input.shape(), 'c');
-        INDArray epsOut5 = Shape.newShapeNoCopy(epsOut.get(all(), interval(0,5*b), all(), all()), new int[]{mb, b, 5, h, w}, false);
-        INDArray epsClassPredictions = epsOut.get(all(), interval(5*b, 5*b+c), all(), all());
+        INDArray epsOut5 = Shape.newShapeNoCopy(epsOut, new int[]{mb, b, 5+c, h, w}, false);
+        INDArray epsClassPredictions = epsOut5.get(all(), all(), interval(5, 5+c), all(), all());    //Shape: [mb, b, 5+c, h, w]
         INDArray epsXY = epsOut5.get(all(), all(), interval(0,2), all(), all());
         INDArray epsWH = epsOut5.get(all(), all(), interval(2,4), all(), all());
         INDArray epsC = epsOut5.get(all(), all(), point(4), all(), all());
@@ -239,9 +246,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Calculate gradient component from class probabilities (softmax)
         //Shape: [minibatch*h*w, c]
-        INDArray gradPredictionLoss2d = layerConf().getLossClassPredictions().computeGradient(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d);
-        INDArray gradPredictionLoss4d = gradPredictionLoss2d.dup('c').reshape(mb, h, w, c).permute(0,3,1,2).dup('c');
-        epsClassPredictions.assign(gradPredictionLoss4d);
+        INDArray gradPredictionLoss2d = layerConf().getLossClassPredictions().computeGradient(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask1_ij_obj_2d);
+        INDArray gradPredictionLoss5d = gradPredictionLoss2d.dup('c').reshape(mb, b, h, w, c).permute(0,1,4,2,3).dup('c');
+        epsClassPredictions.assign(gradPredictionLoss5d);
 
 
         //Calculate gradient component from position (x,y) loss - dL_position/dx and dL_position/dy
@@ -326,12 +333,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int h = input.size(2);
         int w = input.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
-        int c = input.size(1)-5*b;
+        int c = (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
         INDArray output = Nd4j.create(input.shape(), 'c');
-        INDArray output4 = output.get(all(), interval(0,5*b), all(), all());
-        INDArray input4 = input.get(all(), interval(0,5*b), all(), all()).dup('c');
-        INDArray input5 = input4.reshape('c', mb, b, 5, h, w);
+        INDArray output5 = output.reshape('c', mb, b, 5+c, h, w);
+        INDArray output4 = output;  //output.get(all(), interval(0,5*b), all(), all());
+        INDArray input4 = input.dup('c');    //input.get(all(), interval(0,5*b), all(), all()).dup('c');
+        INDArray input5 = input4.reshape('c', mb, b, 5+c, h, w);
 
         //X/Y center in grid: sigmoid
         INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
@@ -350,14 +358,14 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Softmax
         //TODO OPTIMIZE?
-        INDArray inputClasses = input.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
-        INDArray classPredictionsPreSoftmax2d = inputClasses.permute(0,2,3,1).dup('c')  //Shape before reshape: [mb, h, w, c]
-                .reshape(mb*h*w, c);
+        INDArray inputClassesPreSoftmax = input5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
+        INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,1,3,4,2) //[minibatch, b, c, h, w] To [mb, b, h, w, c]
+                .dup('c').reshape('c', new int[]{mb*b*h*w, c});
         Transforms.softmax(classPredictionsPreSoftmax2d, false);
-        INDArray postSoftmax4d = classPredictionsPreSoftmax2d.reshape('c', mb, h, w, c ).permute(0, 3, 1, 2);
+        INDArray postSoftmax5d = classPredictionsPreSoftmax2d.reshape('c', mb, b, h, w, c ).permute(0, 1, 4, 2, 3);
 
-        INDArray outputClasses = output.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
-        outputClasses.assign(postSoftmax4d);
+        INDArray outputClasses = output5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
+        outputClasses.assign(postSoftmax5d);
 
         return output;
     }
@@ -634,18 +642,17 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int h = networkOutput.size(2);
         int w = networkOutput.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
-        int c = networkOutput.size(1)-5*b;
+        int c = (networkOutput.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
-        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, 5B, H, W] to [minibatch, B, 5, H, W]
-        INDArray output5 = networkOutput.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+        //Reshape from [minibatch, B*(5+C), H, W] to [minibatch, B, 5+C, H, W] to [minibatch, B, 5, H, W]
+        INDArray output5 = networkOutput.dup('c').reshape(mb, b, 5+c, h, w);
         INDArray predictedConfidence = output5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
-        INDArray softmax = networkOutput.get(all(), interval(5*b, 5*b+c), all(), all());
+        INDArray softmax = output5.get(all(), all(), interval(5, 5+c), all(), all());
 
         List<DetectedObject> out = new ArrayList<>();
         for( int i=0; i<mb; i++ ){
             for( int x=0; x<w; x++ ){
                 for( int y=0; y<h; y++ ){
-                    INDArray sm = null;
                     for( int box=0; box<b; box++ ){
                         double conf = predictedConfidence.getDouble(i, box, y, x);
                         if(conf < threshold){
@@ -661,10 +668,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         px += x;
                         py += y;
 
-                        if(sm == null){
-                            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                                sm = softmax.get(point(i), all(), point(x), point(y)).dup();
-                            }
+
+                        INDArray sm;
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            sm = softmax.get(point(i), point(box), all(), point(y), point(x)).dup();
                         }
 
                         out.add(new DetectedObject(i, px, py, pw, ph, sm, conf));

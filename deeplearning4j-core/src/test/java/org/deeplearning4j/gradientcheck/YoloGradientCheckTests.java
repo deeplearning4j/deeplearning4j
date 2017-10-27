@@ -62,7 +62,7 @@ public class YoloGradientCheckTests {
         int c = 3;
         int b = 3;
 
-        int yoloDepth = 5*b + c;
+        int yoloDepth = b * (5 + c);
         Activation a = Activation.TANH;
 
         Nd4j.getRandom().setSeed(1234567);
@@ -185,7 +185,7 @@ public class YoloGradientCheckTests {
         rr.initialize(new FileSplit(jpg));
 
         int nClasses = rr.getLabels().size();
-        int depthOut = 5*bbPriors.size(0) + nClasses;
+        int depthOut = bbPriors.size(0) * (5 + nClasses);
 
 
         DataSetIterator iter = new RecordReaderDataSetIterator(rr,2,1,1,true);
