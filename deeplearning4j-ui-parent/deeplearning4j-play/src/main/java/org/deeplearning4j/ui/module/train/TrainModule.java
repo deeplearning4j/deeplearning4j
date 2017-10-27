@@ -10,8 +10,6 @@ import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
@@ -875,9 +873,8 @@ public class TrainModule implements UIModule {
                     String vertexName = gi.getVertexNames().get(layerIdx);
 
                     Map<String, Layer> vertices = conf.getVertices();
-                    if (vertices.containsKey(vertexName) && vertices.get(vertexName) instanceof LayerVertex) {
-                        LayerVertex lv = (LayerVertex) vertices.get(vertexName);
-                        layer = lv.getLayerConf();
+                    if (vertices.containsKey(vertexName) ) {
+                        layer = vertices.get(vertexName);
                     } else if (conf.getNetworkInputs().contains(vertexName)) {
                         layerType = "Input";
                     } else {

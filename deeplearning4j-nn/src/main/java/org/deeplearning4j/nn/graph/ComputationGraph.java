@@ -42,7 +42,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.Edge;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -1520,10 +1519,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         score = 0.0;
         for (String s : configuration.getNetworkOutputs()) {
             Layer gv = verticesMap.get(s);
-
-            if(gv instanceof LayerVertex){
-                gv = ((LayerVertex)gv).getLayer();
-            }
             IOutputLayer ol = ((IOutputLayer) gv);
             Activations l = ActivationsFactory.getInstance().create(ol.getLabels(), ol.getLabelMask());
             //Compute score, using output layer *output* plus labels
@@ -1901,12 +1896,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //                        INDArray currLabelsMask = (labelMaskArrays == null ? null : labelMaskArrays[thisOutputNumber]);
 //                        outputLayer.setLabels(currLabels, currLabelsMask);
                         //Already set the labels and masks earlier...
-                    } else if(current instanceof LayerVertex && ((LayerVertex) current).getLayer() instanceof IOutputLayer){
-                        IOutputLayer outputLayer = (IOutputLayer) ((LayerVertex) current).getLayer();
-
-                        INDArray currLabels = labels[thisOutputNumber];
-                        INDArray currLabelsMask = (labelMaskArrays == null ? null : labelMaskArrays[thisOutputNumber]);
-                        outputLayer.setLabels(currLabels, currLabelsMask);
                     } else {
                         if ((externalEpsilons == null || externalEpsilons.length == 0) && labels[thisOutputNumber] != null) {
                             throw new DL4JException("Layer \"" + cName + "\" of type "
@@ -3392,15 +3381,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     inShape = currentInType.toString();
                     inputTypeList.add(currentInType);
 
-                    //TODO
-                    org.deeplearning4j.nn.conf.layers.Layer l = null;
-                    if(configuration.getVertices().get(currentVertexName) instanceof org.deeplearning4j.nn.conf.graph.LayerVertex){
-                        l = ((org.deeplearning4j.nn.conf.graph.LayerVertex)configuration.getVertices().get(currentVertexName)).getLayerConf();
-                    }
+                    org.deeplearning4j.nn.conf.layers.Layer l = configuration.getVertices().get(currentVertexName);
                     if(l != null){
                         InputPreProcessor layerVertexPreProcesor = l.getPreProcessor();
                         if (layerVertexPreProcesor != null) {
-                            inShape += "-->" + layerVertexPreProcesor.getOutputType(currentInType);
+                            inShape += "-->" + Arrays.toString(layerVertexPreProcesor.getOutputType(currentInType));
                         }
                     }
                 }

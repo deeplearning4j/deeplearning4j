@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -265,29 +264,15 @@ public class TestConvolutionModes {
                                             .nOut(3).build(), "7")
                             .setOutputs("8").build();
 
-            assertEquals(cm, ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf())
-                            .getConvolutionMode());
-            assertEquals(ConvolutionMode.Strict,
-                            ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf())
-                                            .getConvolutionMode());
-            assertEquals(ConvolutionMode.Truncate,
-                            ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf())
-                                            .getConvolutionMode());
-            assertEquals(ConvolutionMode.Same,
-                            ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("3")).getLayerConf())
-                                            .getConvolutionMode());
+            assertEquals(cm, ((ConvolutionLayer) conf.getVertices().get("0")).getConvolutionMode());
+            assertEquals(ConvolutionMode.Strict,((ConvolutionLayer) conf.getVertices().get("1")).getConvolutionMode());
+            assertEquals(ConvolutionMode.Truncate,((ConvolutionLayer) conf.getVertices().get("2")).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((ConvolutionLayer) conf.getVertices().get("3")).getConvolutionMode());
 
-            assertEquals(cm, ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("4")).getLayerConf())
-                            .getConvolutionMode());
-            assertEquals(ConvolutionMode.Strict,
-                            ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("5")).getLayerConf())
-                                            .getConvolutionMode());
-            assertEquals(ConvolutionMode.Truncate,
-                            ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("6")).getLayerConf())
-                                            .getConvolutionMode());
-            assertEquals(ConvolutionMode.Same,
-                            ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("7")).getLayerConf())
-                                            .getConvolutionMode());
+            assertEquals(cm, ((SubsamplingLayer) conf.getVertices().get("4")).getConvolutionMode());
+            assertEquals(ConvolutionMode.Strict,((SubsamplingLayer) conf.getVertices().get("5")).getConvolutionMode());
+            assertEquals(ConvolutionMode.Truncate,((SubsamplingLayer) conf.getVertices().get("6")).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((SubsamplingLayer) conf.getVertices().get("7")).getConvolutionMode());
         }
     }
 

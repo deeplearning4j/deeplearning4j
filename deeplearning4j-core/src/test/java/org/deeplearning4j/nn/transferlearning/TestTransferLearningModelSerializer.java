@@ -4,8 +4,6 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -103,8 +101,8 @@ public class TestTransferLearningModelSerializer {
         assertTrue(withFrozen.getLayer(1) instanceof FrozenLayer);
 
         Map<String, Layer> m = withFrozen.getConfiguration().getVertices();
-        Layer l0 = ((LayerVertex) m.get("0")).getLayerConf();
-        Layer l1 = ((LayerVertex) m.get("1")).getLayerConf();
+        Layer l0 = m.get("0");
+        Layer l1 = m.get("1");
         assertTrue(l0 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
         assertTrue(l1 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 

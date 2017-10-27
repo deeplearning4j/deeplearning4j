@@ -3,8 +3,6 @@ package org.deeplearning4j.nn.conf.serde;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
@@ -39,15 +37,8 @@ public class ComputationGraphConfigurationDeserializer
         //Updater configuration changed after 0.8.0 release
         //Previously: enumerations and fields. Now: classes
         //Here, we manually create the appropriate Updater instances, if the IUpdater field is empty
-
-        List<Layer> layerList = new ArrayList<>();
         Map<String, Layer> vertices = conf.getVertices();
-        for (Map.Entry<String, Layer> entry : vertices.entrySet()) {
-            if (entry.getValue() instanceof LayerVertex) {
-                LayerVertex lv = (LayerVertex) entry.getValue();
-                layerList.add(lv.getLayerConf());
-            }
-        }
+        List<Layer> layerList = new ArrayList<>(vertices.values());
 
         Layer[] layers = layerList.toArray(new Layer[layerList.size()]);
         //Now, check if we need to manually handle IUpdater deserialization from legacy format

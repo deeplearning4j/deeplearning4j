@@ -21,17 +21,13 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.OptimizationConfig;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
-import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
-import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
@@ -341,11 +337,12 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
         int layerCount = 0;
         Map<String, Layer> vertexMap = conf.getVertices();
         JsonNode vertices = null;
+        /*
+        //LEGACY CODE FOR ACTIVATION FUNCTIONS
         for (Map.Entry<String, Layer> entry : vertexMap.entrySet()) {
             if (!(entry.getValue() instanceof LayerVertex)) {
                 continue;
             }
-
             LayerVertex lv = (LayerVertex) entry.getValue();
             if (lv.getLayerConf() != null && lv.getLayerConf() != null) {
                 Layer layer = lv.getLayerConf();
@@ -386,6 +383,7 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
                 }
             }
         }
+        */
 
         return conf;
     }
@@ -667,19 +665,10 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
             Layer gv = vertices.get(s);
 
             List<InputType> inputTypeList = new ArrayList<>();
-
-            if (gv instanceof LayerVertex) {
-                //Add preprocessor, if necessary:
-                String in = vertexInputs.get(s).get(0);
-                InputType layerInput = vertexOutputs.get(in);
-                inputTypeList.add(layerInput);
-                currLayerIdx++;
-            } else {
-                List<String> inputs = vertexInputs.get(s);
-                if (inputs != null) {
-                    for (String inputVertexName : inputs) {
-                        inputTypeList.add(vertexOutputs.get(inputVertexName));
-                    }
+            List<String> inputs = vertexInputs.get(s);
+            if (inputs != null) {
+                for (String inputVertexName : inputs) {
+                    inputTypeList.add(vertexOutputs.get(inputVertexName));
                 }
             }
 

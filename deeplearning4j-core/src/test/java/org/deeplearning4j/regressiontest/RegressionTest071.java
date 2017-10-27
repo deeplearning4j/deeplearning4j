@@ -6,7 +6,6 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -228,22 +227,21 @@ public class RegressionTest071 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf();
+        GravesLSTM l0 = (GravesLSTM) conf.getVertices().get("0");
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
-        GravesBidirectionalLSTM l1 =
-                        (GravesBidirectionalLSTM) ((LayerVertex) conf.getVertices().get("1")).getLayerConf();
+        GravesBidirectionalLSTM l1 = (GravesBidirectionalLSTM) conf.getVertices().get("1");
         assertEquals("softsign", l1.getActivationFn().toString());
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
-        RnnOutputLayer l2 = (RnnOutputLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf();
+        RnnOutputLayer l2 = (RnnOutputLayer) conf.getVertices().get("2");
         assertEquals(4, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals("softmax", l2.getActivationFn().toString());
