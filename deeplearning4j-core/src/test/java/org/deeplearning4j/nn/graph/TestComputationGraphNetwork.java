@@ -7,7 +7,6 @@ import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
@@ -16,7 +15,6 @@ import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
-import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -328,15 +326,13 @@ public class TestComputationGraphNetwork {
                 .addLayer("rnn", new GravesLSTM.Builder().nOut(5).build(), "in")
                 .addLayer("out", new RnnOutputLayer.Builder().nOut(5).build(), "rnn").setOutputs("out").build();
 
-        assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf1.getVertices().get("rnn")).getLayerConf())
-                .getNIn());
-        assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf1.getVertices().get("out")).getLayerConf())
-                .getNIn());
+        assertEquals(5, ((FeedForwardLayer) conf1.getVertices().get("rnn")).getNIn());
+        assertEquals(5, ((FeedForwardLayer) conf1.getVertices().get("out")).getNIn());
 
-        LayerVertex lv1 = (LayerVertex) conf1.getVertices().get("rnn");
-        assertTrue(lv1.getLayerConf().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
-        LayerVertex lv2 = (LayerVertex) conf1.getVertices().get("out");
-        assertNull(lv2.getLayerConf().getPreProcessor());
+        Layer lv1 = conf1.getVertices().get("rnn");
+        assertTrue(lv1.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        Layer lv2 = conf1.getVertices().get("out");
+        assertNull(lv2.getPreProcessor());
 
         //Check RNN -> FF -> RNN
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
@@ -344,15 +340,13 @@ public class TestComputationGraphNetwork {
                 .addLayer("ff", new DenseLayer.Builder().nOut(5).build(), "in")
                 .addLayer("out", new RnnOutputLayer.Builder().nOut(5).build(), "ff").setOutputs("out").build();
 
-        assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf2.getVertices().get("ff")).getLayerConf())
-                .getNIn());
-        assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf2.getVertices().get("out")).getLayerConf())
-                .getNIn());
+        assertEquals(5, ((FeedForwardLayer) conf2.getVertices().get("ff")).getNIn());
+        assertEquals(5, ((FeedForwardLayer) conf2.getVertices().get("out")).getNIn());
 
-        lv1 = (LayerVertex) conf2.getVertices().get("ff");
-        assertTrue(lv1.getLayerConf().getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
-        lv2 = (LayerVertex) conf2.getVertices().get("out");
-        assertTrue(lv2.getLayerConf().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        lv1 = conf2.getVertices().get("ff");
+        assertTrue(lv1.getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
+        lv2 = conf2.getVertices().get("out");
+        assertTrue(lv2.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
         //CNN -> Dense
         ComputationGraphConfiguration conf3 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
@@ -367,21 +361,21 @@ public class TestComputationGraphNetwork {
                 .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "dense").setOutputs("out")
                 .build();
         //Check preprocessors:
-        lv1 = (LayerVertex) conf3.getVertices().get("cnn");
-        assertNull(lv1.getLayerConf().getPreProcessor()); //Shouldn't be adding preprocessor here
+        lv1 = conf3.getVertices().get("cnn");
+        assertNull(lv1.getPreProcessor()); //Shouldn't be adding preprocessor here
 
-        lv2 = (LayerVertex) conf3.getVertices().get("pool");
-        assertNull(lv2.getLayerConf().getPreProcessor());
-        LayerVertex lv3 = (LayerVertex) conf3.getVertices().get("dense");
-        assertTrue(lv3.getLayerConf().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) lv3.getLayerConf().getPreProcessor();
+        lv2 = conf3.getVertices().get("pool");
+        assertNull(lv2.getPreProcessor());
+        Layer lv3 = conf3.getVertices().get("dense");
+        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) lv3.getPreProcessor();
         assertEquals(3, proc.getNumChannels());
         assertEquals(7, proc.getInputHeight());
         assertEquals(7, proc.getInputWidth());
-        LayerVertex lv4 = (LayerVertex) conf3.getVertices().get("out");
-        assertNull(lv4.getLayerConf().getPreProcessor());
+        Layer lv4 = conf3.getVertices().get("out");
+        assertNull(lv4.getPreProcessor());
         //Check nIns:
-        assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3.getLayerConf()).getNIn());
+        assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3).getNIn());
 
         //CNN->Dense, RNN->Dense, Dense->RNN
         ComputationGraphConfiguration conf4 =
@@ -395,30 +389,30 @@ public class TestComputationGraphNetwork {
                                 "cnn") //(14-2+0)/2+1=7
                         .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
                         .addLayer("dense2", new DenseLayer.Builder().nOut(10).build(), "inRNN")
-                        .addVertex("merge", new MergeVertex(), "dense", "dense2")
+                        .addLayer("merge", new MergeVertex(), "dense", "dense2")
                         .addLayer("out", new RnnOutputLayer.Builder().nOut(5).build(), "merge")
                         .setOutputs("out").build();
 
         //Check preprocessors:
-        lv1 = (LayerVertex) conf4.getVertices().get("cnn");
-        assertNull(lv1.getLayerConf().getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
+        lv1 = conf4.getVertices().get("cnn");
+        assertNull(lv1.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
-        lv2 = (LayerVertex) conf4.getVertices().get("pool");
-        assertNull(lv2.getLayerConf().getPreProcessor());
-        lv3 = (LayerVertex) conf4.getVertices().get("dense");
-        assertTrue(lv3.getLayerConf().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        proc = (CnnToFeedForwardPreProcessor) lv3.getLayerConf().getPreProcessor();
+        lv2 = conf4.getVertices().get("pool");
+        assertNull(lv2.getPreProcessor());
+        lv3 = conf4.getVertices().get("dense");
+        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        proc = (CnnToFeedForwardPreProcessor) lv3.getPreProcessor();
         assertEquals(3, proc.getNumChannels());
         assertEquals(7, proc.getInputHeight());
         assertEquals(7, proc.getInputWidth());
-        lv4 = (LayerVertex) conf4.getVertices().get("dense2");
-        assertTrue(lv4.getLayerConf().getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
-        LayerVertex lv5 = (LayerVertex) conf4.getVertices().get("out");
-        assertTrue(lv5.getLayerConf().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        lv4 = conf4.getVertices().get("dense2");
+        assertTrue(lv4.getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
+        Layer lv5 = conf4.getVertices().get("out");
+        assertTrue(lv5.getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
         //Check nIns:
-        assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3.getLayerConf()).getNIn());
-        assertEquals(5, ((FeedForwardLayer) lv4.getLayerConf()).getNIn());
-        assertEquals(20, ((FeedForwardLayer) lv5.getLayerConf()).getNIn()); //10+10 out of the merge vertex -> 20 in to output layer vertex
+        assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3).getNIn());
+        assertEquals(5, ((FeedForwardLayer) lv4).getNIn());
+        assertEquals(20, ((FeedForwardLayer) lv5).getNIn()); //10+10 out of the merge vertex -> 20 in to output layer vertex
 
 
         //Input to 2 CNN layers:
@@ -441,17 +435,17 @@ public class TestComputationGraphNetwork {
                                 "cnn_1", "cnn_2")
                         .addLayer("output", new OutputLayer.Builder().nOut(10).build(), "max_1") //.nIn(7 * 7 * 6)
                         .setOutputs("output").pretrain(false).backprop(true).build();
-        lv1 = (LayerVertex) conf5.getVertices().get("cnn_1");
-        assertNull(lv1.getLayerConf().getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
+        lv1 = conf5.getVertices().get("cnn_1");
+        assertNull(lv1.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
-        lv2 = (LayerVertex) conf5.getVertices().get("cnn_2");
-        assertNull(lv2.getLayerConf().getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
+        lv2 = conf5.getVertices().get("cnn_2");
+        assertNull(lv2.getPreProcessor()); //Expect no preprocessor: cnn data -> cnn layer
 
-        assertNull(((LayerVertex) conf5.getVertices().get("max_1")).getLayerConf().getPreProcessor());
+        assertNull((conf5.getVertices().get("max_1")).getPreProcessor());
 
-        lv3 = (LayerVertex) conf5.getVertices().get("output");
-        assertTrue(lv3.getLayerConf().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) lv3.getLayerConf().getPreProcessor();
+        lv3 = conf5.getVertices().get("output");
+        assertTrue(lv3.getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) lv3.getPreProcessor();
         assertEquals(6, cnnff.getNumChannels());
         assertEquals(7, cnnff.getInputHeight());
         assertEquals(7, cnnff.getInputWidth());
@@ -701,10 +695,9 @@ public class TestComputationGraphNetwork {
                 .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer").setOutputs("out")
                 .pretrain(false).backprop(true).build();
 
-        LayerVertex lv = (LayerVertex) conf.getVertices().get("layer");
-        FeedForwardLayer l = ((FeedForwardLayer) (lv).getLayerConf());
+        FeedForwardLayer l = (FeedForwardLayer) conf.getVertices().get("layer");
         assertEquals(3, l.getNIn());
-        assertNull(lv.getLayerConf().getPreProcessor());
+        assertNull(l.getPreProcessor());
 
         //Check the equivalent config, but with flat conv data input instead
         //In this case, the only difference should be the addition of a preprocessor
@@ -718,11 +711,10 @@ public class TestComputationGraphNetwork {
                 .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "layer").setOutputs("out")
                 .pretrain(false).backprop(true).build();
 
-        lv = (LayerVertex) conf.getVertices().get("layer");
-        l = ((FeedForwardLayer) (lv).getLayerConf());
+        l = (FeedForwardLayer) conf.getVertices().get("layer");
         assertEquals(3, l.getNIn());
-        assertNotNull(lv.getLayerConf().getPreProcessor());
-        InputPreProcessor preProcessor = lv.getLayerConf().getPreProcessor();
+        assertNotNull(l.getPreProcessor());
+        InputPreProcessor preProcessor = l.getPreProcessor();
         assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
         FeedForwardToCnnPreProcessor preproc = (FeedForwardToCnnPreProcessor) preProcessor;
         assertEquals(10, preproc.getInputHeight());
@@ -743,21 +735,18 @@ public class TestComputationGraphNetwork {
                 .pretrain(false).backprop(true).build();
 
         //Check subsampling layer:
-        lv = (LayerVertex) conf.getVertices().get("l0");
-        SubsamplingLayer sl = ((SubsamplingLayer) (lv).getLayerConf());
-        assertNotNull(lv.getLayerConf().getPreProcessor());
-        preProcessor = lv.getLayerConf().getPreProcessor();
+        SubsamplingLayer sl = (SubsamplingLayer) conf.getVertices().get("l0");
+        assertNotNull(l.getPreProcessor());
+        preProcessor = l.getPreProcessor();
         assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
         preproc = (FeedForwardToCnnPreProcessor) preProcessor;
         assertEquals(10, preproc.getInputHeight());
         assertEquals(8, preproc.getInputWidth());
         assertEquals(3, preproc.getNumChannels());
         //Check dense layer
-        lv = (LayerVertex) conf.getVertices().get("layer");
-        l = ((FeedForwardLayer) (lv).getLayerConf());
+        l = (FeedForwardLayer) conf.getVertices().get("layer");
         assertEquals(3, l.getNIn());
-        assertNull(lv.getLayerConf().getPreProcessor());
-
+        assertNull(l.getPreProcessor());
     }
 
     @Test
@@ -898,23 +887,23 @@ public class TestComputationGraphNetwork {
                 .activation(Activation.IDENTITY);
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
-                .addLayer("denseCentre0", new DenseLayer.Builder().nIn(10).nOut(9).build(), "inCentre")
-                .addLayer("denseCentre1", new DenseLayer.Builder().nIn(9).nOut(8).build(), "denseCentre0")
-                .addLayer("denseCentre2", new DenseLayer.Builder().nIn(8).nOut(7).build(), "denseCentre1")
-                .addLayer("denseCentre3", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
-                .addLayer("outCentre",
+                .add("denseCentre0", new DenseLayer.Builder().nIn(10).nOut(9).build(), "inCentre")
+                .add("denseCentre1", new DenseLayer.Builder().nIn(9).nOut(8).build(), "denseCentre0")
+                .add("denseCentre2", new DenseLayer.Builder().nIn(8).nOut(7).build(), "denseCentre1")
+                .add("denseCentre3", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
+                .add("outCentre",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7).nOut(4).build(),
                         "denseCentre3")
-                .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
-                .addLayer("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "subsetLeft")
-                .addLayer("outLeft",
+                .add("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
+                .add("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "subsetLeft")
+                .add("outLeft",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).build(),
                         "denseLeft0")
-                .addLayer("denseRight", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
-                .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "inRight")
-                .addVertex("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
-                .addLayer("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(), "mergeRight")
-                .addLayer("outRight",
+                .add("denseRight", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
+                .add("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "inRight")
+                .add("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
+                .add("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(), "mergeRight")
+                .add("outRight",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(5).build(),
                         "denseRight1")
                 .setOutputs("outLeft", "outCentre", "outRight").build();
@@ -933,10 +922,10 @@ public class TestComputationGraphNetwork {
     public void testFeedForward() {
 
         ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
-                .addVertex("merge", new MergeVertex(), "0", "1")
-                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "merge").setOutputs("out")
+                .add("0", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
+                .add("1", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
+                .add("merge", new MergeVertex(), "0", "1")
+                .add("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "merge").setOutputs("out")
                 .build();
 
         ComputationGraph cg = new ComputationGraph(c);

@@ -481,20 +481,17 @@ public class TransferLearning {
             this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,
                             fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
 
-            /*
+
             Map<String, Layer> vertices = this.editedConfigBuilder.getVertices();
             for (Map.Entry<String, Layer> gv : vertices.entrySet()) {
-                if (gv.getValue() instanceof LayerVertex) {
-                    LayerVertex lv = (LayerVertex) gv.getValue();
-                    NeuralNetConfiguration nnc = lv.getLayerConf().clone();
-                    fineTuneConfiguration.applyToNeuralNetConfiguration(nnc);
-                    vertices.put(gv.getKey(), new LayerVertex(nnc));
-                    nnc.getLayer().setLayerName(gv.getKey());
-                }
+                Layer lv = gv.getValue();
+                Layer newLayer = lv.clone();
+//                fineTuneConfiguration.applyToNeuralNetConfiguration(newLayer);
+                vertices.put(gv.getKey(),newLayer);
+                newLayer.setLayerName(gv.getKey());
+                throw new RuntimeException();
             }
             return this;
-            */
-            throw new RuntimeException();
         }
 
         /**
@@ -704,11 +701,8 @@ public class TransferLearning {
                 //No fine tune config has been set. One isn't required, but we need one to create the editedConfigBuilder
                 //So: create an empty finetune config, which won't override anything
                 //but keep the seed
-                /*
                 fineTuneConfiguration(new FineTuneConfiguration.Builder()
-                                .seed(origConfig.getDefaultConfiguration().getSeed()).build());
-                                */
-                throw new RuntimeException();
+                                .seed(origConfig.getSeed()).build());
             }
         }
 
