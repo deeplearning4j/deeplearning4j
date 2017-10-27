@@ -671,7 +671,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
                         INDArray sm;
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            sm = softmax.get(point(i), point(box), all(), point(x), point(y)).dup();
+                            sm = softmax.get(point(i), point(box), all(), point(y), point(x)).dup();
                         }
 
                         out.add(new DetectedObject(i, px, py, pw, ph, sm, conf));
