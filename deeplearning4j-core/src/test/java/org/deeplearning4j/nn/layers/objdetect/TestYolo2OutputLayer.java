@@ -445,7 +445,7 @@ public class TestYolo2OutputLayer {
         rr.initialize(fileSplit);
 
         int nClasses = rr.getLabels().size();
-        int depthOut = bbPriors.size(0)*5 + nClasses;
+        int depthOut = bbPriors.size(0) * (5 + nClasses);
         // make sure idxCat is not 0 to test DetectedObject.getPredictedClass()
         List<String> labels = rr.getLabels();
         labels.add(labels.remove(labels.indexOf("cat")));

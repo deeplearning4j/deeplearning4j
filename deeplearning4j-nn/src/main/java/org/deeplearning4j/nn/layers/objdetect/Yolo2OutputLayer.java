@@ -647,18 +647,17 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int h = networkOutput.size(2);
         int w = networkOutput.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
-        int c = networkOutput.size(1)-5*b;
+        int c = (networkOutput.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
-        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, 5B, H, W] to [minibatch, B, 5, H, W]
-        INDArray output5 = networkOutput.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+        //Reshape from [minibatch, B*(5+C), H, W] to [minibatch, B, 5+C, H, W] to [minibatch, B, 5, H, W]
+        INDArray output5 = networkOutput.dup('c').reshape(mb, b, 5+c, h, w);
         INDArray predictedConfidence = output5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
-        INDArray softmax = networkOutput.get(all(), interval(5*b, 5*b+c), all(), all());
+        INDArray softmax = output5.get(all(), all(), interval(5, 5+c), all(), all());
 
         List<DetectedObject> out = new ArrayList<>();
         for( int i=0; i<mb; i++ ){
             for( int x=0; x<w; x++ ){
                 for( int y=0; y<h; y++ ){
-                    INDArray sm = null;
                     for( int box=0; box<b; box++ ){
                         double conf = predictedConfidence.getDouble(i, box, y, x);
                         if(conf < threshold){
@@ -674,10 +673,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         px += x;
                         py += y;
 
-                        if(sm == null){
-                            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                                sm = softmax.get(point(i), all(), point(x), point(y)).dup();
-                            }
+
+                        INDArray sm;
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            sm = softmax.get(point(i), point(box), all(), point(x), point(y)).dup();
                         }
 
                         out.add(new DetectedObject(i, px, py, pw, ph, sm, conf));
