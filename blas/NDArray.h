@@ -467,8 +467,14 @@ namespace nd4j {
         // negative operator, it makes all array elements = -elements
         NDArray<T> operator-() const;
 
-        // multiplication operator array*array
-        NDArray<T> operator*(const NDArray<T>& other) const;
+        // multiplication operator array1*array2
+        NDArray<T> operator*(const NDArray<T>& other) const;        
+
+        // multiplication operator array1 *= array2
+        void operator*=(const NDArray<T>& other);
+
+        // multiplication operator array*scalar
+        void operator*=(const T scalar);
 
         // mathematical multiplication of two arrays
         friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);

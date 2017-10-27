@@ -4,6 +4,7 @@
 
 #include "testlayers.h"
 #include <Block.h>
+#include <iomanip>
 #include <Variable.h>
 #include <VariableSpace.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -2434,7 +2435,7 @@ TEST_F(DeclarableOpsTests, BatchNorm4D_BP) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_1) {
+TEST_F(DeclarableOpsTests, sru1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2458,7 +2459,7 @@ TEST_F(DeclarableOpsTests, sru_1) {
     expState.setBuffer(expStateBuff);
     expOut.setBuffer(expOutputBuff);    
 
-    nd4j::ops::sru1<double> op;
+    nd4j::ops::sru<double> op;
     nd4j::ArrayList<double>*  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
     ASSERT_TRUE(results->size() == 2);    
 
@@ -2473,7 +2474,7 @@ TEST_F(DeclarableOpsTests, sru_1) {
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_2) {
+TEST_F(DeclarableOpsTests, sru_logic1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2497,7 +2498,7 @@ TEST_F(DeclarableOpsTests, sru_2) {
     expState.setBuffer(expStateBuff);
     expOut.setBuffer(expOutputBuff);    
 
-    nd4j::ops::sru2<double> op;
+    nd4j::ops::sru_logic<double> op;
     nd4j::ArrayList<double>*  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
     ASSERT_TRUE(results->size() == 2);    
 
@@ -2512,7 +2513,7 @@ TEST_F(DeclarableOpsTests, sru_2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_bp_1) {
+TEST_F(DeclarableOpsTests, sru_bp) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2550,8 +2551,8 @@ TEST_F(DeclarableOpsTests, sru_bp_1) {
     inGradCt.assign(0.5);
     inGradH.assign(0.5);
     
-    nd4j::ops::sru_bp_1<double> bp;
-    nd4j::ArrayList<double>*  resultsBP = bp.execute({&input, &weights, &bias, &init, &mask, &state, &inGradCt, &inGradH}, {}, {});
+    nd4j::ops::sru_bp<double> bp;
+    nd4j::ArrayList<double>*  resultsBP = bp.execute({&input, &weights, &bias, &init, &state, &inGradCt, &inGradH, &mask}, {}, {});
     ASSERT_TRUE(resultsBP->size() == 4);    
 
     NDArray<double>* gradX    = resultsBP->at(0);
@@ -2560,15 +2561,15 @@ TEST_F(DeclarableOpsTests, sru_bp_1) {
     NDArray<double>* gradInit = resultsBP->at(3);
 
     ASSERT_TRUE(expGradX.equalsTo(gradX,1e-4)); 
-    ASSERT_TRUE(expGradW.equalsTo(gradW,1e-4));
-    ASSERT_TRUE(expGradB.equalsTo(gradB,1e-4));
-    ASSERT_TRUE(expGradInit.equalsTo(gradInit,1e-4));
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+    ASSERT_TRUE(expGradB.equalsTo(gradB));
+    ASSERT_TRUE(expGradInit.equalsTo(gradInit));
     
     delete resultsBP;
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_bp_2) {
+TEST_F(DeclarableOpsTests, sru_bp_logic1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2606,8 +2607,8 @@ TEST_F(DeclarableOpsTests, sru_bp_2) {
     inGradCt.assign(0.5);
     inGradH.assign(0.5);
     
-    nd4j::ops::sru_bp_2<double> bp;
-    nd4j::ArrayList<double>*  resultsBP = bp.execute({&input, &weights, &bias, &init, &mask, &state, &inGradCt, &inGradH}, {}, {});
+    nd4j::ops::sru_bp_logic<double> bp;
+    nd4j::ArrayList<double>*  resultsBP = bp.execute({&input, &weights, &bias, &init, &state, &inGradCt, &inGradH, &mask}, {}, {});
     ASSERT_TRUE(resultsBP->size() == 4);    
 
     NDArray<double>* gradX    = resultsBP->at(0);
@@ -2615,43 +2616,107 @@ TEST_F(DeclarableOpsTests, sru_bp_2) {
     NDArray<double>* gradB    = resultsBP->at(2); 
     NDArray<double>* gradInit = resultsBP->at(3);
 
-    ASSERT_TRUE(expGradX.equalsTo(gradX,1e-4)); 
-    ASSERT_TRUE(expGradW.equalsTo(gradW,1e-4));
-    ASSERT_TRUE(expGradB.equalsTo(gradB,1e-4));
-    ASSERT_TRUE(expGradInit.equalsTo(gradInit,1e-4));
+    ASSERT_TRUE(expGradX.equalsTo(gradX, 1e-4)); 
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+    ASSERT_TRUE(expGradB.equalsTo(gradB));
+    ASSERT_TRUE(expGradInit.equalsTo(gradInit));
     
     delete resultsBP;
 }
 
-//////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests, Sum2) {
+//////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, sru_bi_1) {
 
-	// float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
-	// int xShape[]  = {2, 4, 2, 2, 1, 0, 1, 99};
-	// float expBuff[] = {36, 0};
-	// int expShape[]  = {2, 1, 2, 2, 1, 0, 1, 99};
+    const int bS = 2;
+    const int K = 3;    
+    const int N = 4;
+    double expStateBuff[] =  {1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857};
+    double expOutputBuff[] = {0.779265, 0.779265, 0.779265, 0.810752, 0.810752, 0.810752, 0.779265, 0.779265, 0.779265, 0.810752, 0.810752, 0.810752, 0.790317, 0.790317, 0.790317, 0.800804, 0.800804, 0.800804, 0.790317, 0.790317, 0.790317, 0.800804, 0.800804, 0.800804, 0.800804, 0.800804, 0.800804, 0.790317, 0.790317, 0.790317, 0.800804, 0.800804, 0.800804, 0.790317, 0.790317, 0.790317, 0.810752, 0.810752, 0.810752, 0.779265, 0.779265, 0.779265, 0.810752, 0.810752, 0.810752, 0.779265, 0.779265, 0.779265};
 
-	// const std::vector<int> dimensions;
+    NDArray<double> input('c', {N,bS,2*K});
+    NDArray<double> weights('c', {2*K,6*K});
+    NDArray<double> bias('c', {1,4*K});
+    NDArray<double> init('c', {bS,2*K});
+    NDArray<double> mask('c', {bS,2*K});
+    NDArray<double> expState('c', {N,bS,2*K});
+    NDArray<double> expOut('c', {N,bS,2*K});
+   
+    input.assign(1.5);    
+    weights.assign(0.5); 
+    bias.assign(0.3) ;
+    init.assign(1.);
+    mask.assign(1.);
+    expState.setBuffer(expStateBuff);
+    expOut.setBuffer(expOutputBuff);    
 
-	// NDArray<float> x(xBuff, xShape);
-	// NDArray<float> z(1, 2);
-	// NDArray<float> exp(expBuff, expShape);
+    nd4j::ops::sru_bi<double> op;
+    nd4j::ArrayList<double>*  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
+    ASSERT_TRUE(results->size() == 2);    
 
-	// VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    // variableSpace->putVariable(-1, &x);
-	// variableSpace->putVariable(1, &z);
-
-	// Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
-    // block->fillInputs({-1});
-	// std::vector<int>* arguments = block->getIArguments();
-	// *arguments = dimensions;
-
-	// nd4j::ops::sum<float> sum;
-	// Nd4jStatus status = sum.execute(block);
-	// NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
-	// result->printBuffer();
-	// ASSERT_EQ(ND4J_STATUS_OK, status);
-	// ASSERT_TRUE(result->getScalar(0,0) == exp.getScalar(0,0));
-// }
-
+    NDArray<double>* output = results->at(0);
+    NDArray<double>* state = results->at(1);
     
+    ASSERT_TRUE(expState.equalsTo(state));
+    ASSERT_TRUE(expOut.equalsTo(output));
+    
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests, sru_bi_bp_1) {
+
+    const int bS = 2;
+    const int K = 3;    
+    const int N = 3;
+    double expGradXBuff[] = {0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129, 0.00408129};    
+    double expGradInitBuff[] = {1.05121, 1.05121, 1.05121, 1.02676, 1.02676, 1.02676, 1.05121, 1.05121, 1.05121, 1.02676, 1.02676, 1.02676};
+    double expGradWBuff[] = {0.02595354,-0.090096 ,-0.00882456,0.02595354,-0.090096 ,-0.0088245, 0.02595354,-0.090096 ,-0.00882456,0.01651665,-0.0559437,-0.0084390, 0.01651665,-0.0559437,-0.00843906,0.01651665,-0.0559437,-0.00843906, 0.02595354,-0.090096 ,-0.00882456,0.02595354,-0.090096 ,-0.0088245, 0.02595354,-0.090096 ,-0.00882456,0.01651665,-0.0559437,-0.0084390, 0.01651665,-0.0559437,-0.00843906,0.01651665,-0.0559437,-0.00843906, 0.02595354,-0.090096 ,-0.00882456,0.02595354,-0.090096 ,-0.0088245, 0.02595354,-0.090096 ,-0.00882456,0.01651665,-0.0559437,-0.0084390, 0.01651665,-0.0559437,-0.00843906,0.01651665,-0.0559437,-0.00843906, 0.02595354,-0.090096 ,-0.00882456,0.02595354,-0.090096 ,-0.0088245, 0.02595354,-0.090096 ,-0.00882456,0.01651665,-0.0559437,-0.0084390, 0.01651665,-0.0559437,-0.00843906,0.01651665,-0.0559437,-0.00843906, 0.02595354,-0.090096 ,-0.00882456,0.02595354,-0.090096 ,-0.0088245, 0.02595354,-0.090096 ,-0.00882456,0.01651665,-0.0559437,-0.0084390, 0.01651665,-0.0559437,-0.00843906,0.01651665,-0.0559437,-0.00843906, 0.02595354,-0.090096 ,-0.00882456,0.02595354,-0.090096 ,-0.0088245, 0.02595354,-0.090096 ,-0.00882456,0.01651665,-0.0559437,-0.0084390, 0.01651665,-0.0559437,-0.00843906,0.01651665,-0.0559437,-0.00843906, 0.02124567,-0.0731508,-0.00868926,0.02124567,-0.0731508,-0.0086892, 0.02124567,-0.0731508,-0.00868926,0.02084955,-0.0712011,-0.0085608, 0.02084955,-0.0712011,-0.00856086,0.02084955,-0.0712011,-0.00856086, 0.02124567,-0.0731508,-0.00868926,0.02124567,-0.0731508,-0.0086892, 0.02124567,-0.0731508,-0.00868926,0.02084955,-0.0712011,-0.0085608, 0.02084955,-0.0712011,-0.00856086,0.02084955,-0.0712011,-0.00856086, 0.02124567,-0.0731508,-0.00868926,0.02124567,-0.0731508,-0.0086892, 0.02124567,-0.0731508,-0.00868926,0.02084955,-0.0712011,-0.0085608, 0.02084955,-0.0712011,-0.00856086,0.02084955,-0.0712011,-0.00856086, 0.02124567,-0.0731508,-0.00868926,0.02124567,-0.0731508,-0.0086892, 0.02124567,-0.0731508,-0.00868926,0.02084955,-0.0712011,-0.0085608, 0.02084955,-0.0712011,-0.00856086,0.02084955,-0.0712011,-0.00856086, 0.02124567,-0.0731508,-0.00868926,0.02124567,-0.0731508,-0.0086892, 0.02124567,-0.0731508,-0.00868926,0.02084955,-0.0712011,-0.0085608, 0.02084955,-0.0712011,-0.00856086,0.02084955,-0.0712011,-0.00856086, 0.02124567,-0.0731508,-0.00868926,0.02124567,-0.0731508,-0.0086892, 0.02124567,-0.0731508,-0.00868926,0.02084955,-0.0712011,-0.0085608, 0.02084955,-0.0712011,-0.00856086,0.02084955,-0.0712011,-0.00856086, 0.01671156,-0.0570699,-0.00856086,0.01671156,-0.0570699,-0.0085608, 0.01671156,-0.0570699,-0.00856086,0.02534988,-0.0880002,-0.0086892, 0.02534988,-0.0880002,-0.00868926,0.02534988,-0.0880002,-0.00868926, 0.01671156,-0.0570699,-0.00856086,0.01671156,-0.0570699,-0.0085608, 0.01671156,-0.0570699,-0.00856086,0.02534988,-0.0880002,-0.0086892, 0.02534988,-0.0880002,-0.00868926,0.02534988,-0.0880002,-0.00868926, 0.01671156,-0.0570699,-0.00856086,0.01671156,-0.0570699,-0.0085608, 0.01671156,-0.0570699,-0.00856086,0.02534988,-0.0880002,-0.0086892, 0.02534988,-0.0880002,-0.00868926,0.02534988,-0.0880002,-0.00868926, 0.01671156,-0.0570699,-0.00856086,0.01671156,-0.0570699,-0.0085608, 0.01671156,-0.0570699,-0.00856086,0.02534988,-0.0880002,-0.0086892, 0.02534988,-0.0880002,-0.00868926,0.02534988,-0.0880002,-0.00868926, 0.01671156,-0.0570699,-0.00856086,0.01671156,-0.0570699,-0.0085608, 0.01671156,-0.0570699,-0.00856086,0.02534988,-0.0880002,-0.0086892, 0.02534988,-0.0880002,-0.00868926,0.02534988,-0.0880002,-0.00868926, 0.01671156,-0.0570699,-0.00856086,0.01671156,-0.0570699,-0.0085608, 0.01671156,-0.0570699,-0.00856086,0.02534988,-0.0880002,-0.0086892, 0.02534988,-0.0880002,-0.00868926,0.02534988,-0.0880002,-0.00868926};
+    double expGradBBuff[] = {-0.0734389, -0.0734389, -0.0734389, -0.0717151, -0.0717151, -0.0717151, -0.0734389, -0.0734389, -0.0734389, -0.0717151, -0.0717151, -0.0717151, -0.00869156, -0.00869156, -0.00869156, -0.00856306, -0.00856306, -0.00856306, -0.00869156, -0.00869156, -0.00869156, -0.00856306, -0.00856306, -0.00856306};
+    double stateBuff[] = {1.028569, 1.028569, 1.028569, 1.112884, 1.112884, 1.112884, 1.028569, 1.028569, 1.028569, 1.112884, 1.112884, 1.112884, 1.056905, 1.056905, 1.056905, 1.085009, 1.085009, 1.085009, 1.056905, 1.056905, 1.056905, 1.085009, 1.085009, 1.085009, 1.085009, 1.085009, 1.085009, 1.056905, 1.056905, 1.056905, 1.085009, 1.085009, 1.085009, 1.056905, 1.056905, 1.056905, 1.112884, 1.112884, 1.112884, 1.028569, 1.028569, 1.028569, 1.112884, 1.112884, 1.112884, 1.028569, 1.028569, 1.028569};
+    
+    NDArray<double> input('c', {N,bS,2*K});
+    NDArray<double> weights('c', {2*K,6*K});
+    NDArray<double> bias('c', {1,4*K});
+    NDArray<double> init('c', {bS,2*K});
+    NDArray<double> mask('c', {bS,2*K});
+    NDArray<double> state('c', {N,bS,2*K});
+    NDArray<double> inGradCt('c', {bS,2*K});
+    NDArray<double> inGradH('c', {N,bS,2*K});
+    
+    NDArray<double> gradBias('c', {bS,4*K});
+    gradBias.setBuffer(expGradBBuff);
+
+    NDArray<double> expGradX('c', {N,bS,2*K});
+    expGradX.setBuffer(expGradXBuff);
+    NDArray<double> expGradW('c', {N,2*K,6*K});
+    expGradW.setBuffer(expGradWBuff);
+    NDArray<double> expGradB('c', {1,4*K});    
+    gradBias.template reduceAlongDimension<simdOps::Sum<double>>(&expGradB, {0});    // [bS x 4K] -> [1 x 4K]    
+    NDArray<double> expGradInit('c', {bS,2*K});
+    expGradInit.setBuffer(expGradInitBuff);
+
+    input.assign(1.5);
+    weights.assign(0.5);
+    bias.assign(0.3) ;    
+    mask.assign(1.);
+    init.assign(1.);
+    state.setBuffer(stateBuff);
+    inGradCt.assign(0.5);
+    inGradH.assign(0.5);
+    
+    nd4j::ops::sru_bi_bp<double> bp;
+    nd4j::ArrayList<double>*  resultsBP = bp.execute({&input, &weights, &bias, &init, &state, &inGradCt, &inGradH, &mask}, {}, {});
+    ASSERT_TRUE(resultsBP->size() == 4);    
+
+    NDArray<double>* gradX    = resultsBP->at(0);
+    NDArray<double>* gradW    = resultsBP->at(1);
+    NDArray<double>* gradB    = resultsBP->at(2); 
+    NDArray<double>* gradInit = resultsBP->at(3);    
+
+    ASSERT_TRUE(expGradX.equalsTo(gradX)); 
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+    ASSERT_TRUE(expGradB.equalsTo(gradB));
+    ASSERT_TRUE(expGradInit.equalsTo(gradInit));
+    
+    delete resultsBP;
+}
+
