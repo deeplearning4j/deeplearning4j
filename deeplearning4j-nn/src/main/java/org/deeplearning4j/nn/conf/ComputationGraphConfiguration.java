@@ -23,13 +23,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -428,11 +425,14 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
 
+        conf.seed = seed;
         conf.miniBatch = miniBatch;
         conf.miniBatch = minimize;
         conf.optimizationAlgo = optimizationAlgo;
         conf.stepFunction = stepFunction;
         conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
+
+        //Note: intentionally *don't* include the iteration/epoch counts
 
         return conf;
     }

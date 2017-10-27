@@ -176,22 +176,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     public INDArray params() {
-        List<INDArray> list = new ArrayList<>(2);
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-            list.add(entry.getValue());
-        }
-        return Nd4j.toFlattened('f', list);
+        return paramsFlattened;
     }
 
-    /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
+    /**The number of parameters for the model
      * @return the number of parameters for the model (ex. visible bias)
      */
     public int numParams() {
-        int ret = 0;
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-            ret += entry.getValue().length();
-        }
-        return ret;
+        return paramsFlattened.length();
     }
 
     @Override

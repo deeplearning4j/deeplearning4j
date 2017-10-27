@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.junit.Test;
@@ -29,6 +30,7 @@ public class SeedTest {
     public void testAutoEncoderSeed() {
         AutoEncoder l = new AutoEncoder.Builder().nIn(4).nOut(3).corruptionLevel(0.0)
                         .activation(Activation.SIGMOID).build();
+        l.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = l.initializer().numParams(l);
         INDArray params = Nd4j.create(1, numParams);
