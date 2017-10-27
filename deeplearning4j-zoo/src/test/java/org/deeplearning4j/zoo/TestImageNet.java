@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.transform.ColorConversionTransform;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.zoo.model.Darknet19;
+import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.deeplearning4j.zoo.model.VGG19;
 import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
 import org.junit.Test;
@@ -16,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 import static org.junit.Assert.assertEquals;
@@ -69,6 +72,30 @@ public class TestImageNet {
         // check output labels of result
         log.info(result.toString());
         assertEquals(125, (int)result.getDouble(0, 0));
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        // set up model
+        model = new TinyYOLO(TinyYOLO.labels.length, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        initializedModel = (ComputationGraph) model.initPretrained();
+
+        // set up input and feedforward
+        loader = new NativeImageLoader(416, 416, 3, new ColorConversionTransform(COLOR_BGR2RGB));
+        image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+        scaler = new ImagePreProcessingScaler(0, 1);
+        scaler.transform(image);
+        INDArray outputs = initializedModel.outputSingle(image);
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer yout =
+                        (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer)initializedModel.getOutputLayer(0);
+        List<DetectedObject> objs = yout.getPredictedObjects(outputs, 0.6f);
+
+        // check output labels of result
+        for (DetectedObject obj : objs) {
+            log.info(obj.toString());
+            assertEquals("dog", TinyYOLO.labels[obj.getPredictedClass()]);
+        }
     }
 
 }
