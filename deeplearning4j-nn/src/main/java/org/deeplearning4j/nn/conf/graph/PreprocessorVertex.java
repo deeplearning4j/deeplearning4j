@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.conf.graph;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -44,12 +45,10 @@ import java.util.Collection;
 @EqualsAndHashCode(callSuper = false)
 public class PreprocessorVertex extends BaseGraphVertex {
 
-    private InputPreProcessor preProcessor;
-
     /**
      * @param preProcessor The input preprocessor
      */
-    public PreprocessorVertex(InputPreProcessor preProcessor) {
+    public PreprocessorVertex(@NonNull InputPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
     }
 

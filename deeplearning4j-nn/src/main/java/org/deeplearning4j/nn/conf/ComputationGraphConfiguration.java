@@ -844,7 +844,9 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
                         String... layerInputs) {
-            layer.setPreProcessor(preProcessor);
+            if(preProcessor != null) {
+                layer.setPreProcessor(preProcessor);
+            }
             layer.setLayerName(layerName);
             vertices.put(layerName, layer);
             if (layer.maxInputs() == 1 && layerInputs != null && layerInputs.length > 1) {

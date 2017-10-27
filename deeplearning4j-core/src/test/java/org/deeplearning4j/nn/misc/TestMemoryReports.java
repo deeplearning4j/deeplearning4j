@@ -113,7 +113,8 @@ public class TestMemoryReports {
         for (Pair<? extends Layer, InputType> p : l) {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                            .addLayer("0", p.getFirst().clone(), "in").addLayer("1", p.getFirst().clone(), "0")
+                            .add("0", p.getFirst().clone(), "in")
+                            .add("1", p.getFirst().clone(), "0")
                             .setOutputs("1").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
@@ -145,7 +146,7 @@ public class TestMemoryReports {
             String[] layerInputs = inputs.toArray(new String[inputs.size()]);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs(inputs)
-                            .addVertex("gv", p.getFirst(), layerInputs).setOutputs("gv").build();
+                            .add("gv", p.getFirst(), layerInputs).setOutputs("gv").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
             //            System.out.println(mr.toString());
