@@ -54,6 +54,10 @@ public class GlobalConfiguration {
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
 
+    public GlobalConfiguration(){
+        this(true);
+    }
+
     public GlobalConfiguration(boolean withDefaults){
         if(!withDefaults){
             clear();

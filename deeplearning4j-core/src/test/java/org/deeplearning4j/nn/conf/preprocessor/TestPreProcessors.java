@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -37,6 +38,7 @@ public class TestPreProcessors {
 
             RnnToFeedForwardPreProcessor proc = new RnnToFeedForwardPreProcessor();
             Layer conf = new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
+                    .weightInit(WeightInit.XAVIER)
                     .nOut(layerSize).build();
 
             int numParams = conf.initializer().numParams(conf);
@@ -120,6 +122,7 @@ public class TestPreProcessors {
             FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor();
 
             Layer conf = new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
+                    .weightInit(WeightInit.XAVIER)
                     .nOut(layerSize).build();
 
             int numParams = conf.initializer().numParams(conf);
@@ -204,6 +207,7 @@ public class TestPreProcessors {
                             Layer nnc = new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
                                     inputWidth, inputHeight).nIn(cnnNChannelsIn)
                                     .nOut(nChannels).build();
+                            nnc.applyGlobalConfiguration(new GlobalConfiguration());
 
                             int numParams = nnc.initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
@@ -282,7 +286,10 @@ public class TestPreProcessors {
 
                             Layer nnc = new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
                                     inputWidth, inputHeight).nIn(cnnNChannelsIn)
+                                    .weightInit(WeightInit.XAVIER)
                                     .nOut(nChannels).build();
+
+                            nnc.applyGlobalConfiguration(new GlobalConfiguration());
 
                             int numParams = nnc.initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);

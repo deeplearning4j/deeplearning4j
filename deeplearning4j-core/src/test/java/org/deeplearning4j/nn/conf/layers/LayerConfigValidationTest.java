@@ -146,7 +146,8 @@ public class LayerConfigValidationTest {
 
         // Adam Updater
         conf = new NeuralNetConfiguration.Builder().updater(new Adam(0.3))
-                        .weightInit(WeightInit.DISTRIBUTION).list()
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                        .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).l1(0.3).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         net = new MultiLayerNetwork(conf);

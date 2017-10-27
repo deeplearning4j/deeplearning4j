@@ -135,14 +135,14 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
 
         this.validate(); //throws exception for invalid configuration
 
+        //Apply global configuration to each of the layers (has to happen before adding preprocessors)
+        for(Layer l : this.vertices.values()){
+            l.applyGlobalConfiguration(globalConfiguration.globalConf);
+        }
+
         //Automatically add preprocessors, set nIns for CNN->dense transitions, etc
         if (!builder.networkInputTypes.isEmpty()) {
             this.addPreProcessors(builder.networkInputTypes.toArray(new InputType[networkInputs.size()]));
-        }
-
-        //Apply global configuration to each of the layers:
-        for(Layer l : this.vertices.values()){
-            l.applyGlobalConfiguration(globalConfiguration.globalConf);
         }
 
         //And apply global configuration to ComputationGraphConfiguration:
