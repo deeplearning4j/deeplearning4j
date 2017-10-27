@@ -87,6 +87,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(im2col, 1, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(col2im, 1, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(strided_slice, 1, 1, true, 0, -1); // TODO: new op type needed. that returns VIEW
+        DECLARE_CUSTOM_OP(upsampling2d, 1, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(upsampling2d_bp, 2, 1, false, 0, 1);
 
 
         // recurrent ops
@@ -108,8 +110,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);        
         DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7); // make this custom
         DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented
-        DECLARE_CONFIGURABLE_OP(upsampling2d, 1, 1, false, 0, 1); // make this one custom
-        DECLARE_CONFIGURABLE_OP(upsampling2d_bp, 2, 1, false, 0, 1); // make this one custom
+
         DECLARE_CONFIGURABLE_OP(maxpool3d, 1, 2, true, 0, 13); // make this one custom
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
 

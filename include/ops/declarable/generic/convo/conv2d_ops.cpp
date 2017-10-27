@@ -881,20 +881,22 @@ namespace nd4j {
          * IArgs map:
          * IArgs[0] - scale factor
          */
-        CONFIGURABLE_OP_IMPL(upsampling2d, 1, 1, false, 0, 1) {
+        CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 1) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* output = this->getZ(block);
             int scale_factor = block.getIArguments()->at(0);
 
-//            int inputHeight = input->sizeAt(2);
-//            int inputWidth  = input->sizeAt(3);
+
+            REQUIRE_TRUE(input->rankOf() == 4, 0, "Upsampling input should be 4D, but got %i instead", input->rankOf());
+            REQUIRE_TRUE(output->rankOf() == 4, 0, "Upsampling output should be 4D, but got %i instead", output->rankOf());
+
 
             int dW = scale_factor;
             int dH = scale_factor;
 //            int outputHeight = inputHeight * scale_factor;
 //            int outputWidth = inputWidth * scale_factor;
-            int xDim = input->rankOf() - 2;
-            int yDim = input->rankOf() - 1;
+            int xDim = input->rankOf() - 1;
+            int yDim = input->rankOf() - 2;
 
             int osz0 = output->sizeAt(0);
             int osz1 = output->sizeAt(1);
@@ -941,6 +943,18 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(upsampling, upsampling2d);
+        DECLARE_SHAPE_FN(upsampling2d) {
+            auto inShape = inputShape->at(0);
+
+            int scale = INT_ARG(0);
+
+            int* newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+            int shape[] = {shape::shapeOf(inShape)[0], shape::shapeOf(inShape)[1], shape::shapeOf(inShape)[2] * scale, shape::shapeOf(inShape)[3] * scale};
+            shape::shapeBuffer(4, shape, newShape);
+
+            return new ShapeList(newShape);
+        }
 
 //////////////////////////////////////////////////////////////////////////
         /**
@@ -954,7 +968,7 @@ namespace nd4j {
          * IArgs map:
          * IArgs[0] - scale factor
          */
-        CONFIGURABLE_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 1) {
+        CUSTOM_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 1) {
             //NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* gradientNext = INPUT_VARIABLE(1);
             NDArray<T>* output = this->getZ(block);
@@ -1023,6 +1037,18 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(upsampling_bp, upsampling2d_bp);
+        DECLARE_SHAPE_FN(upsampling2d_bp) {
+            auto inShape = inputShape->at(0);
+
+            int scale = INT_ARG(0);
+
+            int* newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+            int shape[] = {shape::shapeOf(inShape)[0], shape::shapeOf(inShape)[1], shape::shapeOf(inShape)[2] / scale, shape::shapeOf(inShape)[3] / scale};
+            shape::shapeBuffer(4, shape, newShape);
+
+            return new ShapeList(newShape);
+        }
 
 //////////////////////////////////////////////////////////////////////////
 
