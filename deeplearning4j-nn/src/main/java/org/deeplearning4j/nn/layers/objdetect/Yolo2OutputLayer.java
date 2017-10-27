@@ -57,7 +57,11 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  * y2 = as above y axis<br>
  * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right<br>
  * <br>
- * Input format: [minibatch, B*(5+C), H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]
+ * Input format: [minibatch, B*(5+C), H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]<br>
+ * B = number of bounding boxes (determined by config)<br>
+ * C = number of classes<br>
+ * H = output/label height<br>
+ * W = output/label width<br>
  * <br>
  * Note that mask arrays are not required - this implementation infers the presence or absence of objects in each grid
  * cell from the class labels (which should be 1-hot if an object is present, or all 0s otherwise).
@@ -155,7 +159,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //We also need 1_ij^noobj, which is (a) no object, or (b) object present in grid cell, but this box doesn't
         // have the highest IOU
         INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup('c'), 1));
-//        mask1_ij_obj.muli(maskObjectPresent);
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresent, mask1_ij_obj, 0,2,3));
         INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
 
@@ -176,15 +179,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.reshape(mb*b*h*w, 1);  //Must be C order before reshaping
         INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
-//        INDArray mask2d = maskObjectPresent.reshape('c', new int[]{mb*b*h*w, 1});
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
                 .dup('c').reshape('c', mb*b*h*w, 2);
         //Don't use INDArray.broadcast(int...) until ND4J issue is fixed: https://github.com/deeplearning4j/nd4j/issues/2066
         //INDArray labelsCenterXYInGridBroadcast = labelsCenterXYInGrid.broadcast(mb, b, 2, h, w);
-        //Broadcast labelsCenterXYInGrid from [mb, 2, h, w} to [mb, b, 2, h, w]
-//        INDArray labelsCenterXYInGridBroadcast = labelsCenterXYInGridBox; //Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
-//        INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', mb*b*h*w, 2);    //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
         //Broadcast labelsCenterXYInGrid from [mb, 2, h, w} to [mb, b, 2, h, w]
         INDArray labelsCenterXYInGridBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
         for(int i=0; i<b; i++ ){
@@ -195,8 +194,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Width/height (sqrt)
         INDArray predictedWHSqrt2d = predictedWHSqrt.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c'); //from [mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
         //Broadcast labelWHSqrt from [mb, 2, h, w} to [mb, b, 2, h, w]
-//        INDArray labelWHSqrtBroadcast = labelWHSqrt;    //Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
-//        INDArray labelWHSqrt2d = labelWHSqrtBroadcast.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c');   //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
         INDArray labelWHSqrtBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
         for(int i=0; i<b; i++ ){
             labelWHSqrtBroadcast.get(all(), point(i), all(), all(), all()).assign(labelWHSqrt); //[mb, 2, h, w] to [mb, b, 2, h, w]
@@ -212,7 +209,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Class prediction loss
         INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,1,3,4,2) //[minibatch, b, c, h, w] To [mb, b, h, w, c]
                 .dup('c').reshape('c', new int[]{mb*b*h*w, c});
-//        INDArray classLabels2d = classLabels.permute(0,1,3,4,2).dup('c').reshape('c', new int[]{mb*b*h*w, c});
         INDArray classLabelsBroadcast = Nd4j.createUninitialized(new int[]{mb, b, c, h, w}, 'c');
         for(int i=0; i<b; i++ ){
             classLabelsBroadcast.get(all(), point(i), all(), all(), all()).assign(classLabels); //[mb, c, h, w] to [mb, b, c, h, w]
@@ -241,7 +237,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // ----- Gradient Calculation (specifically: return dL/dIn -----
 
         INDArray epsOut = Nd4j.create(input.shape(), 'c');
-//        INDArray epsOut5 = Shape.newShapeNoCopy(epsOut.get(all(), interval(0,5*b), all(), all()), new int[]{mb, b, 5, h, w}, false);
         INDArray epsOut5 = Shape.newShapeNoCopy(epsOut, new int[]{mb, b, 5+c, h, w}, false);
         INDArray epsClassPredictions = epsOut5.get(all(), all(), interval(5, 5+c), all(), all());    //Shape: [mb, b, 5+c, h, w]
         INDArray epsXY = epsOut5.get(all(), all(), interval(0,2), all(), all());
