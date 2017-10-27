@@ -527,6 +527,12 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
                 }
             }
 
+            //Copy the global configuration to the layers. Has to happen before input type inference
+            if(globalConfiguration != null) {
+                for (Layer l : confs) {
+                    l.applyGlobalConfiguration(globalConfiguration);
+                }
+            }
 
             //Add preprocessors and set nIns, if InputType has been set
             // Builder.inputType field can be set in 1 of 4 ways:
@@ -560,13 +566,6 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
                 //Set preprocesors from legacy map config...
                 for(Map.Entry<Integer,InputPreProcessor> e : inputPreProcessors.entrySet()){
                     confs.get(e.getKey()).setPreProcessor(e.getValue());
-                }
-            }
-
-            //Copy the global configuration to the layers:
-            if(globalConfiguration != null) {
-                for (Layer l : confs) {
-                    l.applyGlobalConfiguration(globalConfiguration);
                 }
             }
 
