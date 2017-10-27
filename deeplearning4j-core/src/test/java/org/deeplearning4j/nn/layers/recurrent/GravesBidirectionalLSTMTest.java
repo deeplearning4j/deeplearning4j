@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -52,6 +53,7 @@ public class GravesBidirectionalLSTMTest {
 
         Layer conf = new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
                 .nOut(nHiddenUnits).activation(Activation.TANH).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);

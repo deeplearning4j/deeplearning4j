@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -48,7 +49,7 @@ public class AutoEncoderTest {
     public void testAutoEncoderBiasInit() {
         org.deeplearning4j.nn.conf.layers.AutoEncoder conf =
                         new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(1).nOut(3).biasInit(1).build();
-        
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         //        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         int numParams = conf.initializer().numParams(conf);
@@ -66,7 +67,7 @@ public class AutoEncoderTest {
         org.deeplearning4j.nn.conf.layers.Layer conf = new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                 .corruptionLevel(0.6)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build();
-
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
@@ -92,6 +93,7 @@ public class AutoEncoderTest {
         org.deeplearning4j.nn.conf.layers.Layer conf = new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                 .corruptionLevel(0.6)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();

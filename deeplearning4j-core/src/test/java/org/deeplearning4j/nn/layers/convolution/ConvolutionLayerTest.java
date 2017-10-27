@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -225,6 +226,7 @@ public class ConvolutionLayerTest {
     @Test
     public void testCNNBiasInit() {
         ConvolutionLayer cnn = new ConvolutionLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
+        cnn.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = cnn.initializer().numParams(cnn);
         INDArray params = Nd4j.create(1, numParams);
@@ -284,6 +286,7 @@ public class ConvolutionLayerTest {
 
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding).nIn(nIn).nOut(nOut)
                         .activation(Activation.SIGMOID).build();
+        layer.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = layer.initializer().numParams(layer);
         INDArray params = Nd4j.create(1, numParams);

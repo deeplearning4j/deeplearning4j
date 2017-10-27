@@ -46,14 +46,13 @@ public class MultiLayerTestRNN {
         int nHiddenUnits = 17;
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
                                         .list().layer(0,
                                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                                                                         .nIn(nIn).nOut(nHiddenUnits)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
                                                                         .activation(Activation.TANH).build())
                                         .layer(1, new RnnOutputLayer.Builder(LossFunction.MSE).nIn(nHiddenUnits)
-                                                        .nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
-                                                        .activation(Activation.TANH).build())
+                                                        .nOut(nOut).activation(Activation.TANH).build())
                                         .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -86,15 +85,17 @@ public class MultiLayerTestRNN {
         int nIn = 8;
         int nOut = 25;
         int[] nHiddenUnits = {17, 19, 23};
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                        .list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(17)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(17).nOut(19)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .layer(2, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(19).nOut(23)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .layer(3, new RnnOutputLayer.Builder(LossFunction.MSE).nIn(23).nOut(nOut)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();

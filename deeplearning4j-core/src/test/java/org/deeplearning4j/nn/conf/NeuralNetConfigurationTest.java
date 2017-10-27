@@ -267,22 +267,4 @@ public class NeuralNetConfigurationTest {
         assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
         assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 0.0);
     }
-
-    @Test
-    public void testLayerPretrainConfig() {
-        boolean pretrain = true;
-
-        org.deeplearning4j.nn.conf.layers.RBM layer =
-                        new org.deeplearning4j.nn.conf.layers.RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
-                                        .nIn(10).nOut(5).updater(new Sgd(1e-1))
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
-
-//        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
-//
-//        assertFalse(conf.isPretrain());
-//        conf.setPretrain(pretrain);
-//        assertTrue(conf.isPretrain());
-        fail();
-    }
-
 }

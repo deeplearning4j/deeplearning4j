@@ -5,6 +5,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -68,6 +69,7 @@ public class TestUpdaters {
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(nIn).nOut(nOut)
                 .updater(new AdaDelta(rho, Nd4j.EPS_THRESHOLD))
                 .build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -130,7 +132,9 @@ public class TestUpdaters {
         double lr = 1e-2;
         double epsilon = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
 
-        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(nIn).nOut(nOut).build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder()
+                .updater(new AdaGrad(lr, epsilon)).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -171,7 +175,9 @@ public class TestUpdaters {
         double beta2 = 0.888;
         double epsilon = Adam.DEFAULT_ADAM_EPSILON;
 
-        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(nIn).nOut(nOut).build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder()
+                .updater(new Adam(lr, beta1, beta2, epsilon)).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -232,6 +238,7 @@ public class TestUpdaters {
                 .updater(new Nadam.Builder().learningRate(lr).beta1(beta1)
                         .beta2(beta2).epsilon(epsilon).build())
                 .build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -320,6 +327,7 @@ public class TestUpdaters {
 
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder()
                 .updater(new AdaMax(lr, beta1, beta2, AdaMax.DEFAULT_ADAMAX_EPSILON)).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -373,6 +381,7 @@ public class TestUpdaters {
         double mu = 0.6;
 
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().updater(new Nesterovs(lr, mu)).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -418,6 +427,7 @@ public class TestUpdaters {
 
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder()
                 .updater(new RmsProp(lr,rmsDecay, RmsProp.DEFAULT_RMSPROP_EPSILON)).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -463,6 +473,7 @@ public class TestUpdaters {
 
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder()
                 .updater(new Sgd(lr)).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -494,6 +505,7 @@ public class TestUpdaters {
         double lr = 0.5;
 
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().updater(new NoOp()).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -699,8 +711,9 @@ public class TestUpdaters {
         org.deeplearning4j.nn.conf.layers.Layer conf = new org.deeplearning4j.nn.conf.layers.RBM.Builder().updater(new Sgd(lr))
                 .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
                 .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
+
         int numParams = conf.initializer().numParams(conf);
-//        conf.setPretrain(true);
         INDArray params = Nd4j.create(1, numParams);
         BaseLayer layer = (BaseLayer) conf.instantiate(null, null, 0, 1,  params, true);
         layer.setBackpropGradientsViewArray(gradients);
@@ -715,7 +728,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
 
-        updater.update(layer, gradient, -1, 0, 1, false);
+        updater.update(layer, gradient, -1, 0, 1, true);
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();

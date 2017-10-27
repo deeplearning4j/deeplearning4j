@@ -47,7 +47,10 @@ public class LayerUpdater extends BaseMultiLayerUpdater<Layer> {
 
     @Override
     protected boolean isMiniBatch() {
-        return ((Model)network).getOptimizationConfig().isMiniBatch();
+        if(network instanceof Model){
+            return ((Model)network).getOptimizationConfig().isMiniBatch();
+        }
+        return true;    //Should normally never happen (except unit tests, manual updating of single layers etc)
     }
 
     @Override

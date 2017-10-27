@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.feedforward.dense;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -33,6 +34,7 @@ public class DenseTest {
     @Test
     public void testDenseBiasInit() {
         DenseLayer conf = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);

@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -26,6 +27,7 @@ public class TestGradientNormalization {
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20)
                 .updater(new NoOp())
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -70,6 +72,7 @@ public class TestGradientNormalization {
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20)
                 .updater(new NoOp())
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -101,6 +104,7 @@ public class TestGradientNormalization {
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(threshold).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -155,6 +159,7 @@ public class TestGradientNormalization {
             org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                     .gradientNormalization(GradientNormalization.ClipL2PerLayer)
                     .gradientNormalizationThreshold(threshold).build();
+            conf.applyGlobalConfiguration(new GlobalConfiguration());
 
             int numParams = conf.initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
@@ -208,6 +213,7 @@ public class TestGradientNormalization {
         org.deeplearning4j.nn.conf.layers.Layer conf = new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                 .gradientNormalization(GradientNormalization.ClipL2PerParamType)
                 .gradientNormalizationThreshold(threshold).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
         int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
