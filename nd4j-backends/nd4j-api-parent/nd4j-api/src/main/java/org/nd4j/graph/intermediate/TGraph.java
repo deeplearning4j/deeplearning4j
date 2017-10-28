@@ -18,10 +18,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class provides intermediate representation of Graph
@@ -31,6 +29,9 @@ import java.util.Map;
 @Slf4j
 public class TGraph {
     @Getter protected TVariableSpace variableSpace = new TVariableSpace();
+
+    // this map contains reverse lookup information, between external graph (i.e. tf) and ours
+    @Getter protected Map<String, TIndex> reverseMap = new HashMap<>();
 
     // this is the layered representation
     protected Map<Integer, List<TNode>> onionMap = new HashMap<>();
@@ -44,6 +45,13 @@ public class TGraph {
     // storage for Scopes
     protected Map<Integer, TScope> numericScopes = new HashMap<>();
     protected Map<String, TScope> symbolicScopes = new HashMap<>();
+
+    // counters for import processs
+    protected AtomicInteger varsCnt = new AtomicInteger(0);
+    protected AtomicInteger nodesCnt = new AtomicInteger(0);
+
+    // here we store nodes which were already processed by
+    @Getter protected Collection<String> skipSet = new ArrayList<>();
 
     protected void expandOnion(int layer) {
         onionMap.put(layer, new ArrayList<TNode>());
@@ -65,6 +73,38 @@ public class TGraph {
             log.info("Adding node by name: [{}]", node.getName());
             symbolicMap.put(node.getName(), node);
         }
+    }
+
+    /**
+     * This method returns current node id, without increment
+     * @return
+     */
+    public int getCurrentNodeId() {
+        return nodesCnt.get();
+    }
+
+    /**
+     * This method returns new node id, pre-increment
+     * @return
+     */
+    public int getNewNodeId() {
+        return nodesCnt.incrementAndGet();
+    }
+
+    /**
+     * This method returns current var id, without decrement
+     * @return
+     */
+    public int getCurrentVariableId() {
+        return varsCnt.get();
+    }
+
+    /**
+     * This method returns new node id, pre-decrement
+     * @return
+     */
+    public int getNewVariableId() {
+        return varsCnt.decrementAndGet();
     }
 
     protected int getTailSize() {
@@ -122,11 +162,29 @@ public class TGraph {
     }
 
     protected int asFlatNode(@NonNull TScope scope, @NonNull FlatBufferBuilder bufferBuilder) {
-        return 0;
+
+        int scopeName = bufferBuilder.createString(scope.getName());
+
+        int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                scope.getId(),
+                scopeName,
+                OpType.LOGIC,
+                10, // hardcoded value
+                0,
+                0,
+                (byte) 0,
+                0,
+                0,
+                0,
+                0,
+                -1,
+                0.0f, 0, 0);
+
+        return flatNode;
     }
 
     protected int asFlatNode(@NonNull TNode node, @NonNull FlatBufferBuilder bufferBuilder) {
-        log.info("Exporting node: [{}]", node.getOpName());
+        log.info("Exporting node: [{}:<{}>]", node.getOpName(), node.getName());
 
         float[] extras = node.getOpState().getExtraArgs() != null ? new float[node.getOpState().getExtraArgs().length] : new float[0];
         for (int e = 0; e < extras.length; e++) {
@@ -182,9 +240,15 @@ public class TGraph {
         for (val variable: variableSpace.getAllVariables()) {
             log.info("Exporting variable: [{}]", variable.getName());
 
+
+            if (variable.getArray() == null) {
+                if (variable.getShape() == null)
+                    throw new ND4JIllegalStateException("Both array and shape are NULL");
+
+                variable.setArray(Nd4j.create(variable.getShape()));
+            }
             val arr = variable.getArray();
-            if (arr == null)
-                continue;
+
 
             int name = bufferBuilder.createString(variable.getName());
             int values = FlatVariable.createValuesVector(bufferBuilder, arr.data().asFloat());
@@ -241,7 +305,13 @@ public class TGraph {
     }
 
     public static long getOpNum(String name, Op.Type type) {
-        if (type == Op.Type.CUSTOM || type == Op.Type.LOOP || type == Op.Type.IF || type == Op.Type.CONDITIONAL)
+        if (type == Op.Type.LOOP ) {
+            return 0;
+        } else if (type == Op.Type.RETURN) {
+            return 40;
+        } else if (type == Op.Type.IF || type == Op.Type.CONDITIONAL) {
+            return 10;
+        } else if (type == Op.Type.CUSTOM )
             return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
         else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
@@ -262,6 +332,8 @@ public class TGraph {
             case INDEXREDUCE:
                 return OpType.INDEX_ACCUMULATION;
             case LOOP:
+                return OpType.LOGIC;
+            case RETURN:
                 return OpType.LOGIC;
             case CUSTOM:
                 return OpType.CUSTOM;
