@@ -178,7 +178,9 @@
         (16, simdOps::Entropy) ,\
         (17, simdOps::LogEntropy) ,\
         (18, simdOps::ShannonEntropy) ,\
-        (19, simdOps::LogSumExp)
+        (19, simdOps::LogSumExp) ,\
+        (20, simdOps::Any) ,\
+        (21, simdOps::All)
 
 
 

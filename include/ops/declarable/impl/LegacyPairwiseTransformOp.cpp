@@ -24,7 +24,7 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(x->isSameShape(y), 0, "For Pairwise transforms shapes of both operands should be equal");
+            REQUIRE_TRUE(x->isSameShape(y) || y->isScalar(), 0, "Node_%i: For Pairwise transforms shapes of both operands should be equal", block.getNodeId());
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 

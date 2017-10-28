@@ -165,6 +165,42 @@ namespace functions {
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
 
+                if (shape::isScalar(yShapeBuffer)) {
+                    if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
+                        for (int e = 0; e < n; e++) {
+                            result[e] = OpType::op(dx[e], y[0], extraParams);
+                        }
+                    } else {
+                        int xCoord[MAX_RANK];
+                        int resultCoord[MAX_RANK];
+
+                        int xRank = shape::rank(xShapeBuffer);
+                        int resultRank = shape::rank(resultShapeBuffer);
+
+                        int *xShape = shape::shapeOf(xShapeBuffer);
+                        int *xStride = shape::stride(xShapeBuffer);
+
+                        int *resultShape = shape::shapeOf(resultShapeBuffer);
+                        int *resultStride = shape::stride(resultShapeBuffer);
+
+                        int elementsPerThread = n / ELEMENT_THRESHOLD;
+                        int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                        num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(xCoord, resultCoord)
+                        for (Nd4jIndex i = 0; i < n; i++) {
+                            shape::ind2subC(xRank,xShape, i, xCoord);
+                            shape::ind2subC(resultRank,resultShape, i, resultCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultStride, resultCoord, resultRank);
+                            result[resultOffset] = OpType::op(dx[xOffset], y[0], extraParams);
+                        }
+                    }
+
+                    return;
+                }
+
                 bool sameShape = shape::shapeEquals(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer),
                                                     shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer));
 
@@ -277,7 +313,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 }
 
                 else {
-                    Nd4jIndex len = shape::length(xShapeBuffer);
+                    Nd4jIndex len = n;
                     int xRank = shape::rank(xShapeBuffer);
                     int yRank = shape::rank(yShapeBuffer);
                     int resultRank = shape::rank(resultShapeBuffer);

@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
     NDArray<T>* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
 
     bool applyMask = false;        
-    if (block.getVariables()->size() > 4) {
+    if (block.width() > 4) {
         mask = INPUT_VARIABLE(4);   
         applyMask = true;
     }
@@ -143,7 +143,7 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     NDArray<T>* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
 
     bool applyMask = false;        
-    if (block.getVariables()->size() > 4) {
+    if (block.width() > 4) {
         mask = INPUT_VARIABLE(4);   
         applyMask = true;
     }
@@ -232,7 +232,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
 
     bool applyMask = false;        
-    if (block.getVariables()->size() > 7) {
+    if (block.width() > 7) {
         mask = INPUT_VARIABLE(7);   
         applyMask = true;
     }
@@ -430,7 +430,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
 
     bool applyMask = false;        
-    if (block.getVariables()->size() > 7) {
+    if (block.width() > 7) {
         mask = INPUT_VARIABLE(7);   
         applyMask = true;
     }
@@ -588,7 +588,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
     NDArray<T>* mask    = nullptr;                          // optional, 2d tensor of dropout mask [bS x 2K]
 
     bool applyMask = false;        
-    if (block.getVariables()->size() > 4) {
+    if (block.width() > 4) {
         mask = INPUT_VARIABLE(4);   
         applyMask = true;
     }
@@ -705,7 +705,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x 2K]
 
     bool applyMask = false;        
-    if (block.getVariables()->size() > 7) {
+    if (block.width() > 7) {
         mask = INPUT_VARIABLE(7);   
         applyMask = true;
     }

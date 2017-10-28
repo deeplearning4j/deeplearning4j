@@ -14,7 +14,7 @@ namespace nd4j {
 
 
             int scopeConditionIndex = node->input()->at(0).first;
-            auto input = node->getBlock()->getVariables()->at(1);
+            auto input = node->getBlock()->variable(1);
 
             auto scopeCondition = graph->scopeById(scopeConditionIndex);
             int lastNode = 0;

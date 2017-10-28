@@ -55,5 +55,13 @@ namespace nd4j {
          */
         LOGIC_OP_IMPL(Conditional);
         DECLARE_SYN(cond, Conditional);
+
+
+        /**
+         * This op is a placeholder
+         * Actual implementation is in LogicReturn class
+         */
+        LOGIC_OP_IMPL(Return);
+        DECLARE_SYN(return, Return);
     }
 }

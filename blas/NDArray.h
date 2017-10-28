@@ -192,20 +192,7 @@ namespace nd4j {
         bool isContiguous();
 
         // print information about array shape
-        void printShapeInfo(const char * msg = nullptr) const {
-            //shape::printShapeInfo(_shapeInfo);
-            if (msg == nullptr)
-                shape::printShapeInfoLinear(_shapeInfo);
-            else {
-                int rank = shape::rank(_shapeInfo);
-                printf("%s: [", msg);
-                for (int i = 0; i < rank * 2 + 4; i++) {
-                    printf("%i, ", _shapeInfo[i]);
-                }
-                printf("]\n");
-            }
-            fflush(stdout);
-        }
+        void printShapeInfo(const char * msg = nullptr) const;
 
         void printBuffer(const char* msg = nullptr, int limit = -1);
 

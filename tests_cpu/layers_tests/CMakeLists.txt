@@ -86,7 +86,7 @@ add_library(nd4jcpu STATIC ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExec
         ../../include/graph/execution/LogicExecutor.h ../../include/graph/execution/impl/LogicScope.cpp ../../include/graph/execution/LogicScope.h
         ../../include/graph/execution/impl/LogicWhile.cpp ../../include/graph/execution/LogicWhile.h ../../include/graph/execution/impl/LogicConditional.cpp
         ../../include/graph/execution/LogicConditional.h ../../include/graph/execution/impl/LogicSwitch.cpp ../../include/graph/execution/LogicSwitch.h ../../include/graph/Intervals.h ../../include/graph/impl/Intervals.cpp
-        ../../include/ops/declarable/generic/recurrent_ops.cpp)
+        ../../include/ops/declarable/generic/recurrent_ops.cpp ../../include/graph/execution/impl/LogicReturn.cpp ../../include/graph/execution/LogicReturn.h)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
     message(FATAL_ERROR "You need at least GCC 4.9")

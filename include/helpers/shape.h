@@ -3963,9 +3963,13 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 #endif
     INLINEDEF void printShapeInfoLinear(int *shapeInfo) {
         int rank = shape::rank(shapeInfo);
+        int lim = shape::shapeInfoLength(rank);
         printf("ShapeInfo: [");
-        for (int i = 0; i < rank * 2 + 4; i++) {
-            printf("%i, ", shapeInfo[i]);
+        for (int i = 0; i < lim; i++) {
+            printf("%i", shapeInfo[i]);
+
+            if (lim < 1)
+                printf(", ");
         }
         printf("]\n");
 #ifndef __CUDACC__

@@ -522,6 +522,56 @@ TEST_F(NDArrayTest, TestChecks4) {
     ASSERT_TRUE(array.isScalar());
 }
 
+TEST_F(NDArrayTest, TestReductionAny1) {
+    NDArray<float> array('c', {2, 2});
+    array.putScalar(0, 1.0f);
+    array.putScalar(1, 1.0f);
+    array.putScalar(2, 0.0f);
+    array.putScalar(3, 0.0f);
+
+    auto result0 = array.template reduceAlongDimension<simdOps::Any<float>>({0});
+
+    ASSERT_EQ(2, result0->lengthOf());
+
+    ASSERT_NEAR(1.0f, result0->getScalar(0), 1e-5f);
+    ASSERT_NEAR(1.0f, result0->getScalar(1), 1e-5f);
+
+    auto result1 = array.template reduceAlongDimension<simdOps::Any<float>>({1});
+
+    ASSERT_EQ(2, result1->lengthOf());
+
+    ASSERT_NEAR(1.0f, result1->getScalar(0), 1e-5f);
+    ASSERT_NEAR(0.0f, result1->getScalar(1), 1e-5f);
+
+    delete result0;
+    delete result1;
+}
+
+TEST_F(NDArrayTest, TestReductionAll1) {
+    NDArray<float> array('c', {2, 2});
+    array.putScalar(0, 1.0f);
+    array.putScalar(1, 1.0f);
+    array.putScalar(2, 0.0f);
+    array.putScalar(3, 0.0f);
+
+    auto result0 = array.template reduceAlongDimension<simdOps::All<float>>({0});
+
+    ASSERT_EQ(2, result0->lengthOf());
+
+    ASSERT_NEAR(0.0f, result0->getScalar(0), 1e-5f);
+    ASSERT_NEAR(0.0f, result0->getScalar(1), 1e-5f);
+
+    auto result1 = array.template reduceAlongDimension<simdOps::All<float>>({1});
+
+    ASSERT_EQ(2, result1->lengthOf());
+
+    ASSERT_NEAR(1.0f, result1->getScalar(0), 1e-5f);
+    ASSERT_NEAR(0.0f, result1->getScalar(1), 1e-5f);
+
+    delete result0;
+    delete result1;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks5) {
     NDArray<float> array('c', {5, 5, 5});

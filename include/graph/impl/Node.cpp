@@ -166,14 +166,16 @@ namespace nd4j {
 
         template <typename T>
         void nd4j::graph::Node<T>::pickExternalOutput(int outputId) {
-            _output.push_back(outputId);
+            std::pair<int, int> pair(outputId, 0);
+            _output.push_back(pair);
 
             _hasExternalOutputs = true;
         }
 
         template <typename T>
         void nd4j::graph::Node<T>::pickOutput(int outputId) {
-            _output.push_back(outputId);
+            std::pair<int, int> pair(outputId, 0);
+            _output.push_back(pair);
 
             if (outputId < 0)
                 _hasExternalOutputs = true;
@@ -257,7 +259,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        std::vector<int> *nd4j::graph::Node<T>::output() {
+        std::vector<std::pair<int, int>> *nd4j::graph::Node<T>::output() {
             return &_output;
         }
 
@@ -359,6 +361,13 @@ namespace nd4j {
             _extraParams = nullptr;
             _dim = nullptr;
 
+            if (node->scope_id() != 0)
+                this->_scope_id = node->scope_id();
+
+            if (node->scope_name() != nullptr && node->scope_name()->size() > 0)
+                this->_scope_name = node->scope_name()->str();
+
+
             _scalar = node->scalar();
 
             if (node != nullptr) {
@@ -367,19 +376,28 @@ namespace nd4j {
                 this->_opNum = node->opNum();
                 this->_opType = node->opType();
 
-                if (node->name() != nullptr && node->name()->c_str() != nullptr)
+                if (node->name() != nullptr && node->name()->c_str() != nullptr) {
                     this->_name = node->name()->str();
+                }
 
-                nd4j_verbose("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
+                if (node->id() == 12)
+                    nd4j_verbose("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
 
                 if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                     for (int e = 0; e < (int) node->inputPaired()->size(); e++) {
                         auto pair = node->inputPaired()->Get(e);
                         pickInput(pair->first(), pair->second());
                     }
-                } else if (node->input() != nullptr)
+                } else if (node->input() != nullptr && node->input()->size() > 0) {
                     for (int e = 0; e < (int) node->input()->size(); e++)
                         pickInput(node->input()->Get(e));
+                } else {
+                    if (this->_name.size() > 0) {
+                        nd4j_printf("Node [%i:<%s>] do not have any inputs defined\n", this->_id, this->_name.c_str());
+                    } else {
+                        nd4j_printf("Node [%i:<noname>] do not have any inputs defined\n", this->_id);
+                    }
+                }
 
                 if (node->output() != nullptr)
                     for (int e = 0; e < (int) node->output()->size(); e++) {
@@ -430,6 +448,10 @@ namespace nd4j {
 
                         auto block = new Block<T>(this->id(), nullptr, false);
 
+                        for (int e = 0; e < this->input()->size(); e++) {
+                            block->inputs()->emplace_back(this->input()->at(e));
+                        }
+
                         // there's no other IArgs in legacy options, actually
                         for (auto v: _dimensions)
                             block->getIArguments()->emplace_back(v);
@@ -449,6 +471,10 @@ namespace nd4j {
                     }
 
                     auto block = new Block<T>(this->id(), nullptr);
+
+                    for (int e = 0; e < this->input()->size(); e++) {
+                        block->inputs()->emplace_back(this->input()->at(e));
+                    }
 
                     if (node->extraInteger() != nullptr)
                         for (uint32_t e = 0; e < node->extraInteger()->size(); e++)

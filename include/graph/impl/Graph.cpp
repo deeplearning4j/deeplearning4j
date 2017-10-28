@@ -305,7 +305,18 @@ namespace nd4j {
             // storing node state now
             _variableSpace->putVariable(node->id(), nodeState);
 
-            if (node->hasCustomOp()) {
+            // here we're filling our blocks with future variables
+            if (node->opType() == OpType_LOGIC && node->opNum() == 0) {
+                // filling while
+                int inputs = node->input()->size();
+                for (int e = 0; e < inputs - 2; e++){
+                    auto deepVar = new Variable<T>(nullptr, nullptr, node->id(), e);
+
+                    std::pair<int,int> id(node->id(), e);
+                    _variableSpace->putVariable(id, deepVar);
+                }
+
+            } else if (node->hasCustomOp()) {
                 // custom ops require Block inside. but we'll set it inside buildGraph
 
                 // TODO: we want to change this, to make blocks thread-local/session-local
@@ -322,9 +333,11 @@ namespace nd4j {
                     block->setVariableSpace(_variableSpace);
 
                     for (uint32_t e = 0; e < node->input()->size(); e++) {
-                        auto var = _variableSpace->getVariable(node->input()->at(e));
+                        auto p = node->input()->at(e);
+                        //auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                        block->getVariables()->push_back(var);
+                        //block->getVariables()->push_back(var);
+                        block->pickInput(p);
                     }
                 }
 
@@ -344,8 +357,8 @@ namespace nd4j {
                     // we need to check, if we should propagate output of this variable somewhere
                     for (int e = 0; e < node->output()->size(); e++) {
                         auto out = node->output()->at(e);
-                        if (out < 0) {
-                            nd4j_debug("Node [%i] will be propagating its output to Variable [%i]\n", node->id(), out);
+                        if (out.first < 0) {
+                            nd4j_debug("Node [%i] will be propagating its output to Variable [%i]\n", node->id(), out.first);
                             auto extVar = _variableSpace->getVariable(out);
                             if (extVar->hasNDArray()) {
                                 nodeState->setNDArray(extVar->getNDArray());
@@ -377,7 +390,7 @@ namespace nd4j {
                     pushToOutputOnce(node->id());
 
             // if outputs are undefined, we have to auto-create variable
-            if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0) == 0)){
+            if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0).first == 0)){
                 Variable<T>* var;
                 if (!_variableSpace->hasVariable(node->id())) {
                     var = new Variable<T>();
@@ -407,8 +420,8 @@ namespace nd4j {
                 // we're pushing this node to output only
                 if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)) ) {
                     for (int e = 0;  e < (int) node->output()->size(); e++) {
-                        if (node->output()->at(e) < 0)
-                            pushToOutputOnce(node->output()->at(e));
+                        if (node->output()->at(e).first < 0)
+                            pushToOutputOnce(node->output()->at(e).first);
                     }
 
                     nd4j_logger("Loop finished: %i outputs now\n", this->_output.size());
@@ -442,7 +455,7 @@ namespace nd4j {
                 if (node->hasInternalInputs() && !node->hasExternalInputs() && node->input()->size() == 1) {
 
                     // we only can put single input nodes, whose outputs were not mapped yet
-                    if (_mapped->count(node->input()->at(0).first) == 1 && (node->output()->size() == 0 || _mapped->count(node->output()->at(0)) == 0)) {
+                    if (_mapped->count(node->input()->at(0).first) == 1 && (node->output()->size() == 0 || _mapped->count(node->output()->at(0).first) == 0)) {
                         auto parent = _mapped->at(node->input()->at(0).first);
                         int nLayer = parent->getLayer() + 1;
                         if (_onion->count(nLayer) != 1) {
@@ -466,6 +479,8 @@ namespace nd4j {
 
         template <typename T>
         Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
+            int buildCnt = 0;
+            int buildLimit = _unmapped.size() * 2;
             while (_unmapped.size() > 0) {
 
                 // first pass for unmapped nodes, we try to build tale here
@@ -476,11 +491,45 @@ namespace nd4j {
                     // single-input node
                     if (node->input()->size() == 1) {
 
-                        nd4j_logger("Trying SI Node_%i\n", node->id());
-
+                        if (node->getName() == nullptr) {
+                            nd4j_debug("Trying SI Node_%i\n", node->id());
+                        } else {
+                            nd4j_debug("Trying SI Node_%i:[%s]\n", node->id(), node->getName()->c_str());
+                        }
 
                         int iNode = node->input()->at(0).first;
-                        if (_mapped->count(iNode) > 0) {
+                        if (iNode < 0) {
+                            // this is external variable, should we check, who's the last user of this variable?
+                            int lastLayer = _onion->size();
+                            expandOnion(lastLayer);
+
+                            node->setLayer(lastLayer);
+
+                            this->injectNode(node);
+
+                            if (node->hasCustomOp()) {
+                                Block<T>* block = nullptr;
+
+                                if (!node->hasBlockAttached()) {
+                                    block = new Block<T>(node->id(), _variableSpace);
+                                    node->setBlock(block);
+                                } else
+                                    block = node->getBlock();
+
+
+                                if (!block->hasVariablesFilled()) {
+                                    block->setVariableSpace(_variableSpace);
+
+                                    for (int e = 0; e < node->input()->size(); e++) {
+                                        auto p = node->input()->at(e);
+                                        //auto var = _variableSpace->getVariable(node->input()->at(e));
+
+                                        //block->getVariables()->emplace_back(var);
+                                        block->pickInput(p);
+                                    }
+                                }
+                            }
+                        } else if (_mapped->count(iNode) > 0) {
                             int maxLayer = _mapped->at(iNode)->getLayer() + 1;
 
                             node->setLayer(maxLayer);
@@ -503,9 +552,11 @@ namespace nd4j {
                                     block->setVariableSpace(_variableSpace);
 
                                     for (uint32_t e = 0; e < node->input()->size(); e++) {
-                                        auto var = _variableSpace->getVariable(node->input()->at(e));
+                                        auto p = node->input()->at(e);
+                                        //auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                                        block->getVariables()->emplace_back(var);
+                                        //block->getVariables()->emplace_back(var);
+                                        block->pickInput(p);
                                     }
                                 }
                             }
@@ -515,7 +566,11 @@ namespace nd4j {
                         _unmapped.erase(node->id());
                     } else {
                         // multi-input node
-                        nd4j_logger("Trying MI Node_%i\n", node->id());
+                        if (node->getName() == nullptr) {
+                            nd4j_debug("Trying MI Node_%i\n", node->id());
+                        } else {
+                            nd4j_debug("Trying MI Node_%i:[%s]\n", node->id(), node->getName()->c_str());
+                        }
 
                         int maxLayer = 0;
                         for (unsigned int e = 0; e < node->input()->size(); e++) {
@@ -552,9 +607,11 @@ namespace nd4j {
                                 block->setVariableSpace(_variableSpace);
 
                                 for (uint32_t e = 0; e < node->input()->size(); e++) {
-                                    auto var = _variableSpace->getVariable(node->input()->at(e));
+                                    auto p = node->input()->at(e);
+                                    //auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                                    block->getVariables()->push_back(var);
+                                    //block->getVariables()->push_back(var);
+                                    block->pickInput(p);
                                 }
                             }
                         }
@@ -564,6 +621,11 @@ namespace nd4j {
                 }
 
                 // second pass is mover, we'll be moving onion layers around here
+                buildCnt++;
+                if (buildCnt > buildLimit) {
+                    nd4j_printf("Unable to build graph, probably unmapped nodes, or something: %i nodes left", _unmapped.size());
+                    throw "Unable to build graph";
+                }
             }
 
             if (_unmapped.size() == 0)

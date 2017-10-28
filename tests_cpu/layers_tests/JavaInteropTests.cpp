@@ -112,6 +112,52 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
     ASSERT_NEAR(1, output.getScalar(0), 1e-5);
 }
 
+
+TEST_F(JavaInteropTests, TestPooling2d_1) {
+    NDArray<float> input('c', {1, 2, 4, 5});
+    NDArray<float> output('c', {1, 2, 4, 5});
+
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+
+    std::vector<int> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1 , 1, 1});
+
+    nd4j::ops::pooling2d<float> op;
+
+    NativeOps nativeOps;
+
+    Nd4jStatus status = nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 11, false);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+}
+
+
+TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
+    NDArray<float> input('c', {1, 2, 4, 5});
+    NDArray<float> output('c', {1, 2, 4, 5});
+    NDArrayFactory<float>::linspace(1, input);
+
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+
+    std::vector<int> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
+
+    nd4j::ops::maxpool2d<float> op;
+
+    NativeOps nativeOps;
+
+    Nd4jStatus status = nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, false);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+}
 TEST_F(JavaInteropTests, TestCol2Im_1) {
     /*
         o.d.n.l.c.ConvolutionLayer - eps shape: [6, 1, 2, 2, 2, 4, 5, 160, 4, 2, 1, 40, 8, 0, -1, 99]

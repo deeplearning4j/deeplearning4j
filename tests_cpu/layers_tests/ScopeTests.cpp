@@ -81,7 +81,7 @@ TEST_F(ScopeTests, RealTests_1) {
 //// filling out condition scope
 ////////////////////////////////////////////////////////////////////////////////////////////////////
     // this is Sum accumulation, which feed
-    auto scopedA0 = new Node<float>(OpType_ACCUMULATION, 0, 4, {-2});
+    auto scopedA0 = new Node<float>(OpType_ACCUMULATION, 0, 4, {12});
     scopedA0->setScopeInfo(3, "scopeCondition");
 
     // this op compares LT A0 result with variable `scalar` which is 10;
@@ -94,12 +94,17 @@ TEST_F(ScopeTests, RealTests_1) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //// filling out body scope
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-    auto scopedB0 = new Node<float>(OpType_SCALAR, 0, 6, {-2}, {}, {}, 1.0f);
-    scopedB0->markInplace(true);
+    auto scopedB0 = new Node<float>(OpType_SCALAR, 0, 6, {12}, {}, {}, 1.0f);
+    scopedB0->markInplace(false);
     scopedB0->setScopeInfo(10, "scopeBody");
 
+    auto nodeReturn = new Node<float>(OpType_LOGIC, 40, 7, {6}, {12});
+    nd4j::ops::Return<float> opReturn;
+    nodeReturn->setCustomOp(&opReturn);
+    nodeReturn->setScopeInfo(10, "scopeBody");
+
     // WHILE operations takes 2 scopes - :0 is condition scope, and :1 is loop body scope
-    auto nodeWhile = new Node<float>(OpType_LOGIC, 0, 4, {3, 10});
+    auto nodeWhile = new Node<float>(OpType_LOGIC, 0, 12, {-2, 3, 10});
     nd4j::ops::While<float> opWhile;
     nodeWhile->setCustomOp(&opWhile);
 
@@ -123,6 +128,7 @@ TEST_F(ScopeTests, RealTests_1) {
 
     graph.addNode(scopedA1);
     graph.addNode(scopedB0);
+    graph.addNode(nodeReturn);
 
     // should be still 4. no options here.
     ASSERT_EQ(4, graph.totalNodes());
@@ -135,5 +141,7 @@ TEST_F(ScopeTests, RealTests_1) {
     Nd4jStatus status = GraphExecutioner<float>::execute(&graph);
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_NEAR(40.f, y->sumNumber(), 1e-5f);
+    auto w = variableSpace->getVariable(12, 0)->getNDArray();
+
+    ASSERT_NEAR(40.f, w->sumNumber(), 1e-5f);
 }

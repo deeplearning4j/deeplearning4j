@@ -643,7 +643,25 @@ template <typename T>
         return tensorAlongDimension(index, std::vector<int>(dimensions));
     }
 
+    template <typename T>
+    void NDArray<T>::printShapeInfo(const char * msg) const {
+        //shape::printShapeInfo(_shapeInfo);
+        if (msg == nullptr)
+            shape::printShapeInfoLinear(_shapeInfo);
+        else {
+            int rank = shape::rank(_shapeInfo);
+            int lim = shape::shapeInfoLength(rank);
+            printf("%s: [", msg);
+            for (int i = 0; i < shape::shapeInfoLength(rank); i++) {
+                printf("%i", _shapeInfo[i]);
 
+                if (i < lim - 1)
+                    printf(", ");
+            }
+            printf("]\n");
+        }
+        fflush(stdout);
+    }
 
     template <typename T>
     void NDArray<T>::printBuffer(const char* msg, int limit) {

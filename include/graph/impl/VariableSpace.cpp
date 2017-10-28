@@ -80,7 +80,11 @@ namespace nd4j {
             if (pair.first == 0)
                 throw "0 requested";
 
-            if (_paired.count(pair) > 0)
+            nd4j_debug("Requested variable: [%i:%i]\n", pair.first, pair.second);
+
+            if (pair.first < 0)
+                return getVariable(pair.first);
+            else if (_paired.count(pair) > 0)
                 return _paired.at(pair);
             else {
                 if (hasVariable(pair.first) && pair.second == 0)
@@ -250,16 +254,16 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(int id) {
-            _varmap.lock();
+//            _varmap.lock();
 
             if (id < 0) {
                 auto  v = _variables.at(id);
-                _varmap.unlock();
+   //             _varmap.unlock();
 
                 return v;
             } else {
                 auto v = _temporary.at(id);
-                _varmap.unlock();
+    //            _varmap.unlock();
 
                 return v;
             }

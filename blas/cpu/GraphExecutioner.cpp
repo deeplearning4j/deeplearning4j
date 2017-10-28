@@ -57,6 +57,10 @@ template <typename T>
         nd4j_debug("Executing node_%i{%s}\n", node->id(), node->getCustomOp()->getOpName()->c_str());
     }
 
+    if (node->getBlock() != nullptr) {
+        node->getBlock()->setVariableSpace(variableSpace);
+    }
+
     if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
         //nd4j_debug("Input variables: %i\n", node->input()->size());
         printf("       Inputs: {");

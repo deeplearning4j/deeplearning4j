@@ -28,7 +28,7 @@ namespace nd4j {
             Nd4jIndex _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
-            std::vector<int> _output;
+            std::vector<std::pair<int, int>> _output;
             std::vector<int> _dimensions;
 
             int * _dim = nullptr;
@@ -77,7 +77,7 @@ namespace nd4j {
             Nd4jIndex opNum();
             int id();
             std::vector<std::pair<int,int>> *input();
-            std::vector<int> *output();
+            std::vector<std::pair<int, int>> *output();
 
             void setId(int id);
 

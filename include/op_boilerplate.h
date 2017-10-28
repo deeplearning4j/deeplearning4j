@@ -1327,7 +1327,7 @@ struct __registratorDouble_##NAME {\
 #define CHECK_STASH(NAME)   block.getVariableSpace()->getStash()->checkStash(block.getNodeId(), NAME);
 #define UNSTASH(NAME)       block.getVariableSpace()->getStash()->extractArray(block.getNodeId(), NAME);
 
-#define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariables()->at(INDEX)->getNDArray()
+#define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariable(INDEX)->getNDArray()
 #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
 
 #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)

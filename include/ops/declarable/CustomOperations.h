@@ -57,6 +57,7 @@ namespace nd4j {
         DECLARE_LOGIC_OP(While);
         DECLARE_LOGIC_OP(Scope);
         DECLARE_LOGIC_OP(Conditional);
+        DECLARE_LOGIC_OP(Return);
 
         DECLARE_CUSTOM_OP(testcustom, 1, 1, false, 0, -1);
         DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 1);

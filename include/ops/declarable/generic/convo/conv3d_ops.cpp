@@ -15,7 +15,7 @@ namespace nd4j {
             NDArray<T> *input = INPUT_VARIABLE(0);
             NDArray<T> *weights = INPUT_VARIABLE(1);
             NDArray<T> *bias = nullptr;
-            if (block.getVariables()->size() == 3)
+            if (block.width() == 3)
                 bias = INPUT_VARIABLE(2);
 
             if (input->rankOf() != 5)

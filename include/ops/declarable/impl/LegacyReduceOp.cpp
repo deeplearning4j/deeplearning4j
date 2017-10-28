@@ -23,8 +23,13 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+            bool allAxes = false;
 
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT)) {
+            if (block.getIArguments()->size() == x->rankOf())
+                allAxes = true;
+
+            if ((block.getIArguments()->size() == 0) ||
+                (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT) || allAxes) {
                 // scalar
                 T res = NativeOpExcutioner<T>::execReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data());
                 z->putScalar(0, res);
@@ -56,7 +61,13 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             int *newShape;
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT)) {
+
+            bool allAxes = false;
+
+            if (block.getIArguments()->size() == shape::rank(inShape))
+                allAxes = true;
+
+            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT) || allAxes) {
                 // in this case we just return scalar
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
                 newShape[0] = 2;

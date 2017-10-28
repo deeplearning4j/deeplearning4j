@@ -110,12 +110,13 @@ namespace nd4j {
 
         template <typename T>
         void Block<T>::pickInput(int input) {
-            _inputs.emplace_back(input);
+            std::pair<int, int> pair(input, 0);
+            _inputs.emplace_back(pair);
 
-            if (!_variableSpace->hasVariable(input))
-                throw "Unknown variable was referenced";
+//            if (!_variableSpace->hasVariable(input))
+//                throw "Unknown variable was referenced";
 
-            _variables.emplace_back(_variableSpace->getVariable(input));
+//            _variables.emplace_back(_variableSpace->getVariable(input));
         }
 
         template <typename T>
@@ -124,8 +125,17 @@ namespace nd4j {
                 pickInput(v);
             }
         }
-
-
+/*
+        template <typename T>
+        void Block<T>::updateVariables() {
+            _variables.clear();
+            auto x = _inputs.size();
+            for (auto &v:_inputs) {
+                auto var = _variableSpace->getVariable(v);
+                _variables.emplace_back(var);
+            }
+        }
+*/
         template <typename T>
         int Block<T>::getBranch() {
             return _branch;
@@ -155,6 +165,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        std::vector<std::pair<int, int>>* nd4j::graph::Block<T>::inputs() {
+            return &_inputs;
+        }
+
+        template <typename T>
         void nd4j::graph::Block<T>::setOuterTime(Nd4jIndex time){
             _executionTime.first = time;
         }
@@ -166,7 +181,7 @@ namespace nd4j {
 
         template <typename T>
         bool nd4j::graph::Block<T>::hasVariablesFilled() {
-            return _variables.size() > 0;
+            return _inputs.size() > 0;
         }
 
 
@@ -174,11 +189,12 @@ namespace nd4j {
         * This method returns variables in this block
         * @return
         */
+/*
         template <typename T>
         std::vector<nd4j::graph::Variable<T> *>* nd4j::graph::Block<T>::getVariables() {
             return &_variables;
         }
-
+*/
         template <typename T>
         int Block<T>::opNum() {
             return _opNum;
@@ -187,6 +203,37 @@ namespace nd4j {
         template <typename T>
         void Block<T>::setOpNum(int opNum) {
             _opNum = opNum;
+        }
+
+        template <typename T>
+        Variable<T>* Block<T>::getVariable(int idx) {
+            if (idx >= _inputs.size()) {
+                nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", _nodeId, idx, _inputs.size());
+                throw "Bad index";
+            }
+
+            auto p = _inputs[idx];
+            return variable(p);
+        }
+
+        template <typename T>
+        Variable<T>* Block<T>::variable(int idx) {
+            return getVariable(idx);
+        }
+
+        template <typename T>
+        Variable<T>* Block<T>::variable(std::pair<int,int>& p) {
+            if (!_variableSpace->hasVariable(p)) {
+                nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", _nodeId, p.first, p.second);
+                throw "Bad variable";
+            }
+
+            return _variableSpace->getVariable(p);
+        }
+
+        template <typename T>
+        void Block<T>::pickInput(std::pair<int, int>& p) {
+            _inputs.emplace_back(p);
         }
 
         template class ND4J_EXPORT Block<float>;

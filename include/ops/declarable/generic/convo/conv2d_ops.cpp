@@ -22,7 +22,7 @@ namespace nd4j {
             NDArray<T>* weights = INPUT_VARIABLE(1);
             NDArray<T>* bias = nullptr;
 
-            if (block.getVariables()->size() == 3)
+            if (block.width() == 3)
                 bias = INPUT_VARIABLE(2);
 
             const int kY = block.getIArguments()->at(0);
@@ -138,7 +138,7 @@ namespace nd4j {
             NDArray<T>* epsilon = OUTPUT_VARIABLE(0);
             NDArray<T>* gradW = OUTPUT_VARIABLE(1);
             NDArray<T>* gradB = nullptr;
-            if (block.getVariables()->size() == 3)
+            if (block.width() == 3)
                 epsilonNext = INPUT_VARIABLE(2);
             else {
                 bias = INPUT_VARIABLE(2);
@@ -267,22 +267,22 @@ namespace nd4j {
          */
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *weightsDepth = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto weightsDepth = INPUT_VARIABLE(1);
             NDArray<T> *weightsPoint = nullptr;
             NDArray<T> *bias = nullptr;
-            if (block.getVariables()->size() == 3) {
+            if (block.width() == 3) {
                 auto tmp = INPUT_VARIABLE(2);
                 if (tmp->rankOf() == 4)
                     weightsPoint = tmp;
                 else
                     bias = tmp;
-            } else if (block.getVariables()->size() == 4) {
+            } else if (block.width() == 4) {
                 weightsPoint = INPUT_VARIABLE(2);
                 bias = INPUT_VARIABLE(3);
             }
 
-            NDArray<T> *z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
             const int kY = block.getIArguments()->at(0);
             const int kX = block.getIArguments()->at(1);
@@ -454,13 +454,13 @@ namespace nd4j {
             NDArray<T> *bias = nullptr;
 
             // bias is still optional
-            if (block.getVariables()->size() == 4) {
+            if (block.width() == 4) {
                 auto tmp = INPUT_VARIABLE(3);
                 if (tmp->rankOf() == 4)
                     weightsPoint = tmp;
                 else
                     bias = tmp;
-            } else if (block.getVariables()->size() == 5) {
+            } else if (block.width() == 5) {
                 weightsPoint = INPUT_VARIABLE(3);
                 bias = INPUT_VARIABLE(4);
             }
@@ -679,7 +679,7 @@ namespace nd4j {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);
             NDArray<T>* bias = nullptr;
-            if (block.getVariables()->size() > 2)
+            if (block.width() > 2)
                 bias = INPUT_VARIABLE(2);
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should be 4D, but got %iD instead", input->rankOf());
@@ -763,7 +763,7 @@ namespace nd4j {
             NDArray<T> *bias = nullptr;
 
             // bias is still optional
-            if (block.getVariables()->size() > 3)
+            if (block.width() > 3)
                 bias = INPUT_VARIABLE(3);
 
             //epsilonNext->rankOf() == 4 && weights->rankOf() == 4

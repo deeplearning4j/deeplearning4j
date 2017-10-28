@@ -329,3 +329,83 @@ TEST_F(FlatBuffersTest, ReadInception1) {
 
     delete graph;
 }
+
+TEST_F(FlatBuffersTest, ReduceDim_1) {
+    NDArray<float> exp('c', {3, 1});
+    exp.assign(3.0);
+
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/reduce_dim.fb");
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto variableSpace = graph->getVariableSpace();
+
+    ASSERT_TRUE(variableSpace->hasVariable(1));
+
+    auto result = variableSpace->getVariable(1)->getNDArray();
+
+
+    result->printShapeInfo("result shape");
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete graph;
+}
+
+TEST_F(FlatBuffersTest, ReadLoops_3argsWhile_1) {
+    // TF graph:
+    // https://gist.github.com/raver119/b86ef727e9a094aab386e2b35e878966
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/three_args_while.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    NDArray<float> expPhi('c', {2, 2});
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(-1));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(-2));
+
+    auto phi = graph->getVariableSpace()->getVariable(-2)->getNDArray();
+    auto constA = graph->getVariableSpace()->getVariable(-5)->getNDArray();
+    auto lessY = graph->getVariableSpace()->getVariable(-6)->getNDArray();
+
+    constA->printBuffer("constA");
+    lessY->printBuffer("lessY");
+
+    ASSERT_TRUE(expPhi.isSameShape(phi));
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    // now, we expect some values
+
+    auto x = graph->getVariableSpace()->getVariable(20);
+    auto y = graph->getVariableSpace()->getVariable(21);
+
+    ASSERT_NEAR(110.0f, x->getNDArray()->meanNumber(), 1e-5);
+    ASSERT_NEAR(33.0f, y->getNDArray()->meanNumber(), 1e-5);
+}
+
+TEST_F(FlatBuffersTest, ReadLoops_NestedWhile_1) {
+    // TF graph:
+    // https://gist.github.com/raver119/2aa49daf7ec09ed4ddddbc6262f213a0
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/nested_while.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    auto x = graph->getVariableSpace()->getVariable(28);
+    auto y = graph->getVariableSpace()->getVariable(29);
+    auto z = graph->getVariableSpace()->getVariable(11, 2);
+
+    ASSERT_NEAR(110.0f, x->getNDArray()->meanNumber(), 1e-5);
+    ASSERT_NEAR(33.0f, y->getNDArray()->meanNumber(), 1e-5);
+
+    // we should have only 3 cycles in nested loop
+    ASSERT_NEAR(30.0f, z->getNDArray()->meanNumber(), 1e-5);
+}

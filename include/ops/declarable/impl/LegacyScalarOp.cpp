@@ -39,7 +39,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             T scalar = (T) 0.0f;
             int offset = 0;
-            if (block.getVariables()->size() > 1) {
+            if (block.width() > 1) {
                 auto y = INPUT_VARIABLE(1);
                 scalar = y->getScalar(0);
             } else if (block.getTArguments()->size() > 0) {
