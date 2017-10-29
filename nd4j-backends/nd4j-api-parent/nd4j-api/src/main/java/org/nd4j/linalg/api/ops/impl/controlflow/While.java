@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -50,7 +49,7 @@ public class While extends DifferentialFunction implements CustomOp {
     @Getter
     private SDVariable targetBoolean;
 
-    private NDArrayInformation dummyResult;
+    private SDVariable dummyResult;
 
     @Getter
     @Setter
@@ -72,7 +71,8 @@ public class While extends DifferentialFunction implements CustomOp {
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.blockName = blockName;
-        this.dummyResult = NDArrayInformation.newInfo(new int[]{1,1});
+        this.dummyResult =  SDVariable.builder()
+                .varName("dummyresult-" + UUID.randomUUID().toString()).sameDiff(parent).shape(new int[]{1,1}).build();
         this.vertexId = new int[] {parent.graph().nextVertexId()};
         NDArrayVertex dummyVertex = new NDArrayVertex(parent,this.vertexId[0],0,dummyResult);
         parent.graph().addVertex(dummyVertex);
@@ -80,13 +80,20 @@ public class While extends DifferentialFunction implements CustomOp {
         int[] inputEdges = new int[inputVars.length];
         int[] outputEdges = new int[inputVars.length];
         String[] opEdgeIds = new String[inputVars.length * 2];
-        NDArrayInformation[] results = new NDArrayInformation[inputVars.length];
+        SDVariable[] results = new SDVariable[inputVars.length];
         for(int i = 0; i < inputVars.length; i++) {
             inputVars[i] = parent.setupFunction(inputVars[i]);
-            NDArrayInformation outputInfo = NDArrayInformation.newInfo(
-                    inputVars[i].getInfo().getShape()
-                    ,inputVars[i].getInfo().getWeightInitScheme());
+
+            int vertexId = parent.graph().nextVertexId();
+            SDVariable outputInfo =    SDVariable.builder()
+                    .shape(inputVars[i].getShape())
+                    .varName(inputVars[i].getVarName() + "-output")
+                    .sameDiff(parent)
+                    .arr(inputVars[i].getArr())
+                    .vertexId(new int[]{vertexId}).build();
             NDArrayVertex ndArrayVertex = new NDArrayVertex(parent,parent.graph().nextVertexId(),inputVars[i].depth() + 1, outputInfo);
+            outputInfo.setVertex(ndArrayVertex);
+
             inputEdges[i] = inputVars[i].getVertex().vertexID();
             outputEdges[i] = ndArrayVertex.vertexID();
             results[i] = outputInfo;
@@ -97,7 +104,6 @@ public class While extends DifferentialFunction implements CustomOp {
                             .varName(inputVars[i].getVarName() + "-output")
                             .sameDiff(parent)
                             .arr(inputVars[i].getArr())
-                            .info(outputInfo)
                             .vertexId(new int[]{ndArrayVertex.vertexID()})
                             .ndArrayVertex(ndArrayVertex)
                             .build());
@@ -162,7 +168,7 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public NDArrayInformation getResult() {
+    public SDVariable getResult() {
         return dummyResult;
     }
 

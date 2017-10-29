@@ -2,6 +2,7 @@ package org.nd4j.autodiff.opstate;
 
 import lombok.Builder;
 import lombok.Data;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -17,8 +18,8 @@ public class OpExecAction implements Serializable {
     private OpState opState;
     private OpExecAction forwardAction;
     private OpExecAction backwardAction;
-    private NDArrayInformation[] inputs;
-    private NDArrayInformation output;
+    private SDVariable[] inputs;
+    private SDVariable output;
     private int[] inputsIds;
     private int[] outputId;
 

@@ -1,7 +1,7 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 
 
@@ -21,7 +21,13 @@ public class Scalar extends Constant {
 
     public Scalar(SameDiff sameDiff,
                   double value,boolean inPlace,int[] vertexId) {
-        super(sameDiff, NDArrayInformation.newInfo(new int[]{1,1}),new int[]{1,1},inPlace,vertexId);
+        super(sameDiff, SDVariable.builder()
+                        .vertexId(vertexId)
+                        .sameDiff(sameDiff)
+                        .varName("")
+                        .build(),
+                new int[]{1,1}
+                ,inPlace,vertexId);
         this.value = value;
 
     }

@@ -44,7 +44,7 @@ public class Upsampling extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "upsampling";
+        return "upsampling2d";
     }
 
 

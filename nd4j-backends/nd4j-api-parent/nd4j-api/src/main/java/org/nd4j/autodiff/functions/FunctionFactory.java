@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
@@ -16,11 +15,11 @@ public interface FunctionFactory {
 
     DifferentialFunction invoke(String name, Object[] args);
 
-    Constant val(NDArrayInformation iX);
+    Constant val(SDVariable iX);
 
 
 
-    SDVariable var(String iName, NDArrayInformation iX);
+    SDVariable var(String iName, SDVariable iX);
 
 
 

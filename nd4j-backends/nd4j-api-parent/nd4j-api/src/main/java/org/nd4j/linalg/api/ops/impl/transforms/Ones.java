@@ -20,8 +20,8 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -43,14 +43,18 @@ public class Ones extends Constant {
 
 
     public Ones(SameDiff sameDiff, int[] shape,int[] vertexId) {
-        super(sameDiff,NDArrayInformation.newInfo(shape,new OneInitScheme('f')), shape,vertexId);
+        super(sameDiff, SDVariable.builder()
+                .sameDiff(sameDiff).vertexId(vertexId)
+                .shape(shape)
+                .weightInitScheme(new OneInitScheme('f'))
+                .build(), shape,vertexId);
     }
 
-    public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape, boolean inPlace,int[] vertexId) {
+    public Ones(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace,int[] vertexId) {
         super(sameDiff, i_v, shape, inPlace,vertexId);
     }
 
-    public Ones(SameDiff sameDiff, NDArrayInformation i_v, int[] shape,int[] vertexId) {
+    public Ones(SameDiff sameDiff, SDVariable i_v, int[] shape,int[] vertexId) {
         super(sameDiff, i_v, shape,vertexId);
     }
 

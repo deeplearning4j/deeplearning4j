@@ -2,9 +2,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 public class Constant extends BaseTransformOp {
 
-    protected NDArrayInformation m_x;
+    protected SDVariable m_x;
     protected int[] shape;
 
     public Constant() {
@@ -23,7 +23,7 @@ public class Constant extends BaseTransformOp {
 
 
     protected Constant(SameDiff sameDiff,
-                       NDArrayInformation i_v,
+                       SDVariable i_v,
                        int[] shape,
                        boolean inPlace,int[] vertexId) {
         super();
@@ -47,7 +47,7 @@ public class Constant extends BaseTransformOp {
     }
 
     public Constant(SameDiff sameDiff,
-                    NDArrayInformation i_v,
+                    SDVariable i_v,
                     int[] shape,int[] vertexId) {
         this(sameDiff,i_v,shape,false,vertexId);
     }
@@ -93,7 +93,7 @@ public class Constant extends BaseTransformOp {
 
 
     @Override
-    public NDArrayInformation getResult() {
+    public SDVariable getResult() {
         return this.m_x;
     }
 

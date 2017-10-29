@@ -22,10 +22,10 @@ package org.nd4j.linalg.api.ops;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -132,10 +132,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                             String opName,
                             int[] shape) {
         validateFunctionReference(i_v1);
-        NDArrayInformation information =   inPlace ? i_v1.getResult() : NDArrayInformation.builder()
-                .arrId(UUID.randomUUID().toString())
-                .id(opName + "(" + i_v1.getResult().getId() + " -> " +
-                        i_v1.getResult().getId() + ")")
+        SDVariable information =   inPlace ? i_v1.getResult() : SDVariable.builder()
+                .varName(opName + "(" + i_v1.getResult().getVarName() + " -> " +
+                        i_v1.getResult().getVarName() + ")")
                 .shape(i_v1.getResultShape()).build();
 
         //result
@@ -152,10 +151,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                 .opType(Type.SCALAR)
                 .differentialFunction(this).inPlace(inPlace)
                 .opName(opName).extraArgs(extraArgs).scalarValue(scalarValue)
-                .id(opName + "(" + i_v1.getResult().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .id(opName + "(" + i_v1.getResult().getVarName() + " -> " + newVertex.getValue().getVarName() + ")")
                 .vertexIds(sameDiff.generateVertexIds(i_v1.getVertex().vertexID(),newVertex.vertexID()))
                 .n(ArrayUtil.prod(shape))
-                .results(new NDArrayInformation[]{information})
+                .results(new SDVariable[]{information})
                 .build();
 
 
@@ -168,10 +167,10 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
         newVertex.setOpState(owner);
         information.setOwner(owner);
-        owner.setResults(new NDArrayInformation[]{information});
+        owner.setResults(new SDVariable[]{information});
 
         if(owner.isInPlace()) {
-            information.setArrId(i_v1.getResult().getArrId());
+            information.setVarName(i_v1.getResult().getVarName());
         }
 
         this.opState = owner;

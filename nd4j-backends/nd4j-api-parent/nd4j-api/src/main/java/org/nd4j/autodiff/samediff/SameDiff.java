@@ -33,6 +33,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -64,8 +66,7 @@ public class SameDiff {
     private Map<String,SDVariable> variableMap;
     private Map<int[],SDVariable> vertexIdToVariable;
     private Map<String,INDArray> vertexToArray;
-    private IdentityHashMap<INDArray,NDArrayInformation> reverseArrayLookup;
-    private Map<int[],NDArrayInformation> vertexIdxToInfo;
+    private IdentityHashMap<INDArray,SDVariable> reverseArrayLookup;
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String,SameDiff> sameDiffFunctionInstances;
@@ -130,7 +131,7 @@ public class SameDiff {
         //map new vertex ids and create new vertices
         for(int i = 0; i < graph().numVertices(); i++) {
             int nextVertexId = sameDiff.graph.nextVertexId();
-            NDArrayInformation clone = cloner.deepClone(graph.getVertex(i + 1).getValue());
+            SDVariable clone = cloner.deepClone(graph.getVertex(i + 1).getValue());
             if(clone.getOwner() != null && clone.getOwner().getDifferentialFunction() != null)
                 clone.getOwner().getDifferentialFunction().setSameDiff(sameDiff);
             NDArrayVertex info = new NDArrayVertex(
@@ -142,9 +143,6 @@ public class SameDiff {
             sameDiff.graph().addVertex(info);
         }
 
-        for(Map.Entry<int[],NDArrayInformation> informationEntry : vertexIdxToInfo.entrySet()) {
-                sameDiff.vertexIdxToInfo.put(new int[]{thisVertexIdToNew.get(informationEntry.getKey()[0])},informationEntry.getValue());
-        }
 
 
         for(int i = 0; i < graph().numVertices(); i++) {
@@ -223,7 +221,6 @@ public class SameDiff {
                     variable.getVertex(),
                     variable.getArr(),
                     variable.getSameDiff(),
-                    variable.getInfo(),
                     variable.getShape());
             Preconditions.checkState(thisVertexIdToNew.containsKey(variable.getVertexId()[0]),variable.getVertexId()[0] + " not found in mapped vertices!");
             int newVertexMap = thisVertexIdToNew.get(variable.getVertexId()[0]);
@@ -236,8 +233,6 @@ public class SameDiff {
 
             }
 
-            if(variable.getInfo() != null)
-                deepClone.setInfo(variable.getInfo());
 
             if(variable.getVertex() != null)
                 deepClone.setVertex((NDArrayVertex) sameDiff.graph().getVertex(newVertexMap));
@@ -277,10 +272,10 @@ public class SameDiff {
      * are used rather than a clone, so dup() ed arrays
      * will not work here)
      * @param arr the array reference to get the information for
-     * @return the {@link NDArrayInformation}
+     * @return the {@link SDVariable}
      * for the given array reference
      */
-    public NDArrayInformation getInfoFor(INDArray arr) {
+    public SDVariable getInfoFor(INDArray arr) {
         return reverseArrayLookup.get(arr);
     }
 
@@ -390,7 +385,6 @@ public class SameDiff {
         functionFactory = new DifferentialFunctionFactory(this);
         variableMap = new HashMap<>();
         vertexToArray = new HashMap<>();
-        vertexIdxToInfo = new IntArrayKeyMap<>();
         sameDiffFunctionDefinitionMap = new HashMap<>();
         sameDiffFunctionInstances = new HashMap<>();
         functionInstances = new IntArrayKeyMap<>();
@@ -469,9 +463,8 @@ public class SameDiff {
             if(!vertexIdToVariable.containsKey(sdVariable.resultVertexId()))
                 vertexIdToVariable.put(sdVariable.getOutputVertexIds(),sdVariable);
 
-            if(sdVariable.getInfo() != null && sdVariable.getArr() != null) {
-                reverseArrayLookup.put(sdVariable.getArr(),sdVariable.getInfo());
-                vertexToArray.put(sdVariable.getInfo().getArrId(),sdVariable.getArr());
+            if( sdVariable.getArr() != null) {
+                reverseArrayLookup.put(sdVariable.getArr(),sdVariable);
             }
 
         }
@@ -544,7 +537,6 @@ public class SameDiff {
         SDGraph clone = new SDGraph(graph);
         SameDiff ret = SameDiff.builder()
                 .variableMap(originalSameDiff.getVariableMap())
-                .vertexIdxToInfo(originalSameDiff.getVertexIdxToInfo())
                 .sameDiffFunctionInstances(originalSameDiff.getSameDiffFunctionInstances())
                 .vertexToArray(originalSameDiff.getVertexToArray())
                 .graph(clone)
@@ -569,8 +561,6 @@ public class SameDiff {
         if (variableMap != null ? !variableMap.equals(sameDiff.variableMap) : sameDiff.variableMap != null)
             return false;
         if (vertexToArray != null ? !vertexToArray.equals(sameDiff.vertexToArray) : sameDiff.vertexToArray != null)
-            return false;
-        if (vertexIdxToInfo != null ? !vertexIdxToInfo.equals(sameDiff.vertexIdxToInfo) : sameDiff.vertexIdxToInfo != null)
             return false;
         if (sameDiffFunctionDefinitionMap != null ? !sameDiffFunctionDefinitionMap.equals(sameDiff.sameDiffFunctionDefinitionMap) : sameDiff.sameDiffFunctionDefinitionMap != null)
             return false;
@@ -634,7 +624,11 @@ public class SameDiff {
 
 
     /**
-     *
+     * Allocate ndarrays in to memory,
+     * linking the {@link SDVariable}
+     * {@link INDArray}
+     * provided with {@link SDVariable#getArr()}
+     * as needed.
      */
     public void allocate() {
         if(workspace != null) {
@@ -646,52 +640,75 @@ public class SameDiff {
 
 
         for (Integer i : graph().getVertices().keySet()) {
-            NDArrayInformation info = graph.getInformationFor(i);
-            DifferentialFunction func = functionInstances.get(new int[]{i});
-
-            if(!variableMap.containsKey(info.getId())) {
-
-                SDVariable.SDVariableBuilder variableBuilder = SDVariable.builder()
-                        .sameDiff(this)
-                        .varName(info.getId());
-                //associate the proper differential function with the given
-                //variable
-                if(func != null)
-                    variableBuilder.differentialFunction(func);
-
-                if(func != null)
-                    variableBuilder.shape(info.getShape());
-
-                variableBuilder.vertexId(new int[]{i});
-
-                SDVariable variable = variableBuilder.build();
-                variableMap.put(info.getId(),variable);
-            }
-
-            /**
-             * Problem:
-             * Vertexes are not a unique identifier of an actual array.
-             * Duplicate vertices are put in to place
-             * to avoid cycles by may point at the same array.
-             * NDArrayInformation should somehow be unique
-             * and point to an actual array.
-             */
-            if(!vertexToArray.containsKey(info.getArrId()) || vertexToArray.get(info.getArrId()) == null) {
-                //initialize value if it's actually a scalar constant (zero or 1 typically...)
-                if(info.getScalarValue() != null && ArrayUtil.prod(info.getShape()) == 1) {
-                    INDArray arr = Nd4j.valueArrayOf(info.getShape(),
-                            info.getScalarValue().doubleValue());
-                    vertexToArray.put(info.getArrId(),arr);
-                    reverseArrayLookup.put(arr,info);
-                }
-                else {
-                    INDArray newAlloc = info.getWeightInitScheme().create(info.getShape(),Nd4j.zeros(info.getShape(),info.getWeightInitScheme().order()));
-                    vertexToArray.put(info.getArrId(),newAlloc);
-                    reverseArrayLookup.put(newAlloc,info);
-                }
-
-            }
+            SDVariable info = graph.getVariableForVertex(i);
+            allocateArrayFor(info);
         }
+
+    }
+
+
+    /**
+     * Allocate an individual {@link INDArray}
+     * for a given {@link SDVariable}
+     * @param sdVariable the variable to allocate
+     *                   memory for
+     */
+    public void allocateArrayFor(SDVariable sdVariable) {
+        if(workspace != null) {
+            workspace.close();
+        }
+        else {
+            initWorkspace();
+        }
+
+        SDVariable info = sdVariable;
+        DifferentialFunction func = functionInstances.get(info.getVertexId());
+
+        if(!variableMap.containsKey(info.getVarName())) {
+            SDVariable.SDVariableBuilder variableBuilder = SDVariable.builder()
+                    .sameDiff(this)
+                    .varName(info.getVarName());
+            //associate the proper differential function with the given
+            //variable
+            if(func != null)
+                variableBuilder.differentialFunction(func);
+
+            if(func != null)
+                variableBuilder.shape(info.getShape());
+
+            variableBuilder.vertexId(info.getVertexId());
+
+            SDVariable variable = variableBuilder.build();
+            variableMap.put(info.getVarName(),variable);
+        }
+
+        /**
+         * Problem:
+         * Vertexes are not a unique identifier of an actual array.
+         * Duplicate vertices are put in to place
+         * to avoid cycles by may point at the same array.
+         * NDArrayInformation should somehow be unique
+         * and point to an actual array.
+         */
+        if(!vertexToArray.containsKey(info.getVarName()) || vertexToArray.get(info.getVarName()) == null) {
+            //initialize value if it's actually a scalar constant (zero or 1 typically...)
+            if(info.getScalarValue() != null && ArrayUtil.prod(info.getShape()) == 1) {
+                INDArray arr = Nd4j.valueArrayOf(info.getShape(),
+                        info.getScalarValue().doubleValue());
+                vertexToArray.put(info.getVarName(),arr);
+                reverseArrayLookup.put(arr,info);
+                info.setArr(arr);
+            }
+            else {
+                INDArray newAlloc = info.getWeightInitScheme().create(info.getShape(),Nd4j.zeros(info.getShape(),info.getWeightInitScheme().order()));
+                vertexToArray.put(info.getVarName(),newAlloc);
+                reverseArrayLookup.put(newAlloc,info);
+                info.setArr(newAlloc);
+
+            }
+
+        }
+
 
     }
 
@@ -721,10 +738,10 @@ public class SameDiff {
      *
      *
      * @param name
-     * @param arr
+     * @param shape
      * @return
      */
-    public SDVariable var(String name, NDArrayInformation arr) {
+    public SDVariable var(String name, int[] shape) {
         if(variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
             return variableMap.get(name);
 
@@ -732,8 +749,51 @@ public class SameDiff {
         if(name == null || name.length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
 
+        if(workspace == null)
+            initWorkspace();
+
+
+        int[] vertexId = {graph.nextVertexId()};
+        SDVariable ret = SDVariable.builder()
+                .sameDiff(this)
+                .vertexId(vertexId)
+                .shape(shape).weightInitScheme(new ZeroInitScheme('f'))
+                .varName(name)
+                .build();
+
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,vertexId[0], 0,ret);
+        graph.addVertex(ndArrayVertex);
+        addVariable(ret);
+        variableMap.put(name,ret);
+        return ret;
+
+    }
+
+
+    /**
+     * Initialize a {@link SDVariable}
+     * reference tying this variable to this
+     * samediff instance.
+     *
+     * {@link NDArraySupplierInitScheme} is used
+     * to ensure that if the array is allocated anywhere
+     * in any setting, the same array reference will be preserved
+     * while allowing a separate {@link NDArrayVertex}
+     * and {@link SameDiff} instance to exist as a copy of the variable.
+     *
+     * @param arr
+     * @return
+     */
+    public SDVariable var(final SDVariable arr) {
+        if(variableMap.containsKey(arr.getVarName()) && variableMap.get(arr.getVarName()).getArr() != null)
+            return variableMap.get(arr.getVarName());
+
+
+        if(arr.getVarName() == null || arr.getVarName().length() < 1)
+            throw new IllegalArgumentException("Name for variable must be defined");
+
         if(arr == null)
-            throw new IllegalArgumentException("Array for " + name + " must not be null");
+            throw new IllegalArgumentException("Array for " + arr.getVarName() + " must not be null");
 
         if(workspace == null)
             initWorkspace();
@@ -742,17 +802,31 @@ public class SameDiff {
         graph.addVertex(ndArrayVertex);
         SDVariable ret = SDVariable.builder()
                 .sameDiff(this)
-                .info(arr)
                 .vertexId(new int[]{ndArrayVertex.getIdx()})
                 .shape(arr.getShape())
-                .varName(name)
+                .varName(arr.getVarName())
+                .differentialFunction(arr.getDifferentialFunction())
+                .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
+                    @Override
+                    public INDArray getArr() {
+                        /**
+                         * Pre allocate the array if it doesn't already exist.
+                         * The reason we do this is to avoid race conditions with
+                         * {@link #allocate()}
+                         */
+                        if(arr.getArr() == null) {
+                            arr.setArr(arr.getWeightInitScheme().create(arr.getShape()));
+                        }
+                        return arr.getArr();
+                    }
+                }))
                 .build();
         addVariable(ret);
-        vertexIdxToInfo.put(new int[]{ndArrayVertex.vertexID()},arr);
-        variableMap.put(name,ret);
+        variableMap.put(arr.getVarName(),ret);
         return ret;
 
     }
+
 
 
 
@@ -778,32 +852,24 @@ public class SameDiff {
             initWorkspace();
 
         arr = arr.migrate();
-
-        NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
-                .shape(arr.shape()).id(name)
-                .arrId(UUID.randomUUID().toString())
-                .build();
-
-        if(ArrayUtil.prod(arr.shape()) == 1)
-            ndArrayInformation.setScalarValue(arr.getDouble(0));
-
-        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,graph.nextVertexId(), 0,ndArrayInformation);
-        graph.addVertex(ndArrayVertex);
+        int vertexIdx = this.graph.nextVertexId();
         SDVariable ret = SDVariable.builder()
                 .sameDiff(this)
-                .info(ndArrayInformation)
-                .vertexId(new int[]{ndArrayVertex.getIdx()})
+                .vertexId(new int[]{vertexIdx})
                 .shape(arr.shape())
                 .varName(name)
                 .arr(arr).build();
+        if(ArrayUtil.prod(arr.shape()) == 1)
+            ret.setScalarValue(arr.getDouble(0));
+
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,vertexIdx, 0,ret);
+        graph.addVertex(ndArrayVertex);
+
         addVariable(ret);
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
-        vertexToArray.put(ndArrayInformation.getArrId(), arr);
-        reverseArrayLookup.put(arr, ndArrayInformation);
-
-
-        vertexIdxToInfo.put(new int[]{ndArrayVertex.vertexID()},ndArrayInformation);
+        vertexToArray.put(ret.getVarName(), arr);
+        reverseArrayLookup.put(arr, ret);
         variableMap.put(name,ret);
         return ret;
 
@@ -918,12 +984,12 @@ public class SameDiff {
     /**
      * Returns the ndarrays
      * allocated for a given
-     * {@link NDArrayInformation}
+     * {@link SDVariable}
      * @param info the information to get the array for
      * @return
      */
-    public INDArray getNDArray(NDArrayInformation info) {
-        return getVertexToArray().get(info.getArrId());
+    public INDArray getNDArray(SDVariable  info) {
+        return getVertexToArray().get(info.getVarName());
     }
 
 
@@ -3174,9 +3240,8 @@ public class SameDiff {
 
         vertexIdToVariable.put(getFunctionInput(variable).resultVertexId(),variable);
         variableMap.put(variable.getVarName(),variable);
-        if(variable.getInfo() != null && variable.getArr() != null) {
-            reverseArrayLookup.put(variable.getArr(),variable.getInfo());
-            vertexToArray.put(variable.getInfo().getArrId(),variable.getArr());
+        if( variable.getArr() != null) {
+            reverseArrayLookup.put(variable.getArr(),variable);
         }
 
     }
@@ -3263,14 +3328,14 @@ public class SameDiff {
 
 
     private INDArray getX(OpExecAction opExecAction) {
-        INDArray ret =  vertexToArray.get(opExecAction.getInputs()[0].getArrId());
+        INDArray ret =  vertexToArray.get(opExecAction.getInputs()[0].getVarName());
         return ret;
     }
 
     private INDArray getY(OpExecAction opExecAction) {
         if(opExecAction.getInputsIds().length > 1) {
-            NDArrayInformation opId = opExecAction.getInputs()[1];
-            INDArray ret = vertexToArray.get(opId.getArrId());
+            SDVariable opId = opExecAction.getInputs()[1];
+            INDArray ret = vertexToArray.get(opId.getVarName());
             return ret;
         }
         return null;
@@ -3279,8 +3344,8 @@ public class SameDiff {
     private INDArray getZ(OpExecAction opExecAction) {
         if(opExecAction.isInPlace())
             return getX(opExecAction);
-        NDArrayInformation opId = opExecAction.getOutput();
-        INDArray ret =  vertexToArray.get(opId.getArrId());
+        SDVariable opId = opExecAction.getOutput();
+        INDArray ret =  vertexToArray.get(opId.getVarName());
         return ret;
     }
 
@@ -3502,11 +3567,10 @@ public class SameDiff {
             //re execute to populate subgraph
             SDVariable[] ret = new SDVariable[variables.length];
             for(int i = 0; i < ret.length; i++) {
-                NDArrayVertex ndArrayVertex = new NDArrayVertex(sub,sub.graph().nextVertexId(),0,variables[i].getInfo());
+                NDArrayVertex ndArrayVertex = new NDArrayVertex(sub,sub.graph().nextVertexId(),0,variables[i]);
                 ret[i] = sub.setupFunction(SDVariable
                         .builder()
                         .ndArrayVertex(ndArrayVertex)
-                        .info(variables[i].getInfo())
                         .arr(variables[i].getArr())
                         .sameDiff(sub).vertexId(new int[]{ndArrayVertex.getIdx()})
                         .differentialFunction(variables[i].getDifferentialFunction() != null ?
@@ -3861,8 +3925,7 @@ public class SameDiff {
 
                     currVariable.setArr(op.z());
                 opMap.put(currVariable,differentialFunction);
-                vertexIdxToInfo.put(opExecAction.getOutputId(),opExecAction.getOutput());
-                getVertexToArray().put(opExecAction.getOutput().getArrId(),op.z());
+                getVertexToArray().put(opExecAction.getOutput().getVarName(),op.z());
                 getFunctionInstances().put(opExecAction.getOutputId(),opExecAction.getOpState().getDifferentialFunction());
             }
 
