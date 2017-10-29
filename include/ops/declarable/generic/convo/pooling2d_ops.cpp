@@ -7,6 +7,7 @@
 
 namespace nd4j {
     namespace ops {
+        
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
 
@@ -71,19 +72,17 @@ namespace nd4j {
                 delete epsilonTemp;
             }
 
-            // NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW}, block.getWorkspace());
+            NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
 
-            T extraParams1[] = {(T)kW, (T)kH, (T)sW, (T)sH, (T)pW, (T)pH, (T)dW, (T)dH};
+            T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW};
             input->template applyTransform<simdOps::Im2col<T>>(col6dPermuted, extraParams1);
 
             //FIXME: this op should be moved to CustomOps
-            // T extraParams2[] = {(T)1.f, (T)1.f};
-            // col2d->template applyTransform<simdOps::IsMax<T>>(extraParams2);
-            // col2d->muliColumnVector(epsilon1d);
+            T extraParams2[] = {(T)1.f, (T)1.f};
+            col2d->template applyTransform<simdOps::IsMax<T>>(extraParams2);
+            col2d->muliColumnVector(epsilon1d);
 
-            // NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW}, block.getWorkspace());
-            // NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
-            T extraParams3[] = {(T) sW, (T)sH, (T)pW, (T)pH, (T)iH, (T)iW, (T)dW, (T)dH};   			// ??? zeros
+            T extraParams3[] = {(T) sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};   			// ??? zeros
             col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
 
             STORE_RESULT(*outEpsilon);		// ???
@@ -99,30 +98,17 @@ namespace nd4j {
         }
         DECLARE_SYN(MaxPool2D_bp, maxpool2d_bp);
         DECLARE_SYN(MaxPool_bp, maxpool2d_bp);
-
-        //////////////////////////////////////////////////////////////////////////
+        
         DECLARE_SHAPE_FN(maxpool2d_bp) {
-            int* inShape = inputShape->at(0);
-            int bS = inShape[1];
-            int iD = inShape[2];
-            int iH = inShape[3];
-            int iW = inShape[4];
-            // calculate output Height/Width
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-            newShapeInfo[0] = 4;		// rank
-            newShapeInfo[1] = iD;
-            newShapeInfo[2] = bS;
-            newShapeInfo[3] = iH;
-            newShapeInfo[4] = iW;
-            shape::updateStrides(newShapeInfo, 'c');
-            int dimensions[] = {1, 0, 2, 3};
-            shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);
+            
+            int* newShapeInfo = nullptr; 
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); 
+            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); 
             return new ShapeList(newShapeInfo);
         }
 
 
-
+        //////////////////////////////////////////////////////////////////////////
         // maxpool2d corresponds to poolingMode=0
         CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
@@ -143,10 +129,7 @@ namespace nd4j {
 
             const bool isSameMode = block.getIArguments()->at(8) > 0;
             if (isSameMode)
-                ConvolutionUtils<T>::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
             std::vector<T> argT = {(T)argI[0], (T)argI[1], (T)argI[2], (T)argI[3], (T) pY, (T) pX, (T)argI[6], (T)argI[7], (T)0.f, (T)0.f, (T)1.f};
@@ -162,7 +145,7 @@ namespace nd4j {
         DECLARE_SYN(MaxPool2D, maxpool2d);
         DECLARE_SYN(MaxPool, maxpool2d);
         DECLARE_SYN(maxpool, maxpool2d);
-        //////////////////////////////////////////////////////////////////////////
+        
         DECLARE_SHAPE_FN(maxpool2d) {
             //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             int* inShape = inputShape->at(0);
@@ -207,7 +190,7 @@ namespace nd4j {
             return new ShapeList(newShapeInfo);
         }
 
-//////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         // avgpool2d corresponds to poolingMode=1
         CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 9) {
 
@@ -243,7 +226,7 @@ namespace nd4j {
         DECLARE_SYN(AvgPool2D, avgpool2d);
         DECLARE_SYN(AvgPool, avgpool2d);
         DECLARE_SYN(avgpool, avgpool2d);
-        //////////////////////////////////////////////////////////////////////////
+        
         DECLARE_SHAPE_FN(avgpool2d) {
             int* inShape = inputShape->at(0);
             int* shapeOf = shape::shapeOf(inShape);
@@ -290,7 +273,7 @@ namespace nd4j {
             return new ShapeList(newShapeInfo);
         }
 
-//////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         // pnormpool2d corresponds to poolingMode=2
         CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
 
@@ -313,7 +296,7 @@ namespace nd4j {
         DECLARE_SYN(PnormPool, pnormpool2d);
         DECLARE_SYN(pnormpool, pnormpool2d);
 
-        //////////////////////////////////////////////////////////////////////////
+        
         DECLARE_SHAPE_FN(pnormpool2d) {
             int* inShape = inputShape->at(0);
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;

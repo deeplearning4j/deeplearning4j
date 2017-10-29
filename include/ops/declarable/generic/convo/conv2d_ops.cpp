@@ -90,6 +90,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        
         DECLARE_SHAPE_FN(conv2d) {
             auto inShape = inputShape->at(0);
             auto wShape = inputShape->at(1);
@@ -128,7 +129,7 @@ namespace nd4j {
         }
 
 
-
+        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);
@@ -232,6 +233,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
         DECLARE_SHAPE_FN(conv2d_bp) {
             auto inShape = inputShape->at(0);
             auto wShape = inputShape->at(1);
@@ -265,7 +267,7 @@ namespace nd4j {
         /**
          * Depthwise convolution2d
          */
-//////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
             auto input = INPUT_VARIABLE(0);
             auto weightsDepth = INPUT_VARIABLE(1);
@@ -376,6 +378,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
         DECLARE_SHAPE_FN(sconv2d) {
             auto inShape = inputShape->at(0);
             auto wdShape = inputShape->at(1);
@@ -442,10 +445,8 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
-        /**
-         *
-         *
-         */
+        
+        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(sconv2d_bp, 4, 2, false, 0, 9) {
             NDArray<T> *input = INPUT_VARIABLE(0);
             NDArray<T> *epsilonNext = INPUT_VARIABLE(1);
@@ -626,6 +627,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
         DECLARE_SHAPE_FN(sconv2d_bp) {
             auto inShape = inputShape->at(0);
             auto eShape = inputShape->at(1);
@@ -674,7 +676,7 @@ namespace nd4j {
             return shapes;
         }
 
-//////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);
@@ -727,6 +729,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
         DECLARE_SHAPE_FN(deconv2d) {
             auto inShape = inputShape->at(0);
             auto wShape = inputShape->at(1);
@@ -755,7 +758,7 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
-
+        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(deconv2d_bp, 4, 2, false, 0, 9) {
             NDArray<T> *input = INPUT_VARIABLE(0);
             NDArray<T> *weights = INPUT_VARIABLE(1);
@@ -843,6 +846,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
         DECLARE_SHAPE_FN(deconv2d_bp) {
             auto inShape = inputShape->at(0);
             auto wShape = inputShape->at(1);
@@ -874,7 +878,7 @@ namespace nd4j {
             return shapes;
         }
 
-//////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
         /**
          * Upsampling implementation, based on pytorch
          *
@@ -956,7 +960,8 @@ namespace nd4j {
             return new ShapeList(newShape);
         }
 
-//////////////////////////////////////////////////////////////////////////
+        
+        //////////////////////////////////////////////////////////////////////////
         /**
          * Upsampling backprop implementation, based on pytorch
          *
@@ -1049,9 +1054,6 @@ namespace nd4j {
 
             return new ShapeList(newShape);
         }
-
-//////////////////////////////////////////////////////////////////////////
-
 
 
 		//////////////////////////////////////////////////////////////////////////
@@ -1516,12 +1518,10 @@ namespace nd4j {
 				delete epsilonTemp;
 			}
 
-			// NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW}, block.getWorkspace());			
-			// col2d->addiColumnVector(epsilon1d);		
-
-			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW}, block.getWorkspace());
-			// NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
-			T extraParams3[] = {(T)sW, (T)sH, (T)pW, (T)pH, (T)iH, (T)iW, (T)dW, (T)dH};   			// ??? zeros
+			NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
+			col2d->addiColumnVector(epsilon1d);		
+			
+			T extraParams3[] = {(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};   			// ??? zeros
 			col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
             outEpsilon->template applyScalar<simdOps::Divide<T>>((T) kH*kW, outEpsilon);
 
@@ -1532,32 +1532,18 @@ namespace nd4j {
 			delete col6d;
 			delete col6dPermuted;
 			delete epsilon1d;
-            // delete col2d;
+            delete col2d;
 
 			return ND4J_STATUS_OK;
         }
 
-		//////////////////////////////////////////////////////////////////////////
-		DECLARE_SHAPE_FN(avgpool2d_bp) {
-			int* inShape = inputShape->at(0);            
-            int bS = inShape[1];
-            int iD = inShape[2];
-            int iH = inShape[3];
-            int iW = inShape[4];
-
-			// calculate output Height/Width
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-			newShapeInfo[0] = 4;		// rank
-			newShapeInfo[1] = iD;
-			newShapeInfo[2] = bS;
-			newShapeInfo[3] = iH;
-			newShapeInfo[4] = iW;
-            shape::updateStrides(newShapeInfo, 'c');
-			int dimensions[] = {1, 0, 2, 3};
-			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
-			return new ShapeList(newShapeInfo);
-		}	
+		DECLARE_SHAPE_FN(avgpool2d_bp) {			     
+            
+            int* newShapeInfo = nullptr; 
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); 
+            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); 
+            return new ShapeList(newShapeInfo);
+        }
 
 		//////////////////////////////////////////////////////////////////////////
 		CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
@@ -1626,7 +1612,7 @@ namespace nd4j {
 
 			NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
 
-			T extraParams1[] = {(T)kW, (T)kH, (T)sW, (T)sH, (T)pW, (T)pH, (T)dW, (T)dH};
+			T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW};
 			input->template applyTransform<simdOps::Im2col<T>>(col6dPermuted, extraParams1);
 						
 			NDArray<T>* pNorm = new NDArray<T>(col2d->getShapeInfo(), block.getWorkspace()); 
@@ -1655,9 +1641,7 @@ namespace nd4j {
 			denom->template applyPairwiseTransform<simdOps::Divide<T>>(epsilon1d, denom, nullptr);
 			numerator->muliColumnVector(denom);
 
-			// NDArray<T>* tempEpsilon = new NDArray<T>('c', {iD, bS, iH, iW});
-			// NDArray<T>* outEpsilon = tempEpsilon.permute({1, 0, 2, 3});
-			T extraParams5[] = {(T)sW, (T)sH, (T)pW, (T)pH, (T)iH, (T)iW, (T)dW, (T)dH};   			// ??? zeros
+			T extraParams5[] = {(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};   			// ??? zeros
 			col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams5);
 
 			STORE_RESULT(*outEpsilon);
@@ -1677,26 +1661,13 @@ namespace nd4j {
 
 		//////////////////////////////////////////////////////////////////////////
 		DECLARE_SHAPE_FN(pnormpool2d_bp) {
+            
+            int* newShapeInfo = nullptr; 
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); 
+            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); 
+            return new ShapeList(newShapeInfo);
+        }
 
-			int* inShape = inputShape->at(0);            
-            int bS = inShape[1];
-            int iD = inShape[2];
-            int iH = inShape[3];
-            int iW = inShape[4];
-
-			// calculate output Height/Width
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-			newShapeInfo[0] = 4;		// rank
-			newShapeInfo[1] = iD;
-			newShapeInfo[2] = bS;
-			newShapeInfo[3] = iH;
-			newShapeInfo[4] = iW;
-            shape::updateStrides(newShapeInfo, 'c');
-			int dimensions[] = {1, 0, 2, 3};
-			shape::doPermuteShapeBuffer(4, newShapeInfo, dimensions);	
-			return new ShapeList(newShapeInfo);
-		}	
 		
 		
 

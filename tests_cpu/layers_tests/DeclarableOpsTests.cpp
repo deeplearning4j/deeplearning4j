@@ -1972,7 +1972,7 @@ TEST_F(DeclarableOpsTests, Pooling2d1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MaxPool2dBP) {
+TEST_F(DeclarableOpsTests, MaxPool2d_bp1) {
 
 	NDArray<float> input  ('c', {bS,iD,iH,iW});
 	NDArray<float> epsilon('c', {bS,iD,oH,oW});
@@ -2720,3 +2720,60 @@ TEST_F(DeclarableOpsTests, sru_bi_bp_1) {
     delete resultsBP;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Maxpool2d_bp2) {
+    
+    int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
+    int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     
+    int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;    
+
+    double epsilonBuff[]  = {6., 7., 8., 10., 11., 12., 14., 15., 16., 22., 23., 24., 26., 27., 28., 30., 31., 32.};
+    double expectedBuff[] = {0., 0., 0., 0.,0., 6., 7., 8.,0.,10.,11.,12.,0.,14.,15.,16.,0., 0., 0., 0.,0.,22.,23.,24.,0.,26.,27.,28.,0.,30.,31.,32.};
+
+    NDArray<double> input   ('c', {bS,iD,iH,iW});
+    NDArray<double> epsilon ('c', {bS,iD,oH,oW});
+    NDArray<double> expected('c', {bS,iD,iH,iW});
+
+
+    nd4j::NDArrayFactory<double>::linspace(1., input);
+    epsilon.setBuffer(epsilonBuff);
+    expected.setBuffer(expectedBuff);
+    
+    std::initializer_list<int> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+
+    nd4j::ops::maxpool2d_bp<double> op;
+    nd4j::ArrayList<double>*  results = op.execute({&input, &epsilon}, {}, argI);
+    NDArray<double>* output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Avgpool2d_bp2) {
+    
+    int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
+    int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     
+    int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;    
+
+    double epsilonBuff[] = {3.5 , 4.5 , 5.5, 7.5 , 8.5 , 9.5, 11.5, 12.5, 13.5, 19.5, 20.5, 21.5, 23.5, 24.5, 25.5, 27.5, 28.5, 29.5};
+    double expectedBuff[] = {0.875, 2., 2.5,  1.375, 2.75 , 6., 7.,  3.75, 4.75 ,10., 11., 5.75, 2.875, 6., 6.5, 3.375, 4.875, 10.,10.5, 5.375, 10.75, 22.,23., 11.75, 12.75, 26.,27., 13.75, 6.875, 14.,14.5, 7.375};
+
+    NDArray<double> input   ('c', {bS,iD,iH,iW});
+    NDArray<double> epsilon ('c', {bS,iD,oH,oW});
+    NDArray<double> expected('c', {bS,iD,iH,iW});
+
+
+    nd4j::NDArrayFactory<double>::linspace(1., input);
+    epsilon.setBuffer(epsilonBuff);
+    expected.setBuffer(expectedBuff);
+    
+    std::initializer_list<int> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+
+    nd4j::ops::avgpool2d_bp<double> op;
+    nd4j::ArrayList<double>*  results = op.execute({&input, &epsilon}, {}, argI);
+    NDArray<double>* output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+}
