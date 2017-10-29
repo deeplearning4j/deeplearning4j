@@ -12,7 +12,7 @@
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <ops/declarable/DeclarableOp.h>
-#include <ops/declarable/generic/convo/conv2d_ops.cpp>
+#include <ops/declarable/generic/convo/conv2d.cpp>
 
 using namespace nd4j::graph;
 

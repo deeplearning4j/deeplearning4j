@@ -159,6 +159,8 @@ namespace nd4j {
             auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
             std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair2(hash, op);
             _declarablesLF.insert(pair2);
+
+            //nd4j_printf("Adding op [%s]:[%lld]\n", name, hash);
             return true;
         }
 
@@ -216,7 +218,7 @@ namespace nd4j {
         nd4j::ops::DeclarableOp<float> *OpRegistrator::getOperationFloat(Nd4jIndex hash) {
             if (!_declarablesLF.count(hash)) {
                 if (!_msvc.count(hash)) {
-                    nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                    nd4j_printf("Unknown F operation requested by hash: [%lld]\n", hash);
                     return nullptr;
                 } else {
                     _locker.lock();
@@ -239,7 +241,7 @@ namespace nd4j {
         nd4j::ops::DeclarableOp<float16> *OpRegistrator::getOperationHalf(Nd4jIndex hash) {
             if (!_declarablesLH.count(hash)) {
                 if (!_msvc.count(hash)) {
-                    nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                    nd4j_printf("Unknown H operation requested by hash: [%lld]\n", hash);
                     return nullptr;
                 } else {
                     _locker.lock();
@@ -283,7 +285,7 @@ namespace nd4j {
         nd4j::ops::DeclarableOp<double> *OpRegistrator::getOperationDouble(Nd4jIndex hash) {
             if (!_declarablesLD.count(hash)) {
                 if (!_msvc.count(hash)) {
-                    nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                    nd4j_printf("Unknown D operation requested by hash: [%lld]\n", hash);
                     return nullptr;
                 } else {
                     _locker.lock();

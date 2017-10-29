@@ -2777,3 +2777,10 @@ TEST_F(DeclarableOpsTests, Avgpool2d_bp2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 }
+
+
+TEST_F(DeclarableOpsTests, LRN1) {
+    nd4j::ops::lrn<double> lrn;
+
+    lrn.getOpName();
+}

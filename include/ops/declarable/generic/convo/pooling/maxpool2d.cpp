@@ -1,5 +1,5 @@
 //
-// Created by raver119 on 08.10.2017.
+// Created by raver119 on 29/10/17.
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -7,7 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
 
@@ -98,12 +97,12 @@ namespace nd4j {
         }
         DECLARE_SYN(MaxPool2D_bp, maxpool2d_bp);
         DECLARE_SYN(MaxPool_bp, maxpool2d_bp);
-        
+
         DECLARE_SHAPE_FN(maxpool2d_bp) {
-            
-            int* newShapeInfo = nullptr; 
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); 
-            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); 
+
+            int* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
+            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
             return new ShapeList(newShapeInfo);
         }
 
@@ -145,7 +144,7 @@ namespace nd4j {
         DECLARE_SYN(MaxPool2D, maxpool2d);
         DECLARE_SYN(MaxPool, maxpool2d);
         DECLARE_SYN(maxpool, maxpool2d);
-        
+
         DECLARE_SHAPE_FN(maxpool2d) {
             //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             int* inShape = inputShape->at(0);
@@ -189,150 +188,5 @@ namespace nd4j {
 
             return new ShapeList(newShapeInfo);
         }
-
-        //////////////////////////////////////////////////////////////////////////
-        // avgpool2d corresponds to poolingMode=1
-        CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 9) {
-
-            NDArray<T> *x = INPUT_VARIABLE(0);
-
-            REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
-
-            const int inY = x->sizeAt(2);
-            const int inX = x->sizeAt(3);
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-            auto z = this->getZ(block);
-
-            int pY = argI[4];
-            int pX = argI[5];
-
-            const bool isSameMode = block.getIArguments()->at(8) > 0;
-            if (isSameMode)
-                ConvolutionUtils<T>::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            std::vector<T> argT = {(T) argI[0], (T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T)argI[6], (T)argI[7], (T)1.f, (T)1.f, (T)1.f};
-
-
-            x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
-
-            STORE_RESULT(*z);
-
-            return ND4J_STATUS_OK;
-        }
-
-        DECLARE_SYN(AvgPool2D, avgpool2d);
-        DECLARE_SYN(AvgPool, avgpool2d);
-        DECLARE_SYN(avgpool, avgpool2d);
-        
-        DECLARE_SHAPE_FN(avgpool2d) {
-            int* inShape = inputShape->at(0);
-            int* shapeOf = shape::shapeOf(inShape);
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-            int kH = argI[0];
-            int kW = argI[1];
-            int sH = argI[2];
-            int sW = argI[3];
-            int pH = argI[4];
-            int pW = argI[5];
-            int dH = argI[6];
-            int dW = argI[7];
-            int isSameMode = argI[8];
-
-            int bS = shapeOf[0];
-            int iD = shapeOf[1];
-            int iH = shapeOf[2];
-            int iW = shapeOf[3];
-
-
-            char order = shape::order(inShape); // output order must be equal to input order
-
-            // calculate output Height/Width
-            int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-
-            const bool bisSameMode = block.getIArguments()->at(8) > 0;
-            if (bisSameMode)
-                ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
-
-
-            // allocate memory for new shape
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-            newShapeInfo[0] = 4;		// rank
-            newShapeInfo[1] = bS;
-            newShapeInfo[2] = iD;
-            newShapeInfo[3] = oH;
-            newShapeInfo[4] = oW;
-            shape::updateStrides(newShapeInfo, order);
-
-            return new ShapeList(newShapeInfo);
-        }
-
-        //////////////////////////////////////////////////////////////////////////
-        // pnormpool2d corresponds to poolingMode=2
-        CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
-
-            REQUIRE_OK(this->validateInputLengthMatch(block));
-            REQUIRE_OK(this->validateInputDimensionsMatch(block));
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
-            REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
-
-            std::vector<int> argI = *(block.getIArguments()); // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - extraParam0 for pnorm case;
-            std::vector<T> argT = {(T) argI[0], (T) argI[1], (T) argI[2], (T) argI[3], (T) argI[4], (T) argI[5], (T) argI[6], (T) argI[7], (T) argI[8], (T) 2.f, (T)argI[9]};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - extraParam0 for pnorm case;
-            x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
-
-            STORE_RESULT(*z);
-
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(PnormPool2D, pnormpool2d);
-        DECLARE_SYN(PnormPool, pnormpool2d);
-        DECLARE_SYN(pnormpool, pnormpool2d);
-
-        
-        DECLARE_SHAPE_FN(pnormpool2d) {
-            int* inShape = inputShape->at(0);
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-            int kH = argI[0];
-            int kW = argI[1];
-            int sH = argI[2];
-            int sW = argI[3];
-            int pH = argI[4];
-            int pW = argI[5];
-            int dH = argI[6];
-            int dW = argI[7];
-            int isSameMode = argI[8];
-
-            int bS = inShape[1];
-            int iD = inShape[2];
-            int iH = inShape[3];
-            int iW = inShape[4];
-
-            char order = shape::order(inShape); // output order must be equal to input order
-
-            // calculate output Height/Width
-            int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-            // allocate memory for new shape
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-            newShapeInfo[0] = 4;		// rank
-            newShapeInfo[1] = bS;
-            newShapeInfo[2] = iD;
-            newShapeInfo[3] = oH;
-            newShapeInfo[4] = oW;
-            shape::updateStrides(newShapeInfo, order);
-
-            return new ShapeList(newShapeInfo);
-        }
-
     }
 }

@@ -358,7 +358,7 @@ mkbuilddir
 pwd
 eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
-        eval $MAKE_COMMAND -j4 && cd ../../..
+        eval $MAKE_COMMAND -j5 && cd ../../..
     else
         eval $MAKE_COMMAND && cd ../../..
 fi
