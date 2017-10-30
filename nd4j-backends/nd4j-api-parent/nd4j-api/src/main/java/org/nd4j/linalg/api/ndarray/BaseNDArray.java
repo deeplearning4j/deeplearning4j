@@ -1053,7 +1053,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride, 0, elementWiseStride(),
                         ordering()));
     }
-
+    
+    @Override
+    public void setShapeAndStride(int[] shape, int[] stride) {
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, -1, ordering()));
+    }
 
 
     /**
