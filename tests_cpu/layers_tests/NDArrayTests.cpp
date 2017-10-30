@@ -1498,7 +1498,7 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
     NDArrayFactory<double>::linspace(1, input);
     NDArrayFactory<double>::linspace(1, weights);
 
-    auto result = NDArrayFactory<double>::tensorDot(&weights, &input, nullptr, {0}, {1});
+    auto result = NDArrayFactory<double>::tensorDot(&weights, &input, {0}, {1});
 
     result->printShapeInfo("result shape");
     ASSERT_TRUE(exp.isSameShape(result));

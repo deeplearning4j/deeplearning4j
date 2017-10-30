@@ -10,6 +10,7 @@
 #include <memory/Workspace.h>
 #include <ops/gemm.h>
 #include <types/float16.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
 
@@ -107,108 +108,29 @@ namespace nd4j {
         return result;
     }
 
-
+    
+    //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, std::initializer_list<int> axesA, std::initializer_list<int> axesB) {
+    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::initializer_list<int> axesA, const std::initializer_list<int> axesB) {
         std::vector<int> aA(axesA);
         std::vector<int> aB(axesB);
-        return tensorDot(A, B, C, aA, aB);
+        return tensorDot(A, B, aA, aB);
     }
 
+    //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(nd4j::NDArray<T>* a, nd4j::NDArray<T>* b, nd4j::NDArray<T>* C, std::vector<int>& axes_0, std::vector<int>& axes_1) {
+    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, std::vector<int>& axes_0, std::vector<int>& axes_1) {
 
-        int axe0_size = (int) axes_0.size();
-        int axe1_size = (int) axes_1.size();
-        // validating axes
-        int validationLength = nd4j::math::nd4j_min<int>(axe0_size, axe1_size);
-        for (int i = 0; i < validationLength; i++) {
-            if (a->sizeAt(axes_0[i]) != b->sizeAt(axes_1[i]))
-                throw "Size of the given axes at each dimension must be the same size.";
-            if (axes_0[i] < 0)
-                axes_0[i] += a->rankOf();
-            if (axes_1[i] < 0)
-                axes_1[i] += b->rankOf();
-        }
+        std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
+        std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
+        NDArray<T>* aT = a->permute(permutAt);
+        NDArray<T>* bT = b->permute(permutBt);
+        aT->reshapei('c', shapeAt);
+        bT->reshapei('c', shapeBt);        
 
-        std::vector<int> list_A, list_B;
-        for (int i = 0; i < a->rankOf(); i++)
-            if (std::find(axes_0.begin(), axes_0.end(), i) == axes_0.end())
-                list_A.push_back(i);
-
-        for (int i = 0; i < b->rankOf(); i++)
-            if (std::find(axes_1.begin(), axes_1.end(), i) == axes_1.end())
-                list_B.push_back(i);
-
-
-        std::vector<int> newAxesA(list_A);
-        std::vector<int> newAxesB;
-        for (auto v: axes_0)
-            newAxesA.push_back(v);
-
-        for (auto v: axes_1)
-            newAxesB.push_back(v);
-
-        for (auto v: list_B)
-            newAxesB.push_back(v);
-
-        int n2 = 1;
-        int aLength = nd4j::math::nd4j_min<int>(a->rankOf(), axes_0.size());
-        for (int i = 0; i < aLength; i++)
-            n2 *= a->sizeAt(axes_0[i]);
-
-        std::vector<int> newShapeA({-1, n2});
-        std::vector<int> oldShapeA;
-        if (list_A.size() == 0) {
-            oldShapeA.push_back(1);
-        } else {
-            for (auto v: list_A)
-                oldShapeA.push_back(v);
-
-            for (int i = 0; i < (int) oldShapeA.size(); i++)
-                oldShapeA[i] = a->sizeAt(oldShapeA[i]);
-        }
-
-        int n3 = 1;
-        int bNax = nd4j::math::nd4j_min<int>(b->rankOf(), axes_1.size());
-        for (int i = 0; i < bNax; i++)
-            n3 *= b->sizeAt(axes_1[i]);
-
-        std::vector<int> newShapeB({n3, -1});
-        std::vector<int> oldShapeB;
-        if (list_B.size() == 0) {
-            oldShapeB.push_back(1);
-        } else {
-            for (auto v: list_B)
-                oldShapeB.push_back(v);
-            for (int i = 0; i < (int) oldShapeB.size(); i++)
-                oldShapeB[i] = b->sizeAt(oldShapeB[i]);
-        }
-
-        //d4j::Logger::printv("newAxesA: ", newAxesA);
-        //nd4j::Logger::printv("newAxesB: ", newAxesB);
-        auto aT = a->permute(newAxesA);
-        auto bT = b->permute(newAxesB);
-
-        //aT->printShapeInfo("at pshape");
-        //bT->printShapeInfo("bt pshape");
-
-        //aT->permutei(newAxesA);
-        aT->reshapei('c', newShapeA);
-        //aT->printShapeInfo("at rshape");
-
-        //bT->permutei(newAxesB);
-        bT->reshapei('c', newShapeB);
-        //bT->printShapeInfo("bt rshape");
-
-        auto c = nd4j::NDArrayFactory<T>::mmulHelper(aT, bT, nullptr, 1.0, 0.0);
-
-        std::vector<int> aPlusB(oldShapeA);
-        for (auto v: oldShapeB)
-            aPlusB.push_back(v);
-
-        c->reshapei('c', aPlusB);
+        NDArray<T>* c = nd4j::NDArrayFactory<T>::mmulHelper(aT, bT, nullptr, 1.0, 0.0);
+        c->reshapei('c', outShape);
 
         if (aT != a)
             delete aT;
@@ -217,6 +139,30 @@ namespace nd4j {
             delete bT;
 
         return c;
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, std::vector<int>& axes_0, std::vector<int>& axes_1) {
+
+        std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
+        std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+
+        NDArray<T>* aT = a->permute(permutAt);
+        NDArray<T>* bT = b->permute(permutBt);
+        aT->reshapei('c', shapeAt);
+        bT->reshapei('c', shapeBt);        
+
+        nd4j::NDArrayFactory<T>::mmulHelper(aT, bT, c, 1.0, 0.0);
+        c->reshapei('c', outShape);
+
+        if (aT != a)
+            delete aT;
+
+        if (bT != b)
+            delete bT;
+        
     }
 
 

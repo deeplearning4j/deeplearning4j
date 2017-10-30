@@ -91,7 +91,9 @@ namespace nd4j {
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
  
-        NDArray<T>* repeat(int dimension, const std::vector<int>& reps);
+        NDArray<T>* repeat(int dimension, const std::vector<int>& reps) const;
+
+        void repeat(int dimension, NDArray<T>& target) const;
 
         NDArray<T>* getView();
 
@@ -133,7 +135,7 @@ namespace nd4j {
             _isShapeAlloc = shapeAllocated;
         }
 
-        int sizeAt(int dim);
+        int sizeAt(int dim) const;
 
         // This method returns order of this NDArray
         char ordering() const {
@@ -170,9 +172,9 @@ namespace nd4j {
         bool permutei(const std::vector<int>& dimensions);
         bool permutei(const int* dimensions, const int rank);
 
-		NDArray<T>* permute(const std::initializer_list<int>& dimensions);
-        NDArray<T>* permute(const std::vector<int>& dimensions);
-        NDArray<T>* permute(const int* dimensions, const int rank);
+		NDArray<T>* permute(const std::initializer_list<int>& dimensions) const;
+        NDArray<T>* permute(const std::vector<int>& dimensions) const;
+        NDArray<T>* permute(const int* dimensions, const int rank) const;
 
         // This method returns number of rows in this NDArray
         int rows() const {
@@ -401,10 +403,7 @@ namespace nd4j {
 
 		// check whether array is unitary matrix
 		bool isUnitary(); 
-        
-        // evaluate resulting shape after reduce operation
-        int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions) const;
-        
+                
         // reduce dimensions in this array relying on index operations
         template<typename OpName>
         NDArray<T>* applyIndexReduce(const std::vector<int>& dimensions, const T *extraParams = nullptr) const;

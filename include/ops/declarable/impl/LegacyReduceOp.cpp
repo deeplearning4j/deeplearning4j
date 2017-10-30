@@ -4,6 +4,7 @@
 
 #include "ops/declarable/LegacyReduceOp.h"
 #include <helpers/TAD.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -83,7 +84,7 @@ namespace nd4j {
                 auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                newShape = array->evalReduceShapeInfo('c', *block.getIArguments());
+                newShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array);
 
                 delete array;
             }

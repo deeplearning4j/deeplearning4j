@@ -11,13 +11,13 @@
 #include <pointercast.h>
 #include <stdexcept>
 #include <memory>
-#include <climits>
 #include <helpers/logger.h>
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
 #include <loops/broadcasting.h>
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
 
@@ -522,7 +522,7 @@ template <typename T>
         
         std::vector<int> copy(dimensions);
         
-        int* newShape = evalReduceShapeInfo('c', copy);  
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -549,7 +549,7 @@ template <typename T>
 
         std::vector<int> copy(dimensions);
 
-        int* newShape = evalReduceShapeInfo('c', copy);
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
             throw "NDArray::reduceAlongDimension method: wrong target shape !";
         RELEASE(newShape, _workspace);
@@ -1459,7 +1459,7 @@ template <typename T>
 }
 
     template<typename T>
-    int NDArray<T>::sizeAt(int dim) {
+    int NDArray<T>::sizeAt(int dim) const {
         if (dim >= this->rankOf() || dim < -this->rankOf())
             throw "Bad size index requested";
 
@@ -1471,45 +1471,22 @@ template <typename T>
 
 
 //////////////////////////////////////////////////////////////////////////
-// change an array by repeating it the number of times given by reps
+// create new  array by repeating it the number of times given by reps
 template<typename T>
-    NDArray<T>* NDArray<T>::repeat(int dimension, const std::vector<int>& repeats) {
+    NDArray<T>* NDArray<T>::repeat(int dimension, const std::vector<int>& repeats) const {
 
-    if (dimension < 0)
-        dimension += this->rankOf();
+    std::vector<int> outShape = ShapeUtils<T>::evalRepeatShape(dimension, repeats, *this);
+    
+    // the size of outShape == rank
+    int rank = rankOf();            // = outShape.size()
 
-    std::vector<int> reps;
+    int *newShape = new int[rank];
+    for (int i = 0; i < rank; i++)
+        newShape[i] = outShape[i];
 
-    if ((int) reps.size() < this->rankOf()) {
-        if (dimension > 0) {
-            for (int e = 0; e < this->rankOf() - (int) repeats.size(); e++)
-                reps.push_back(1);
+    NDArray<T>* ret = new NDArray<T>('c', outShape, _workspace);
 
-            for (auto r: repeats)
-                reps.push_back(r);
-        } else {
-            for (auto r: repeats)
-                reps.push_back(r);
-
-            for (int e = 0; e < this->rankOf() - (int) repeats.size(); e++)
-                reps.push_back(1);
-        }
-    }/* else {
-        for (auto r: repeats)
-            reps.push_back(r);
-    }*/
-
-    int *newShape = new int[this->rankOf()];
-    std::vector<int> rShape;
-
-    for (int i = 0; i < this->rankOf(); i++) {
-        newShape[i] = this->sizeAt(i) * reps.at(i);
-        rShape.push_back(newShape[i]);
-    }
-
-    auto ret = new NDArray<T>('c', rShape, _workspace);
-
-    auto repeatDelta = shape::prodLong(newShape, this->rankOf()) / this->lengthOf();
+    auto repeatDelta = shape::prodLong(newShape, rank) / this->lengthOf();
     auto numTads = this->tensorsAlongDimension({dimension});
     for (int i = 0; i < numTads; i++) {
         auto thisTensor = this->tensorAlongDimension(i, {dimension});
@@ -1530,6 +1507,30 @@ template<typename T>
 
     return ret;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// fill array by repeating it the number of times given by reps
+    template<typename T>
+    void NDArray<T>::repeat(int dimension, NDArray<T>& target) const {
+    
+    Nd4jIndex repeatDelta = shape::prodLong(target.shapeOf(), rankOf()) / this->lengthOf();
+    Nd4jIndex numTads = this->tensorsAlongDimension({dimension});
+    for (int i = 0; i < numTads; i++) {
+        NDArray<T>* thisTensor = this->tensorAlongDimension(i, {dimension});
+        NDArray<T>* retTensor = target.tensorAlongDimension(i, {dimension});
+        int retIdx = 0;
+        for (int k = 0; k < thisTensor->lengthOf(); k++) {
+            T s = thisTensor->getIndexedScalar(k);
+            for (int j = 0; j < repeatDelta; j++) {
+                retTensor->putIndexedScalar(retIdx++, s);
+            }
+        }
+
+        delete thisTensor;
+        delete retTensor;
+    }
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -1568,7 +1569,7 @@ bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
+NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) const {
 
     if (_buffer==nullptr || rank != rankOf())
         throw "Wrong arguments in permute method: either array is nullptr or rank is not suitable!";
@@ -1597,14 +1598,14 @@ NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray<T>* NDArray<T>::permute(const std::vector<int>& dimensions) {
+NDArray<T>* NDArray<T>::permute(const std::vector<int>& dimensions) const {
     return permute(dimensions.data(), dimensions.size());
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) {
+NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) const {
     std::vector<int> vec(dimensions);
     return permute(vec);
 }
@@ -2174,50 +2175,6 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         return new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // evaluate resulting shape after reduce operation
-    template<typename T>
-    int* NDArray<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions) const {
-        
-        int rank = rankOf();
-        shape::checkDimensions(rank, dimensions);
-        
-		int* newShape = nullptr;
-        int dimSize = dimensions.size();
-		int newRank = rank - dimSize;
-		if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
-			ALLOCATE(newShape, _workspace, 8, int);		// set newRank = 2
-			newShape[0] = 2;
-			newShape[1] = 1;
-			newShape[2] = 1;			
-		}
-        else {
-			ALLOCATE(newShape, _workspace, shape::shapeInfoLength(2), int);
-			int* tempShape = shape::removeIndex(shapeOf(), const_cast<int*>(dimensions.data()), rank, dimSize);
-            newShape[0] = newRank;                      // set rank
-			for(int i=0; i<newRank; ++i)
-				newShape[i+1] = tempShape[i]; 			// ignore zero index (rank)
-			delete []tempShape;
-		}		
-		//ensure vector is proper shape 
-		if (newRank == 1) {            
-			int oldValue = newShape[1];
-			RELEASE(newShape, _workspace);
-			ALLOCATE(newShape, _workspace, shape::shapeInfoLength(2), int);		// set newRank = 2
-			newShape[0] = 2;
-            if (dimensions[0] == 0) {
-                newShape[1] = 1; 
-				newShape[2] = oldValue;
-			}
-            else {
-                newShape[1] = oldValue;
-				newShape[2] = 1; 				
-			}
-        } 
-		shape::updateStrides(newShape, order);
-        
-        return newShape;
-    }
 
     ////////////////////////////////////////////////////////////////////////
     // reduce dimensions in this array relying on index operations
@@ -2227,7 +2184,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         
         std::vector<int> copy(dimensions);
 
-        int* newShape = evalReduceShapeInfo('c', copy);        
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -2338,7 +2295,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);               
 
-        int* newShape = evalReduceShapeInfo('c', copy);        
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
@@ -2375,7 +2332,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     
         std::vector<int> copy(dimensions);
             
-        int* newShape = evalReduceShapeInfo('c', copy);  
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         

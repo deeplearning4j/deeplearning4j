@@ -3,6 +3,7 @@
 //
 
 #include "ops/declarable/LegacyReduce3Op.h"
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -69,7 +70,7 @@ namespace nd4j {
                 auto array = new NDArray<T>(nullptr, xShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                xShape = array->evalReduceShapeInfo('c', *block.getIArguments());
+                xShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array);
 
                 delete array;
             }

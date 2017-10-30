@@ -44,7 +44,7 @@ namespace nd4j {
             int oY = z->sizeAt(2);
             int oX = z->sizeAt(3);
 
-            auto gcol = nd4j::NDArrayFactory<T>::tensorDot(weights, input, nullptr, {0}, {1});
+            auto gcol = nd4j::NDArrayFactory<T>::tensorDot(weights, input, {0}, {1});
             gcol->permutei({3, 0, 1, 2, 4, 5});
 
             std::vector<T> extrasCol2Im({(T) sY, (T) sX, (T) pY, (T) pX, (T) oY, (T) oX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
@@ -158,7 +158,7 @@ namespace nd4j {
                     gy, col, ((0, 2, 3), (0, 4, 5))).
             */
 
-            auto gW = NDArrayFactory<T>::tensorDot(input, gcol, nullptr, {0, 2, 3}, {0, 4, 5});
+            auto gW = NDArrayFactory<T>::tensorDot(input, gcol, {0, 2, 3}, {0, 4, 5});
             gradW->assign(gW);
 
             delete gW;
