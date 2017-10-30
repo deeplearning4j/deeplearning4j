@@ -12,8 +12,10 @@ import org.datavec.image.transform.ImageTransform;
 public interface CacheableDataSet {
 
     public String remoteDataUrl();
+    public String remoteDataUrl(DataSetType set);
     public String localCacheName();
     public long expectedChecksum();
+    public long expectedChecksum(DataSetType set);
     public boolean isCached();
     public RecordReader getRecordReader(long rngSeed, int[] imgDim, DataSetType set, ImageTransform imageTransform);
 
