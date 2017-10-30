@@ -11,7 +11,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;

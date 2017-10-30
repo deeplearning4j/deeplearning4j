@@ -71,26 +71,6 @@ public class TestComputationGraphNetwork {
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).build()).build();
     }
 
-    public ComputationGraph getRBMModel(boolean preTrain, int nIn, int nOut) {
-        ComputationGraphConfiguration rbm = new NeuralNetConfiguration.Builder().seed(42).graphBuilder()
-                .addInputs("input")
-                .addLayer("firstLayer",
-                        new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                                .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build(),
-                        "input")
-                .addLayer("outputLayer",
-                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation(Activation.IDENTITY).nIn(nOut)
-                                .nOut(nOut).build(),
-                        "firstLayer")
-                .setOutputs("outputLayer").pretrain(preTrain).build();
-        ComputationGraph graph = new ComputationGraph(rbm);
-        graph.init();
-        return graph;
-    }
-
     private static int getNumParams() {
         //Number of parameters for both iris models
         return (4 * 5 + 5) + (5 * 3 + 3);
@@ -774,47 +754,6 @@ public class TestComputationGraphNetwork {
         Evaluation evalActual = graph.evaluate(iris);
 
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 0e-4);
-    }
-
-    @Test
-    public void testApplyingPreTrainConfigAndParams() {
-        int nIn = 10;
-        int nOut = 10;
-
-        // Test pretrain true
-        ComputationGraph rbmPre = getRBMModel(true, nIn, nOut);
-        assertTrue(rbmPre.getConfiguration().isPretrain()); // check on the graph
-        assertTrue(rbmPre.getConfiguration().isPretrain()); // check on the network
-//        assertTrue(((Model)rbmPre.getLayer("firstLayer")).getOptimizationConfig().isPretrain()); // check on the layer
-//        assertFalse(rbmPre.getLayer("outputLayer").conf().isPretrain()); // check on the layer
-        fail();
-        int actualNP = rbmPre.numParams();
-        assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        INDArray params = rbmPre.params();
-        assertEquals(params.length(), actualNP);
-        Map<String, INDArray> paramTable = rbmPre.paramTable();
-        assertTrue(paramTable.containsKey("firstLayer_vb"));
-        assertFalse(paramTable.containsKey("outputLayer_vb"));
-        rbmPre.setParam("firstLayer_vb", Nd4j.ones(10));
-        params = rbmPre.getParam("firstLayer_vb");
-        assertEquals(Nd4j.ones(10), params);
-
-
-        // Test pretrain false
-        ComputationGraph rbmNoPre = getRBMModel(false, nIn, nOut);
-//        assertFalse(rbmNoPre.conf().isPretrain());
-        assertFalse(rbmNoPre.getConfiguration().isPretrain());
-//        assertFalse(rbmNoPre.getLayer("firstLayer").conf().isPretrain());
-//        assertFalse(rbmNoPre.getLayer("outputLayer").conf().isPretrain()); // check on the layer
-        fail();
-        actualNP = rbmNoPre.numParams();
-        assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        params = rbmNoPre.params();
-        assertEquals(params.length(), actualNP);
-        paramTable = rbmNoPre.paramTable();
-        assertTrue(paramTable.containsKey("firstLayer_vb"));
-        assertFalse(paramTable.containsKey("outputLayer_vb"));
-
     }
 
     @Test

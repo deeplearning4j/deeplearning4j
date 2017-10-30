@@ -51,7 +51,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                        .layer(0, new DenseLayer.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor()).build();
 
         String json = conf.toJson();
@@ -165,7 +165,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                        .layer(0, new DenseLayer.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor()).build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
@@ -194,7 +194,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testClone() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new RBM.Builder().build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new DenseLayer.Builder().build())
                         .layer(1, new OutputLayer.Builder().build())
                         .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
 
@@ -228,7 +228,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     private static MultiLayerConfiguration getConf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345l).list()
-                        .layer(0, new RBM.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(1, new OutputLayer.Builder().nIn(2).nOut(1).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())

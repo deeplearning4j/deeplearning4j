@@ -18,28 +18,18 @@
 
 package org.deeplearning4j.nn.conf;
 
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.api.OptimizationConfig;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 11/27/14.
@@ -68,118 +58,6 @@ public class NeuralNetConfigurationTest {
         return new DataSet(input, labels);
     }
 
-
-    @Test
-    public void testJson() {
-        org.deeplearning4j.nn.conf.layers.Layer conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
-        String json = conf.toJson();
-        org.deeplearning4j.nn.conf.layers.Layer read = org.deeplearning4j.nn.conf.layers.Layer.fromJson(json);
-        assertEquals(conf, read);
-    }
-
-
-    @Test
-    public void testYaml() {
-        org.deeplearning4j.nn.conf.layers.Layer conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
-        String json = conf.toYaml();
-        org.deeplearning4j.nn.conf.layers.Layer read = org.deeplearning4j.nn.conf.layers.Layer.fromYaml(json);
-
-        assertEquals(conf, read);
-    }
-
-    @Test
-    public void testClone() {
-        org.deeplearning4j.nn.conf.layers.Layer conf = getRBMConfig(1, 1, WeightInit.UNIFORM, true);
-        BaseLayer bl = (BaseLayer) conf;
-
-        org.deeplearning4j.nn.conf.layers.Layer conf2 = conf.clone();
-
-        assertEquals(conf, conf2);
-        assertNotSame(conf, conf2);
-        assertNotSame(conf, conf2);
-        assertNotSame(bl.getDist(), ((BaseLayer) conf2).getDist());
-    }
-
-    @Test
-    public void testSetSeedSize() {
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
-        INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
-        INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        assertEquals(modelWeights, modelWeights2);
-    }
-
-
-    @Test
-    public void testSetSeedNormalized() {
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
-        INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
-        INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        assertEquals(modelWeights, modelWeights2);
-    }
-
-    @Test
-    public void testSetSeedXavier() {
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
-        INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
-        INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-        assertEquals(modelWeights, modelWeights2);
-    }
-
-    @Test
-    public void testSetSeedDistribution() {
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
-        INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
-        INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-        assertEquals(modelWeights, modelWeights2);
-    }
-
-    @Test
-    public void testPretrain() {
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
-
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, false);
-
-//        assertNotEquals(model.conf().isPretrain(), model2.conf().isPretrain());
-        fail();
-    }
-
-
-    private static org.deeplearning4j.nn.conf.layers.Layer getRBMConfig(int nIn, int nOut, WeightInit weightInit, boolean pretrain) {
-        RBM layer = new RBM.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).dist(new NormalDistribution(1, 1))
-                        .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                        .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
-
-        return layer;
-    }
-
-    private static Layer getRBMLayer(int nIn, int nOut, WeightInit weightInit, boolean preTrain) {
-        org.deeplearning4j.nn.conf.layers.Layer conf = getRBMConfig(nIn, nOut, weightInit, preTrain);
-        int numParams = conf.initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        return conf.instantiate(null, null, 0, 1, params, true);
-    }
 
 
     @Test

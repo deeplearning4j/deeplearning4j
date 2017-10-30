@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,7 +23,7 @@ public class TestSetGetParameters {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
-                        .layer(1, new RBM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(1, new VariationalAutoencoder.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())

@@ -708,7 +708,8 @@ public class TestUpdaters {
         gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient);
 
 
-        org.deeplearning4j.nn.conf.layers.Layer conf = new org.deeplearning4j.nn.conf.layers.RBM.Builder().updater(new Sgd(lr))
+        org.deeplearning4j.nn.conf.layers.Layer conf = new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder
+                .Builder().updater(new Sgd(lr))
                 .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
                 .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build();
         conf.applyGlobalConfiguration(new GlobalConfiguration());
