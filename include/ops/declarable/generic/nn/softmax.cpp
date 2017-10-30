@@ -9,8 +9,8 @@ namespace nd4j {
         //////////////////////////////////////////////////////////////////////////
         OP_IMPL(softmax, 1, 1, true) {
             // YaY
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* z = this->getZ(block);
+            auto input = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
 

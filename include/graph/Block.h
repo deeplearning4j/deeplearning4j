@@ -63,40 +63,50 @@ namespace nd4j {
             Block(int nodeId, VariableSpace<T> *variableSpace = nullptr);
             Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
 
+            // default destructor
             ~Block();
 
+            // these methods are for execution timing
             void setOuterTime(Nd4jIndex time);
             void setInnerTime(Nd4jIndex time);
-
             Nd4jIndex getOuterTime();
             Nd4jIndex getInnerTime();
 
+            // this method returns true, if inputs are defined
             bool hasVariablesFilled();
-            bool hasWorkspaceProvided();
 
+
+            // these methods are related to Workspace abstraction
+            bool hasWorkspaceProvided();
             void attachWorkspace(nd4j::memory::Workspace* workspace);
-            void setVariableSpace(VariableSpace<T> *variableSpace);
             void forgetWorkspace();
             nd4j::memory::Workspace* getWorkspace();
+            nd4j::memory::Workspace* workspace();
+
+            void setVariableSpace(VariableSpace<T> *variableSpace);
+
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
             int getNodeId();
+
+
             std::vector<T>* getTArguments();
             std::vector<int>* getIArguments();
 
+            // these fields define, if we can execute specific node in-place, without generating new array
             bool isInplace();
             void markInplace(bool reallyInplace);
 
             void pickInput(int input);
+            void pickInput(int input, int index);
             void pickInput(std::pair<int, int>& p);
             void fillInputs(std::initializer_list<int> inputs);
             void fillInputs(std::vector<int>& inputs);
             std::vector<std::pair<int, int>>* inputs();
 
+            // these variables are only for Divergent Nodes
             int getBranch();
             void setBranch(int branch);
-
-            //void updateVariables();
 
             /**
              * This method returns number of inputs available in this block
@@ -110,10 +120,20 @@ namespace nd4j {
             */
             VariableSpace<T>* getVariableSpace();
 
-            //std::vector<nd4j::graph::Variable<T> *>* getVariables();
 
+            /**
+             * This method returns variable for a given input index for this block
+             * @param idx
+             * @return
+             */
             Variable<T>* getVariable(int idx);
             Variable<T>* variable(int idx);
+
+            /**
+             * This method fetches variable from Workspace DIRECTLY
+             * @param p
+             * @return
+             */
             Variable<T>* variable(std::pair<int,int>& p);
 
             int opNum();

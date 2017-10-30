@@ -61,6 +61,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        nd4j::memory::Workspace* Block<T>::workspace() {
+            return _workspace;
+        }
+
+        template <typename T>
         nd4j::random::RandomBuffer* Block<T>::getRNG() {
             return _rng;
         }
@@ -112,11 +117,6 @@ namespace nd4j {
         void Block<T>::pickInput(int input) {
             std::pair<int, int> pair(input, 0);
             _inputs.emplace_back(pair);
-
-//            if (!_variableSpace->hasVariable(input))
-//                throw "Unknown variable was referenced";
-
-//            _variables.emplace_back(_variableSpace->getVariable(input));
         }
 
         template <typename T>
@@ -185,16 +185,6 @@ namespace nd4j {
         }
 
 
-        /**
-        * This method returns variables in this block
-        * @return
-        */
-/*
-        template <typename T>
-        std::vector<nd4j::graph::Variable<T> *>* nd4j::graph::Block<T>::getVariables() {
-            return &_variables;
-        }
-*/
         template <typename T>
         int Block<T>::opNum() {
             return _opNum;
@@ -234,6 +224,12 @@ namespace nd4j {
         template <typename T>
         void Block<T>::pickInput(std::pair<int, int>& p) {
             _inputs.emplace_back(p);
+        }
+
+        template <typename T>
+        void Block<T>::pickInput(int input, int index) {
+            std::pair<int, int> pair(input, index);
+            pickInput(pair);
         }
 
         template class ND4J_EXPORT Block<float>;

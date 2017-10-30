@@ -150,11 +150,16 @@ namespace nd4j {
             return externalMemory() + internalMemory();
         }
 
-
         template <typename T>
         void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, NDArray<T> *array) {
-            auto variable = new Variable<T>(array);
+            auto variable = new Variable<T>(array, nullptr, pair.first, pair.second);
             this->putVariable(pair, variable);
+        }
+
+        template <typename T>
+        void nd4j::graph::VariableSpace<T>::putVariable(int node, int idx, NDArray<T> *array) {
+            std::pair<int, int> pair(node, idx);
+            this->putVariable(pair, array);
         }
 
 

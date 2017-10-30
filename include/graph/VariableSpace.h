@@ -66,6 +66,7 @@ namespace nd4j {
             void putVariable(std::pair<int,int>& pair, Variable<T> *variable);
             void putVariable(int id, Variable<T> *variable);
             void putVariable(int id, NDArray<T> *array);
+            void putVariable(int id, int idx, NDArray<T> *array);
 
 
             void putOutputVariable(Variable<T> *variable);

@@ -19,8 +19,8 @@ namespace nd4j {
 
             auto tads = NDArrayFactory<T>::allTensorsAlongDimension(input, dims);
             for (int e = 0; e < tads->size(); e++) {
-                // FIXME (r119): do we really want all-C here?
-                auto outE = tads->at(e)->dup('c');
+                auto outE = OUTPUT_VARIABLE(e);
+                outE->assign(tads->at(e));
 
                 this->storeResult(block, e, *outE);
             }
@@ -69,8 +69,8 @@ namespace nd4j {
 
             auto tads = NDArrayFactory<T>::allTensorsAlongDimension(input, dims);
             for (int e = 0; e < tads->size(); e++) {
-                // FIXME (r119): do we really want all-C here?
-                auto outE = tads->at(e)->dup('c');
+                auto outE = OUTPUT_VARIABLE(e);
+                outE->assign(tads->at(e));
 
                 this->storeResult(block, e, *outE);
             }
