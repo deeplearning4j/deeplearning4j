@@ -43,8 +43,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         this.allowMultithreading = allowMultithreading;
         this.stringBuffer = new LinkedBlockingQueue<>(512);
 
-        threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors() / 2, 2)
-                        : 1];
+        threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1];
 
         try {
             int cnt = 0;

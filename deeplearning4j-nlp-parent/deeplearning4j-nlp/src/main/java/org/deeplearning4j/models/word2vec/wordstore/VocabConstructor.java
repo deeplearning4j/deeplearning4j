@@ -219,7 +219,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 // if we're not in parallel mode - wait till this runnable finishes
                 if (!allowParallelBuilder) {
                     while (execCounter.get() != finCounter.get())
-                        LockSupport.parkNanos(1000);
+                        LockSupport.parkNanos(100);
                 }
 
                 // as we see in profiler, this lock isn't really happen too often
@@ -227,7 +227,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 while (execCounter.get() - finCounter.get() > numProc) {
                     try {
-                        Thread.sleep(1);
+                        LockSupport.parkNanos(100);
                     } catch (Exception e) {
                     }
                 }
@@ -266,7 +266,7 @@ public class VocabConstructor<T extends SequenceElement> {
                     log.info("Starting scavenger...");
                     while (execCounter.get() != finCounter.get()) {
                         try {
-                            Thread.sleep(2);
+                            LockSupport.parkNanos(100);
                         } catch (Exception e) {
                         }
                     }
@@ -285,7 +285,7 @@ public class VocabConstructor<T extends SequenceElement> {
             log.debug("Waiting till all processes stop...");
             while (execCounter.get() != finCounter.get()) {
                 try {
-                    Thread.sleep(2);
+                    LockSupport.parkNanos(100);
                 } catch (Exception e) {
                 }
             }
