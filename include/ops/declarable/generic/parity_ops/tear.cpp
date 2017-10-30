@@ -37,7 +37,7 @@ namespace nd4j {
 
             shape::TAD tad(inShape, dims.data(), (int) dims.size());
             tad.createTadOnlyShapeInfo();
-            Nd4jIndex numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
+            Nd4jIndex numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
 
             auto result = new ShapeList();
             for (int e = 0; e < numTads; e++) {
@@ -91,7 +91,7 @@ namespace nd4j {
 
             shape::TAD tad(inShape, dims.data(), (int) dims.size());
             tad.createTadOnlyShapeInfo();
-            Nd4jIndex numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
+            Nd4jIndex numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
 
             auto result = new ShapeList();
             for (int e = 0; e < numTads; e++) {
