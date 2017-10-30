@@ -1,6 +1,7 @@
 ---
 title: Using Neural Networks With Regression
 layout: default
+redirect_from: linear-regression
 ---
 
 # Using Neural Networks With Regression
