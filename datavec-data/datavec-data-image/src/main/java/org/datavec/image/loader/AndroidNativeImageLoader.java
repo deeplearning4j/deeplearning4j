@@ -17,6 +17,7 @@ package org.datavec.image.loader;
 
 import android.graphics.Bitmap;
 import org.bytedeco.javacv.AndroidFrameConverter;
+import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -75,4 +76,19 @@ public class AndroidNativeImageLoader extends NativeImageLoader {
         return image instanceof Bitmap ? asMatrix((Bitmap) image) : null;
     }
 
+    /** Returns {@code asBitmap(array, Frame.DEPTH_UBYTE)}. */
+    public Bitmap asBitmap(INDArray array) {
+        return asBitmap(array, Frame.DEPTH_UBYTE);
+    }
+
+    /**
+     * Converts an INDArray to a Bitmap. Only intended for images with rank 3.
+     *
+     * @param array to convert
+     * @param dataType from JavaCV (DEPTH_FLOAT, DEPTH_UBYTE, etc), or -1 to use same type as the INDArray
+     * @return data copied to a Frame
+     */
+    public Bitmap asBitmap(INDArray array, int dataType) {
+        return converter2.convert(asFrame(array, dataType));
+    }
 }

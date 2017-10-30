@@ -15,6 +15,7 @@
  */
 package org.datavec.image.loader;
 
+import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.transform.ImageTransform;
@@ -100,4 +101,19 @@ public class Java2DNativeImageLoader extends NativeImageLoader {
         return image instanceof BufferedImage ? asMatrix((BufferedImage) image) : null;
     }
 
+    /** Returns {@code asBufferedImage(array, Frame.DEPTH_UBYTE)}. */
+    public BufferedImage asBufferedImage(INDArray array) {
+        return asBufferedImage(array, Frame.DEPTH_UBYTE);
+    }
+
+    /**
+     * Converts an INDArray to a BufferedImage. Only intended for images with rank 3.
+     *
+     * @param array to convert
+     * @param dataType from JavaCV (DEPTH_FLOAT, DEPTH_UBYTE, etc), or -1 to use same type as the INDArray
+     * @return data copied to a Frame
+     */
+    public BufferedImage asBufferedImage(INDArray array, int dataType) {
+        return converter2.convert(asFrame(array, dataType));
+    }
 }

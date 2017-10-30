@@ -192,6 +192,10 @@ public class TestNativeImageLoader {
         assertEquals(h3, frame.imageHeight);
         assertEquals(ch3, frame.imageChannels);
         assertEquals(Frame.DEPTH_UBYTE, frame.imageDepth);
+
+        Java2DNativeImageLoader loader4 = new Java2DNativeImageLoader();
+        BufferedImage img12 = loader4.asBufferedImage(array1);
+        assertEquals(array1, loader4.asMatrix(img12));
     }
 
     @Test
