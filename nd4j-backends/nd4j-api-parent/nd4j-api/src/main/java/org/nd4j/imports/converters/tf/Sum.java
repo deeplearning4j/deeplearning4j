@@ -11,7 +11,7 @@ import org.tensorflow.framework.NodeDef;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class Sum extends BaseTensorFlowNode{
+public class Sum extends BaseTensorFlowNode {
 
     public Sum() {
         super();

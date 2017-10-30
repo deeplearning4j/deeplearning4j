@@ -78,35 +78,9 @@ public class While extends DifferentialFunction implements CustomOp {
         parent.graph().addVertex(dummyVertex);
         this.vertex = dummyVertex;
         int[] inputEdges = new int[inputVars.length];
-        int[] outputEdges = new int[inputVars.length];
-        String[] opEdgeIds = new String[inputVars.length * 2];
-        SDVariable[] results = new SDVariable[inputVars.length];
+        String[] opEdgeIds = new String[inputVars.length];
         for(int i = 0; i < inputVars.length; i++) {
-            inputVars[i] = parent.setupFunction(inputVars[i]);
-
-            int vertexId = parent.graph().nextVertexId();
-            SDVariable outputInfo =    SDVariable.builder()
-                    .shape(inputVars[i].getShape())
-                    .varName(inputVars[i].getVarName() + "-output")
-                    .sameDiff(parent)
-                    .arr(inputVars[i].getArr())
-                    .vertexId(new int[]{vertexId}).build();
-            NDArrayVertex ndArrayVertex = new NDArrayVertex(parent,parent.graph().nextVertexId(),inputVars[i].depth() + 1, outputInfo);
-            outputInfo.setVertex(ndArrayVertex);
-
-            inputEdges[i] = inputVars[i].getVertex().vertexID();
-            outputEdges[i] = ndArrayVertex.vertexID();
-            results[i] = outputInfo;
-            parent.graph().addVertex(ndArrayVertex);
-            parent.addVariable(
-                    SDVariable.builder()
-                            .shape(inputVars[i].getShape())
-                            .varName(inputVars[i].getVarName() + "-output")
-                            .sameDiff(parent)
-                            .arr(inputVars[i].getArr())
-                            .vertexId(new int[]{ndArrayVertex.vertexID()})
-                            .ndArrayVertex(ndArrayVertex)
-                            .build());
+            inputVars[i] = parent.var(inputVars[i]);
         }
 
 
@@ -118,9 +92,6 @@ public class While extends DifferentialFunction implements CustomOp {
             opEdgeIds[opEdgeIdIdx++] = String.valueOf(inputEdges[i]);
         }
 
-        for(int i = 0; i < inputEdges.length; i++) {
-            opEdgeIds[opEdgeIdIdx++] = String.valueOf(outputEdges[i]);
-        }
 
         //create a samediff sub graph for running just the execution
         //return a reference to the loop for referencing during actual execution
@@ -143,12 +114,12 @@ public class While extends DifferentialFunction implements CustomOp {
                 .opType(Op.Type.LOOP)
                 .differentialFunction(this)
                 .inPlace(false)
-                .results(results)
+                .results(new SDVariable[]{dummyResult})
                 .id(UUID.randomUUID().toString())
                 .vertexIds(opEdgeIds)
                 .build();
 
-        parent.graph().addEdge(inputEdges,outputEdges,opState,true);
+        parent.graph().addEdge(inputEdges,vertexId,opState,true);
 
     }
 

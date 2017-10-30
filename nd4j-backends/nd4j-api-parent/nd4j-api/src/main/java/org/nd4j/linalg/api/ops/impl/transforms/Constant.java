@@ -39,7 +39,7 @@ public class Constant extends BaseTransformOp {
         }
 
         this.vertexId = vertexId;
-        validateFunctionReference(this);
+        f().validateFunctionReference(this);
         if(sameDiff.getGraph().getVertex(this.vertexId[0]) == null) {
             sameDiff.getGraph().addVertex(new NDArrayVertex(sameDiff,vertexId[0],0,i_v));
         }
@@ -109,7 +109,7 @@ public class Constant extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsameDiff(i_v);
+        f().validateDifferentialFunctionsameDiff(i_v);
         Zero ret = new Zero(sameDiff,shape,new int[]{sameDiff.graph().nextVertexId()});
         DifferentialFunction add = ret;
         return Arrays.asList(add);

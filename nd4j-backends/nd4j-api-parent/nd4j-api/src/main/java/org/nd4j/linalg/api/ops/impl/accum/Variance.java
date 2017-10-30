@@ -321,7 +321,7 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        validateDifferentialFunctionsameDiff(i_v1);
+        f().validateDifferentialFunctionsameDiff(i_v1);
         int inputs = f().getInputLength(i_v1.get(0));
         DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
         DifferentialFunction ret = f().mul(g,f().mul(f().mul(f().one(getResultShape()),2),g));

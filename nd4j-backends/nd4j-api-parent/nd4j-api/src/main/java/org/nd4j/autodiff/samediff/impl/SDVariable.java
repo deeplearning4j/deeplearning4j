@@ -16,6 +16,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -42,8 +43,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     private SDVariable gradient;
     private SDVariable forwardVariable;
     protected DifferentialFunction differentialFunction;
-    protected OpState owner;
-    @Getter
+   @Getter
     @Setter
     protected WeightInitScheme weightInitScheme;
     @Builder
@@ -63,7 +63,25 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.weightInitScheme = weightInitScheme;
         this.arr = arr;
         this.vertexId = vertexId;
-        this.owner = opState;
+
+        if(opState == null) {
+            if(differentialFunction != null)
+                this.opState = differentialFunction.getOpState();
+            else
+                this.opState = OpState.builder()
+                        .opType(Op.Type.RETURN)
+                        .inPlace(true)
+                        .results(new SDVariable[] {this})
+                        .vertexIds(ArrayUtil.convertToString(vertexId))
+                        .opName(varName)
+                        .build();
+        }
+
+
+        if(weightInitScheme == null) {
+            this.weightInitScheme = new ZeroInitScheme('f');
+        }
+
         this.sameDiff = sameDiff;
         if(differentialFunction != null) {
             this.vertexId = differentialFunction.getVertexId();
@@ -71,6 +89,17 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
 
+    }
+
+    @Override
+    public boolean isVariable() {
+        return true;
+    }
+
+
+    @Override
+    public SDVariable getResult() {
+        return this;
     }
 
     @Override
@@ -1044,7 +1073,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
+        int result = 0;
         result = 31 * result + (arr != null ? arr.hashCode() : 0);
         result = 31 * result + (varName != null ? varName.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(shape);

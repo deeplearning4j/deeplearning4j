@@ -219,18 +219,36 @@ public class SameDiffTests {
     }
 
 
+    @Test
+    public void testDefineFunctionVariableReferences() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable varOne = sameDiff.var("one",Nd4j.ones(2));
+        String funcName = "func1";
+        SameDiff func = sameDiff.defineFunction(funcName, new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                return variableInputs;
+            }
+        },new SDVariable[]{varOne});
+
+        assertEquals(varOne.getVarName(),func.getVariable(varOne.getVarName()).getVarName());
+        assertTrue(varOne.getArr() == func.getVariable(varOne.getVarName()).getArr());
+    }
+
+
+
 
     @Test
     public void testCrossSameDiffVariableInitWithAlloc() {
-      SameDiff first = SameDiff.create();
-      SameDiff second = SameDiff.create();
-      first.allocate();
+        SameDiff first = SameDiff.create();
+        SameDiff second = SameDiff.create();
+        first.allocate();
 
 
-      SDVariable firstVar = first.var("one",new int[]{2,2});
-      SDVariable secondVar = second.var(firstVar);
-      assertTrue(firstVar.getArr() == secondVar.getArr());
-      assertEquals(firstVar.getVarName(),secondVar.getVarName());
+        SDVariable firstVar = first.var("one",new int[]{2,2});
+        SDVariable secondVar = second.var(firstVar);
+        assertTrue(firstVar.getArr() == secondVar.getArr());
+        assertEquals(firstVar.getVarName(),secondVar.getVarName());
 
     }
 

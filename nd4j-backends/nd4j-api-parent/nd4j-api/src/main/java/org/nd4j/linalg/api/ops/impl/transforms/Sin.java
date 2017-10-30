@@ -153,7 +153,7 @@ public class Sin extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsameDiff(i_v);
+        f().validateDifferentialFunctionsameDiff(i_v);
         DifferentialFunction ret = f().cos(arg());
 
         return Collections.singletonList(ret);

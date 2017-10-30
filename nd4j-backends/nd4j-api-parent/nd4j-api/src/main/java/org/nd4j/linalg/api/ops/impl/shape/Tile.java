@@ -171,7 +171,7 @@ public class Tile extends ShapeOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsameDiff(i_v);
+        f().validateDifferentialFunctionsameDiff(i_v);
         throw new UnsupportedOperationException();
     }
 

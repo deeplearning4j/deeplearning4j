@@ -1,10 +1,14 @@
 package org.nd4j.autodiff.functions;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 import lombok.Data;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -24,8 +28,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -959,6 +962,134 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
     /**
+     * Adds function edges to the same diff graph
+     * based on inputs and the current target op.
+     * @param op the
+     */
+    public void addFunctionEdges(DifferentialFunction op) {
+        DifferentialFunction[] inputs = op.args();
+        for (DifferentialFunction input : inputs) {
+            validateFunctionReference(input);
+            validateDifferentialFunctionGraph(input);
+        }
+
+
+
+        String opName = op.opName();
+
+        List<int[]> outputShapes = op.calculateOutputShape();
+        int[] outputVertexIds = new int[outputShapes.size()];
+        List<Integer> inputIdsList = new ArrayList<>();
+        for (int i = 0; i < inputs.length; i++) {
+            DifferentialFunction differentialFunction = inputs[i];
+            List<DifferentialFunction> outputs = differentialFunction.outputs();
+            for (DifferentialFunction output : outputs) {
+                for (int vertexId : output.getOutputVertexIds()) {
+                    if (!inputIdsList.contains(vertexId))
+                        inputIdsList.add(vertexId);
+                }
+            }
+
+        }
+
+        NDArrayVertex[] outputs = new NDArrayVertex[outputShapes.size()];
+        DifferentialFunction[] outputFunctions = new DifferentialFunction[outputShapes.size()];
+        SDVariable[] resultInfo = new SDVariable[outputShapes.size()];
+        for (int i = 0; i < outputShapes.size(); i++) {
+            SDVariable variable = sameDiff.var(sameDiff.generateVariableName(opName, false),outputShapes.get(i));
+            outputVertexIds[i] = variable.getVertex().vertexID();
+            resultInfo[i] = variable;
+            outputs[i] = variable.getVertex();
+            outputFunctions[i] = variable;
+        }
+
+        int[] inputIds = Ints.toArray(inputIdsList);
+
+        Op.Type opType = op.opType();
+
+        String[] vertexIds = sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds));
+        OpState opState = OpState.builder()
+                .opType(opType).inPlace(op.isInPlace())
+                .differentialFunction(op)
+                .opName(opName)
+                .id(opName + "(" + vertexIds + ")")
+                .vertexIds(sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds)))
+                .extraArgs(op.getExtraArgs())
+                .results(resultInfo)
+                .build();
+
+
+        /**
+         * Create 1 opstate with all of the vertex ids
+         * with all inputs and outputs representing the edge.
+         */
+        sameDiff.graph().addEdge(
+                inputIds,
+                outputVertexIds,
+                opState, true);
+
+
+        op.opState = opState;
+
+    }
+
+    public void validateDifferentialFunctionsameDiff(
+            List<DifferentialFunction> function) {
+        for(DifferentialFunction differentialFunction : function)
+            validateDifferentialFunctionsameDiff(differentialFunction);
+    }
+
+
+
+    public void validateDifferentialFunctionsameDiff(
+            DifferentialFunction function) {
+
+        Preconditions.checkState(function != null,"Passed in function was null.");
+        Preconditions.checkState(function.getSameDiff() == sameDiff);
+
+        Preconditions.checkState(function.getSameDiff() ==
+                        this.getSameDiff(),
+                "Function applications must be contained " +
+                        "in same sameDiff. The left " + function +"" +
+                        " must match this function " + this);
+        Preconditions.checkState(sameDiff ==
+                this.getSameDiff(),"Function applications m" +
+                "ust be " +
+                "contained in same sameDiff. The left " + function +" " +
+                "must " +
+                "match this function " + this);
+
+    }
+
+
+
+    public void validateDifferentialFunctionGraph(DifferentialFunction function) {
+        Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
+
+    }
+
+
+
+    public void validateFunctionReference(List<DifferentialFunction> reference) {
+        for(int i = 0; i < reference.size(); i++) {
+            validateFunctionReference(reference.get(i));
+        }
+
+    }
+
+
+    public void validateFunctionReference(DifferentialFunction reference) {
+        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId())) {
+            DifferentialFunction get = sameDiff.getFunctionInstances()
+                    .get(reference.getVertexId());
+            Preconditions.checkState(reference.equals(get), "Found invalid reference " + reference + " for vertex id "
+                    + reference.getVertexId());
+        }
+
+
+    }
+
+    /**
      *
      * @param func
      * @param input
@@ -1006,21 +1137,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
                 '}';
     }
 
-    private void validateDifferentialFunctionsameDiff(
-            DifferentialFunction function) {
-        Preconditions.checkState(function.getSameDiff() ==
-                        this.getSameDiff(),
-                "Function applications must be contained " +
-                        "in same sameDiff(). The left " + function +"" +
-                        " must match this function " + this);
-        Preconditions.checkState(sameDiff ==
-                this.getSameDiff(),"Function applications m" +
-                "ust be " +
-                "contained in same sameDiff. The left " + function +" " +
-                "must " +
-                "match this function " + this);
 
-    }
 
 
 

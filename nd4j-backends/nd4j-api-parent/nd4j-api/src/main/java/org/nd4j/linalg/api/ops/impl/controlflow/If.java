@@ -61,46 +61,28 @@ public class If extends DifferentialFunction implements CustomOp {
               SameDiff.SameDiffConditional predicate,
               SameDiff.SameDiffFunctionDefinition trueBody,
               SameDiff.SameDiffFunctionDefinition falseBody) {
-
-
-
         this.sameDiff = parent;
         this.inputVars = inputVars;
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.falseBody = falseBody;
         this.blockName = blockName;
-        this.dummyResult = SDVariable.builder()
-        .varName("dummyresult-" + UUID.randomUUID().toString()).sameDiff(parent).shape(new int[]{1,1}).build();
         this.vertexId = new int[] {parent.graph().nextVertexId()};
+        this.dummyResult = SDVariable.builder()
+        .varName("dummyresult-" + UUID.randomUUID().toString())
+                .sameDiff(parent).shape(new int[]{1,1}).vertexId(vertexId)
+                .build();
+
         NDArrayVertex dummyVertex = new NDArrayVertex(parent,this.vertexId[0],0,dummyResult);
+        dummyResult.setVertex(dummyVertex);
         parent.graph().addVertex(dummyVertex);
         this.vertex = dummyVertex;
         int[] inputEdges = new int[inputVars.length];
-        int[] outputEdges = new int[inputVars.length];
         String[] opEdgeIds = new String[inputVars.length * 2];
-        SDVariable[] results = new SDVariable[inputVars.length];
-        for(int i = 0; i < inputVars.length; i++) {
-            inputVars[i] = parent.setupFunction(inputVars[i]);
-            int vertexId = parent.graph().nextVertexId();
 
-
-            SDVariable outputInfo =    SDVariable.builder()
-                    .shape(inputVars[i].getShape())
-                    .varName(inputVars[i].getVarName() + "-output")
-                    .sameDiff(parent)
-                    .arr(inputVars[i].getArr())
-                    .vertexId(new int[]{vertexId}).build();
-            NDArrayVertex ndArrayVertex = new NDArrayVertex(parent,parent.graph().nextVertexId(),inputVars[i].depth() + 1, outputInfo);
-            outputInfo.setVertex(ndArrayVertex);
-
+        for(int i = 0; i < inputEdges.length; i++) {
             inputEdges[i] = inputVars[i].getVertex().vertexID();
-            outputEdges[i] = ndArrayVertex.vertexID();
-            results[i] = outputInfo;
-            parent.graph().addVertex(ndArrayVertex);
-            parent.addVariable(outputInfo);
         }
-
 
         /**
          * Setup the opstate ids
@@ -110,9 +92,6 @@ public class If extends DifferentialFunction implements CustomOp {
             opEdgeIds[opEdgeIdIdx++] = String.valueOf(inputEdges[i]);
         }
 
-        for(int i = 0; i < inputEdges.length; i++) {
-            opEdgeIds[opEdgeIdIdx++] = String.valueOf(outputEdges[i]);
-        }
 
         //create a samediff sub graph for running just the execution
         //return a reference to the loop for referencing during actual execution
@@ -140,12 +119,12 @@ public class If extends DifferentialFunction implements CustomOp {
                 .opType(Op.Type.CONDITIONAL)
                 .differentialFunction(this)
                 .inPlace(false)
-                .results(results)
+                .results(new SDVariable[]{dummyResult})
                 .id(UUID.randomUUID().toString())
                 .vertexIds(opEdgeIds)
                 .build();
 
-        parent.graph().addEdge(inputEdges,outputEdges,opState,true);
+        parent.graph().addEdge(inputEdges,vertexId,opState,true);
     }
 
 

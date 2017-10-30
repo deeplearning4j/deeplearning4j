@@ -174,7 +174,7 @@ public class ExpandDims extends ShapeOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsameDiff(i_v);
+        f().validateDifferentialFunctionsameDiff(i_v);
         DifferentialFunction ret = f().div(arg(),f().abs(arg()));
 
         return Collections.singletonList(ret);

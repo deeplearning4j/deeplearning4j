@@ -9,10 +9,8 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -174,8 +172,7 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public List<DifferentialFunction> outputs() {
-        List<Edge<OpState>> opStates =  sameDiff.graph().getEdgesOut(vertexId);
-        return Arrays.asList(opStates.get(0).getValue().getDifferentialFunction());
+        return Arrays.asList(this);
     }
 
     public  boolean isVariable() {
@@ -245,30 +242,20 @@ public abstract class DifferentialFunction implements Differential {
         return vals;
     }
 
-    protected void validateDifferentialFunctionGraph(DifferentialFunction function) {
-        Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
 
+    public String opName() {
+        if(this instanceof  Op) {
+            Op op = (Op) this;
+            return op.name();
+        }
+        throw new UnsupportedOperationException();
     }
 
 
-
-
-
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            DifferentialFunction i_v2,
-                            String opName,
-                            Op.Type opType,
-                            int[] shape) {
-        addEdges(sameDiff,
-                i_v1,
-                i_v2,
-                opName,
-                opType,
-                shape,
-                null);
-
+    public Op.Type opType() {
+        throw new UnsupportedOperationException();
     }
+
 
     private INDArray getX() {
         INDArray ret =  sameDiff.getVertexToArray().get(args()[0].getResult().getVarName());
@@ -311,166 +298,14 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public SDVariable getResult() {
+        if(opState == null || opState.getResults() == null) {
+            throw new ND4JIllegalStateException("No op state for variable found for obtaining result.");
+        }
         return opState.getResults()[0];
     }
 
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            DifferentialFunction i_v2,
-                            String opName,
-                            Op.Type opType,
-                            int[] shape, Object[] extraArgs) {
-        i_v1 = sameDiff.setupFunction(i_v1);
-        i_v2 = sameDiff.setupFunction(i_v2);
-        validateFunctionReference(i_v1);
-        validateFunctionReference(i_v2);
-
-        validateDifferentialFunctionGraph(i_v1);
-        validateDifferentialFunctionGraph(i_v2);
 
 
-
-        int[] v1VertexId = i_v1.resultVertexId();
-        int[] v2VertexId = i_v2.resultVertexId();
-        SDVariable arrInfo = inPlace ?  i_v1.getResult() : SDVariable.builder()
-                .varName(opName +"(" + i_v1.getResult().getVarName() + "," + i_v2.getResult().getVarName() + ")")
-                .shape(shape).build();
-
-        NDArrayVertex newVertex = new NDArrayVertex(
-                sameDiff,
-                sameDiff.getGraph().nextVertexId(),
-                Math.max(i_v1   .getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
-                arrInfo);
-        if(Arrays.equals(new int[]{newVertex.vertexID()},v2VertexId) || Arrays.equals(new int[]{newVertex.vertexID()},v1VertexId))
-            throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
-                    " Perhaps a mismatched graph call? Another likely cause is applyGraph");
-        this.vertexId = new int[]  {newVertex.vertexID()};
-        this.vertex = newVertex;
-        //add the result vertex
-        sameDiff.getGraph().addVertex(newVertex);
-        OpState opState,opState2;
-
-
-        //ensure there's 2 vertices for when the 2 inputs are the same
-        if(i_v1.equals(i_v2)) {
-            NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
-                    Math.max(i_v1.getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
-                    arrInfo);
-            //update vertex id
-            v2VertexId = new int[] {dupVertex.vertexID()};
-            sameDiff.getGraph().addVertex(dupVertex);
-            opState = OpState.builder()
-                    .opType(opType).inPlace(inPlace)
-                    .differentialFunction(this)
-                    .opName(opName)
-                    .id(opName + "(" + dupVertex.getValue().getVarName() + " -> " + newVertex.getValue().getVarName() + ")")
-                    .vertexIds(sameDiff.generateVertexIds(v2VertexId,new int[]{newVertex.vertexID()}))
-                    .n(ArrayUtil.prod(shape))
-                    .extraArgs(extraArgs)
-                    .results(new SDVariable[]{arrInfo})
-                    .build();
-
-
-        }
-        else {
-            opState =  OpState.builder()
-                    .opType(opType)
-                    .opName(opName).inPlace(inPlace)
-                    .differentialFunction(this)
-                    .id(opName + "(" + i_v1.getVertex().getValue().getVarName() + " -> " + newVertex.getValue().getVarName() + ")")
-                    .vertexIds(sameDiff.generateVertexIds(v2VertexId,new int[]{newVertex.vertexID()}))
-                    .n(ArrayUtil.prod(shape))
-                    .extraArgs(extraArgs)
-                    .results(new SDVariable[]{arrInfo})
-                    .build();
-        }
-
-        opState2 = OpState.builder()
-                .opType(opType).inPlace(inPlace)
-                .opName(opName)
-                .results(new SDVariable[]{arrInfo})
-                .id(opName + "(" + i_v1.getVertex().getValue().getVarName() + " -> " + newVertex.getValue().getVarName() + ")")
-                .vertexIds(sameDiff.generateVertexIds(v1VertexId,new int[]{newVertex.vertexID()}))
-                .n(ArrayUtil.prod(shape))
-                .extraArgs(extraArgs)
-                .differentialFunction(this)
-                .build();
-
-
-        //add the first vertex no matter what as normal
-        sameDiff.graph().addEdge(
-                v1VertexId,
-                new int[]{newVertex.vertexID()},
-                opState2,true);
-
-        sameDiff.graph().addEdge(
-                v2VertexId,
-                new int[]{newVertex.vertexID()},
-                opState
-                ,true);
-        newVertex.setOpState(opState2);
-        arrInfo.setOwner(opState2);
-
-        this.opState = opState;
-
-
-
-
-    }
-
-
-    /**
-     * Resolve the type of this
-     * ndarray based on the op.
-     * @return
-     */
-    public Op.Type resolveType() {
-        if(!(this instanceof  Op))
-            throw new IllegalStateException("Unable to resolve type. Must be an op");
-        if(this instanceof ScalarOp)
-            return Op.Type.SCALAR;
-        else if(this instanceof ShapeOp)
-            return Op.Type.SHAPE;
-        else if(this instanceof TransformOp)
-            return Op.Type.TRANSFORM;
-        else if(this instanceof BroadcastOp)
-            return Op.Type.BROADCAST;
-        else if(this instanceof Accumulation) {
-            Accumulation accumulation = (Accumulation) this;
-            if(accumulation.y() != null)
-                return Op.Type.REDUCE3;
-            else
-                return Op.Type.REDUCE;
-        }
-        else if(this instanceof Variance)
-            return Op.Type.VARIANCE;
-        else if(this instanceof IndexAccumulation)
-            return Op.Type.INDEXREDUCE;
-
-        throw new IllegalStateException("No type found for class " + getClass().getName());
-
-    }
-
-
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            DifferentialFunction i_v2,
-                            String opName) {
-        validateDifferentialFunctionGraph(i_v1);
-        validateDifferentialFunctionGraph(i_v2);
-        validateFunctionReference(i_v1);
-        validateFunctionReference(i_v2);
-
-
-        addEdges(sameDiff,
-                i_v1,
-                i_v2,
-                opName,
-                resolveType(),
-               i_v1.getResultShape());
-
-
-    }
 
 
     /**
@@ -507,22 +342,6 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-    protected void validateFunctionReference(List<DifferentialFunction> reference) {
-        for(int i = 0; i < reference.size(); i++) {
-            validateFunctionReference(reference.get(i));
-        }
-
-    }
-    protected void validateFunctionReference(DifferentialFunction reference) {
-        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId())) {
-            DifferentialFunction get = sameDiff.getFunctionInstances()
-                    .get(reference.getVertexId());
-            Preconditions.checkState(reference.equals(get), "Found invalid reference " + reference + " for vertex id "
-                    + reference.getVertexId());
-        }
-
-
-    }
 
     /**
      * Return the vertex id
@@ -536,65 +355,13 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-
-
-
     /**
-     * Add nodes to the graph
-     * @param sameDiff
-     * @param i_v1
-     * @param opName
+     * Calculate the output shape for this op
+     * @return
      */
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            String opName,
-                            int...shape) {
-        validateFunctionReference(i_v1);
-        SDVariable information =   inPlace ? i_v1.getResult() :  SDVariable.builder()
-                .varName(opName + "(" + i_v1.getResult().getVarName() + " -> " +
-                        i_v1.getResult().getVarName() + ")")
-                .shape(shape).build();
-        //result
-        NDArrayVertex newVertex = new NDArrayVertex(
-                sameDiff,
-                sameDiff.graph().nextVertexId(),
-                i_v1.getVertex().depth() + 1,
-                information);
-        this.vertexId = new int[] {newVertex.vertexID()};
-        sameDiff.graph().addVertex(newVertex);
-        Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
-        OpState owner =  OpState.builder()
-                .opType(resolveType()).differentialFunction(this)
-                .opName(opName).inPlace(inPlace)
-                .extraArgs(extraArgs).axes(dimensions)
-                .id(opName + "(" + i_v1.getResult().getVarName() + " -> " + newVertex.getValue().getVarName() + ")")
-                .vertexIds(sameDiff.generateVertexIds(i_v1.getVertex().vertexID(),newVertex.vertexID()))
-                .n(ArrayUtil.prod(shape)).results(new SDVariable[] { information })
-                .build();
-
-
-        sameDiff.getGraph().addEdge(
-                arg().resultVertexId(),
-                new int[]{newVertex.vertexID()},
-                owner,
-                true);
-
-
-
-        newVertex.setOpState(owner);
-        information.setOwner(owner);
-        owner.setResults(new SDVariable[]{information});
-        if(owner.isInPlace()) {
-            information.setVarName(i_v1.getResult().getVarName());
-        }
-
-        this.opState = owner;
-
-
-
+    public List<int[]> calculateOutputShape() {
+        throw new UnsupportedOperationException();
     }
-
-
 
     /**
      * Set a forward function reference
@@ -632,33 +399,6 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-    protected void validateDifferentialFunctionsameDiff(
-            List<DifferentialFunction> function) {
-        for(DifferentialFunction differentialFunction : function)
-            validateDifferentialFunctionsameDiff(differentialFunction);
-    }
-
-
-
-    protected void validateDifferentialFunctionsameDiff(
-            DifferentialFunction function) {
-
-        Preconditions.checkState(function != null,"Passed in function was null.");
-        Preconditions.checkState(function.getSameDiff() == sameDiff);
-
-        Preconditions.checkState(function.getSameDiff() ==
-                        this.getSameDiff(),
-                "Function applications must be contained " +
-                        "in same sameDiff. The left " + function +"" +
-                        " must match this function " + this);
-        Preconditions.checkState(sameDiff ==
-                this.getSameDiff(),"Function applications m" +
-                "ust be " +
-                "contained in same sameDiff. The left " + function +" " +
-                "must " +
-                "match this function " + this);
-
-    }
 
     protected int fromBoolean(boolean bool) {
         return bool ? 1 : 0;

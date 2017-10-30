@@ -167,8 +167,8 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        validateDifferentialFunctionsameDiff(i_v1);
-        validateFunctionReference(i_v1);
+        f().validateDifferentialFunctionsameDiff(i_v1);
+        f().validateFunctionReference(i_v1);
         DifferentialFunction repeat =  f().doRepeat(
                 i_v1.get(0),
                 arg(),dimensions);

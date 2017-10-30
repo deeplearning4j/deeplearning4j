@@ -67,49 +67,25 @@ public class TensorMmul extends BaseAccumulation {
         this.extraArgs = new Object[] {axes,mMulTranspose};
 
         this.args = new DifferentialFunction[] {i_v1,i_v2};
-        validateFunctionReference(i_v1);
-        validateFunctionReference(i_v2);
+        f().validateFunctionReference(i_v1);
+        f().validateFunctionReference(i_v2);
 
         if(!addedEdges) {
-            int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(i_v1.getResultShape()) : i_v1.getResultShape();
-            int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(i_v2.getResultShape()) : i_v2.getResultShape();
-
-
-            addEdges(sameDiff,
-                    i_v1,
-                    i_v2,
-                    name(),
-                    Type.REDUCE,
-                    this instanceof Mmul ? Shape.getMatrixMultiplyShape(aShape,bShape)
-                            : getTensorMmulShape(aShape,bShape, dimensions)
-                    ,extraArgs);
+            f().addFunctionEdges(this);
             addedEdges = true;
         }
     }
-
 
     @Override
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            DifferentialFunction i_v2,
-                            String opName) {
-        if(axes != null
-                && !addedEdges) {
-            addedEdges = true;
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>(1);
+        int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getResultShape()) : larg().getResultShape();
+        int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getResultShape()) : rarg().getResultShape();
 
-            addEdges(sameDiff,i_v1,i_v2,opName,
-                    Type.REDUCE,
-                    getTensorMmulShape(i_v1.getResultShape(),
-                            i_v2.getResultShape(),
-                            axes)
-                    ,extraArgs);
-
-        }
-
+        ret.add(  this instanceof Mmul ? Shape.getMatrixMultiplyShape(aShape,bShape)
+                : getTensorMmulShape(aShape,bShape, axes));
+        return ret;
     }
-
-
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {

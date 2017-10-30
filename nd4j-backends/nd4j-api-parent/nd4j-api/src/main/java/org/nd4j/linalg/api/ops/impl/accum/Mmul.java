@@ -153,23 +153,12 @@ public class Mmul extends TensorMmul {
 
         ret.add(gradWrtX);
         ret.add(gradWrtY);
-        validateFunctionReference(larg());
-        validateFunctionReference(rarg());
+        f().validateFunctionReference(larg());
+        f().validateFunctionReference(rarg());
         return ret;
     }
 
-    @Override
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            DifferentialFunction i_v2,
-                            String opName) {
-           //skip empty dimensions
-        addEdges(sameDiff,i_v1,i_v2,opName,
-                Type.REDUCE3,
-                Shape.getMatrixMultiplyShape(
-                        i_v1.getResultShape(),
-                        i_v2.getResultShape()));
-    }
+
 
 
 

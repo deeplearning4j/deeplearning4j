@@ -6,6 +6,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @NoArgsConstructor
 public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
@@ -27,20 +30,15 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         super(sameDiff,inPlace,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
-            validateDifferentialFunctionsameDiff(i_v1);
-            validateDifferentialFunctionsameDiff(i_v2);
-            validateFunctionReference(i_v1);
-            validateFunctionReference(i_v2);
+            f().validateDifferentialFunctionsameDiff(i_v1);
+            f().validateDifferentialFunctionsameDiff(i_v2);
+            f().validateFunctionReference(i_v1);
+            f().validateFunctionReference(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
-            addEdges(sameDiff,
-                    i_v1,
-                    i_v2,
-                    name(),
-                    Type.BROADCAST,
-                    Shape.broadcastOutputShape(i_v1.getResultShape(),i_v2.getResultShape()),
-                    null);
+            f().addFunctionEdges(this);
+
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -60,18 +58,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         if (i_v1 != null && i_v2 != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
 
-            validateDifferentialFunctionsameDiff(i_v1);
-            validateDifferentialFunctionsameDiff(i_v2);
+            f().validateDifferentialFunctionsameDiff(i_v1);
+            f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
+            f().addFunctionEdges(this);
 
-            addEdges(sameDiff,
-                    i_v1,
-                    i_v2,
-                    name(),
-                    Type.BROADCAST,
-                    Shape.broadcastOutputShape(i_v1.getResultShape(),i_v2.getResultShape()),
-                    null);
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -95,9 +87,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         this.dimension = dimension;
         if (i_v != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
-            validateFunctionReference(i_v);
-            validateDifferentialFunctionsameDiff(i_v);
-            addEdges(sameDiff,this.args[0],name(),shape);
+            f().validateFunctionReference(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v);
+            f().addFunctionEdges(this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -120,7 +112,20 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     }
 
+    @Override
+    public Type opType() {
+        return Type.BROADCAST;
+    }
 
+    /**
+     * Calculate the output shape for this op
+     * @return
+     */
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>();
+        ret.add(Shape.broadcastOutputShape(larg().getResultShape(),rarg().getResultShape()));
+        return ret;
+    }
 
     @Override
     public int broadcastLength() {
@@ -131,9 +136,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public int[] broadcastShape() {
-        if (y == null)
-            throw new IllegalStateException("Unable to get broad cast shape for y, no y specified");
-        return y.shape();
+        return calculateOutputShape().get(0);
     }
 
     @Override

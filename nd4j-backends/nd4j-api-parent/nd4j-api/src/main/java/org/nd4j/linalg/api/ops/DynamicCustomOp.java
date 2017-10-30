@@ -50,7 +50,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
-        addEdges(sameDiff,opName(), Op.Type.CUSTOM,extraArgs);
+        f().addFunctionEdges(this);
+
     }
 
 
@@ -209,78 +210,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return Arrays.asList(outputFunctions);
     }
 
-    protected void addEdges(SameDiff sameDiff,
-                            String opName,
-                            Op.Type opType,
-                            Object[] extraArgs) {
-        for (DifferentialFunction input : args()) {
-            validateFunctionReference(input);
-            validateDifferentialFunctionGraph(input);
-        }
 
-
-        List<int[]> outputShapes = this.calculateOutputShape();
-        int[] outputVertexIds = new int[outputShapes.size()];
-        List<Integer> inputs = new ArrayList<>();
-        for (int i = 0; i < args().length; i++) {
-            DifferentialFunction differentialFunction = args()[i];
-            List<DifferentialFunction> outputs = differentialFunction.outputs();
-            for (DifferentialFunction output : outputs) {
-                for (int vertexId : output.getOutputVertexIds()) {
-                    if (!inputs.contains(vertexId))
-                        inputs.add(vertexId);
-                }
-            }
-
-        }
-
-        this.outputs = new NDArrayVertex[outputShapes.size()];
-        this.outputFunctions = new DifferentialFunction[outputShapes.size()];
-        SDVariable[] resultInfo = new SDVariable[outputShapes.size()];
-        for (int i = 0; i < outputShapes.size(); i++) {
-            int nextVertexId = sameDiff.graph().nextVertexId();
-            SDVariable variable = sameDiff.setupFunction(SDVariable.builder()
-                    .varName(opName + "-UUID.randomUUID().toString()")
-                    .shape(outputShapes.get(i))
-                    .vertexId(new int[]{nextVertexId})
-                    .varName(sameDiff.generateVariableName(opName, false))
-                    .build());
-
-            outputVertexIds[i] = variable.getVertex().vertexID();
-            resultInfo[i] = variable;
-            this.outputs[i] = variable.getVertex();
-            this.outputFunctions[i] = variable;
-        }
-
-        int[] inputIds = Ints.toArray(inputs);
-
-
-        String[] vertexIds = sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds));
-        OpState opState = OpState.builder()
-                .opType(opType).inPlace(inPlace)
-                .differentialFunction(this)
-                .opName(opName)
-                .id(opName + "(" + vertexIds + ")")
-                .vertexIds(sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds)))
-                .extraArgs(extraArgs)
-                .results(resultInfo)
-                .build();
-
-
-        /**
-         * Create 1 opstate with all of the vertex ids
-         * with all inputs and outputs representing the edge.
-         */
-        sameDiff.graph().addEdge(
-                inputIds,
-                outputVertexIds,
-                opState, true);
-
-
-        this.opState = opState;
-
-
-    }
 
 
     public static class SameDiffBuilder extends DynamicCustomOpsBuilder {
@@ -333,13 +263,18 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             ret.setArgs(args.toArray(new DifferentialFunction[args.size()]));
             ret.setSameDiff(sameDiff);
             ret.outputShapes = outputShapes;
-            ret.addEdges(sameDiff,opName, Op.Type.CUSTOM,null);
+            //ret.addEdges(sameDiff,opName, Op.Type.CUSTOM,null);
             return ret;
         }
     }
 
 
-    public static SameDiffBuilder sameDiffBuilder(String opName,SameDiff sameDiff) {
+    @Override
+    public Op.Type opType() {
+        return Op.Type.CUSTOM;
+    }
+
+    public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {
         return new SameDiffBuilder(opName,sameDiff);
     }
 

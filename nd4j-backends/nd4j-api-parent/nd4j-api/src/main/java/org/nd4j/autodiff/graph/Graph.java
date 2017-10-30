@@ -202,7 +202,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             throw new IllegalArgumentException("No cycles allowed");
 
         for(int i : edge.getFrom())
-            if (i < 0)
+            if (i <= 0)
                 throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
 
         List<Edge<E>> fromList =  edges.get(edge.getFrom());

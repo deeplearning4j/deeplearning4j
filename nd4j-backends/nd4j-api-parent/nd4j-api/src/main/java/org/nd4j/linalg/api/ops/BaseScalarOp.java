@@ -32,6 +32,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -101,9 +103,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         this.scalarValue = scalar;
         if (i_v != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
-            validateFunctionReference(i_v);
-            validateDifferentialFunctionsameDiff(i_v);
-            addEdges(sameDiff,this.args[0],name(),shape);
+            f().validateFunctionReference(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v);
+            f().addFunctionEdges(this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -118,64 +120,16 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     }
 
 
-
-
-    /**
-     * Add nodes to the graph
-     * @param sameDiff
-     * @param i_v1
-     * @param opName
-     */
     @Override
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            String opName,
-                            int[] shape) {
-        validateFunctionReference(i_v1);
-        SDVariable information =   inPlace ? i_v1.getResult() : SDVariable.builder()
-                .varName(opName + "(" + i_v1.getResult().getVarName() + " -> " +
-                        i_v1.getResult().getVarName() + ")")
-                .shape(i_v1.getResultShape()).build();
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>(1);
+        ret.add(arg().getResultShape());
+        return ret;
+    }
 
-        //result
-        NDArrayVertex newVertex = new NDArrayVertex(
-                sameDiff,
-                sameDiff.graph().nextVertexId(),
-                i_v1.getVertex().depth() + 1,
-                information);
-        this.vertexId = new int[] {newVertex.vertexID()};
-        sameDiff.graph().addVertex(newVertex);
-
-
-        OpState owner =  OpState.builder()
-                .opType(Type.SCALAR)
-                .differentialFunction(this).inPlace(inPlace)
-                .opName(opName).extraArgs(extraArgs).scalarValue(scalarValue)
-                .id(opName + "(" + i_v1.getResult().getVarName() + " -> " + newVertex.getValue().getVarName() + ")")
-                .vertexIds(sameDiff.generateVertexIds(i_v1.getVertex().vertexID(),newVertex.vertexID()))
-                .n(ArrayUtil.prod(shape))
-                .results(new SDVariable[]{information})
-                .build();
-
-
-        sameDiff.getGraph().addEdge(
-                arg().resultVertexId(),
-                new int[]{newVertex.vertexID()},
-                owner,
-                true);
-
-
-        newVertex.setOpState(owner);
-        information.setOwner(owner);
-        owner.setResults(new SDVariable[]{information});
-
-        if(owner.isInPlace()) {
-            information.setVarName(i_v1.getResult().getVarName());
-        }
-
-        this.opState = owner;
-
-
+    @Override
+    public Type opType() {
+        return Type.SCALAR;
     }
 
     @Override
