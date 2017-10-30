@@ -29,7 +29,40 @@ import org.nd4j.linalg.learning.config.Adam;
  *  Reference: https://arxiv.org/pdf/1612.08242.pdf
  *
  * <p>ImageNet+VOC weights for this model are available and have been converted from https://pjreddie.com/darknet/yolo/
- * using https://github.com/allanzelener/YAD2K .</p>
+ * using https://github.com/allanzelener/YAD2K and the following code.</p>
+ *
+ * <pre>{@code
+ *     String filename = "tiny-yolo-voc.h5";
+ *     ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(filename, false);
+ *     INDArray priors = Nd4j.create(priorBoxes);
+ *
+ *     FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
+ *             .seed(seed)
+ *             .iterations(iterations)
+ *             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+ *             .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+ *             .gradientNormalizationThreshold(1.0)
+ *             .updater(new Adam.Builder().learningRate(1e-3).build())
+ *             .l2(0.00001)
+ *             .activation(Activation.IDENTITY)
+ *             .trainingWorkspaceMode(workspaceMode)
+ *             .inferenceWorkspaceMode(workspaceMode)
+ *             .build();
+ *
+ *     ComputationGraph model = new TransferLearning.GraphBuilder(graph)
+ *             .fineTuneConfiguration(fineTuneConf)
+ *             .addLayer("outputs",
+ *                     new Yolo2OutputLayer.Builder()
+ *                             .boundingBoxPriors(priors)
+ *                             .build(),
+ *                     "conv2d_9")
+ *             .setOutputs("outputs")
+ *             .build();
+ *
+ *     System.out.println(model.summary(InputType.convolutional(416, 416, 3)));
+ *
+ *     ModelSerializer.writeModel(model, "tiny-yolo-voc_dl4j_inference.v1.zip", false);
+ *}</pre>
  *
  * The channels of the 416x416 input images need to be in RGB order (not BGR), with values normalized within [0, 1].
  *
@@ -40,30 +73,9 @@ public class TinyYOLO extends ZooModel {
 
     public static int nBoxes = 5;
     public static double[][] priorBoxes = {{1.08, 1.19}, {3.42, 4.41}, {6.63, 11.38}, {9.42, 5.11}, {16.62, 10.52}};
-    public static String[] labels = {
-            "aeroplane",
-            "bicycle",
-            "bird",
-            "boat",
-            "bottle",
-            "bus",
-            "car",
-            "cat",
-            "chair",
-            "cow",
-            "diningtable",
-            "dog",
-            "horse",
-            "motorbike",
-            "person",
-            "pottedplant",
-            "sheep",
-            "sofa",
-            "train",
-            "tvmonitor"};
 
     private int[] inputShape = {3, 416, 416};
-    private int numLabels = labels.length;
+    private int numLabels;
     private long seed;
     private int iterations;
     private WorkspaceMode workspaceMode;
@@ -239,49 +251,4 @@ public class TinyYOLO extends ZooModel {
     public int getGridHeight() {
         return inputShape[2] / 32;
     }
-
-/*
-    // Import from a Keras model
-    @Override
-    public Model initPretrained(PretrainedType pretrainedType) throws IOException {
-        try {
-            String filename = "tiny-yolo-voc.h5";
-            ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(filename, false);
-            INDArray priors = Nd4j.create(priorBoxes);
-
-            FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
-                    .seed(seed)
-                    .iterations(iterations)
-                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                    .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                    .gradientNormalizationThreshold(1.0)
-                    .updater(new Adam.Builder().learningRate(1e-3).build())
-                    .l2(0.00001)
-                    .activation(Activation.IDENTITY)
-                    .trainingWorkspaceMode(workspaceMode)
-                    .inferenceWorkspaceMode(workspaceMode)
-                    .build();
-
-            ComputationGraph model = new TransferLearning.GraphBuilder(graph)
-                    .fineTuneConfiguration(fineTuneConf)
-                    .addLayer("outputs",
-                            new Yolo2OutputLayer.Builder()
-                                    .boundingBoxPriors(priors)
-                                    .build(),
-                            "conv2d_9")
-                    .setOutputs("outputs")
-                    .build();
-
-            System.out.println(model.summary(InputType.convolutional(416, 416, 3)));
-
-            ModelSerializer.writeModel(model, "tiny-yolo-voc_dl4j_inference.v1.zip", false);
-
-            return model;
-        } catch (UnsupportedKerasConfigurationException ex) {
-            throw new IOException(ex);
-        } catch (InvalidKerasConfigurationException ex) {
-            throw new IOException(ex);
-        }
-    }
-*/
 }

@@ -1,11 +1,11 @@
 package org.deeplearning4j.zoo.util.imagenet;
 
+import org.deeplearning4j.zoo.util.BaseLabels;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -14,26 +14,22 @@ import java.util.HashMap;
  *
  * @author susaneraly
  */
-public class ImageNetLabels {
+public class ImageNetLabels extends BaseLabels {
 
-    private final static String jsonUrl = "http://blob.deeplearning4j.org/utils/imagenet_class_index.json";
-    private static ArrayList<String> predictionLabels = null;
+    private static final String jsonResource = "imagenet_class_index.json";
+    private ArrayList<String> predictionLabels = null;
 
-    public ImageNetLabels() {
+    public ImageNetLabels() throws IOException {
         this.predictionLabels = getLabels();
     }
 
-    private static ArrayList<String> getLabels() {
+    protected ArrayList<String> getLabels() throws IOException {
         if (predictionLabels == null) {
             HashMap<String, ArrayList<String>> jsonMap;
-            try {
-                jsonMap = new ObjectMapper().readValue(new URL(jsonUrl), HashMap.class);
-                predictionLabels = new ArrayList<>(jsonMap.size());
-                for (int i = 0; i < jsonMap.size(); i++) {
-                    predictionLabels.add(jsonMap.get(String.valueOf(i)).get(1));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            jsonMap = new ObjectMapper().readValue(this.getClass().getResourceAsStream(jsonResource), HashMap.class);
+            predictionLabels = new ArrayList<>(jsonMap.size());
+            for (int i = 0; i < jsonMap.size(); i++) {
+                predictionLabels.add(jsonMap.get(String.valueOf(i)).get(1));
             }
         }
         return predictionLabels;
