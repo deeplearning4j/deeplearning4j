@@ -233,8 +233,7 @@ namespace nd4j {
             if (node->getLayer() < 0)
                 throw std::runtime_error("Only nodes with non-negative layer defined can be inserted");
 
-            printf("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
-            fflush(stdout);
+            nd4j_debug("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
 
             std::pair<int32_t, nd4j::graph::Node<T> *> pair(node->id(), node);
             _onion->at(node->getLayer())->push_back(node);
