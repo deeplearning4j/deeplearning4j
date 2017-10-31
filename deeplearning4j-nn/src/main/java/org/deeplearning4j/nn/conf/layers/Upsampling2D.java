@@ -90,12 +90,12 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Upsampling layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType[0], getLayerName());
     }
 
     @Override

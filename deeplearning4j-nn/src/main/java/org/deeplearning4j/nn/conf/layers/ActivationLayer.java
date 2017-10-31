@@ -69,7 +69,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         //No input preprocessor required for any input
         return null;
     }

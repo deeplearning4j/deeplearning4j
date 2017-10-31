@@ -67,7 +67,7 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         //No input preprocessor required; dropout applies to any input type
         return null;
     }

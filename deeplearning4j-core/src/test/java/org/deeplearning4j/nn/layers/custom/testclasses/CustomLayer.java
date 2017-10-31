@@ -77,7 +77,7 @@ public class CustomLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         return null;
     }
 

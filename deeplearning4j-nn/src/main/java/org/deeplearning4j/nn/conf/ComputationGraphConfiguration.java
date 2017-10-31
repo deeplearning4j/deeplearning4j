@@ -547,21 +547,22 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
             List<InputType> inputTypeList = new ArrayList<>();
 
             //Add preprocessor, if necessary:
-            String in = vertexInputs.get(s).get(0);
-            InputType layerInput = vertexOutputs.get(in);
-            inputTypeList.add(layerInput);
-
+            int nInputs = vertexInputs.get(s).size();
+            InputType[] layerInputs = new InputType[nInputs];
+            for( int i=0; i<nInputs; i++ ){
+                layerInputs[i] = vertexOutputs.get(vertexInputs.get(s).get(i));
+            }
 
             //Preprocessors - add if necessary
             if (gv.getPreProcessor() == null) {
                 //But don't override preprocessors that are manually defined; if none has been defined,
                 //add the appropriate preprocessor for this input type/layer combination
-                InputPreProcessor preproc = gv.getPreProcessorForInputType(layerInput);
+                InputPreProcessor preproc = gv.getPreProcessorForInputType(layerInputs);
                 if (preproc != null) {
                     gv.setPreProcessor(preproc);
-                    gv.setNIn(new InputType[]{layerInput}, false); //Don't override the nIn setting, if it's manually set by the user
+                    gv.setNIn(inputTypes, false); //Don't override the nIn setting, if it's manually set by the user
                 } else {
-                    gv.setNIn(new InputType[]{layerInput}, false); //Don't override the nIn setting, if it's manually set by the user
+                    gv.setNIn(inputTypes, false); //Don't override the nIn setting, if it's manually set by the user
                 }
             }
 

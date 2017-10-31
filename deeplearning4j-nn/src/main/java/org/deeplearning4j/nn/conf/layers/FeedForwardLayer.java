@@ -65,13 +65,13 @@ public abstract class FeedForwardLayer extends BaseLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException(
-                            "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        switch (inputType.getType()) {
+        switch (inputType[0].getType()) {
             case FF:
             case CNNFlat:
                 //FF -> FF and CNN (flattened format) -> FF: no preprocessor necessary
@@ -81,7 +81,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 return new RnnToFeedForwardPreProcessor();
             case CNN:
                 //CNN -> FF
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType[0];
                 return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getDepth());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);

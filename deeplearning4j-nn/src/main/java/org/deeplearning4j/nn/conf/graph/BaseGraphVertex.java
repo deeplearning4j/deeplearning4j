@@ -19,7 +19,7 @@ public abstract class BaseGraphVertex extends Layer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         return null;
     }
 

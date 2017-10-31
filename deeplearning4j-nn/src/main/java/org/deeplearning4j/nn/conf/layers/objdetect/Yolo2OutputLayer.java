@@ -98,15 +98,19 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        switch (inputType.getType()){
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Yolo2OutputLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
+        }
+        switch (inputType[0].getType()){
             case FF:
             case RNN:
                 throw new UnsupportedOperationException("Cannot use FF or RNN input types");
             case CNN:
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat)inputType;
+                InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat)inputType[0];
                 return new FeedForwardToCnnPreProcessor(cf.getHeight(), cf.getWidth(), cf.getDepth());
             default:
                 return null;

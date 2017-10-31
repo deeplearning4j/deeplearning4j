@@ -605,7 +605,7 @@ public class GradientCheckTestsComputationGraph {
                         .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                         .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
-                        .addVertex("m", new MergeVertex(), "d0", "d1", "d2")
+                        .add("m", new MergeVertex(), "d0", "d1", "d2")
                         .addLayer("D0", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
                         .addLayer("D1", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
                         .addLayer("D2", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
@@ -649,24 +649,26 @@ public class GradientCheckTestsComputationGraph {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("input")
-                        .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
-                        .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
-                        .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
-                        .addVertex("m", new MergeVertex(), "l1", "l2")
-                        .addLayer("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("m", new MergeVertex(), "l1", "l2")
+                        .add("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2)
+                        .add("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2)
                                         .build(), "l3", "l4")
                         .setOutputs("out").setInputTypes(InputType.convolutional(inH, inW, 2)).pretrain(false)
                         .backprop(true).build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
+
+        System.out.println(graph.getConfiguration().getTopologicalSortOrder());
 
         int[] minibatchSizes = {1, 3};
         for (int mb : minibatchSizes) {

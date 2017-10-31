@@ -127,9 +127,13 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType.getType() == InputType.Type.CNNFlat) {
-            InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType;
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
+        }
+        if (inputType[0].getType() == InputType.Type.CNNFlat) {
+            InputType.InputTypeConvolutionalFlat i = (InputType.InputTypeConvolutionalFlat) inputType[0];
             return new FeedForwardToCnnPreProcessor(i.getHeight(), i.getWidth(), i.getDepth());
         }
 

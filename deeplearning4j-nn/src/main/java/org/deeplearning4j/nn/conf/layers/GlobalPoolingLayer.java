@@ -127,19 +127,23 @@ public class GlobalPoolingLayer extends Layer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for global pooling layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
+        }
 
-        switch (inputType.getType()) {
+        switch (inputType[0].getType()) {
             case FF:
                 throw new UnsupportedOperationException(
                                 "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                                + inputType);
+                                                + inputType[0]);
             case RNN:
             case CNN:
                 //No preprocessor required
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat) inputType[0];
                 return new FeedForwardToCnnPreProcessor(cFlat.getHeight(), cFlat.getWidth(), cFlat.getDepth());
         }
 

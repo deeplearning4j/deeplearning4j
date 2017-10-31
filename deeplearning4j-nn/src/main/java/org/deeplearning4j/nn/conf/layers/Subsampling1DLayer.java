@@ -69,13 +69,13 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Subsampling1DLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], getLayerName());
     }
 
     @Override

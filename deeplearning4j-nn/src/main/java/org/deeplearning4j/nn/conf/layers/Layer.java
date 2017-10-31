@@ -185,7 +185,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @return Null if no preprocessor is required, otherwise the type of preprocessor necessary for this layer/input combination
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
+    public abstract InputPreProcessor getPreProcessorForInputType(InputType... inputTypes);
 
     /**
      * Get the L1 coefficient for the given parameter.
