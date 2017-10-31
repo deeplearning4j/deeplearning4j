@@ -259,9 +259,8 @@ namespace nd4j {
 
 
 
-
 //////////////////////////////////////////////////////////////////////////
-        CONFIGURABLE_OP_IMPL(maxpool3d, 1, 2, true, 0, 13) {
+        CUSTOM_OP_IMPL(maxpool3d, 1, 2, true, 0, 13) {
 
             NDArray<T> *input = INPUT_VARIABLE(0);
 
@@ -274,6 +273,7 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got rank %i instead", input->rankOf());
             REQUIRE_TRUE(output->rankOf() == 5, 0, "Output should be 5D, got rank %i instead", output->rankOf());
 
+            // TODO change width/height order  height/width
             int kT = block.getIArguments()->at(0);
             int kW = block.getIArguments()->at(1);
             int kH = block.getIArguments()->at(2);
@@ -313,11 +313,11 @@ namespace nd4j {
             Nd4jIndex otime;
             Nd4jIndex oheight;
             Nd4jIndex owidth;
-            T *input_data;
-            T *output_data;
+            T *input_data(nullptr);
+            T *output_data(nullptr);
 
             ////////////
-            T *indices_data;
+            T *indices_data(nullptr);
 
 
             int dimN = 1;
@@ -351,7 +351,6 @@ namespace nd4j {
                     --owidth;
             }
 
-
             REQUIRE_TRUE(otime >= 1 && owidth >= 1 && oheight >= 1, 0, "Output size is too small: [%i, %i, %i]", otime, oheight, owidth);
 
             NDArray<T>* _input;
@@ -362,11 +361,6 @@ namespace nd4j {
 
             Nd4jIndex istride = nslices * itime * iwidth * iheight;
             Nd4jIndex ostride = nslices * otime * owidth * oheight;
-
-            REQUIRE_TRUE(output->sizeAt(0) == input->sizeAt(0) && output->sizeAt(1) == nslices && output->sizeAt(2) == otime && output->sizeAt(3) == oheight && output->sizeAt(4) == owidth, 0,
-                         "Output shape expected to be [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", input->sizeAt(0), nslices, otime, oheight, owidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
-
-            REQUIRE_TRUE(indices->isSameShape(output), 0, "Output and Indices shapes should be equal");
 
             input_data = _input->getBuffer();
             output_data = output->getBuffer();
@@ -395,6 +389,71 @@ namespace nd4j {
         }
         DECLARE_SYN(MaxPool3D, maxpool3d);
         DECLARE_SYN(MaxPool3d, maxpool3d);
+
+        
+        DECLARE_SHAPE_FN(maxpool3d) {
+
+            // REQUIRE_TRUE(output->sizeAt(0) == input->sizeAt(0) && output->sizeAt(1) == nslices && output->sizeAt(2) == otime && output->sizeAt(3) == oheight && output->sizeAt(4) == owidth, 0,
+            // "Output shape expected to be [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", input->sizeAt(0), nslices, otime, oheight, owidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
+            // REQUIRE_TRUE(indices->isSameShape(output), 0, "Output and Indices shapes should be equal");
+
+            int* inputShapeInfo = inputShape->at(0);   
+                
+            int rank = inputShapeInfo[0];       // = 5
+            int bS = inputShapeInfo[1];
+            int nslices = inputShapeInfo[2];
+            int itime   = inputShapeInfo[3];
+            int iheight = inputShapeInfo[4];
+            int iwidth  = inputShapeInfo[5];
+            int dilationT = block.getIArguments()->at(9);
+            int dilationW = block.getIArguments()->at(10);
+            int dilationH = block.getIArguments()->at(11);
+            int kT = block.getIArguments()->at(0);
+            int kW = block.getIArguments()->at(1);
+            int kH = block.getIArguments()->at(2);
+            int dT = block.getIArguments()->at(3);
+            int dW = block.getIArguments()->at(4);
+            int dH = block.getIArguments()->at(5);
+            int pT = block.getIArguments()->at(6);
+            int pW = block.getIArguments()->at(7);
+            int pH = block.getIArguments()->at(8);
+
+            bool ceilMode = block.getIArguments()->at(12) != 0;
+            
+            int otime, oheight, owidth;
+            if (ceilMode) {
+                otime = (int)(nd4j::math::nd4j_ceil<T>((T)(itime - (dilationT * (kT - 1) + 1) + 2*pT) / dT)) + 1;
+                oheight = (int)(nd4j::math::nd4j_ceil<T>((T)(iheight - (dilationH * (kH - 1) + 1) + 2*pH) / dH)) + 1;
+                owidth  = (int)(nd4j::math::nd4j_ceil<T>((T)(iwidth  - (dilationW * (kW - 1) + 1) + 2*pW) / dW)) + 1;
+            } else {
+                otime = (int)(nd4j::math::nd4j_floor<T>((T)(itime - (dilationT * (kT - 1) + 1) + 2*pT) / dT)) + 1;
+                oheight = (int)(nd4j::math::nd4j_floor<T>((T)(iheight - (dilationH * (kH - 1) + 1) + 2*pH) / dH)) + 1;
+                owidth  = (int)(nd4j::math::nd4j_floor<T>((T)(iwidth  - (dilationW * (kW - 1) + 1) + 2*pW) / dW)) + 1;
+            }
+
+
+            int shapeInfoLength = rank*2 + 4;        
+            char order = (char)(inputShapeInfo[shapeInfoLength-1]);
+        
+            int* newShapeInfo0(nullptr), *newShapeInfo1(nullptr);
+            ALLOCATE(newShapeInfo0, block.getWorkspace(), shapeInfoLength, int);
+            ALLOCATE(newShapeInfo1, block.getWorkspace(), shapeInfoLength, int);
+
+            newShapeInfo0[0] = rank;
+            newShapeInfo0[1] = bS;
+            newShapeInfo0[2] = nslices;
+            newShapeInfo0[3] = otime;
+            newShapeInfo0[4] = oheight;
+            newShapeInfo0[5] = owidth;
+
+            shape::updateStrides(newShapeInfo0, order);
+
+            memcpy(newShapeInfo1, newShapeInfo0, shape::shapeInfoByteLength(newShapeInfo0));
+
+            return new ShapeList({newShapeInfo0, newShapeInfo1});
+
+        }   
+
 
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(maxpool3d_bp, 3, 1, true, 0, 13) {

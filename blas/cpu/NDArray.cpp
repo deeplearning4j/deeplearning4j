@@ -733,7 +733,7 @@ template <typename T>
         return array;
     }
 
-// method makes copy of this array and applies to the copy the transpose operation, this array remains unaffected 
+// method makes copy of this array and applies to the copy transpose operation, this array remains unaffected 
 template <typename T>
     NDArray<T>* NDArray<T>::transpose() const {
         int shapeInfoLength = shape::shapeInfoLength(rankOf());
@@ -784,6 +784,28 @@ template <typename T>
     return result;
         */
 }
+
+////////////////////////////////////////////////////////////////////////
+// method performs transpose operation based on this array and store result in target, this array remains unaffected 
+    template <typename T>
+    void NDArray<T>::transpose(NDArray<T>& target) const {
+        
+        int* correctShape = ShapeUtils<T>::evalTranspShapeInfo(*this);
+        if(!shape::equalsStrict(correctShape, target.getShapeInfo()))
+            throw "NDArray::transpose method: the shapeInfo of target array is wrong !";
+
+    // check whether target has allocated (its own) buffer
+    if (target._isBuffAlloc) 
+        RELEASE(target._buffer, target._workspace);
+
+    target._buffer = _buffer;
+    // don't forget to indicate that memory for new array was allocated
+    target._isBuffAlloc = false;
+    target._isView = true;
+
+    RELEASE(correctShape, _workspace);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // This method applies in-place transpose to this array, so this array becomes transposed 
@@ -1536,19 +1558,15 @@ template<typename T>
 template <typename T>
 bool NDArray<T>::permutei(const int* dimensions, const int rank) {
 
-    if(_buffer==nullptr || rank != rankOf())
-        return false;
-
     // check if current object is _shapeInfo owner
     if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-        int *shapeInfoNew;
-        ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
-        memcpy(shapeInfoNew, _shapeInfo, (rank * 2 + 4) * sizeof(int));
-        shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int *>(dimensions));
-        _shapeInfo = shapeInfoNew;
+        _shapeInfo = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this);    
         _isShapeAlloc = true;
-    } else
+    } else {
+        if (!nonNull() || rank != rankOf())
+            throw "NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!";
         shape::doPermuteShapeBuffer(rank, _shapeInfo, const_cast<int *>(dimensions));
+    }
 
     return true;
 }
@@ -1571,24 +1589,11 @@ bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
 template <typename T>
 NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) const {
 
-    if (_buffer==nullptr || rank != rankOf())
-        throw "Wrong arguments in permute method: either array is nullptr or rank is not suitable!";
-
-	int buffLength = lengthOf();
-	int shapeInfoLength = rankOf()*2 + 4;
-	// allocate memory for new array - buffer and shapeInfo
-
-    int* shapeInfoNew;
-    ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), int);
-
-	// copy this arrays  _shapeInfo into new array		
-	memcpy(shapeInfoNew, _shapeInfo, shapeInfoLength*sizeof(int));	
-	// perform buffer permutation	
-	shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));	
-
+    // evaluate shapeInfo for output (permuted) array ret
+    int* shapeInfoNew = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this);    
     // create array to be returned
-    NDArray<T>* ret = new NDArray<T>(this->_buffer, shapeInfoNew, _workspace);
-	// don't forget to indicate that memory for new array was allocated
+    NDArray<T>* ret = new NDArray<T>(_buffer, shapeInfoNew, _workspace);
+    // don't forget to indicate that memory for new array was allocated
     ret->_isBuffAlloc = false;
     ret->_isShapeAlloc = true;
 	ret->_isView = true;
@@ -1610,6 +1615,29 @@ NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) co
     return permute(vec);
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArray<T>::permute(const int* dimensions, const int rank, NDArray<T>& target) const {
+
+    if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf() )
+        throw "NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!";
+
+    // check whether target has allocated (its own) buffer
+    if (target._isBuffAlloc) 
+        RELEASE(target._buffer, target._workspace);
+
+    target._buffer = _buffer;
+    // don't forget to indicate that memory for new array was allocated
+    target._isBuffAlloc = false;
+    target._isView = true;
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArray<T>::permute(const std::vector<int>& dimensions, NDArray<T>& target) const {
+    permute(dimensions.data(), dimensions.size(), target);
+}
 
 //////////////////////////////////////////////////////////////////////////
 // tile an array by repeating it the number of times given by reps.

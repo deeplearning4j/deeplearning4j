@@ -154,6 +154,43 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
 }
 
 
+//////////////////////////////////////////////////////////////////////////
+// evaluate shapeInfo of permuted array
+    template<typename T>
+    int* ShapeUtils<T>::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray<T>& arr) {
+
+    if (!arr.nonNull() || rank != arr.rankOf())
+        throw "ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in permute method: either array is nullptr or rank is not suitable!";
+    
+    int shapeInfoLength = rank*2 + 4;
+    // allocate memory for new array - shapeInfo
+
+    int* shapeInfoNew = nullptr;
+    ALLOCATE(shapeInfoNew, arr.getWorkspace(), shapeInfoLength, int);
+    // copy arr _shapeInfo into new array       
+    memcpy(shapeInfoNew, arr.getShapeInfo(), shapeInfoLength*sizeof(int));  
+    // perform buffer permutation   
+    shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));      
+
+    return shapeInfoNew;
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+// evaluate shapeInfo of transposed array
+    template<typename T>
+    int* ShapeUtils<T>::evalTranspShapeInfo(const NDArray<T>& arr) {
+
+        int rank = arr.rankOf();
+        std::vector<int> dimensions(rank);
+        for (int i = 0; i < rank; ++i)
+            dimensions[i] = rank - 1 - i;
+
+        int* shapeInfoNew = evalPermShapeInfo(dimensions.data(), dimensions.size(), arr);
+
+        return shapeInfoNew;
+    }
+
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;

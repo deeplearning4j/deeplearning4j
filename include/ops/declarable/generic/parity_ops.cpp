@@ -800,7 +800,7 @@ namespace nd4j {
             ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int); 
             newShapeInfo[0] = rank;
             copy(outShape.begin(), outShape.end(), newShapeInfo+1);
-            shape::updateStrides(newShapeInfo, 'c');
+            shape::updateStrides(newShapeInfo, x->ordering());
 
             return new ShapeList(newShapeInfo);
         }

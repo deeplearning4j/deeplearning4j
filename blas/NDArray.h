@@ -176,6 +176,9 @@ namespace nd4j {
         NDArray<T>* permute(const std::vector<int>& dimensions) const;
         NDArray<T>* permute(const int* dimensions, const int rank) const;
 
+        void permute(const int* dimensions, const int rank, NDArray<T>& target) const;
+        void permute(const std::vector<int>& dimensions, NDArray<T>& target) const;
+
         // This method returns number of rows in this NDArray
         int rows() const {
             return shapeOf()[0];
@@ -280,6 +283,9 @@ namespace nd4j {
 
         // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
         NDArray<T> *transpose() const;
+
+        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
+        void transpose(NDArray<T>& target) const;
 
         // This method applies in-place transpose to this array, so this array becomes transposed 
         void transposei();

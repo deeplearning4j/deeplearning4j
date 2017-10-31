@@ -45,8 +45,6 @@ namespace nd4j {
         DECLARE_OP(multiply, 2, 1, true);
         DECLARE_OP(divide, 2, 1, true);
         DECLARE_OP(reversedivide, 2, 1, true);
-        DECLARE_OP(reshapeas, 2, 1, true);      // should become custom
-        DECLARE_OP(transpose, 1, 1, true);      // should become custom
         DECLARE_OP(zeros_as, 1, 1, false);
         DECLARE_OP(maximum, 2, 1, true);
         DECLARE_OP(minimum, 2, 1, true);
@@ -91,7 +89,12 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(upsampling2d, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(upsampling2d_bp, 2, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(tensormmul, 2, 1, false, 0, -1);   
-        DECLARE_CUSTOM_OP(repeat, 1, 1, true, 0, -1);   // should become custom
+        DECLARE_CUSTOM_OP(repeat, 1, 1, true, 0, -1);   
+        DECLARE_CUSTOM_OP(conv3d, 2, 1, false, 0, 7); 
+        DECLARE_CUSTOM_OP(maxpool3d, 1, 2, true, 0, 13); 
+        DECLARE_CUSTOM_OP(permute, 1, 1, true, 0, -1);   
+        DECLARE_CUSTOM_OP(reshapeas, 2, 1, true, 0, 0);      
+        DECLARE_CUSTOM_OP(transpose, 1, 1, true, 0, 0);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);
@@ -104,15 +107,11 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0);
         DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1);
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0);        
-        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);
-        DECLARE_CONFIGURABLE_OP(permute, 1, 1, true, 0, -1);   // MAYBE should become custom :/
+        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);        
         DECLARE_CONFIGURABLE_OP(sum, 1, 1, false, 0, -1);       // should become reduction
         DECLARE_CONFIGURABLE_OP(batchnorm, 1, 1, true, 4, 3);
-        DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);        
-        DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7); // make this custom
-        DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented
-
-        DECLARE_CONFIGURABLE_OP(maxpool3d, 1, 2, true, 0, 13); // make this one custom
+        DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                
+        DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented        
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
 
 

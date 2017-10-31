@@ -3,22 +3,37 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
-    namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-        OP_IMPL(transpose, 1, 1, true) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
+namespace ops {
 
-            if(block.isInplace()) {
-                x->transposei();
-                STORE_RESULT(*x);
-            }
-            else {
-                NDArray<T>* ret = x->transpose();
-                STORE_RESULT(*ret);
-            }
-            return ND4J_STATUS_OK;
+    //////////////////////////////////////////////////////////////////////////
+    CUSTOM_OP_IMPL(transpose, 1, 1, true, 0, 0) {
+        NDArray<T>* x = INPUT_VARIABLE(0);            
+        if(block.isInplace()) {
+            x->transposei();
+            STORE_RESULT(*x);
         }
+        else {
+            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            x->transpose(*output);
+            STORE_RESULT(*output);
+        }
+        return ND4J_STATUS_OK;
     }
+
+
+    DECLARE_SHAPE_FN(transpose) {
+    
+    int* outputShapeInfo = ShapeUtils<T>::evalTranspShapeInfo(*INPUT_VARIABLE(0));
+    return new ShapeList(outputShapeInfo);
+}
+
+
+
+
+
+
+}
 }
