@@ -3345,7 +3345,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String paramCount = "-";
             String in = "-";
             String out = "-";
-            String paramShape = "-";
+            StringBuilder paramShape = new StringBuilder("-");
             if (gvInputVertex.contains(currentVertex.getName())) {
                 if (inputTypes != null) vertexOutputs.put(currentVertexName, inputTypes[configuration.getNetworkInputs().indexOf(currentVertexName)]); //for input vertices the outputs are just the input types (only layer vertices have preprocessing?)
             } else {
@@ -3357,15 +3357,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 paramCount = String.valueOf(currentLayer.numParams());
                 //layer with params
                 if (currentLayer.numParams() > 0) {
-                    paramShape = "";
+                    paramShape = new StringBuilder();
 //                        in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()..getNIn());
 //                        out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer().getNOut());
                     List<String> paraNames = currentLayer.conf().initializer().paramKeys(currentLayer.conf());
                     for (String aP : paraNames) {
                         String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
-                        paramShape += aP + ":" + paramS + ", ";
+                        paramShape.append(aP).append(":").append(paramS).append(", ");
                     }
-                    paramShape = paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString();
+                    paramShape = new StringBuilder(paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString());
                 }
                 //frozen layer
                 if (currentLayer instanceof FrozenLayer) {
@@ -3375,36 +3375,44 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 if (inputTypes != null) {
-                    //get input type
-                    String inputVertexName = vertices[gvEdgesIn.get(currentVertex.getName())[0].getFromIndex()].getName();
-                    InputType currentInType = vertexOutputs.get(inputVertexName);
-                    inShape = currentInType.toString();
-                    inputTypeList.add(currentInType);
+                    //get input types
+                    Edge[] inputEdges = gvEdgesIn.get(currentVertexName);
+                    InputType[] inputs = new InputType[inputEdges.length];
+                    for(int i=0; i<inputEdges.length; i++ ){
+                        inputs[i] = vertexOutputs.get(inputEdges[i].getFromName());
+                    }
+//                    String inputVertexName = vertices[gvEdgesIn.get(currentVertex.getName())[0].getFromIndex()].getName();
+//                    InputType currentInType = vertexOutputs.get(inputVertexName);
+//                    inShape = currentInType.toString();
+//                    inputTypeList.add(currentInType);
+
+                    inShape = Arrays.toString(inputs);
 
                     org.deeplearning4j.nn.conf.layers.Layer l = configuration.getVertices().get(currentVertexName);
                     if(l != null){
                         InputPreProcessor layerVertexPreProcesor = l.getPreProcessor();
                         if (layerVertexPreProcesor != null) {
-                            inShape += "-->" + Arrays.toString(layerVertexPreProcesor.getOutputType(currentInType));
+                            inShape += "-->" + Arrays.toString(layerVertexPreProcesor.getOutputType(inputs));
                         }
                     }
-                }
-                currLayerIdx++;
-                if (inputTypes != null) {
+
+//                    InputType currentVertexOutputType = configuration.getVertices().get(currentVertexName)
+//                            .getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];
                     InputType currentVertexOutputType = configuration.getVertices().get(currentVertexName)
-                            .getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];
+                            .getOutputType(currLayerIdx, inputs)[0];    //TODO multiple outputs
                     outShape = currentVertexOutputType.toString();
                     vertexOutputs.put(currentVertexName, currentVertexOutputType);
                 }
+                currLayerIdx++;
             }
 
             //Add on to summary string
             if (inputTypes != null) {
                 ret += String.format("%-40s%-10s%-12s%-40s%-30s%-75s%-75s", currentVertexName + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape, connections, inShape, outShape);
+                        paramShape.toString(), connections, inShape, outShape);
             } else {
                 ret += String.format("%-40s%-10s%-12s%-40s%-30s", currentVertexName + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape, connections);
+                        paramShape.toString(), connections);
             }
             ret += "\n";
 

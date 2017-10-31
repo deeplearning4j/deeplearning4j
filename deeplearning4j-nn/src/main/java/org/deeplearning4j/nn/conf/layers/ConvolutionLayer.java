@@ -159,9 +159,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
         if (preProcessor != null) {
             inputType = preProcessor.getOutputType(inputType);
         }
-        if (inputType == null || inputType[0].getType() != InputType.Type.CNN) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         return new InputType[]{InputTypeUtil.getOutputTypeCnnLayers(inputType[0], kernelSize, stride, padding, dilation,

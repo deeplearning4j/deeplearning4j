@@ -669,6 +669,7 @@ public class GradientCheckTestsComputationGraph {
         graph.init();
 
         System.out.println(graph.getConfiguration().getTopologicalSortOrder());
+        System.out.println(graph.summary(InputType.convolutional(inH, inW, 2)));
 
         int[] minibatchSizes = {1, 3};
         for (int mb : minibatchSizes) {

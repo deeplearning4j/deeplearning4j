@@ -544,8 +544,6 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
 
             Layer gv = vertices.get(s);
 
-            List<InputType> inputTypeList = new ArrayList<>();
-
             //Add preprocessor, if necessary:
             int nInputs = vertexInputs.get(s).size();
             InputType[] layerInputs = new InputType[nInputs];
@@ -569,9 +567,10 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
             currLayerIdx++;
 
             InputType outputFromVertex =
-                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]))[0];  //TODO mulitple outputs
+                            gv.getOutputType(currLayerIdx, layerInputs)[0];  //TODO mulitple outputs
             vertexOutputs.put(s, outputFromVertex);
         }
+        System.out.println();
     }
 
     private Map<String, List<String>> verticesOutputTo() {
