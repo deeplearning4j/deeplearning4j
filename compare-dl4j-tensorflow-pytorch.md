@@ -72,7 +72,8 @@ Pros and Cons:
 * Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized.
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers.
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = sigmoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution.
-* From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools.
+* Google introduced *Eager*, [a dynamic computation graph module for TensorFlow](https://medium.com/@yaroslavvb/tensorflow-meets-pytorch-with-eager-mode-714cce161e6c), in October 2017.
+* From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools, given how Google developed services on top of Android, and the general lack of enterprise support.
 * Caveat: Not all operations in Tensorflow work as they do in Numpy.
 * [A Critique of Tensorflow](http://nicodjimenez.github.io/2017/10/08/tensorflow.html)
 * [Keras shoot-out: TensorFlow vs MXNet](https://medium.com/@julsimon/keras-shoot-out-tensorflow-vs-mxnet-51ae2b30a9c0)
