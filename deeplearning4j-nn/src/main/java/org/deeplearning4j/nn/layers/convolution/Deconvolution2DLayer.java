@@ -70,14 +70,11 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
         }
 
-        int outH = outSize[0];
-        int outW = outSize[1];
-
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, outH, outW);
+        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
+        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -148,13 +145,14 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
+        int outDepth = weights.size(0);
         int inDepth = weights.size(1);
 
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in SeparableConvolution2D layer (layer name = " + layerName
+            throw new DL4JInvalidInputException("Cannot do forward pass in Deconvolution2D layer (layer name = " + layerName
                     + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
                     + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
                     + Arrays.toString(input.shape()) + "; expected" + " input depth = " + inDepth + ") "
@@ -205,8 +203,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         }
 
         int miniBatch = input.size(0);
-        INDArray output = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
-        INDArray reshapedOutput = output.reshape('c', miniBatch, inDepth, outH, outW);
+        INDArray output = Nd4j.createUninitialized(miniBatch * outDepth * outH * outW);
+        INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
