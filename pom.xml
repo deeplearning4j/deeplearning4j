@@ -267,7 +267,9 @@
                         <groupId>com.lewisd</groupId>
                         <artifactId>lint-maven-plugin</artifactId>
                         <versionRange>[0.0.11,)</versionRange>
-                        <goal>check</goal>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
                       </pluginExecutionFilter>
                       <action>
                         <ignore/>
