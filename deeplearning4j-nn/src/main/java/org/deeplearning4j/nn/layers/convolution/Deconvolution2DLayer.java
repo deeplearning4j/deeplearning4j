@@ -73,7 +73,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
+        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
@@ -203,10 +203,29 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         }
 
         int miniBatch = input.size(0);
-        INDArray output = Nd4j.createUninitialized(miniBatch * outDepth * outH * outW);
+        INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);
         INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
+
+        System.out.println("kernel shape:");
+        System.out.println(Arrays.toString(kernel));
+        System.out.println("padding shape:");
+        System.out.println(Arrays.toString(pad));
+        System.out.println("dilation shape:");
+        System.out.println(Arrays.toString(dilation));
+        System.out.println("Conv mode:");
+        System.out.println(convolutionMode.toString());
+
+
+        System.out.println("Input shape:");
+        System.out.println(Arrays.toString(input.shape()));
+        System.out.println("Output shape:");
+        System.out.println(Arrays.toString(reshapedOutput.shape()));
+        System.out.println("Weights shape:");
+        System.out.println(Arrays.toString(weights.shape()));
+        System.out.println("Bias shape:");
+        System.out.println(Arrays.toString(bias.shape()));
 
         int[] args = new int[] {
                 kH, kW, strides[0], strides[1],
