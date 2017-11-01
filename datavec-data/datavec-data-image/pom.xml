@@ -112,6 +112,12 @@
             <version>${leptonica.version}-${javacpp-presets.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>hdf5-platform</artifactId>
+            <version>${hdf5.version}-${javacpp-presets.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
