@@ -757,4 +757,83 @@ TEST_F(ConvolutionTests, TestSconvCrash_max_2) {
     delete result;
 }
 
+TEST_F(ConvolutionTests, TestDeconv_bp_1) {
+    double _expb[] = {  35.f,   38.f,   41.f,   44.f,   47.f,   50.f,   53.f,   56.f,   59.f,   62.f,   65.f,    68.f,   71.f,   74.f,   77.f,   80.f,   71.f,   78.f,   85.f,   92.f,   99.f,  106.f,    113.f,  120.f,  127.f,  134.f,  141.f,  148.f,  155.f,  162.f,  169.f,  176.f,  107.f,    118.f,  129.f,  140.f,  151.f,  162.f,  173.f,  184.f,  195.f,  206.f,  217.f,  228.f,    239.f,  250.f,  261.f,  272.f,  131.f,  134.f,  137.f,  140.f,  143.f,  146.f,  149.f,    152.f,  155.f,  158.f,  161.f,  164.f,  167.f,  170.f,  173.f,  176.f,  295.f,  302.f,    309.f,  316.f,  323.f,  330.f,  337.f,  344.f,  351.f,  358.f,  365.f,  372.f,  379.f,    386.f,  393.f,  400.f,  459.f,  470.f,  481.f,  492.f,  503.f,  514.f,  525.f,  536.f,    547.f,  558.f,  569.f,  580.f,  591.f,  602.f,  613.f,  624.f,  227.f,  230.f,  233.f,    236.f,  239.f,  242.f,  245.f,  248.f,  251.f,  254.f,  257.f,  260.f,  263.f,  266.f,    269.f,  272.f,  519.f,  526.f,  533.f,  540.f,  547.f,  554.f,  561.f,  568.f,  575.f,    582.f,  589.f,  596.f,  603.f,  610.f,  617.f,  624.f,  811.f,  822.f,  833.f,  844.f,    855.f,  866.f,  877.f,  888.f,  899.f,  910.f,  921.f,  932.f,  943.f,  954.f,  965.f,    976.f,};
+    NDArray<double> expEpsilon('c', {3, 3, 4, 4});
+    expEpsilon.setBuffer(_expb);
+
+    double _expwb[] = { 160008.f,  203400.f,  191112.f,  246792.f,  222216.f,  290184.f,};
+    NDArray<double> expGradW('c', {3, 2, 1, 1});
+    expGradW.setBuffer(_expwb);
+
+    double _expbb[] = {1944.f,  2712.f};
+    NDArray<double> expGradB('c', {1, 2});
+    expGradB.setBuffer(_expbb);
+
+    NDArray<double> input('c', {3, 3, 4, 4});
+    NDArray<double> bias('c', {1, 2});
+    NDArray<double> weights('c',{3, 2, 1, 1});
+    NDArray<double> epsilon('c', {3, 2, 4, 4});
+
+    /*
+        Input shape (3, 3, 4, 4)
+        Weights shape (3, 2, 1, 1)
+        Epsilon shape (3, 2, 4, 4)
+     */
+
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
+    NDArrayFactory<double>::linspace(1, bias);
+    NDArrayFactory<double>::linspace(1, epsilon);
+
+    nd4j::ops::deconv2d_bp<double> op;
+
+    auto result = op.execute({&input, &weights, &bias, &epsilon}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto expNext = result->at(0);
+
+    ASSERT_TRUE(expEpsilon.isSameShape(expNext));
+    ASSERT_TRUE(expEpsilon.equalsTo(expNext));
+
+    auto gradW = result->at(1);
+
+    ASSERT_TRUE(expGradW.isSameShape(gradW));
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+
+    auto gradB = result->at(2);
+
+    ASSERT_TRUE(expGradB.isSameShape(gradB));
+    ASSERT_TRUE(expGradB.equalsTo(gradB));
+
+}
+
+TEST_F(ConvolutionTests, TestDeconv_ff_2) {
+
+    double expB[] = {218.f,   227.f,   236.f,   245.f,   254.f,   263.f,   272.f,   281.f,   290.f,   299.f,    308.f,   317.f,   326.f,   335.f,   344.f,   353.f,   270.f,   282.f,   294.f,   306.f,    318.f,   330.f,   342.f,   354.f,   366.f,   378.f,   390.f,   402.f,   414.f,   426.f,    438.f,   450.f,   650.f,   659.f,   668.f,   677.f,   686.f,   695.f,   704.f,   713.f,    722.f,   731.f,   740.f,   749.f,   758.f,   767.f,   776.f,   785.f,   846.f,   858.f,    870.f,   882.f,   894.f,   906.f,   918.f,   930.f,   942.f,   954.f,   966.f,   978.f,    990.f,  1002.f,  1014.f,  1026.f,  1082.f,  1091.f,  1100.f,  1109.f,  1118.f,  1127.f,    1136.f,  1145.f,  1154.f,  1163.f,  1172.f,  1181.f,  1190.f,  1199.f,  1208.f,  1217.f,    1422.f,  1434.f,  1446.f,  1458.f,  1470.f,  1482.f,  1494.f,  1506.f,  1518.f,  1530.f,    1542.f,  1554.f,  1566.f,  1578.f,  1590.f,  1602.f,};
+
+    NDArray<double> exp('c', {3, 2, 4, 4});
+    exp.setBuffer(expB);
+
+    NDArray<double> input('c', {3, 3, 4, 4});
+    NDArray<double> weights('c',{3, 2, 1, 1});
+    NDArray<double> bias('c', {1, 2});
+
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
+    NDArrayFactory<double>::linspace(1, bias);
+
+    nd4j::ops::deconv2d<double> op;
+
+    auto result = op.execute({&input, &weights, &bias}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H

@@ -19,7 +19,7 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should be 4D, but got %iD instead", input->rankOf());
             REQUIRE_TRUE(weights->rankOf() == 4, 0, "Weights should be 4D, but got %iD instead", weights->rankOf());
 
-            int oD = weights->sizeAt(0);
+            int oD = weights->sizeAt(1);
 
             if (bias != nullptr) {
                 REQUIRE_TRUE(bias->isVector(), 0, "Bias should be vector");
@@ -29,17 +29,17 @@ namespace nd4j {
             int iY = input->sizeAt(2);
             int iX = input->sizeAt(3);
 
-            int kY = block.getIArguments()->at(0);
-            int kX = block.getIArguments()->at(1);
-            int sY = block.getIArguments()->at(2);
-            int sX = block.getIArguments()->at(3);
-            int pY = block.getIArguments()->at(4);
-            int pX = block.getIArguments()->at(5);
-            int dY = block.getIArguments()->at(6);
-            int dX = block.getIArguments()->at(7);
+            int kY = INT_ARG(0);
+            int kX = INT_ARG(1);
+            int sY = INT_ARG(2);
+            int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
+            int dY = INT_ARG(6);
+            int dX = INT_ARG(7);
             const bool isSameMode = block.getIArguments()->at(8) != 0;
 
-            NDArray<T> *z = this->getZ(block);
+            NDArray<T> *z = OUTPUT_VARIABLE(0);
 
             int oY = z->sizeAt(2);
             int oX = z->sizeAt(3);
@@ -71,13 +71,13 @@ namespace nd4j {
             int iY = shape::shapeOf(inShape)[2];
             int iX = shape::shapeOf(inShape)[3];
 
-            int oC = shape::shapeOf(wShape)[0];
-            int kY = block.getIArguments()->at(0);
-            int kX = block.getIArguments()->at(1);
-            int sY = block.getIArguments()->at(2);
-            int sX = block.getIArguments()->at(3);
-            int pY = block.getIArguments()->at(4);
-            int pX = block.getIArguments()->at(5);
+            int oC = shape::shapeOf(wShape)[1];
+            int kY = INT_ARG(0);
+            int kX = INT_ARG(1);
+            int sY = INT_ARG(2);
+            int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
 
             int oY = sY * (iY - 1) + kY - 2 * pY;
             int oX = sX * (iX - 1) + kX - 2 * pX;
@@ -94,49 +94,49 @@ namespace nd4j {
         CUSTOM_OP_IMPL(deconv2d_bp, 4, 2, false, 0, 9) {
             NDArray<T> *input = INPUT_VARIABLE(0);
             NDArray<T> *weights = INPUT_VARIABLE(1);
-            NDArray<T> *epsilonNext = INPUT_VARIABLE(2);
             NDArray<T> *bias = nullptr;
+            NDArray<T> *epsilonNext = nullptr; //INPUT_VARIABLE(2);
+
+            REQUIRE_TRUE(block.width() >= 3, 0, "deconv2d_bp: Number of input variables should be 3 or 4, but got %i instead", block.width());
 
             // bias is still optional
-            if (block.width() > 3)
-                bias = INPUT_VARIABLE(3);
+            if (block.width() == 4) {
+                bias = INPUT_VARIABLE(2);
+                epsilonNext = INPUT_VARIABLE(3);
+            } else if (block.width() == 3) {
+                epsilonNext = INPUT_VARIABLE(2);
+            }
+
+            REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "epsilon should have rank of 4, but got %i instead", epsilonNext->rankOf());
 
             //epsilonNext->rankOf() == 4 && weights->rankOf() == 4
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should be 4D, but got %iD instead", input->rankOf());
             REQUIRE_TRUE(weights->rankOf() == 4, 0, "Weights should be 4D, but got %iD instead", weights->rankOf());
             REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "Epsilon should be 4D, but got %iD instead", epsilonNext->rankOf());
 
-            int kY = block.getIArguments()->at(0);
-            int kX = block.getIArguments()->at(1);
-            int sY = block.getIArguments()->at(2);
-            int sX = block.getIArguments()->at(3);
-            int pY = block.getIArguments()->at(4);
-            int pX = block.getIArguments()->at(5);
-            int dY = block.getIArguments()->at(6);
-            int dX = block.getIArguments()->at(7);
+            int kY = INT_ARG(0);
+            int kX = INT_ARG(1);
+            int sY = INT_ARG(2);
+            int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
+            int dY = INT_ARG(6);
+            int dX = INT_ARG(7);
             const bool isSameMode = block.getIArguments()->at(8) != 0;
 
-            NDArray<T>* epsilon = this->getZ(block);
-            NDArray<T>* gradW = this->getZ(block, 1);
+            NDArray<T>* epsilon = OUTPUT_VARIABLE(0);
+            NDArray<T>* gradW = OUTPUT_VARIABLE(1);
             NDArray<T>* gradB = nullptr;
 
             if (bias != nullptr)
-                gradB = this->getZ(block, 2);
+                gradB = OUTPUT_VARIABLE(2);
 
             // epsilon for deconv2d is FF conv pass
 
             nd4j::ops::conv2d<T> op;
-            Nd4jStatus r1 = op.execute({input, weights}, {epsilon}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, block.getIArguments()->at(8)});
+            Nd4jStatus r1 = op.execute({epsilonNext, weights}, {epsilon}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, block.getIArguments()->at(8)});
             if (r1 != ND4J_STATUS_OK)
                 return r1;
-
-            // gradW is im2col + tensorDot
-            /*
-              col = conv.im2col_cpu(
-            x, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
-            cover_all=self.cover_all)
-             gW = numpy.tensordot(gy, col, ((0, 2, 3), (0, 4, 5))).
-             */
 
             int oY = 0;
             int oX = 0;
@@ -150,13 +150,8 @@ namespace nd4j {
             }
 
             std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
-            auto gcol = new NDArray<T>('c', {input->sizeAt(0), input->sizeAt(1), kY, kX, oY, oX });
+            auto gcol = new NDArray<T>('c', {input->sizeAt(0), weights->sizeAt(1), kY, kX, oY, oX });
             epsilonNext->template applyTransform<simdOps::Im2col<T>>(gcol, extrasIm2Col.data());
-
-            /*
-            gW = numpy.tensordot(
-                    gy, col, ((0, 2, 3), (0, 4, 5))).
-            */
 
             auto gW = NDArrayFactory<T>::tensorDot(input, gcol, {0, 2, 3}, {0, 4, 5});
             gradW->assign(gW);
@@ -165,7 +160,7 @@ namespace nd4j {
             delete gcol;
 
             if (gradB != nullptr) {
-                auto sum = epsilon->template reduceAlongDimension<simdOps::Sum<T>>({0, 2, 3});
+                auto sum = epsilonNext->template reduceAlongDimension<simdOps::Sum<T>>({0, 2, 3});
                 gradB->assign(sum);
                 delete sum;
 
@@ -182,12 +177,16 @@ namespace nd4j {
         DECLARE_SHAPE_FN(deconv2d_bp) {
             auto inShape = inputShape->at(0);
             auto wShape = inputShape->at(1);
-            auto eShape = inputShape->at(2);
-            int *bShape = nullptr;
+            int* eShape = nullptr;
+            int* bShape = nullptr;
 
             // bias is optional thing, and might be absent
-            if (inputShape->size() == 4)
-                bShape = inputShape->at(3);
+            if (inputShape->size() == 4) {
+                bShape = inputShape->at(2);
+                eShape = inputShape->at(3);
+            } else {
+                eShape = inputShape->at(2);
+            }
 
             int *newInShape;
             int *newWShape;
