@@ -1,7 +1,11 @@
-package org.nd4j.tools;
+package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.tools.BTools;
+import org.nd4j.tools.InfoLine;
+import org.nd4j.tools.InfoValues;
+import org.nd4j.tools.SIS;
 
 
 /**
@@ -12,11 +16,11 @@ import org.nd4j.linalg.dataset.DataSet;
  * @author clavvis 
  */
 
-public class DL4JTools {
+public class DataSetUtils {
 	//
 	private SIS sis;
 	//
-	public DL4JTools(
+	public DataSetUtils(
 			SIS sis,
 			String superiorModuleCode
 			) {

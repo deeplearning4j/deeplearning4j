@@ -22,9 +22,11 @@ package org.nd4j.linalg.api.ops;
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.Buffer;
@@ -167,25 +169,58 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public void setX(INDArray x) {
-        if (x == null)
-            throw new IllegalArgumentException("X must not be null");
-        this.x = x;
+        if (x == null) {
+            if(args != null && args.length >= 1) {
+                DifferentialFunction firstArg = args()[0];
+                if(firstArg instanceof SDVariable) {
+                    SDVariable sdVariable = (SDVariable) firstArg;
+                    if(sdVariable.getArr() != null)
+                        this.x = sdVariable.getArr();
+                }
+            }
+            else
+                throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
+        }
+        else
+            this.x = x;
         numProcessed = 0;
     }
 
     @Override
     public void setZ(INDArray z) {
-        if (z == null)
-            throw new IllegalArgumentException("Z must not be null");
-        this.z = z;
+        if (z == null) {
+            SDVariable getResult = sameDiff.getVariableForVertexId(vertexId);
+            if(getResult != null) {
+                if(getResult.getArr() != null)
+                    this.z = getResult.getArr();
+                else
+                    throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
+
+            }
+            else
+                throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
+        }
+        else
+            this.z = z;
         numProcessed = 0;
     }
 
     @Override
     public void setY(INDArray y) {
-        if (y == null)
-            throw new IllegalArgumentException("Y must not be null");
-        this.y = y;
+        if (y == null) {
+            if(args != null && args.length > 1) {
+                DifferentialFunction firstArg = args()[1];
+                if(firstArg instanceof SDVariable) {
+                    SDVariable sdVariable = (SDVariable) firstArg;
+                    if(sdVariable.getArr() != null)
+                        this.y = sdVariable.getArr();
+                }
+            }
+            else
+                throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
+        }
+        else
+            this.y = y;
         numProcessed = 0;
     }
 

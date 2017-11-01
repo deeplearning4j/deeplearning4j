@@ -7,7 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -67,16 +67,11 @@ public class If extends DifferentialFunction implements CustomOp {
         this.trueBody = trueBody;
         this.falseBody = falseBody;
         this.blockName = blockName;
-        this.vertexId = new int[] {parent.graph().nextVertexId()};
-        this.dummyResult = SDVariable.builder()
-        .varName("dummyresult-" + UUID.randomUUID().toString())
-                .sameDiff(parent).shape(new int[]{1,1}).vertexId(vertexId)
-                .build();
-
-        NDArrayVertex dummyVertex = new NDArrayVertex(parent,this.vertexId[0],0,dummyResult);
-        dummyResult.setVertex(dummyVertex);
-        parent.graph().addVertex(dummyVertex);
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1});
+        this.dummyResult.setDifferentialFunction(this);
+        NDArrayVertex dummyVertex = dummyResult.getVertex();
         this.vertex = dummyVertex;
+        this.vertexId = new int[] {dummyVertex.vertexID()};
         int[] inputEdges = new int[inputVars.length];
         String[] opEdgeIds = new String[inputVars.length * 2];
 
@@ -110,7 +105,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.loopBodyExecution = parent.defineFunction(trueBodyName,trueBody,inputVars);
         this.falseBodyExecution = parent.defineFunction(falseBodyName,falseBody,inputVars);
         parent.defineFunction(blockName,conditionBody,inputVars);
-        parent.getSameDiffFunctionInstances().put("predicate-eval-body",sameDiff);
+        parent.putSubFunction("predicate-eval-body",sameDiff);
         //get a reference to the actual loop body
         this.loopBodyExecution = parent.getFunction(trueBodyName);
 

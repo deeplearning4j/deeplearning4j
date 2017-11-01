@@ -6,7 +6,7 @@ import lombok.Data;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -96,13 +96,13 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
     @Override
-    public Zero zero(int[] shape) {
-        return sameDiff().setupFunction(new Zero(sameDiff(),shape,new int[]{sameDiff().graph().nextVertexId()}));
+    public SDVariable zero(int[] shape) {
+        return sameDiff().setupFunction(sameDiff.zero("one-" + UUID.randomUUID().toString(),shape));
     }
 
     @Override
-    public Ones one(int[] shape) {
-        return sameDiff().setupFunction(new Ones(sameDiff(),shape,new int[]{ sameDiff.graph().nextVertexId()}));
+    public SDVariable one(int[] shape) {
+        return sameDiff().setupFunction(sameDiff.one("one-" + UUID.randomUUID().toString(),shape));
     }
 
     @Override
@@ -982,13 +982,21 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         List<Integer> inputIdsList = new ArrayList<>();
         for (int i = 0; i < inputs.length; i++) {
             DifferentialFunction differentialFunction = inputs[i];
-            List<DifferentialFunction> outputs = differentialFunction.outputs();
-            for (DifferentialFunction output : outputs) {
-                for (int vertexId : output.getOutputVertexIds()) {
-                    if (!inputIdsList.contains(vertexId))
-                        inputIdsList.add(vertexId);
+            if(differentialFunction instanceof SDVariable || differentialFunction.outputs().size() == 1 && differentialFunction.outputs().get(0) == differentialFunction) {
+                inputIdsList.addAll(Ints.asList(differentialFunction.vertexId));
+            }
+            else {
+                List<DifferentialFunction> outputs = differentialFunction.outputs();
+                for (DifferentialFunction output : outputs) {
+                    if(output == differentialFunction)
+                        continue;
+                    for (int vertexId : output.getOutputVertexIds()) {
+                        if (!inputIdsList.contains(vertexId))
+                            inputIdsList.add(vertexId);
+                    }
                 }
             }
+
 
         }
 
@@ -1002,6 +1010,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
             outputs[i] = variable.getVertex();
             outputFunctions[i] = variable;
         }
+
 
         int[] inputIds = Ints.toArray(inputIdsList);
 
@@ -1079,9 +1088,8 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
     public void validateFunctionReference(DifferentialFunction reference) {
-        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId())) {
-            DifferentialFunction get = sameDiff.getFunctionInstances()
-                    .get(reference.getVertexId());
+        if(sameDiff.getFunctionForVertexId(reference.getVertexId()) != null) {
+            DifferentialFunction get = sameDiff.getFunctionForVertexId(reference.getVertexId());
             Preconditions.checkState(reference.equals(get), "Found invalid reference " + reference + " for vertex id "
                     + reference.getVertexId());
         }

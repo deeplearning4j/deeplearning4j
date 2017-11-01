@@ -1,19 +1,15 @@
-package org.nd4j.tools2;
+package org.nd4j.linalg.util;
 
-import org.nd4j.tools.SIS;
-import org.nd4j.tools.DL4JTools;
-
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.tools.SIS;
 
-
-import org.junit.After;
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -23,7 +19,7 @@ import static org.junit.Assert.*;
  * @author clavvis
  */
 
-public class DL4JToolsTest {
+public class DataSetUtilsTest {
 	//
 	@Rule
 	public TemporaryFolder tmpFld = new TemporaryFolder();
@@ -46,7 +42,7 @@ public class DL4JToolsTest {
 		//
 		DataSet ds = new DataSet( in_INDA, ot_INDA );
 		//
-		DL4JTools dl4jt = new DL4JTools( sis, "TEST" );
+		DataSetUtils dl4jt = new DataSetUtils( sis, "TEST" );
 		//
 		dl4jt.showDataSet( mtLv, "ds", ds, 2, 2, 20, 20 );
 		//

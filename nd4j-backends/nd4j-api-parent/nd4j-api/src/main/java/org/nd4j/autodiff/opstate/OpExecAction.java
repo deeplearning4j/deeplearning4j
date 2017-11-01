@@ -2,7 +2,7 @@ package org.nd4j.autodiff.opstate;
 
 import lombok.Builder;
 import lombok.Data;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 
 import java.io.Serializable;
 import java.util.Arrays;

@@ -1,16 +1,13 @@
 package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,6 +15,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Basic implementation for CustomOp
@@ -216,7 +214,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public static class SameDiffBuilder extends DynamicCustomOpsBuilder {
         private SameDiff sameDiff;
         private List<DifferentialFunction> args = new ArrayList<>();
-
+        private List<DifferentialFunction> outputs = new ArrayList<>();
         private SameDiffBuilder(String opName,SameDiff sameDiff) {
             this(opName,sameDiff,0,0,0,false,0,0);
         }
@@ -252,7 +250,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         public DynamicCustomOpsBuilder addOutputs(DifferentialFunction... outputs) {
-            throw new UnsupportedOperationException("Unable to add direct ndarrays. Please use the normal builder for that.");
+            this.outputs.addAll(Arrays.asList(outputs));
+            return this;
 
         }
 
@@ -263,7 +262,20 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             ret.setArgs(args.toArray(new DifferentialFunction[args.size()]));
             ret.setSameDiff(sameDiff);
             ret.outputShapes = outputShapes;
-            //ret.addEdges(sameDiff,opName, Op.Type.CUSTOM,null);
+            if(outputs.isEmpty() && !outputShapes.isEmpty()) {
+                for (int i = 0; i < outputShapes.size(); i++) {
+                   outputs.add(sameDiff.var(sameDiff.generateVariableName(
+                           "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
+                           false,ret.args),outputShapes.get(i)));
+                }
+
+            }
+
+            ret.outputFunctions = outputs.toArray(new DifferentialFunction[outputs.size()]);
+            ret.outputs = new NDArrayVertex[ret.outputFunctions.length];
+            for(int i = 0; i < ret.outputs.length; i++) {
+                ret.outputs[i] = ret.outputFunctions[i].getVertex();
+            }
             return ret;
         }
     }
@@ -484,6 +496,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             result.inplaceCall = inplaceCall;
             result.hash = opHash;
             result.outputShapes = outputShapes;
+
             return result;
         }
     }

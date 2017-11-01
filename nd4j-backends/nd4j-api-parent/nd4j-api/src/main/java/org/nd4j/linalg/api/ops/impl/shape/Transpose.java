@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.Collections;
@@ -38,7 +39,7 @@ import java.util.List;
  */
 public class Transpose extends ShapeOp {
     public Transpose(SameDiff sameDiff, DifferentialFunction i_v) {
-        super(sameDiff, i_v, false);
+        super(sameDiff, i_v, ArrayUtil.reverseCopy(i_v.getShape()),false,null);
     }
 
     public Transpose() {}

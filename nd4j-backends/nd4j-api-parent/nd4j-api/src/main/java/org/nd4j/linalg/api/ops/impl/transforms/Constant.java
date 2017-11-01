@@ -4,13 +4,14 @@ import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class Constant extends BaseTransformOp {
@@ -110,9 +111,8 @@ public class Constant extends BaseTransformOp {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         f().validateDifferentialFunctionsameDiff(i_v);
-        Zero ret = new Zero(sameDiff,shape,new int[]{sameDiff.graph().nextVertexId()});
-        DifferentialFunction add = ret;
-        return Arrays.asList(add);
+        return Collections.<DifferentialFunction> singletonList(sameDiff.zero("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+
     }
 
     @Override

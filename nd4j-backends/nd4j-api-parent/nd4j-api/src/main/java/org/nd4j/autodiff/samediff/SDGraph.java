@@ -9,7 +9,6 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;

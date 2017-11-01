@@ -15,7 +15,8 @@ import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
@@ -200,6 +201,12 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         if(!frozen && Arrays.equals(edge.getFrom(),edge.getTo()))
             throw new IllegalArgumentException("No cycles allowed");
+
+        if(edge.getFrom() == null || edge.getFrom().length < 1)
+            throw new ND4JIllegalStateException("From must contain vertices.");
+
+        if(edge.getTo() == null || edge.getTo().length < 1)
+            throw new ND4JIllegalStateException("From must contain vertices.");
 
         for(int i : edge.getFrom())
             if (i <= 0)

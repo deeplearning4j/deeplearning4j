@@ -63,6 +63,11 @@ public abstract class ShapeOp extends BaseOp {
         return ret;
     }
 
+    @Override
+    public Type opType() {
+        return Type.SHAPE;
+    }
+
     /**
      * An op for one ndarray
      *

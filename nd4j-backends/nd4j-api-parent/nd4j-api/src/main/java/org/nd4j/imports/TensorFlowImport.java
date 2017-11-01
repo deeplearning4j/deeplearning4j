@@ -7,17 +7,14 @@ import com.google.protobuf.TextFormat;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.graph.intermediate.*;
 import org.nd4j.imports.converters.TensorFlowMapper;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -81,7 +78,6 @@ public class TensorFlowImport {
 
         SameDiff diff = SameDiff.builder()
                 .graph(graph)
-                .vertexToArray(Maps.<String, INDArray>newHashMap())
                 .variableMap(Maps.<String, SDVariable>newHashMap())
                 .build();
 
