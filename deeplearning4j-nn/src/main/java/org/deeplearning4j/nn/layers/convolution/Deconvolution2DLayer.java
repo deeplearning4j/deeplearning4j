@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -45,6 +46,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + layerId());
         }
 
+        INDArray bias;
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
@@ -61,17 +63,17 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, null, convolutionMode, dilation);
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
         }
 
         int outH = outSize[0];
         int outW = outSize[1];
 
-//        INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
+        INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
@@ -84,19 +86,36 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
 
-        CustomOp op = DynamicCustomOp.builder("deconv2d_bp")
-                .addInputs(input, weights, epsilon)
-                .addIntegerArguments(args)
-                .addOutputs(reshapedEpsilon, weightGradView)
-                .callInplace(false)
-                .build();
+        INDArray delta;
+        IActivation afn = layerConf().getActivationFn();
+        Pair<INDArray, INDArray> p = preOutput4d(true, true);
+        delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
+        CustomOp op;
+        if(layerConf().hasBias()){
+
+            bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, true);
+
+            op = DynamicCustomOp.builder("deconv2d_bp")
+                    .addInputs(input, delta, weights, bias)
+                    .addIntegerArguments(args)
+                    .addOutputs(reshapedEpsilon, weightGradView, biasGradView)
+                    .callInplace(false)
+                    .build();
+        } else {
+            op = DynamicCustomOp.builder("deconv2d_bp")
+                    .addInputs(input, delta, weights)
+                    .addIntegerArguments(args)
+                    .addOutputs(reshapedEpsilon, weightGradView)
+                    .callInplace(false)
+                    .build();
+        }
         Nd4j.getExecutioner().exec(op);
 
         Gradient retGradient = new DefaultGradient();
-//        if(layerConf().hasBias()){
-//            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
-//        }
+        if(layerConf().hasBias()){
+            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+        }
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
         weightNoiseParams.clear();
 
@@ -151,12 +170,12 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
                     strides, dilation );
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
         int outH = outSize[0];
@@ -196,13 +215,22 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
 
-        CustomOp op = DynamicCustomOp.builder("deconv2d")
-                .addInputs(input, weights)
-                .addIntegerArguments(args)
-                .addOutputs(reshapedOutput)
-                .callInplace(false)
-                .build();
-
+        CustomOp op;
+        if (layerConf().hasBias()) {
+            op = DynamicCustomOp.builder("deconv2d")
+                    .addInputs(input, weights, bias)
+                    .addIntegerArguments(args)
+                    .addOutputs(reshapedOutput)
+                    .callInplace(false)
+                    .build();
+        } else {
+            op = DynamicCustomOp.builder("deconv2d")
+                    .addInputs(input, weights)
+                    .addIntegerArguments(args)
+                    .addOutputs(reshapedOutput)
+                    .callInplace(false)
+                    .build();
+        }
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(reshapedOutput, null);
