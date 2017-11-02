@@ -9,8 +9,8 @@ namespace nd4j {
     nd4j::Environment::Environment() {
         _tadThreshold.store(1);
         _elementThreshold.store(32);
-        _verbose.store(true);
-        _debug.store(true);
+        _verbose.store(false);
+        _debug.store(false);
     }
 
     nd4j::Environment::~Environment() {
