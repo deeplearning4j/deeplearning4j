@@ -10,7 +10,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -95,7 +95,7 @@ public class Deconvolution2D extends ConvolutionLayer {
 
     @Override
     public ParamInitializer initializer() {
-        return ConvolutionParamInitializer.getInstance();
+        return DeconvolutionParamInitializer.getInstance();
     }
 
     @Override

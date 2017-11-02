@@ -7,8 +7,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -47,13 +46,14 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         }
 
         INDArray bias;
-        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
+        INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int inDepth = weights.size(1);
+        int inDepth = weights.size(0);
+
         int kH = weights.size(2);
         int kW = weights.size(3);
 
@@ -70,8 +70,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
         }
 
-        INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
-        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);
+        INDArray biasGradView = gradientViews.get(DeconvolutionParamInitializer.BIAS_KEY);
+        INDArray weightGradView = gradientViews.get(DeconvolutionParamInitializer.WEIGHT_KEY);
 
         INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
@@ -88,20 +88,32 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         Pair<INDArray, INDArray> p = preOutput4d(true, true);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
+
+        System.out.println("weight shape:");
+        System.out.println(Arrays.toString(weights.shape()));
+        System.out.println("weight grad shape:");
+        System.out.println(Arrays.toString(weightGradView.shape()));
+        System.out.println("bias grad shape:");
+        System.out.println(Arrays.toString(biasGradView.shape()));
+        System.out.println("input epsilon shape:");
+        System.out.println(Arrays.toString(epsilon.shape()));
+        System.out.println("output epsilon shape:");
+        System.out.println(Arrays.toString(reshapedEpsilon.shape()));
+
         CustomOp op;
         if(layerConf().hasBias()){
 
-            bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, true);
+            bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true);
 
             op = DynamicCustomOp.builder("deconv2d_bp")
-                    .addInputs(input, delta, weights, bias)
+                    .addInputs(input, weights, bias, delta)
                     .addIntegerArguments(args)
                     .addOutputs(reshapedEpsilon, weightGradView, biasGradView)
                     .callInplace(false)
                     .build();
         } else {
             op = DynamicCustomOp.builder("deconv2d_bp")
-                    .addInputs(input, delta, weights)
+                    .addInputs(input, weights, delta)
                     .addIntegerArguments(args)
                     .addOutputs(reshapedEpsilon, weightGradView)
                     .callInplace(false)
@@ -111,10 +123,12 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         Gradient retGradient = new DefaultGradient();
         if(layerConf().hasBias()){
-            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+            retGradient.setGradientFor(DeconvolutionParamInitializer.BIAS_KEY, biasGradView);
         }
-        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
+        retGradient.setGradientFor(DeconvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
         weightNoiseParams.clear();
+
+        reshapedEpsilon = reshapedEpsilon.permute(1, 0, 2 , 3);
 
         return new Pair<>(retGradient, reshapedEpsilon);
     }
@@ -127,8 +141,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop) {
 
-        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
-        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
+        INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, training);
+        INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, training);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
@@ -145,8 +159,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
-        int outDepth = weights.size(0);
-        int inDepth = weights.size(1);
+        int inDepth = weights.size(0);
+        int outDepth = weights.size(1);
 
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
@@ -208,24 +222,26 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        System.out.println("kernel shape:");
-        System.out.println(Arrays.toString(kernel));
-        System.out.println("padding shape:");
-        System.out.println(Arrays.toString(pad));
-        System.out.println("dilation shape:");
-        System.out.println(Arrays.toString(dilation));
-        System.out.println("Conv mode:");
-        System.out.println(convolutionMode.toString());
 
+//        System.out.println("kernel shape:");
+//        System.out.println(Arrays.toString(kernel));
+//        System.out.println("padding shape:");
+//        System.out.println(Arrays.toString(pad));
+//        System.out.println("dilation shape:");
+//        System.out.println(Arrays.toString(dilation));
+//        System.out.println("Conv mode:");
+//        System.out.println(convolutionMode.toString());
+//
+//
+//        System.out.println("Input shape:");
+//        System.out.println(Arrays.toString(input.shape()));
+//        System.out.println("Output shape:");
+//        System.out.println(Arrays.toString(reshapedOutput.shape()));
+//        System.out.println("Weights shape:");
+//        System.out.println(Arrays.toString(weights.shape()));
+//        System.out.println("Bias shape:");
+//        System.out.println(Arrays.toString(bias.shape()));
 
-        System.out.println("Input shape:");
-        System.out.println(Arrays.toString(input.shape()));
-        System.out.println("Output shape:");
-        System.out.println(Arrays.toString(reshapedOutput.shape()));
-        System.out.println("Weights shape:");
-        System.out.println(Arrays.toString(weights.shape()));
-        System.out.println("Bias shape:");
-        System.out.println(Arrays.toString(bias.shape()));
 
         int[] args = new int[] {
                 kH, kW, strides[0], strides[1],
