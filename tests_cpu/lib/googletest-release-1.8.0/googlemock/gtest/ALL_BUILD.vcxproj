@@ -1,0 +1,178 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|Win32">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|Win32">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B70B6EE1-A95E-3D07-8EA3-59D615CF12B4}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>Win32</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\include;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\include;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\include;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\include;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building Custom Rule D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">setlocal
+C:\programs\msys64\mingw64\bin\cmake.exe -HD:/github/libnd4j/tests_cpu -BD:/github/libnd4j/tests_cpu --check-stamp-file D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googlemock/gtest/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\cmake\internal_utils.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPythonInterp.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindThreads.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckLibraryExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckSymbolExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.c.in;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\gtest\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building Custom Rule D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">setlocal
+C:\programs\msys64\mingw64\bin\cmake.exe -HD:/github/libnd4j/tests_cpu -BD:/github/libnd4j/tests_cpu --check-stamp-file D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googlemock/gtest/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\cmake\internal_utils.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPythonInterp.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindThreads.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckLibraryExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckSymbolExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.c.in;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\gtest\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Building Custom Rule D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">setlocal
+C:\programs\msys64\mingw64\bin\cmake.exe -HD:/github/libnd4j/tests_cpu -BD:/github/libnd4j/tests_cpu --check-stamp-file D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googlemock/gtest/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\cmake\internal_utils.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPythonInterp.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindThreads.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckLibraryExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckSymbolExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.c.in;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\gtest\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Building Custom Rule D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">setlocal
+C:\programs\msys64\mingw64\bin\cmake.exe -HD:/github/libnd4j/tests_cpu -BD:/github/libnd4j/tests_cpu --check-stamp-file D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googlemock/gtest/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">D:/github/libnd4j/tests_cpu/lib/googletest-release-1.8.0/googletest/CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\cmake\internal_utils.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPythonInterp.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindThreads.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckLibraryExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckSymbolExists.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\CheckIncludeFile.c.in;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\programs\msys64\mingw64\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\gtest\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\github\libnd4j\tests_cpu\ZERO_CHECK.vcxproj">
+      <Project>{CED8C673-5790-35DD-AB70-C094957FB9AE}</Project>
+      <Name>ZERO_CHECK</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\gtest\gtest.vcxproj">
+      <Project>{03FBCD17-4D3C-3797-AD8F-1696CE307BA1}</Project>
+      <Name>gtest</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\gtest\gtest_main.vcxproj">
+      <Project>{FCE4033E-D23F-3CDB-A5D6-24C4CACBC33C}</Project>
+      <Name>gtest_main</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

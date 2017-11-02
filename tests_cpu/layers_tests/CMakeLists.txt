@@ -21,7 +21,7 @@ endif()
 
 # -fsanitize=address
 #  -fsanitize=leak
-set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+set(CMAKE_CXX_FLAGS  "-fPIC -w -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
 
 
 if (APPLE)
@@ -92,6 +92,6 @@ elseif(MSYS)
 endif()
 
 
-#
 add_executable(runtests StashTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests.cpp DenseLayerTests.cpp  GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp LegacyOpsTests.cpp BlockTests.cpp)
+# add_executable(runtests DeclarableOpsTests.cpp)
 target_link_libraries(runtests nd4jcpu gtest gtest_main)

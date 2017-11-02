@@ -2778,9 +2778,152 @@ TEST_F(DeclarableOpsTests, Avgpool2d_bp2) {
     ASSERT_TRUE(expected.equalsTo(output));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, LRN1) {
     nd4j::ops::lrn<double> lrn;
 
     lrn.getOpName();
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Stack_1) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    int shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    int shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    int expShape[]  = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> input2(buff2, shape2);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ArrayList<float>*  results = op.execute({&input1, &input2}, {}, {0});
+    NDArray<float>* output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Stack_2) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1,  2,  3,  4, 13, 14, 16, 16, 5,  6,  7,  8, 17, 18, 19, 20, 9, 10, 11, 12, 21, 22, 23, 24};
+    int shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    int shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};    
+    int expShape[]  = {3, 3, 2, 4, 8, 4, 1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> input2(buff2, shape2);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ArrayList<float>*  results = op.execute({&input1, &input2}, {}, {1});
+    NDArray<float>* output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Stack_3) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    int shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    int shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    int expShape[]  = {2, 2, 12, 12, 1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> input2(buff2, shape2);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ArrayList<float>*  results = op.execute({&input1, &input2}, {}, {0});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Stack_4) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    int shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    int shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    int expShape[]  = {2, 2, 12, 12, 1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> input2(buff2, shape2);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ArrayList<float>*  results = op.execute({&input1, &input2}, {}, {1});
+    NDArray<float>* output = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Stack_5) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    int shape1[]    = {2, 12, 1, 1,  1, 0, 1, 99};
+    int shape2[]    = {2, 12, 1, 1,  1, 0, 1, 99};
+    int expShape[]  = {2, 2, 12, 12, 1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> input2(buff2, shape2);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ArrayList<float>*  results = op.execute({&input1, &input2}, {}, {0});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Stack_6) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};    
+    float expBuff[] = {1 ,13 ,2 ,14 ,3 ,16 ,4 ,16 ,5 ,17 ,6 ,18 ,7 ,19 ,8 ,20 ,9 ,21 ,10 ,22 ,11 ,23 ,12 ,24};
+    int shape1[]    = {2, 12, 1, 1, 12, 0, 1, 99};
+    int shape2[]    = {2, 12, 1, 1, 12, 0, 1, 99};
+    int expShape[]  = {2, 12, 2, 2,  1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> input2(buff2, shape2);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ArrayList<float>*  results = op.execute({&input1, &input2}, {}, {1});
+    NDArray<float>* output = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+}
+
+ 
+
+ 

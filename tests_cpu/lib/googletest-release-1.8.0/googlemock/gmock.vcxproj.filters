@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googletest\src\gtest-all.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\src\gmock-all.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\github\libnd4j\tests_cpu\lib\googletest-release-1.8.0\googlemock\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{98ABA062-B6B7-3FD7-96E3-049C45B109FA}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
