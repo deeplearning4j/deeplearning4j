@@ -62,6 +62,20 @@ public class SvhnDataFetcher extends CacheableExtractableDataSetFetcher {
     }
 
     @Override
+    public String dataSetName(DataSetType set) {
+        switch (set) {
+            case TRAIN:
+                return "train";
+            case TEST:
+                return "test";
+            case VALIDATION:
+                return "extra";
+            default:
+                throw new IllegalArgumentException("Unknown DataSetType:" + set);
+        }
+    }
+
+    @Override
     public long expectedChecksum(DataSetType set) {
         switch (set) {
             case TRAIN:
