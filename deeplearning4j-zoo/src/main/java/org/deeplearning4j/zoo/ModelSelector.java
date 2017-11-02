@@ -89,6 +89,7 @@ public class ModelSelector {
                 netmap.putAll(ModelSelector.select(ZooType.VGG16, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.VGG19, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.DARKNET19, numLabels, seed, iterations, workspaceMode));
+                netmap.putAll(ModelSelector.select(ZooType.TINYYOLO, numLabels, seed, iterations, workspaceMode));
                 break;
             // RNN models
             case RNN:
@@ -127,6 +128,9 @@ public class ModelSelector {
                 break;
             case DARKNET19:
                 netmap.put(ZooType.DARKNET19, new Darknet19(numLabels, seed, iterations, workspaceMode));
+                break;
+            case TINYYOLO:
+                netmap.put(ZooType.TINYYOLO, new TinyYOLO(numLabels, seed, iterations, workspaceMode));
                 break;
             default:
                 // do nothing

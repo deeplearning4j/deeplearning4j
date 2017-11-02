@@ -24,8 +24,14 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
     private AtomicLong counter = new AtomicLong(0);
 
     public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations) {
+        this(featuresShape, numLabels, totalIterations, -1, -1);
+    }
+
+    public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations, int gridWidth, int gridHeight) {
         this.baseFeatures = Nd4j.rand(featuresShape);
-        this.baseLabels = Nd4j.create(featuresShape[0], numLabels);
+        this.baseLabels = gridWidth > 0 && gridHeight > 0
+                        ? Nd4j.create(featuresShape[0], numLabels, gridWidth, gridHeight)
+                        : Nd4j.create(featuresShape[0], numLabels);
         this.baseLabels.getColumn(1).assign(1.0);
 
         Nd4j.getExecutioner().commit();
