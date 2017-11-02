@@ -192,7 +192,7 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        validateDifferentialFunctionsameDiff(i_v1);
+        f().validateDifferentialFunctionsameDiff(i_v1);
         DifferentialFunction ret = f().div(f().doRepeat(
                 this,
                 i_v1.get(0)

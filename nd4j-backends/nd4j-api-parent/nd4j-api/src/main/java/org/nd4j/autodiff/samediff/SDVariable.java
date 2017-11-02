@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.samediff.impl;
+package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
 import lombok.Builder;
@@ -6,15 +6,16 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.weightinit.WeightInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -37,30 +38,56 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     private INDArray arr;
     @Getter
     @Setter
-    private NDArrayInformation info;
-    @Getter
-    @Setter
     private String varName;
     private SDVariable gradient;
     private SDVariable forwardVariable;
     protected DifferentialFunction differentialFunction;
-
+    @Getter
+    @Setter
+    protected WeightInitScheme weightInitScheme;
     @Builder
     private SDVariable(DifferentialFunction differentialFunction,
                        String varName,
                        INDArray arr,
-                       NDArrayInformation info,
+                       OpState opState,
                        SameDiff sameDiff,
                        int[] shape,
+                       WeightInitScheme weightInitScheme,
                        NDArrayVertex ndArrayVertex,
                        int[] vertexId) {
-        this.shape = info != null ? info.getShape() : shape;
-        this.info = info;
+        this.shape =  shape;
         this.differentialFunction = differentialFunction;
         this.varName = varName;
         this.vertex = ndArrayVertex;
+        this.weightInitScheme = weightInitScheme;
         this.arr = arr;
         this.vertexId = vertexId;
+        if(shape == null) {
+            if(arr != null) {
+                this.shape = arr.shape();
+            }
+            else
+                throw new ND4JIllegalStateException("Variable must have a shape.");
+        }
+
+        if(opState == null) {
+            if(differentialFunction != null)
+                this.opState = differentialFunction.getOpState();
+            else
+                this.opState = OpState.builder()
+                        .opType(Op.Type.RETURN)
+                        .inPlace(true)
+                        .results(new SDVariable[] {this})
+                        .vertexIds(ArrayUtil.convertToString(vertexId))
+                        .opName(varName)
+                        .build();
+        }
+
+
+        if(weightInitScheme == null) {
+            this.weightInitScheme = new ZeroInitScheme('f');
+        }
+
         this.sameDiff = sameDiff;
         if(differentialFunction != null) {
             this.vertexId = differentialFunction.getVertexId();
@@ -71,14 +98,21 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     @Override
+    public boolean isVariable() {
+        return true;
+    }
+
+
+    @Override
+    public SDVariable getResult() {
+        return this;
+    }
+
+    @Override
     public int[] getResultShape() {
         return getShape();
     }
 
-    @Override
-    public NDArrayInformation getResult() {
-        return getInfo();
-    }
 
     public void setArr(INDArray arr) {
         if(arr == null) {
@@ -94,24 +128,42 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     }
 
+    /**
+     * A getter for the allocated ndarray
+     * with this {@link SDVariable}.
+     *
+     * This getter will lazy initialize an array if one is not found
+     * based on the associated shape and {@link WeightInitScheme}
+     * if neither are found, an {@link ND4JIllegalStateException}
+     * is thrown.
+     *
+     * If a {@link DifferentialFunction} is defined, note that
+     * its getArr() method is called instead.
+     * @return the {@link INDArray} associated with this variable.
+     */
     public INDArray getArr() {
-        if(differentialFunction == null)
-            if(arr != null)
-                return arr;
-            else
-                return null;
-        Op op = (Op) differentialFunction;
-        return op.z();
+        if(arr != null)
+            return arr;
+
+        //initialize value if it's actually a scalar constant (zero or 1 typically...)
+        if(getScalarValue() != null && ArrayUtil.prod(getShape()) == 1) {
+            INDArray arr = Nd4j.valueArrayOf(getShape(),
+                    getScalarValue().doubleValue());
+            sameDiff.associateArrayWithVariable(arr,this);
+            setArr(arr);
+        }
+        else {
+            INDArray newAlloc = getWeightInitScheme().create(getShape(),Nd4j.zeros(getShape(),getWeightInitScheme().order()));
+            sameDiff.associateArrayWithVariable(newAlloc,this);
+            setArr(newAlloc);
+
+        }
+
+        return arr;
     }
 
     public INDArray getArr(boolean requireArray) {
         if(arr == null && requireArray) {
-            if(sameDiff.getVertexIdxToInfo().get(vertexId) != null)
-                this.arr = sameDiff.getNDArray(sameDiff.getVertexIdxToInfo().get(vertexId));
-
-            if(this.arr == null && sameDiff.getFunctionInstances().get(vertexId) != null) {
-                this.arr = sameDiff.getNDArray(sameDiff.getFunctionInstances().get(vertexId).getResult());
-            }
 
             if(this.arr == null && sameDiff.getFunction("grad") != null) {
                 this.arr = sameDiff.getFunction("grad").getVariable(varName).getArr(requireArray);
@@ -148,14 +200,24 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable getGradient() {
-        Op grad = (Op) (this.getDifferentialFunction() == null ? getGradient() : this.getDifferentialFunction().getGradient());
+
+        DifferentialFunction grad =  (this.getDifferentialFunction() != null ?  this.getDifferentialFunction().getGradient() : gradient);
+        INDArray arr  = null;
+        if(grad instanceof Op) {
+            Op o = (Op) grad;
+            arr = o.z();
+        }
+        else if(grad instanceof SDVariable) {
+            SDVariable sdVariable = (SDVariable) grad;
+            arr = sdVariable.getArr();
+        }
 
         if(gradient == null && differentialFunction != null && differentialFunction.getGradient() != null) {
             this.gradient = differentialFunction != null && differentialFunction.getGradient() != null ? SDVariable.builder()
                     .sameDiff(sameDiff)
                     .differentialFunction(differentialFunction.getGradient())
                     .varName(varName + "-grad")
-                    .arr(grad.z())
+                    .arr(arr)
                     .shape(differentialFunction.getGradient() != null ? differentialFunction.getGradient().getResultShape() : null)
                     .build() : null;
 
@@ -171,17 +233,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             this.gradient.setForwardVariable(this);
         }
 
-        if(this.gradient != null && this.gradient.getArr() == null) {
-            this.gradient.setArr(sameDiff.getNDArray(differentialFunction.getGradient().getResult()));
-
-        }
 
         return gradient;
     }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        throw new ND4JIllegalStateException("Unable to differentiate a variable! Must be a function.");
     }
 
     /**
@@ -193,18 +251,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.gradient.setForwardVariable(this);
     }
 
-    /**
-     *
-     * @return
-     */
-    public NDArrayInformation getInfo() {
-        if(differentialFunction == null && info != null)
-            return info;
-        else if(differentialFunction !=  null)
-            return differentialFunction.getResult();
-        else
-            throw new IllegalStateException("No ndarray found. Please set either a differential function or a variable");
-    }
 
 
 
@@ -216,8 +262,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public int[] getShape() {
         if(shape != null)
             return shape;
-        if(info != null)
-            return info.getShape();
         if(differentialFunction == null)
             throw new IllegalStateException("Unable to infer shape. Function is null.");
         OpState opState =  differentialFunction.getOpState();
@@ -967,7 +1011,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
         DifferentialFunction left = getFunction(this);
         DifferentialFunction right = getFunction(sameDiffVariable);
-        DifferentialFunction result = sameDiff.getFunctionFactory().muli(left,right);
+        DifferentialFunction result = sameDiff.f().muli(left,right);
         SDVariable ret = SDVariable.builder()
                 .varName(varName)
                 .arr(null).sameDiff(sameDiffVariable.getSameDiff())
@@ -1040,7 +1084,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
+        int result = 0;
         result = 31 * result + (arr != null ? arr.hashCode() : 0);
         result = 31 * result + (varName != null ? varName.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(shape);

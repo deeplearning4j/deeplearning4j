@@ -7,7 +7,10 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -20,36 +23,33 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
 
 
-    private double alpha,beta,bias,depth;
+    protected LocalResponseNormalizationConfig config;
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public LocalResponseNormalization(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, double alpha, double beta, double bias, double depth) {
-        super(null,sameDiff, inputs, inPlace);
-        this.alpha = alpha;
-        this.beta = beta;
-        this.bias = bias;
-        this.depth = depth;
+
+    @Builder(builderMethodName = "builder")
+    public LocalResponseNormalization(SameDiff sameDiff, DifferentialFunction[] inputFunctions,INDArray[] inputs, INDArray[] outputs,boolean inPlace,LocalResponseNormalizationConfig config) {
+        super(null,sameDiff, inputFunctions, inPlace);
+        this.config = config;
+        if(inputs != null) {
+            getInputArguments().addAll(Arrays.asList(inputs));
+        }
+
+        if(outputs!= null) {
+            getOutputArguments().addAll(Arrays.asList(outputs));
+        }
+
         addArgs();
     }
 
-    @Builder(builderMethodName = "execBuilder")
-    public LocalResponseNormalization(INDArray[] inputs, INDArray[] outputs,double alpha, double beta, double bias, double depth) {
-        super(null,inputs,outputs);
-        this.alpha = alpha;
-        this.beta = beta;
-        this.bias = bias;
-        this.depth = depth;
-        addArgs();
-    }
 
     public LocalResponseNormalization() {}
 
 
     private void addArgs() {
-        getTArguments().add(alpha);
-        getTArguments().add(beta);
-        getTArguments().add(bias);
-        getTArguments().add(depth);
+        getTArguments().add(config.getAlpha());
+        getTArguments().add(config.getBeta());
+        getTArguments().add(config.getBias());
+        getTArguments().add(config.getDepth());
     }
 
     @Override
@@ -59,7 +59,19 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        List<DifferentialFunction> ret = new ArrayList<>();
+        List<DifferentialFunction> inputs = new ArrayList<>();
+        inputs.addAll(Arrays.asList(args()));
+        inputs.add(f1.get(0));
+        LocalResponseNormalizationDerivative localResponseNormalizationDerivative = LocalResponseNormalizationDerivative.derivativeBuilder()
+                .inPlace(inPlace)
+                .sameDiff(sameDiff)
+                .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .config(config)
+                .build();
+        ret.addAll(Arrays.asList(localResponseNormalizationDerivative.getOutputFunctions()));
+
+        return ret;
     }
 
 }

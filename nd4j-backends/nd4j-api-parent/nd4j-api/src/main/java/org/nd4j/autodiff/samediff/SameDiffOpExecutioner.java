@@ -1,7 +1,6 @@
-package org.nd4j.autodiff.samediff.impl;
+package org.nd4j.autodiff.samediff;
 
 import lombok.Getter;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;

@@ -158,7 +158,7 @@ public class StandardDeviation extends Variance {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        validateDifferentialFunctionsameDiff(i_v1);
+        f().validateDifferentialFunctionsameDiff(i_v1);
         int inputs = f().getInputLength(i_v1.get(0));
         DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
         DifferentialFunction ret = f().div(f().sub(f().mul(g,arg()),f().mean(arg(),dimensions)),f().mul(f()

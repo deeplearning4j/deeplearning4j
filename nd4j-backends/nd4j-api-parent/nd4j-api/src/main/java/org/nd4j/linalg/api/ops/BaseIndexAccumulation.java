@@ -5,8 +5,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected int finalResult;
@@ -19,9 +23,9 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         if (i_v != null) {
             this.args = new DifferentialFunction[] {i_v};
             this.dimensions = dimensions;
-            validateDifferentialFunctionsameDiff(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v);
+            f().addFunctionEdges(this);
 
-            addEdges(sameDiff,args[0],name());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -35,10 +39,10 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         if (i_v != null) {
             this.args = new DifferentialFunction[] {i_v,i_v2};
             this.dimensions = dimensions;
-            validateDifferentialFunctionsameDiff(i_v);
-            validateDifferentialFunctionsameDiff(i_v2);
+            f().validateDifferentialFunctionsameDiff(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v2);
+            f().addFunctionEdges(this);
 
-            addEdges(sameDiff,args[0],args[1],name());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -127,6 +131,16 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         int idxOut = update(first.getFirst(), idxFirst, second.getFirst(), idxSecond);
         return (idxOut == idxFirst ? first : second);
     }
+
+
+    @Override
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>(1);
+        ret.add(Shape.getReducedShape(arg().getResultShape(),dimensions));
+        return ret;
+    }
+
+
 
     @Override
     public void setFinalResult(int idx) {

@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.samediff;
 
-import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;

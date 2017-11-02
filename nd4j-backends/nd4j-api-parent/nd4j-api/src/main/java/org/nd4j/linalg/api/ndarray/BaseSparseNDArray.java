@@ -1209,6 +1209,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public void setShape(int... shape) {
 
     }
+    
+    @Override
+    public void setShapeAndStride(int[] shape, int[] stride) {
+
+    }
 
     @Override
     public void setOrder(char order) {

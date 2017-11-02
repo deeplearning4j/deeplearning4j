@@ -20,7 +20,7 @@ import java.util.*;
  */
 @NoArgsConstructor
 @Data
-public class SDGraph extends Graph<NDArrayInformation,OpState> {
+public class SDGraph extends Graph<SDVariable,OpState> {
 
     protected SameDiff sameDiff;
 
@@ -40,7 +40,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
     @Builder
     private SDGraph(boolean allowMultipleEdges,
                     Map<int[], List<Edge<OpState>>> edges,
-                    Map<Integer, Vertex<NDArrayInformation>> vertices,
+                    Map<Integer, Vertex<SDVariable>> vertices,
                     boolean frozen,
                     Map<int[], List<Edge<OpState>>> incomingEdges,
                     SameDiff sameDiff) {
@@ -55,7 +55,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * @param ndArrayInformationVertex
      */
     @Override
-    public void addVertex(Vertex<NDArrayInformation> ndArrayInformationVertex) {
+    public void addVertex(Vertex<SDVariable> ndArrayInformationVertex) {
         if(getGraphApply() != null) {
             ndArrayInformationVertex.setIdx(getGraphApply().getNextVertexId());
         }
@@ -103,8 +103,8 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * Get the output vertices
      * @return
      */
-    public List<NDArrayInformation> getOutputs() {
-        List<NDArrayInformation> ret = new ArrayList<>();
+    public List<SDVariable> getOutputs() {
+        List<SDVariable> ret = new ArrayList<>();
         for (int i : getVertices().keySet()) {
             if (getEdgesOut(new int[]{i}).size() < 1)
                 ret.add(getVertex(i).getValue());
@@ -117,8 +117,8 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * Get the input vertices
      * @return
      */
-    public List<NDArrayInformation> getInputs() {
-        List<NDArrayInformation> ret = new ArrayList<>();
+    public List<SDVariable> getInputs() {
+        List<SDVariable> ret = new ArrayList<>();
         for (int i : getVertices().keySet()) {
             int[] key = {i};
             if (getVertexInDegree(key) < 1) {
@@ -226,13 +226,13 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 int inputsCount = 0;
                 List<Integer> inputIdsList = new ArrayList<>();
                 List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
-                List<NDArrayInformation> inputInfo = new ArrayList<>();
+                List<SDVariable> inputInfo = new ArrayList<>();
                 //get the inputs for this this output array
                 for (Edge<OpState> edge : inputOpStates) {
                     inputIdsList.addAll(Ints.asList(edge.getFrom()));
                     for(int input : edge.getFrom())  {
-                        Preconditions.checkNotNull(getInformationFor(input));
-                        inputInfo.add(getInformationFor(input));
+                        Preconditions.checkNotNull(getVariableForVertex(input));
+                        inputInfo.add(getVariableForVertex(input));
                         inputsCount++;
                     }
                 }
@@ -244,7 +244,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                     ret.add(OpExecAction.builder()
                             .output(opStateEdge.getValue().getResults()[0])
                             .opState(opStateEdge.getValue())
-                            .inputs(inputInfo.toArray(new NDArrayInformation[inputInfo.size()]))
+                            .inputs(inputInfo.toArray(new SDVariable[inputInfo.size()]))
                             .inputsIds(Ints.toArray(inputIdsList))
                             .outputId(order[i])
                             .build());
@@ -275,13 +275,13 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
     }
 
     /**
-     * {@link NDArrayInformation}
+     * {@link SDVariable}
      * accessor for a given vertex
      * @param vertex the vertex id
      * @return the information for the vertex
      */
-    public NDArrayInformation getInformationFor(int vertex) {
-        Vertex<NDArrayInformation> ndArrayInformation = getVertex(vertex);
+    public SDVariable getVariableForVertex(int vertex) {
+        Vertex<SDVariable> ndArrayInformation = getVertex(vertex);
         if(ndArrayInformation == null)
             return null;
         return ndArrayInformation.getValue();

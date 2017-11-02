@@ -4,6 +4,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class ShapeOp extends BaseOp {
     public ShapeOp() {}
 
@@ -31,9 +34,9 @@ public abstract class ShapeOp extends BaseOp {
 
         if (i_v != null) {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
-            validateFunctionReference(i_v);
-            validateDifferentialFunctionsameDiff(i_v);
-            addEdges(sameDiff,this.args[0],name(),shape);
+            f().validateFunctionReference(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v);
+            f().addFunctionEdges(this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -53,7 +56,17 @@ public abstract class ShapeOp extends BaseOp {
         super(x, y, z, n);
     }
 
+    @Override
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>();
+        ret.add(shape);
+        return ret;
+    }
 
+    @Override
+    public Type opType() {
+        return Type.SHAPE;
+    }
 
     /**
      * An op for one ndarray

@@ -2,9 +2,8 @@ package org.nd4j.linalg.api.ops.impl.layers;
 
 import lombok.Builder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseModule;
@@ -12,6 +11,7 @@ import org.nd4j.linalg.api.ops.Module;
 import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.weightinit.WeightInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -142,19 +142,20 @@ public class Linear extends BaseModule {
         if(biasWeightInitScheme != null) {
             return new DifferentialFunction[] {
                    SDVariable.builder().sameDiff(sameDiff).varName("w")
-                    .info(NDArrayInformation.newInfo(new int[]{nOut,nIn}
-                            ,weightInitScheme)).build(),
+                    .shape(new int[]{nOut,nIn}).weightInitScheme(
+                            weightInitScheme).build(),
                     SDVariable.builder().sameDiff(sameDiff)
                             .varName("b")
-                    .info(NDArrayInformation.newInfo(new int[]{nOut,1}
-                            ,biasWeightInitScheme)).build()
+                    .shape(new int[]{nOut,1})
+                            .weightInitScheme(biasWeightInitScheme).build()
             };
         }
         else {
             return new DifferentialFunction[] {
                    SDVariable.builder().sameDiff(sameDiff)
                     .varName("w")
-                    .info(NDArrayInformation.newInfo(new int[]{nOut,nIn}))
+                    .shape(new int[]{nOut,nIn})
+                           .weightInitScheme(new ZeroInitScheme('f'))
                     .build()
             };
         }

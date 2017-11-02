@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 
 import java.util.List;
 
@@ -17,15 +18,9 @@ public class Conv3DDerivative extends Conv3D {
 
     public Conv3DDerivative() {}
 
-
-    @Builder(builderMethodName = "sameDiffDerivativeBuilder")
-    public Conv3DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs, boolean inPlace, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
-        super(sameDiff, inputs, inPlace, dT, dW, dH, pT, pW, pH, dilationT, dilationW, dilationH, aT, aW, aH, biasUsed);
-    }
-
-    @Builder(builderMethodName = "execDerivativeBuilder")
-    public Conv3DDerivative(INDArray[] inputs, INDArray[] outputs, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
-        super(inputs, outputs, dT, dW, dH, pT, pW, pH, dilationT, dilationW, dilationH, aT, aW, aH, biasUsed);
+    @Builder(builderMethodName = "derivativeBuilder")
+    public Conv3DDerivative(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputs, INDArray[] outputs, Conv3DConfig conv3DConfig) {
+        super(sameDiff, inputFunctions, inputs, outputs, conv3DConfig);
     }
 
     @Override

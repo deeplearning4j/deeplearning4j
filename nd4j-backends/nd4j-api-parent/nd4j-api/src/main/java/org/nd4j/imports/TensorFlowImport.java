@@ -7,31 +7,22 @@ import com.google.protobuf.TextFormat;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
-import org.nd4j.autodiff.graph.api.Edge;
-import org.nd4j.autodiff.graph.api.Vertex;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.graph.intermediate.*;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.imports.converters.TensorFlowMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.*;
 
 import java.io.*;
 import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -87,9 +78,7 @@ public class TensorFlowImport {
 
         SameDiff diff = SameDiff.builder()
                 .graph(graph)
-                .vertexToArray(Maps.<String, INDArray>newHashMap())
                 .variableMap(Maps.<String, SDVariable>newHashMap())
-                .vertexIdxToInfo(Maps.<int[], NDArrayInformation>newHashMap())
                 .build();
 
         graph.setSameDiff(diff);
@@ -126,9 +115,8 @@ public class TensorFlowImport {
                         .varName(tfNode.getName())
                         .build();
 
-                NDArrayInformation varInformation = NDArrayInformation.builder()
-                        .id(tfNode.getName())
-                        .arrId(tfNode.getName())
+                SDVariable varInformation = SDVariable.builder()
+                        .varName(tfNode.getName())
                         .build();
 
                 NDArrayVertex vertex = new NDArrayVertex(diff,++nodesCnt,0, varInformation);
@@ -181,6 +169,11 @@ public class TensorFlowImport {
                 graph.addVertex(vertex);
             } else {
                 // operation node
+
+                /*
+
+                   SDVariable varInformation = SDVariable.builder()
+                        .varName(tfNode.getName())
                 NDArrayInformation varInformation = NDArrayInformation.builder()
                         .id(tfNode.getName())
                         .build();
@@ -189,7 +182,7 @@ public class TensorFlowImport {
                 graph.addVertex(vertex);
 
                 OpState opState = getOpStateFromNodeDef(tfNode, tfNode.getInputCount());
-                opState.setResults(new NDArrayInformation[]{varInformation});
+                opState.setResults(new SDVariable[]{varInformation});
 
                 reverseVertexMap.put(tfNode.getName(), nodesCnt);
 
@@ -204,6 +197,7 @@ public class TensorFlowImport {
 
                     graph.addEdge(new int[]{id}, new int[]{nodesCnt}, opState, true);
                 }
+                */
             }
         }
         return diff;
@@ -243,23 +237,23 @@ public class TensorFlowImport {
         return importIntermediate(def);
     }
 
-    protected static TNode importWhileLoop(TGraph intermediateGraph, @NonNull Map<String, TIndex> reverseVertexMap, int startPosition, Set<String> skipList, List<NodeDef> nodes, @NonNull AtomicInteger varsCnt, @NonNull AtomicInteger nodesCnt) {
+    protected static TNode importWhileLoop(TGraph intermediateGraph, int startPosition, List<NodeDef> nodes) {
+        val uniqueId = java.util.UUID.randomUUID().toString();
 
-
-        val scopeCondition = new TScope(nodesCnt.incrementAndGet(), "scopeCondition");
-        val scopeLoop = new TScope(nodesCnt.incrementAndGet(), "scopeLoop");
+        val scopeCondition = new TScope(intermediateGraph.getNewNodeId(), "scopeCondition_" + uniqueId);
+        val scopeLoop = new TScope(intermediateGraph.getNewNodeId(), "scopeLoop_" + uniqueId);
 
         intermediateGraph.addScope(scopeCondition);
         intermediateGraph.addScope(scopeLoop);
 
-        val tNode = TNode.builder().id(nodesCnt.incrementAndGet())
-                .inputs(TIndex.indices(TIndex.makeOf(scopeCondition.getId()), TIndex.makeOf(scopeLoop.getId())))
+        val whileNode = TNode.builder().id(intermediateGraph.getNewNodeId())
                 .opName("while")
+                .name("whileLoop_" + uniqueId)
                 .opNum(0)
                 .opState(OpState.builder().opName("while").opNum(0).opType(Op.Type.LOOP).build())
                 .build();
 
-        log.info("Adding 2 new scopes for WHILE {}", tNode.getId());
+        log.info("Adding 2 new scopes for WHILE {}", whileNode.getId());
 
 
         /**
@@ -273,23 +267,34 @@ public class TensorFlowImport {
 
         Map<String, TIndex> localReverseMap = new HashMap<>();
 
+
         // parsing declarations first. they all come as Enter ops
+        val whileInputs = new ArrayList<TIndex>();
         for (; startPosition < nodes.size(); startPosition++) {
             val tfNode = nodes.get(startPosition);
 
             if (!tfNode.getOp().equalsIgnoreCase("enter")) {
-                skipList.add(tfNode.getName().toLowerCase());
+                //intermediateGraph.getSkipSet().add(tfNode.getName());
                 break;
             }
 
-            skipList.add(tfNode.getName().toLowerCase());
+//            if (intermediateGraph.getSkipSet().contains(tfNode.getName()))
+//                continue;
+
+            intermediateGraph.getSkipSet().add(tfNode.getName());
 
             for (int e = 0; e < tfNode.getInputCount(); e++) {
                 val input = tfNode.getInput(e);
-                val idx = reverseVertexMap.get(input);
+                val idx = intermediateGraph.getReverseMap().get(input);
                 log.info("Mapping [{}] to [{}]", input, idx);
+
+                // mapping this
+                whileInputs.add(idx);
             }
         }
+        whileInputs.add(TIndex.makeOf(scopeCondition.getId()));
+        whileInputs.add(TIndex.makeOf(scopeLoop.getId()));
+        whileNode.setInputs(whileInputs);
 
         // now we're skipping Merge step, since we've already captured variables at Enter step
         int mergedCnt = 0;
@@ -297,15 +302,13 @@ public class TensorFlowImport {
             val tfNode = nodes.get(startPosition);
 
             if (!tfNode.getOp().equalsIgnoreCase("merge")) {
-                skipList.add(tfNode.getName().toLowerCase());
                 break;
             }
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
 
-
-            //localReverseMap.put(tfNode.getName().toLowerCase(), TIndex.makeOf(tNode.getId(), mergedCnt));
-            reverseVertexMap.put(tfNode.getName(), TIndex.makeOf(tNode.getId(), mergedCnt++));
+            //localReverseMap.put(tfNode.getName(), TIndex.makeOf(tNode.getId(), mergedCnt));
+            intermediateGraph.getReverseMap().put(tfNode.getName(), TIndex.makeOf(whileNode.getId(), mergedCnt++));
         }
 
 
@@ -315,7 +318,7 @@ public class TensorFlowImport {
 
             // we're parsing up to condition
             if (tfNode.getOp().equalsIgnoreCase("LoopCond")) {
-                skipList.add(tfNode.getName().toLowerCase());
+                intermediateGraph.getSkipSet().add(tfNode.getName());
                 startPosition++;
                 break;
             }
@@ -326,14 +329,14 @@ public class TensorFlowImport {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = importVariable(tfNode, reverseVertexMap, varsCnt.decrementAndGet());
+                val var = importVariable(tfNode, intermediateGraph.getReverseMap(), intermediateGraph.getNewVariableId());
                 log.info("Adding condition var [{}:{}]", var.getName(), var.getId());
 
                 intermediateGraph.getVariableSpace().addVariable(var.getId(), var);
             } else {
                 log.info("starting on [{}]: {}", tfNode.getName(), tfNode.getOp());
 
-                val scopedNode = importNode(intermediateGraph, tfNode, reverseVertexMap, nodesCnt.incrementAndGet());
+                val scopedNode = importNode(intermediateGraph, tfNode, intermediateGraph.getNewNodeId());
                 scopedNode.setScoped(true);
                 scopedNode.setScopeId(scopeCondition.getId());
                 scopedNode.setScopeName(scopeCondition.getName());
@@ -341,7 +344,7 @@ public class TensorFlowImport {
                 scopeCondition.addNode(scopedNode);
             }
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
         }
 
 
@@ -355,8 +358,8 @@ public class TensorFlowImport {
             if (!tfNode.getOp().equalsIgnoreCase("Switch"))
                 break;
 
-            reverseVertexMap.put(tfNode.getName(), TIndex.makeOf(tNode.getId(), switchCnt++));
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getReverseMap().put(tfNode.getName(), TIndex.makeOf(whileNode.getId(), switchCnt++));
+            intermediateGraph.getSkipSet().add(tfNode.getName());
         }
 
         // now we're parsing Identity step
@@ -369,16 +372,16 @@ public class TensorFlowImport {
                 break;
             }
 
-            val scopedNode = importNode(intermediateGraph, tfNode, reverseVertexMap, nodesCnt.incrementAndGet());
+            val scopedNode = importNode(intermediateGraph, tfNode, intermediateGraph.getNewNodeId());
             scopedNode.setScopeId(scopeLoop.getId());
             scopedNode.setScopeName(scopeLoop.getName());
 
             // we overwrite inputs here, because that's always mapping to the While scope operands
-            scopedNode.setInputs(Lists.newArrayList(TIndex.makeOf(tNode.getId(), identityCnt++)));
+            scopedNode.setInputs(Lists.newArrayList(TIndex.makeOf(whileNode.getId(), identityCnt++)));
 
             scopeLoop.addNode(scopedNode);
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
         }
 
 
@@ -386,9 +389,21 @@ public class TensorFlowImport {
         for (; startPosition < nodes.size(); startPosition++) {
             val tfNode = nodes.get(startPosition);
 
+            if (intermediateGraph.getSkipSet().contains(tfNode.getName())) {
+                log.info("Skipping: {}", tfNode.getName());
+                continue;
+            }
+
             if (tfNode.getOp().equalsIgnoreCase("NextIteration")) {
+//                intermediateGraph.getSkipSet().add(tfNode.getName());
                 break;
             }
+
+            if (intermediateGraph.getSkipSet().contains(tfNode.getName())) {
+                log.info("Skipping: {}", tfNode.getName());
+                continue;
+            }
+
 
 
             boolean isConst = tfNode.getOp().equalsIgnoreCase("const");
@@ -397,120 +412,106 @@ public class TensorFlowImport {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = importVariable(tfNode, reverseVertexMap, varsCnt.decrementAndGet());
+                val var = importVariable(tfNode, intermediateGraph.getReverseMap(), intermediateGraph.getNewVariableId());
                 log.info("Adding body var [{}:{}]", var.getName(), var.getId());
 
                 intermediateGraph.getVariableSpace().addVariable(var.getId(), var);
             } else {
                 log.info("starting on [{}]: {}", tfNode.getName(), tfNode.getOp());
 
-                val scopedNode = importNode(intermediateGraph, tfNode, reverseVertexMap, nodesCnt.incrementAndGet());
-                scopedNode.setScoped(true);
-                scopedNode.setScopeId(scopeLoop.getId());
-                scopedNode.setScopeName(scopeLoop.getName());
+                if (tfNode.getOp().equalsIgnoreCase("enter")) {
+                    log.info("NEW LOOP ----------------------------------------");
+                    val scopedWhile = importWhileLoop(intermediateGraph, startPosition, nodes);
+                    scopedWhile.setScoped(true);
+                    scopedWhile.setScopeId(scopeLoop.getId());
+                    scopedWhile.setScopeName(scopeLoop.getName());
 
-                scopeLoop.addNode(scopedNode);
+                    scopeLoop.addNode(scopedWhile);
+
+                    log.info("END LOOP ----------------------------------------");
+                } else {
+                    val scopedNode = importNode(intermediateGraph, tfNode, intermediateGraph.getNewNodeId());
+                    scopedNode.setScoped(true);
+                    scopedNode.setScopeId(scopeLoop.getId());
+                    scopedNode.setScopeName(scopeLoop.getName());
+
+                    scopeLoop.addNode(scopedNode);
+                }
             }
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
         }
 
+        val returnOp = TNode.builder()
+                .opState(OpState.builder()
+                        .opType(Op.Type.RETURN)
+                        .opNum(40)
+                        .opName("return")
+                        .build())
+                .name("whileReturn_" + uniqueId)
+                .id(intermediateGraph.getNewNodeId())
+                .opName("return")
+                .opNum(40)
+                .scoped(true)
+                .scopeId(scopeLoop.getId())
+                .scopeName(scopeLoop.getName())
+                .build();
 
-        // skipping NextIterations, we just know when the Scope ends
+        val returnInputs = new ArrayList<TIndex>();
+        val returnOutputs = new ArrayList<Integer>();
+        // mapping NextIterations, to Return op
         for (; startPosition < nodes.size(); startPosition++) {
             val tfNode = nodes.get(startPosition);
 
             if (!tfNode.getOp().equalsIgnoreCase("NextIteration"))
                 break;
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
+
+            val inputName = tfNode.getInput(0);
+            val input = intermediateGraph.getReverseMap().get(inputName);
+            returnInputs.add(input);
+            returnOutputs.add(whileNode.getId());
         }
+        returnOp.setInputs(returnInputs);
+        returnOp.setOutputs(returnOutputs);
+        scopeLoop.addNode(returnOp);
 
         // we should also map While/Exit to libnd4j while
         int exitCnt = 0;
         for (; startPosition < nodes.size(); startPosition++) {
             val tfNode = nodes.get(startPosition);
 
-            if (!tfNode.getOp().equalsIgnoreCase("Exit"))
+            if (!tfNode.getOp().equalsIgnoreCase("Exit")) {
+                //intermediateGraph.getSkipSet().add(tfNode.getName());
                 break;
+            }
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
 
-            reverseVertexMap.put(tfNode.getName(), TIndex.makeOf(tNode.getId(), exitCnt++));
+            intermediateGraph.getReverseMap().put(tfNode.getName(), TIndex.makeOf(whileNode.getId(), exitCnt++));
         }
 
 
         log.info("-------------------------------------------");
 
-        return tNode;
+        return whileNode;
     }
 
 
 
-    protected static TNode importNode(@NonNull TGraph intermediateGraph, @NonNull NodeDef tfNode, @NonNull Map<String, TIndex> reverseVertexMap, int nodeId) {
-        reverseVertexMap.put(tfNode.getName(), TIndex.makeOf(nodeId, 0));
-        val tNode = TNode.builder()
-                .name(tfNode.getName())
-                .id(nodeId)
-                .opName(tfNode.getOp())
-                .build();
+    protected static TNode importNode(@NonNull TGraph intermediateGraph, @NonNull NodeDef tfNode, int nodeId) {
 
-
-        for (int e = 0; e < tfNode.getInputCount(); e++) {
-            val input = tfNode.getInput(e);
-
-
-            // input taken from mult
-            if (input.startsWith("^")) {
-                log.debug("Wow");
-            } else if (input.contains(":")) {
-                val split = input.split(":");
-
-                if (split.length == 1) {
-                    Integer id = reverseVertexMap.get(split[0]).getNode();
-
-                    tNode.addInput(id);
-                } else if (split.length == 2) {
-                    Integer node = reverseVertexMap.get(split[0]).getNode();
-                    Integer idx = Integer.valueOf(split[1]);
-
-                    if (node == null) {
-                        log.error("Can't find mapped node [{}]", input);
-                        throw new ND4JIllegalStateException("Can't find mapped node [" + input + "]");
-                    }
-
-
-                    tNode.addInput(node, idx);
-                } else
-                    throw new RuntimeException("Unknown input passed in: [" + input + "]");
-
-            } else {
-                val id = reverseVertexMap.get(input);
-
-                if (id == null)
-                    throw new ND4JIllegalStateException("Unknown input: [" + input + "]");
-
-                tNode.addInput(id);
-            }
-        }
-
-        OpState opState = getOpStateFromNodeDef(tfNode, tfNode.getInputCount(), tNode, intermediateGraph.getVariableSpace());
-        tNode.setOpState(opState);
-
-        for (val index: tNode.getInputs()) {
-            if (index.getNode() < 0)
-                continue;
-
-            val node = intermediateGraph.getNode(index.getNode());
-
-            if (node != null)
-                node.getOutputs().add(tNode.getId());
-        }
+        val tNode = TensorFlowMapper.getInstance().asIntermediate(tfNode, intermediateGraph);
 
         return tNode;
     }
 
     protected static TVariable importVariable(@NonNull NodeDef tfNode, @NonNull Map<String, TIndex> reverseVertexMap, int varId) {
+        if (tfNode.getName().equalsIgnoreCase("while/Less/y"))
+        //if (tfNode.getName().equalsIgnoreCase("while/Sum"))
+            log.debug("wow");
+
         val variable = new TVariable();
         val attributes = tfNode.getAttrMap();
         List<Integer> dimensions = new ArrayList<>();
@@ -526,6 +527,9 @@ public class TensorFlowImport {
         variable.setPlaceholder(isPlaceholder);
 
         int[] arrayShape = null;
+
+        if (tfNode.getName().equalsIgnoreCase("while/Const"))
+            log.debug("");
 
         if (tfNode.getName().equalsIgnoreCase("mixed4b/concat_dim")) {
             log.debug("concat found!");
@@ -565,7 +569,7 @@ public class TensorFlowImport {
 
             TensorProto tensor = value.getTensor();
             log.debug("Dtype: {}", tensor.getDtype());
-            if (tensor.getDtype() == DataType.DT_FLOAT || tensor.getDtype() == DataType.DT_DOUBLE) {
+            if (tensor.getDtype() == DataType.DT_FLOAT || tensor.getDtype() == DataType.DT_DOUBLE || tensor.getDtype() == DataType.DT_INT32 || tensor.getDtype() == DataType.DT_INT64) {
 
                 INDArray array = getNDArrayFromTensor(tensor);
                 variable.setShape(array.shape());
@@ -575,6 +579,11 @@ public class TensorFlowImport {
 
                 assert shape != null;
                 assert shape.length > 0;
+
+                // in most of cases this loop will fix scalars. i.e shapes [0, 1] or [1, 0]
+                for (int e = 0; e < shape.length; e++)
+                    if (shape[e] == 0)
+                        shape[e] = 1;
 
                 variable.setShape(shape);
             }
@@ -589,28 +598,30 @@ public class TensorFlowImport {
         return variable;
     }
 
-    protected static void traverseList(@NonNull TGraph intermediateGraph, @NonNull List<NodeDef> tfNodesList, @NonNull Map<String, TIndex> reverseVertexMap,  Set<String> skipList, AtomicInteger varsCnt, AtomicInteger nodesCnt, int offset) {
+    protected static void traverseList(@NonNull TGraph intermediateGraph, @NonNull List<NodeDef> tfNodesList, int offset) {
         for (int e = offset; e < tfNodesList.size(); e++) {
             val tfNode = tfNodesList.get(e);
 
-            if (skipList.contains(tfNode.getName().toLowerCase()))
+            if (intermediateGraph.getSkipSet().contains(tfNode.getName()))
                 continue;
 
-            skipList.add(tfNode.getName().toLowerCase());
+            intermediateGraph.getSkipSet().add(tfNode.getName());
 
             boolean isConst = tfNode.getOp().equalsIgnoreCase("const");
             boolean isVar = tfNode.getOp().startsWith("VariableV");
             boolean isPlaceholder = tfNode.getOp().startsWith("Placeholder");
 
             if (isConst || isVar || isPlaceholder) {
-                val variable = importVariable(tfNode, reverseVertexMap, varsCnt.decrementAndGet());
+                val variable = importVariable(tfNode, intermediateGraph.getReverseMap(), intermediateGraph.getNewVariableId());
                 log.info("Adding var [{}:{}]", variable.getName(), variable.getId());
 
                 intermediateGraph.getVariableSpace().addVariable(variable.getId(), variable);
             } else {
-                int cCnt = nodesCnt.incrementAndGet();
+                int cCnt = intermediateGraph.getNewNodeId();
 
                 // operation node
+                if (tfNode.getOp().equalsIgnoreCase("NoOp"))
+                    continue;
 
                 if (tfNode.getOp().equalsIgnoreCase("merge"))
                     continue;
@@ -619,7 +630,7 @@ public class TensorFlowImport {
                     /*
                         on while/enter we'll open 2 scopes: 1st scope for condition, 2nd scope for loop body
                     */
-                    val tNode = importWhileLoop(intermediateGraph, reverseVertexMap, e, skipList, tfNodesList, varsCnt, nodesCnt);
+                    val tNode = importWhileLoop(intermediateGraph, e, tfNodesList);
                     intermediateGraph.addNode(tNode);
 
                     continue;
@@ -627,9 +638,9 @@ public class TensorFlowImport {
 
                 log.info("Adding op [{}]", tfNode.getOp());
 
-                val tNode = importNode(intermediateGraph, tfNode, reverseVertexMap, cCnt);
+                val tNode = importNode(intermediateGraph, tfNode, cCnt);
 
-                log.debug("Node: {}", tNode);
+                log.info("Node: {}", tNode);
                 intermediateGraph.addNode(tNode);
             }
         }
@@ -653,7 +664,7 @@ public class TensorFlowImport {
         val tfNodesList = tfGraph.getNodeList();
 
         // we're just starting our recursive fn here
-        traverseList(intermediateGraph, tfNodesList, reverseVertexMap, skipList, varsCnt, nodesCnt, 0);
+        traverseList(intermediateGraph, tfNodesList, 0);
 
         return intermediateGraph;
     }
@@ -734,7 +745,19 @@ public class TensorFlowImport {
                 return array;
             } else {
                 // FIXME: INT bytebuffers should be converted to floating point
-                throw new UnsupportedOperationException("To be implemented yet");
+                //throw new UnsupportedOperationException("To be implemented yet");
+                long length = ArrayUtil.prodLong(arrayShape);
+                // binary representation
+                val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
+                val fb = bb.order(ByteOrder.nativeOrder()).asIntBuffer();
+                val fa = new float[fb.capacity()];
+                for (int e = 0; e < fb.capacity(); e++)
+                    fa[e] = (float) fb.get(e);
+
+                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                //log.debug("SUM1: {}", array.sumNumber());
+                //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
+                return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_FLOAT) {
             if (tfTensor.getFloatValCount() == 1) {
@@ -835,169 +858,4 @@ public class TensorFlowImport {
         throw new RuntimeException("Wtf?");
     }
 
-    protected static OpState getOpStateFromNodeDef(NodeDef tfNode, int numInputs) {
-        return getOpStateFromNodeDef(tfNode, numInputs, null, null);
-    }
-
-    protected static OpState getOpStateFromNodeDef(NodeDef tfNode, int numInputs, TNode tNode, TVariableSpace variableSpace) {
-        String lc = tfNode.getOp().toLowerCase();
-        if (lc.equalsIgnoreCase("while"))
-            log.info("While found");
-
-        log.debug("Looking for [{}] op...", lc);
-        if (numInputs > 0 && numInputs <= 2) {
-            int opNum = Nd4j.getOpFactory().getOpNumIfExists(lc);
-
-            if (opNum >= 0) {
-                /*
-                OpState opState = OpState.builder()
-                        .opType(BaseOp.getOpType(Nd4j.getOpFactory().getOpByName(lc)))
-                        .opNum(opNum)
-                        .opName(lc)
-                        .build();
-                        */
-                val type = BaseOp.getOpType(Nd4j.getOpFactory().getOpByName(lc));
-
-                if (type != Op.Type.SHAPE && type != Op.Type.CUSTOM) {
-                    val op = Nd4j.getOpFactory().getOpByName(lc);
-                    OpState opState = OpState.builder()
-                            .opType(type)
-                            .extraArgs(op.extraArgs())
-                            .opNum(opNum)
-                            .opName(lc)
-                            .build();
-
-                    return opState;
-                }
-            }
-        }
-
-        OpState opState = OpState.builder()
-                .opType(Op.Type.CUSTOM)
-                .opNum(-1)
-                .opName(tfNode.getOp())
-                .build();
-
-         if (lc.equalsIgnoreCase("conv2d")) {
-
-
-             val aStrides = tfNode.getAttrOrThrow("strides");
-             val tfStrides = aStrides.getList().getIList();
-             val sY = tfStrides.get(1);
-             val sX = tfStrides.get(2);
-
-             val aPadding = tfNode.getAttrOrDefault("padding", null);
-
-             val paddingMode = aPadding.getS().toStringUtf8();
-
-             // we know that second input to conv2d is weights array
-             val weightsIndex = tNode.getInputs().get(1);
-             val variable = variableSpace.getVariable(weightsIndex);
-
-             val kY = variable.getArray().size(0);
-             val kX = variable.getArray().size(1);
-
-             variable.setArray(variable.getArray().permute(3, 2, 0, 1).dup('c'));
-
-             boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
-
-             if (!isSameMode)
-                 log.debug("Mode: {}", paddingMode);
-
-            log.debug("Conv2D: k: [{}, {}]; s: [{}, {}]; padding: {}", kY, kX, sY, sX,  paddingMode);
-
-             opState.setExtraBits(new int[] {kY, kX, sY.intValue(), sX.intValue(), 0, 0, 1, 1, isSameMode ? 1 : 0});
-         } else if (lc.equalsIgnoreCase("avgpool") || lc.equalsIgnoreCase("maxpool")) {
-             val aStrides = tfNode.getAttrOrThrow("strides");
-             val tfStrides = aStrides.getList().getIList();
-             val sY = tfStrides.get(1);
-             val sX = tfStrides.get(2);
-
-             val aKernels = tfNode.getAttrOrThrow("ksize");
-             val tfKernels = aKernels.getList().getIList();
-
-             val kY = tfKernels.get(1);
-             val kX = tfKernels.get(2);
-
-             val aPadding = tfNode.getAttrOrThrow("padding");
-
-             val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"","");
-
-             boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
-
-             if (!isSameMode)
-                 log.debug("Mode: {}", paddingMode);
-
-             log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kY, kX, sY, sX, aPadding);
-
-             opState.setExtraBits(new int[] {kY.intValue(), kX.intValue(), sY.intValue(), sX.intValue(), 0, 0, 1, 1, isSameMode ? 1 : 0 });
-
-         } else if (lc.equalsIgnoreCase("lrn")) {
-             val aAlpha = tfNode.getAttrOrThrow("alpha");
-             val aBeta = tfNode.getAttrOrThrow("beta");
-             val aBias = tfNode.getAttrOrThrow("bias");
-             val aDepth = tfNode.getAttrOrThrow("depth_radius");
-
-             val alpha = aAlpha.getF();
-             val beta = aBeta.getF();
-             val bias = aBias.getF();
-             val depth = aDepth.getF();
-
-
-             opState.setExtraArgs(new Object[]{alpha, beta, bias, depth});
-             log.debug("LRN: alpha: {}; beta: {}; bias: {}; depth: {};", alpha, beta, bias, depth);
-         } else if (lc.equalsIgnoreCase("reshape")) {
-             // in reshape operation we replace second input, and replace it with extra args
-             log.debug("TNode inputs: {}", tNode.getInputs());
-             val shapeIndex = tNode.getInputs().remove(1);
-             val variable = variableSpace.getVariable(shapeIndex);
-
-             assert variable != null;
-             assert variable.getShape() != null;
-
-             // we know that TF is always C order
-             int[] args = ArrayUtils.add(variable.getShape(),  0, (int)'c');
-
-             log.debug("Reshape node_{}, new shape: {}", tNode.getId(), Arrays.toString(args));
-
-             // new shape goes here
-             opState.setExtraBits(args);
-         } else if (lc.equalsIgnoreCase("concat")) {
-             log.debug("TNode inputs: {}", tNode.getInputs());
-             TIndex dimIndex;
-             int idx = -1;
-             int cnt = 0;
-             int concatDimension = 0;
-             for (val index:tNode.getInputs()) {
-                 log.debug("Trying to find node: [{}]", index);
-                 val variable = variableSpace.getVariable(index);
-
-                 // concat dimension is only possible
-                 if (variable != null && variable.getId() < 0 && variable.getArray() == null) {
-                     idx = cnt;
-                     concatDimension = variable.getShape()[0];
-                 }
-                 cnt++;
-             }
-
-             if (idx < 0)
-                 throw new ND4JIllegalStateException("Can't find dimension for concatenatiion");
-
-             // deleting index of concat dimension
-             tNode.getInputs().remove(idx);
-
-             // if that's convolution graph, we should swap dimensions
-             if (concatDimension == 3)
-                 concatDimension = 1;
-
-             opState.setExtraBits(new int[]{concatDimension});
-             log.debug("Concat dimension: {}", concatDimension);
-         }
-
-         if (!Nd4j.getExecutioner().getCustomOperations().containsKey(lc))
-             log.warn("Unknown op: [{}]", lc);
-             //throw new ND4JIllegalStateException("Unknown operation requested: ["+ tfNode.getOp() +"]");
-
-        return opState;
-    }
 }

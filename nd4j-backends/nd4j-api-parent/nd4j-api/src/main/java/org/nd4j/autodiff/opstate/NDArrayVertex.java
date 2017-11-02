@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SDVariable;
 
 /**
  * Created by agibsonccc on 4/6/17.
@@ -12,17 +13,15 @@ import org.nd4j.autodiff.samediff.SameDiff;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class NDArrayVertex extends Vertex<NDArrayInformation>  {
+public class NDArrayVertex extends Vertex<SDVariable>  {
     private OpState opState;
     private SameDiff sameDiff;
 
 
 
     public NDArrayVertex(SameDiff sameDiff, int idx, int depth, int[] shape) {
-        this(sameDiff,idx,depth,
-                NDArrayInformation.builder().shape(shape)
-                        .id(String.valueOf(idx))
-                        .build());
+        this(sameDiff,idx,depth,SDVariable.builder()
+        .sameDiff(sameDiff).shape(shape).vertexId(new int[]{idx}).build());
     }
 
     /**
@@ -36,7 +35,7 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
             SameDiff sameDiff,
             int idx,
             int depth,
-            NDArrayInformation value) {
+            SDVariable value) {
         super(idx, depth,value);
         this.sameDiff = sameDiff;
 

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.util;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.RandomUtils;
 
@@ -66,6 +67,22 @@ public class ArrayUtil {
         }
 
         return false;
+    }
+
+
+    /**
+     * Convert a int array to a string array
+     * @param arr the array to convert
+     * @return the equivalent string array
+     */
+    public static String[] convertToString(int[] arr) {
+        Preconditions.checkNotNull(arr);
+        String[] ret = new String[arr.length];
+        for(int i = 0; i < arr.length; i++) {
+            ret[i] = String.valueOf(arr[i]);
+        }
+
+        return ret;
     }
 
 

@@ -13,9 +13,10 @@ import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
@@ -201,8 +202,14 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(!frozen && Arrays.equals(edge.getFrom(),edge.getTo()))
             throw new IllegalArgumentException("No cycles allowed");
 
+        if(edge.getFrom() == null || edge.getFrom().length < 1)
+            throw new ND4JIllegalStateException("From must contain vertices.");
+
+        if(edge.getTo() == null || edge.getTo().length < 1)
+            throw new ND4JIllegalStateException("From must contain vertices.");
+
         for(int i : edge.getFrom())
-            if (i < 0)
+            if (i <= 0)
                 throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
 
         List<Edge<E>> fromList =  edges.get(edge.getFrom());
@@ -405,9 +412,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
                 NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo()[0]);
                 OpState opState = (OpState) edge.getValue();
                 g = g.with(node(String.valueOf(vertex.vertexID()))
-                        .with(Label.of(String.valueOf(vertex.getValue().getId())))
+                        .with(Label.of(String.valueOf(vertex.getValue().getVarName())))
                         .link(to(node(String.valueOf(v2.vertexID()))
-                                .with(Label.of(v2.getValue().getId())))
+                                .with(Label.of(v2.getValue().getVarName())))
                                 .with(Label.of(opState.getOpName()))));
 
 
@@ -415,8 +422,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         for(Vertex<V> vertex : getVertices().values()) {
             if(!edges.containsKey(vertex.getIdx())) {
-                NDArrayInformation vertex1 = (NDArrayInformation) vertex.getValue();
-                g = g.with(node(String.valueOf(vertex.vertexID())).with(Label.of(vertex1.getId())));
+                SDVariable vertex1 = (SDVariable) vertex.getValue();
+                g = g.with(node(String.valueOf(vertex.vertexID())).with(Label.of(vertex1.getVarName())));
             }
         }
 

@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ops.Op;
 
 import java.io.Serializable;
@@ -29,27 +30,11 @@ public class OpState implements Serializable {
     private Object[] extraArgs;
     private int[] extraBits;
     private Object[] extraArgsWithoutInPlace;
-    private NDArrayInformation[] results;
+    private SDVariable[] results;
     //function handle mainly used for autodiff invocation
     private DifferentialFunction differentialFunction;
     private boolean inPlace;
 
-     OpState(long n, Op.Type opType, String opName, int opNum, Number scalarValue, String[] vertexIds, String id, int[] axes, Object[] extraArgs, int[] extraBits, Object[] extraArgsWithoutInPlace, NDArrayInformation[] results, DifferentialFunction differentialFunction, boolean inPlace) {
-        this.n = n;
-        this.opType = opType;
-        this.opName = opName;
-        this.opNum = opNum;
-        this.scalarValue = scalarValue;
-        this.vertexIds = vertexIds;
-        this.id = id;
-        this.axes = axes;
-        this.extraArgs = extraArgs;
-        this.extraBits = extraBits;
-        this.extraArgsWithoutInPlace = extraArgsWithoutInPlace;
-        this.results = results;
-        this.differentialFunction = differentialFunction;
-        this.inPlace = inPlace;
-    }
 
     public DifferentialFunction getDifferentialFunction() {
         if(differentialFunction != null)

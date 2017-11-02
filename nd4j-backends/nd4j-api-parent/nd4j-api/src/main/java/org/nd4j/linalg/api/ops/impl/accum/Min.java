@@ -168,7 +168,7 @@ public class Min extends BaseAccumulation {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        validateDifferentialFunctionsameDiff(i_v1);
+        f().validateDifferentialFunctionsameDiff(i_v1);
         DifferentialFunction ret = f().doGradChoose(this,i_v1.get(0),dimensions);
 
         return Collections.singletonList(ret);

@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,76 +20,40 @@ import java.util.List;
 @Slf4j
 @Getter
 public class Conv3D extends DynamicCustomOp {
-   
-     private int dT;
-     private int dW;
-     private int dH;
-     private int pT;
-     private int pW;
-     private int pH;
-     private int dilationT;
-     private int dilationW;
-     private int dilationH;
-     private int aT;
-     private int aW;
-     private int aH;
-     private boolean biasUsed;
+
+    protected Conv3DConfig config;
 
     public Conv3D() {}
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public Conv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions,boolean inPlace, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
-        super(null,sameDiff, inputFunctions, inPlace);
-        this.dT = dT;
-        this.dW = dW;
-        this.dH = dH;
-        this.pT = pT;
-        this.pW = pW;
-        this.pH = pH;
-        this.dilationT = dilationT;
-        this.dilationW = dilationW;
-        this.dilationH = dilationH;
-        this.aT = aT;
-        this.aW = aW;
-        this.aH = aH;
-        this.biasUsed = biasUsed;
-       addArgs();
-
-    }
-
-    @Builder(builderMethodName = "execBuilder")
-    public Conv3D(INDArray[] inputs, INDArray[] outputs, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH, int aT, int aW, int aH, boolean biasUsed) {
-        super(null,inputs,outputs);
-        this.dT = dT;
-        this.dW = dW;
-        this.dH = dH;
-        this.pT = pT;
-        this.pW = pW;
-        this.pH = pH;
-        this.dilationT = dilationT;
-        this.dilationW = dilationW;
-        this.dilationH = dilationH;
-        this.aT = aT;
-        this.aW = aW;
-        this.aH = aH;
-        this.biasUsed = biasUsed;
+    @Builder(builderMethodName = "builder")
+    public Conv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
+        super(null,sameDiff, inputFunctions, false);
+        setSameDiff(sameDiff);
+        setArgs(inputFunctions);
+        if(inputs != null)
+            getInputArguments().addAll(Arrays.asList(inputs));
+        if(outputs != null)
+            getOutputArguments().addAll(Arrays.asList(outputs));
+        this.config = conv3DConfig;
         addArgs();
+
     }
+
 
     private void addArgs() {
-        getIArguments().add(dT);
-        getIArguments().add(dW);
-        getIArguments().add(dH);
-        getIArguments().add(pT);
-        getIArguments().add(pW);
-        getIArguments().add(pH);
-        getIArguments().add(dilationT);
-        getIArguments().add(dilationW);
-        getIArguments().add(dilationH);
-        getIArguments().add(aT);
-        getIArguments().add(aW);
-        getIArguments().add(aH);
-        getIArguments().add(fromBoolean(biasUsed));
+        getIArguments().add(getConfig().getDT());
+        getIArguments().add(getConfig().getDW());
+        getIArguments().add(getConfig().getDH());
+        getIArguments().add(getConfig().getPT());
+        getIArguments().add(getConfig().getPW());
+        getIArguments().add(getConfig().getPH());
+        getIArguments().add(getConfig().getDilationT());
+        getIArguments().add(getConfig().getDilationW());
+        getIArguments().add(getConfig().getDilationH());
+        getIArguments().add(getConfig().getAT());
+        getIArguments().add(getConfig().getAW());
+        getIArguments().add(getConfig().getAH());
+        getIArguments().add(fromBoolean(getConfig().isBiasUsed()));
 
     }
 
@@ -105,20 +70,12 @@ public class Conv3D extends DynamicCustomOp {
         List<DifferentialFunction> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
-        Conv3DDerivative conv3DDerivative = Conv3DDerivative.sameDiffDerivativeBuilder()
-                .dH(dH)
-                .dT(dT)
-                .biasUsed(biasUsed)
-                .aT(aT)
-                .aH(aH)
-                .aW(aW)
-                .dilationH(dilationH)
-                .dilationT(dilationT)
-                .dilationW(dilationW)
-                .pH(pH)
-                .pW(pW)
-                .pT(pT)
-                .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+        Conv3DDerivative conv3DDerivative = Conv3DDerivative.derivativeBuilder()
+               .conv3DConfig(config)
+                .inputFunctions(args())
+                .outputs(this.getOutputArguments().toArray(new INDArray[this.getOutputArguments().size()]))
+                .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .sameDiff(sameDiff)
                 .build();
         ret.addAll(Arrays.asList(conv3DDerivative.getOutputFunctions()));
         return ret;

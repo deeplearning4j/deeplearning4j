@@ -1,11 +1,8 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.transforms.Constant;
-import org.nd4j.linalg.api.ops.impl.transforms.Ones;
-import org.nd4j.linalg.api.ops.impl.transforms.Zero;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -16,17 +13,17 @@ public interface FunctionFactory {
 
     DifferentialFunction invoke(String name, Object[] args);
 
-    Constant val(NDArrayInformation iX);
+    Constant val(SDVariable iX);
 
 
 
-    SDVariable var(String iName, NDArrayInformation iX);
+    SDVariable var(String iName, SDVariable iX);
 
 
 
-    Zero zero(int[] shape);
+    SDVariable zero(int[] shape);
 
-    Ones one(int[] shape);
+    SDVariable one(int[] shape);
 
 
     DifferentialFunction tile(DifferentialFunction iX, int[] repeat);

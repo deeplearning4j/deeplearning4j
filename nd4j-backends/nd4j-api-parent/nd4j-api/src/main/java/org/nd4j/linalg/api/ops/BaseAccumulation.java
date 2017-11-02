@@ -27,6 +27,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Base class for accumulation, initiates the initial entry
  * with respect to the child class. Also contains baseline fields
@@ -47,9 +50,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         if (i_v != null) {
             this.args = new DifferentialFunction[] {i_v};
             this.dimensions = dimensions;
-            validateDifferentialFunctionsameDiff(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v);
 
-            addEdges(sameDiff,args[0],name(), Shape.getReducedShape(i_v.getResultShape(),dimensions));
+            f().addFunctionEdges(this);
+
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -63,10 +67,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         if (i_v != null) {
             this.args = new DifferentialFunction[] {i_v,i_v2};
             this.dimensions = dimensions;
-            validateDifferentialFunctionsameDiff(i_v);
-            validateDifferentialFunctionsameDiff(i_v2);
+            f().validateDifferentialFunctionsameDiff(i_v);
+            f().validateDifferentialFunctionsameDiff(i_v2);
+            f().addFunctionEdges(this);
 
-            addEdges(sameDiff,args[0],args[1],name());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -117,21 +121,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
 
-    @Override
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction i_v1,
-                            DifferentialFunction i_v2,
-                            String opName) {
-        //skip empty dimensions
-        if(dimensions == null)
-            return;
-        addEdges(sameDiff,i_v1,i_v2,opName,
-                Op.Type.REDUCE3,
-                Shape.getReducedShape(i_v1.getResultShape(),
-                        dimensions));
 
-
-    }
 
     private void init() {
         if (z == null || x == z)
@@ -304,6 +294,21 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             z.assign(number);
         }
     }
+
+    @Override
+    public Type opType() {
+        if(args() != null && args().length > 1)
+            return Type.REDUCE3;
+        return Type.REDUCE;
+    }
+
+    @Override
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>(1);
+        ret.add(Shape.getReducedShape(arg().getResultShape(),dimensions));
+        return ret;
+    }
+
 
     @Override
     public void setFinalResultComplex(IComplexNumber number) {

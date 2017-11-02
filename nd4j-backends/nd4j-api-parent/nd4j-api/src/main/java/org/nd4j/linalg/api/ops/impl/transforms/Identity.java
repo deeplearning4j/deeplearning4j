@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Identity function
@@ -142,8 +143,7 @@ public class Identity extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction grad = sameDiff.setupFunction(new Ones(sameDiff,i_v.get(0).getResultShape(),new int[]{sameDiff.graph().nextVertexId()}));
-        return Collections.singletonList(grad);
+        return Collections.<DifferentialFunction> singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
     }
 
 }

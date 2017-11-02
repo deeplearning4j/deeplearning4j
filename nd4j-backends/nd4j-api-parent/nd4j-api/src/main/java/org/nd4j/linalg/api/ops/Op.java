@@ -62,7 +62,8 @@ public interface Op {
         SHAPE,
         CONDITIONAL,
         LOOP,
-        IF
+        IF,
+        RETURN,
     }
 
     /**

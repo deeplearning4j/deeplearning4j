@@ -145,8 +145,8 @@ public class Log extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsameDiff(i_v);
-        validateDifferentialFunctionsameDiff(arg());
+        f().validateDifferentialFunctionsameDiff(i_v);
+        f().validateDifferentialFunctionsameDiff(arg());
         DifferentialFunction toInverse = sameDiff.setupFunction(f().div(i_v.get(0),arg()));
         return Collections.singletonList(toInverse);
     }

@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseModule;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
 import java.util.List;
 
@@ -15,14 +17,9 @@ import java.util.List;
 @Slf4j
 public class SConv2DDerivative extends SConv2D {
 
-    @Builder(builderMethodName = "sameDiffDerivativeBuilder")
-    public SConv2DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs,boolean inPlace, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        super(sameDiff, inputs, inPlace, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode);
-    }
-
-    @Builder(builderMethodName = "execDerivativeBuilder")
-    public SConv2DDerivative(INDArray[] inputs, INDArray[] outputs, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        super(inputs,outputs, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode);
+    @Builder(builderMethodName = "sDerviativeBuilder")
+    public SConv2DDerivative(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
+        super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
     }
 
     public SConv2DDerivative() {}

@@ -2,20 +2,21 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class Constant extends BaseTransformOp {
 
-    protected NDArrayInformation m_x;
+    protected SDVariable m_x;
     protected int[] shape;
 
     public Constant() {
@@ -23,7 +24,7 @@ public class Constant extends BaseTransformOp {
 
 
     protected Constant(SameDiff sameDiff,
-                       NDArrayInformation i_v,
+                       SDVariable i_v,
                        int[] shape,
                        boolean inPlace,int[] vertexId) {
         super();
@@ -39,7 +40,7 @@ public class Constant extends BaseTransformOp {
         }
 
         this.vertexId = vertexId;
-        validateFunctionReference(this);
+        f().validateFunctionReference(this);
         if(sameDiff.getGraph().getVertex(this.vertexId[0]) == null) {
             sameDiff.getGraph().addVertex(new NDArrayVertex(sameDiff,vertexId[0],0,i_v));
         }
@@ -47,7 +48,7 @@ public class Constant extends BaseTransformOp {
     }
 
     public Constant(SameDiff sameDiff,
-                    NDArrayInformation i_v,
+                    SDVariable i_v,
                     int[] shape,int[] vertexId) {
         this(sameDiff,i_v,shape,false,vertexId);
     }
@@ -93,7 +94,7 @@ public class Constant extends BaseTransformOp {
 
 
     @Override
-    public NDArrayInformation getResult() {
+    public SDVariable getResult() {
         return this.m_x;
     }
 
@@ -109,10 +110,9 @@ public class Constant extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsameDiff(i_v);
-        Zero ret = new Zero(sameDiff,shape,new int[]{sameDiff.graph().nextVertexId()});
-        DifferentialFunction add = ret;
-        return Arrays.asList(add);
+        f().validateDifferentialFunctionsameDiff(i_v);
+        return Collections.<DifferentialFunction> singletonList(sameDiff.zero("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+
     }
 
     @Override
