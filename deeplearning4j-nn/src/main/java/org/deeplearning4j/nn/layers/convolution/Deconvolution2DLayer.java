@@ -21,7 +21,17 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Arrays;
 
 /**
- * 2D deconvolution layer implementation
+ * 2D deconvolution layer implementation.
+ *
+ * Deconvolutions are also known as transpose convolutions or fractionally strided convolutions.
+ * In essence, deconvolutions swap forward and backward pass with regular 2D convolutions.
+ *
+ * See the paper by Matt Zeiler for details:
+ * http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf
+ *
+ * For an intuitive guide to convolution arithmetic and shapes, see:
+ * https://arxiv.org/abs/1603.07285v1
+ *
  *
  * @author Max Pumperla
  */
@@ -87,18 +97,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         IActivation afn = layerConf().getActivationFn();
         Pair<INDArray, INDArray> p = preOutput4d(true, true);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
-
-
-        System.out.println("weight shape:");
-        System.out.println(Arrays.toString(weights.shape()));
-        System.out.println("weight grad shape:");
-        System.out.println(Arrays.toString(weightGradView.shape()));
-        System.out.println("bias grad shape:");
-        System.out.println(Arrays.toString(biasGradView.shape()));
-        System.out.println("input epsilon shape:");
-        System.out.println(Arrays.toString(epsilon.shape()));
-        System.out.println("output epsilon shape:");
-        System.out.println(Arrays.toString(reshapedEpsilon.shape()));
 
         CustomOp op;
         if(layerConf().hasBias()){
@@ -221,27 +219,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
-
-
-//        System.out.println("kernel shape:");
-//        System.out.println(Arrays.toString(kernel));
-//        System.out.println("padding shape:");
-//        System.out.println(Arrays.toString(pad));
-//        System.out.println("dilation shape:");
-//        System.out.println(Arrays.toString(dilation));
-//        System.out.println("Conv mode:");
-//        System.out.println(convolutionMode.toString());
-//
-//
-//        System.out.println("Input shape:");
-//        System.out.println(Arrays.toString(input.shape()));
-//        System.out.println("Output shape:");
-//        System.out.println(Arrays.toString(reshapedOutput.shape()));
-//        System.out.println("Weights shape:");
-//        System.out.println(Arrays.toString(weights.shape()));
-//        System.out.println("Bias shape:");
-//        System.out.println(Arrays.toString(bias.shape()));
-
 
         int[] args = new int[] {
                 kH, kW, strides[0], strides[1],

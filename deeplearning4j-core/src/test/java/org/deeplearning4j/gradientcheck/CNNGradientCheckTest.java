@@ -661,11 +661,11 @@ public class CNNGradientCheckTest {
         int width = 7;
         int height = 7;
         int inputDepth = 3;
-        int[] kernelSizes = new int[]{1};
-        int[] strides = {2};
-        int[] dilation = {1};
+        int[] kernelSizes = new int[]{1, 3};
+        int[] strides = {1, 2};
+        int[] dilation = {1, 2};
         Activation[] activations = new Activation[]{Activation.SIGMOID};
-        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Same};
+        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same};
 
         Nd4j.getRandom().setSeed(12345);
 

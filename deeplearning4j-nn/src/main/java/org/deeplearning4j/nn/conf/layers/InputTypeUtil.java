@@ -33,7 +33,6 @@ public class InputTypeUtil {
         int kH = kernelSize[0];
         int kW = kernelSize[1];
         if(dilation[0] != 1){
-            //Use *effective* kernel size, accounting for dilation
             kH = kH + (kH-1)*(dilation[0]-1);
         }
         if(dilation[1] != 1){
