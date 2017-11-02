@@ -87,7 +87,7 @@ namespace nd4j {
                 ekX = kX;
             } else {
                 ekY = kY + (kY - 1) * (dY - 1);
-                ekX = kY + (kY - 1) * (dY - 1);
+                ekX = kX + (kX - 1) * (dX - 1);
             }
 
             int oY = sY * (iY - 1) + ekY - 2 * pY;
