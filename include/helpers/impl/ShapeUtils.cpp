@@ -67,29 +67,33 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
     aPlusB.insert(aPlusB.end(), oldShapeB.begin(), oldShapeB.end());            
     return aPlusB;
 }
-    
- 
 
-//////////////////////////////////////////////////////////////////////////
+
+    template<typename T>
+    int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr) {
+        return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), arr.getWorkspace());
+    }
+
+    //////////////////////////////////////////////////////////////////////////
 // evaluate resulting shape after reduce operation
 template<typename T>
-int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr) {
+int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int *shape , nd4j::memory::Workspace* workspace) {
         
-    int rank = arr.rankOf();
+    int rank = shape::rank(const_cast<int*>(shape));
     shape::checkDimensions(rank, dimensions);
        
 	int* newShape = nullptr;
     int dimSize = dimensions.size();
 	int newRank = rank - dimSize;
 	if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
-		ALLOCATE(newShape, arr.getWorkspace(), 8, int);						// set newRank = 2
+		ALLOCATE(newShape, workspace, 8, int);						// set newRank = 2
 		newShape[0] = 2;
 		newShape[1] = 1;
 		newShape[2] = 1;			
 	}
        else {
-		ALLOCATE(newShape, arr.getWorkspace(), shape::shapeInfoLength(2), int);
-		int* tempShape = shape::removeIndex(arr.shapeOf(), const_cast<int*>(dimensions.data()), rank, dimSize);
+		ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);
+		int* tempShape = shape::removeIndex(shape::shapeOf(const_cast<int*>(shape)), const_cast<int*>(dimensions.data()), rank, dimSize);
            newShape[0] = newRank;                      // set rank
 		for(int i=0; i<newRank; ++i)
 			newShape[i+1] = tempShape[i]; 			// ignore zero index (rank)
@@ -98,8 +102,8 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
 	//ensure vector is proper shape 
 	if (newRank == 1) {
 		int oldValue = newShape[1];
-		RELEASE(newShape, arr.getWorkspace());
-		ALLOCATE(newShape, arr.getWorkspace(), shape::shapeInfoLength(2), int);		// set newRank = 2
+		RELEASE(newShape, workspace);
+		ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);		// set newRank = 2
 		newShape[0] = 2;
         if (dimensions[0] == 0) {
                newShape[1] = 1; 
@@ -191,28 +195,56 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
         return shapeInfoNew;
     }
 
+    template<typename T>
+    bool ShapeUtils<T>::insertDimension(int rank, int *shape, int axis, int dimension) {
+        if (axis >= rank || axis <= -rank)
+            return false;
+
+        if (axis < 0)
+            axis = rank + axis;
+
+        std::vector<int> tmp;
+        for (int e = 0; e < rank; e++) {
+            if (shape[e] != 1)
+                tmp.emplace_back(shape[e]);
+        }
+
+        tmp.insert(tmp.begin() + axis, dimension);
+        memcpy(shape, tmp.data(), tmp.size() * sizeof(int));
+
+        return true;
+    }
+
+    template<typename T>
+    bool ShapeUtils<T>::copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset) {
+        if (source.size() < offset + rank)
+            return false;
+
+        for (int e = offset; e < offset + rank; e++)
+            target.push_back(source[e]);
+
+        return true;
+    }
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) dimensions array without dimensions that are present in input vector
     template<typename T>
     std::vector<int> ShapeUtils<T>::evalDimsToExclude(const int rank, const std::vector<int> dimensions) {
-    
-    std::vector<int> newDimensions;
-    for(int i=0; i<rank; ++i)
-        for(int j=0; j<dimensions.size(); ++j)
-            if(i != dimensions[j])
-                newDimensions.emplace_back(i);
 
-    return newDimensions;
-}
+        std::vector<int> newDimensions;
+        for(int i=0; i<rank; ++i)
+            for(int j=0; j<dimensions.size(); ++j)
+                if(i != dimensions[j])
+                    newDimensions.emplace_back(i);
+
+        return newDimensions;
+    }
 
 
 
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;
-
-
-
-
 }

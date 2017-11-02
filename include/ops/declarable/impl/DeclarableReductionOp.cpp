@@ -5,6 +5,7 @@
 #include <ops/declarable/DeclarableReductionOp.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <helpers/TAD.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -21,16 +22,16 @@ namespace nd4j {
 
         template <typename T>
         nd4j::ShapeList* DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block)  {
-            int numDims = block.getIArguments()->at(0);
+           // int numDims = block.getIArguments()->at(0);
             std::vector<int> dims;
-            for (int e = 0; e < numDims; e++)
-                dims.push_back(block.getIArguments()->at(e+1));
+            for (int e = 0; e < block.getIArguments()->size(); e++)
+                dims.push_back(block.getIArguments()->at(e));
 
-            if (numDims > 1)
+            if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
 
             // special case - output is scalar
-            if (numDims == 1 && dims.at(0) == MAX_INT) {
+            if (dims.size() == 1 && dims.at(0) == MAX_INT) {
                 int* newShape;
                 ALLOCATE(newShape, block.getWorkspace(), 8, int);
 
@@ -46,24 +47,13 @@ namespace nd4j {
                 return new ShapeList(newShape);
             }
 
-            shape::TAD tad(inputShape->at(0), dims.data(), numDims);
+            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
             tad.createTadOnlyShapeInfo();
 
-            Nd4jIndex tadLength = shape::tadLength(inputShape->at(0), dims.data(), numDims);
+            Nd4jIndex tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
             Nd4jIndex numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            int* newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-
-            // FIXME!
-            newShape[0] = 2;
-            newShape[1] = 1;
-            newShape[2] = numTads;
-            newShape[3] = numTads;
-            newShape[4] = 1;
-            newShape[5] = 0;
-            newShape[6] = 1;
-            newShape[7] = 99;
+            int *newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), block.getWorkspace());
 
             return new ShapeList(newShape);
         }

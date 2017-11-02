@@ -198,6 +198,54 @@ namespace simdOps {
 	};
 
     template<typename T>
+    class FloorDiv {
+    public:
+        op_def static T op(T d1, T d2) {
+            return nd4j::math::nd4j_floor<T>(d1 / d2);
+        }
+
+        op_def static T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_floor<T>(d1 / d2);
+        }
+
+        op_def static T op(T d1) {
+            return nd4j::math::nd4j_floor<T>(d1);
+        }
+
+        // op for MetaOps
+        op_def static T op(T d1, T *params) {
+            return nd4j::math::nd4j_floor<T>(d1 / params[0]);
+        }
+    };
+
+    template<typename T>
+    class TruncateDiv {
+    public:
+        op_def static T op(T d1, T d2) {
+            int i1 = (int) d1;
+            int i2 = (int) d2;
+            return (T)(i1 / i2);
+        }
+
+        op_def static T op(T d1, T d2, T *params) {
+            int i1 = (int) d1;
+            int i2 = (int) d2;
+            return (T)(i1 / i2);
+        }
+
+        op_def static T op(T d1) {
+            return d1;
+        }
+
+        // op for MetaOps
+        op_def static T op(T d1, T *params) {
+            int i1 = (int) d1;
+            int i2 = (int) params[0];
+            return (T)(i1 / i2);
+        }
+    };
+
+    template<typename T>
     class Remainder {
     public:
         op_def static T op(T d1, T d2) {
@@ -875,6 +923,17 @@ namespace simdOps {
 
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_sqrt<T>(d1);
+		}
+	};
+
+	template<typename T>
+	class RSqrt {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return (T) 1.0f / nd4j::math::nd4j_sqrt<T>(d1);
 		}
 	};
 

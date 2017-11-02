@@ -110,7 +110,8 @@
         (72,simdOps::MatchCondition) ,\
         (73,simdOps::ClipByValue) ,\
         (74,simdOps::Swish) ,\
-        (75,simdOps::SwishDerivative)
+        (75,simdOps::SwishDerivative) ,\
+        (76,simdOps::RSqrt)
 
 
 
@@ -141,7 +142,9 @@
         (15,simdOps::ReverseMod),\
         (16,simdOps::GreaterThanOrEqual),\
         (17,simdOps::Remainder),\
-        (18,simdOps::FMod)
+        (18,simdOps::FMod) ,\
+        (19, simdOps::TruncateDiv) ,\
+        (20, simdOps::FloorDiv)
 
 
 
@@ -228,8 +231,9 @@
         (58,simdOps::Xor),\
         (59,simdOps::Remainder),\
         (60,simdOps::FMod),\
-        (69,simdOps::Atan2)
-
+        (69,simdOps::Atan2) ,\
+        (19, simdOps::TruncateDiv),\
+        (20, simdOps::FloorDiv)
 
 
 #define INDEX_REDUCE_OPS \

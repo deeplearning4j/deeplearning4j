@@ -159,6 +159,10 @@ namespace nd4j {
             return true;
         }
 
+        template <typename T>
+        void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, NDArray<T>* array) {
+            this->storeResult(block, outputNumber, *array);
+        }
 
         template <typename T>
         void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, NDArray<T>& array) {

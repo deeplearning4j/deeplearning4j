@@ -114,3 +114,23 @@ TEST_F(ParityOpsTests, TestUnstack1) {
     delete result;
     delete tads;
 }
+
+
+TEST_F(ParityOpsTests, ExpandDimsTest1) {
+    NDArray<float> input('c', {5, 5});
+    NDArrayFactory<float>::linspace(1, input);
+    auto reshaped = input.reshape('c', {5, 1, 5});
+
+    nd4j::ops::expand_dims<float> op;
+    auto result = op.execute({&input}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(reshaped->isSameShape(z));
+    ASSERT_TRUE(reshaped->equalsTo(z));
+
+    delete result;
+
+}

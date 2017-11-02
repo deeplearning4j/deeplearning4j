@@ -23,3 +23,7 @@ int nd4j::IndicesList::size() {
 nd4j::NDIndex* nd4j::IndicesList::at(int idx) {
     return _indices.at(idx);
 }
+
+void nd4j::IndicesList::push_back(NDIndex* idx) {
+    _indices.emplace_back(idx);
+}

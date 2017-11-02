@@ -23,6 +23,8 @@
 namespace nd4j {
     namespace ops {
         DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1);
+        DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
+        DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
 
         DECLARE_OP(noop, -1, -1, true);
         DECLARE_OP(testop2i2o, 2, 2, true);
@@ -46,8 +48,10 @@ namespace nd4j {
         DECLARE_OP(divide, 2, 1, true);
         DECLARE_OP(reversedivide, 2, 1, true);
         DECLARE_OP(zeros_as, 1, 1, false);
+        DECLARE_OP(ones_as, 1, 1, false);
         DECLARE_OP(maximum, 2, 1, true);
         DECLARE_OP(minimum, 2, 1, true);
+        DECLARE_OP(square, 1, 1, true);
 
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
@@ -85,7 +89,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(unstack, 1, -1, false, 0, 1);
         DECLARE_CUSTOM_OP(im2col, 1, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(col2im, 1, 1, false, 0, 9);
-        DECLARE_CUSTOM_OP(strided_slice, 1, 1, true, 0, -1); // TODO: new op type needed. that returns VIEW
+        DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, -1); // TODO: new op type needed. that returns VIEW
+        DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -1);
         DECLARE_CUSTOM_OP(upsampling2d, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(upsampling2d_bp, 2, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(tensormmul, 2, 1, false, 0, -1);   
@@ -96,6 +101,10 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reshapeas, 2, 1, true, 0, 0);      
         DECLARE_CUSTOM_OP(transpose, 1, 1, true, 0, 0);
         DECLARE_CUSTOM_OP(stack, -1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(size, 1, 1, false, 0, 0); // add DeclarableScalarOp?
+        DECLARE_CUSTOM_OP(rank, 1, 1, false, 0, 0); // ^^^^
+        DECLARE_CUSTOM_OP(onehot, 1, 1, false, 2, 2);
+        DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, 1);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);
@@ -114,6 +123,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                
         DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented        
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
+        DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
 
 
         DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);

@@ -143,7 +143,7 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T>::~Variable() {
-            nd4j_debug("Removing variable [%i:%i]\n", _id, _index);
+            //nd4j_debug("Removing variable [%i:%i]\n", _id, _index);
 
             if (_ndarray != nullptr && _removable)
                 delete _ndarray;

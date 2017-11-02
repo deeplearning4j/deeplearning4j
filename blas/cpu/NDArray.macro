@@ -67,6 +67,10 @@ BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template applyReduce
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template applyReduce3, float16, (const NDArray<float16>* other, const float16* extraParams) const, REDUCE3_OPS)
 BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template applyReduce3, double, (const NDArray<double>* other, const double* extraParams) const, REDUCE3_OPS)
 
+BUILD_CALL_1(template void nd4j::NDArray<float>::template applyIndexReduce, float, (const NDArray<float>* target, const std::vector<int> & alpha, const float* beta) const, INDEX_REDUCE_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::template applyIndexReduce, float16, (const NDArray<float16>* target, const std::vector<int> & alpha, const float16* beta) const, INDEX_REDUCE_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::template applyIndexReduce, double, (const NDArray<double>* target, const std::vector<int> & alpha, const double* beta) const, INDEX_REDUCE_OPS)
+
 BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template applyIndexReduce, float, (const std::vector<int> & alpha, const float* beta) const, INDEX_REDUCE_OPS)
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template applyIndexReduce, float16, (const std::vector<int> & alpha, const float16* beta) const, INDEX_REDUCE_OPS)
 BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template applyIndexReduce, double, (const std::vector<int> & alpha, const double* beta) const, INDEX_REDUCE_OPS)

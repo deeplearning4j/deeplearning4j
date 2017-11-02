@@ -68,6 +68,7 @@ namespace nd4j {
             * This method attaches array to specific Variable, identified by node ID and outputNumber (which is output index for multi-output operations)
             */
             void storeResult(Block<T> &block, int outputNumber, NDArray<T>& array);
+            void storeResult(Block<T> &block, int outputNumber, NDArray<T>* array);
             nd4j::NDArray<T> *getZ(Block<T>& block, int inputId = 0);
 
             /**

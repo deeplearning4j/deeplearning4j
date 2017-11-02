@@ -80,7 +80,7 @@ namespace nd4j {
             if (pair.first == 0)
                 throw "0 requested";
 
-            nd4j_debug("Requested variable: [%i:%i]\n", pair.first, pair.second);
+            //nd4j_debug("Requested variable: [%i:%i]\n", pair.first, pair.second);
 
             if (pair.first < 0)
                 return getVariable(pair.first);
@@ -211,7 +211,7 @@ namespace nd4j {
                 return;
             }
 
-            nd4j_verbose("Adding Variable to Space: id: %i; Array is null: %i;\n", id, variable->getNDArray() == nullptr);
+            //nd4j_debug("Adding Variable to Space: id: %i; Array is null: %i;\n", id, variable->getNDArray() == nullptr);
 
             _varmap.lock();
 

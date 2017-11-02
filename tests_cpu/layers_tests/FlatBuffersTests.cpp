@@ -261,7 +261,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
 TEST_F(FlatBuffersTest, ReadFile1) {
 
-    uint8_t* data = nd4j::graph::readFlatBuffers("../../../tests_cpu/resources/adam_sum.fb");
+    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/adam_sum.fb");
 
     auto fg = GetFlatGraph(data);
     auto restoredGraph = new Graph<float>(fg);
@@ -283,7 +283,7 @@ TEST_F(FlatBuffersTest, ReadFile1) {
 }
 
 TEST_F(FlatBuffersTest, ReadFile2) {
-    uint8_t* data = nd4j::graph::readFlatBuffers("../../../tests_cpu/resources/adam_sum.fb");
+    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/adam_sum.fb");
     Nd4jPointer result = GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) data);
 
     ArrayList<float> arrays(GetFlatResult(result));
@@ -294,7 +294,7 @@ TEST_F(FlatBuffersTest, ReadFile2) {
 }
 
 TEST_F(FlatBuffersTest, ReadFile3) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/adam_sum.fb");
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/adam_sum.fb");
     Nd4jStatus status = GraphExecutioner<float>::execute(graph);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -307,7 +307,7 @@ TEST_F(FlatBuffersTest, ReadFile3) {
 
 
 TEST_F(FlatBuffersTest, ReadInception1) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/inception.fb");
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/inception.fb");
 
     Nd4jStatus status = GraphExecutioner<float>::execute(graph);
 
@@ -335,7 +335,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
     exp.assign(3.0);
 
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/reduce_dim.fb");
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
 
     Nd4jStatus status = GraphExecutioner<float>::execute(graph);
 
@@ -359,7 +359,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
 TEST_F(FlatBuffersTest, ReadLoops_3argsWhile_1) {
     // TF graph:
     // https://gist.github.com/raver119/b86ef727e9a094aab386e2b35e878966
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/three_args_while.fb");
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/three_args_while.fb");
 
     ASSERT_TRUE(graph != nullptr);
 
@@ -393,11 +393,13 @@ TEST_F(FlatBuffersTest, ReadLoops_3argsWhile_1) {
 TEST_F(FlatBuffersTest, ReadLoops_NestedWhile_1) {
     // TF graph:
     // https://gist.github.com/raver119/2aa49daf7ec09ed4ddddbc6262f213a0
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("../../../tests_cpu/resources/nested_while.fb");
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/nested_while.fb");
 
     ASSERT_TRUE(graph != nullptr);
 
     Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto x = graph->getVariableSpace()->getVariable(28);
     auto y = graph->getVariableSpace()->getVariable(29);
@@ -408,4 +410,26 @@ TEST_F(FlatBuffersTest, ReadLoops_NestedWhile_1) {
 
     // we should have only 3 cycles in nested loop
     ASSERT_NEAR(30.0f, z->getNDArray()->meanNumber(), 1e-5);
+
+    delete graph;
+}
+
+
+TEST_F(FlatBuffersTest, ReadStridedSlice_1) {
+    // TF graph: https://gist.github.com/raver119/fc3bf2d31c91e465c635b24020fd798d
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_slice.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(2));
+
+    auto z = graph->getVariableSpace()->getVariable(2)->getNDArray();
+
+    ASSERT_NEAR(73.5f, z->getScalar(0), 1e-5);
+
+    delete graph;
 }

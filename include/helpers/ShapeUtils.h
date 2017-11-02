@@ -20,6 +20,7 @@ namespace nd4j {
 
         // evaluate resulting shape after reduce operation
         static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr);
+        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int* shape, nd4j::memory::Workspace* workspace = nullptr);
 
 		// evaluate shape for array which is result of repeat operation applied to arr
     	static std::vector<int> evalRepeatShape(int dimension, const std::vector<int>& repeats, const NDArray<T>& arr);
@@ -29,6 +30,10 @@ namespace nd4j {
 
         // evaluate shapeInfo of transposed array
         static int* evalTranspShapeInfo(const NDArray<T>& arr);
+
+        static bool insertDimension(int rank, int *shape, int axis, int dimension);
+
+        static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
         // return new (shorter) dimensions array without dimensions that are present in input vector
         static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int> dimensions);

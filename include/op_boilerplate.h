@@ -45,13 +45,12 @@
  * @author Paul Dubs (@treo)
  * @author raver119@gmail.com
  */
-
-#define ELEMENT_THRESHOLD nd4j::Environment::getInstance()->elementwiseThreshold()
-#define TAD_THRESHOLD nd4j::Environment::getInstance()->tadThreshold()
-
 #pragma once
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
+
+#define ELEMENT_THRESHOLD nd4j::Environment::getInstance()->elementwiseThreshold()
+#define TAD_THRESHOLD nd4j::Environment::getInstance()->tadThreshold()
 
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 

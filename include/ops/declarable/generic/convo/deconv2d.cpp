@@ -44,6 +44,9 @@ namespace nd4j {
             int oY = z->sizeAt(2);
             int oX = z->sizeAt(3);
 
+            weights->printShapeInfo("weights");
+            input->printShapeInfo("input");
+            //auto wP = weights->permute({1, 0, 2, 3});
             auto gcol = nd4j::NDArrayFactory<T>::tensorDot(weights, input, {0}, {1});
             gcol->permutei({3, 0, 1, 2, 4, 5});
 
@@ -52,6 +55,7 @@ namespace nd4j {
             gcol->template applyTransform<simdOps::Col2Im<T>>(z, extrasCol2Im.data());
 
             delete gcol;
+            //delete wP;
 
             if (bias != nullptr) {
                 z->template applyBroadcast<simdOps::Add<T>>({1}, bias);

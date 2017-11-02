@@ -354,7 +354,7 @@ namespace nd4j {
         }
 
         REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
             STORE_RESULT(*z);
             return ND4J_STATUS_OK;
@@ -463,6 +463,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(mergesum, mergeadd);
+        DECLARE_SYN(add_n, mergeadd);
 
         OP_IMPL(mergeavg, -1, 1, false) {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));

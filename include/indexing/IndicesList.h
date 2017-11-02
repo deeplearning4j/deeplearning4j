@@ -13,10 +13,11 @@ namespace nd4j {
     protected:
         std::vector<NDIndex *> _indices;
     public:
-        explicit IndicesList(std::initializer_list<NDIndex *> list);
+        explicit IndicesList(std::initializer_list<NDIndex *> list = {});
 
         int size();
         NDIndex* at(int idx);
+        void push_back(NDIndex* idx);
 
         ~IndicesList();
     };
