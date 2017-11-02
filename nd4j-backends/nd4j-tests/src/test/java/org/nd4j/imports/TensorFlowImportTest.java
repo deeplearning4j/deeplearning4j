@@ -304,6 +304,42 @@ public class TensorFlowImportTest {
     }
 
     @Test
+    public void testIntermediateStridedSlice1() throws Exception {
+        Nd4j.create(1);
+        val tg = TensorFlowImport.importIntermediate(new ClassPathResource("tf_graphs/tensor_slice.pb.txt").getFile());
+
+        assertNotNull(tg);
+
+        val constIn = tg.getVariableSpace().getVariable("StridedSlice/input");
+        assertNotNull(constIn);
+
+        assertEquals(139.5, constIn.getArray().sumNumber().doubleValue(), 1e-5);
+
+
+        // now converting to FlatBuffer
+        val fb = tg.asFlatBuffers();
+        assertNotNull(fb);
+/*
+        val offset = fb.position();
+
+        log.info("Length: {}; Offset: {};", fb.capacity(), offset);
+        val array = fb.array();
+
+        try (val fos = new FileOutputStream("../../../libnd4j/tests_cpu/resources/tensor_slice.fb"); val dos = new DataOutputStream(fos)) {
+            dos.write(array, offset, array.length - offset);
+        }
+        */
+    }
+
+    @Test
+    public void testIntermediateTensorArrayLoop1() throws Exception {
+        Nd4j.create(1);
+        val tg = TensorFlowImport.importIntermediate(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getFile());
+
+        assertNotNull(tg);
+    }
+
+    @Test
     public void testIntermediateHelper() throws Exception {
         assertTrue(TensorFlowMapper.getInstance().knownOps().size() > 0);
         assertTrue(TensorFlowMapper.getInstance().knownOps().contains("lrn"));

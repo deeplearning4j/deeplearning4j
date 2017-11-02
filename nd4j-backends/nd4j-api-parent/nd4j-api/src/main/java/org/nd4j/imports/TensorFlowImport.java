@@ -818,7 +818,7 @@ public class TensorFlowImport {
 
                 // binary representation
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
-                val fb = bb.order(ByteOrder.nativeOrder()).asFloatBuffer();
+                val fb = bb.order(ByteOrder.nativeOrder()).asDoubleBuffer();
                 val da = new double[fb.capacity()];
                 for (int e = 0; e < fb.capacity(); e++)
                     da[e] = fb.get(e);
