@@ -341,6 +341,7 @@ namespace shape {
             wholeThing = true;
             //vector case
         else {
+             // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
             if(dimension == 0 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
                 wholeThing = true;
             }
