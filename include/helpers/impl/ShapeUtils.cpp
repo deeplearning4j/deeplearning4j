@@ -191,23 +191,6 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
         return shapeInfoNew;
     }
 
-
-//////////////////////////////////////////////////////////////////////////
-// return new (shorter) dimensions array without dimensions that are present in input vector
-    template<typename T>
-    std::vector<int> ShapeUtils<T>::evalDimsToExclude(const int rank, const std::vector<int> dimensions) {
-    
-    std::vector<int> newDimensions;
-    for(int i=0; i<rank; ++i)
-        for(int j=0; j<dimensions.size(); ++j)
-            if(i != dimensions[j])
-                newDimensions.emplace_back(i);
-
-    return newDimensions;
-}
-
-
-
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;

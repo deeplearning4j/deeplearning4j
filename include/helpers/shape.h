@@ -3120,7 +3120,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
     INLINEDEF Nd4jIndex length(std::initializer_list<int>& shape) {
-        Nd4jIndex ret = 1;
+        Nd4jIndex ret = 0;
         for (auto v : shape) {
             ret *= v;
         }
