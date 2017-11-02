@@ -809,6 +809,48 @@ TEST_F(ConvolutionTests, TestDeconv_bp_1) {
 
 }
 
+TEST_F(ConvolutionTests, TestDeconv_bp_2) {
+    /*
+     Input shape:
+    [3, 3, 14, 14]
+    Output shape:
+    [3, 2, 15, 15]
+    Weights shape:
+    [3, 2, 2, 2]
+    Bias shape:
+    [1, 2]
+    weight shape:
+    [3, 2, 2, 2]
+    weight grad shape:
+    [3, 2, 2, 2]
+    bias grad shape:
+    [1, 2]
+    input epsilon shape:
+    [3, 2, 15, 15]
+    output epsilon shape:
+    [3, 3, 14, 14]
+     */
+/*
+    NDArray<double> input('c', {3, 3, 14, 14});
+    NDArray<double> bias('c', {1, 2});
+    NDArray<double> weights('c',{3, 2, 2, 2});
+    NDArray<double> epsilon('c', {3, 2, 15, 15});
+
+
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
+    NDArrayFactory<double>::linspace(1, bias);
+    NDArrayFactory<double>::linspace(1, epsilon);
+
+    nd4j::ops::deconv2d_bp<double> op;
+
+    auto result = op.execute({&input, &weights, &bias, &epsilon}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+
+    delete result;*/
+}
+
 TEST_F(ConvolutionTests, TestDeconv_ff_2) {
 
     double expB[] = {218.f,   227.f,   236.f,   245.f,   254.f,   263.f,   272.f,   281.f,   290.f,   299.f,    308.f,   317.f,   326.f,   335.f,   344.f,   353.f,   270.f,   282.f,   294.f,   306.f,    318.f,   330.f,   342.f,   354.f,   366.f,   378.f,   390.f,   402.f,   414.f,   426.f,    438.f,   450.f,   650.f,   659.f,   668.f,   677.f,   686.f,   695.f,   704.f,   713.f,    722.f,   731.f,   740.f,   749.f,   758.f,   767.f,   776.f,   785.f,   846.f,   858.f,    870.f,   882.f,   894.f,   906.f,   918.f,   930.f,   942.f,   954.f,   966.f,   978.f,    990.f,  1002.f,  1014.f,  1026.f,  1082.f,  1091.f,  1100.f,  1109.f,  1118.f,  1127.f,    1136.f,  1145.f,  1154.f,  1163.f,  1172.f,  1181.f,  1190.f,  1199.f,  1208.f,  1217.f,    1422.f,  1434.f,  1446.f,  1458.f,  1470.f,  1482.f,  1494.f,  1506.f,  1518.f,  1530.f,    1542.f,  1554.f,  1566.f,  1578.f,  1590.f,  1602.f,};

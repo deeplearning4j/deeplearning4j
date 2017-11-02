@@ -54,6 +54,7 @@ namespace nd4j {
             NDArray<T>* output = OUTPUT_VARIABLE(0);
 
             Nd4jIndex prod = batchSize * outDepth * oY * oX;
+            REQUIRE_TRUE(output->sizeAt(0) == batchSize && output->sizeAt(1) == outDepth && output->sizeAt(2) == oY && output->sizeAt(3) == oX, 0, "Expected output shape is [%i, %i, %i, %i] but got [%i, %i, %i, %i] instead", batchSize, outDepth, oY, oX, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3))
             REQUIRE_TRUE(output->lengthOf() == prod, 0, "Z should have total length of %i, but got %i instead", prod, output->lengthOf());
 
             std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));

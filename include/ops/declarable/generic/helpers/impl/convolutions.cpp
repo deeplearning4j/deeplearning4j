@@ -662,8 +662,8 @@ namespace nd4j {
                 oW = (int) nd4j::math::nd4j_ceil(iW * 1.f / sW);
             }
             else {
-                oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;
-                oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;
+                oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
+                oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
             }
         }
 
