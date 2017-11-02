@@ -72,9 +72,8 @@ public class ConvolutionUtils {
             return new int[] {hOut, wOut};
         }
 
-        int hOut = strides[0] * (hIn - 1) + kernel[0] - 2 * padding[0];
-        int wOut = strides[1] * (wIn - 1) + kernel[1] - 2 * padding[1];
-
+        int hOut = strides[0] * (hIn - 1) + eKernel[0] - 2 * padding[0];
+        int wOut = strides[1] * (wIn - 1) + eKernel[1] - 2 * padding[1];
 
         return new int[] {hOut, wOut};
     }

@@ -40,20 +40,18 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            int[] weightsShape = new int[] {outputDepth, inputDepth, kernel[0], kernel[1]};
+            int[] weightsShape = new int[] {inputDepth, outputDepth, kernel[0], kernel[1]};
 
             INDArray weights = WeightInitUtil.initWeights(
                     fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c', weightView);
-            weights = weights.permute(1, 0, 2, 3);
 
             return weights;
         } else {
             int[] kernel = layerConf.getKernelSize();
 
             INDArray weights =  WeightInitUtil.reshapeWeights(
-                    new int[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0],
+                    new int[] {layerConf.getNIn(), layerConf.getNOut(), kernel[0],
                             kernel[1]}, weightView, 'c');
-            weights = weights.permute(1, 0, 2, 3);
 
             return weights;
         }

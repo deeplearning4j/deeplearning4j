@@ -105,7 +105,7 @@ public class Deconvolution2D extends ConvolutionLayer {
                     + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
+        return InputTypeUtil.getOutputTypeDeconvLayer(inputType, kernelSize, stride, padding, dilation,
                 convolutionMode, nOut, layerIndex, getLayerName(), Deconvolution2DLayer.class);
     }
 
