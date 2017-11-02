@@ -80,18 +80,26 @@ namespace nd4j {
             int pX = INT_ARG(5);
             int dY = INT_ARG(6);
             int dX = INT_ARG(7);
+            const bool isSameMode = block.getIArguments()->at(8) != 0;
 
-            int ekY, ekX;
-            if (dY == 1 && dX == 1) {
-                ekY = kY;
-                ekX = kX;
+            int oY, oX;
+
+            if (isSameMode) {
+                oY = sY * iY;
+                oX = sX * iX;
             } else {
-                ekY = kY + (kY - 1) * (dY - 1);
-                ekX = kX + (kX - 1) * (dX - 1);
-            }
+                int ekY, ekX;
+                if (dY == 1 && dX == 1) {
+                    ekY = kY;
+                    ekX = kX;
+                } else {
+                    ekY = kY + (kY - 1) * (dY - 1);
+                    ekX = kX + (kX - 1) * (dX - 1);
+                }
 
-            int oY = sY * (iY - 1) + ekY - 2 * pY;
-            int oX = sX * (iX - 1) + ekX - 2 * pX;
+                oY = sY * (iY - 1) + ekY - 2 * pY;
+                oX = sX * (iX - 1) + ekX - 2 * pX;
+            }
 
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);

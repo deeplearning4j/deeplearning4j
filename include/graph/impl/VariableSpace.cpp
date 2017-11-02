@@ -49,7 +49,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        int nd4j::graph::VariableSpace<T>::numberOfPlaceholders() {
+        int nd4j::graph::VariableSpace<T> ::numberOfPlaceholders() {
             return _placeholders.size();
         }
 
