@@ -93,7 +93,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this.workspaceId = "AMDSI_ITER-" + java.util.UUID.randomUUID().toString();
         this.deviceId = deviceId;
 
-        if (iterator.resetSupported())
+        if (iterator.resetSupported() && !iterator.hasNext())
             this.backedIterator.reset();
 
         this.thread = new AsyncPrefetchThread(buffer, iterator, terminator);
