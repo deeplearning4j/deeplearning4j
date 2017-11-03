@@ -165,7 +165,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, NDArray<T>& array) {
+        void nd4j::ops::DeclarableOp<T>::storeResult(nd4j::graph::Block<T> &block, int outputNumber, NDArray<T>& array) {
 
             if (nd4j::Environment::getInstance()->isDebug()) {
                 T mean = array.meanNumber();
@@ -178,7 +178,18 @@ namespace nd4j {
             if (outputNumber == 0 && this->getOpDescriptor()->getNumberOfOutputs() == 1) {
                 // we're adding this check, to avoid saving in legacy execution mechanism
                 if (!block.getVariableSpace()->hasVariable(block.getNodeId())) {
-                    nd4j_debug("Skipping storeResult for node_%i:%i\n", block.getNodeId(), outputNumber);
+                    //nd4j_debug("Skipping storeResult for node_%i:%i\n", block.getNodeId(), outputNumber);
+                    std::pair<int,int> pair(block.getNodeId(), outputNumber);
+                    auto var = new nd4j::graph::Variable<T>(nullptr, nullptr, block.getNodeId(), outputNumber);
+                    if (block.isInplace()) {
+                        auto arr = new NDArray<T>(array.buffer(), array.shapeInfo(), array.getWorkspace());
+                        arr->triggerAllocationFlag(false, false);
+                        var->setNDArray(arr);
+                    } else {
+                        var->setNDArray(&array);
+                    }
+
+                    block.getVariableSpace()->putVariable(pair, var);
                     return;
                 }
 
