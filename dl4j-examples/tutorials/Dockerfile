@@ -7,6 +7,7 @@ RUN set -ex \
     build-essential \
     pkg-config \
     gfortran \
+    dos2unix \
  ' \
  && apt-get update && apt-get install -y --no-install-recommends \
     $buildDeps \
@@ -66,18 +67,19 @@ RUN curl -sL http://archive.apache.org/dist/maven/maven-3/3.5.0/binaries/apache-
    | gunzip \
    | tar x -C /tmp/
 
-RUN apt-get update && apt-get install dos2unix
-COPY notebook_json $ZEPPELIN_HOME/notebook_json
-ADD json-folder-ids.py $ZEPPELIN_HOME
+COPY . $ZEPPELIN_HOME/dockerfiles
+# moves all additional zeppelin files to their respective locations
+# remaining files are notebooks, we move those once everything else is gone
+RUN mv $ZEPPELIN_HOME/dockerfiles/docker/conf $ZEPPELIN_HOME/conf \
+    && mv $ZEPPELIN_HOME/dockerfiles/docker/json-folder-ids.py $ZEPPELIN_HOME \
+    && mv $ZEPPELIN_HOME/dockerfiles/docker/pom.xml $ZEPPELIN_HOME/otherpoms \
+    && mv $ZEPPELIN_HOME/dockerfiles/ $ZEPPELIN_HOME/notebook_json
+
 RUN cd $ZEPPELIN_HOME && python json-folder-ids.py && mkdir $ZEPPELIN_HOME/otherpoms && cd $ZEPPELIN_HOME/otherpoms
-ADD pom.xml $ZEPPELIN_HOME/otherpoms
 RUN cd $ZEPPELIN_HOME/otherpoms && /tmp/apache-maven-3.5.0/bin/mvn package
-ADD zeppelin-env.sh $ZEPPELIN_HOME/conf
-ADD log4j.properties $ZEPPELIN_HOME/conf
 RUN dos2unix $ZEPPELIN_HOME/conf/zeppelin-env.sh
 
-EXPOSE 4040
-EXPOSE 8080
+EXPOSE 8080 4040
 
 WORKDIR $ZEPPELIN_HOME
 CMD ["bin/zeppelin.sh"]
