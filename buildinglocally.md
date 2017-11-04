@@ -30,6 +30,8 @@ Your local machine will require some essential software and environment variable
 - gcc (4.9 or higher)
 - maven (3.3 or higher)
 
+**Note**: There is a known [issue](https://github.com/deeplearning4j/nd4j/issues/2240) with building ND4J using maven 3.5.2.
+
 Architecture-specific software includes:
 
 CPU options:
