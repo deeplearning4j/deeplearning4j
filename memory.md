@@ -21,7 +21,7 @@ Despite the differences between these two approaches, the idea stays the same: o
 
 # Configuring Memory Limits
 
-With DL4J/ND4J, there are two types of memory limits to be aware of and configure: The on-heap JVM memory limit, and the off-heap memory limit. Both limits are controlled via Java command line arguments:
+With DL4J/ND4J, there are two types of memory limits to be aware of and configure: The on-heap JVM memory limit, and the off-heap memory limit, where NDArrays live. Both limits are controlled via Java command line arguments:
 
 `-Xms` - this option defines how much memory JVM heap will use at application start.
 
@@ -35,8 +35,11 @@ Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
 
 ```-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxphysicalbytes=8G```
 
+**Notice**: With GPU systems, the maxbytes and maxphysicalbytes settings currently also effectively defines the memory limit for the GPU, since the off-heap memory is mapped (via NDArrays) to the GPU - read more about this in the GPU-section below.
+
 **Best practice**: for many applications, you want less RAM to be used in JVM heap, and more RAM to be used in off-heap, since all NDArrays are stored there. If you allocate too much to the JVM heap, there will not be enough memory left for the off-heap memory.
 
+**PLEASE NOTE**: If you get a "RuntimeException: Can't allocate [HOST] memory: xxx; threadId: yyy", you have run out of off-heap memory. You should most often use a WorkspaceConfiguration to handle your NDArrays allocation, in particular in e.g. training or evaluation/inference loops - if you do not, the NDArrays and their off-heap (and GPU) resources are reclaimed using the JVM GC, which might introduce severe latency and possible out of memory situations.
 
 **PLEASE NOTE**: If you don't specify JVM heap limit, it will use 1/4 of your total system RAM as the limit, by default.
 
