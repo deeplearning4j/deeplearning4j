@@ -43,6 +43,8 @@ public class Sum extends BaseAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
+
+
     public Sum() {}
 
     public Sum(INDArray x, INDArray y, INDArray z, long n) {

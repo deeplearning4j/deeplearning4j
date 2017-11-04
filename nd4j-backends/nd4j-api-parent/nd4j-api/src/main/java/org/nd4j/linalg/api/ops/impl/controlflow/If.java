@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.util.*;
 
@@ -67,16 +68,14 @@ public class If extends DifferentialFunction implements CustomOp {
         this.trueBody = trueBody;
         this.falseBody = falseBody;
         this.blockName = blockName;
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1});
-        this.dummyResult.setDifferentialFunction(this);
-        NDArrayVertex dummyVertex = dummyResult.getVertex();
-        this.vertex = dummyVertex;
-        this.vertexId = new int[] {dummyVertex.vertexID()};
+        int[] vertexId = {parent.graph().nextVertexId()};
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
+        this.vertexId = vertexId;
         int[] inputEdges = new int[inputVars.length];
         String[] opEdgeIds = new String[inputVars.length * 2];
 
         for(int i = 0; i < inputEdges.length; i++) {
-            inputEdges[i] = inputVars[i].getVertex().vertexID();
+            inputEdges[i] = inputVars[i].getVertexId()[0];
         }
 
         /**
@@ -105,16 +104,15 @@ public class If extends DifferentialFunction implements CustomOp {
         this.loopBodyExecution = parent.defineFunction(trueBodyName,trueBody,inputVars);
         this.falseBodyExecution = parent.defineFunction(falseBodyName,falseBody,inputVars);
         parent.defineFunction(blockName,conditionBody,inputVars);
-        parent.putSubFunction("predicate-eval-body",sameDiff);
+        parent.putSubFunction("predicate-eval-body-" + UUID.randomUUID().toString(),sameDiff);
         //get a reference to the actual loop body
         this.loopBodyExecution = parent.getFunction(trueBodyName);
+        parent.putFunction(vertexId,this);
 
         OpState opState = OpState.builder()
                 .opName(opName())
                 .opType(Op.Type.CONDITIONAL)
-                .differentialFunction(this)
                 .inPlace(false)
-                .results(new SDVariable[]{dummyResult})
                 .id(UUID.randomUUID().toString())
                 .vertexIds(opEdgeIds)
                 .build();
@@ -135,10 +133,6 @@ public class If extends DifferentialFunction implements CustomOp {
             this.trueBodyExecuted = false;
     }
 
-    @Override
-    public NDArrayVertex getVertex() {
-        return vertex;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

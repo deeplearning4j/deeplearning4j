@@ -86,6 +86,7 @@ public class SoftMax extends BaseTransformOp {
 
     public SoftMax(INDArray x) {
         super(x);
+
     }
 
     @Override

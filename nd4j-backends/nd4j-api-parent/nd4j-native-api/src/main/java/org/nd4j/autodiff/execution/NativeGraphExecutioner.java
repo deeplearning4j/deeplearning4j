@@ -111,7 +111,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
             // each of inputs can be either external variable, or another node
             for (int in: ins) {
-                SDVariable state = action.getOutput();
+                SDVariable state = sd.getVariableForVertexId(action.getOutputId());
 
                 int[] realIn;
                 if (state != null && mappedVariables.containsKey(state.getVarName())) {

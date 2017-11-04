@@ -60,6 +60,7 @@ public class ScalarAdd extends BaseScalarOp {
 
     public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
+
     }
 
     public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {

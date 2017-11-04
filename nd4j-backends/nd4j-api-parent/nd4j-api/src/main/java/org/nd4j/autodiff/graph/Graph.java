@@ -16,6 +16,7 @@ import org.nd4j.autodiff.graph.exception.NoEdgesException;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -64,8 +65,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     public Graph(boolean allowMultipleEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
         vertices = new TreeMap<>();
-        edges = new TreeMap<>(Ints.lexicographicalComparator());
-        this.incomingEdges = new TreeMap<>(Ints.lexicographicalComparator());
+        edges = new IntArrayKeyMap<>();
+        this.incomingEdges = new IntArrayKeyMap<>();
         nextVertexId = 0;
     }
 
@@ -398,6 +399,22 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         return sb.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Graph<?, ?> graph = (Graph<?, ?>) o;
+        return toString().equals(graph.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (edges != null ? edges.hashCode() : 0);
+        result = 31 * result + (vertices != null ? vertices.hashCode() : 0);
+        return result;
+    }
 
     /**
      * Save the graph to a file with graphviz
@@ -437,6 +454,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(frozen) {
             return nextVertexId;
         }
+        else if(nextVertexId > vertices.size())
+            throw new ND4JIllegalStateException("Unable to increment vertex id.  No vertices added.");
         return ++nextVertexId; // Make vertexIds start at 1 to uncover array indexing issues.
     }
 }

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
+import com.google.common.base.Preconditions;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -37,11 +38,15 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
+            addAsNewVertexId();
             f().addFunctionEdges(this);
+            this.opState.setAxes(dimension);
 
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
+
+        Preconditions.checkState(sameDiff.setupFunction(this) == this);
     }
 
     public BaseBroadcastOp(SameDiff sameDiff) {
@@ -62,11 +67,17 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
+            addAsNewVertexId();
             f().addFunctionEdges(this);
+            this.opState.setAxes(dimension);
+
 
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
+
+        Preconditions.checkState(sameDiff.setupFunction(this) == this);
+
     }
 
 
@@ -89,10 +100,16 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
+            addAsNewVertexId();
             f().addFunctionEdges(this);
+            this.opState.setAxes(dimension);
+
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+
+        Preconditions.checkState(sameDiff.setupFunction(this) == this);
+
     }
 
 

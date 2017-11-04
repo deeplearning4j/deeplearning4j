@@ -30,17 +30,10 @@ public class OpState implements Serializable {
     private Object[] extraArgs;
     private int[] extraBits;
     private Object[] extraArgsWithoutInPlace;
-    private SDVariable[] results;
-    //function handle mainly used for autodiff invocation
-    private DifferentialFunction differentialFunction;
     private boolean inPlace;
 
 
-    public DifferentialFunction getDifferentialFunction() {
-        if(differentialFunction != null)
-            return differentialFunction.getSameDiff().setupFunction(differentialFunction);
-        return null;
-    }
+
 
     /**
      *
@@ -86,16 +79,9 @@ public class OpState implements Serializable {
         if (opType != opState.opType) return false;
         if (opName != null ? !opName.equals(opState.opName) : opState.opName != null) return false;
         if (scalarValue != null ? !scalarValue.equals(opState.scalarValue) : opState.scalarValue != null) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        if (!Arrays.equals(vertexIds, opState.vertexIds)) return false;
-        if (id != null ? !id.equals(opState.id) : opState.id != null) return false;
+           if (id != null ? !id.equals(opState.id) : opState.id != null) return false;
         if (!Arrays.equals(axes, opState.axes)) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        if(extraArgs != null && opState.extraArgs != null)
-            if(extraArgs.length != opState.extraArgs.length)
-                return false;
-        if (results != null ? !Arrays.equals(results,opState.results) : opState.results != null) return false;
-        return true;
+          return true;
     }
 
     @Override
@@ -110,7 +96,6 @@ public class OpState implements Serializable {
         result1 = 31 * result1 + Arrays.hashCode(axes);
         result1 = 31 * result1 + Arrays.hashCode(extraArgs);
         result1 = 31 * result1 + Arrays.hashCode(extraArgsWithoutInPlace);
-        result1 = 31 * result1 + (results != null ? Arrays.hashCode(results) : 0);
         return result1;
     }
 }

@@ -5,10 +5,13 @@ import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
+import org.nd4j.linalg.collection.IntArrayKeyMap;
+import org.nd4j.linalg.collection.IntArrayKeySet;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -99,19 +102,6 @@ public class SDGraph extends Graph<SDVariable,OpState> {
     }
 
 
-    /**
-     * Get the output vertices
-     * @return
-     */
-    public List<SDVariable> getOutputs() {
-        List<SDVariable> ret = new ArrayList<>();
-        for (int i : getVertices().keySet()) {
-            if (getEdgesOut(new int[]{i}).size() < 1)
-                ret.add(getVertex(i).getValue());
-        }
-
-        return ret;
-    }
 
     /**
      * Get the input vertices
@@ -119,17 +109,25 @@ public class SDGraph extends Graph<SDVariable,OpState> {
      */
     public List<SDVariable> getInputs() {
         List<SDVariable> ret = new ArrayList<>();
-        for (int i : getVertices().keySet()) {
-            int[] key = {i};
-            if (getVertexInDegree(key) < 1) {
-                ret.add(getVertex(i).getValue());
-            }
+        List<SDVariable> outVars = sameDiff.variables();
+        for (SDVariable entry : outVars) {
+            if(numInputsFor(entry.getVertexId()) < 1)
+                ret.add(entry);
         }
 
         return ret;
     }
 
-
+    /**
+     * Get the number of inputs for a particular vertex id
+     * @param vertexId the vertex id to check
+     * @return the number of inputs for a particular vertex
+     */
+    public int numInputsFor(int...vertexId)  {
+        if(getIncomingEdges().containsKey(vertexId))
+            return getIncomingEdges().get(vertexId).size();
+        return 0;
+    }
 
     /**
      *
@@ -140,10 +138,10 @@ public class SDGraph extends Graph<SDVariable,OpState> {
         Set<OpState> seenStates = new HashSet<>();
         if(reverse) {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
-            Map<int[],OpExecAction> opExecActionMap = new HashMap<>();
+            Map<int[],OpExecAction> opExecActionMap = new IntArrayKeyMap<>();
             //size the vertex id relative to where it would be encountered
             //in a reverse order traversal
-            final Map<int[],Integer> normalForwardOrderMap = new HashMap<>();
+            final Map<int[],Integer> normalForwardOrderMap = new IntArrayKeyMap<>();
             for(int i = forwardActions.size() - 1,j = 0; i >= 0; i--,j++) {
                 OpExecAction currAction = forwardActions.get(i);
                 normalForwardOrderMap.put(currAction.getOutputId(),j);
@@ -169,26 +167,26 @@ public class SDGraph extends Graph<SDVariable,OpState> {
             });
 
 
-            List<int[]> vertices = new ArrayList<>();
+            List<IntArrayKeyMap.IntArray> vertices = new ArrayList<>();
             for(List<Edge<OpState>> edge : getEdges().values())  {
                 for(Edge<OpState> edge1 : edge) {
-                    if(!vertices.contains(edge1.getTo())) {
-                        vertices.add(edge1.getTo());
+                    if(!vertices.contains(new IntArrayKeyMap.IntArray(edge1.getTo()))) {
+                        vertices.add(new IntArrayKeyMap.IntArray(edge1.getTo()));
                     }
                 }
             }
 
-            Collections.sort(vertices, new Comparator<int[]>() {
+            Collections.sort(vertices, new Comparator<IntArrayKeyMap.IntArray>() {
                 @Override
-                public int compare(int[] ints, int[] t1) {
-                    return Ints.compare(Ints.max(ints),Ints.max(t1));
+                public int compare(IntArrayKeyMap.IntArray ints, IntArrayKeyMap.IntArray t1) {
+                    return Ints.compare(Ints.max(ints.getBackingArray()),Ints.max(t1.getBackingArray()));
                 }
             });
 
 
 
-            for(int[] i : vertices) {
-                depthQueue.add(i);
+            for(IntArrayKeyMap.IntArray i : vertices) {
+                depthQueue.add(i.getBackingArray());
 
             }
 
@@ -237,14 +235,12 @@ public class SDGraph extends Graph<SDVariable,OpState> {
                     }
                 }
 
-               // Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
+                // Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
                 //add edges
                 Edge<OpState> opStateEdge = inputOpStates.get(0);
                 if(!seenStates.contains(opStateEdge.getValue())) {
                     ret.add(OpExecAction.builder()
-                            .output(opStateEdge.getValue().getResults()[0])
                             .opState(opStateEdge.getValue())
-                            .inputs(inputInfo.toArray(new SDVariable[inputInfo.size()]))
                             .inputsIds(Ints.toArray(inputIdsList))
                             .outputId(order[i])
                             .build());
@@ -361,8 +357,8 @@ public class SDGraph extends Graph<SDVariable,OpState> {
         }
         else {
             LinkedList<int[]> noIncoming = new LinkedList<>();
-            Map<int[], Set<int[]>> inputEdges = new TreeMap<>(Ints.lexicographicalComparator()); //key: vertex. Values: vertices that the key vertex receives input from
-            Map<int[], Set<int[]>> outputEdges = new TreeMap<>(Ints.lexicographicalComparator()); //key: vertex. Values: vertices that the key vertex outputs to
+            Map<int[], Set<int[]>> inputEdges = new IntArrayKeyMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
+            Map<int[], Set<int[]>> outputEdges = new IntArrayKeyMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
 
 
             for (int[] i : vertices) {
@@ -372,13 +368,13 @@ public class SDGraph extends Graph<SDVariable,OpState> {
                 }
 
                 List<Edge<OpState>> edges = getEdgesOut(i);
-                Set<int[]> outVertices = new TreeSet<>(Ints.lexicographicalComparator());
-                Set<int[]> currInputs = new TreeSet<>(Ints.lexicographicalComparator());
+                Set<int[]> outVertices = new IntArrayKeySet();
+                Set<int[]> currInputs = new IntArrayKeySet();
                 for (Edge<OpState> edge : edges) {
                     outVertices.add(edge.getTo());
                     Set<int[]> outputSetForInputIdx = outputEdges.get(i);
                     if (outputSetForInputIdx == null) {
-                        outputSetForInputIdx = new TreeSet<>(Ints.lexicographicalComparator());
+                        outputSetForInputIdx = new IntArrayKeySet();
                         outputEdges.put(i, outputSetForInputIdx);
                     }
 
@@ -446,7 +442,7 @@ public class SDGraph extends Graph<SDVariable,OpState> {
 
 
 
-    private int getMaxDepth(int[] vertexIdx) {
+    public int getMaxDepth(int[] vertexIdx) {
         int ret = -1;
         for(int vertexId : vertexIdx)
             if(getVertex(vertexId).depth() > ret)

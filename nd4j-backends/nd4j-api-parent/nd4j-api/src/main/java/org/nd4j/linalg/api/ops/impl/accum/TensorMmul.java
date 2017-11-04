@@ -69,7 +69,8 @@ public class TensorMmul extends BaseAccumulation {
         this.args = new DifferentialFunction[] {i_v1,i_v2};
         f().validateFunctionReference(i_v1);
         f().validateFunctionReference(i_v2);
-
+        this.shape = calculateOutputShape().get(0);
+        addAsNewVertexId();
         if(!addedEdges) {
             f().addFunctionEdges(this);
             addedEdges = true;

@@ -76,7 +76,7 @@ public class HardTanh extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().hardTanhDerivative(f().val(this.opState.getResults()[0]));
+        DifferentialFunction ret = f().hardTanhDerivative(f().val(this.sameDiff.getVariableForVertexId(resultVertexId())));
 
         return Collections.singletonList(ret);
     }
