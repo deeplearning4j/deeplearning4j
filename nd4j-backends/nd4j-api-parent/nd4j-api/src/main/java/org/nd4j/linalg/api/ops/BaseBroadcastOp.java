@@ -38,6 +38,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
+            this.shape = Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape());
             addAsNewVertexId();
             f().addFunctionEdges(this);
             this.opState.setAxes(dimension);
@@ -67,6 +68,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
+            this.shape = Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape());
             addAsNewVertexId();
             f().addFunctionEdges(this);
             this.opState.setAxes(dimension);

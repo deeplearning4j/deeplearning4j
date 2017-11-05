@@ -308,9 +308,9 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
         assertEquals(3, sameDiff.graph().numVertices());
-        assertEquals(2, sameDiff.graph().getEdges().size());
+        assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2, 2, 2}, new int[]{2, 2, 2}, new int[][]{{0}, {1}}), result.getShape());
-        assertEquals(32, sameDiff.numElements());
+        assertEquals(48, sameDiff.numElements());
     }
 
     @Test
@@ -442,6 +442,16 @@ public class SameDiffTests {
         SDVariable add = sdVariable.add(1.0);
         assertEquals(sameDiff.getVariableForVertexId(add.getVertexId()),add);
         assumeFalse(sameDiff.getFunctionForVertexId(sdVariable.getVertexId()) != null);
+    }
+
+
+
+    @Test
+    public void testUpdateVariable() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable one = sameDiff.one("one",new int[]{1,1});
+        sameDiff.updateVariableName(one.getVertexId(),"one-diff");
+        assertEquals(one.getArr(),sameDiff.getVariable("one-diff").getArr());
     }
 
 
@@ -718,7 +728,7 @@ public class SameDiffTests {
         SDVariable right = sameDiff.var("row",row);
         SDVariable test = left.add(right);
         sameDiff.exec();
-        assertEquals(assertion,test.getArr(true));
+        assertEquals(assertion,test.getArr());
     }
 
     @Test
@@ -752,7 +762,7 @@ public class SameDiffTests {
             activation.execBackwards();
             INDArray wGrad = activation.grad("w").getArr().reshape(vars.get("w").shape());
             vars.get("w").subi(wGrad.mul(lr));
-            System.out.println("Score: " + activation.getVariable("negtotalsum").getArr(true));
+            System.out.println("Score: " + activation.getVariable("negtotalsum").getArr());
         }
 
     }
@@ -1031,32 +1041,18 @@ public class SameDiffTests {
 
 
     @Test
-    public void testMmulGradientLogistic() {
+    public void testSumGradient() {
         SameDiff sameDiff = SameDiff.create();
-        Map<String,INDArray> inputs = variablesForInput();
-
-        sameDiff.defineFunction("mmulGradient", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable input = sameDiff.var("x",inputs.get("x"));
-                SDVariable input2 = sameDiff.var("w",inputs.get("w"));
-                SDVariable exp = sameDiff.mmul("mmul",input,input2);
-                SDVariable sigmoid = sameDiff.sigmoid("sigmoid",exp);
-                SDVariable sum = sameDiff.sum("sum",sigmoid,Integer.MAX_VALUE);
-                return new SDVariable[] {sum};
-            }
-        },inputs);
-
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> ops = sameDiff.getFunction("mmulGradient").execBackwards();
-        INDArray wGradAssertion = Nd4j.create(new double[]{0.665,-.5975,0.2525}).reshape(3,1);
-        INDArray mmulGradAssertion = Nd4j.valueArrayOf(4,0.25).reshape(4,1);
-        SDVariable wGrad = sameDiff.getFunction("mmulGradient").grad("w");
-        SDVariable mmulGrad = sameDiff.getFunction("mmulGradient").grad("mmul");
-        assertEquals(wGradAssertion,wGrad.getArr());
-        assertEquals(mmulGradAssertion,mmulGrad.getArr());
-
+        SDVariable twoByTwo = sameDiff.var("initial",Nd4j.linspace(1,4,4).reshape(2,2));
+        SDVariable sum = sameDiff.sum(twoByTwo,Integer.MAX_VALUE);
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = sameDiff.execBackwards();
+        SameDiff grad = sameDiff.getFunction("grad");
+        SDVariable gradArr = sameDiff.grad(twoByTwo.getVarName());
+        assertEquals(Nd4j.ones(2,2),gradArr.getArr());
     }
 
+
+ 
 
 
 
@@ -1361,6 +1357,17 @@ public class SameDiffTests {
             }
 
         }
+    }
+
+
+    @Test
+    public void testScalarAdd() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable twoByTwo = sameDiff.var("first",Nd4j.linspace(1,4,4).reshape(2,2));
+        SDVariable add = twoByTwo.add(1.0);
+        INDArray test = sameDiff.execAndEndResult();
+        INDArray assertion = Nd4j.linspace(1,4,4).reshape('f',2,2).add(1.0);
+        assertEquals(assertion,test);
     }
 
 

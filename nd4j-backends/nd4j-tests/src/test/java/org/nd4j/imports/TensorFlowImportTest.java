@@ -105,9 +105,8 @@ public class TensorFlowImportTest {
         val p0 = Nd4j.create(10, 10).assign(2.0);
         val p1 = Nd4j.create(10, 10).assign(3.0);
 
-
-        graph.variableMap().get("Placeholder").setArr(p0);
-        graph.variableMap().get("Placeholder_1").setArr(p1);
+        graph.associateArrayWithVariable(p0,graph.variableMap().get("Placeholder"));
+        graph.associateArrayWithVariable(p1, graph.variableMap().get("Placeholder_1"));
 
 
         graph.var("Placeholder", p0);

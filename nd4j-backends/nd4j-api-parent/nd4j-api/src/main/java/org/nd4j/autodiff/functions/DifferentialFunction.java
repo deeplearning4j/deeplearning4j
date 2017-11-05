@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.functions;
 
-import com.google.common.base.Preconditions;
 import com.rits.cloning.Cloner;
 import lombok.Data;
 import lombok.Getter;
@@ -255,11 +254,14 @@ public abstract class DifferentialFunction implements Differential {
             DifferentialFunction grad = var.getGradient();
             if(grad != null) {
                 DifferentialFunction ret = f().addi(differentialFunction, grad);
-                sameDiff.setVertexForId(ret.vertexId,sameDiff.getVariableForVertexId(ret.vertexId));
+                sameDiff.updateVariableName(ret.getVertexId(),var.getVarName() + "-grad");
+                sameDiff.setGradientForVertexId(var.vertexId,sameDiff.getVariableForVertexId(ret.vertexId));
+                sameDiff.setForwardVariableForVertexId(ret.vertexId,var);
             }
             else {
                 SDVariable gradVar = sameDiff.getVariableForVertexId(differentialFunction.getVertexId());
-                sameDiff.setVertexForId(var.vertexId, gradVar);
+                sameDiff.setGradientForVertexId(var.vertexId, gradVar);
+                sameDiff.setForwardVariableForVertexId(gradVar.vertexId,var);
             }
         }
 
@@ -289,7 +291,7 @@ public abstract class DifferentialFunction implements Differential {
     private INDArray getY() {
         if(args().length > 1) {
             SDVariable opId = args()[1].getResult();
-            INDArray ret = sameDiff.getVariable(opId.getVarName()).getArr();
+            INDArray ret = opId.getArr();
             return ret;
         }
         return null;

@@ -258,20 +258,21 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
             if (var.name() != null && sd.variableMap().containsKey(var.name())) {
                 //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.name(), sd.variableMap().containsKey(var.name()), sd.getVertexToArray().containsKey(var.name()));
-                sd.variableMap().get(var.name()).setArr(val);
+                sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
+
             } else {
                 int[] original = intermediate.get(var.id()).getOriginalOutput();
                 //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getVariableForVertex(original));
                 if (sd.variableMap().get(sd.getGraph().getVariableForVertex(original[0]).getVarName()) != null) {
-                    sd.variableMap().get(sd.getGraph().getVariableForVertex(original[0]).getVarName()).setArr(val);
+                    sd.associateArrayWithVariable(val,sd.variableMap().get(sd.getGraph().getVariableForVertex(original[0]).getVarName()));
                 } else {
                     SDVariable variable = SDVariable.builder()
-                            .arr(val)
                             .varName(sd.getGraph().getVariableForVertex(original[0]).getVarName())
                             .shape(val.shape())
                             .sameDiff(sd)
                             .build();
 
+                    sd.associateArrayWithVariable(val,variable);
                     sd.addVariable(variable);
                 }
             }

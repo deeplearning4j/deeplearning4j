@@ -35,7 +35,6 @@ import java.util.Map;
  */
 @Data
 public class SDVariable extends DifferentialFunction implements Serializable {
-    private INDArray arr;
     @Getter
     @Setter
     private String varName;
@@ -44,7 +43,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
     @Builder
     private SDVariable(String varName,
-                       INDArray arr,
                        OpState opState,
                        SameDiff sameDiff,
                        int[] shape,
@@ -53,15 +51,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.shape =  shape;
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
-        this.arr = arr;
         this.vertexId = vertexId;
-        if(shape == null) {
-            if(arr != null) {
-                this.shape = arr.shape();
-            }
-            else
-                throw new ND4JIllegalStateException("Variable must have a shape.");
-        }
 
         if(opState == null) {
             this.opState = OpState.builder()
@@ -103,13 +93,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-    public void setArr(INDArray arr) {
-        if(arr == null) {
-            return;
-        }
-
-        this.arr = arr;
-    }
 
 
 
@@ -128,41 +111,24 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return the {@link INDArray} associated with this variable.
      */
     public INDArray getArr() {
-        if(arr != null)
-            return arr;
+        if(sameDiff.arrayAlreadyExistsForVertexId(vertexId))
+            return sameDiff.getArrForVertexId(vertexId);
 
         //initialize value if it's actually a scalar constant (zero or 1 typically...)
         if(getScalarValue() != null && ArrayUtil.prod(getShape()) == 1) {
             INDArray arr = Nd4j.valueArrayOf(getShape(),
                     getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
-            setArr(arr);
         }
         else {
-            INDArray newAlloc = getWeightInitScheme().create(getShape(),Nd4j.zeros(getShape(),getWeightInitScheme().order()));
+            INDArray newAlloc = getWeightInitScheme().create(getShape());
             sameDiff.associateArrayWithVariable(newAlloc,this);
-            setArr(newAlloc);
 
         }
 
-        return arr;
+        return sameDiff.getArrForVertexId(vertexId);
     }
 
-    public INDArray getArr(boolean requireArray) {
-        if(arr == null && requireArray) {
-
-            if(this.arr == null && sameDiff.getFunction("grad") != null) {
-                this.arr = sameDiff.getFunction("grad").getVariable(varName).getArr(requireArray);
-            }
-
-            if(arr == null) {
-                throw new IllegalStateException("Unable to get array. No vertex info or array field definition found.");
-            }
-
-        }
-
-        return arr;
-    }
 
     /**
      * Nicer looking alias
@@ -186,7 +152,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable getGradient() {
-     return sameDiff.getGradForVertexId(vertexId);
+        return sameDiff.getGradForVertexId(vertexId);
     }
 
     @Override
@@ -211,22 +177,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-    /**
-     *
-     * @return
-     */
-    public boolean isAllocated() {
-        return arr != null;
-    }
-
-    /**
-     *
-     */
-    public void allocate() {
-        if(arr == null)
-            arr = Nd4j.zeros(getShape());
-    }
-
 
     /**
      *
@@ -237,7 +187,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 .varName(varName)
                 .shape(shape)
                 .sameDiff(sameDiff)
-                .arr(arr != null ? arr.dup() : null)
                 .build();
     }
 
@@ -859,20 +808,19 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
-        SDVariable variable = (SDVariable) o;
+        SDVariable that = (SDVariable) o;
 
-        if (arr != null ? !arr.equals(variable.arr) : variable.arr != null) return false;
-        if (varName != null ? !varName.equals(variable.varName) : variable.varName != null) return false;
-        return true;
+        if (varName != null ? !varName.equals(that.varName) : that.varName != null) return false;
+        return weightInitScheme != null ? weightInitScheme.equals(that.weightInitScheme) : that.weightInitScheme == null;
     }
 
     @Override
     public int hashCode() {
-        int result = 0;
-        result = 31 * result + (arr != null ? arr.hashCode() : 0);
+        int result = super.hashCode();
         result = 31 * result + (varName != null ? varName.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode(shape);
+        result = 31 * result + (weightInitScheme != null ? weightInitScheme.hashCode() : 0);
         return result;
     }
 }

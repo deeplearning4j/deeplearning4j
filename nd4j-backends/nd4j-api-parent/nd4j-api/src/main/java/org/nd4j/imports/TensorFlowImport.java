@@ -162,7 +162,7 @@ public class TensorFlowImport {
 
                     INDArray array = getNDArrayFromTensor(tensor);
                     variable.setShape(array.shape());
-                    variable.setArr(array);
+                    variable.getSameDiff().associateArrayWithVariable(array,variable);
                 }
 
                 diff.addVariable(variable);

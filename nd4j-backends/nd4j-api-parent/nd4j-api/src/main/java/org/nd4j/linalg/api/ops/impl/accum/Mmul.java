@@ -159,8 +159,22 @@ public class Mmul extends TensorMmul {
     }
 
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
+        Mmul mmul = (Mmul) o;
 
+        return mMulTranspose != null ? mMulTranspose.equals(mmul.mMulTranspose) : mmul.mMulTranspose == null;
+    }
 
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (mMulTranspose != null ? mMulTranspose.hashCode() : 0);
+        return result;
+    }
 }
 

@@ -374,5 +374,24 @@ public class TensorMmul extends BaseAccumulation {
         return first.add(second);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        TensorMmul that = (TensorMmul) o;
+
+        if (addedEdges != that.addedEdges) return false;
+        if (!Arrays.deepEquals(axes, that.axes)) return false;
+        return mMulTranspose != null ? mMulTranspose.equals(that.mMulTranspose) : that.mMulTranspose == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Arrays.deepHashCode(axes);
+        result = 31 * result + (addedEdges ? 1 : 0);
+        result = 31 * result + (mMulTranspose != null ? mMulTranspose.hashCode() : 0);
+        return result;
+    }
 }

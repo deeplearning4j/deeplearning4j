@@ -1018,13 +1018,19 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
         }
 
+
+        /**
+         * Need to do something about in place operations.
+         * Due to how variables are handled, we need to make sure array references are updated properly.
+         *
+         */
         DifferentialFunction[] outputFunctions = new DifferentialFunction[outputShapes.size()];
         SDVariable[] resultInfo = new SDVariable[outputShapes.size()];
         if(outputShapes.size() > 1) {
             throw new ND4JIllegalStateException("Automatically generating edges assumes *only* 1 output for now. Consider using DynamicCustomOp for multi output");
         }
         for (int i = 0; i < outputShapes.size(); i++) {
-            SDVariable variable = sameDiff.var(sameDiff.generateVariableName(opName, false),outputShapes.get(i),new ZeroInitScheme('f'),op.getVertexId(),op.depth());
+            SDVariable variable = sameDiff.var(sameDiff.generateVariableName(opName, false,op.args()),outputShapes.get(i),new ZeroInitScheme('f'),op.getVertexId(),op.depth());
             outputVertexIds[i] = variable.getVertexId()[0];
             resultInfo[i] = variable;
             outputFunctions[i] = variable;

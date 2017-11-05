@@ -48,7 +48,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
                            boolean inPlace) {
         super(sameDiff,inPlace,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
+            this.args = new DifferentialFunction[] {i_v1,i_v2};
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
             f().validateFunctionReference(i_v1);

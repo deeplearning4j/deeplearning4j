@@ -36,16 +36,13 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Broadcast extends ShapeOp {
-    private int[] shape;
 
     public Broadcast(SameDiff sameDiff, int[] shape) {
         super(sameDiff);
-        this.shape = shape;
     }
 
     public Broadcast(SameDiff sameDiff, DifferentialFunction i_v, int[] shape) {
-        super(sameDiff, i_v, false);
-        this.shape = shape;
+        super(sameDiff, i_v, shape,false,null);
     }
 
     public Broadcast() {}
