@@ -34,12 +34,12 @@ import java.io.Serializable;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = CategoricalMetaData.class, name = "Categorical"),
                 @JsonSubTypes.Type(value = DoubleMetaData.class, name = "Double"),
+                @JsonSubTypes.Type(value = FloatMetaData.class, name = "Float"),
                 @JsonSubTypes.Type(value = IntegerMetaData.class, name = "Integer"),
                 @JsonSubTypes.Type(value = LongMetaData.class, name = "Long"),
                 @JsonSubTypes.Type(value = StringMetaData.class, name = "String"),
                 @JsonSubTypes.Type(value = TimeMetaData.class, name = "Time"),
                 @JsonSubTypes.Type(value = NDArrayMetaData.class, name = "NDArray")
-
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public interface ColumnMetaData extends Serializable, Cloneable {
