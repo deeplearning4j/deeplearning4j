@@ -14,6 +14,7 @@ public interface CacheableDataSet {
     public String remoteDataUrl();
     public String remoteDataUrl(DataSetType set);
     public String localCacheName();
+    public String dataSetName(DataSetType set);
     public long expectedChecksum();
     public long expectedChecksum(DataSetType set);
     public boolean isCached();

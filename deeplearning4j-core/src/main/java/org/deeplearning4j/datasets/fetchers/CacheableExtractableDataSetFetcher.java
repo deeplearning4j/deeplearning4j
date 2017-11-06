@@ -22,8 +22,9 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
     public final static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), DL4J_DIR);
     public File LOCAL_CACHE = new File(ROOT_CACHE_DIR, localCacheName());
 
-    public String remoteDataUrl() { return remoteDataUrl(DataSetType.TRAIN); }
-    public long expectedChecksum() { return expectedChecksum(DataSetType.TRAIN); }
+    @Override public String dataSetName(DataSetType set) { return ""; }
+    @Override public String remoteDataUrl() { return remoteDataUrl(DataSetType.TRAIN); }
+    @Override public long expectedChecksum() { return expectedChecksum(DataSetType.TRAIN); }
     public void downloadAndExtract() throws IOException { downloadAndExtract(DataSetType.TRAIN); }
 
     /**
@@ -41,7 +42,7 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
             if(LOCAL_CACHE.listFiles().length<1) LOCAL_CACHE.delete();
         }
 
-        if(!LOCAL_CACHE.exists()) {
+        if(!new File(LOCAL_CACHE, dataSetName(set)).exists()) {
             LOCAL_CACHE.mkdirs();
             tmpFile.delete();
             log.info("Downloading dataset to " + tmpFile.getAbsolutePath());
