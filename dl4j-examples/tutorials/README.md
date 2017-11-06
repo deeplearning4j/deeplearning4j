@@ -11,13 +11,18 @@ You may want to read some resources on how the JVM works before using these tuto
 
 ### Install Apache Zeppelin
 
-#### Via Docker
+#### Run via Docker
 
-[Docker](https://www.docker.com/) is an easy-to-use containerization platform. This is the preferred method for running Zeppelin. Download the latest release from the [Zeppelin Docker Hub](https://hub.docker.com/r/apache/zeppelin/).
+[Docker](https://www.docker.com/) is an easy-to-use containerization platform. This is the preferred method for running Zeppelin. Download the latest release from the [Skymind Docker Hub](https://hub.docker.com/r/skymindops/zeppelin-dl4j/).
 
-Or you can use our public docker image with all the dependencies set and notebooks installed
+We've assembled a special Docker with all dependencies installed:
 ```
-docker run -it --rm  -p 8080:8080 shamsulazeem/zeppelin-0.8.0-snapshot:latest
+docker run -it --rm  -p 8080:8080 skymindops/zeppelin-dl4j:latest
+```
+
+If you have a CUDA-enabled GPU and have [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) installed:
+```
+docker run -it --rm  -p 8080:8080 skymindops/zeppelin-dl4j:latest-cuda-8.0
 ```
 
 #### Via Binaries
@@ -26,7 +31,7 @@ Native binaries are also available for Zeppelin which can be downloaded here: ht
 
 ## Setting up dependencies
 
-If your installation of Zeppelin is not already set up for Deeplearning4j, you will need to add DL4J to the classpath. The easiest solution is to add the appropriate Maven dependencies to the included Spark Interpreter.
+If your installation of Zeppelin is not already set up for Deeplearning4j (i.e.: you didn't use our custom Docker image), you will need to add DL4J to the classpath. The easiest solution is to add the appropriate Maven dependencies to the included Spark Interpreter.
 
 See this Zeppelin documentation for accessing the interpreter settings: https://zeppelin.apache.org/docs/latest/manual/dependencymanagement.html.
 
