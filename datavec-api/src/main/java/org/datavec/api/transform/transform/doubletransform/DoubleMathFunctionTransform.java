@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import lombok.Data;
 import org.datavec.api.transform.MathFunction;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -27,11 +28,13 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class DoubleMathFunctionTransform extends BaseDoubleTransform {
 
-    private final MathFunction mathFunction;
+    private MathFunction mathFunction;
 
-    public DoubleMathFunctionTransform(@JsonProperty("columnName") String columnName, MathFunction mathFunction) {
+    public DoubleMathFunctionTransform(@JsonProperty("columnName") String columnName,
+                                       @JsonProperty("mathFunction") MathFunction mathFunction) {
         super(columnName);
         this.mathFunction = mathFunction;
     }
