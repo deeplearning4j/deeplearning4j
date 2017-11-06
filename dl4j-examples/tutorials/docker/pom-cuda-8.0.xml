@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.artifact>nd4j-native-platform</nd4j.artifact>
+        <nd4j.artifact>nd4j-cuda-8.0</nd4j.artifact>
         <nd4j.version>0.9.1</nd4j.version>
         <deeplearning4j.version>0.9.1</deeplearning4j.version>
         <datavec.version>0.9.1</datavec.version>

@@ -21,7 +21,7 @@ ENV PATH        $JAVA_HOME/bin:$SCALA_HOME/bin:$SBT_HOME/bin:$SPARK_HOME/bin:$SP
 
 # Download, uncompress and move all the required packages and libraries to their corresponding directories in /usr/local/ folder.
 RUN apk update && \
-    apk add build-base nodejs nodejs-npm lapack-dev python3-dev git bzip2 openssl gfortran curl && \
+    apk add build-base nodejs nodejs-npm lapack-dev python3-dev git bzip2 openssl gfortran curl bash && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/* && \
     wget -qO - ${SCALA_BINARY_DOWNLOAD_URL} | tar -xz -C /usr/local/ && \
@@ -104,20 +104,25 @@ RUN mkdir -p $ZEPPELIN_HOME/otherpoms \
     && mkdir -p $ZEPPELIN_HOME/dockerfiles
 COPY . $ZEPPELIN_HOME/dockerfiles/.
 
-#RUN mv $ZEPPELIN_HOME/dockerfiles/docker/json-folder-ids.py $ZEPPELIN_HOME/. \
-RUN ls $ZEPPELIN_HOME/dockerfiles \
+# switch lines if building for cuda or cpu
+RUN cp $ZEPPELIN_HOME/dockerfiles/docker/pom.xml $ZEPPELIN_HOME/otherpoms/.
+#RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-cuda-8.0.xml $ZEPPELIN_HOME/otherpoms/pom.xml
+
+RUN ls $ZEPPELIN_HOME/bin/ \
     && cp -a $ZEPPELIN_HOME/dockerfiles/docker/conf/. $ZEPPELIN_HOME/conf/ \
-    && cp $ZEPPELIN_HOME/dockerfiles/docker/pom.xml $ZEPPELIN_HOME/otherpoms/. \
     && cp -a $ZEPPELIN_HOME/dockerfiles/. $ZEPPELIN_HOME/notebook_json \
     && rm -rf $ZEPPELIN_HOME/notebook_json/docker/ \
-    && rm -rf $ZEPPELIN_HOME/notebook_json/*.ipynb \
+    && find $ZEPPELIN_HOME/notebook_json/ -type f -not -name '*.json' -delete \
+    && dos2unix $ZEPPELIN_HOME/conf/zeppelin-env.sh \
+    && dos2unix $ZEPPELIN_HOME/bin/zeppelin.sh \
+    && cd $ZEPPELIN_HOME \
+    && mv $ZEPPELIN_HOME/dockerfiles/docker/json-folder-ids.py $ZEPPELIN_HOME \
+    && python json-folder-ids.py \
     && cd $ZEPPELIN_HOME/otherpoms \
     && /tmp/apache-maven-3.5.0/bin/mvn package \
-    && dos2unix $ZEPPELIN_HOME/conf/zeppelin-env.sh \
-    && cd $ZEPPELIN_HOME \
-    && python json-folder-ids.py
+    && rm -rf $ZEPPELIN_HOME/dockerfiles/
 
 EXPOSE 8080 4040
 
 WORKDIR $ZEPPELIN_HOME
-CMD ["bin/zeppelin.sh"]
+CMD ["/bin/bash","bin/zeppelin.sh"]
