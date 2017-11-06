@@ -36,7 +36,7 @@ namespace nd4j {
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
         // return new (shorter) dimensions array without dimensions that are present in input vector
-        static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int> dimensions);
+        static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);
 
     };
 

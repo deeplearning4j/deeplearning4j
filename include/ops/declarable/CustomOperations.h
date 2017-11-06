@@ -124,6 +124,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented        
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
         DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(reverse, 1, 1, true, 0, -2);
 
 
         DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);

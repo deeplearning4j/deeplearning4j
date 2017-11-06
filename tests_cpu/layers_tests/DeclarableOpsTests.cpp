@@ -2867,7 +2867,7 @@ TEST_F(DeclarableOpsTests, OneHotTests_1) {
     indices.putScalar(2, -1.0);
     indices.putScalar(3, 1.0);
 
-    float _expB[] = {1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000};
+    float _expB[] = {1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0.};
     NDArray<float> exp('c', {4, 3});
     exp.setBuffer(_expB);
 
@@ -2891,7 +2891,7 @@ TEST_F(DeclarableOpsTests, OneHotTests_2) {
     indices.putScalar(2, 1.0);
     indices.putScalar(3, -1.0);
 
-    float _expB[] = {1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000};
+    float _expB[] = {1., 0., 0., 0., 0., 1., 0., 1., 0., 0., 0., 0.};
     NDArray<float> exp('c', {2, 2, 3});
     exp.setBuffer(_expB);
 
@@ -3073,5 +3073,230 @@ TEST_F(DeclarableOpsTests, Stack_6) {
 
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_1 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};   
+    // int shapeInfo[] = {2, 2, 12, 12, 1, 0, 1, 99};   
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_2 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};   
+    // int shapeInfo[] = {2, 2, 12, 12, 1, 0, 1, 99};   
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {}, true);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(&input));
+    ASSERT_TRUE(expected.equalsTo(&input));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_3 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., 24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+    // result->printBuffer();    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_4 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {16,15,14,13,    20,19,18,17,       24,23,22,21,    4,3,2,1,    8,7,6,5,      12,11,10,9,};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+    // result->printBuffer();    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_5 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16., 9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_6 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {4., 3., 2., 1., 8., 7., 6., 5., 12., 11., 10., 9., 16., 15., 14., 13., 20., 19., 18., 17., 24., 23., 22., 21.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {0,1}, true);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);        
+    // result->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(&input));
+    ASSERT_TRUE(expected.equalsTo(&input));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_7 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);        
+    // result->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_8 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {2,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);        
+    // result->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reverse_9 ) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.};
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};    
+
+    NDArray<float> input(inBuff, shapeInfo);
+    NDArray<float> expected(expBuff, shapeInfo);
+    NDArray<float> output(shapeInfo);   
+
+    nd4j::ops::reverse<float> op;
+    auto results = op.execute({&input}, {}, {1,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
 
 

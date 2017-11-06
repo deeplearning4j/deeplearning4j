@@ -336,12 +336,12 @@ namespace shape {
         int ews = shape::elementWiseStride(shapeInfo);
 
         if(!shape::isVector(shapeInfo))
-            wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo)) && ews == 1);
+            wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo)) && ews == 1);                        
         else if(shape::isScalar(shapeInfo))
             wholeThing = true;
             //vector case
         else {
-             // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
+            // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
             if(dimension == 0 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
                 wholeThing = true;
             }
@@ -720,12 +720,19 @@ namespace shape {
 
 
     INLINEDEF int* TAD::shapeInfoOnlyShapeAndStride() {
-        if(wholeThing && dimensionLength == 1 && dimension[0] == MAX_DIMENSION) {
+        if(wholeThing && dimensionLength == 1 && dimension[0] == MAX_DIMENSION) 
             return shape::createScalarShapeInfo();
-        }
+
         //ensure tad shapes get setup right for vectors
-        if(dimensionLength < 1 && !shape::isVector(shapeInfo)) {
+        if(dimensionLength > 1 && shape::isVector(shapeInfo)) 
             return shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo);
+
+        // case when tad coincides with whole array
+        if( this->numTads == 1 ) {
+            int* ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo); 
+            if(shape::isDimPermuted(dimension, dimensionLength))    // check whether we need permutation
+                shape::doPermuteShapeBuffer(ret, dimension);
+            return ret;
         }
 
         int *theShape = shape::shapeOf(shapeInfo);

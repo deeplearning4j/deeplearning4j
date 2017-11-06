@@ -66,4 +66,31 @@ TEST_F(TadTests, TestNumTads1) {
     ASSERT_EQ(2, numTadsY);
 }
 
+TEST_F(TadTests, TestShapeTad_1) {
+
+    float buff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};    
+    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};   
+
+    NDArray<float> input(buff, shapeInfo);
+    
+    std::vector<int> dimensions = {0,1,2};
+    Nd4jIndex tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    Nd4jIndex numTads = input.lengthOf() / tadLength;
+    
+    shape::TAD tad(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    tad.createTadOnlyShapeInfo();
+    tad.createOffsets();
+
+    int tadShapeInfo[shape::shapeInfoLength(tad.tadOnlyShapeInfo[0])];
+    std::memcpy(tadShapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+
+    float* tadBuff = input.getBuffer() + tad.tadOffsets[0];
+    NDArray<float> tadArr(tadBuff, tadShapeInfo);
+   
+    ASSERT_TRUE(numTads==1);
+    ASSERT_TRUE(input.isSameShapeStrict(&tadArr));
+    ASSERT_TRUE(input.equalsTo(&tadArr));
+    
+}
+
 #endif //LIBND4J_TADTESTS_H

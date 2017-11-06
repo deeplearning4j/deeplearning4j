@@ -220,6 +220,12 @@ __host__ __device__
     ND4J_EXPORT void updateStrides(int *shape, const char order);
 
 
+// check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    ND4J_EXPORT bool isDimPermuted(const int* dimensions, const int dimSize);
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -1865,6 +1871,19 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         shape[doubleRank + 2] = 1;
         shape[doubleRank + 3] = (int)order;
     }
+
+
+// check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF bool isDimPermuted(const int* dimensions, const int dimSize ) {
+        for(int i=0; i<dimSize-1; ++i)
+            if(dimensions[i] > dimensions[i+1])
+                return true;
+        return false;
+    }
+
 
 /**
  * @param toCopy the shape to copy
