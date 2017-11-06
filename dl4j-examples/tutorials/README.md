@@ -22,7 +22,7 @@ docker run -it --rm  -p 8080:8080 skymindops/zeppelin-dl4j:latest
 
 If you have a CUDA-enabled GPU and have [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) installed:
 ```
-docker run -it --rm  -p 8080:8080 skymindops/zeppelin-dl4j:latest-cuda-8.0
+nvidia-docker run -it --rm  -p 8080:8080 skymindops/zeppelin-dl4j:latest-cuda-8.0
 ```
 
 #### Via Binaries
