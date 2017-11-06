@@ -1,13 +1,13 @@
 Deeplearning4j Tutorials
 ========================
 
-Welcome to the [Deeplearning4j](https://deeplearning4j.org/) tutorial series in Zeppelin. This README will help you get started with using Zeppelin notebooks and load the required dependencies.
+Welcome to the [Deeplearning4j](https://deeplearning4j.org/) tutorial series in Zeppelin. This README will help you get started with using Zeppelin notebooks and loading the required dependencies.
 
 ## Prerequisites
 
-While Deeplearning4j has been written in Java, the advantage of the Java Virtual Machine (JVM) is you can import and share code in any other JVM language. These tutorials are written in Scala, the de facto standard for data science in the Java environment. There's nothing stopping you from using any other interpreter such as Java, Kotlin, or Clojure.
+While Deeplearning4j is written in Java, the Java Virtual Machine (JVM) lets you import and share code in other JVM languages. These tutorials are written in Scala, the de facto standard for data science in the Java environment. There's nothing stopping you from using any other interpreter such as Java, Kotlin, or Clojure.
 
-You may want to read some resources on how the JVM works before using these tutorials. Knowing the basic terms such as classpath, virtual machine, "strongly-typed" languages, and functional programming will help you debug and expand on the knowledge you learn here. If you don't know Scala and aren't sure if you can learn it, Coursera has a great course named [Functional Programming Principles in Scala](https://www.coursera.org/learn/progfun1).
+If you're coming from non-JVM languages like Python or R, you may want to read about how the JVM works before using these tutorials. Knowing the basic terms such as classpath, virtual machine, "strongly-typed" languages, and functional programming will help you debug, as well as expand on the knowledge you gain here. If you don't know Scala and want to learn it, Coursera has a great course named [Functional Programming Principles in Scala](https://www.coursera.org/learn/progfun1).
 
 ### Install Apache Zeppelin
 
@@ -27,7 +27,7 @@ nvidia-docker run -it --rm  -p 8080:8080 skymindops/zeppelin-dl4j:latest-cuda-8.
 
 #### Via Binaries
 
-Native binaries are also available for Zeppelin which can be downloaded here: https://zeppelin.apache.org/download.html.
+Native binaries are also available for Zeppelin, downloadable here: https://zeppelin.apache.org/download.html.
 
 ## Setting up dependencies
 
@@ -48,8 +48,7 @@ Once you have located the Spark Interpreter, you will need to add the following 
 | `org.deeplearning4j:dl4j-spark_2.11:0.9.1_spark_2` | `org.scala-lang:scala-compiler` | always |
 
 
-Alternatively, you can dynamically load dependencies into notebooks, but this is not recommended: If you intend on adding new dependencies, you will have to restart the interpreter before re-running dynamic loading code. Nevertheless, here's an example on how to do it:
-
+Alternatively, you can dynamically load dependencies into notebooks, though this is not recommended. If you intend on adding new dependencies, you will have to restart the interpreter before re-running dynamic loading code. With that said, here's an example on how to do it:
 
 ```
 %spark.dep
@@ -73,7 +72,7 @@ z.load("org.deeplearning4j:deeplearning4j-core:0.9.1")
 
 ## Out-of-memory
 
-Zeppelin may run out of memory when using larger networks. Its default memory setting is low. To fix this, create a zeppelin-env.sh file [like this one](https://github.com/apache/zeppelin/blob/master/conf/zeppelin-env.sh.template#L23) and enable the `ZEPPELIN_INTP_MEM` option.
+Zeppelin may run out of memory when using larger networks. Its default memory setting is low. To fix this, create a `zeppelin-env.sh` file [like this one](https://github.com/apache/zeppelin/blob/master/conf/zeppelin-env.sh.template#L23) and enable the `ZEPPELIN_INTP_MEM` option.
 
 ```
 export ZEPPELIN_INTP_MEM="-Xmx10g"
