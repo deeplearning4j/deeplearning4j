@@ -7,8 +7,6 @@ layout: default
 
 You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, which is a subset of AI.
 
-![Alt text](./img/russiandolls.png)
-
 AI is any computer program that does something smart, broadly speaking.
 
 It can be a pile of if-then statements or a complex statistical model. Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. So you could say that true AI is whatever computers can't do yet. ;)
