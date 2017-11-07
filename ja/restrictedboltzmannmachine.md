@@ -11,7 +11,7 @@ redirect_from: ja/ja-restrictedboltzmannmachine
 * <a href="#define">定義と構造</a>
 * <a href="#reconstruct">復元</a>
 * <a href="#probability">確率分布</a>
-* <a href="#code">コードサンプル：Deeplearning4jを使ったIrisで制限付きボルツマンマシンを起動する</a>
+* <a href="#code">コードのサンプル: RBMSのスタック</a>
 * <a href="#params">パラメータ及びkについて</a>
 * <a href="#CRBM">連続的なRBM</a>
 * <a href="#next">結論及び次のステップ</a>
@@ -19,9 +19,9 @@ redirect_from: ja/ja-restrictedboltzmannmachine
 
 ## <a name="define">定義と構造</a>
 
-Geoff Hintonによって開発された制限付きボルツマンマシン（RBM）は、次元削減、分類、[回帰](linear-regression)、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどの[ように使われるか](neuralnet-overview)、さらに具体的な例を知りたい方は[ユースケース](use_cases)のページをご覧ください。）
+Geoff Hintonによって開発されたRBM（Restricted Boltzmann machine、制限付きボルツマンマシン）は、次元削減、分類、[回帰](linear-regression)、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどの[ように使われるか](neuralnet-overview)、さらに具体的な例を知りたい方は[ユースケース](use_cases)のページをご覧ください。）
 
-制限付きボルツマンマシンは比較的シンプルで歴史的にも重要なので、まずはこのニューラルネットワークに取り組んでみることにしましょう。以下に、図と簡単な説明で、制限付きボルツマンマシンがどのように機能するのかを解説していきます。
+RBMは比較的シンプルで歴史的にも重要なので、まずはこのニューラルネットワークに取り組んでみることにしましょう。以下に、図と簡単な説明で、RBMがどのように機能するのかを解説していきます。
 
 RBMとは浅い2層のニューラルネットであり、ディープビリーフネットワークの構成要素です。RBMの最初の層は可視層または入力層と呼ばれ、2つ目の層は隠れ層と呼ばれます。
 
@@ -53,13 +53,13 @@ RBMとは浅い2層のニューラルネットであり、ディープビリー�
 
 ![Alt text](../img/multiple_inputs_RBM.png)
 
-この2つの層がより深いニューラルネットワークの一部だった場合、隠れ層1の出力値は隠れ層2の入力値として渡され、そこから先は最後の分類層に達するまで同じようにして隠れ層をいくつでも通過します。（シンプルなフィードフォワードの動きにするため、RBMのノードはオートエンコーダとしてのみ機能します。）
+この2つの層がより深いニューラルネットワークの一部だった場合、隠れ層1の出力値は隠れ層2の入力値として渡され、そこから先は最後の分類層に達するまで同じようにして隠れ層をいくつでも通過します。（シンプルな順伝播型の動きにするため、RBMのノードはオートエンコーダとしてのみ機能します。）
 
 ![Alt text](../img/multiple_hidden_layers_RBM.png)
 
-## <a name="reconstructions">復元</a>
+## <a name="reconstruct">復元</a>
 
-今回の制限付きボルツマンマシンのイントロダクションでは、教師なし学習法（教師なしとは、データにより提供されたラベルを用いないということです）で可視層と隠れ層1との間の前方パスと後方パスのみで（それ以上の層が関与することなく）どのようにしてこのネットワークがデータ復元を学習するのかに焦点を当てていきます。
+今回のRBMのイントロダクションでは、教師なし学習法（教師なしとは、データにより提供されたラベルを用いないということです）で可視層と隠れ層1との間の前方パスと後方パスのみで（それ以上の層が関与することなく）どのようにしてこのネットワークがデータ復元を学習するのかに焦点を当てていきます。
 
 復元のフェーズでは、隠れ層1の活性化は後方パスでは入力になります。前方パスにおいてxの重みが調整されるのと同時に、後方パスでは各ノード間のエッジに同じ重みが掛けられます。各可視ノードで、これらの値の合計に可視層のバイアスが足され、これらの計算結果が復元結果となります。つまり、元の入力値の近似値となります。これを下記の図で表すことができます。
 
@@ -98,7 +98,7 @@ Kullback Leiblerダイバージェンスは、2つの曲線について、重な
 
 ![Alt text](https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg)
 
-このグラフから分かるように、2から12まで合計値のうちで、最も出る確率の高い結果は7です。これは合計が7になる組み合わせが最も多いからです。サイコロを振った結果を予測しようとする数式は全て、このことを考慮に入れる必要があります。
+このグラフから分かるように、2から12まで合計値のうちで、最も出る確率の高い結果は7です。これは合計が7になるサイコロの目の組み合わせが最も多いからです。サイコロを振った結果を予測しようとする数式は全て、このことを考慮に入れる必要があります。
 
 もう一つ別の例で考えてみましょう。ある言語においてそれぞれの文字が使われる確率分布はその言語特有のものです。どの言語を見てもある文字が他の文字よりも多く使用されているからです。英語では、eとtとaが最もよく使われます。一方、アイスランド語では、aとrとnが最もよく使われます。英語をベースにした重み付けを使ってアイスランド語を復元しようとすると、大きな違いが生じるでしょう。
 
@@ -118,7 +118,7 @@ Kullback Leiblerダイバージェンスは、2つの曲線について、重な
 
 上記の2つの画像から、RBMを実装した[Deeplearning4j](http://deeplearning4j.org/)がどのように復元を学習するかが分かります。これらの復元が表しているのは、RBMの活性化が「考える」元のデータです。Geoff Hinton氏は、これをマシンが見る「夢」のようなものだと言っています。ニューラルネットのトレーニング中にレンダリングされた際、RBMが本当に学習しているということを確認するには、そうした視覚化は非常に有効なヒューリスティックです。学習されていなければ、この後の説明にあるように、ハイパーパラメータの調整を行うべきです。
 
-最後にもう一点、RBMには、2つのバイアスがあることに気が付くと思います。これが、オートエンコーダとの相違点です。隠されたバイアスは、RBMが前方パスを行う際に活性化を生成するのを助けます（データがどんなにわずかでも、少なくともいくつかのノードが活性化できるように底値を押し付けるからです）。可視層のバイアスはRBMの後方パスの際に復元するのを学習するのを助けます。
+最後にもう一点、RBMには、2つのバイアスがあることに気付いたでしょうか。これが、オートエンコーダとの相違点です。隠されたバイアスは、RBMが前方パスを行う際に活性化を助けます（データがどんなにわずかでも、少なくともいくつかのノードが活性化できるように底値を押し付けるからです）。可視層のバイアスはRBMの後方パスの際に復元を学習するのを助けます。
 
 ### 多層構造
 
@@ -138,61 +138,15 @@ RBMには多くの利用方法がありますが、重み初期化が適切で�
 
 より深い層のRBMの構造に関する学習に興味のある方への参考までに言うと、これらは無方向ラフィカルモデルのうちの一つで、[マルコフ確率場](https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E7%A2%BA%E7%8E%87%E5%A0%B4)とも呼ばれています。
 
-## <a name="code">コードサンプル：Deeplearning4jを使ったIrisで制限付きボルツマンマシンを起動する</a>
+### <a name="code">コードのサンプル: RBMのスタック</a>
+https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java
 
-より一般的なクラスにパラメータが与えられた`NeuralNetConfiguration`の層として、RBMを簡単に作成できることに留意してください。同様に、RBMのオブジェクトは、可視層に適用されるガウス変換や、隠れ層に適用される修正線形変換のように、プロパティをストアするために利用されます。
-
-      final int numRows = 4;
-        final int numColumns = 1;
-        int outputNum = 3;
-        int numSamples = 150;
-        int batchSize = 150;
-        int iterations = 100;
-        int seed = 123;
-        int listenerFreq = iterations/5;
-
-        log.info("Load data....");
-        DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
-        // Loads data into generator and format consumable for NN
-        DataSet iris = iter.next();
-
-        iris.normalizeZeroMeanZeroUnitVariance();
-
-        log.info("Build model....");
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-        // Gaussian for visible; Rectified for hidden
-        // Set contrastive divergence to 1
-        .layer(new RBM.Builder(HiddenUnit.RECTIFIED, VisibleUnit.GAUSSIAN, 1)
-            .nIn(numRows * numColumns) // Input nodes
-            .nOut(outputNum) // Output nodes
-            .activation("tanh") // Activation function type
-            .build())
-        .seed(seed) // Locks in weight initialization for tuning
-        .weightInit(WeightInit.DISTRIBUTION) // Weight initialization
-        .dist(new UniformDistribution(0, 1))
-        // ^^ Weight distribution curve mean and st. deviation
-        .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
-        .learningRate(1e-1f) // Backprop step size
-        .momentum(0.9) // Speed of modifying learning rate
-        .regularization(true) // Prevents overfitting
-        .l2(2e-4) // Regularization type L2
-        .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-        // ^^ Calculates gradients
-        .constrainGradientToUnitNorm(true)
-        .build();
-    Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);
-    model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
-
-このコードはgist-itから引用しました。こちらを参照してください。
-[src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java)
-
-上記のコーディングは、Iris flowerのデータセットを処理するRBM のサンプルです。
 
 ## <a name="params">パラメータ及びkについて</a>
 
 変数kは[コントラスティブダイバージェンス](http://deeplearning4j.org/glossary.html#contrastivedivergence)を実行する回数です。コントラスティブダイバージェンスは、学習が起きない間に、勾配を計算する際に用いられる方法です（勾配はネットワーク間の重みの関係を表しています）。
 
-コントラスティブダイバージェンスが実行されると、それは毎回、制限付きボルツマンマシンを構成するマルコフ連鎖のサンプルになります。典型的な値は1です。
+コントラスティブダイバージェンスが実行されると、それは毎回、RBMを構成するマルコフ連鎖のサンプルになります。典型的な値は1です。
 
 上記の例では、より一般的な`MultiLayerConfiguration`を使って、RBMが層として形成される様子を見ることができます。各ドットの後ろを見れば、ディープニューラルネットの構造やパフォーマンスに影響を及ぼす追加パラメータが分かるのです。このサイト上では、そういったパラメータの大部分を定義しています。
 
@@ -212,7 +166,7 @@ RBMには多くの利用方法がありますが、重み初期化が適切で�
 
 ## <a name="CRBM">連続的なRBM</a>
 
-連続的な制限付きボルツマンマシンとは、種類の異なるコントラスティブダイバージェンスのサンプルを通じて、連続入力（小数点以下を切り捨てた数字）を受け入れるRBMの形式です。これにより、0と1の間の小数に正規化される画像画素やワードカウント・ベクトルのようなものを処理することができます。
+連続的なRBMとは、種類の異なるコントラスティブダイバージェンスのサンプルを通じて、連続入力（小数点以下を切り捨てた数字）を受け入れるRBMの形式です。これにより、0と1の間の小数に正規化される画像画素やワードカウント・ベクトルのようなものを処理することができます。
 
 注目すべき点は、ディープラーニングネットの全ての層が入力、係数、バイアス及び変換（活性化アルゴリズム）という4つの要素を必要としているということです。
 
@@ -220,27 +174,27 @@ RBMには多くの利用方法がありますが、重み初期化が適切で�
 
 追加アルゴリズムとその組み合わせは層によって異なる可能性があります。
 
-効果的な連続的な制限付きボルツマンマシンは、可視層（または入力層）ではガウス変換を、隠れ層では正規化線形変換を使用しています。この方法は顔の復元の際に、特に役立ちます。RBMで2値データを処理するには、単に両方の変換を2値変換にするのです。
+効果的な連続的なRBMは、可視層（または入力層）ではガウス変換を、隠れ層では正規化線形変換を使用しています。この方法は顔の復元の際に、特に役立ちます。RBMで2値データを処理するには、単に両方の変換を2値変換にするのです。
 
 ガウス変換はRBMの隠れ層にはあまり効果的ではありません。その代わりに使用される正規化線形変換は、2値変換よりも多くの特徴を表すことができるため、[ディープビリーフネット](../deepbeliefnetwork)で採用されています。
 
 ## <a name="next">結論及び次のステップ</a>
 
-RBMの出力数は割合として解釈することができます。復元の数字が0でない場合は常に、RBMが入力を学習したという良い結果を示しています。制限付きボルツマンマシンを動かすメカニズムを別の視点から見るには、[こちら](./understandingRBMs)をクリックしてください。
+RBMの出力数は割合として解釈することができます。復元の数字が0でない場合は常に、RBMが入力を学習したという良い結果を示しています。RBMを動かすメカニズムを別の視点から見るには、[こちら](./understandingRBMs)をクリックしてください。
 
 RBMにより、すべての浅い層の順伝播型ネットワークが最も安定した一貫性のある結果を生成できるというわけではないということに気を付けてください。 多くの場合、層が深い[変分オートエンコーダ](http://deeplearning4j.org/glossary.html#autoencoder)の方が優れています。実際、業界ではIndeed, the industry is moving toward tools such as variational autoencoders.
 
-次回は、多くの制限付きボルツマンマシンが相互に積み重なったものである[ディープビリーフネットワーク](../deepbeliefnetwork)の実装方法をお教えします。
+次回は、多くのRBMが相互に積み重なったものである[ディープビリーフネットワーク](../deepbeliefnetwork)の実装方法をお教えします。
 
 ### <a name="resources">その他のリソース</a>
 
-* [Geoff Hinton on Boltzmann Machines](http://www.scholarpedia.org/article/Boltzmann_machine)
-* [Deeplearning.net's Restricted Boltzmann Machine Tutorial](http://deeplearning.net/tutorial/rbm.html)
-* [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf); Geoff Hinton
+* [Geoff Hintonによるボルツマンマシンの説明](http://www.scholarpedia.org/article/Boltzmann_machine)（英語のみ）
+* [Deeplearning.netによる制限付きボルツマンマシンのチュートリアル](http://deeplearning.net/tutorial/rbm.html)（英語のみ）
+* [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf) Geoff Hintonによる制限付きボルツマンマシンのトレーニングの実用ガイド（英語のみ）
 
 ### その他の初心者用ガイド
 
-* [Neural Networks](ja-neuralnet-overview)
-* [Eigenvectors, PCA and Entropy](eigenvector)
-* [Neural Networks & Regression](linear-regression)
-* [Convolutional Networks](convolutionalnets)
+* [ディープニュ―ラルネットワークについて](ja-neuralnet-overview)
+* [固有ベクトル、主成分分析、共分散、エントロピー入門](https://deeplearning4j.org/ja/eigenvector)
+* [回帰を使ったニューラルネットワーク](https://deeplearning4j.org/ja/linear-regression)
+* [畳み込みネットワーク](https://deeplearning4j.org/ja/convolutionalnets)
