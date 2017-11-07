@@ -3,7 +3,7 @@ title: Using snapshots for daily updated builds of DL4J in your app
 layout: default
 ---
 
-# Using Snapshots 
+# Snapshots Aren't Working
 
 Contents
 
@@ -13,6 +13,8 @@ Contents
 * [Confiiguration of ND4J Backend](#ND4J_Backend)
 
 ## <a name="Introduction">Overview/Introduction</a>
+
+**Please use Maven to build 0.9.1, or compile from source.**
 
 We provide automated daily builds of our repositories: ND4J/DataVec/DeepLearning4j/RL4J etc. So, all newest functionality & bug fixes are delivered daily.
 
