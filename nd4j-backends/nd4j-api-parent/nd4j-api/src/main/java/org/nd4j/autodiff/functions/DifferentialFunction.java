@@ -35,14 +35,6 @@ public abstract class DifferentialFunction implements Differential {
     @Getter
     @Setter
     protected boolean inPlace;
-    @Getter
-    @Setter
-    protected boolean gradFunction;
-
-
-    @Getter
-    @Setter
-    protected DifferentialFunction forwardFunction;
 
     @Getter
     @Setter
@@ -76,7 +68,7 @@ public abstract class DifferentialFunction implements Differential {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
         this.extraArgs = extraArgs;
-       
+
 
     }
 
@@ -89,7 +81,7 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunction(SameDiff sameDiff, Object[] extraArgs) {
         this.sameDiff = sameDiff;
         this.extraArgs = extraArgs;
-       
+
     }
 
     public DifferentialFunction(SameDiff sameDiff, DifferentialFunction[] args) {
@@ -100,17 +92,15 @@ public abstract class DifferentialFunction implements Differential {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
         this.args = args;
-       
+
     }
 
 
-    public DifferentialFunction(SameDiff sameDiff, OpState opState, int[] vertexId, boolean inPlace, boolean gradFunction, DifferentialFunction forwardFunction, int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
+    public DifferentialFunction(SameDiff sameDiff, OpState opState, int[] vertexId, boolean inPlace,int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
         this.sameDiff = sameDiff;
         this.opState = opState;
         this.vertexId = vertexId;
         this.inPlace = inPlace;
-        this.gradFunction = gradFunction;
-        this.forwardFunction = forwardFunction;
         this.shape = shape;
         this.args = args;
         this.scalarValue = scalarValue;
@@ -121,14 +111,16 @@ public abstract class DifferentialFunction implements Differential {
 
 
     protected void addAsNewVertexId(int[] vertexId) {
-        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),shape,new ZeroInitScheme('f'),vertexId,maxDepthForArgs() + 1);
+        this.vertexId = vertexId;
+
+        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),shape,new ZeroInitScheme('f'),vertexId,maxDepthForArgs());
         if(sameDiff.graph().getVertex(vertexId[0]) == null) {
             NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff, var.vertexId[0], depth(), var);
             var.setVertexId(new int[]{ndArrayVertex.vertexID()});
         }
 
 
-        this.vertexId = var.getVertexId();
+
         var.setOpState(opState);
         sameDiff.addVariable(var);
         sameDiff.putFunction(var.getVertexId(),this);
@@ -137,7 +129,7 @@ public abstract class DifferentialFunction implements Differential {
 
     protected void addAsNewVertexId() {
         int vertexId = sameDiff.graph().getNextVertexId()  > sameDiff.graph().numVertices() ? sameDiff.graph().getNextVertexId() : sameDiff.graph().nextVertexId();
-         addAsNewVertexId(new int[]{vertexId});
+        addAsNewVertexId(new int[]{vertexId});
     }
 
 
@@ -247,7 +239,7 @@ public abstract class DifferentialFunction implements Differential {
     public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
 
         List<DifferentialFunction> vals = doDiff(i_v1);
-        for(int i = 0; i < vals.size(); i++) {
+        for(int i = 0; i < args().length; i++) {
             DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
             DifferentialFunction arg = sameDiff.setupFunction(args()[i]);
             SDVariable var = sameDiff.getVariableForVertexId(arg.vertexId);
@@ -390,6 +382,8 @@ public abstract class DifferentialFunction implements Differential {
     public int maxDepthForArgs() {
         int depth = -1;
         for(DifferentialFunction arg : args()) {
+            if(arg == this)
+                continue;
             depth = Math.max(arg.depth(),depth);
         }
 

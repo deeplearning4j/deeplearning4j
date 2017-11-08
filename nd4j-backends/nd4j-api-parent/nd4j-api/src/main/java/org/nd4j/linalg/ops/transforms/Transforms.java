@@ -109,10 +109,11 @@ public class Transforms {
 
     /**
      * Atan2 operation, new INDArray instance will be returned
+     * Note the order of x and y parameters is opposite to that of java.lang.Math.atan2
      *
-     * @param x
-     * @param y
-     * @return
+     * @param x the abscissa coordinate
+     * @param y the ordinate coordinate
+     * @return the theta from point (r, theta) when converting (x,y) from to cartesian to polar coordinates
      */
     public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
         return Nd4j.getExecutioner()
