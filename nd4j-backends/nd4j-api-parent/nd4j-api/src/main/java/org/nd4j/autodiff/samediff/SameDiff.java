@@ -311,6 +311,24 @@ public class SameDiff {
 
 
     /**
+     * Get the {@link SDVariable}
+     * associated with each function
+     * based on the {@link DifferentialFunction#resultVertexId()}
+     * @param functions the functions to get the variables for
+     * @return the list of variables associated with the given {@link DifferentialFunction}
+     */
+    public List<SDVariable> getVariablesAssociatedWithFunctions(List<DifferentialFunction> functions) {
+        List<SDVariable> ret = new ArrayList<>(functions.size());
+        for(DifferentialFunction function : functions) {
+            ret.add(getVariableForVertexId(function.getVertexId()));
+        }
+
+        return ret;
+    }
+
+
+
+    /**
      * Associate a {@link SameDiff}
      * namespace as a sub function.
      * @param name the name of the function
@@ -3203,6 +3221,9 @@ public class SameDiff {
 
     }
 
+
+
+
     /**
      * Exec a given function
      * @param functionName the name of the function
@@ -3292,7 +3313,7 @@ public class SameDiff {
                         //clear out all the variables
                         List<SDVariable> functionVars = debugMode ? new ArrayList<SDVariable>(2) : null;
 
-                        for(int i = 0; i < backwardResult.size(); i++) {
+                        for(int i = 0; i < currFunction.args().length; i++) {
                             DifferentialFunction differentialFunction = sameDiff.setupFunction(backwardResult.get(i));
                             DifferentialFunction x  = sameDiff.setupFunction(currFunction.args()[i]);
                             if(!seen.contains(x)) {
@@ -3380,49 +3401,103 @@ public class SameDiff {
                     opExecAction);
             if(differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
-                ifOp.getPredicateExecution().exec();
-                //depending on the block add the proper graph body to this for persistence
-                //and possible later processing.
-                if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                    ifOp.getLoopBodyExecution().exec();
-                    ifOp.exectedTrueOrFalse(true);
-                }
-                else {
-                    ifOp.getFalseBodyExecution().exec();
-                    ifOp.exectedTrueOrFalse(false);
+               if(!onBackward) {
+                   ifOp.getPredicateExecution().exec();
+                   //depending on the block add the proper graph body to this for persistence
+                   //and possible later processing.
+                   if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                       ifOp.getLoopBodyExecution().exec();
+                       ifOp.exectedTrueOrFalse(true);
+                   }
+                   else {
+                       ifOp.getFalseBodyExecution().exec();
+                       ifOp.exectedTrueOrFalse(false);
 
-                }
+                   }
+               }
+               else {
+                   if(ifOp.getTrueBodyExecuted() != null) {
+                       Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = null;
+                       List<SDVariable> variablesForFunctions =  null;
+                       if(ifOp.getTrueBodyExecuted()) {
+                           execBackwards = ifOp.getLoopBodyExecution().execBackwards();
+                           variablesForFunctions = ifOp.getLoopBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
+                       }
+                       else {
+                           execBackwards = ifOp.getFalseBodyExecution().execBackwards();
+                           variablesForFunctions = ifOp.getFalseBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
+                       }
+
+                       /**
+                        * Maps the variables from the child namespace body to
+                        * the parent. This allows access to the underlying ndarray
+                        * and returning a valid variable reference for autodiff.
+                        */
+                       for(SDVariable variable : variablesForFunctions) {
+                           SDVariable proxyVar = var(variable);
+                       }
+
+
+                   }
+
+                   else
+                       throw new ND4JIllegalStateException("No body was run.");
+
+               }
+
 
                 ops.add(differentialFunction);
 
             }
             else if(differentialFunction instanceof While) {
                 While whileOp = (While) differentialFunction;
-                SameDiff execBody = whileOp.getLoopBodyExecution();
-                //depending on the block add the proper graph body to this for persistence
-                //and possible later processing.
-                //note that we need to update the graph predicate by running the execution
-                whileOp.getPredicateExecution().exec();
-                while(whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                    //run the body
-                    execBody.exec();
-                    //update the predicate
+
+                if(!onBackward) {
+                    SameDiff execBody = whileOp.getLoopBodyExecution();
+                    //depending on the block add the proper graph body to this for persistence
+                    //and possible later processing.
+                    //note that we need to update the graph predicate by running the execution
                     whileOp.getPredicateExecution().exec();
-                    whileOp.incrementLoopCounter();
+                    while(whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                        //run the body
+                        execBody.exec();
+                        //update the predicate
+                        whileOp.getPredicateExecution().exec();
+                        whileOp.incrementLoopCounter();
+
+                    }
+
+                    List<int[]> list = execBody.graph().getOutputIds();
+                    List<SDVariable> outputs = new ArrayList<>();
+                    /**
+                     * Find why this is null.
+                     */
+                    for(int[] output : list) {
+                        outputs.add(execBody.getVariableForVertexId(output));
+                    }
+
+                    whileOp.setOutputVars(outputs.toArray(new SDVariable[outputs.size()]));
+                    ops.add(differentialFunction);
+                }
+
+                else {
+                    /**
+                     * Note: Need to accumulate gradients.
+                     * Multiply each value by the number of times looped.
+                     * This approximates accumulating the gradient
+                     * across a number of loop cycles.
+                     * We only compute the gradient for the internal loop once
+                     * and from that we multiply the gradient by 5.
+                     *
+                     */
+                    Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> mapListPair = whileOp.getLoopBodyExecution().execBackwards();
+                    for(SDVariable variable : mapListPair.getFirst().keySet()) {
+                        variable.getArr().muli(whileOp.getNumLooped());
+                    }
+
 
                 }
 
-                List<int[]> list = execBody.graph().getOutputIds();
-                List<SDVariable> outputs = new ArrayList<>();
-                /**
-                 * Find why this is null.
-                 */
-                for(int[] output : list) {
-                    outputs.add(execBody.getVariableForVertexId(output));
-                }
-
-                whileOp.setOutputVars(outputs.toArray(new SDVariable[outputs.size()]));
-                ops.add(differentialFunction);
 
 
             }
@@ -3477,8 +3552,9 @@ public class SameDiff {
                     currVariable = add;
 
                 }
-                else
-                     associateArrayWithVariable(op.z(),currVariable);
+                else {
+                    associateArrayWithVariable(op.z(), currVariable);
+                }
 
                 opMap.put(currVariable,differentialFunction);
                 putFunction(opExecAction.getOutputId(),differentialFunction);

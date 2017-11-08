@@ -32,32 +32,77 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
     @Getter
-    private SameDiff loopBodyExecution,predicateExecution;
+    protected SameDiff loopBodyExecution,predicateExecution;
 
 
     @Getter
-    private SameDiff.SameDiffConditional predicate;
+    protected SameDiff.SameDiffConditional predicate;
     @Getter
-    private SameDiff.SameDiffFunctionDefinition trueBody;
-
-    @Getter
-    private String blockName,trueBodyName;
+    protected SameDiff.SameDiffFunctionDefinition trueBody;
 
     @Getter
-    private SDVariable[] inputVars;
+    protected String blockName,trueBodyName;
+
+    @Getter
+    protected SDVariable[] inputVars;
 
 
     @Getter
-    private SDVariable targetBoolean;
+    protected SDVariable targetBoolean;
 
-    private SDVariable dummyResult;
+    protected SDVariable dummyResult;
 
     @Getter
     @Setter
-    private SDVariable[] outputVars;
+    protected SDVariable[] outputVars;
 
     @Getter
-    private int numLooped = 0;
+    protected int numLooped = 0;
+
+    public While(While whileStatement) {
+        this.sameDiff = whileStatement.sameDiff;
+        this.outputVars = whileStatement.outputVars;
+        this.loopBodyExecution = whileStatement.loopBodyExecution;
+        this.numLooped = whileStatement.numLooped;
+        this.args = whileStatement.args;
+        this.dummyResult = whileStatement.dummyResult;
+        this.predicate = whileStatement.predicate;
+        this.predicateExecution = whileStatement.predicateExecution;
+        this.shape = new int[] {1,1};
+        addAsNewVertexId();
+        f().addFunctionEdges(this);
+        this.inputVars = whileStatement.inputVars;
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
+        int[] inputEdges = new int[inputVars.length];
+        String[] opEdgeIds = new String[inputVars.length * 2];
+
+        for(int i = 0; i < inputEdges.length; i++) {
+            inputEdges[i] = inputVars[i].getVertexId()[0];
+        }
+
+        /**
+         * Setup the opstate ids
+         */
+        int opEdgeIdIdx = 0;
+        for(int i = 0; i < inputEdges.length; i++) {
+            opEdgeIds[opEdgeIdIdx++] = String.valueOf(inputEdges[i]);
+        }
+
+
+        OpState opState = OpState.builder()
+                .opName(opName())
+                .opType(opType())
+                .inPlace(false)
+                .id(UUID.randomUUID().toString())
+                .vertexIds(opEdgeIds)
+                .build();
+
+        this.sameDiff.graph().addEdge(inputEdges,vertexId,opState,true);
+
+
+    }
+
+
 
     @Builder
     public While(String blockName,
@@ -71,6 +116,8 @@ public class While extends DifferentialFunction implements CustomOp {
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.blockName = blockName;
+        //need to add the op to the list of ops to be executed when running backwards
+        this.args = new DifferentialFunction[] {this};
         int[] vertexId = {parent.graph().nextVertexId()};
 
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId);
@@ -122,6 +169,15 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
 
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        List<DifferentialFunction> ret = new ArrayList<>();
+        ret.add(new WhileDerivative(this));
+        return ret;
+    }
+
+
+
     /**
      * Increments the loop counter.
      * This should be called when the loop
@@ -143,13 +199,6 @@ public class While extends DifferentialFunction implements CustomOp {
         return dummyResult;
     }
 
-    @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        for(int i = 0; i < numLooped; i++) {
-            loopBodyExecution.execBackwards();
-        }
-        return null;
-    }
 
     @Override
     public String toString() {
