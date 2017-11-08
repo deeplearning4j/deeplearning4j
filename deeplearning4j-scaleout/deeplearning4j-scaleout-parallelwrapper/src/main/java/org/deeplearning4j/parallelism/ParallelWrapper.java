@@ -99,8 +99,6 @@ public class ParallelWrapper implements AutoCloseable {
     @Setter
     protected GradientsAccumulator gradientsAccumulator;
 
-    private MagicQueue mq;
-
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
@@ -185,7 +183,7 @@ public class ParallelWrapper implements AutoCloseable {
      */
     public synchronized void fit(@NonNull MultiDataSetIterator source) {
         stopFit.set(false);
-        createZooIfNeccessary(true);
+        createZooIfNeccessary();
 
         if (source.resetSupported())
             source.reset();
@@ -468,7 +466,7 @@ public class ParallelWrapper implements AutoCloseable {
     public synchronized void fit(@NonNull DataSetIterator source) {
         log.info("Using workspaceMode {} for training", workspaceMode.name());
         stopFit.set(false);
-        createZooIfNeccessary(false);
+        createZooIfNeccessary();
 
 
 
@@ -620,7 +618,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
 
-    private void createZooIfNeccessary(boolean useMDS) {
+    private void createZooIfNeccessary() {
         if (zoo == null) {
             trainerContext.init(model, trainerContextArgs);
 
@@ -629,7 +627,7 @@ public class ParallelWrapper implements AutoCloseable {
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
-                                useMDS, this, workspaceMode, averagingFrequency);
+                                 this, workspaceMode, averagingFrequency);
 
                 /*
                 zoo[cnt].setUncaughtExceptionHandler(handler);

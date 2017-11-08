@@ -4,7 +4,6 @@ import io.aeron.driver.MediaDriver;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.parallelism.MagicQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
@@ -53,14 +52,13 @@ public class ParameterServerTrainerContext implements TrainerContext {
      * @param threadId   the thread id to use for this worker
      * @param model      the model to start the trainer with
      * @param rootDevice the root device id
-     * @param useMDS     whether to use the {@link MagicQueue}
      *                   or not
      * @param wrapper    the wrapper instance to use with this trainer (this refernece is needed
      *                   for coordination with the {@link ParallelWrapper} 's {@link IterationListener}
      * @return the created training instance
      */
     @Override
-    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
+    public Trainer create(int threadId, Model model, int rootDevice, ParallelWrapper wrapper,
                     WorkspaceMode mode, int averagingFrequency) {
         return ParameterServerTrainer.builder().originalModel(model).parameterServerClient(ParameterServerClient
                         .builder().aeron(parameterServerNode.getAeron())
@@ -69,7 +67,7 @@ public class ParameterServerTrainerContext implements TrainerContext {
                         .ndarraySendUrl(parameterServerNode.getSubscriber()[threadId].getSubscriber().connectionUrl())
                         .subscriberHost("localhost").masterStatusHost("localhost").masterStatusPort(statusServerPort)
                         .subscriberPort(40625 + threadId).subscriberStream(12 + threadId).build())
-                        .replicatedModel(model).threadId(threadId).parallelWrapper(wrapper).useMDS(useMDS).build();
+                        .replicatedModel(model).threadId(threadId).parallelWrapper(wrapper).build();
     }
 
     @Override

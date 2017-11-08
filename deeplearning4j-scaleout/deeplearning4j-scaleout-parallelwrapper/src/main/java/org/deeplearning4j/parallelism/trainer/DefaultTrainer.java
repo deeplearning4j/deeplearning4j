@@ -61,7 +61,6 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected AtomicBoolean shouldStop = new AtomicBoolean(false);
     protected Exception thrownException;
     @Builder.Default
-    protected volatile boolean useMDS = false;
     protected final String uuid = UUID.randomUUID().toString();
     @Builder.Default
     protected boolean onRootModel = false;
@@ -163,7 +162,6 @@ public class DefaultTrainer extends Thread implements Trainer {
     }
 
 
-
     protected void setupIfNeccessary() {
         if (queue == null)
             queue = new LinkedBlockingQueue<>(1);
@@ -255,7 +253,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             if (originalModel instanceof MultiLayerNetwork) {
                 if (!onRootModel) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(
-                                    ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
+                            ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
                     conf.setTrainingWorkspaceMode(workspaceMode);
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
@@ -270,7 +268,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
                             updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel,
-                                            updaterOrigina.getStateViewArray().unsafeDuplication(true), false);
+                                    updaterOrigina.getStateViewArray().unsafeDuplication(true), false);
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -280,12 +278,12 @@ public class DefaultTrainer extends Thread implements Trainer {
                         this.replicatedModel.init();
 
                     ((MultiLayerNetwork) replicatedModel).getLayerWiseConfigurations()
-                                    .setTrainingWorkspaceMode(workspaceMode);
+                            .setTrainingWorkspaceMode(workspaceMode);
                 }
             } else if (originalModel instanceof ComputationGraph) {
                 if (!onRootModel) {
                     ComputationGraphConfiguration conf = ComputationGraphConfiguration
-                                    .fromJson(((ComputationGraph) originalModel).getConfiguration().toJson());
+                            .fromJson(((ComputationGraph) originalModel).getConfiguration().toJson());
                     conf.setTrainingWorkspaceMode(workspaceMode);
 
                     this.replicatedModel = new ComputationGraph(conf);
@@ -300,7 +298,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
                             updaterReplica.setStateViewArray(
-                                            updaterOrigina.getStateViewArray().unsafeDuplication(true));
+                                    updaterOrigina.getStateViewArray().unsafeDuplication(true));
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -317,83 +315,52 @@ public class DefaultTrainer extends Thread implements Trainer {
             // classes that extend DefaultTrainer might hook something there
             postInit();
 
-            if (!useMDS) {
-                while (!shouldStop.get()) {
-                    DataSet dataSet = null;
-                    if (nullMode == null || !nullMode.get())
-                        dataSet = queue.poll(10, TimeUnit.MILLISECONDS);
-                    else {
-                        // this code branch is for debugging only, please ignore :)
-                        if (nullDataSet == null)
-                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28),
-                                            Nd4j.create(64, 10));
+            while (!shouldStop.get()) {
+                DataSet dataSet = null;
+                if (nullMode == null || !nullMode.get())
+                    dataSet = queue.poll(10, TimeUnit.MILLISECONDS);
+                else {
+                    // this code branch is for debugging only, please ignore :)
+                    if (nullDataSet == null)
+                        nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28),
+                                Nd4j.create(64, 10));
 
-                        dataSet = nullDataSet;
-                    }
-                    if (dataSet != null) {
-
-                        fit(dataSet);
-
-                        // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && (averagingFrequency == 0
-                                        || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
-                                        && averagingRequired()) {
-                            // we ensure all operations are finished in this training round
-                            Nd4j.getExecutioner().commit();
-
-                            // we ensure memory is updated on host side
-                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(),
-                                            AffinityManager.Location.HOST);
-
-                            if (replicatedModel instanceof MultiLayerNetwork) {
-                                Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
-                                if (updaterReplica.getStateViewArray() != null)
-                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
-                                                    AffinityManager.Location.HOST);
-                            } else {
-                                ComputationGraphUpdater updaterReplica =
-                                                ((ComputationGraph) replicatedModel).getUpdater();
-
-                                if (updaterReplica.getStateViewArray() != null)
-                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
-                                                    AffinityManager.Location.HOST);
-                            }
-                        }
-
-                        running.decrementAndGet();
-                    }
+                    dataSet = nullDataSet;
                 }
-            } else {
-                // loop for MultiDataSet
-                while (!shouldStop.get()) {
-                    MultiDataSet dataSet = queueMDS.poll(10, TimeUnit.MILLISECONDS);
-                    if (dataSet != null) {
+                if (dataSet != null) {
 
-                        // just fitting
-                        fit(dataSet);
+                    fit(dataSet);
 
-                        // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && (averagingFrequency == 0
-                                        || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
-                                        && averagingRequired()) {
-                            // we ensure all operations are finished in this training round
-                            Nd4j.getExecutioner().commit();
+                    // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
+                    if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && (averagingFrequency == 0
+                            || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
+                            && averagingRequired()) {
+                        // we ensure all operations are finished in this training round
+                        Nd4j.getExecutioner().commit();
 
-                            // we ensure memory is updated on host side
-                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(),
-                                            AffinityManager.Location.HOST);
+                        // we ensure memory is updated on host side
+                        Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(),
+                                AffinityManager.Location.HOST);
 
-                            ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                        if (replicatedModel instanceof MultiLayerNetwork) {
+                            Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                            if (updaterReplica.getStateViewArray() != null)
+                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
+                                        AffinityManager.Location.HOST);
+                        } else {
+                            ComputationGraphUpdater updaterReplica =
+                                    ((ComputationGraph) replicatedModel).getUpdater();
 
                             if (updaterReplica.getStateViewArray() != null)
                                 Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
-                                                AffinityManager.Location.HOST);
+                                        AffinityManager.Location.HOST);
                         }
-
-                        running.decrementAndGet();
                     }
+
+                    running.decrementAndGet();
                 }
             }
+
         } catch (Exception e) {
             this.thrownException = e;
             throw new RuntimeException(e);
@@ -431,7 +398,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
 
     protected void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
-                    Collection<IterationListener> replicatedListeners) {
+                                      Collection<IterationListener> replicatedListeners) {
         for (IterationListener listener : oldListeners) {
             IterationListener l = cloneListener(listener);
 
@@ -460,7 +427,8 @@ public class DefaultTrainer extends Thread implements Trainer {
 
 
     public static class DefaultTrainerBuilder {
-        public DefaultTrainerBuilder() {}
+        public DefaultTrainerBuilder() {
+        }
     }
 
 }
