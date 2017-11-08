@@ -31,6 +31,7 @@ layout: default
 - Deeplearning4j: Use of Evaluation class no-arg constructor (i.e., new Evaluation()) can result in accuracy/stats being reported as 0.0. Other Evaluation class constructors, and ComputationGraph/MultiLayerNetwork.evaluate(DataSetIterator) methods work as expected.
     - This also impacts Spark (distributed) evaluation: workaround is to replace ```sparkNet.evaluate(testData);``` with ```sparkNet.doEvaluation(testData, 64, new Evaluation(10))[0];```, where 10 is the number of classes and 64 in the evaluation minibatch size to use.
 - SequenceRecordReaderDataSetIterator applies preprocessors (such as normalization) twice to each DataSet (possible workaround: use RecordReaderMultiDataSetIterator + MultiDataSetWrapperIterator)
+- TransferLearning: ComputationGraph may incorrectly apply l1/l2 regularization (defined in FinetuneConfiguration) to frozen layers. Workaround: set 0.0 l1/l2 on FineTuneConfiguration, and required l1/l2 on new/non-frozen layers directly. Note that MultiLayerNetwork with TransferLearning appears to be unaffected.
 
 
 
