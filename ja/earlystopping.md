@@ -18,7 +18,7 @@ layout: default
 * テストセットでの性能が最も高かったものを最終モデルとする。
 
 
-これをグラフにすると以下のようになります。
+これをグラフにすると次のようになります。
 
 ![Early Stopping](./img/earlystopping.png)
 
