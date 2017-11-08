@@ -692,6 +692,21 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Create a ListBuilder (for creating a MultiLayerConfiguration)<br>
+         * Usage:<br>
+         * <pre>
+         * {@code .toListBuilder()
+         * .layer(new DenseLayer.Builder()...build())
+         * ...
+         * .layer(new OutputLayer.Builder()...build())
+         * }
+         * </pre>
+         */
+        public ListBuilder toListBuilder() {
+            return list();
+        }
+
+        /**
          * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified layers<br>
          * Usage:<br>
          * <pre>
@@ -713,6 +728,23 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             }
             return new ListBuilder(this, layerMap);
 
+        }
+
+        /**
+         * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified layers<br>
+         * Usage:<br>
+         * <pre>
+         * {@code .toListBuilder(
+         *      new DenseLayer.Builder()...build(),
+         *      ...,
+         *      new OutputLayer.Builder()...build())
+         * }
+         * </pre>
+         *
+         * @param layers The layer configurations for the network
+         */
+        public ListBuilder toListBuilder(Layer... layers) {
+            return list(layers);
         }
 
         /**

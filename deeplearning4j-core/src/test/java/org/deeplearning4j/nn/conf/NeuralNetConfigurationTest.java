@@ -25,7 +25,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 
@@ -36,29 +35,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class NeuralNetConfigurationTest {
 
-    final DataSet trainingSet = createData();
-
-    public DataSet createData() {
-        int numFeatures = 40;
-
-        INDArray input = Nd4j.create(2, numFeatures); // have to be at least two or else output layer gradient is a scalar and cause exception
-        INDArray labels = Nd4j.create(2, 2);
-
-        INDArray row0 = Nd4j.create(1, numFeatures);
-        row0.assign(0.1);
-        input.putRow(0, row0);
-        labels.put(0, 1, 1); // set the 4th column
-
-        INDArray row1 = Nd4j.create(1, numFeatures);
-        row1.assign(0.2);
-
-        input.putRow(1, row1);
-        labels.put(1, 0, 1); // set the 2nd column
-
-        return new DataSet(input, labels);
-    }
-
-
 
     @Test
     public void testLearningRateByParam() {
@@ -66,26 +42,29 @@ public class NeuralNetConfigurationTest {
         double biasLr = 0.02;
         int[] nIns = {4, 3, 3};
         int[] nOuts = {3, 3, 3};
-        int oldScore = 1;
-        int newScore = 1;
-        int iteration = 3;
-        INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
-                        .backprop(true).pretrain(false).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3))
+                .toListBuilder()
+                .layer(new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
+                        .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
+                .layer(new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1])
+                        .updater(new Sgd(0.7)).build())
+                .layer(new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
+                .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(lr, ((Sgd)net.getLayer(0).conf().getUpdaterByParam("W")).getLearningRate(), 1e-4);
-        assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getUpdaterByParam("b")).getLearningRate(), 1e-4);
-        assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getUpdaterByParam("gamma")).getLearningRate(), 1e-4);
-        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
-        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(lr, ((Sgd) net.getLayer(0).conf()
+                .getUpdaterByParam("W")).getLearningRate(), 1e-4);
+        assertEquals(biasLr, ((Sgd) net.getLayer(0).conf()
+                .getUpdaterByParam("b")).getLearningRate(), 1e-4);
+        assertEquals(0.7, ((Sgd) net.getLayer(1).conf()
+                .getUpdaterByParam("gamma")).getLearningRate(), 1e-4);
+        assertEquals(0.3, ((Sgd) net.getLayer(2).conf()
+                .getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(0.3, ((Sgd) net.getLayer(2).conf()
+                .getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
     }
 
     @Test
@@ -109,7 +88,7 @@ public class NeuralNetConfigurationTest {
         String confActivation = "leakyrelu";
         Object[] confExtra = {myAlpha};
         INDArray outMine = Nd4j.getExecutioner().execAndReturn(
-                        Nd4j.getOpFactory().createTransform(confActivation, leakyVector.dup(), confExtra));
+                Nd4j.getOpFactory().createTransform(confActivation, leakyVector.dup(), confExtra));
         System.out.println("======================");
         System.out.println("Exec and Return: Leaky Relu transformation with a value via getOpFactory");
         System.out.println("======================");
@@ -127,11 +106,11 @@ public class NeuralNetConfigurationTest {
         int[] nOuts = {3, 3, 3};
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l1(l1)
-                        .l2(l2).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
-                        .backprop(true).pretrain(false).build();
+                .l2(l2).toListBuilder()
+                .layer(new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
+                .layer(new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
+                .layer(new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
+                .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
