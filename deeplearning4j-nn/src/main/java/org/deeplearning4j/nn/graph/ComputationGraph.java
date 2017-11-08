@@ -1751,7 +1751,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for( int i=0; i<out.length; i++ ){
             if(act[i].size() > 1){
                 throw new UnsupportedOperationException("Cannot convert Activation[] to INDArray[]: output has multiple" +
-                        " outputs. Use silencOutputAct or similar");
+                        " outputs. Use silentOutputAct or similar");
             }
             out[i] = act[i].get(0);
         }

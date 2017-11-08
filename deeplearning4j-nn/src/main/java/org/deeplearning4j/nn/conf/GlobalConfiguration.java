@@ -80,7 +80,7 @@ public class GlobalConfiguration {
 
     @Override
     public GlobalConfiguration clone(){
-        throw new UnsupportedOperationException("Not yet implemneted");
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
 
