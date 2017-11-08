@@ -132,8 +132,8 @@ public class NearestNeighborsServer {
                 if (record == null)
                     return badRequest(Json.toJson(Collections.singletonMap("status", "invalid json passed.")));
 
-                NearstNeighborsResults results =
-                                NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                NearestNeighborsResults results =
+                                NearestNeighborsResults.builder().results(nearestNeighbor.search()).build();
 
 
                 return ok(Json.toJson(results));
@@ -179,7 +179,7 @@ public class NearestNeighborsServer {
                         nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));
                 }
 
-                NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();
+                NearestNeighborsResults results2 = NearestNeighborsResults.builder().results(nnResult).build();
                 return ok(Json.toJson(results2));
 
             } catch (Exception e) {

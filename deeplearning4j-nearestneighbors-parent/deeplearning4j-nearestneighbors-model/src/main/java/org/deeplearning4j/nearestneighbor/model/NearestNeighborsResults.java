@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class NearstNeighborsResults implements Serializable {
+public class NearestNeighborsResults implements Serializable {
     private List<NearestNeighborsResult> results;
 
 }

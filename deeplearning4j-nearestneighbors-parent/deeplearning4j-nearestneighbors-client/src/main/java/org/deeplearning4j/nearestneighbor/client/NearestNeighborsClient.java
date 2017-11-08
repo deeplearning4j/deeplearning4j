@@ -5,7 +5,7 @@ import com.mashape.unirest.http.Unirest;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.nearestneighbor.model.Base64NDArrayBody;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
-import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
+import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -62,12 +62,12 @@ public class NearestNeighborsClient {
      * @return
      * @throws Exception
      */
-    public NearstNeighborsResults knn(int index, int k) throws Exception {
+    public NearestNeighborsResults knn(int index, int k) throws Exception {
         NearestNeighborRequest request = new NearestNeighborRequest();
         request.setInputIndex(index);
         request.setK(k);
-        NearstNeighborsResults ret = Unirest.post(url + "/knn").header("accept", "application/json")
-                        .header("Content-Type", "application/json").body(request).asObject(NearstNeighborsResults.class)
+        NearestNeighborsResults ret = Unirest.post(url + "/knn").header("accept", "application/json")
+                        .header("Content-Type", "application/json").body(request).asObject(NearestNeighborsResults.class)
                         .getBody();
         return ret;
     }
@@ -82,13 +82,13 @@ public class NearestNeighborsClient {
      * @return
      * @throws Exception
      */
-    public NearstNeighborsResults knnNew(int k, INDArray arr) throws Exception {
+    public NearestNeighborsResults knnNew(int k, INDArray arr) throws Exception {
         Base64NDArrayBody base64NDArrayBody =
                         Base64NDArrayBody.builder().k(k).ndarray(Nd4jBase64.base64String(arr)).build();
 
-        NearstNeighborsResults ret = Unirest.post(url + "/knnnew").header("accept", "application/json")
+        NearestNeighborsResults ret = Unirest.post(url + "/knnnew").header("accept", "application/json")
                         .header("Content-Type", "application/json").body(base64NDArrayBody)
-                        .asObject(NearstNeighborsResults.class).getBody();
+                        .asObject(NearestNeighborsResults.class).getBody();
 
         return ret;
     }
