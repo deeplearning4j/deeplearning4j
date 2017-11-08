@@ -40,7 +40,7 @@ public class AbstractDataSetIteratorTest {
     }
 
 
-    protected static Iterable<Pair<float[], float[]>> floatIterable(final int totalRows, final int numColumns) {
+    private static Iterable<Pair<float[], float[]>> floatIterable(final int totalRows, final int numColumns) {
         return new Iterable<Pair<float[], float[]>>() {
             @Override
             public Iterator<Pair<float[], float[]>> iterator() {

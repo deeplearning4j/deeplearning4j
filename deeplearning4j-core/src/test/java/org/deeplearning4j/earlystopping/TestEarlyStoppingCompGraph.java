@@ -42,8 +42,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -55,20 +53,21 @@ public class TestEarlyStoppingCompGraph {
     @Test
     public void testEarlyStoppingIris() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
-                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                        .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                .iterationTerminationConditions(
+                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
 
         IEarlyStoppingTrainer<ComputationGraph> trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
 
@@ -98,29 +97,29 @@ public class TestEarlyStoppingCompGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(5.0)) //Intentionally huge LR
-                        .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
-                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(5.0)) //Intentionally huge LR
+                .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
-                                        new MaxScoreIterationTerminationCondition(10)) //Initial score is ~2.5
-                        .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
+                        new MaxScoreIterationTerminationCondition(10)) //Initial score is ~2.5
+                .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        result.getTerminationReason());
+                result.getTerminationReason());
         String expDetails = new MaxScoreIterationTerminationCondition(10).toString();
         assertEquals(expDetails, result.getTerminationDetails());
 
@@ -134,12 +133,12 @@ public class TestEarlyStoppingCompGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).graphBuilder()
-                        .addInputs("in")
-                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -147,11 +146,11 @@ public class TestEarlyStoppingCompGraph {
 
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                        .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                        //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
-                        .modelSaver(saver).build();
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
+                .modelSaver(saver).build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
         long startTime = System.currentTimeMillis();
@@ -163,7 +162,7 @@ public class TestEarlyStoppingCompGraph {
         assertTrue(durationSeconds <= 9);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        result.getTerminationReason());
+                result.getTerminationReason());
         String expDetails = new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
@@ -175,12 +174,12 @@ public class TestEarlyStoppingCompGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).graphBuilder()
-                        .addInputs("in")
-                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -188,11 +187,11 @@ public class TestEarlyStoppingCompGraph {
 
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
-                                        new ScoreImprovementEpochTerminationCondition(5))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                        .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
+                        new ScoreImprovementEpochTerminationCondition(5))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
         EarlyStoppingResult result = trainer.fit();
@@ -209,20 +208,20 @@ public class TestEarlyStoppingCompGraph {
     @Test
     public void testListeners() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
-                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                        .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 

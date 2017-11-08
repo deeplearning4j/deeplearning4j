@@ -359,11 +359,13 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     @Override
     public org.deeplearning4j.nn.conf.layers.Layer conf() {
+        //TODO: implement this
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
+        //TODO: implement
         throw new UnsupportedOperationException();
     }
 

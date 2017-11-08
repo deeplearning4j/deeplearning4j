@@ -32,8 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -48,23 +46,23 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingIris() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
 
@@ -91,21 +89,21 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingEveryNEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
-                                        .evaluateEveryNEpochs(2).modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                        .evaluateEveryNEpochs(2).modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
 
@@ -119,11 +117,11 @@ public class TestEarlyStopping {
     @Test
     public void testEarlyStoppingIrisMultiEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -132,12 +130,12 @@ public class TestEarlyStopping {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, mIter);
 
@@ -167,32 +165,32 @@ public class TestEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(5.0)) //Intentionally huge LR
-                        .weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(5.0)) //Intentionally huge LR
+                .weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
-                                                        new MaxScoreIterationTerminationCondition(10)) //Initial score is ~2.5
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
+                                new MaxScoreIterationTerminationCondition(10)) //Initial score is ~2.5
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        result.getTerminationReason());
+                result.getTerminationReason());
         String expDetails = new MaxScoreIterationTerminationCondition(10).toString();
         assertEquals(expDetails, result.getTerminationDetails());
 
@@ -206,11 +204,11 @@ public class TestEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -218,13 +216,12 @@ public class TestEarlyStopping {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
-                                        .modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                                new MaxScoreIterationTerminationCondition(7.5))
+                        .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
         long startTime = System.currentTimeMillis();
@@ -236,7 +233,7 @@ public class TestEarlyStopping {
         assertTrue(durationSeconds <= 9);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        result.getTerminationReason());
+                result.getTerminationReason());
         String expDetails = new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
@@ -248,11 +245,11 @@ public class TestEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -260,14 +257,14 @@ public class TestEarlyStopping {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
-                                                        new ScoreImprovementEpochTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
+                                new ScoreImprovementEpochTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                                new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
         EarlyStoppingResult result = trainer.fit();
@@ -282,21 +279,22 @@ public class TestEarlyStopping {
 
     @Test
     public void testMinImprovementNEpochsTermination() {
-        //Idea: terminate training if score (test set loss) does not improve more than minImprovement for 5 consecutive epochs
+        //Idea: terminate training if score (test set loss) does not improve more than
+        // minImprovement for 5 consecutive epochs
         //Simulate this by setting LR = 0.0
         Random rng = new Random(123);
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Nesterovs(0.0,0.9)).list()
-                        .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
-                                        .weightInit(WeightInit.XAVIER).activation(
-                                                        Activation.TANH)
-                                        .build())
-                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
-                                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER).nIn(20).nOut(1)
-                                        .build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Nesterovs(0.0, 0.9)).list()
+                .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
+                        .weightInit(WeightInit.XAVIER).activation(
+                                Activation.TANH)
+                        .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER).nIn(20).nOut(1)
+                        .build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
         int nSamples = 100;
@@ -312,33 +310,34 @@ public class TestEarlyStopping {
         double minImprovement = 0.0009;
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(1000),
-                                                        //Go on for max 5 epochs without any improvements that are greater than minImprovement
-                                                        new ScoreImprovementEpochTerminationCondition(5,
-                                                                        minImprovement))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(3, TimeUnit.MINUTES))
-                                        .scoreCalculator(new DataSetLossCalculator(training, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(1000),
+                                //Go on for max 5 epochs without any improvements that are greater than minImprovement
+                                new ScoreImprovementEpochTerminationCondition(5,
+                                        minImprovement))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(3, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(training, true)).modelSaver(saver)
+                        .build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, training);
         EarlyStoppingResult result = trainer.fit();
 
         assertEquals(6, result.getTotalEpochs());
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
-        String expDetails = new ScoreImprovementEpochTerminationCondition(5, minImprovement).toString();
+        String expDetails = new ScoreImprovementEpochTerminationCondition(5,
+                minImprovement).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
 
     @Test
     public void testEarlyStoppingGetBestModel() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -347,12 +346,12 @@ public class TestEarlyStopping {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, mIter);
 
@@ -363,6 +362,7 @@ public class TestEarlyStopping {
 
         assertEquals(net.getnLayers(), mln.getnLayers());
         assertEquals(net.getConfiguration().getOptimizationAlgo(), mln.getConfiguration().getOptimizationAlgo());
+
         BaseLayer bl = (BaseLayer) net.conf();
         assertEquals(bl.getActivationFn().toString(), ((BaseLayer) mln.conf()).getActivationFn().toString());
         assertEquals(bl.getIUpdater(), ((BaseLayer) mln.conf()).getIUpdater());
@@ -371,23 +371,23 @@ public class TestEarlyStopping {
     @Test
     public void testListeners() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 

@@ -41,13 +41,16 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Load details from CSV files; single input/output -> compare to RecordReaderDataSetIterator
         RecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
-        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 10, 4, 3);
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(
+                rr, 10, 4, 3);
 
         RecordReader rr2 = new CSVRecordReader(0, ',');
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
-        MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10).addReader("reader", rr2)
-                        .addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
+        MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
+                .addReader("reader", rr2)
+                .addInput("reader", 0, 3)
+                .addOutputOneHot("reader", 4, 3).build();
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
@@ -89,7 +92,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         SequenceRecordReaderDataSetIterator iter =
-                        new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
+                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
 
         SequenceRecordReader featureReader2 = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader2 = new CSVSequenceRecordReader(1, ",");
@@ -97,8 +100,8 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         MultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("in", featureReader2).addSequenceReader("out", labelReader2).addInput("in")
-                        .addOutputOneHot("out", 0, 4).build();
+                .addSequenceReader("in", featureReader2).addSequenceReader("out", labelReader2).addInput("in")
+                .addOutputOneHot("out", 0, 4).build();
 
         while (iter.hasNext()) {
             DataSet ds = iter.next();
@@ -129,7 +132,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
-                        .addReader("reader", rr2).addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
+                .addReader("reader", rr2).addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
 
         rrmdsi.setCollectMetaData(true);
 
@@ -157,8 +160,8 @@ public class RecordReaderMultiDataSetIteratorTest {
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10).addReader("reader", rr2)
-                        .addInput("reader", 0, 0).addInput("reader", 1, 2).addOutput("reader", 3, 3)
-                        .addOutputOneHot("reader", 4, 3).build();
+                .addInput("reader", 0, 0).addInput("reader", 1, 2).addOutput("reader", 3, 3)
+                .addOutputOneHot("reader", 4, 3).build();
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
@@ -203,8 +206,8 @@ public class RecordReaderMultiDataSetIteratorTest {
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
-                        .addReader("reader", rr2).addInput("reader", 0, 0).addInput("reader", 1, 2)
-                        .addOutput("reader", 3, 3).addOutputOneHot("reader", 4, 3).build();
+                .addReader("reader", rr2).addInput("reader", 0, 0).addInput("reader", 1, 2)
+                .addOutput("reader", 3, 3).addOutputOneHot("reader", 4, 3).build();
         rrmdsi.setCollectMetaData(true);
 
         int count = 0;
@@ -239,7 +242,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         SequenceRecordReaderDataSetIterator iter =
-                        new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
+                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
 
         SequenceRecordReader featureReader2 = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader2 = new CSVSequenceRecordReader(1, ",");
@@ -247,8 +250,8 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         MultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("seq1", featureReader2).addSequenceReader("seq2", labelReader2)
-                        .addInput("seq1", 0, 1).addInput("seq1", 2, 2).addOutputOneHot("seq2", 0, 4).build();
+                .addSequenceReader("seq1", featureReader2).addSequenceReader("seq2", labelReader2)
+                .addInput("seq1", 0, 1).addInput("seq1", 2, 2).addOutputOneHot("seq2", 0, 4).build();
 
         while (iter.hasNext()) {
             DataSet ds = iter.next();
@@ -307,8 +310,8 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         RecordReaderMultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("seq1", featureReader2).addSequenceReader("seq2", labelReader2)
-                        .addInput("seq1", 0, 1).addInput("seq1", 2, 2).addOutputOneHot("seq2", 0, 4).build();
+                .addSequenceReader("seq1", featureReader2).addSequenceReader("seq2", labelReader2)
+                .addInput("seq1", 0, 1).addInput("seq1", 2, 2).addOutputOneHot("seq2", 0, 4).build();
 
         srrmdsi.setCollectMetaData(true);
 
@@ -329,7 +332,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Test: no readers
         try {
             MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addInput("something")
-                            .addOutput("something").build();
+                    .addOutput("something").build();
             fail("Should have thrown exception");
         } catch (Exception e) {
         }
@@ -340,7 +343,7 @@ public class RecordReaderMultiDataSetIteratorTest {
             rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
             MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addReader("iris", rr)
-                            .addInput("thisDoesntExist", 0, 3).addOutputOneHot("iris", 4, 3).build();
+                    .addInput("thisDoesntExist", 0, 3).addOutputOneHot("iris", 4, 3).build();
             fail("Should have thrown exception");
         } catch (Exception e) {
         }
@@ -381,10 +384,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         SequenceRecordReaderDataSetIterator iterAlignStart = new SequenceRecordReaderDataSetIterator(featureReader,
-                        labelReader, 1, 4, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_START);
+                labelReader, 1, 4, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_START);
 
         SequenceRecordReaderDataSetIterator iterAlignEnd = new SequenceRecordReaderDataSetIterator(featureReader2,
-                        labelReader2, 1, 4, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+                labelReader2, 1, 4, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
 
         //Set up
@@ -399,14 +402,14 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader4.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         RecordReaderMultiDataSetIterator rrmdsiStart = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("in", featureReader3).addSequenceReader("out", labelReader3).addInput("in")
-                        .addOutputOneHot("out", 0, 4)
-                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START).build();
+                .addSequenceReader("in", featureReader3).addSequenceReader("out", labelReader3).addInput("in")
+                .addOutputOneHot("out", 0, 4)
+                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START).build();
 
         RecordReaderMultiDataSetIterator rrmdsiEnd = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("in", featureReader4).addSequenceReader("out", labelReader4).addInput("in")
-                        .addOutputOneHot("out", 0, 4)
-                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END).build();
+                .addSequenceReader("in", featureReader4).addSequenceReader("out", labelReader4).addInput("in")
+                .addOutputOneHot("out", 0, 4)
+                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END).build();
 
 
         while (iterAlignStart.hasNext()) {
@@ -466,14 +469,14 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader4.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         RecordReaderMultiDataSetIterator rrmdsiStart = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("in", featureReader3).addSequenceReader("out", labelReader3).addInput("in")
-                        .addOutputOneHot("out", 0, 4)
-                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START).build();
+                .addSequenceReader("in", featureReader3).addSequenceReader("out", labelReader3).addInput("in")
+                .addOutputOneHot("out", 0, 4)
+                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START).build();
 
         RecordReaderMultiDataSetIterator rrmdsiEnd = new RecordReaderMultiDataSetIterator.Builder(1)
-                        .addSequenceReader("in", featureReader4).addSequenceReader("out", labelReader4).addInput("in")
-                        .addOutputOneHot("out", 0, 4)
-                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END).build();
+                .addSequenceReader("in", featureReader4).addSequenceReader("out", labelReader4).addInput("in")
+                .addOutputOneHot("out", 0, 4)
+                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END).build();
 
         rrmdsiStart.setCollectMetaData(true);
         rrmdsiEnd.setCollectMetaData(true);
@@ -484,7 +487,7 @@ public class RecordReaderMultiDataSetIteratorTest {
             MultiDataSet mdsEnd = rrmdsiEnd.next();
 
             MultiDataSet mdsStartFromMeta =
-                            rrmdsiStart.loadFromMetaData(mdsStart.getExampleMetaData(RecordMetaData.class));
+                    rrmdsiStart.loadFromMetaData(mdsStart.getExampleMetaData(RecordMetaData.class));
             MultiDataSet mdsEndFromMeta = rrmdsiEnd.loadFromMetaData(mdsEnd.getExampleMetaData(RecordMetaData.class));
 
             assertEquals(mdsStart, mdsStartFromMeta);
@@ -510,9 +513,9 @@ public class RecordReaderMultiDataSetIteratorTest {
         f2.mkdirs();
 
         writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
-                        new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+                new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
         writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
-                        new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+                new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
 
         int outputNum = 2;
@@ -527,8 +530,8 @@ public class RecordReaderMultiDataSetIteratorTest {
 
 
         MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(1).addReader("rr1", rr1)
-                        .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
-                        .addOutputOneHot("rr1s", 1, outputNum).build();
+                .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
+                .addOutputOneHot("rr1s", 1, outputNum).build();
 
         //Now, do the same thing with ImageRecordReader, and check we get the same results:
         ImageRecordReader rr1_b = new ImageRecordReader(10, 10, 1, labelMaker);
@@ -564,9 +567,9 @@ public class RecordReaderMultiDataSetIteratorTest {
         f2.mkdirs();
 
         writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
-                        new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+                new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
         writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
-                        new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+                new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
         int outputNum = 2;
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
@@ -578,8 +581,8 @@ public class RecordReaderMultiDataSetIteratorTest {
         rr1s.initialize(new FileSplit(parentDir));
 
         MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(2).addReader("rr1", rr1)
-                        .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
-                        .addOutputOneHot("rr1s", 1, outputNum).build();
+                .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
+                .addOutputOneHot("rr1s", 1, outputNum).build();
 
         //Now, do the same thing with ImageRecordReader, and check we get the same results:
         ImageRecordReader rr1_b = new ImageRecordReader(10, 10, 1, labelMaker);
@@ -600,7 +603,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         assertEquals(d1.getLabels(), mds.getLabels(0));
 
         //Check label assignment:
-        INDArray expLabels = Nd4j.create(new double[][] {{1, 0}, {0, 1}});
+        INDArray expLabels = Nd4j.create(new double[][]{{1, 0}, {0, 1}});
 
         assertEquals(expLabels, d1.getLabels());
         assertEquals(expLabels, d2.getLabels());
@@ -615,31 +618,30 @@ public class RecordReaderMultiDataSetIteratorTest {
     }
 
 
-
     @Test
     public void testTimeSeriesRandomOffset() {
         //2 in, 2 out, 3 total sequences of length [1,3,5]
 
         List<List<Writable>> seq1 =
-                        Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(1.0), new DoubleWritable(2.0)));
+                Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(1.0), new DoubleWritable(2.0)));
         List<List<Writable>> seq2 =
-                        Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(10.0), new DoubleWritable(11.0)),
-                                        Arrays.<Writable>asList(new DoubleWritable(20.0), new DoubleWritable(21.0)),
-                                        Arrays.<Writable>asList(new DoubleWritable(30.0), new DoubleWritable(31.0)));
+                Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(10.0), new DoubleWritable(11.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(20.0), new DoubleWritable(21.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(30.0), new DoubleWritable(31.0)));
         List<List<Writable>> seq3 =
-                        Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(100.0), new DoubleWritable(101.0)),
-                                        Arrays.<Writable>asList(new DoubleWritable(200.0), new DoubleWritable(201.0)),
-                                        Arrays.<Writable>asList(new DoubleWritable(300.0), new DoubleWritable(301.0)),
-                                        Arrays.<Writable>asList(new DoubleWritable(400.0), new DoubleWritable(401.0)),
-                                        Arrays.<Writable>asList(new DoubleWritable(500.0), new DoubleWritable(501.0)));
+                Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(100.0), new DoubleWritable(101.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(200.0), new DoubleWritable(201.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(300.0), new DoubleWritable(301.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(400.0), new DoubleWritable(401.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(500.0), new DoubleWritable(501.0)));
 
         Collection<List<List<Writable>>> seqs = Arrays.asList(seq1, seq2, seq3);
 
         SequenceRecordReader rr = new CollectionSequenceRecordReader(seqs);
 
         RecordReaderMultiDataSetIterator rrmdsi =
-                        new RecordReaderMultiDataSetIterator.Builder(3).addSequenceReader("rr", rr).addInput("rr", 0, 0)
-                                        .addOutput("rr", 1, 1).timeSeriesRandomOffset(true, 1234L).build();
+                new RecordReaderMultiDataSetIterator.Builder(3).addSequenceReader("rr", rr).addInput("rr", 0, 0)
+                        .addOutput("rr", 1, 1).timeSeriesRandomOffset(true, 1234L).build();
 
 
         Random r = new Random(1234); //Provides seed for each minibatch
@@ -653,7 +655,7 @@ public class RecordReaderMultiDataSetIteratorTest {
 
         MultiDataSet mds = rrmdsi.next();
 
-        INDArray expMask = Nd4j.create(new double[][] {{0, 0, 0, 1, 0}, {0, 1, 1, 1, 0}, {1, 1, 1, 1, 1}});
+        INDArray expMask = Nd4j.create(new double[][]{{0, 0, 0, 1, 0}, {0, 1, 1, 1, 0}, {1, 1, 1, 1, 1}});
 
         assertEquals(expMask, mds.getFeaturesMaskArray(0));
         assertEquals(expMask, mds.getLabelsMaskArray(0));
@@ -661,28 +663,28 @@ public class RecordReaderMultiDataSetIteratorTest {
         INDArray f = mds.getFeatures(0);
         INDArray l = mds.getLabels(0);
 
-        INDArray expF1 = Nd4j.create(new double[] {1.0});
-        INDArray expL1 = Nd4j.create(new double[] {2.0});
+        INDArray expF1 = Nd4j.create(new double[]{1.0});
+        INDArray expL1 = Nd4j.create(new double[]{2.0});
 
-        INDArray expF2 = Nd4j.create(new double[] {10, 20, 30});
-        INDArray expL2 = Nd4j.create(new double[] {11, 21, 31});
+        INDArray expF2 = Nd4j.create(new double[]{10, 20, 30});
+        INDArray expL2 = Nd4j.create(new double[]{11, 21, 31});
 
-        INDArray expF3 = Nd4j.create(new double[] {100, 200, 300, 400, 500});
-        INDArray expL3 = Nd4j.create(new double[] {101, 201, 301, 401, 501});
+        INDArray expF3 = Nd4j.create(new double[]{100, 200, 300, 400, 500});
+        INDArray expL3 = Nd4j.create(new double[]{101, 201, 301, 401, 501});
 
         assertEquals(expF1, f.get(NDArrayIndex.point(0), NDArrayIndex.all(),
-                        NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
+                NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
         assertEquals(expL1, l.get(NDArrayIndex.point(0), NDArrayIndex.all(),
-                        NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
+                NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
 
         assertEquals(expF2, f.get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                        NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2 + 3)));
+                NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2 + 3)));
         assertEquals(expL2, l.get(NDArrayIndex.point(1), NDArrayIndex.all(),
-                        NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2 + 3)));
+                NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2 + 3)));
 
         assertEquals(expF3, f.get(NDArrayIndex.point(2), NDArrayIndex.all(),
-                        NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3 + 5)));
+                NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3 + 5)));
         assertEquals(expL3, l.get(NDArrayIndex.point(2), NDArrayIndex.all(),
-                        NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3 + 5)));
+                NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3 + 5)));
     }
 }
