@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
@@ -87,12 +88,12 @@ import java.util.zip.ZipOutputStream;
  * @author Adam Gibson
  * @author raver119
  */
+@Slf4j
 public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
     private static final boolean HAS_HEADER = true;
     private static final int MAX_SIZE = 50;
     private static final String whitespaceReplacement = "_Az92_";
-    private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
     private WordVectorSerializer() {}
 

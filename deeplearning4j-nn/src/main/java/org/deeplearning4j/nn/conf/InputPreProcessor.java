@@ -19,12 +19,9 @@
 package org.deeplearning4j.nn.conf;
 
 
-import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.preprocessor.*;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -36,18 +33,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = CnnToFeedForwardPreProcessor.class, name = "cnnToFeedForward"),
-                @JsonSubTypes.Type(value = CnnToRnnPreProcessor.class, name = "cnnToRnn"),
-                @JsonSubTypes.Type(value = ComposableInputPreProcessor.class, name = "composableInput"),
-                @JsonSubTypes.Type(value = FeedForwardToCnnPreProcessor.class, name = "feedForwardToCnn"),
-                @JsonSubTypes.Type(value = FeedForwardToRnnPreProcessor.class, name = "feedForwardToRnn"),
-                @JsonSubTypes.Type(value = RnnToFeedForwardPreProcessor.class, name = "rnnToFeedForward"),
-                @JsonSubTypes.Type(value = RnnToCnnPreProcessor.class, name = "rnnToCnn"),
-                @JsonSubTypes.Type(value = BinomialSamplingPreProcessor.class, name = "binomialSampling"),
-                @JsonSubTypes.Type(value = UnitVarianceProcessor.class, name = "unitVariance"),
-                @JsonSubTypes.Type(value = ZeroMeanAndUnitVariancePreProcessor.class, name = "zeroMeanAndUnitVariance"),
-                @JsonSubTypes.Type(value = ZeroMeanPrePreProcessor.class, name = "zeroMean"),})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface InputPreProcessor extends Serializable, Cloneable {
 
 
@@ -57,26 +43,23 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @param miniBatchSize
      * @return the processed input
      */
-    INDArray preProcess(INDArray input, int miniBatchSize);
+    Activations preProcess(Activations input, int miniBatchSize, boolean training);
 
     /**Reverse the preProcess during backprop. Process Gradient/epsilons before
      * passing them to the layer below.
-     * @param output which is a pair of the gradient and epsilon
+     * @param gradients Activation gradients
      * @param miniBatchSize
      * @return the reverse of the pre preProcess step (if any)
      */
-    INDArray backprop(INDArray output, int miniBatchSize);
+    Gradients backprop(Gradients gradients, int miniBatchSize);
 
     InputPreProcessor clone();
 
     /**
      * For a given type of input to this preprocessor, what is the type of the output?
      *
-     * @param inputType    Type of input for the preprocessor
+     * @param inputTypes    Type of input for the preprocessor
      * @return             Type of input after applying the preprocessor
      */
-    InputType getOutputType(InputType inputType);
-
-
-    Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
+    InputType[] getOutputType(InputType... inputTypes);
 }

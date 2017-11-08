@@ -1,6 +1,11 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
+import org.deeplearning4j.nn.api.gradients.GradientsSingle;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -43,18 +48,14 @@ import java.util.Arrays;
  */
 public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
-    public SeparableConvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public SeparableConvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public SeparableConvolution2DLayer(org.deeplearning4j.nn.conf.layers.SeparableConvolution2D layer) {
+        super(layer);
     }
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-
+    public Gradients backpropGradient(Gradients epsilon) {
+        INDArray input = this.input.get(0);
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
@@ -66,7 +67,6 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, true);
         INDArray pointWiseWeights =
                 getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, true);
-
 
         int miniBatch = input.size(0);
         int inH = input.size(2);
@@ -111,7 +111,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
         Pair<INDArray, INDArray> p = preOutput4d(true, true);
-        delta = afn.backprop(p.getFirst(), epsilon).getFirst();
+        delta = afn.backprop(p.getFirst(), epsilon.get(0)).getFirst();
 
         CustomOp op;
         if(layerConf().hasBias()){
@@ -142,7 +142,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         weightNoiseParams.clear();
 
-        return new Pair<>(retGradient, reshapedEpsilon);
+        return GradientsFactory.getInstance().create(retGradient, reshapedEpsilon);
     }
 
 
@@ -152,6 +152,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
     }
 
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop) {
+        INDArray input = this.input.get(0);
 
         INDArray bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, training);
         INDArray depthWiseWeights =
@@ -160,7 +161,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, training);
 
         if (input.rank() != 4) {
-            String layerName = conf.getLayer().getLayerName();
+            String layerName = layerConf().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -177,7 +178,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int outDepth = pointWiseWeights.size(0);
 
         if (input.size(1) != inDepth) {
-            String layerName = conf.getLayer().getLayerName();
+            String layerName = layerConf().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in SeparableConvolution2D layer (layer name = " + layerName
@@ -263,8 +264,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        if (input == null) {
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull()) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
 
@@ -290,11 +291,11 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
             INDArray ret = helper.activate(z, layerConf().getActivationFn());
             if (ret != null) {
-                return ret;
+                ActivationsFactory.getInstance().create(ret);
             }
         }
 
         INDArray activation = afn.getActivation(z, training);
-        return activation;
+        return ActivationsFactory.getInstance().create(activation);
     }
 }

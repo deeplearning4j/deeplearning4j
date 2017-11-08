@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -39,42 +40,42 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): Expected RNN input, got " + inputType);
+                            + "\"): Expected RNN input, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
         return inputType;
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Subsampling1DLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], getLayerName());
     }
 
     @Override

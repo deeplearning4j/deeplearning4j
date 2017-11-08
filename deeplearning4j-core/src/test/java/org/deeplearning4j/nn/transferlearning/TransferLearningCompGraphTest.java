@@ -23,6 +23,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by susaneraly on 2/17/17.
@@ -110,9 +111,9 @@ public class TransferLearningCompGraphTest {
                         //.setOutputs("layer3")
                         .build();
 
-        BaseLayer bl0 = ((BaseLayer) modelNow.getLayer("layer0").conf().getLayer());
-        BaseLayer bl1 = ((BaseLayer) modelNow.getLayer("layer1").conf().getLayer());
-        BaseLayer bl3 = ((BaseLayer) modelNow.getLayer("layer3").conf().getLayer());
+        BaseLayer bl0 = ((BaseLayer) modelNow.getLayer("layer0").conf());
+        BaseLayer bl1 = ((BaseLayer) modelNow.getLayer("layer1").conf());
+        BaseLayer bl3 = ((BaseLayer) modelNow.getLayer("layer3").conf());
         assertEquals(bl0.getWeightInit(), WeightInit.DISTRIBUTION);
         assertEquals(bl0.getDist(), new NormalDistribution(1, 1e-1));
         assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);
@@ -224,7 +225,7 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         ComputationGraph modelToFineTune =
                         new ComputationGraph(
-                                new NeuralNetConfiguration.Builder().seed(123).iterations(1)
+                                new NeuralNetConfiguration.Builder().seed(123)
                                         .weightInit(WeightInit.XAVIER)
                                         .updater(new Nesterovs(0.01, 0.9)).graphBuilder()
                                         .addInputs("layer0In")
@@ -353,8 +354,6 @@ public class TransferLearningCompGraphTest {
                                         "layer7")
                                 .setOutputs("layer8").backprop(true).pretrain(false).build());
         modelExpectedArch.init();
-        modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
-        modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
 
         assertEquals(modelExpectedArch.getConfiguration().toJson(), modelNow.getConfiguration().toJson());
 
@@ -392,7 +391,8 @@ public class TransferLearningCompGraphTest {
                         new FineTuneConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).build();
 
         ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration)
-                        .removeVertexKeepConnections("out").setFeatureExtractor("dense")
+                        .removeVertexKeepConnections("out")
+                        .setFeatureExtractor("dense")
                         .addLayer("out", new OutputLayer.Builder().updater(new Adam(0.1))
                                 .weightInit(WeightInit.XAVIER)
                                         .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)

@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -42,50 +42,39 @@ import org.nd4j.linalg.primitives.Pair;
 public class L2Vertex extends BaseGraphVertex {
     private double eps;
 
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps) {
-        this(graph, name, vertexIndex, null, null, eps);
-    }
-
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double eps) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public L2Vertex(String name, int vertexIndex, int numInputs, double eps) {
+        super(name, vertexIndex, numInputs);
         this.eps = eps;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        INDArray a = inputs[0];
-        INDArray b = inputs[1];
+        INDArray a = input.get(0);
+        INDArray b = input.get(1);
 
         int[] dimensions = new int[a.rank() - 1];
         for (int i = 1; i < a.rank(); i++) {
             dimensions[i - 1] = i;
         }
 
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(
+                Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions),
+                masks.getFirst(), masks.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: error not set");
+    public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
+        INDArray epsilon = gradient.get(0);
 
-        INDArray a = inputs[0];
-        INDArray b = inputs[1];
-        INDArray out = doForward(tbptt);
+        INDArray a = input.get(0);
+        INDArray b = input.get(1);
+        INDArray out = activate(true).get(0);
         Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon; //dL/dlambda aka 'epsilon' - from layer above
@@ -108,7 +97,7 @@ public class L2Vertex extends BaseGraphVertex {
             dLdb = dLda.neg();
         }
 
-        return new Pair<>(null, new INDArray[] {dLda, dLdb});
+        return GradientsFactory.getInstance().createPair(dLda, dLdb, null);
     }
 
     @Override
@@ -119,11 +108,11 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "L2Vertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "L2Vertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ")";
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

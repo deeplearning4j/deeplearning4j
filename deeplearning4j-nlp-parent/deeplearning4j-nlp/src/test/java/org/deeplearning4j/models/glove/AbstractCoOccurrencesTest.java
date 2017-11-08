@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.glove;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -27,9 +28,8 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AbstractCoOccurrencesTest {
-
-    private static final Logger log = LoggerFactory.getLogger(AbstractCoOccurrencesTest.class);
 
     @Before
     public void setUp() throws Exception {

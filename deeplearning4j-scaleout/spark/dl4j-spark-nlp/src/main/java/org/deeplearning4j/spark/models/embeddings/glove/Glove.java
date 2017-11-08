@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.models.embeddings.glove;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -54,6 +55,7 @@ import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariab
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class Glove implements Serializable {
 
     private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
@@ -61,7 +63,6 @@ public class Glove implements Serializable {
     private boolean symmetric = true;
     private int windowSize = 15;
     private int iterations = 300;
-    private static Logger log = LoggerFactory.getLogger(Glove.class);
 
     /**
      *

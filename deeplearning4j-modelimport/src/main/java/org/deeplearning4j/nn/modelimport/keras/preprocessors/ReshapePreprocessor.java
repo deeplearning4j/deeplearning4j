@@ -18,7 +18,12 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
@@ -33,6 +38,7 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@EqualsAndHashCode(callSuper = true)
 public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     private int[] inputShape;
@@ -66,7 +72,13 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
+        if(a.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
+                    + a.size());
+        }
+        INDArray input = a.get(0);
+
         // the target shape read from a keras config does not have mini-batch size
         // included. We prepend it here dynamically.
         if (targetShape.length + 1 == input.shape().length) {
@@ -75,7 +87,8 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             this.hasMiniBatchDimension = true;
         }
         if (prod(input.shape()) == prod((targetShape))) {
-            return input.reshape(this.targetShape);
+            INDArray ret = input.reshape(this.targetShape);
+            return ActivationsFactory.getInstance().create(ret, a.getMask(0), a.getMaskState(0));
         } else {
             throw new IllegalStateException("Input shape " + Arrays.toString(input.shape())
                     + " and output shape" + Arrays.toString(inputShape) + " do not match");
@@ -83,13 +96,20 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        if(g.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
+                    "exactly 1 array. Got: " + g.size());
+        }
+        INDArray output = g.get(0);
+
         if (targetShape != output.shape()) {
             throw new IllegalStateException("Unexpected output shape" + Arrays.toString(output.shape())
                     + " (expected to be " + Arrays.toString(targetShape) + ")");
         }
         if (prod(output.shape()) == prod((targetShape))) {
-            return output.reshape(this.inputShape);
+            INDArray ret = output.reshape(this.inputShape);
+            return GradientsFactory.getInstance().create(ret, g.getParameterGradients());
         } else {
             throw new IllegalStateException("Output shape" + Arrays.toString(output.shape())
                     + " and input shape" + Arrays.toString(targetShape) + " do not match");
@@ -97,19 +117,24 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) throws InvalidInputTypeException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidInputTypeException {
 
         int[] shape = hasMiniBatchDimension ? targetShape : prependMiniBatchSize(targetShape, 0);
+        InputType ret;
         switch (shape.length) {
             case 2:
-                return InputType.feedForward(shape[1]);
+                ret = InputType.feedForward(shape[1]);
+                break;
             case 3:
-                return InputType.recurrent(shape[1]);
+                ret = InputType.recurrent(shape[1]);
+                break;
             case 4:
-                return InputType.convolutional(shape[2], shape[3], shape[1]);
+                ret = InputType.convolutional(shape[2], shape[3], shape[1]);
+                break;
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));
         }
+        return new InputType[]{ret};
     }
 }

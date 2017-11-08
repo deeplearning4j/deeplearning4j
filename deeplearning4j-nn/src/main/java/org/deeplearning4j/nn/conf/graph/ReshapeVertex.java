@@ -19,15 +19,20 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Adds the ability to reshape and flatten the tensor in the computation graph.<br>
@@ -38,7 +43,8 @@ import java.util.Arrays;
  * @author Justin Long (crockpotveggies)
  */
 @Data
-public class ReshapeVertex extends GraphVertex {
+@EqualsAndHashCode(callSuper = false)
+public class ReshapeVertex extends BaseGraphVertex {
     public static final char DEFAULT_RESHAPE_ORDER = 'c';
 
     protected char reshapeOrder = 'c';
@@ -62,58 +68,47 @@ public class ReshapeVertex extends GraphVertex {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof ReshapeVertex))
-            return false;
-        return Arrays.equals(((ReshapeVertex) o).newShape, newShape);
-    }
-
-    @Override
-    public int hashCode() {
-        return reshapeOrder ^ Arrays.hashCode(newShape);
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
-
-    @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(graph, name, idx, reshapeOrder, newShape, maskShape);
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(name, idx, numInputs, reshapeOrder, newShape, maskShape);
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         //Infer output shape from specified shape:
+        InputType ret;
         switch (newShape.length) {
             case 2:
-                return InputType.feedForward(newShape[1]);
+                ret = InputType.feedForward(newShape[1]);
+                break;
             case 3:
-                return InputType.recurrent(newShape[1]);
+                ret = InputType.recurrent(newShape[1]);
+                break;
             case 4:
-                return InputType.convolutional(newShape[2], newShape[3], newShape[1]); //[mb,d,h,w] for activations
+                ret = InputType.convolutional(newShape[2], newShape[3], newShape[1]); //[mb,d,h,w] for activations
+                break;
             default:
                 throw new UnsupportedOperationException(
                                 "Cannot infer input type for reshape array " + Arrays.toString(newShape));
         }
+        return new InputType[]{ret};
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Assume it's a reshape-with-copy op. In this case: memory use is accounted for in activations
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ReshapeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

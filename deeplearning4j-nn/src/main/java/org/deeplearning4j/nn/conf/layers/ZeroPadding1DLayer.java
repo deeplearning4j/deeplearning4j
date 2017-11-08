@@ -53,16 +53,15 @@ public class ZeroPadding1DLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer(conf);
-        ret.setListeners(iterationListeners);
+                new org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer(this);
         ret.setIndex(layerIndex);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -72,30 +71,30 @@ public class ZeroPadding1DLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
                     + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                     + inputType);
         }
-        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        return InputType.recurrent(recurrent.getSize(),
-                recurrent.getTimeSeriesLength() + padding[0] + padding[1]);
+        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType[0];
+        return new InputType[]{InputType.recurrent(recurrent.getSize(),
+                recurrent.getTimeSeriesLength() + padding[0] + padding[1])};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for ZeroPadding1DLayer layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for ZeroPadding1DLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], getLayerName());
     }
 
     @Override
@@ -114,8 +113,12 @@ public class ZeroPadding1DLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
                 .standardMemory(0, 0) //No params

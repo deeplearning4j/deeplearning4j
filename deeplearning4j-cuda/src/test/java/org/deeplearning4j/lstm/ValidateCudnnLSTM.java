@@ -1,6 +1,8 @@
 package org.deeplearning4j.lstm;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.LSTM;
@@ -16,6 +18,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -27,6 +30,8 @@ import static org.junit.Assert.*;
  * Created by Alex on 18/07/2017.
  */
 public class ValidateCudnnLSTM {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void validateImplSimple() throws Exception {
@@ -88,13 +93,13 @@ public class ValidateCudnnLSTM {
         mln2.setInput(input);
         mln2.setLabels(labels);
 
-        mln1.computeGradientAndScore();
-        mln2.computeGradientAndScore();
+        Pair<Gradients,Double> p1 = mln1.computeGradientAndScore(af.create(input), af.create(labels));
+        Pair<Gradients,Double> p2 = mln2.computeGradientAndScore(af.create(input), af.create(labels));
 
         assertEquals(mln1.score(), mln2.score(), 1e-8);
 
-        Gradient g1 = mln1.gradient();
-        Gradient g2 = mln2.gradient();
+        Gradient g1 = p1.getFirst().getParameterGradients();
+        Gradient g2 = p2.getFirst().getParameterGradients();
 
         for (Map.Entry<String, INDArray> entry : g1.gradientForVariable().entrySet()) {
             INDArray exp = entry.getValue();
@@ -175,14 +180,8 @@ public class ValidateCudnnLSTM {
                 }
             }
 
-            mln1.setInput(input);
-            mln1.setLabels(labels);
-
-            mln2.setInput(input);
-            mln2.setLabels(labels);
-
-            mln1.computeGradientAndScore();
-            mln2.computeGradientAndScore();
+            mln1.computeGradientAndScore(af.create(input), af.create(labels));
+            mln2.computeGradientAndScore(af.create(input), af.create(labels));
 
             assertEquals(mln1.score(), mln2.score(), 1e-8);
 

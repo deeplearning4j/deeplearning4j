@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.feedforward.dense;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -32,13 +33,12 @@ public class DenseTest {
 
     @Test
     public void testDenseBiasInit() {
-        DenseLayer build = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
+        DenseLayer conf = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
+        conf.applyGlobalConfiguration(new GlobalConfiguration());
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(build).build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.instantiate(null, null, 0, 1, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -104,10 +104,9 @@ public class DenseTest {
     private static MultiLayerNetwork getDenseMLNConfig(boolean backprop, boolean pretrain) {
         int numInputs = 4;
         int outputNum = 3;
-        int iterations = 10;
         long seed = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
                         .updater(new Sgd(1e-3)).l1(0.3).l2(1e-3).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(numInputs).nOut(3)
                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())

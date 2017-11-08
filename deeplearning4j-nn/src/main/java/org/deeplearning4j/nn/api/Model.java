@@ -18,15 +18,18 @@
 
 package org.deeplearning4j.nn.api;
 
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * A Model is meant for predicting something from data.
@@ -34,12 +37,14 @@ import java.util.Map;
  * there are labels attached to the examples.
  *
  */
-public interface Model {
+public interface Model extends Layer {
 
     /**
      * Init the model
      */
     void init();
+
+    Activations getLabels();
 
 
     /**
@@ -62,20 +67,9 @@ public interface Model {
 
 
     /**
-     * All models have a fit method
+     * Get the iteration listeners for this layer.
      */
-    void fit();
-
-    /**
-     * Update layer weights and biases with gradient change
-     */
-    void update(Gradient gradient);
-
-    /**
-     * Perform one update  applying the gradient
-     * @param gradient the gradient to apply
-     */
-    void update(INDArray gradient, String paramType);
+    Collection<IterationListener> getListeners();
 
 
     /**
@@ -85,123 +79,38 @@ public interface Model {
     double score();
 
 
+    Pair<Gradients, Double> computeGradientAndScore(DataSet dataSet);
+
+    Pair<Gradients, Double> computeGradientAndScore(MultiDataSet dataSet);
+
     /**
      * Update the score
      */
-    void computeGradientAndScore();
+    Pair<Gradients, Double> computeGradientAndScore(Activations input, Activations labels);
+
+
+    void fit(Activations data);
 
     /**
-     * Sets a rolling tally for the score. This is useful for mini batch learning when
-     * you are accumulating error across a dataset.
-     * @param accum the amount to accum
+     * Train the model based on the datasetiterator
+     * @param iter the iterator to train on
      */
-    void accumulateScore(double accum);
-
-
-    /**
-     * Parameters of the model (if any)
-     * @return the parameters of the model
-     */
-    INDArray params();
-
-    /**
-     * the number of parameters for the model
-     * @return the number of parameters for the model
-     *
-     */
-    int numParams();
+    void fit(DataSetIterator iter);
 
 
     /**
-     * the number of parameters for the model
-     * @return the number of parameters for the model
-     *
+     * Fit the model
+     * @param examples the examples to classify (one example in each row)
+     * @param labels the example labels(a binary outcome matrix)
      */
-    int numParams(boolean backwards);
+    void fit(INDArray examples, INDArray labels);
 
     /**
-     * Set the parameters for this model.
-     * This expects a linear ndarray which then be unpacked internally
-     * relative to the expected ordering of the model
-     * @param params the parameters for the model
+     * Fit the model
+     * @param data the data to train on
      */
-    void setParams(INDArray params);
+    void fit(DataSet data);
 
-    /**
-     * Set the initial parameters array as a view of the full (backprop) network parameters
-     * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.
-     * @param params a 1 x nParams row vector that is a view of the larger (MLN/CG) parameters array
-     */
-    void setParamsViewArray(INDArray params);
-
-
-    INDArray getGradientsViewArray();
-
-    /**
-     * Set the gradients array as a view of the full (backprop) network parameters
-     * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.
-     * @param gradients a 1 x nParams row vector that is a view of the larger (MLN/CG) gradients array
-     */
-    void setBackpropGradientsViewArray(INDArray gradients);
-
-    /**
-     * Fit the model to the given data
-     * @param data the data to fit the model to
-     */
-    void fit(INDArray data);
-
-
-    /**
-     * Run one iteration
-     * @param input the input to iterate on
-     */
-    void iterate(INDArray input);
-
-
-    /**
-     * Calculate a gradient
-     * @return the gradient for this model
-     */
-    Gradient gradient();
-
-    /**
-     * Get the gradient and score
-     * @return the gradient and score
-     */
-    Pair<Gradient, Double> gradientAndScore();
-
-    /**
-     * The current inputs batch size
-     * @return the current inputs batch size
-     */
-    int batchSize();
-
-
-    /**
-     * The configuration for the neural network
-     * @return the configuration for the neural network
-     */
-    NeuralNetConfiguration conf();
-
-    /**
-     * Setter for the configuration
-     * @param conf
-     */
-    void setConf(NeuralNetConfiguration conf);
-
-    /**
-     * The input/feature matrix for the model
-     * @return the input/feature matrix for the model
-     */
-    INDArray input();
-
-
-    /**
-     * Validate the input
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void validateInput();
 
     /**
      * Returns this models optimizer
@@ -209,57 +118,6 @@ public interface Model {
      */
     ConvexOptimizer getOptimizer();
 
-    /**
-     * Get the parameter
-     * @param param the key of the parameter
-     * @return the parameter vector/matrix with that particular key
-     */
-    INDArray getParam(String param);
+    OptimizationConfig getOptimizationConfig();
 
-    /**
-     * Initialize the parameters
-     * @deprecated As of 0.7.3 - Feb 2017. Not used; neural network params are initialized by the parameter initializaters.
-     *  Furthermore, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void initParams();
-
-    /**
-     * The param table
-     * @return
-     */
-    Map<String, INDArray> paramTable();
-
-    /**
-     * Table of parameters by key, for backprop
-     * For many models (dense layers, etc) - all parameters are backprop parameters
-     * @param backpropParamsOnly If true, return backprop params only. If false: return all params (equivalent to
-     *                           paramsTable())
-     */
-    Map<String, INDArray> paramTable(boolean backpropParamsOnly);
-
-    /**
-     * Setter for the param table
-     * @param paramTable
-     */
-    void setParamTable(Map<String, INDArray> paramTable);
-
-
-    /**
-     * Set the parameter with a new ndarray
-     * @param key the key to se t
-     * @param val the new ndarray
-     */
-    void setParam(String key, INDArray val);
-
-    /**
-     * Clear input
-     */
-    void clear();
-
-
-    /**
-     * Apply any constraints to the model
-     */
-    void applyConstraints(int iteration, int epoch);
 }

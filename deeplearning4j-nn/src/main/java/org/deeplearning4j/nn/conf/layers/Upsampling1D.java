@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -54,17 +55,16 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
-                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
-        ret.setListeners(iterationListeners);
+                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -75,29 +75,36 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D Upsampling layer (layer index = " + layerIndex
                     + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                    + inputType);
+                    + (inputType == null ? null : inputType[0]));
         }
-        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        return InputType.recurrent(recurrent.getSize(), recurrent.getTimeSeriesLength());
+        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType[0];
+        return new InputType[]{InputType.recurrent(recurrent.getSize(), recurrent.getTimeSeriesLength())};
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Upsampling1D layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType[0], getLayerName());
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        InputType.InputTypeRecurrent outputType = (InputType.InputTypeRecurrent) getOutputType(-1, inputType);
+        InputType.InputTypeRecurrent outputType = (InputType.InputTypeRecurrent) getOutputType(-1, inputType)[0];
 
         int im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size;
         int trainingWorkingSizePerEx = im2colSizePerEx;

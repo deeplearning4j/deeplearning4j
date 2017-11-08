@@ -2,6 +2,7 @@ package org.deeplearning4j.streaming.routes;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Processor;
@@ -13,6 +14,7 @@ import org.apache.camel.builder.RouteBuilder;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class CamelKafkaRouteBuilder extends RouteBuilder {
     private String topicName;
     private String kafkaBrokerList;

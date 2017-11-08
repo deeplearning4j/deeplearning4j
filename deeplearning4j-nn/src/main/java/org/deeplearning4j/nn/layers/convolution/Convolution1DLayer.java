@@ -1,8 +1,9 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -25,36 +26,37 @@ import java.util.Arrays;
  * @author dave@skymind.io
  */
 public class Convolution1DLayer extends ConvolutionLayer {
-    public Convolution1DLayer(NeuralNetConfiguration conf) {
+    public Convolution1DLayer(org.deeplearning4j.nn.conf.layers.Convolution1DLayer conf) {
         super(conf);
     }
 
-    public Convolution1DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.get(0);
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Convolution1DLayer backprop with shape "
                             + Arrays.toString(epsilon.shape())
                             + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
 
+        INDArray input = this.input.get(0);
+
         // add singleton fourth dimension to input and next layer's epsilon
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         // call 2D ConvolutionLayer's backpropGradient method
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
-        INDArray epsNext = gradientEpsNext.getSecond();
+        gradients.set(0, epsilon);
+        Gradients gradientEpsNext = super.backpropGradient(gradients);
+        INDArray epsNext = gradientEpsNext.get(0);
 
         // remove singleton fourth dimension from input and current epsilon
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
-        input = origInput;
+        this.input.set(0, origInput);
 
-        return new Pair<>(gradientEpsNext.getFirst(), epsNext);
+        Gradients g = GradientsFactory.getInstance().create(epsNext, gradientEpsNext.getParameterGradients());
+        return backpropPreprocessor(g);
     }
 
     @Override
@@ -64,14 +66,15 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public INDArray preOutput(boolean training) {
+        INDArray input = this.input.get(0);
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         // call 2D ConvolutionLayer's activate method
         INDArray preOutput = super.preOutput(training);
 
         // remove singleton fourth dimension from output activations
-        input = origInput;
+        this.input.set(0, origInput);
         preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
 
         return preOutput;

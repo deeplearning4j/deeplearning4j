@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.api.storage.Persistable;
@@ -8,6 +9,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
@@ -35,6 +37,7 @@ import java.util.UUID;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ConvolutionalIterationListener implements IterationListener {
 
     private enum Orientation {
@@ -42,7 +45,6 @@ public class ConvolutionalIterationListener implements IterationListener {
     }
 
     private int freq = 10;
-    private static final Logger log = LoggerFactory.getLogger(ConvolutionalIterationListener.class);
     private int minibatchNum = 0;
     private boolean openBrowser = true;
     private String path;
@@ -117,11 +119,11 @@ public class ConvolutionalIterationListener implements IterationListener {
             if (model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
                 for (Layer layer : l.getLayers()) {
-                    if (!(layer instanceof FrozenLayer) && layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                    if (!(layer instanceof FrozenLayer) && layer.getInput().get(0).rank() == 4) {
+                        INDArray output = layer.activate(ActivationsFactory.getInstance().create(layer.getInput().get(0))).get(0);
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = ((ConvolutionLayer) layer).input();
+                            INDArray inputs = ((ConvolutionLayer) layer).getInput().get(0);
 
                             try {
                                 sourceImage = restoreRGBImage(
@@ -142,11 +144,11 @@ public class ConvolutionalIterationListener implements IterationListener {
             } else if (model instanceof ComputationGraph) {
                 ComputationGraph l = (ComputationGraph) model;
                 for (Layer layer : l.getLayers()) {
-                    if (!(layer instanceof FrozenLayer) && layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                    if (!(layer instanceof FrozenLayer) && layer.getInput().get(0).rank() == 4) {
+                        INDArray output = layer.activate(ActivationsFactory.getInstance().create(layer.getInput().get(0))).get(0);
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = ((ConvolutionLayer) layer).input();
+                            INDArray inputs = ((ConvolutionLayer) layer).getInput().get(0);
 
                             try {
                                 sourceImage = restoreRGBImage(

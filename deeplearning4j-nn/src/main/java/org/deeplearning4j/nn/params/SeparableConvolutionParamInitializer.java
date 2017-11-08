@@ -49,11 +49,6 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        return numParams(conf.getLayer());
-    }
-
-    @Override
     public int numParams(Layer l) {
         SeparableConvolution2D layerConf = (SeparableConvolution2D) l;
 
@@ -138,40 +133,35 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
 
     @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        SeparableConvolution2D layer = (SeparableConvolution2D) conf.getLayer();
+    public Map<String, INDArray> init(Layer l, INDArray paramsView, boolean initializeParams) {
+        SeparableConvolution2D layer = (SeparableConvolution2D) l;
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        SeparableConvolution2D layerConf = (SeparableConvolution2D) conf.getLayer();
 
-        int depthWiseParams = numDepthWiseParams(layerConf);
-        int biasParams = numBiasParams(layerConf);
+        int depthWiseParams = numDepthWiseParams(layer);
+        int biasParams = numBiasParams(layer);
 
         INDArray depthWiseWeightView = paramsView.get(
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams));
         INDArray pointWiseWeightView = paramsView.get(
-                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)));
+                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(layer)));
 
-        params.put(DEPTH_WISE_WEIGHT_KEY, createDepthWiseWeightMatrix(conf, depthWiseWeightView, initializeParams));
-        conf.addVariable(DEPTH_WISE_WEIGHT_KEY);
-        params.put(POINT_WISE_WEIGHT_KEY, createPointWiseWeightMatrix(conf, pointWiseWeightView, initializeParams));
-        conf.addVariable(POINT_WISE_WEIGHT_KEY);
+        params.put(DEPTH_WISE_WEIGHT_KEY, createDepthWiseWeightMatrix(layer, depthWiseWeightView, initializeParams));
+        params.put(POINT_WISE_WEIGHT_KEY, createPointWiseWeightMatrix(layer, pointWiseWeightView, initializeParams));
 
         if(layer.hasBias()){
             INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, biasParams));
-            params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
-            conf.addVariable(BIAS_KEY);
+            params.put(BIAS_KEY, createBias(layer, biasView, initializeParams));
         }
 
         return params;
     }
 
     @Override
-    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+    public Map<String, INDArray> getGradientsFromFlattened(Layer layer, INDArray gradientView) {
 
-        SeparableConvolution2D layerConf =
-                        (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2D layerConf = (SeparableConvolution2D) layer;
 
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
@@ -187,7 +177,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
                 .reshape('c', depthMultiplier, nIn, kernel[0], kernel[1]);
         INDArray pointWiseWeightGradientView = gradientView.get(
-                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)))
+                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(layer)))
                 .reshape('c', nOut, nIn * depthMultiplier, 1, 1);
         out.put(DEPTH_WISE_WEIGHT_KEY, depthWiseWeightGradientView);
         out.put(POINT_WISE_WEIGHT_KEY, pointWiseWeightGradientView);
@@ -199,22 +189,20 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         return out;
     }
 
-    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView, boolean initializeParams) {
-        SeparableConvolution2D layerConf =
-                        (SeparableConvolution2D) conf.getLayer();
+    protected INDArray createBias(Layer layer, INDArray biasView, boolean initializeParams) {
+        SeparableConvolution2D layerConf = (SeparableConvolution2D) layer;
         if (initializeParams)
             biasView.assign(layerConf.getBiasInit());
         return biasView;
     }
 
 
-    protected INDArray createDepthWiseWeightMatrix(NeuralNetConfiguration conf, INDArray weightView, boolean initializeParams) {
+    protected INDArray createDepthWiseWeightMatrix(Layer layer, INDArray weightView, boolean initializeParams) {
         /*
          Create a 4d weight matrix of: (depth multiplier, num input channels, kernel height, kernel width)
          Inputs to the convolution layer are: (batch size, num input feature maps, image height, image width)
          */
-        SeparableConvolution2D layerConf =
-                        (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2D layerConf = (SeparableConvolution2D) layer;
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
@@ -238,14 +226,13 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         }
     }
 
-    protected INDArray createPointWiseWeightMatrix(NeuralNetConfiguration conf, INDArray weightView,
+    protected INDArray createPointWiseWeightMatrix(Layer layer, INDArray weightView,
                                                    boolean initializeParams) {
         /*
          Create a 4d weight matrix of: (num output channels, depth multiplier * num input channels,
          kernel height, kernel width)
          */
-        SeparableConvolution2D layerConf =
-                (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2D layerConf = (SeparableConvolution2D) layer;
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {

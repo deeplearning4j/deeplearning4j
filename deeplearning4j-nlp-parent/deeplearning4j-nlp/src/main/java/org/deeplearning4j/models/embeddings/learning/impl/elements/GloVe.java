@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
 
     private VocabCache<T> vocabCache;
@@ -57,8 +59,6 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
     private int workers = Runtime.getRuntime().availableProcessors();
 
     private int vectorLength;
-
-    private static final Logger log = LoggerFactory.getLogger(GloVe.class);
 
     @Override
     public String getCodeName() {

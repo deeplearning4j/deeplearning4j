@@ -21,6 +21,10 @@ package org.deeplearning4j.nn.layers.convolution.upsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
@@ -32,7 +36,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 
@@ -50,12 +53,8 @@ import java.util.Arrays;
 public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling2D> {
 
 
-    public Upsampling2D(NeuralNetConfiguration conf) {
+    public Upsampling2D(org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer conf) {
         super(conf);
-    }
-
-    public Upsampling2D(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
     }
 
 
@@ -69,21 +68,18 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return 0;
     }
 
-    @Override
-    public Type type() {
-        return Type.SUBSAMPLING;
-    }
-
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
+        INDArray epsilon = gradients.get(0);
 
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        int size = layerConf().getSize();   //Required to avoid casting issue in subclasses
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
@@ -100,16 +96,14 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return new Pair<>(gradient, reshapedEpsilon);
-    }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false);
+        Gradients g = GradientsFactory.getInstance().create(reshapedEpsilon, gradient);
+        return backpropPreprocessor(g);
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
+        INDArray input = this.input.get(0);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -147,13 +141,14 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        INDArray z = preOutput(training);
+        INDArray z = preOutput(training, false);
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
@@ -163,17 +158,12 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 preOutput = z.unsafeDuplication();
             }
         }
-        return z;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
+        return ActivationsFactory.getInstance().create(z);
     }
 
     @Override
     public Layer clone() {
-        return new Upsampling2D(conf.clone());
+        return new Upsampling2D((org.deeplearning4j.nn.conf.layers.Upsampling2D)conf.clone());
     }
 
     @Override
@@ -187,48 +177,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported - no parameters");
-    }
-
-    @Override
-    public void fit() {
-
-    }
-
-    @Override
     public int numParams() {
         return 0;
-    }
-
-    @Override
-    public void fit(INDArray input) {
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public double score() {
-        return 0;
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-
     }
 
     @Override

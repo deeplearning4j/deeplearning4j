@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.text;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -51,14 +52,13 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Jeffrey Tang
  */
+@Slf4j
 public class TextPipelineTest extends BaseSparkTest {
 
     private List<String> sentenceList;
     private SparkConf conf;
     private Word2Vec word2vec;
     private Word2Vec word2vecNoStop;
-
-    private static final Logger log = LoggerFactory.getLogger(TextPipeline.class);
 
     public JavaRDD<String> getCorpusRDD(JavaSparkContext sc) {
         return sc.parallelize(sentenceList, 2);

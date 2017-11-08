@@ -32,9 +32,6 @@ public class BinaryCoOccurrenceReader<T extends SequenceElement> implements CoOc
     private StreamReaderThread readerThread;
     private CountMap<T> countMap;
 
-
-    protected static final Logger logger = LoggerFactory.getLogger(BinaryCoOccurrenceReader.class);
-
     public BinaryCoOccurrenceReader(@NonNull File file, @NonNull VocabCache<T> vocabCache, CountMap<T> map) {
         this.vocabCache = vocabCache;
         this.file = file;

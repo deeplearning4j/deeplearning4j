@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.updater.custom;
 
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -20,6 +21,8 @@ import static org.junit.Assert.assertTrue;
  * Created by Alex on 09/05/2017.
  */
 public class TestCustomUpdater {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testCustomUpdater() {
@@ -44,18 +47,18 @@ public class TestCustomUpdater {
                         .build();
 
         //First: Check updater config
-        assertTrue(((BaseLayer) conf1.getConf(0).getLayer()).getIUpdater() instanceof CustomIUpdater);
-        assertTrue(((BaseLayer) conf1.getConf(1).getLayer()).getIUpdater() instanceof CustomIUpdater);
-        assertTrue(((BaseLayer) conf2.getConf(0).getLayer()).getIUpdater() instanceof Sgd);
-        assertTrue(((BaseLayer) conf2.getConf(1).getLayer()).getIUpdater() instanceof Sgd);
+        assertTrue(((BaseLayer) conf1.getConf(0)).getIUpdater() instanceof CustomIUpdater);
+        assertTrue(((BaseLayer) conf1.getConf(1)).getIUpdater() instanceof CustomIUpdater);
+        assertTrue(((BaseLayer) conf2.getConf(0)).getIUpdater() instanceof Sgd);
+        assertTrue(((BaseLayer) conf2.getConf(1)).getIUpdater() instanceof Sgd);
 
-        CustomIUpdater u0_0 = (CustomIUpdater) ((BaseLayer) conf1.getConf(0).getLayer()).getIUpdater();
-        CustomIUpdater u0_1 = (CustomIUpdater) ((BaseLayer) conf1.getConf(1).getLayer()).getIUpdater();
+        CustomIUpdater u0_0 = (CustomIUpdater) ((BaseLayer) conf1.getConf(0)).getIUpdater();
+        CustomIUpdater u0_1 = (CustomIUpdater) ((BaseLayer) conf1.getConf(1)).getIUpdater();
         assertEquals(lr, u0_0.getLearningRate(), 1e-6);
         assertEquals(lr, u0_1.getLearningRate(), 1e-6);
 
-        Sgd u1_0 = (Sgd) ((BaseLayer) conf2.getConf(0).getLayer()).getIUpdater();
-        Sgd u1_1 = (Sgd) ((BaseLayer) conf2.getConf(1).getLayer()).getIUpdater();
+        Sgd u1_0 = (Sgd) ((BaseLayer) conf2.getConf(0)).getIUpdater();
+        Sgd u1_1 = (Sgd) ((BaseLayer) conf2.getConf(1)).getIUpdater();
         assertEquals(lr, u1_0.getLearningRate(), 1e-6);
         assertEquals(lr, u1_1.getLearningRate(), 1e-6);
 
@@ -84,8 +87,8 @@ public class TestCustomUpdater {
         net1.setLabels(labels);
         net2.setLabels(labels);
 
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();;
+        net1.computeGradientAndScore(af.create(in), af.create(labels));
+        net2.computeGradientAndScore(af.create(in), af.create(labels));
 
         assertEquals(net1.getFlattenedGradients(), net2.getFlattenedGradients());
     }

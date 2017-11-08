@@ -19,9 +19,8 @@
 package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,15 +39,13 @@ public class LBFGS extends BaseOptimizer {
     private static final long serialVersionUID = 9148732140255034888L;
     private int m = 4;
 
-    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        super(conf, stepFunction, iterationListeners, model);
+    public LBFGS(OptimizationConfig conf, StepFunction stepFunction, Model model) {
+        super(conf, stepFunction, model);
     }
 
-    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
+    public LBFGS(OptimizationConfig conf, StepFunction stepFunction,
                     Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, iterationListeners, terminationConditions, model);
+        super(conf, stepFunction, terminationConditions, model);
     }
 
     @Override

@@ -2,6 +2,10 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -18,11 +22,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
@@ -47,7 +48,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected INDArray xMu;
     protected INDArray xHat;
 
-    public BatchNormalization(NeuralNetConfiguration conf) {
+    public BatchNormalization(org.deeplearning4j.nn.conf.layers.BatchNormalization conf) {
         super(conf);
         initializeHelper();
     }
@@ -75,22 +76,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public Type type() {
-        return Type.NORMALIZATION;
-    }
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
+        INDArray epsilon = gradients.get(0);
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch
@@ -120,7 +108,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if (layerConf.isLockGammaBeta()) {
                 gamma = Nd4j.valueArrayOf(new int[] {1, shape[1]}, layerConf.getGamma());
             }
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
+            Gradients ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
                             layerConf.getEps());
             if (ret != null) {
                 return ret;
@@ -215,28 +203,17 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                             + layerId());
         }
 
-        return new Pair<>(retGradient, nextEpsilon);
+        Gradients g = GradientsFactory.getInstance().create(nextEpsilon, retGradient);
+        return backpropPreprocessor(g);
     }
 
     @Override
-    public void fit(INDArray data) {}
-
-    @Override
-    public INDArray activate(boolean training) {
-        return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST);
+    public Activations activate(boolean training) {
+        return ActivationsFactory.getInstance().create(preOutput(input.get(0), training ));
     }
 
-    @Override
-    public Gradient gradient() {
-        return gradient;
-    }
 
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, TrainingMode.TRAIN);
-    }
-
-    public INDArray preOutput(INDArray x, TrainingMode training) {
+    public INDArray preOutput(INDArray x, boolean training) {
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after
@@ -252,7 +229,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         //  different elements of the same feature map, at different locations, are normalized in the same way. To achieve
         //  this, we jointly normalize all the activations in a minibatch, over all locations."
         INDArray mean, var;
-        if (training == TrainingMode.TRAIN) {
+        if (training) {
             switch (x.rank()) {
                 case 2:
                     // mean and variance over samples in batch
@@ -283,7 +260,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray globalMeanView = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
         INDArray globalVarView = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         if (layerConf.isLockGammaBeta()) {
-            if (helper != null && input.rank() == 4) {
+            if (helper != null && input.get(0).rank() == 4) {
                 //TODO: don't create these each iteration, when using cudnn
                 int[] gammaBetaShape = new int[] {1, layerConf().getNOut()};
                 gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma());
@@ -294,10 +271,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             beta = getParam(BatchNormalizationParamInitializer.BETA);
         }
 
-        if (helper != null && input.rank() == 4) {
+        if (helper != null && input.get(0).rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             double decay = layerConf.getDecay();
-            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
+            INDArray ret = helper.preOutput(x, training, shape, gamma, beta, globalMeanView,
                             globalVarView, decay, layerConf.getEps());
             if (ret != null) {
                 return ret;
@@ -363,7 +340,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // store mean and var if using batch mean while training
         double decay;
-        if (training == TrainingMode.TRAIN) {
+        if (training) {
             // TODO track finetune phase here to update decay for finetune
             //          layerConf.setN(layerConf.getN() + 1);
             //          decay =  1. / layerConf.getN();
@@ -395,40 +372,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return preOutput(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return preOutput(x, training ? TrainingMode.TRAIN : TrainingMode.TEST);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
     public Layer clone() {
         throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return listeners;
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        this.listeners = new ArrayList<>(Arrays.asList(listeners));
     }
 
     @Override

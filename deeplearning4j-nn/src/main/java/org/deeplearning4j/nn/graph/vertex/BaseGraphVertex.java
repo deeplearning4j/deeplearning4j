@@ -19,38 +19,22 @@
 package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data
-public abstract class BaseGraphVertex implements GraphVertex {
-
-    protected ComputationGraph graph;
+@EqualsAndHashCode(callSuper = true)
+public abstract class BaseGraphVertex extends AbstractLayer {
 
     protected String vertexName;
-
-    /** The index of this vertex */
-    protected int vertexIndex;
-
-    /**A representation of the vertices that are inputs to this vertex (inputs during forward pass)
-     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
-     * then the Zth output of vertex Y is the Xth input to this vertex
-     */
-    protected VertexIndices[] inputVertices;
-
-    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
-     * then the output of this vertex (there is only one output) is connected to the Zth input of vertex Y
-     */
-    protected VertexIndices[] outputVertices;
-
-    protected INDArray[] inputs;
-    protected INDArray epsilon;
 
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
@@ -58,129 +42,28 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Setter @Getter
     protected boolean outputVertex;
 
-    protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        this.graph = graph;
+    protected BaseGraphVertex(String name, int vertexIndex, int numInputs) {
         this.vertexName = name;
-        this.vertexIndex = vertexIndex;
-        this.inputVertices = inputVertices;
-        this.outputVertices = outputVertices;
-
-        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
+        this.index = vertexIndex;
+        this.numInputs = numInputs;
     }
 
     @Override
-    public String getVertexName() {
+    public String getName(){
         return vertexName;
     }
 
-    @Override
-    public int getVertexIndex() {
-        return vertexIndex;
-    }
-
-    @Override
-    public int getNumInputArrays() {
-        return (inputVertices == null ? 0 : inputVertices.length);
-    }
-
-    @Override
-    public int getNumOutputConnections() {
-        return (outputVertices == null ? 0 : outputVertices.length);
-    }
-
-    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
-     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
-     * then the Zth output of vertex Y is the Xth input to this vertex
-     */
-    @Override
-    public VertexIndices[] getInputVertices() {
-        return inputVertices;
-    }
-
-    @Override
-    public void setInputVertices(VertexIndices[] inputVertices) {
-        this.inputVertices = inputVertices;
-        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
-    }
-
-    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
-     * then the Xth output of this vertex is connected to the Zth input of vertex Y
-     */
-    @Override
-    public VertexIndices[] getOutputVertices() {
-        return outputVertices;
-    }
-
-    @Override
-    public void setOutputVertices(VertexIndices[] outputVertices) {
-        this.outputVertices = outputVertices;
-    }
-
-    @Override
-    public boolean isInputVertex() {
-        return false;
-    }
-
-    @Override
-    public void setInput(int inputNumber, INDArray input) {
-        if (inputNumber >= getNumInputArrays()) {
-            throw new IllegalArgumentException("Invalid input number");
-        }
-        inputs[inputNumber] = input;
-    }
-
-    @Override
-    public void setEpsilon(INDArray epsilon) {
-        this.epsilon = epsilon;
-    }
-
-    @Override
-    public void clear() {
-        for (int i = 0; i < inputs.length; i++) {
-            inputs[i] = null;
-        }
-    }
-
-    @Override
-    public boolean canDoForward() {
-        for (INDArray input : inputs) {
-            if (input == null) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean canDoBackward() {
-        for (INDArray input : inputs) {
-            if (input == null) {
-                return false;
-            }
-        }
-        return epsilon != null;
-    }
-
-    @Override
-    public INDArray getEpsilon() {
-        return epsilon;
-    }
 
     @Override
     public abstract String toString();
 
     @Override
-    public void setLayerAsFrozen() {
-        if (!(this instanceof LayerVertex)) {
-            throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
-        }
+    public boolean isPretrainLayer() {
+        return false;
     }
 
     @Override
-    public void clearVertex() {
-        clear();
-        epsilon = null;
+    public void clearNoiseWeightParams() {
+        //No op
     }
 }

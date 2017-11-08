@@ -19,15 +19,17 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -58,32 +60,24 @@ public class GravesBidirectionalLSTM
     protected FwdPassReturn cachedPassForward;
     protected FwdPassReturn cachedPassBackward;
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
+    public GravesBidirectionalLSTM(org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM conf) {
         super(conf);
     }
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
+    public Gradients tbpttBackpropGradient(Gradients epsilon, int tbpttBackwardLength) {
         return backpropGradientHelper(epsilon, true, tbpttBackwardLength);
     }
 
 
-    private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
+    private Gradients backpropGradientHelper(final Gradients gradients, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
+        INDArray epsilon = gradients.get(0);
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
@@ -93,28 +87,28 @@ public class GravesBidirectionalLSTM
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
 
-        final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
+        final Gradients forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
+                        this.layerConf().getGateActivationFn(), this.input.get(0),
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), epsilon,
                         truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, this.input.getMask(0), true,
                         null);
 
 
 
         final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false);
 
-        final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
+        final Gradients backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
+                        this.layerConf().getGateActivationFn(), this.input.get(0),
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), epsilon,
                         truncatedBPTT, tbpttBackwardLength, backPass, false,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, this.input.getMask(0), true,
                         null);
 
 
@@ -124,11 +118,11 @@ public class GravesBidirectionalLSTM
         final Gradient combinedGradient = new DefaultGradient();
 
 
-        for (Map.Entry<String, INDArray> entry : forwardsGradient.getFirst().gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> entry : forwardsGradient.getParameterGradients().gradientForVariable().entrySet()) {
             combinedGradient.setGradientFor(entry.getKey(), entry.getValue());
         }
 
-        for (Map.Entry<String, INDArray> entry : backwardsGradient.getFirst().gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> entry : backwardsGradient.getParameterGradients().gradientForVariable().entrySet()) {
             combinedGradient.setGradientFor(entry.getKey(), entry.getValue());
         }
 
@@ -138,51 +132,28 @@ public class GravesBidirectionalLSTM
             correctOrderedGradient.setGradientFor(key, combinedGradient.getGradientFor(key));
         }
 
-        final INDArray forwardEpsilon = forwardsGradient.getSecond();
-        final INDArray backwardsEpsilon = backwardsGradient.getSecond();
+        final INDArray forwardEpsilon = forwardsGradient.get(0);
+        final INDArray backwardsEpsilon = backwardsGradient.get(0);
         final INDArray combinedEpsilon = forwardEpsilon.addi(backwardsEpsilon);
 
         //sum the errors that were back-propagated
-        return new Pair<>(correctOrderedGradient, combinedEpsilon);
-
-    }
-
-
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return activate(x, true);
+        Gradients g = GradientsFactory.getInstance().create(combinedEpsilon, correctOrderedGradient);
+        return backpropPreprocessor(g);
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public Activations activate(Activations input, boolean training) {
         setInput(input);
         return activateOutput(training, false);
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activateOutput(true, false);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         return activateOutput(training, false);
     }
 
-    @Override
-    public INDArray activate() {
-
-        return activateOutput(false, false);
-    }
-
-    private INDArray activateOutput(final boolean training, boolean forBackprop) {
+    private Activations activateOutput(final boolean training, boolean forBackprop) {
+        applyPreprocessorIfNecessary(training);
         final FwdPassReturn forwardsEval;
         final FwdPassReturn backwardsEval;
 
@@ -196,20 +167,20 @@ public class GravesBidirectionalLSTM
         } else {
 
             forwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                            this.input, getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                            this.input.get(0), getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, this.input.getMask(0), true, null,
                             forBackprop ? cacheMode : CacheMode.NONE);
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                            this.input,
+                            this.input.get(0),
                             getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), false,
-                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, this.input.getMask(0), true, null,
                             forBackprop ? cacheMode : CacheMode.NONE);
 
             cachedPassForward = forwardsEval;
@@ -224,7 +195,13 @@ public class GravesBidirectionalLSTM
         final INDArray totalOutput = training && cacheMode != CacheMode.NONE && !forBackprop ? fwdOutput.add(backOutput)
                         : fwdOutput.addi(backOutput);
 
-        return totalOutput;
+        //Bidirectional RNNs operate differently to standard RNNs from a masking perspective
+        //Specifically, the masks are applied regardless of the mask state
+        //For example, input -> RNN -> Bidirectional-RNN: we should still mask the activations and errors in the bi-RNN
+        // even though the normal RNN has marked the current mask state as 'passthrough'
+        //Consequently, the mask is marked as active again
+
+        return ActivationsFactory.getInstance().create(totalOutput, input.getMask(0), (input.getMask(0) == null ? null : MaskState.Active));
     }
 
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
@@ -253,21 +230,11 @@ public class GravesBidirectionalLSTM
                 biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
             }
 
-            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
+            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input.get(0),
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
-                            prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
+                            prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, this.input.getMask(0), true,
                             null, forBackprop ? cacheMode : CacheMode.NONE);
         }
-    }
-
-    @Override
-    public Type type() {
-        return Type.RECURRENT;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -276,36 +243,7 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l2 = conf.getL2ByParam(entry.getKey());
-            if (l2 > 0) {
-                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
-                l2Sum += 0.5 * l2 * norm2 * norm2;
-            }
-        }
-
-        return l2Sum;
-    }
-
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l1 = conf.getL1ByParam(entry.getKey());
-            if (l1 > 0) {
-                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
-                l1Sum += l1 * norm1;
-            }
-        }
-
-        return l1Sum;
-    }
-
-    @Override
-    public INDArray rnnTimeStep(INDArray input) {
+    public Activations rnnTimeStep(Activations input) {
         throw new UnsupportedOperationException(
                         "you can not time step a bidirectional RNN, it has to run on a batch of data all at once "
                                         + layerId());
@@ -314,24 +252,8 @@ public class GravesBidirectionalLSTM
 
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public Activations rnnActivateUsingStoredState(Activations input, boolean training, boolean storeLastForTBPTT) {
         throw new UnsupportedOperationException(
                         "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
-    }
-
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        //Bidirectional RNNs operate differently to standard RNNs from a masking perspective
-        //Specifically, the masks are applied regardless of the mask state
-        //For example, input -> RNN -> Bidirectional-RNN: we should still mask the activations and errors in the bi-RNN
-        // even though the normal RNN has marked the current mask state as 'passthrough'
-        //Consequently, the mask is marked as active again
-
-        this.maskArray = maskArray;
-        this.maskState = currentMaskState;
-
-        return new Pair<>(maskArray, MaskState.Active);
     }
 }

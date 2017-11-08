@@ -10,8 +10,8 @@ public class UpdaterUtils {
 
 
     public static boolean updaterConfigurationsEquals(Layer layer1, String param1, Layer layer2, String param2) {
-        org.deeplearning4j.nn.conf.layers.Layer l1 = layer1.conf().getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
+        org.deeplearning4j.nn.conf.layers.Layer l1 = layer1.conf();
+        org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf();
         IUpdater u1 = l1.getUpdaterByParam(param1);
         IUpdater u2 = l2.getUpdaterByParam(param2);
 
@@ -25,8 +25,8 @@ public class UpdaterUtils {
             return false;
         }
 
-        boolean isPretrainParam1 = layer1.conf().getLayer().isPretrainParam(param1);
-        boolean isPretrainParam2 = layer2.conf().getLayer().isPretrainParam(param2);
+        boolean isPretrainParam1 = layer1.conf().isPretrainParam(param1);
+        boolean isPretrainParam2 = layer2.conf().isPretrainParam(param2);
         if (isPretrainParam1 || isPretrainParam2) {
             //One or both of params are pretrainable.
             //Either layers differ -> don't want to combine a pretrain updaters across layers

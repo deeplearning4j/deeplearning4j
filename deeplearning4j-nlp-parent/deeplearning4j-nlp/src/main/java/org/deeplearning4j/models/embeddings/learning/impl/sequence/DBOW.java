@@ -35,8 +35,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     protected SkipGram<T> skipGram = new SkipGram<>();
 
-    private static final Logger log = LoggerFactory.getLogger(DBOW.class);
-
     @Override
     public ElementsLearningAlgorithm<T> getElementsLearningAlgorithm() {
         return skipGram;

@@ -38,7 +38,7 @@ public class TestImageNet {
     @Test
     public void testImageNetLabels() throws IOException {
         // set up model
-        ZooModel model = new VGG19(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new VGG19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -47,7 +47,7 @@ public class TestImageNet {
         INDArray image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
         DataNormalization scaler = new VGG16ImagePreProcessor();
         scaler.transform(image);
-        INDArray[] output = initializedModel.output(false, image);
+        INDArray[] output = initializedModel.output(false, image).getAsArray();
 
         // check output labels of result
         String decodedLabels = new ImageNetLabels().decodePredictions(output[0]);
@@ -62,7 +62,7 @@ public class TestImageNet {
     @Test
     public void testDarknetLabels() throws IOException {
         // set up model
-        ZooModel model = new Darknet19(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new Darknet19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -84,7 +84,7 @@ public class TestImageNet {
         System.gc();
 
         // set up model
-        model = new TinyYOLO(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        model = new TinyYOLO(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward

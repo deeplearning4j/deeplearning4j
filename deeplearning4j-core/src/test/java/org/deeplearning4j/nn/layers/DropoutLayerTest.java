@@ -39,8 +39,8 @@ public class DropoutLayerTest {
         InputType in1 = InputType.feedForward(20);
         InputType in2 = InputType.convolutional(28, 28, 1);
 
-        assertEquals(in1, config.getOutputType(0, in1));
-        assertEquals(in2, config.getOutputType(0, in2));
+        assertEquals(in1, config.getOutputType(0, in1)[0]);
+        assertEquals(in2, config.getOutputType(0, in2)[0]);
         assertNull(config.getPreProcessorForInputType(in1));
         assertNull(config.getPreProcessorForInputType(in2));
     }
@@ -48,14 +48,14 @@ public class DropoutLayerTest {
     @Test
     public void testDropoutLayerWithoutTraining() throws Exception {
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(3648)
-                        .list().layer(0,
-                                        new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25)
-                                                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
-                                                        .build())
-                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY).dropOut(0.25)
-                                        .nOut(4).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
+                .list().layer(0,
+                        new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25)
+                                .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
+                                .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY).dropOut(0.25)
+                        .nOut(4).build())
+                .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
 
         MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
         netIntegrated.init();
@@ -65,21 +65,19 @@ public class DropoutLayerTest {
         netIntegrated.getLayer(1).setParam("b", Nd4j.zeros(4, 1));
 
         MultiLayerConfiguration confSeparate =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(3648)
-                                        .list().layer(0,
-                                                        new DropoutLayer.Builder(0.25)
-                                                                        .build())
-                                        .layer(1, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
-                                                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
-                                                        .build())
-                                        .layer(2, new DropoutLayer.Builder(0.25).build())
-                                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY)
-                                                        .nOut(4).build())
-                                        .backprop(true).pretrain(false)
-                                        .setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
+                new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .seed(3648)
+                        .list().layer(0, new DropoutLayer.Builder(0.25).build())
+                        .layer(1, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
+                                .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
+                                .build())
+                        .layer(2, new DropoutLayer.Builder(0.25).build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                .weightInit(WeightInit.XAVIER).activation(Activation.IDENTITY)
+                                .nOut(4).build())
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutionalFlat(2, 2, 1)).build();
 
         MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
         netSeparate.init();
@@ -111,7 +109,7 @@ public class DropoutLayerTest {
 
         // Run without separate activation layer
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10)
                                         .activation(Activation.RELU).weightInit(
@@ -128,7 +126,7 @@ public class DropoutLayerTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -182,7 +180,7 @@ public class DropoutLayerTest {
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).dropOut(0.5)
                                         .nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         // Run with separate activation layer
         Nd4j.getRandom().setSeed(12345);
@@ -190,8 +188,6 @@ public class DropoutLayerTest {
         //Manually configure preprocessors
         //This is necessary, otherwise CnnToFeedForwardPreprocessor will be in different locatinos
         //i.e., dropout on 4d activations in latter, and dropout on 2d activations in former
-        Map<Integer, InputPreProcessor> preProcessorMap = new HashMap<>();
-        preProcessorMap.put(1, new CnnToFeedForwardPreProcessor(13, 13, 20));
 
         MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder().seed(123).list()
                         .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
@@ -199,7 +195,6 @@ public class DropoutLayerTest {
                         .layer(1, new DropoutLayer.Builder(0.5).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                        .inputPreProcessors(preProcessorMap).backprop(true).pretrain(false)
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
 

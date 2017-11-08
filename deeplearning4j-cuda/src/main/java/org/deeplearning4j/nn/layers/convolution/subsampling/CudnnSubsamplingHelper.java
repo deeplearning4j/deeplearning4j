@@ -19,6 +19,8 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -101,8 +103,8 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
     private INDArray reduced = null;
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
-                    int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
+    public Gradients backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
+                                      int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling
             return null;
@@ -142,7 +144,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
                 poolingMode = CUDNN_POOLING_MAX;
                 break;
             case NONE:
-                return new Pair<>(retGradient, epsilon);
+                return GradientsFactory.getInstance().create(epsilon, retGradient);
             default:
                 return null;
         }
@@ -196,7 +198,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
 
-        return new Pair<>(retGradient, outEpsilon);
+        return GradientsFactory.getInstance().create(outEpsilon, retGradient);
     }
 
 

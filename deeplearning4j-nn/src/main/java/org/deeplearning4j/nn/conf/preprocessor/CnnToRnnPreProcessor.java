@@ -2,6 +2,10 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
@@ -47,7 +51,12 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
+        if(a.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
+                    + a.size());
+        }
+        INDArray input = a.get(0);
         if (input.rank() != 4)
             throw new IllegalArgumentException(
                             "Invalid input: expect CNN activations with rank 4 (received input with shape "
@@ -64,11 +73,19 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         INDArray twod = input.reshape('c', input.size(0), ArrayUtil.prod(input.shape()) / input.size(0));
         //Second: reshape 2d to 3d, as per FeedForwardToRnnPreProcessor
         INDArray reshaped = twod.dup('f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
-        return reshaped.permute(0, 2, 1);
+        INDArray ret = reshaped.permute(0, 2, 1);
+
+        Pair<INDArray, MaskState> p = feedForwardMaskArray(a.getMask(0), a.getMaskState(0), miniBatchSize);
+        return ActivationsFactory.getInstance().create(ret, p.getFirst(), p.getSecond());
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        if(g.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
+                    "exactly 1 array. Got: " + g.size());
+        }
+        INDArray output = g.get(0);
         if (output.ordering() == 'c')
             output = output.dup('f');
 
@@ -90,7 +107,8 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException("Invalid input: expected output size(1)=" + shape[1]
                             + " must be equal to " + inputHeight + " x columns " + inputWidth + " x depth "
                             + numChannels + " = " + product + ", received: " + shape[1]);
-        return output2d.dup('c').reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
+        INDArray ret = output2d.dup('c').reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
+        return GradientsFactory.getInstance().create(ret, g.getParameterGradients());
     }
 
     @Override
@@ -99,17 +117,18 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+    public InputType[] getOutputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType[0];
         int outSize = c.getDepth() * c.getHeight() * c.getWidth();
-        return InputType.recurrent(outSize);
+        return new InputType[]{InputType.recurrent(outSize)};
     }
 
-    @Override
+
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]

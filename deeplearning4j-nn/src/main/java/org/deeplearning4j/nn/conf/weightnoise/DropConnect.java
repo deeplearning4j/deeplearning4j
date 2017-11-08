@@ -62,7 +62,7 @@ public class DropConnect implements IWeightNoise {
 
     @Override
     public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train) {
-        ParamInitializer init = layer.conf().getLayer().initializer();
+        ParamInitializer init = layer.conf().initializer();
         INDArray param = layer.getParam(paramKey);
 
         double p;

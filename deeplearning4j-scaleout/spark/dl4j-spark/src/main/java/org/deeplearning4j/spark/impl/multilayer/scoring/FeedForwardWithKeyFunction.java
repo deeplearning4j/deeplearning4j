@@ -61,8 +61,6 @@ public class FeedForwardWithKeyFunction<K>
 class FeedForwardWithKeyFunctionAdapter<K>
                 implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, INDArray>> {
 
-    protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
-
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;
     private final int batchSize;

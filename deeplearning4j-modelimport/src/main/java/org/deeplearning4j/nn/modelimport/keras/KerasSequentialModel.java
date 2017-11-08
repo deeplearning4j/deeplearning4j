@@ -183,13 +183,11 @@ public class KerasSequentialModel extends KerasModel {
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName()
                             + " is not an IOutputLayer (no loss function specified)");
-            } else if (layer.getVertex() != null)
-                throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name "
-                        + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");
+            }
             prevLayer = layer;
         }
 
-        InputType inputType = this.layersOrdered.get(0).getOutputType();
+        InputType inputType = this.layersOrdered.get(0).getOutputType()[0];
         if (inputType != null)
             listBuilder.setInputType(inputType);
 

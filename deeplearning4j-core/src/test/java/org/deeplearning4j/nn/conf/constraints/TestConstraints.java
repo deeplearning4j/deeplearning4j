@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -43,14 +44,14 @@ public class TestConstraints {
                     .list()
                     .layer(new LSTM.Builder().nIn(12).nOut(10)
                             .constrainRecurrent(lc).build())
-                    .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(8).build())
+                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(8).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -103,7 +104,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -115,8 +116,8 @@ public class TestConstraints {
 
             if (lc instanceof MaxNormConstraint) {
                 assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.5);
-
             } else if (lc instanceof MinMaxNormConstraint) {
+                double d = b0.norm2(1).maxNumber().doubleValue();
                 assertTrue(b0.norm2(1).minNumber().doubleValue() >= 0.3);
                 assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.4);
             } else if (lc instanceof NonNegativeConstraint) {
@@ -155,7 +156,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -208,7 +209,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -269,7 +270,7 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
@@ -329,8 +330,8 @@ public class TestConstraints {
             net.init();
 
             LayerConstraint exp = lc.clone();
-            assertEquals(exp.toString(), net.getLayer(0).conf().getLayer().getConstraints().get(0).toString());
-            assertEquals(exp.toString(), net.getLayer(1).conf().getLayer().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(0).conf().getConstraints().get(0).toString());
+            assertEquals(exp.toString(), net.getLayer(1).conf().getConstraints().get(0).toString());
 
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);

@@ -38,18 +38,16 @@ public class GoogLeNet extends ZooModel {
     private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels;
     private long seed;
-    private int iterations;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public GoogLeNet(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public GoogLeNet(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public GoogLeNet(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public GoogLeNet(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -136,7 +134,7 @@ public class GoogLeNet extends ZooModel {
     }
 
     public ComputationGraphConfiguration conf() {
-        GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 1e-2, 0.96, 320000), 0.9))
                         .biasUpdater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 2e-2, 0.96, 320000), 0.9))

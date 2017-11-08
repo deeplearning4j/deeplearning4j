@@ -8,6 +8,8 @@ import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -220,16 +222,16 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onForwardPass(Model model, List<INDArray> activations) {
+    public void onForwardPass(Model model, List<Activations> activations) {
         int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             //Assumption: we have input, layer 0, layer 1, ...
             activationsMap = new HashMap<>();
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 int count = 0;
-                for (INDArray arr : activations) {
+                for (Activations arr : activations) {
                     String layerName = (count == 0 ? "input" : String.valueOf(count - 1));
-                    activationsMap.put(layerName, arr.dup());
+                    activationsMap.put(layerName, arr.get(0).dup());
                     count++;
                 }
             }
@@ -237,25 +239,25 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+    public void onForwardPass(Model model, Map<String, Activations> activations) {
         int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             activationsMap = new HashMap<>();
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (Map.Entry<String, INDArray> e : activations.entrySet()) {
-                    activationsMap.put(e.getKey(), e.getValue().dup());
+                for (Map.Entry<String, Activations> e : activations.entrySet()) {
+                    activationsMap.put(e.getKey(), e.getValue().get(0).dup());      //TODO multiple outputs
                 }
             }
         }
     }
 
     @Override
-    public void onGradientCalculation(Model model) {
+    public void onGradientCalculation(Model model, Gradients gradients) {
         int iterCount = getModelInfo(model).iterCount;
         if (storeGradients() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
-            Gradient g = model.gradient();
+            Gradient g = gradients.getParameterGradients();
             gradientsPreUpdateMap.clear();
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
@@ -278,12 +280,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void onBackwardPass(Model model) {
-        //No op
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration, int epoch) {
+    public void onBackwardPass(Model model, Gradients g) {
+        int iteration = model.getIterationCount();
+        int epoch = model.getEpochCount();
         StatsUpdateConfiguration config = updateConfig;
 
         ModelInfo modelInfo = getModelInfo(model);
@@ -323,7 +322,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             }
             long totalRuntimeMS = currentTime - modelInfo.initTime;
             report.reportPerformance(totalRuntimeMS, modelInfo.totalExamples, modelInfo.totalMinibatches,
-                            examplesPerSecond, minibatchesPerSecond);
+                    examplesPerSecond, minibatchesPerSecond);
 
             modelInfo.examplesSinceLastReport = 0;
             modelInfo.minibatchesSinceLastReport = 0;
@@ -400,10 +399,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 //Need to append "0_", "1_" etc to param names from layers...
                 int layerIdx = 0;
                 for (Layer l : ((MultiLayerNetwork) model).getLayers()) {
-                    NeuralNetConfiguration conf = l.conf();
-                    List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
+                    org.deeplearning4j.nn.conf.layers.Layer conf = l.conf();
+                    List<String> paramkeys = l.conf().initializer().paramKeys(l.conf());
                     for(String s : paramkeys){
-                        double lr = conf.getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                        double lr = conf.getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
                         if(Double.isNaN(lr)){
                             //Edge case: No-Op updater, AdaDelta etc - don't have a LR hence return NaN for IUpdater.getLearningRate
                             lr = 0.0;
@@ -414,11 +413,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 }
             } else if (model instanceof ComputationGraph) {
                 for (Layer l : ((ComputationGraph) model).getLayers()) {
-                    NeuralNetConfiguration conf = l.conf();
-                    String layerName = conf.getLayer().getLayerName();
-                    List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
+                    org.deeplearning4j.nn.conf.layers.Layer conf = l.conf();
+                    String layerName = conf.getLayerName();
+                    List<String> paramkeys = l.conf().initializer().paramKeys(l.conf());
                     for(String s : paramkeys){
-                        double lr = conf.getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                        double lr = conf.getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
                         if(Double.isNaN(lr)){
                             //Edge case: No-Op updater, AdaDelta etc - don't have a LR hence return NaN for IUpdater.getLearningRate
                             lr = 0.0;
@@ -428,9 +427,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 }
             } else if (model instanceof Layer) {
                 Layer l = (Layer) model;
-                List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
+                List<String> paramkeys = l.conf().initializer().paramKeys(l.conf());
                 for(String s : paramkeys){
-                    double lr = l.conf().getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                    double lr = l.conf().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
                     lrs.put(s, lr);
                 }
             }
@@ -442,25 +441,25 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectHistograms(StatsType.Parameters)) {
             Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(backpropParamsOnly),
-                            config.numHistogramBins(StatsType.Parameters));
+                    config.numHistogramBins(StatsType.Parameters));
             report.reportHistograms(StatsType.Parameters, paramHistograms);
         }
 
         if (config.collectHistograms(StatsType.Gradients)) {
             Map<String, Histogram> gradientHistograms =
-                            getHistograms(gradientsPreUpdateMap, config.numHistogramBins(StatsType.Gradients));
+                    getHistograms(gradientsPreUpdateMap, config.numHistogramBins(StatsType.Gradients));
             report.reportHistograms(StatsType.Gradients, gradientHistograms);
         }
 
         if (config.collectHistograms(StatsType.Updates)) {
-            Map<String, Histogram> updateHistograms = getHistograms(model.gradient().gradientForVariable(),
-                            config.numHistogramBins(StatsType.Updates));
+            Map<String, Histogram> updateHistograms = getHistograms(g.getParameterGradients().gradientForVariable(),
+                    config.numHistogramBins(StatsType.Updates));
             report.reportHistograms(StatsType.Updates, updateHistograms);
         }
 
         if (config.collectHistograms(StatsType.Activations)) {
             Map<String, Histogram> activationHistograms =
-                            getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
+                    getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
             report.reportHistograms(StatsType.Activations, activationHistograms);
         }
 
@@ -479,7 +478,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectMean(StatsType.Updates)) {
             Map<String, Double> meanUpdates =
-                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Mean);
+                    calculateSummaryStats(g.getParameterGradients().gradientForVariable(), StatType.Mean);
             report.reportMean(StatsType.Updates, meanUpdates);
         }
 
@@ -491,7 +490,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectStdev(StatsType.Parameters)) {
             Map<String, Double> stdevParams =
-                            calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
+                    calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
             report.reportStdev(StatsType.Parameters, stdevParams);
         }
 
@@ -502,7 +501,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectStdev(StatsType.Updates)) {
             Map<String, Double> stdevUpdates =
-                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Stdev);
+                    calculateSummaryStats(g.getParameterGradients().gradientForVariable(), StatType.Stdev);
             report.reportStdev(StatsType.Updates, stdevUpdates);
         }
 
@@ -514,7 +513,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectMeanMagnitudes(StatsType.Parameters)) {
             Map<String, Double> meanMagParams =
-                            calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
+                    calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Parameters, meanMagParams);
         }
 
@@ -525,7 +524,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (config.collectMeanMagnitudes(StatsType.Updates)) {
             Map<String, Double> meanMagUpdates =
-                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.MeanMagnitude);
+                    calculateSummaryStats(g.getParameterGradients().gradientForVariable(), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Updates, meanMagUpdates);
         }
 
@@ -545,6 +544,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         modelInfo.iterCount = iteration;
         activationsMap = null;
+    }
+
+    @Override
+    public void iterationDone(Model model, int iteration, int epoch) {
+        //No op
     }
 
     private long getTime() {
@@ -645,9 +649,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 numParams = cg.numParams();
             } else if (model instanceof Layer) {
                 Layer l = (Layer) model;
-                jsonConf = l.conf().toJson();
+                jsonConf = null;    //l.conf().toJson();
                 numLayers = 1;
                 numParams = l.numParams();
+                throw new UnsupportedOperationException("Not yet implemented"); //TODO
             } else {
                 throw new RuntimeException("Invalid model: Expected MultiLayerNetwork or ComputationGraph. Got: "
                                 + (model == null ? null : model.getClass()));
@@ -691,9 +696,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
-            examplesThisMinibatch = ((MultiLayerNetwork) model).batchSize();
+            examplesThisMinibatch = ((MultiLayerNetwork) model).getInputMiniBatchSize();
         } else if (model instanceof ComputationGraph) {
-            examplesThisMinibatch = ((ComputationGraph) model).batchSize();
+            examplesThisMinibatch = ((ComputationGraph) model).getInputMiniBatchSize();
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }

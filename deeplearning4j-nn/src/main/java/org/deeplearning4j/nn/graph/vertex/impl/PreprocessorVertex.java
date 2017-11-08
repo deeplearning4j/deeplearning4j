@@ -18,13 +18,11 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -36,39 +34,24 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     private InputPreProcessor preProcessor;
 
-    public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, InputPreProcessor preProcessor) {
-        this(graph, name, vertexIndex, null, null, preProcessor);
-    }
-
-    public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, InputPreProcessor preProcessor) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public PreprocessorVertex(String name, int vertexIndex, int numInputs, InputPreProcessor preProcessor) {
+        super(name, vertexIndex, numInputs);
         this.preProcessor = preProcessor;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
+    public Activations activate(boolean training) {
+        return preProcessor.preProcess(input, getInputMiniBatchSize(), training);
     }
 
     @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        return preProcessor.preProcess(inputs[0], graph.batchSize());
-    }
-
-    @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        return new Pair<>(null, new INDArray[] {preProcessor.backprop(epsilon, graph.batchSize())});
+    public Gradients backpropGradient(Gradients gradient) {
+        return preProcessor.backprop(gradient, -1); //TODO
     }
 
     @Override
     public String toString() {
-        return "PreprocessorVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor="
+        return "PreprocessorVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",preProcessor="
                         + preProcessor.toString() + ")";
     }
 
@@ -76,16 +59,5 @@ public class PreprocessorVertex extends BaseGraphVertex {
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
         if (backpropGradientsViewArray != null)
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
-        //No op
-        if (maskArrays == null || maskArrays.length == 0) {
-            return null;
-        }
-
-        return preProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
     }
 }

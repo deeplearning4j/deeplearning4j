@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.word2vec;
 
 import com.google.common.primitives.Doubles;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
@@ -54,9 +55,8 @@ import static org.junit.Assert.*;
 /**
  * @author jeffreytang
  */
+@Slf4j
 public class Word2VecTests {
-
-    private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
     private File inputFile;
     private String pathToWriteto;

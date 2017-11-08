@@ -19,6 +19,8 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
@@ -108,8 +110,8 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
-                    INDArray dGammaView, INDArray dBetaView, double eps) {
+    public Gradients backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
+                                      INDArray dGammaView, INDArray dBetaView, double eps) {
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -166,7 +168,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
 
-        return new Pair<>(retGradient, nextEpsilon);
+        return GradientsFactory.getInstance().create(nextEpsilon, retGradient);
     }
 
 

@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -19,6 +22,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +32,8 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class TestVariableLengthTS {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testVariableLengthSimple() {
@@ -45,7 +51,7 @@ public class TestVariableLengthTS {
             Nd4j.getRandom().setSeed(12345);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
@@ -73,19 +79,13 @@ public class TestVariableLengthTS {
                 labelMask.putScalar(new int[] {j, 4}, 0);
             }
 
-
-            net.setInput(in1);
-            net.setLabels(labels1);
-            net.computeGradientAndScore();
+            Pair<Gradients,Double> p = net.computeGradientAndScore(af.create(in1), af.create(labels1));
             double score1 = net.score();
-            Gradient g1 = net.gradient();
+            Gradient g1 = p.getFirst().getParameterGradients();
 
-            net.setInput(in2);
-            net.setLabels(labels2);
-            net.setLayerMaskArrays(null, labelMask);
-            net.computeGradientAndScore();
+            p = net.computeGradientAndScore(af.create(in2), af.create(labels2, labelMask));
             double score2 = net.score();
-            Gradient g2 = net.gradient();
+            Gradient g2 = p.getFirst().getParameterGradients();
 
             //Scores and gradients should be identical for two cases (given mask array)
             assertEquals(score1, score2, 1e-6);
@@ -106,10 +106,9 @@ public class TestVariableLengthTS {
                     double d = r.nextDouble();
                     labels2.putScalar(new int[] {i, j, 4}, d);
                 }
-                net.setLabels(labels2);
-                net.computeGradientAndScore();
+                p = net.computeGradientAndScore(af.create(in2), af.create(labels2, labelMask));
                 double score2a = net.score();
-                Gradient g2a = net.gradient();
+                Gradient g2a = p.getFirst().getParameterGradients();
                 assertEquals(score2, score2a, 1e-6);
                 for (String s : g2map.keySet()) {
                     INDArray g2s = g2map.get(s);
@@ -133,7 +132,7 @@ public class TestVariableLengthTS {
             Nd4j.getRandom().setSeed(12345);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
@@ -164,24 +163,18 @@ public class TestVariableLengthTS {
                 inputMask.putScalar(new int[] {j, 4}, 0);
             }
 
-
-            net.setInput(in1);
-            net.setLabels(labels1);
-            net.computeGradientAndScore();
+            Pair<Gradients,Double> p = net.computeGradientAndScore(af.create(in1), af.create(labels1));
             double score1 = net.score();
-            Gradient g1 = net.gradient();
+            Gradient g1 = p.getFirst().getParameterGradients();
             Map<String, INDArray> map1 = g1.gradientForVariable();
             for (String s : map1.keySet()) {
                 map1.put(s, map1.get(s).dup()); //Note: gradients are a view normally -> second computeGradientAndScore would have modified the original gradient map values...
             }
 
-            net.setInput(in2);
-            net.setLabels(labels2);
-            net.setLayerMaskArrays(inputMask, null);
-            net.computeGradientAndScore();
+            p = net.computeGradientAndScore(af.create(in2, inputMask), af.create(labels2));
             double score2 = net.score();
-            Gradient g2 = net.gradient();
-            List<INDArray> activations2 = net.feedForward();
+            Gradient g2 = p.getFirst().getParameterGradients();
+            List<Activations> activations2 = net.feedForward(af.create(in2, inputMask), false);
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
             assertNotEquals(score1, score2, 0.01);
@@ -193,39 +186,38 @@ public class TestVariableLengthTS {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
 
-                System.out.println("-------");
-                System.out.println("Variable: " + s);
-                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
-                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
+//                System.out.println("-------");
+//                System.out.println("Variable: " + s);
+//                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
+//                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
                 assertNotEquals(s, g1s, g2s);
             }
 
-            //Modify the values at the masked time step, and check that neither the gradients, score or activations change
+            //Modify the *input* values at the masked time step, and check that neither the gradients, score or activations change
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
-                net.setInput(in2);
-                net.computeGradientAndScore();
+                p = net.computeGradientAndScore(af.create(in2, inputMask), af.create(labels2));
                 double score2a = net.score();
-                Gradient g2a = net.gradient();
+                Gradient g2a = p.getFirst().getParameterGradients();
                 assertEquals(score2, score2a, 1e-12);
                 for (String s : g2.gradientForVariable().keySet()) {
                     assertEquals(g2.getGradientFor(s), g2a.getGradientFor(s));
                 }
 
-                List<INDArray> activations2a = net.feedForward();
+                List<Activations> activations2a = net.feedForward(af.create(in2, inputMask), false);
                 for (int k = 1; k < activations2.size(); k++) {
-                    assertEquals(activations2.get(k), activations2a.get(k));
+                    assertEquals(activations2.get(k).get(0), activations2a.get(k).get(0));
                 }
             }
 
             //Finally: check that the activations for the first two (dense) layers are zero at the appropriate time step
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
-            INDArray l0Before = activations2.get(1);
-            INDArray l1Before = activations2.get(2);
-            INDArray l0After = temp.preProcess(l0Before, nExamples);
-            INDArray l1After = temp.preProcess(l1Before, nExamples);
+            INDArray l0Before = activations2.get(1).get(0);
+            INDArray l1Before = activations2.get(2).get(0);
+            INDArray l0After = temp.preProcess(af.create(l0Before), nExamples, true).get(0);
+            INDArray l1After = temp.preProcess(af.create(l1Before), nExamples, true).get(0);
 
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {
@@ -289,11 +281,7 @@ public class TestVariableLengthTS {
                         //MSE loss function: 1/n * sum(squaredErrors)... but sum(squaredErrors) = n * (1-0) here -> sum(squaredErrors)
                         double expScore = (tsLength - nToMask); //Sum over minibatches, then divide by minibatch size
 
-                        mln.setLayerMaskArrays(null, labelMaskArray);
-                        mln.setInput(input);
-                        mln.setLabels(labels);
-
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(input), af.create(labels, labelMaskArray));
                         double score = mln.score();
 
                         assertEquals(msg, expScore, score, 0.1);
@@ -365,9 +353,8 @@ public class TestVariableLengthTS {
                         MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
                         mln2.init();
 
-                        mln.setLayerMaskArrays(null, labelMaskArray);
-                        mln2.setLayerMaskArrays(null, labelMaskArray);
-
+                        mln.setLabels(null, labelMaskArray);
+                        mln2.setLabels(null, labelMaskArray);
 
                         INDArray out = mln.output(input);
                         INDArray out2 = mln2.output(input);
@@ -381,8 +368,8 @@ public class TestVariableLengthTS {
                                     INDArray outRow2 = out2.get(NDArrayIndex.point(i), NDArrayIndex.all(),
                                                     NDArrayIndex.point(j));
                                     for (int k = 0; k < nOut; k++) {
-                                        assertEquals(outRow.getDouble(k), 0.0, 0.0);
-                                        assertEquals(outRow2.getDouble(k), 0.0, 0.0);
+                                        assertEquals(0.0, outRow.getDouble(k), 0.0);
+                                        assertEquals(0.0, outRow2.getDouble(k), 0.0);
                                     }
                                 }
                             }
@@ -426,10 +413,10 @@ public class TestVariableLengthTS {
 
         INDArray labelsMask = featuresMask.dup();
 
-        net.setLayerMaskArrays(featuresMask, labelsMask);
-        INDArray outMasked = net.output(input);
+        net.setLabels(null, labelsMask);
+        INDArray outMasked = net.output(ActivationsFactory.getInstance().create(input, featuresMask));
 
-        net.clearLayerMaskArrays();
+        net.clear();
 
         //Check forward pass:
         for (int i = 0; i < minibatch; i++) {
@@ -506,10 +493,8 @@ public class TestVariableLengthTS {
                 INDArray labels = Nd4j.rand(new int[] {minibatch, nOut});
                 INDArray featuresMask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}});
 
-
-                net.setLayerMaskArrays(featuresMask, null);
-                INDArray outMasked = net.output(input);
-                net.clearLayerMaskArrays();
+                INDArray outMasked = net.output(af.create(input, featuresMask));
+                net.clear();
 
                 for (int i = 0; i < minibatch; i++) {
                     INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),

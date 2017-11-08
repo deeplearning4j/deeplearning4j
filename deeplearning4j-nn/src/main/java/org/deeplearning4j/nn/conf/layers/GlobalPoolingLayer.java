@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -58,17 +59,16 @@ public class GlobalPoolingLayer extends Layer {
 
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret =
-                        new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -78,60 +78,72 @@ public class GlobalPoolingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
 
-        switch (inputType.getType()) {
+        InputType ret;
+        switch (inputType[0].getType()) {
             case FF:
                 throw new UnsupportedOperationException(
                                 "Global max pooling cannot be applied to feed-forward input type. Got input type = "
                                                 + inputType);
             case RNN:
-                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType[0];
                 if (collapseDimensions) {
                     //Return 2d (feed-forward) activations
-                    return InputType.feedForward(recurrent.getSize());
+                    ret = InputType.feedForward(recurrent.getSize());
                 } else {
                     //Return 3d activations, with shape [minibatch, timeStepSize, 1]
-                    return recurrent;
+                    ret = recurrent;
                 }
+                break;
             case CNN:
-                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType[0];
                 if (collapseDimensions) {
-                    return InputType.feedForward(conv.getDepth());
+                    ret = InputType.feedForward(conv.getDepth());
                 } else {
-                    return InputType.convolutional(1, 1, conv.getDepth());
+                    ret = InputType.convolutional(1, 1, conv.getDepth());
                 }
+                break;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType[0];
                 if (collapseDimensions) {
-                    return InputType.feedForward(convFlat.getDepth());
+                    ret = InputType.feedForward(convFlat.getDepth());
                 } else {
-                    return InputType.convolutional(1, 1, convFlat.getDepth());
+                    ret = InputType.convolutional(1, 1, convFlat.getDepth());
                 }
+                break;
             default:
-                throw new UnsupportedOperationException("Unknown or not supported input type: " + inputType);
+                throw new UnsupportedOperationException("Unknown or not supported input type: " + inputType[0]);
         }
+        return new InputType[]{ret};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //Not applicable
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for global pooling layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
+        }
 
-        switch (inputType.getType()) {
+        switch (inputType[0].getType()) {
             case FF:
                 throw new UnsupportedOperationException(
                                 "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                                + inputType);
+                                                + inputType[0]);
             case RNN:
             case CNN:
                 //No preprocessor required
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat) inputType[0];
                 return new FeedForwardToCnnPreProcessor(cFlat.getHeight(), cFlat.getWidth(), cFlat.getDepth());
         }
 
@@ -156,8 +168,13 @@ public class GlobalPoolingLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int fwdTrainInferenceWorkingPerEx = 0;
         //Here: we'll assume we are doing 'full array' global pooling.

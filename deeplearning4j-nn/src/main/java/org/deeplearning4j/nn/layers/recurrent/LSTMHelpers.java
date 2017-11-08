@@ -2,11 +2,14 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -65,7 +68,7 @@ public class LSTMHelpers {
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all
      */
-    static public FwdPassReturn activateHelper(final BaseLayer layer, final NeuralNetConfiguration conf,
+    static public FwdPassReturn activateHelper(final BaseLayer layer, final Layer conf,
                     final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
                     final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
@@ -79,8 +82,8 @@ public class LSTMHelpers {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
         //Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
-        if (input == null || input.length() == 0)
-            throw new IllegalArgumentException("Invalid input: not set or 0 length");
+        if (input == null )
+            throw new IllegalArgumentException("Invalid input: not set (null)");
 
         INDArray inputWeights = originalInputWeights;
         INDArray prevOutputActivations = originalPrevOutputActivations;
@@ -178,7 +181,7 @@ public class LSTMHelpers {
         }
 
         if (helper != null) {
-            FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
+            FwdPassReturn ret = helper.activate(layer, gateActivationFn, input, recurrentWeights, inputWeights,
                             biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards,
                             inputWeightKey, maskArray, hasPeepholeConnections);
             if (ret != null) {
@@ -389,7 +392,7 @@ public class LSTMHelpers {
         return toReturn;
     }
 
-    static public Pair<Gradient, INDArray> backpropGradientHelper(final NeuralNetConfiguration conf,
+    public static Gradients backpropGradientHelper(final Layer conf,
                     final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
@@ -460,7 +463,7 @@ public class LSTMHelpers {
         }
 
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
+            Gradients ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
                             inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, forwards,
                             inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews, maskArray,
                             hasPeepholeConnections);
@@ -470,7 +473,7 @@ public class LSTMHelpers {
         }
 
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
+        IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf).getActivationFn();
 
         // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()
@@ -691,7 +694,7 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut);
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
-        return new Pair<>(retGradient, epsilonNext);
+        return GradientsFactory.getInstance().create(epsilonNext, retGradient);
     }
 
 
@@ -729,7 +732,7 @@ public class LSTMHelpers {
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
         int tsLength = itr.getTimeSeriesLength();
 
-        InputType outputType = lstmLayer.getOutputType(-1, inputType);
+        InputType outputType = lstmLayer.getOutputType(-1, inputType)[0];
 
         int numParams = lstmLayer.initializer().numParams(lstmLayer);
         int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);

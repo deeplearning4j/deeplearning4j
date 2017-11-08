@@ -3,6 +3,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -28,12 +29,11 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
     private VocabCache<T> vocabCache;
     private WeightLookupTable<T> lookupTable;
     private VectorsConfiguration configuration;
-
-    private static final Logger logger = LoggerFactory.getLogger(CBOW.class);
 
     protected static double MAX_EXP = 6;
 
@@ -72,7 +72,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
         if (configuration.getNegative() > 0) {
             if (((InMemoryLookupTable<T>) lookupTable).getSyn1Neg() == null) {
-                logger.info("Initializing syn1Neg...");
+                log.info("Initializing syn1Neg...");
                 ((InMemoryLookupTable<T>) lookupTable).setUseHS(configuration.isUseHierarchicSoftmax());
                 ((InMemoryLookupTable<T>) lookupTable).setNegative(configuration.getNegative());
                 ((InMemoryLookupTable<T>) lookupTable).resetWeights(false);

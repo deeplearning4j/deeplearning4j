@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.glove.count.*;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.FilteredSequenceIterator;
@@ -34,6 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AbstractCoOccurrences<T extends SequenceElement> implements Serializable {
 
     protected boolean symmetric;
@@ -59,9 +61,6 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     //private Counter<Integer> occurrenceAllocations = Util.parallelCounter();
     //private List<Pair<T, T>> coOccurrences;
     private AtomicLong processedSequences = new AtomicLong(0);
-
-
-    protected static final Logger logger = LoggerFactory.getLogger(AbstractCoOccurrences.class);
 
     // this method should be private, to avoid non-configured instantiation
     private AbstractCoOccurrences() {}
@@ -122,7 +121,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         }
 
         shadowThread.finish();
-        logger.info("CoOccurrences map was built.");
+        log.info("CoOccurrences map was built.");
     }
 
     /**
@@ -141,7 +140,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                             .setFetchSize(500000).build());
 
         } catch (Exception e) {
-            logger.error("Target file was not found on last stage!");
+            log.error("Target file was not found on last stage!");
             throw new RuntimeException(e);
         }
         return new Iterator<Pair<Pair<T, T>, Double>>() {
@@ -267,7 +266,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             ret.memory_threshold = this.maxmemory;
 
 
-            logger.info("Actual memory limit: [" + this.maxmemory + "]");
+            log.info("Actual memory limit: [" + this.maxmemory + "]");
 
             // use temp file, if no target file was specified
             try {
@@ -306,7 +305,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 Sequence<T> sequence = iterator.nextSequence();
 
                 List<String> tokens = new ArrayList<>(sequence.asLabels());
-                //            logger.info("Tokens size: " + tokens.size());
+                //            log.info("Tokens size: " + tokens.size());
                 for (int x = 0; x < sequence.getElements().size(); x++) {
                     int wordIdx = vocabCache.indexOf(tokens.get(x));
                     if (wordIdx < 0) {
@@ -344,7 +343,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                 lock.readLock().unlock();
                                 */
                                 if (threadId == 0) {
-                                    logger.debug("Memory consuimption > threshold: {footrpint: [" + getMemoryFootprint()
+                                    log.debug("Memory consuimption > threshold: {footrpint: [" + getMemoryFootprint()
                                                     + "], threshold: [" + getMemoryThreshold() + "] }");
                                 }
                                 Thread.sleep(10000);
@@ -356,7 +355,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         }
                         /*
                         if (getMemoryFootprint() == 0) {
-                            logger.info("Zero size!");
+                            log.info("Zero size!");
                         }
                         */
 
@@ -439,7 +438,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                 //lock.readLock().lock();
                                 //int size = coOccurrenceCounts.size();
                                 //lock.readLock().unlock();
-                                //logger.info("Current memory situation: {size: [" +size+ "], footprint: [" + getMemoryFootprint()+"], threshold: ["+ getMemoryThreshold() +"]}");
+                                //log.info("Current memory situation: {size: [" +size+ "], footprint: [" + getMemoryFootprint()+"], threshold: ["+ getMemoryThreshold() +"]}");
                          */
                         Thread.sleep(1000);
                     } catch (Exception e) {
@@ -469,7 +468,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
             isInvoked.set(true);
 
-            logger.debug("Memory purge started.");
+            log.debug("Memory purge started.");
 
             /*
                 Basic plan:
@@ -511,7 +510,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 int linesRead = 0;
 
-                logger.debug("Saving to: [" + counter.get() + "], Reading from: [" + counter.previous() + "]");
+                log.debug("Saving to: [" + counter.get() + "], Reading from: [" + counter.previous() + "]");
                 CoOccurenceReader<T> reader =
                                 new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache, localMap);
                 CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile)
@@ -527,7 +526,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 }
                 reader.finish();
 
-                logger.debug("Lines read: [" + linesRead + "]");
+                log.debug("Lines read: [" + linesRead + "]");
 
                 //now, we can dump the rest of elements, which were not presented in existing dump
                 Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
@@ -542,7 +541,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     writer.writeObject(object);
 
                     numberOfLinesSaved++;
-                    //      if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
+                    //      if (numberOfLinesSaved % 100000 == 0) log.info("Lines saved: [" + numberOfLinesSaved +"]");
                 }
 
                 writer.finish();
@@ -587,12 +586,12 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         numberOfLinesSaved++;
                         linesRead++;
                 
-                   // if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
-                  //  if (linesRead % 100000 == 0) logger.info("Lines read: [" + linesRead +"]");
+                   // if (numberOfLinesSaved % 100000 == 0) log.info("Lines saved: [" + numberOfLinesSaved +"]");
+                  //  if (linesRead % 100000 == 0) log.info("Lines read: [" + linesRead +"]");
                 }
                 */
                 /*
-                logger.info("Lines read: [" + linesRead + "]");
+                log.info("Lines read: [" + linesRead + "]");
                 
                 //now, we can dump the rest of elements, which were not presented in existing dump
                 Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
@@ -604,7 +603,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     pw.println(builder.toString());
                     numberOfLinesSaved++;
                 
-                              //      if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
+                              //      if (numberOfLinesSaved % 100000 == 0) log.info("Lines saved: [" + numberOfLinesSaved +"]");
                 }
                 
                 pw.flush();
@@ -619,7 +618,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 throw new RuntimeException(e);
             }
 
-            logger.info("Number of word pairs saved so far: [" + numberOfLinesSaved + "]");
+            log.info("Number of word pairs saved so far: [" + numberOfLinesSaved + "]");
             isInvoked.set(false);
         }
 

@@ -18,8 +18,14 @@
 
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 
 /**
@@ -31,12 +37,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> {
 
-    public OutputLayer(NeuralNetConfiguration conf) {
+    public OutputLayer(org.deeplearning4j.nn.conf.layers.OutputLayer conf) {
         super(conf);
     }
 
-    public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    @Override
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
+        return labelMask;
     }
+
 
 }

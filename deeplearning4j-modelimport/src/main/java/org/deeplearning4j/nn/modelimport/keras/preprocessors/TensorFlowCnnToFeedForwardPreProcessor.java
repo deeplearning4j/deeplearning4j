@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
@@ -31,22 +34,28 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean train) {
+        if(a.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
+                    + a.size());
+        }
+        INDArray input = a.get(0);
         if (input.rank() == 2)
-            return input; //Should usually never happen
+            return a; //Should usually never happen
         /* DL4J convolutional input:       # channels, # rows, # cols
          * TensorFlow convolutional input: # rows, # cols, # channels
          * Theano convolutional input:     # channels, # rows, # cols
          */
         INDArray permuted = input.permute(0, 2, 3, 1);
-        INDArray flatPermuted = super.preProcess(permuted, miniBatchSize);
-        return flatPermuted;
+        Activations a2 = ActivationsFactory.getInstance().create(permuted, a.getMask(0), a.getMaskState(0));
+        return super.preProcess(a2, miniBatchSize, train);
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        INDArray epsilonsReshaped = super.backprop(epsilons, miniBatchSize);
-        return epsilonsReshaped.permute(0, 3, 1, 2);
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        Gradients gReshaped = super.backprop(g, miniBatchSize);
+        gReshaped.set(0, gReshaped.get(0).permute(0, 3, 1, 2));
+        return gReshaped;
     }
 
     @Override

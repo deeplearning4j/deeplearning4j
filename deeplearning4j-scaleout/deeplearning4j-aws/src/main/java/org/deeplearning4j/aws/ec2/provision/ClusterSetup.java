@@ -19,6 +19,7 @@
 package org.deeplearning4j.aws.ec2.provision;
 
 import com.amazonaws.regions.Regions;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -35,6 +36,7 @@ import java.util.concurrent.Executors;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class ClusterSetup {
 
     @Option(name = "-w", usage = "Number of workers")
@@ -58,8 +60,6 @@ public class ClusterSetup {
     private String region = Regions.US_EAST_1.getName();
 
     private ExecutorService as;
-
-    private static final Logger log = LoggerFactory.getLogger(ClusterSetup.class);
 
 
     public ClusterSetup(String[] args) {

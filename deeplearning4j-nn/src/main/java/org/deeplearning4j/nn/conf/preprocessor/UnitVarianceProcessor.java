@@ -19,6 +19,9 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.*;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,16 +40,22 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     INDArray columnStds;
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        columnStds = input.std(0);
-        columnStds.addi(Nd4j.EPS_THRESHOLD);
-        input.diviRowVector(columnStds);
-        return input;
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
+
+        Activations out = ActivationsFactory.getInstance().create(a.getAsArray(),
+                a.getMaskAsArray(), a.getMaskStateAsArray());
+        for(int i=0; i<a.size(); i++ ) {
+            INDArray input = a.get(i);
+            columnStds = input.std(0);
+            columnStds.addi(Nd4j.EPS_THRESHOLD);
+            input.diviRowVector(columnStds);
+        }
+        return out;
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
-        return output; //no-op
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        return g; //no-op
     }
 
     @Override
@@ -58,7 +67,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         if (inputType == null)
             throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;

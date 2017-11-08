@@ -18,12 +18,13 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Or;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,48 +47,33 @@ public class MergeVertex extends BaseGraphVertex {
     private int[][] forwardPassShapes;
     private int fwdPassRank;
 
-    public MergeVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
-    }
-
-    public MergeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public MergeVertex(String name, int vertexIndex, int numInputs) {
+        super(name, vertexIndex, numInputs);
     }
 
     @Override
     public String toString() {
-        return "MergeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\")";
+        return "MergeVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\")";
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        if (inputs.length == 1) {
+        if (input.size() == 1) {
             //No-op case
-            int[] shape = inputs[0].shape();
+            int[] shape = input.get(0).shape();
             forwardPassShapes = new int[][] {Arrays.copyOf(shape, shape.length)};
-            return inputs[0];
+            return input;
         }
 
-        forwardPassShapes = new int[inputs.length][0];
-        int nExamples = inputs[0].size(0);
+        forwardPassShapes = new int[input.size()][0];
+        int nExamples = input.get(0).size(0);
         int nOut = 0;
-        fwdPassRank = inputs[0].rank();
-        for (int i = 0; i < inputs.length; i++) {
-            int[] currShape = inputs[i].shape();
+        fwdPassRank = input.get(0).rank();
+        for (int i = 0; i < input.size(); i++) {
+            int[] currShape = input.get(i).shape();
             if (fwdPassRank != currShape.length) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different ranks: first activations have rank "
@@ -98,79 +84,27 @@ public class MergeVertex extends BaseGraphVertex {
             if (currShape[0] != nExamples) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different number of examples (activations[0] shape: "
-                                                + Arrays.toString(inputs[0].shape()) + ", activations[" + i
-                                                + "] shape: " + Arrays.toString(inputs[i].shape()));
+                                                + Arrays.toString(input.get(0).shape()) + ", activations[" + i
+                                                + "] shape: " + Arrays.toString(input.get(i).shape()));
             }
 
             nOut += currShape[1]; //Same dimension for all of CNNs, FF, RNNs
         }
 
-        int nOutCumulative = 0;
-        INDArray out;
-        switch (inputs[0].rank()) {
-            case 2:
-                //Standard feedforward inputs...
-                /*
-                out = Nd4j.create(nExamples, nOut);
-                
-                for (INDArray activation : inputs) {
-                    int[] currShape = activation.shape();
-                    out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]))
-                                    .assign(activation);
-                    nOutCumulative += currShape[1];
-                }
-                */
-                out = Nd4j.hstack(inputs);
-                break;
-            case 3:
-                //Time series inputs...
-                /*
-                int tsLength = inputs[0].size(2);
-                out = Nd4j.create(nExamples, nOut, tsLength);
-                
-                for (INDArray activation : inputs) {
-                    int[] currShape = activation.shape();
-                    out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]),
-                                    NDArrayIndex.all()).assign(activation);
-                    nOutCumulative += currShape[1];
-                }
-                */
-                out = Nd4j.hstack(inputs);
+        INDArray out = Nd4j.hstack(input.getAsArray());
 
-                break;
-            case 4:
-                fwdPassRank = 4;
-                /*
-                int[] outShape = Arrays.copyOf(inputs[0].shape(), 4);
-                outShape[1] = nOut;
-                out = Nd4j.create(outShape);
-                
-                //Input activations: [minibatch,depth,width,height]
-                for (INDArray activation : inputs) {
-                    out.get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(nOutCumulative, nOutCumulative + activation.size(1)),
-                                    NDArrayIndex.all(), NDArrayIndex.all()).assign(activation);
-                    nOutCumulative += activation.size(1);
-                }
-                */
-                out = Nd4j.hstack(inputs);
-
-                break;
-            default:
-                throw new UnsupportedOperationException("Cannot merge activations with rank 4 or more");
-        }
-
-        return out;
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(out, masks.getFirst(), masks.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set");
+    public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
+        INDArray epsilon = gradient.get(0);
 
         if (forwardPassShapes.length == 1) {
-            //No op case
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return gradient;
         }
 
         //Split the epsilons in the opposite way that the activations were merged
@@ -210,7 +144,7 @@ public class MergeVertex extends BaseGraphVertex {
                 throw new RuntimeException("Invalid rank during forward pass (not 2, 3, 4)"); //Should never happen
         }
 
-        return new Pair<>(null, out);
+        return GradientsFactory.getInstance().create(null, out);
     }
 
     @Override
@@ -219,8 +153,8 @@ public class MergeVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);

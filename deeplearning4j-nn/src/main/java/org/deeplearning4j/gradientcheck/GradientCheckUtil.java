@@ -1,14 +1,13 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -30,6 +29,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -55,6 +55,8 @@ import java.util.Map;
  */
 @Slf4j
 public class GradientCheckUtil {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
                     Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
@@ -84,10 +86,10 @@ public class GradientCheckUtil {
             afn = o.layerConf().getActivationFn();
         }
 
-        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getSoftmaxClipEps() != 0) {
+        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getClipEps() != 0) {
             log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
-            ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+            ((LossMCXENT) lfn).setClipEps(0.0);
         } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
             log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
@@ -95,6 +97,19 @@ public class GradientCheckUtil {
         }
     }
 
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, null, labels, null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray inputMask,
+                                         INDArray labels, INDArray labelsMask) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, true,
+                af.create(input, inputMask), labels, labelsMask);
+    }
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
@@ -110,7 +125,14 @@ public class GradientCheckUtil {
      * @return true if gradients are passed, false otherwise.
      */
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         Activations input, INDArray labels, INDArray labelsMask) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, true, input, labels, labelsMask);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                 double minAbsoluteError, boolean print, boolean exitOnFirstError, boolean lossFunctionRemoveClipping,
+                                         Activations input, INDArray labels, INDArray labelsMask) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -128,9 +150,9 @@ public class GradientCheckUtil {
 
         //Check network configuration:
         int layerCount = 0;
-        for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
-            if (n.getLayer() instanceof BaseLayer) {
-                BaseLayer bl = (BaseLayer) n.getLayer();
+        for (org.deeplearning4j.nn.conf.layers.Layer n : mln.getLayerWiseConfigurations().getConfs()) {
+            if (n instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) n;
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
@@ -138,7 +160,7 @@ public class GradientCheckUtil {
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
                                         + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + n.getLayer().getLayerName() + "\"");
+                                        + n.getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
@@ -156,28 +178,28 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (n.getLayer().getIDropout() != null) {
+            if (n.getIDropout() != null) {
                 throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
-                                + n.getLayer().getIDropout() + " for layer " + layerCount);
+                                + n.getIDropout() + " for layer " + layerCount);
             }
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : mln.getLayers()){
-            if(l instanceof IOutputLayer){
-                configureLossFnClippingIfPresent((IOutputLayer) l);
+        if(lossFunctionRemoveClipping) {
+            for (Layer l : mln.getLayers()) {
+                if (l instanceof IOutputLayer) {
+                    configureLossFnClippingIfPresent((IOutputLayer) l);
+                }
             }
         }
 
-        mln.setInput(input);
-        mln.setLabels(labels);
-        mln.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
+        Pair<Gradients, Double> gradAndScore = mln.computeGradientAndScore(input, af.create(labels, labelsMask));
+        Gradient g = gradAndScore.getFirst().getParameterGradients();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize());
+        updater.update(mln, g, 0, 0, input.get(0).size(0), false);
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
@@ -193,7 +215,7 @@ public class GradientCheckUtil {
 
         int totalNFailures = 0;
         double maxError = 0.0;
-        DataSet ds = new DataSet(input, labels);
+        DataSet ds = new DataSet(input.get(0), labels, input.getMask(0), labelsMask);
         int currParamNameIdx = 0;
 
         INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
@@ -264,6 +286,13 @@ public class GradientCheckUtil {
     }
 
 
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
+                af.create(inputs, null, null), labels, null);
+    }
+
 
     /**Check backprop gradients for a ComputationGraph
      * @param graph ComputationGraph to test. This must be initialized.
@@ -279,15 +308,15 @@ public class GradientCheckUtil {
      * @return true if gradients are passed, false otherwise.
      */
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                    INDArray[] labels) {
+                    double minAbsoluteError, boolean print, boolean exitOnFirstError, Activations inputs,
+                    INDArray[] labels, INDArray[] labelsMasks) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        if (graph.getNumInputArrays() != inputs.length)
+        if (graph.getNumInputArrays() != inputs.size())
             throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
         if (graph.getNumOutputArrays() != labels.length)
             throw new IllegalArgumentException(
@@ -303,13 +332,10 @@ public class GradientCheckUtil {
         //Check configuration
         int layerCount = 0;
         for (String vertexName : graph.getConfiguration().getVertices().keySet()) {
-            GraphVertex gv = graph.getConfiguration().getVertices().get(vertexName);
-            if (!(gv instanceof LayerVertex))
-                continue;
-            LayerVertex lv = (LayerVertex) gv;
+            org.deeplearning4j.nn.conf.layers.Layer l = graph.getConfiguration().getVertices().get(vertexName);
 
-            if (lv.getLayerConf().getLayer() instanceof BaseLayer) {
-                BaseLayer bl = (BaseLayer) lv.getLayerConf().getLayer();
+            if (l instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) l;
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
@@ -317,7 +343,7 @@ public class GradientCheckUtil {
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
                                         + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                                        + l.getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
@@ -335,9 +361,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (lv.getLayerConf().getLayer().getIDropout() != null) {
+            if (l.getIDropout() != null) {
                 throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
-                        + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
+                        + l.getIDropout() + " for layer " + layerCount);
             }
         }
 
@@ -348,18 +374,18 @@ public class GradientCheckUtil {
             }
         }
 
-        for (int i = 0; i < inputs.length; i++)
-            graph.setInput(i, inputs[i]);
+        graph.setInput(inputs);
         for (int i = 0; i < labels.length; i++)
             graph.setLabel(i, labels[i]);
 
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
+
+        Pair<Gradients, Double> gradAndScore = graph.computeGradientAndScore(inputs, af.create(labels, labelsMasks, null));
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize());
+        Gradient g = gradAndScore.getFirst().getParameterGradients();
+        updater.update(g, 0, 0, inputs.get(0).size(0), false);
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
@@ -375,7 +401,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
-        MultiDataSet mds = new MultiDataSet(inputs, labels);
+        MultiDataSet mds = new MultiDataSet(inputs.getAsArray(), labels, inputs.getMaskAsArray(), labelsMasks);
         INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
         for (int i = 0; i < nParams; i++) {
             //Get param name
@@ -451,8 +477,8 @@ public class GradientCheckUtil {
      *
      * NOTE: gradient checking pretrain layers can be difficult...
      */
-    public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+    public static boolean checkGradientsPretrainLayer(Model layer, double epsilon, double maxRelError,
+                                                      double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -467,15 +493,15 @@ public class GradientCheckUtil {
         }
 
         //Check network configuration:
-        layer.setInput(input);
         Nd4j.getRandom().setSeed(rngSeed);
-        layer.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
+        Activations a = af.create(input);
+        Pair<Gradients, Double> gradAndScore = layer.computeGradientAndScore(a, null);
+        Gradient g = gradAndScore.getFirst().getParameterGradients();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize());
+        updater.update(layer, g, 0, 0, input.size(0), true);
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray gradientToCheck = g.gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
@@ -507,13 +533,13 @@ public class GradientCheckUtil {
 
             //TODO add a 'score' method that doesn't calculate gradients...
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(a, null);
             double scorePlus = layer.score();
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(a, null);
             double scoreMinus = layer.score();
 
             //Reset original param value

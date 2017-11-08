@@ -22,6 +22,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -38,78 +40,67 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 /**
  * A neural network layer.
  */
-@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
-                @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
-                @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
-                @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
-                @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
-                @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
-                @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
-                @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
-                @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
-                @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
-                @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
-                @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
-                @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
-                @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
-                @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
-                @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
-                @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
-                @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
-                @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-                @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
-                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
-                @JsonSubTypes.Type(value = ZeroPadding1DLayer.class, name = "zeroPadding1d"),
-                @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer"),
-                @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
-                @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
     protected IDropout iDropout;
     protected List<LayerConstraint> constraints;
+    protected InputPreProcessor preProcessor;
+    protected CacheMode cacheMode;
 
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.iDropout = builder.iDropout;
+        this.preProcessor = builder.preProcessor;
+    }
+
+    public int minInputs(){
+        return 1;
+    }
+
+    public int maxInputs(){
+        return 1;
     }
 
     /**
      * Initialize the weight constraints. Should be called last, in the outer-most constructor
      */
-    protected void initializeConstraints(Builder<?> builder){
+    protected void initializeConstraints(List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> weightConstraints,
+                                         List<LayerConstraint> biasConstraints){
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
-        if (builder.allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
-            for (LayerConstraint c : builder.allParamConstraints) {
+        if (allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
+            for (LayerConstraint c : allParamConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().paramKeys(this)));
                 allConstraints.add(c2);
             }
         }
 
-        if (builder.weightConstraints != null && initializer().weightKeys(this).size() > 0) {
-            for (LayerConstraint c : builder.weightConstraints) {
+        if (weightConstraints != null && initializer().weightKeys(this).size() > 0) {
+            for (LayerConstraint c : weightConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().weightKeys(this)));
                 allConstraints.add(c2);
             }
         }
 
-        if (builder.biasConstraints != null && initializer().biasKeys(this).size() > 0) {
-            for (LayerConstraint c : builder.biasConstraints) {
+        if (biasConstraints != null && initializer().biasKeys(this).size() > 0) {
+            for (LayerConstraint c : biasConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().biasKeys(this)));
                 allConstraints.add(c2);
@@ -120,7 +111,15 @@ public abstract class Layer implements Serializable, Cloneable {
         } else {
             this.constraints = null;
         }
-        this.iDropout = builder.iDropout;
+    }
+
+    public void applyGlobalConfiguration(GlobalConfiguration c){
+        if(iDropout == null)
+            iDropout = c.getDropOut();
+        if(constraints == null )
+            initializeConstraints(c.getAllParamConstraints(), c.getWeightConstraints(), c.getBiasConstraints());
+        if(cacheMode == null)
+            cacheMode = c.getCacheMode();
     }
 
     /**
@@ -134,6 +133,10 @@ public abstract class Layer implements Serializable, Cloneable {
         this.constraints = null;
     }
 
+    public int numOutputs(){
+        return 1;
+    }
+
     @Override
     public Layer clone() {
         try {
@@ -143,8 +146,8 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+    public abstract org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                    String name, int layerIndex, int numInputs, INDArray layerParamsView,
                     boolean initializeParams);
 
     /**
@@ -153,14 +156,14 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract ParamInitializer initializer();
 
     /**
-     * For a given type of input to this layer, what is the type of the output?
+     * For a given type of input to this layer, what is the type of the output(s)?
      *
      * @param layerIndex Index of the layer
-     * @param inputType Type of input for the layer
+     * @param inputTypes Types of input for the layer
      * @return Type of output from the layer
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract InputType getOutputType(int layerIndex, InputType inputType);
+    public abstract InputType[] getOutputType(int layerIndex, InputType... inputTypes);
 
     /**
      * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
@@ -170,7 +173,7 @@ public abstract class Layer implements Serializable, Cloneable {
      *                  already set or not.
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract void setNIn(InputType inputType, boolean override);
+    public abstract void setNIn(InputType[] inputType, boolean override);
 
 
     /**
@@ -182,7 +185,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @return Null if no preprocessor is required, otherwise the type of preprocessor necessary for this layer/input combination
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
+    public abstract InputPreProcessor getPreProcessorForInputType(InputType... inputTypes);
 
     /**
      * Get the L1 coefficient for the given parameter.
@@ -233,7 +236,51 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param inputType Input type to the layer. Memory consumption is often a function of the input type
      * @return Memory report for the layer
      */
-    public abstract LayerMemoryReport getMemoryReport(InputType inputType);
+    public abstract LayerMemoryReport getMemoryReport(InputType... inputType);
+
+
+    public String toJson(){
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        try {
+            String ret = mapper.writeValueAsString(this);
+            return ret;
+
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Layer fromJson(String json){
+        ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        try {
+            Layer ret = mapper.readValue(json, Layer.class);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toYaml(){
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+
+        try {
+            String ret = mapper.writeValueAsString(this);
+            return ret;
+
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Layer fromYaml(String yaml) {
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+        try {
+            Layer ret = mapper.readValue(yaml, Layer.class);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
@@ -242,6 +289,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
         protected IDropout iDropout;
+        protected InputPreProcessor preProcessor;
 
         /**
          * Layer name assigns layer string name.
@@ -323,6 +371,17 @@ public abstract class Layer implements Serializable, Cloneable {
          */
         public T constrainWeights(LayerConstraint... constraints) {
             this.weightConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
+
+        /**
+         * Set the input preprocessor for this layer. Note that the input preprocessor is applied before performing
+         * forward pass (and, after performing backward pass)
+         *
+         * @param preProcessor Preprocessor to use for this layer
+         */
+        public T preProcessor(InputPreProcessor preProcessor){
+            this.preProcessor = preProcessor;
             return (T) this;
         }
 

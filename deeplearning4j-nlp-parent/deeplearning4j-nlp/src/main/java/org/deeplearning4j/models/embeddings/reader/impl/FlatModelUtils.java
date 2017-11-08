@@ -17,7 +17,6 @@ import java.util.Collection;
  * @author raver119@gmail.com
  */
 public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T> {
-    private static final Logger log = LoggerFactory.getLogger(FlatModelUtils.class);
 
     public FlatModelUtils() {
 

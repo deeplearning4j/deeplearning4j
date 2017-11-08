@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -17,6 +18,7 @@ import java.util.Map;
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasInput extends KerasLayer {
 
     private final int NO_TRUNCATED_BPTT = 0;
@@ -78,7 +80,6 @@ public class KerasInput extends KerasLayer {
         this.inputShape = inputShape;
         this.inboundLayerNames = new ArrayList<String>();
         this.layer = null;
-        this.vertex = null;
         if (this.inputShape.length < 0 || this.inputShape.length > 3)
             throw new UnsupportedKerasConfigurationException(
                             "Inputs with " + this.inputShape.length + " dimensions not supported");
@@ -93,7 +94,7 @@ public class KerasInput extends KerasLayer {
      * @throws UnsupportedKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType)
+    public InputType[] getOutputType(InputType... inputType)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         if (inputType.length > 0)
             log.warn("Keras Input layer does not accept inputs (received " + inputType.length + "). Ignoring.");
@@ -127,7 +128,7 @@ public class KerasInput extends KerasLayer {
                 throw new UnsupportedKerasConfigurationException(
                                 "Inputs with " + this.inputShape.length + " dimensions not supported");
         }
-        return myInputType;
+        return new InputType[]{myInputType};
     }
 
     /**

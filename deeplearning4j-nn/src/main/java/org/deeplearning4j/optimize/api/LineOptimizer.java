@@ -19,6 +19,7 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -37,7 +38,8 @@ public interface LineOptimizer extends Serializable {
      * @return the last step size used
      * @throws InvalidStepException
      */
-    double optimize(INDArray parameters, INDArray gradient, INDArray searchDirection) throws InvalidStepException;
+    double optimize(Activations input, Activations labels, INDArray parameters, INDArray gradient,
+                    INDArray searchDirection) throws InvalidStepException;
 
 
 

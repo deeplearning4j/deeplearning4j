@@ -19,11 +19,16 @@
 package org.deeplearning4j.nn.layers.training;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -42,16 +47,10 @@ import org.nd4j.linalg.primitives.Pair;
  * @author Justin Long (@crockpotveggies)
  */
 public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer> {
+    private static final IActivation IDENTITY = new ActivationIdentity();
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
-
-    public CenterLossOutputLayer(NeuralNetConfiguration conf) {
+    public CenterLossOutputLayer(org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer conf) {
         super(conf);
-    }
-
-    public CenterLossOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
     }
 
     /** Compute score after labels and input have been set.
@@ -62,12 +61,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
+    public double computeScore(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
+        if (layerOutput == null || labels == null || input == null)
+            throw new IllegalStateException("Cannot calculate score without input, output and labels " + layerId());
 
         // center loss has two components
         // the first enforces inter-class dissimilarity, the second intra-class dissimilarity (squared l2 norm of differences)
@@ -75,10 +71,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray centersForExamples = labels.get(0).mmul(centers);
 
-        //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
-        INDArray norm2DifferenceSquared = input.sub(centersForExamples).norm2(1);
+        //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), this.input.getMask(0), false);
+        INDArray norm2DifferenceSquared = input.get(0).sub(centersForExamples).norm2(1);
         norm2DifferenceSquared.muli(norm2DifferenceSquared);
 
         double sum = norm2DifferenceSquared.sumNumber().doubleValue();
@@ -92,8 +88,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
 
         // now calculate the inter-class score component
-        double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(),
-                        maskArray, false);
+        //Note: (preOutput + activation function) == (output + identity), from the perspective of scoring
+        double interClassScore = interClassLoss.computeScore(getLabels2d(), layerOutput.get(0), IDENTITY,
+                        this.input.getMask(0), false);
 
         double score = interClassScore + intraClassScore;
 
@@ -102,6 +99,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         this.score = score;
 
+        clear();
         return score;
     }
 
@@ -112,20 +110,24 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
+        setInput(layerOutput);
+        setLabels(labels);
+
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        INDArray input = this.input.get(0);
         INDArray preOut = preOutput2d(false);
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray centersForExamples = this.labels.mmul(centers);
         INDArray intraClassScoreArray = input.sub(centersForExamples);
 
         // calculate the inter-class score component
         ILossFunction interClassLoss = layerConf().getLossFn();
         INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(),
-                        maskArray);
+                        this.input.getMask(0));
         scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda() / 2));
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
@@ -137,31 +139,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    public void computeGradientAndScore() {
-        if (input == null || labels == null)
-            return;
-
-        INDArray preOut = preOutput2d(true);
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getFirst();
-
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
-    }
-
-    @Override
-    protected void setScoreWithZ(INDArray z) {
-        throw new RuntimeException("Not supported " + layerId());
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = pair.getSecond();
+    public Gradients backpropGradient(Gradients epsilon) {
+        INDArray input = this.input.get(0);
+        Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        INDArray delta = pair.get(0);
 
         // centers
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
@@ -176,20 +157,13 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         weightNoiseParams.clear();
 
-        return new Pair<>(pair.getFirst(), epsilonNext);
-    }
-
-    /**
-     * Gets the gradient from one training iteration
-     * @return the gradient (bias and weight matrix)
-     */
-    @Override
-    public Gradient gradient() {
-        return gradient;
+        Gradients g = GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
+        return backpropPreprocessor(g);
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Gradients getGradientsAndDelta(INDArray preOut) {
+        INDArray input = this.input.get(0);
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {
@@ -198,7 +172,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
                                             + " number of outputs (nOut = " + preOut.size(1) + ") " + layerId());
         }
 
-        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
+        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), this.input.getMask(0));
 
         Gradient gradient = new DefaultGradient();
 
@@ -235,6 +209,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         gradient.gradientForVariable().put(CenterLossParamInitializer.BIAS_KEY, biasGradView);
         gradient.gradientForVariable().put(CenterLossParamInitializer.CENTER_KEY, centersGradView);
 
-        return new Pair<>(gradient, delta);
+        return GradientsFactory.getInstance().create(delta, gradient);
+    }
+
+    @Override
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
+        return labelMask;
     }
 }

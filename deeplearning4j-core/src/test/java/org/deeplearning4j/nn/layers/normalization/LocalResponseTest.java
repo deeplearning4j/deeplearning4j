@@ -3,6 +3,9 @@ package org.deeplearning4j.nn.layers.normalization;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,6 +34,8 @@ import static org.junit.Assert.assertEquals;
  *
  */
 public class LocalResponseTest {
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     private INDArray x = Nd4j.create(new double[] {0.88128096, -0.96666986, -0.61832994, 0.26418415, 0.05694608,
                     0.2950289, 0.99222249, 0.24541704, 0.4219842, 0.96430975, 0.19299535, -0.06658337, -0.27603117,
@@ -89,13 +94,10 @@ public class LocalResponseTest {
 
     @Before
     public void doBefore() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
-                        .build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build();
 
-        layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
-        activationsActual = layer.activate(x);
+        layer = conf.instantiate(null, null, 0, 1, null, false);
+        activationsActual = layer.activate(af.create(x)).get(0);
     }
 
     @Test
@@ -107,29 +109,18 @@ public class LocalResponseTest {
 
     @Test
     public void testBackpropGradient() {
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(epsilon);
+        Gradients containedOutput = layer.backpropGradient(gf.create(epsilon));
 
-        assertEquals(newEpsilonExpected.getDouble(8), containedOutput.getSecond().getDouble(8), 1e-4);
-        assertEquals(newEpsilonExpected.getDouble(20), containedOutput.getSecond().getDouble(20), 1e-4);
-        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
-        assertArrayEquals(newEpsilonExpected.shape(), containedOutput.getSecond().shape());
-    }
-
-    @Test
-    public void testRegularization() {
-        // Confirm a structure with regularization true will not throw an error
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l1(0.2)
-                        .l2(0.1).seed(123)
-                        .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
-                        .build();
+        assertEquals(newEpsilonExpected.getDouble(8), containedOutput.get(0).getDouble(8), 1e-4);
+        assertEquals(newEpsilonExpected.getDouble(20), containedOutput.get(0).getDouble(20), 1e-4);
+        assertEquals(null, containedOutput.getParameterGradients().getGradientFor("W"));
+        assertArrayEquals(newEpsilonExpected.shape(), containedOutput.get(0).shape());
     }
 
     @Test
     public void testMultiCNNLayer() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(123).list()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new LocalResponseNormalization.Builder().build()).layer(2,
@@ -182,12 +173,11 @@ public class LocalResponseTest {
         }
 
         LocalResponseNormalization lrn = new LocalResponseNormalization.Builder().build();
-        NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().layer(lrn).build();
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization layer =
-                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
-                                        null, 0, null, false);
+                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization)
+                                lrn.instantiate(null, null, 0, 1, null, false);
 
-        INDArray outAct = layer.activate(in, true);
+        INDArray outAct = layer.activate(af.create(in), true).get(0);
 
         assertEquals(outExp, outAct);
     }

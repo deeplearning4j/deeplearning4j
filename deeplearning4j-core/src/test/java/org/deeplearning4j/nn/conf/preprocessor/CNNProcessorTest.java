@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -26,17 +28,19 @@ public class CNNProcessorTest {
     private static INDArray in3D = Nd4j.create(20, 784, 7);
     private static INDArray in4D = Nd4j.create(20, 1, 28, 28);
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     @Test
     public void testFeedForwardToCnnPreProcessor() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
 
-        INDArray check2to4 = convProcessor.preProcess(in2D, -1);
+        INDArray check2to4 = convProcessor.preProcess(af.create(in2D), -1, true).get(0);
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
         assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
 
-        INDArray check4to4 = convProcessor.preProcess(in4D, -1);
+        INDArray check4to4 = convProcessor.preProcess(af.create(in4D), -1, true).get(0);
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
         assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
@@ -63,8 +67,8 @@ public class CNNProcessorTest {
                         assertEquals(ffInput_c, ffInput_f);
 
                         //Test forward pass:
-                        INDArray convAct_c = convProcessor.preProcess(ffInput_c, -1);
-                        INDArray convAct_f = convProcessor.preProcess(ffInput_f, -1);
+                        INDArray convAct_c = convProcessor.preProcess(af.create(ffInput_c), -1, true).get(0);
+                        INDArray convAct_f = convProcessor.preProcess(af.create(ffInput_f), -1, true).get(0);
                         int[] convShape = {miniBatch, d, rows, cols};
                         assertArrayEquals(convShape, convAct_c.shape());
                         assertArrayEquals(convShape, convAct_f.shape());
@@ -93,8 +97,8 @@ public class CNNProcessorTest {
                         INDArray epsilon4_f = Nd4j.create(convShape, 'f');
                         epsilon4_c.assign(convAct_c);
                         epsilon4_f.assign(convAct_f);
-                        INDArray epsilon2_c = convProcessor.backprop(epsilon4_c, -1);
-                        INDArray epsilon2_f = convProcessor.backprop(epsilon4_f, -1);
+                        INDArray epsilon2_c = convProcessor.backprop(gf.create(epsilon4_c), -1).get(0);
+                        INDArray epsilon2_f = convProcessor.backprop(gf.create(epsilon4_f), -1).get(0);
                         assertEquals(ffInput_c, epsilon2_c);
                         assertEquals(ffInput_c, epsilon2_f);
                     }
@@ -107,9 +111,9 @@ public class CNNProcessorTest {
     @Test
     public void testFeedForwardToCnnPreProcessorBackprop() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
-        convProcessor.preProcess(in2D, -1);
+        convProcessor.preProcess(af.create(in2D), -1, true);
 
-        INDArray check2to2 = convProcessor.backprop(in2D, -1);
+        INDArray check2to2 = convProcessor.backprop(gf.create(in2D), -1).get(0);
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
@@ -119,12 +123,12 @@ public class CNNProcessorTest {
     public void testCnnToFeedForwardProcessor() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
 
-        INDArray check2to4 = convProcessor.backprop(in2D, -1);
+        INDArray check2to4 = convProcessor.backprop(gf.create(in2D), -1).get(0);
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
         assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
 
-        INDArray check4to4 = convProcessor.backprop(in4D, -1);
+        INDArray check4to4 = convProcessor.backprop(gf.create(in4D), -1).get(0);
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
         assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
@@ -133,14 +137,14 @@ public class CNNProcessorTest {
     @Test
     public void testCnnToFeedForwardPreProcessorBackprop() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
-        convProcessor.preProcess(in4D, -1);
+        convProcessor.preProcess(af.create(in4D), -1, true).get(0);
 
-        INDArray check2to2 = convProcessor.preProcess(in2D, -1);
+        INDArray check2to2 = convProcessor.preProcess(af.create(in2D), -1, true).get(0);
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
 
-        INDArray check4to2 = convProcessor.preProcess(in4D, -1);
+        INDArray check4to2 = convProcessor.preProcess(af.create(in4D), -1, true).get(0);
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
         assertEquals(Nd4j.create(20, 784), check4to2);
@@ -167,8 +171,8 @@ public class CNNProcessorTest {
                         assertEquals(convInput_c, convInput_f);
 
                         //Test forward pass:
-                        INDArray ffAct_c = convProcessor.preProcess(convInput_c, -1);
-                        INDArray ffAct_f = convProcessor.preProcess(convInput_f, -1);
+                        INDArray ffAct_c = convProcessor.preProcess(af.create(convInput_c), -1, true).get(0);
+                        INDArray ffAct_f = convProcessor.preProcess(af.create(convInput_f), -1, true).get(0);
                         int[] ffActShape = {miniBatch, d * rows * cols};
                         assertArrayEquals(ffActShape, ffAct_c.shape());
                         assertArrayEquals(ffActShape, ffAct_f.shape());
@@ -197,31 +201,13 @@ public class CNNProcessorTest {
                         INDArray epsilon2_f = Nd4j.create(ffActShape, 'f');
                         epsilon2_c.assign(ffAct_c);
                         epsilon2_f.assign(ffAct_c);
-                        INDArray epsilon4_c = convProcessor.backprop(epsilon2_c, -1);
-                        INDArray epsilon4_f = convProcessor.backprop(epsilon2_f, -1);
+                        INDArray epsilon4_c = convProcessor.backprop(gf.create(epsilon2_c), -1).get(0);
+                        INDArray epsilon4_f = convProcessor.backprop(gf.create(epsilon2_f), -1).get(0);
                         assertEquals(convInput_c, epsilon4_c);
                         assertEquals(convInput_c, epsilon4_f);
                     }
                 }
             }
         }
-    }
-
-
-    public static MultiLayerNetwork getCNNMnistConfig() {
-
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).iterations(5)
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {9, 9},
-                                        new int[] {1, 1}).nOut(20).weightInit(WeightInit.XAVIER)
-                                                        .activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
-                                        .build())
-                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
-        return new MultiLayerNetwork(conf);
     }
 }

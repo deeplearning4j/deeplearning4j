@@ -21,6 +21,9 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,22 +39,28 @@ public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        INDArray columnMeans = input.mean(0);
-        INDArray columnStds = input.std(0);
-        input.subiRowVector(columnMeans);
-        columnStds.addi(Nd4j.EPS_THRESHOLD);
-        input.diviRowVector(columnStds);
-        return input;
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
+        Activations out = ActivationsFactory.getInstance().create(a.getAsArray(),
+                a.getMaskAsArray(), a.getMaskStateAsArray());
+        for(int i=0; i<a.size(); i++ ) {
+            INDArray input = a.get(i);
+            INDArray columnMeans = input.mean(0);
+            INDArray columnStds = input.std(0);
+            input.subiRowVector(columnMeans);
+            columnStds.addi(Nd4j.EPS_THRESHOLD);
+            input.diviRowVector(columnStds);
+        }
+
+        return out;
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
-        return output; //no-op
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        return g; //no-op
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         if (inputType == null)
             throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;

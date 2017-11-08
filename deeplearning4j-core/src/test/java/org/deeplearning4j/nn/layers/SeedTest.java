@@ -2,6 +2,10 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.junit.Test;
@@ -24,23 +28,22 @@ public class SeedTest {
 
     @Test
     public void testAutoEncoderSeed() {
-        AutoEncoder layerType = new AutoEncoder.Builder().nIn(4).nOut(3).corruptionLevel(0.0)
+        AutoEncoder l = new AutoEncoder.Builder().nIn(4).nOut(3).corruptionLevel(0.0)
                         .activation(Activation.SIGMOID).build();
+        l.applyGlobalConfiguration(new GlobalConfiguration());
 
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().iterations(1).layer(layerType).seed(123).build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = l.initializer().numParams(l);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Model layer = (Model)l.instantiate(null, null, 0, 1, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
-        layer.fit(data.getFeatureMatrix());
+        Activations a = ActivationsFactory.getInstance().create(data.getFeatures());
+        layer.fit(a);
 
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(a, null);
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(a, null);
 
         double score2 = layer.score();
         assertEquals(parameters, layer.params());

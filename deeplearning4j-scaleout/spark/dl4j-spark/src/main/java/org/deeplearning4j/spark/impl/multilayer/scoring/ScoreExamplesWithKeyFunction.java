@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -67,10 +68,9 @@ public class ScoreExamplesWithKeyFunction<K>
  * @author Alex Black
  * @see ScoreExamplesFunction
  */
+@Slf4j
 class ScoreExamplesWithKeyFunctionAdapter<K>
                 implements FlatMapFunctionAdapter<Iterator<Tuple2<K, DataSet>>, Tuple2<K, Double>> {
-
-    protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;

@@ -2,9 +2,11 @@ package org.deeplearning4j.optimize.solver;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -35,6 +37,8 @@ public class BackTrackLineSearchTest {
     private DataSetIterator irisIter;
     private DataSet irisData;
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Before
     public void before() {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
@@ -49,114 +53,16 @@ public class BackTrackLineSearchTest {
         }
     }
 
-
-
-    @Test
-    public void testSingleMinLineSearch() throws Exception {
-        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
-                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
-        layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
-
-        BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
-
-        assertEquals(1.0, step, 1e-3);
-    }
-
-    @Test
-    public void testSingleMaxLineSearch() throws Exception {
-        double score1, score2;
-
-        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
-                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
-        layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
-        score1 = layer.score();
-
-        BackTrackLineSearch lineSearch =
-                        new BackTrackLineSearch(layer, new NegativeDefaultStepFunction(), layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
-
-        assertEquals(1.0, step, 1e-3);
-    }
-
-
-    @Test
-    public void testMultMinLineSearch() throws Exception {
-        double score1, score2;
-
-        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
-                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
-        layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
-        score1 = layer.score();
-        INDArray origGradient = layer.gradient().gradient().dup();
-
-        NegativeDefaultStepFunction sf = new NegativeDefaultStepFunction();
-        BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
-        INDArray currParams = layer.params();
-        sf.step(currParams, origGradient, step);
-        layer.setParams(currParams);
-        layer.computeGradientAndScore();
-
-        score2 = layer.score();
-
-        assertTrue("score1=" + score1 + ", score2=" + score2, score1 > score2);
-
-    }
-
-    @Test
-    public void testMultMaxLineSearch() throws Exception {
-        double score1, score2;
-
-        irisData.normalizeZeroMeanZeroUnitVariance();
-        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
-        int nParams = layer.numParams();
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
-        layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
-        score1 = layer.score();
-        INDArray origGradient = layer.gradient().gradient().dup();
-
-        DefaultStepFunction sf = new DefaultStepFunction();
-        BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params().dup(), layer.gradient().gradient().dup(),
-                        layer.gradient().gradient().dup());
-
-        INDArray currParams = layer.params();
-        sf.step(currParams, origGradient, step);
-        layer.setParams(currParams);
-        layer.computeGradientAndScore();
-        score2 = layer.score();
-
-        assertTrue("score1 = " + score1 + ", score2 = " + score2, score1 < score2);
-    }
-
     private static OutputLayer getIrisLogisticLayerConfig(Activation activationFunction, int maxIterations,
                     LossFunctions.LossFunction lossFunction) {
-        NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345L).iterations(1).miniBatch(true)
-                                        .maxNumLineSearchIterations(maxIterations)
-                                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
-                                                        .nIn(4).nOut(3).activation(activationFunction)
-                                                        .weightInit(WeightInit.XAVIER).build())
-                                        .build();
+        Layer conf = new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+                .nIn(4).nOut(3).activation(activationFunction)
+                .weightInit(WeightInit.XAVIER).build();
+
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return (OutputLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        return (OutputLayer) conf.instantiate(null, null, 0, 1, params, true);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -231,7 +137,7 @@ public class BackTrackLineSearchTest {
     private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, int iterations,
                     OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)
-                        .iterations(iterations).miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
+                        .miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(activationFunction).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

@@ -30,8 +30,6 @@ public class ScoreFlatMapFunction extends BaseFlatMapFunctionAdaptee<Iterator<Da
 
 class ScoreFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, Tuple2<Integer, Double>> {
 
-    private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunction.class);
-
     private String json;
     private Broadcast<INDArray> params;
     private int minibatchSize;

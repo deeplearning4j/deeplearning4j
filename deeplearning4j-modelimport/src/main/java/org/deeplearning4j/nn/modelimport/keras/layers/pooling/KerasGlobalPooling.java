@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -39,6 +40,7 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolin
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasGlobalPooling extends KerasLayer {
 
     private final int[] dimensions;
@@ -75,7 +77,6 @@ public class KerasGlobalPooling extends KerasLayer {
                                 .name(this.layerName)
                                 .dropOut(this.dropout);
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**
@@ -116,7 +117,7 @@ public class KerasGlobalPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");

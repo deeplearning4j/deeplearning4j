@@ -19,12 +19,17 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /** A MergeVertex is used to combine the activations of two or more layers/GraphVertex by means of concatenation/merging.<br>
  * Exactly how this is done depends on the type of input.<br>
@@ -35,7 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *      -> [numExamples,depth1 + depth2,width,height]<br>
  * @author Alex Black
  */
-public class MergeVertex extends GraphVertex {
+public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public MergeVertex clone() {
@@ -53,17 +58,12 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
-
-    @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 2;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return Integer.MAX_VALUE;
     }
 
@@ -73,15 +73,16 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(graph, name, idx);
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(name, idx, numInputs);
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
-            return vertexInputs[0];
+            return vertexInputs;
         InputType first = vertexInputs[0];
         if (first.getType() == InputType.Type.CNNFlat) {
             //TODO
@@ -121,23 +122,25 @@ public class MergeVertex extends GraphVertex {
                 }
             }
 
+            InputType ret;
             if (size > 0) {
                 //Size is specified
                 if (type == InputType.Type.FF) {
-                    return InputType.feedForward(size);
+                    ret = InputType.feedForward(size);
                 } else {
                     int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
-                    return InputType.recurrent(size, tsLength);
+                    ret = InputType.recurrent(size, tsLength);
                 }
             } else {
                 //size is unknown
                 if (type == InputType.Type.FF) {
-                    return InputType.feedForward(-1);
+                    ret = InputType.feedForward(-1);
                 } else {
                     int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
-                    return InputType.recurrent(-1, tsLength);
+                    ret = InputType.recurrent(-1, tsLength);
                 }
             }
+            return new InputType[]{ret};
         } else {
             //CNN inputs... also check that the depth, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
@@ -171,13 +174,13 @@ public class MergeVertex extends GraphVertex {
                 depthSum += od;
             }
 
-            return InputType.convolutional(fh, fw, depthSum);
+            return new InputType[]{InputType.convolutional(fh, fw, depthSum)};
         }
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
-        InputType outputType = getOutputType(-1, inputTypes);
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        InputType outputType = getOutputType(-1, inputTypes)[0];
 
         //TODO multiple input types
         return new LayerMemoryReport.Builder(null, MergeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params

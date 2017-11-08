@@ -22,11 +22,15 @@ package org.deeplearning4j.nn.conf;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -52,10 +56,9 @@ import java.util.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @Slf4j
-public class MultiLayerConfiguration implements Serializable, Cloneable {
+public class MultiLayerConfiguration implements OptimizationConfig, Serializable, Cloneable {
 
-    protected List<NeuralNetConfiguration> confs;
-    protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
+    protected List<Layer> confs;
     protected boolean pretrain = false;
     protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
@@ -81,6 +84,14 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
+
+    //New fields, previously on defaultconfiguration, required for optimization etc:
+    protected long seed;
+    protected boolean miniBatch = true;
+    protected boolean minimize = true;
+    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
+    protected org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction = new org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction();
+    protected int maxNumLineSearchIterations = 5;
 
     /**
      *
@@ -150,8 +161,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         // IN the past, could have only been an OutputLayer or RnnOutputLayer using these enums
         int layerCount = 0;
         JsonNode confs = null;
-        for (NeuralNetConfiguration nnc : conf.getConfs()) {
-            Layer l = nnc.getLayer();
+        for (Layer l : conf.getConfs()) {
             if (l instanceof BaseOutputLayer && ((BaseOutputLayer) l).getLossFn() == null) {
                 //lossFn field null -> may be an old config format, with lossFunction field being for the enum
                 //if so, try walking the JSON graph to extract out the appropriate enum value
@@ -270,7 +280,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return toJson();
     }
 
-    public NeuralNetConfiguration getConf(int i) {
+    public Layer getConf(int i) {
         return confs.get(i);
     }
 
@@ -280,34 +290,28 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
 
             if (clone.confs != null) {
-                List<NeuralNetConfiguration> list = new ArrayList<>();
-                for (NeuralNetConfiguration conf : clone.confs) {
+                List<Layer> list = new ArrayList<>();
+                for (Layer conf : clone.confs) {
                     list.add(conf.clone());
                 }
                 clone.confs = list;
-            }
-
-            if (clone.inputPreProcessors != null) {
-                Map<Integer, InputPreProcessor> map = new HashMap<>();
-                for (Map.Entry<Integer, InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
-                    map.put(entry.getKey(), entry.getValue().clone());
-                }
-                clone.inputPreProcessors = map;
             }
 
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
 
+            clone.seed = seed;
+            clone.miniBatch = miniBatch;
+            clone.minimize = minimize;
+            clone.optimizationAlgo = optimizationAlgo;
+            clone.stepFunction = stepFunction;
+
             return clone;
 
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public InputPreProcessor getInputPreProcess(int curr) {
-        return inputPreProcessors.get(curr);
     }
 
     /**
@@ -322,22 +326,15 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         Map<String, MemoryReport> memoryReportMap = new LinkedHashMap<>();
         int nLayers = confs.size();
         for (int i = 0; i < nLayers; i++) {
-            String layerName = confs.get(i).getLayer().getLayerName();
+            String layerName = confs.get(i).getLayerName();
             if (layerName == null) {
                 layerName = String.valueOf(i);
             }
 
-            //Pass input type through preprocessor, if necessary
-            InputPreProcessor preproc = getInputPreProcess(i);
-            //TODO memory requirements for preprocessor
-            if (preproc != null) {
-                inputType = preproc.getOutputType(inputType);
-            }
-
-            LayerMemoryReport report = confs.get(i).getLayer().getMemoryReport(inputType);
+            LayerMemoryReport report = confs.get(i).getMemoryReport(inputType);
             memoryReportMap.put(layerName, report);
 
-            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+            inputType = confs.get(i).getOutputType(i, inputType)[0];
         }
 
         return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
@@ -346,8 +343,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     @Data
     public static class Builder {
 
-        protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        protected double dampingFactor = 100;
+        protected GlobalConfiguration globalConfiguration;
+        protected List<Layer> confs = new ArrayList<>();
         protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean pretrain = false;
         protected boolean backprop = true;
@@ -360,18 +357,29 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
         protected CacheMode cacheMode = CacheMode.NONE;
 
+        public Builder globalConfiguration(GlobalConfiguration globalConfiguration){
+            this.globalConfiguration = globalConfiguration;
+            return this;
+        }
+
         /**
          * Specify the processors.
          * These are used at each layer for doing things like normalization and
          * shaping of input.
          * @param processor what to use to preProcess the data.
          * @return builder pattern
+         * @deprecated Now: set input preprocessors on layers configurations/builders - {@link Layer.Builder#preProcessor(InputPreProcessor)}
          */
+        @Deprecated
         public Builder inputPreProcessor(Integer layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer, processor);
             return this;
         }
 
+        /**
+         * @deprecated Now: set input preprocessors on layers configurations/builders - {@link Layer.Builder#preProcessor(InputPreProcessor)}
+         */
+        @Deprecated
         public Builder inputPreProcessors(Map<Integer, InputPreProcessor> processors) {
             this.inputPreProcessors = processors;
             return this;
@@ -484,7 +492,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public Builder confs(List<NeuralNetConfiguration> confs) {
+        public Builder confs(List<Layer> confs) {
             this.confs = confs;
             return this;
         }
@@ -501,7 +509,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 // standard feedforward or RNN data
                 //This isn't the most elegant implementation, but should avoid breaking backward compatibility here
                 //Can't infer InputType for CNN layers, however (don't know image dimensions/depth)
-                Layer firstLayer = confs.get(0).getLayer();
+                Layer firstLayer = confs.get(0);
                 if (firstLayer instanceof BaseRecurrentLayer) {
                     BaseRecurrentLayer brl = (BaseRecurrentLayer) firstLayer;
                     int nIn = brl.getNIn();
@@ -519,6 +527,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 }
             }
 
+            //Copy the global configuration to the layers. Has to happen before input type inference
+            if(globalConfiguration != null) {
+                for (Layer l : confs) {
+                    l.applyGlobalConfiguration(globalConfiguration);
+                }
+            }
 
             //Add preprocessors and set nIns, if InputType has been set
             // Builder.inputType field can be set in 1 of 4 ways:
@@ -528,31 +542,30 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             if (inputType != null) {
                 InputType currentInputType = inputType;
                 for (int i = 0; i < confs.size(); i++) {
-                    Layer l = confs.get(i).getLayer();
+                    Layer l = confs.get(i);
                     if (inputPreProcessors.get(i) == null) {
                         //Don't override preprocessor setting, but set preprocessor if required...
                         InputPreProcessor inputPreProcessor = l.getPreProcessorForInputType(currentInputType);
                         if (inputPreProcessor != null) {
-                            inputPreProcessors.put(i, inputPreProcessor);
+                            l.setPreProcessor(inputPreProcessor);
+                            l.setNIn(new InputType[]{currentInputType}, false); //Don't override the nIn setting, if it's manually set by the user
+                        } else {
+                            l.setNIn(new InputType[]{currentInputType}, false); //Don't override the nIn setting, if it's manually set by the user
                         }
+                    } else {
+                        InputPreProcessor inputPreProcessor = inputPreProcessors.get(i);
+                        if (inputPreProcessor != null) {
+                            l.setPreProcessor(inputPreProcessor);   //Set on layer, from legacy map
+                        }
+                        l.setNIn(new InputType[]{currentInputType}, false); //Don't override the nIn setting, if it's manually set by the user
                     }
 
-                    InputPreProcessor inputPreProcessor = inputPreProcessors.get(i);
-                    if (inputPreProcessor != null) {
-                        currentInputType = inputPreProcessor.getOutputType(currentInputType);
-                    }
-                    l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
-
-                    currentInputType = l.getOutputType(i, currentInputType);
+                    currentInputType = l.getOutputType(i, currentInputType)[0];
                 }
-
-            }
-            // Sets pretrain on the layer to track update for that specific layer
-            if (isPretrain()) {
-                for (int j = 0; j < confs.size(); j++) {
-                    Layer l = confs.get(j).getLayer();
-                    if (l instanceof BasePretrainNetwork)
-                        confs.get(j).setPretrain(pretrain);
+            } else if(inputPreProcessors.size() > 0){
+                //Set preprocesors from legacy map config...
+                for(Map.Entry<Integer,InputPreProcessor> e : inputPreProcessors.entrySet()){
+                    confs.get(e.getKey()).setPreProcessor(e.getValue());
                 }
             }
 
@@ -560,7 +573,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.confs = this.confs;
             conf.pretrain = pretrain;
             conf.backprop = backprop;
-            conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;
@@ -568,9 +580,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             conf.cacheMode = cacheMode;
 
-            Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
-            return conf;
+            //And apply global configuration to ComputationGraphConfiguration:
+            GlobalConfiguration gc = globalConfiguration;
+            conf.seed = gc.getSeed();
+            conf.miniBatch = gc.getMiniBatch();
+            conf.minimize = gc.getMinimize();
+            conf.optimizationAlgo = gc.getOptimizationAlgo();
+            conf.stepFunction = gc.getStepFunction();
+            conf.maxNumLineSearchIterations = gc.getMaxNumLineSearchIterations();
 
+            return conf;
         }
 
 

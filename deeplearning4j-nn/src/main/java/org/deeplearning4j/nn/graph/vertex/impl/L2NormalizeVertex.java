@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -46,56 +46,44 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     private int[] dimension;
     private double eps;
 
-    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension, double eps) {
-        this(graph, name, vertexIndex, null, null, dimension, eps);
-    }
-
-    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int[] dimension, double eps) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public L2NormalizeVertex(String name, int vertexIndex, int numInputs, int[] dimension, double eps) {
+        super(name, vertexIndex, numInputs);
         this.dimension = dimension;
         this.eps = eps;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (L2NormalizeVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + getIndex() + ")");
 
         // L2 norm along all dimensions except 0, unless user-specified
         // x / |x|2
-        INDArray x = inputs[0];
+        INDArray x = input.get(0);
         int[] dimensions = getDimensions(x);
 
         INDArray xNorm2 = x.norm2(dimensions);
         Transforms.max(xNorm2, eps, false);
 
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
         if (x.rank() == 2) {
-            return x.divColumnVector(xNorm2);
+            return ActivationsFactory.getInstance().create(x.divColumnVector(xNorm2));
         } else {
             INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
-            return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0));
+            return ActivationsFactory.getInstance().create(
+                    Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0)),
+                            masks.getFirst(), masks.getSecond());
         }
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set (L2NormalizeVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+    public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null) " + layerId());
+        INDArray epsilon = gradient.get(0);
 
-        INDArray x = inputs[0];
+        INDArray x = input.get(0);
         int[] dimensions = getDimensions(x);
 
         INDArray norm = x.norm2(dimensions);
@@ -124,7 +112,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             dLdx.subi(xDivNorm3);
         }
 
-        return new Pair<>(null, new INDArray[] {dLdx});
+        return GradientsFactory.getInstance().create(dLdx, null);
     }
 
     private int[] getDimensions(INDArray x) {
@@ -149,8 +137,8 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {
@@ -162,7 +150,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "L2NormalizeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ",dim=\""
+        return "L2NormalizeVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ",dim=\""
                         + dimension + "\")";
     }
 }

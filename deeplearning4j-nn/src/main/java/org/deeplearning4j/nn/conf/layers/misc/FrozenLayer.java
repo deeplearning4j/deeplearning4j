@@ -4,6 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -15,13 +16,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 /**
  * Created by Alex on 10/07/2017.
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class FrozenLayer extends Layer {
 
     @Getter
@@ -43,6 +45,11 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
+    public void applyGlobalConfiguration(GlobalConfiguration c){
+        layer.applyGlobalConfiguration(c);
+    }
+
+    @Override
     public Layer clone() {
         FrozenLayer l = (FrozenLayer) super.clone();
         l.layer = layer.clone();
@@ -50,29 +57,13 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
 
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
-        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), iterationListeners,
-                        layerIndex, layerParamsView, initializeParams);
-
-        NeuralNetConfiguration nncUnderlying = underlying.conf();
-        if (nncUnderlying.variables() != null) {
-            List<String> vars = nncUnderlying.variables(true);
-            nncUnderlying.clearVariables();
-            conf.clearVariables();
-            for (String s : vars) {
-                conf.variables(false).add(s);
-                conf.getL1ByParam().put(s, 0.0);
-                conf.getL2ByParam().put(s, 0.0);
-
-                nncUnderlying.variables(false).add(s);
-                nncUnderlying.getL1ByParam().put(s, 0.0);
-                nncUnderlying.getL2ByParam().put(s, 0.0);
-            }
-        }
+        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(iterationListeners,
+                        name, layerIndex, numInputs, layerParamsView, initializeParams);
 
         return new org.deeplearning4j.nn.layers.FrozenLayer(underlying);
     }
@@ -83,17 +74,17 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         return layer.getOutputType(layerIndex, inputType);
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         layer.setNIn(inputType, override);
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         return layer.getPreProcessorForInputType(inputType);
     }
 
@@ -118,7 +109,11 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         return layer.getMemoryReport(inputType);
     }
 
@@ -132,6 +127,16 @@ public class FrozenLayer extends Layer {
     public void setConstraints(List<LayerConstraint> constraints){
         this.constraints = constraints;
         this.layer.setConstraints(constraints);
+    }
+
+    @Override
+    public void setPreProcessor(InputPreProcessor preProcessor){
+        layer.setPreProcessor(preProcessor);
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessor(){
+        return layer.getPreProcessor();
     }
 
     public static class Builder extends Layer.Builder<Builder> {

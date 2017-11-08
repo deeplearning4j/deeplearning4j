@@ -19,13 +19,16 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Collection;
 
 /**
  * A ScaleVertex is used to scale the size of activations of a single layer<br>
@@ -35,7 +38,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Justin Long (@crockpotveggies)
  */
 @Data
-public class ScaleVertex extends GraphVertex {
+@EqualsAndHashCode(callSuper = false)
+public class ScaleVertex extends BaseGraphVertex {
 
     public ScaleVertex(@JsonProperty("scaleFactor") double scaleFactor) {
         this.scaleFactor = scaleFactor;
@@ -48,53 +52,42 @@ public class ScaleVertex extends GraphVertex {
         return new ScaleVertex(scaleFactor);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof ScaleVertex))
-            return false;
-        return ((ScaleVertex) o).scaleFactor == scaleFactor;
-    }
 
     @Override
-    public int hashCode() {
-        return 123073088;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
-
-    @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(graph, name, idx, scaleFactor);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(name, layerIndex, numInputs, scaleFactor);
     }
 
+
+
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
-            return vertexInputs[0];
+            return vertexInputs;
         InputType first = vertexInputs[0];
 
-        return first; //Same output shape/size as
+        return new InputType[]{first}; //Same output shape/size as
     }
 
+
+
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Do one dup on the forward pass (output activations). Accounted for in output activations.
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ScaleVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -52,7 +51,7 @@ public class TestPlayUI {
         //        uiServer.attach(ss);
         //
         //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-        //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+        //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         //                .list()
         //                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
         //                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
@@ -86,7 +85,7 @@ public class TestPlayUI {
         uiServer.attach(ss);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-5))
                         .list().layer(0,
                                         new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(10, 11)
@@ -118,38 +117,6 @@ public class TestPlayUI {
         Thread.sleep(100000);
     }
 
-    @Test
-    @Ignore
-    public void testUI_RBM() throws Exception {
-        //RBM - for unsupervised layerwise pretraining
-
-        StatsStorage ss = new InMemoryStatsStorage();
-
-        UIServer uiServer = UIServer.getInstance();
-        uiServer.attach(ss);
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(new Sgd(0.1)).list().layer(0, new RBM.Builder().nIn(4).nOut(3).build())
-                        .layer(1, new RBM.Builder().nIn(3).nOut(3).build())
-                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true).backprop(true)
-                        .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
-
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-        for (int i = 0; i < 50; i++) {
-            net.fit(iter);
-            Thread.sleep(100);
-        }
-
-
-        Thread.sleep(100000);
-    }
-
 
     @Test
     @Ignore
@@ -163,7 +130,7 @@ public class TestPlayUI {
             uiServer.attach(ss);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
                             .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())

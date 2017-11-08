@@ -1,14 +1,13 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+
+import java.util.Arrays;
 
 /**
  * Created by jeffreytang on 7/21/15.
@@ -29,43 +28,50 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+    public InputType[] getOutputType(int layerIndex, @NonNull InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType.length != 1 || (inputType[0].getType() != InputType.Type.FF
+                        && inputType[0].getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type (layer index = " + layerIndex + ", layer name=\""
-                            + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
+                            + getLayerName() + "\"): expected FeedForward input type. Got: " + Arrays.toString(inputType));
         }
 
-        return InputType.feedForward(nOut);
+        return new InputType[]{InputType.feedForward(nOut)};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || (inputType[0].getType() != InputType.Type.FF
+                        && inputType[0].getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName()
-                            + "\"): expected FeedForward input type. Got: " + inputType);
+                            + "\"): expected FeedForward input type. Got: "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            if (inputType.getType() == InputType.Type.FF) {
-                InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+            if (inputType[0].getType() == InputType.Type.FF) {
+                InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType[0];
                 this.nIn = f.getSize();
             } else {
-                InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
+                InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType[0];
                 this.nIn = f.getFlattenedSize();
             }
         }
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException(
-                            "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        switch (inputType.getType()) {
+        switch (inputType[0].getType()) {
             case FF:
             case CNNFlat:
                 //FF -> FF and CNN (flattened format) -> FF: no preprocessor necessary
@@ -75,7 +81,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 return new RnnToFeedForwardPreProcessor();
             case CNN:
                 //CNN -> FF
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType[0];
                 return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getDepth());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);

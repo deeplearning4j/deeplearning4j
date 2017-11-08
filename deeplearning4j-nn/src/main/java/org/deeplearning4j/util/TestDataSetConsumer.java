@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;
@@ -13,11 +14,11 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class TestDataSetConsumer {
     private DataSetIterator iterator;
     private long delay;
     private AtomicLong count = new AtomicLong(0);
-    protected static final Logger logger = LoggerFactory.getLogger(TestDataSetConsumer.class);
 
     public TestDataSetConsumer(long delay) {
         this.delay = delay;
@@ -69,7 +70,7 @@ public class TestDataSetConsumer {
         count.incrementAndGet();
 
         if (count.get() % 100 == 0)
-            logger.info("Passed {} datasets...", count.get());
+            log.info("Passed {} datasets...", count.get());
 
         return count.get();
     }

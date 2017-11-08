@@ -16,6 +16,7 @@
  */
 package com.atilika.kuromoji.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +25,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+@Slf4j
 public class FileResourceResolver implements ResourceResolver {
-    protected static final Logger log = LoggerFactory.getLogger(FileResourceResolver.class);
 
     static {
         if (KuromojiBinFilesFetcher.kuromojiExist() == false) {

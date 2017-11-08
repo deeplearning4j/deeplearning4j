@@ -1,8 +1,11 @@
 package org.deeplearning4j.nn.layers.variational;
 
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -20,6 +23,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +37,8 @@ import static org.junit.Assert.*;
  */
 public class TestVAE {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testInitialization() {
 
@@ -43,9 +49,9 @@ public class TestVAE {
                                                         .build())
                                         .build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         int allParams = vae.initializer().numParams(c);
 
@@ -79,9 +85,9 @@ public class TestVAE {
                                             .nOut(5).encoderLayerSizes(encLayerSizes[i]).decoderLayerSizes(13).build())
                             .build();
 
-            NeuralNetConfiguration c = mlc.getConf(0);
+            Layer c = mlc.getConf(0);
             org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                            (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                            (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
             MultiLayerNetwork net = new MultiLayerNetwork(mlc);
             net.init();
@@ -105,9 +111,9 @@ public class TestVAE {
                                         .nIn(inputSize).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
                         .pretrain(true).backprop(false).build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         int allParams = vae.initializer().numParams(c);
 
@@ -131,7 +137,7 @@ public class TestVAE {
         INDArray data = Nd4j.rand(1, inputSize);
 
 
-        net.fit(data);
+        net.pretrainLayer(0, data);
     }
 
 
@@ -143,9 +149,9 @@ public class TestVAE {
                                         .nIn(10).nOut(5).encoderLayerSizes(12, 13).decoderLayerSizes(14, 15).build())
                         .build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
@@ -158,9 +164,8 @@ public class TestVAE {
         Map<String, INDArray> layerParams = layer.paramTable();
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
-        layer.setInput(Nd4j.rand(3, 10));
-        layer.computeGradientAndScore();;
-        Gradient g = layer.gradient();
+        Pair<Gradients,Double> pair = layer.computeGradientAndScore(af.create(Nd4j.rand(3, 10)), null);
+        Gradient g = pair.getFirst().getParameterGradients();
         Map<String, INDArray> grads = g.gradientForVariable();
 
         assertEquals(layerParams.size(), layerGradViews.size());
@@ -203,9 +208,9 @@ public class TestVAE {
                                         .activation(new ActivationTanH()).build())
                         .pretrain(true).backprop(true).build();
 
-        NeuralNetConfiguration c = mlc.getConf(0);
+        Layer c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
-                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c;
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
@@ -216,7 +221,7 @@ public class TestVAE {
                         (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
 
         INDArray input = Nd4j.rand(3, 10);
-        net.pretrain(input);
+        net.pretrainLayer(0, input);
 
         //Get a snapshot of the pretrain params after fitting:
         Map<String, INDArray> layerParams = layer.paramTable();
@@ -348,7 +353,7 @@ public class TestVAE {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
                 mln.initGradientsView();
-                mln.fit(data);
+                mln.pretrainLayer(0, data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer =
                                 (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);
@@ -366,8 +371,8 @@ public class TestVAE {
                 for (int j = 0; j < minibatch; j++) {
                     double p = reconstructionProb.getDouble(j);
                     double logp = reconstructionLogProb.getDouble(j);
-                    assertTrue(p >= 0.0 && p <= 1.0);
-                    assertTrue(logp <= 0.0);
+                    assertTrue(String.valueOf(p), p >= 0.0 && p <= 1.0);
+                    assertTrue(String.valueOf(logp), logp <= 0.0);
 
                     double pFromLogP = Math.exp(logp);
                     assertEquals(p, pFromLogP, 1e-6);
@@ -414,7 +419,7 @@ public class TestVAE {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
                 mln.initGradientsView();
-                mln.fit(data);
+                mln.pretrainLayer(0, data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer =
                                 (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);

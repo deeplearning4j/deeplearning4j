@@ -3,8 +3,11 @@ package org.deeplearning4j.nn.layers.objdetect;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -20,8 +23,6 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -29,12 +30,9 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossL2;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
@@ -71,26 +69,27 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer> implements Serializable, IOutputLayer {
     private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
 
-    //current input and label matrices
-    @Setter @Getter
+    @Getter
     protected INDArray labels;
 
     private double fullNetworkL1;
     private double fullNetworkL2;
     private double score;
 
-    public Yolo2OutputLayer(NeuralNetConfiguration conf) {
+    public Yolo2OutputLayer(org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer conf) {
         super(conf);
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         INDArray epsOut = computeBackpropGradientAndScore();
 
-        return new Pair<>(EMPTY_GRADIENT, epsOut);
+        Gradients g = GradientsFactory.getInstance().create(epsOut, EMPTY_GRADIENT);
+        return backpropPreprocessor(g);
     }
 
     private INDArray computeBackpropGradientAndScore(){
+        INDArray input = this.input.get(0);
 
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
@@ -325,8 +324,152 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return epsOut;
     }
 
+    @AllArgsConstructor
+    @Data
+    private static class LabelsCalcs {
+        private INDArray maskObjectPresent;
+        private INDArray classLabels;
+        private INDArray labelTLXY;
+        private INDArray labelBRXY;
+        private INDArray labelsCenterXYInGridBox;
+        private INDArray labelWHSqrt;
+    }
+
+    private LabelsCalcs labelCalcs(INDArray labels){
+        int mb = labels.size(0);
+        int h = labels.size(2);
+        int w = labels.size(3);
+
+        int size1 = labels.size(1);
+        INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());
+
+        //Labels shape: [mb, 4B+C, H, W]
+        //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
+        // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
+        // all 0s if no class label is present
+        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(new int[]{mb, h, w}, 'c'), 1); //Shape: [minibatch, H, W]
+
+
+        // ----- Labels format conversion -----
+        //First: Convert labels/ground truth (x1,y1,x2,y2) from "coordinates (grid box units)" format to "center position in grid box" format
+        //0.5 * ([x1,y1]+[x2,y2])   ->      shape: [mb, 2, H, W]
+        INDArray labelTLXY = labels.get(all(),interval(0,2), all(), all());
+        INDArray labelBRXY = labels.get(all(),interval(2,4), all(), all());
+
+        INDArray labelCenterXY = labelTLXY.add(labelBRXY).muli(0.5);  //In terms of grid units
+        INDArray labelsCenterXYInGridBox = labelCenterXY.dup(labelCenterXY.ordering());
+        labelsCenterXYInGridBox.subi(Transforms.floor(labelsCenterXYInGridBox,true));
+
+        //Also infer size/scale (label w/h) from (x1,y1,x2,y2) format to (w,h) format, then sqrt
+        INDArray labelWHSqrt = Transforms.sqrt(labelBRXY.sub(labelTLXY), true);
+
+        return new LabelsCalcs(maskObjectPresent, classLabels, labelTLXY, labelBRXY, labelsCenterXYInGridBox, labelWHSqrt);
+    }
+
+    private double computeScoreFromNetworkOutput(INDArray output, INDArray labels, double fullNetworkL1, double fullNetworkL2){
+
+        double lambdaCoord = layerConf().getLambdaCoord();
+        double lambdaNoObj = layerConf().getLambdaNoObj();
+
+        int mb = output.size(0);
+        int h = output.size(2);
+        int w = output.size(3);
+        int b = layerConf().getBoundingBoxes().size(0);
+        int c = labels.size(1)-4;
+
+        LabelsCalcs ls = labelCalcs(labels);
+
+        // ----- Get subsets of network output activations -----
+        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, 5B, H, W] to [minibatch, B, 5, H, W]
+        INDArray output5 = output.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+        INDArray outputSoftmax = output.get(all(), interval(5*b, 5*b+c), all(), all());
+
+        INDArray predictedXYCenterGrid = output5.get(all(), all(), interval(0,2), all(), all());
+
+        //Exponential for w/h (for: boxPrior * exp(input))      ->      Predicted WH in grid units (0 to 13 usually)
+        INDArray predictedWH = output5.get(all(), all(), interval(2,4), all(), all());
+        INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
+
+
+
+        // ----- Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
+        //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and predicted values
+        IOURet iouRet = calculateIOULabelPredicted(ls.labelTLXY, ls.labelBRXY, predictedWH, predictedXYCenterGrid, ls.maskObjectPresent);  //IOU shape: [minibatch, B, H, W]
+        INDArray iou = iouRet.getIou();
+
+        //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
+        //In this mask: 1 if (a) object is present in cell [for each mb/H/W], AND (b) it is the box with the highest
+        // IOU of any in the grid cell
+        //We also need 1_ij^noobj, which is (a) no object, or (b) object present in grid cell, but this box doesn't
+        // have the highest IOU
+        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup('c'), 1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, ls.maskObjectPresent, mask1_ij_obj, 0,2,3));
+
+
+
+        // ----- Step 4: Calculate confidence, and confidence label -----
+        //Predicted confidence: sigmoid (0 to 1)
+        //Label confidence: 0 if no object, IOU(predicted,actual) if an object is present
+        INDArray labelConfidence = iou.mul(mask1_ij_obj);  //Need to reuse IOU array later. IOU Shape: [mb, B, H, W]
+        INDArray predictedConfidence = output5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
+
+
+        // ----- Step 5: Loss Function -----
+        //One design goal here is to make the loss function configurable. To do this, we want to reshape the activations
+        //(and masks) to a 2d representation, suitable for use in DL4J's loss functions
+
+        INDArray mask1_ij_obj_2d = mask1_ij_obj.reshape(mb*b*h*w, 1);  //Must be C order before reshaping
+        INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
+        INDArray mask2d = ls.maskObjectPresent.reshape('c', new int[]{mb*h*w, 1});
+
+        INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
+                .dup('c').reshape('c', mb*b*h*w, 2);
+        //Don't use INDArray.broadcast(int...) until ND4J issue is fixed: https://github.com/deeplearning4j/nd4j/issues/2066
+        //INDArray labelsCenterXYInGridBroadcast = labelsCenterXYInGrid.broadcast(mb, b, 2, h, w);
+        //Broadcast labelsCenterXYInGrid from [mb, 2, h, w} to [mb, b, 2, h, w]
+        INDArray labelsCenterXYInGridBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        for(int i=0; i<b; i++ ){
+            labelsCenterXYInGridBroadcast.get(all(), point(i), all(), all(), all()).assign(ls.labelsCenterXYInGridBox);
+        }
+        INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', mb*b*h*w, 2);    //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
+
+
+        INDArray predictedWHSqrt2d = predictedWHSqrt.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c'); //from [mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
+        INDArray labelWHSqrtBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        for(int i=0; i<b; i++ ){
+            labelWHSqrtBroadcast.get(all(), point(i), all(), all(), all()).assign(ls.labelWHSqrt); //[mb, 2, h, w] to [mb, b, 2, h, w]
+        }
+        INDArray labelWHSqrt2d = labelWHSqrtBroadcast.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c');   //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
+
+
+        INDArray labelConfidence2d = labelConfidence.dup('c').reshape('c', mb * b * h * w, 1);
+        INDArray predictedConfidence2d = predictedConfidence.dup('c').reshape('c', mb * b * h * w, 1).dup('c');
+
+
+        INDArray classPredictions2d = outputSoftmax.permute(0,2,3,1) //[minibatch, c, h, w] To [mb, h, w, c]
+                .dup('c').reshape('c', new int[]{mb*h*w, c});
+        INDArray classLabels2d = ls.classLabels.permute(0,2,3,1).dup('c').reshape('c', new int[]{mb*h*w, c});
+
+        ILossFunction lossConfidence = new LossL2();
+        IActivation identity = new ActivationIdentity();
+        double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
+        double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
+        double confidenceLoss = lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
+                + lambdaNoObj * lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);
+        double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictions2d, identity, mask2d, false);
+
+        double score = lambdaCoord * (positionLoss + sizeScaleLoss) +
+                confidenceLoss  +
+                classPredictionLoss +
+                fullNetworkL1 +
+                fullNetworkL2;
+
+        return score / labels.size(0);
+    }
+
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
+        INDArray input = this.input.get(0);
         //Essentially: just apply activation functions...
 
         int mb = input.size(0);
@@ -367,7 +510,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray outputClasses = output5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
         outputClasses.assign(postSoftmax5d);
 
-        return output;
+        return ActivationsFactory.getInstance().create(output);
     }
 
     @Override
@@ -376,13 +519,37 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(Activations networkOutput, Activations labels, double fullNetworkL1, double fullNetworkL2, boolean training) {
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
 
-        //TODO optimize?
-        computeBackpropGradientAndScore();
-        return score();
+        score = computeScoreFromNetworkOutput(networkOutput.get(0), labels.get(0), fullNetworkL1, fullNetworkL2);
+        return score;
+    }
+
+    @Override
+    public void setLabels(INDArray labels, INDArray labelMask) {
+        if(labelMask != null){
+            throw new IllegalStateException("Label masks are not yet supported by Yolo2OutputLayer");
+        }
+        this.labels = labels;
+    }
+
+    @Override
+    public void setLabels(Activations labels){
+        if(labels == null){
+            setLabels(null, null);
+        } else {
+            if(labels.size() != 1){
+                throw new IllegalArgumentException("Cannot set labels: must be of size (# arrays) 1. Got labels size: " + labels.size());
+            }
+            setLabels(labels.get(0), labels.getMask(0));
+        }
+    }
+
+    @Override
+    public INDArray getLabelMask() {
+        return null;
     }
 
     @Override
@@ -531,75 +698,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public void computeGradientAndScore(){
-
-        //TODO
+    public INDArray computeScoreForExamples(Activations layerInput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return input;
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double f1Score(DataSet data) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public double f1Score(INDArray examples, INDArray labels) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public int numLabels() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(DataSetIterator iter) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public int[] predict(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public List<String> predict(DataSet dataSet) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(INDArray examples, INDArray labels) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(DataSet data) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(INDArray examples, int[] labels) {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

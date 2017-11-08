@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -34,63 +34,40 @@ import org.nd4j.linalg.primitives.Pair;
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
  * This can be used for example in sequence to sequence architectures, and potentially for sequence classification.
  * <b>NOTE</b>: Because RNNs may have masking arrays (to allow for examples/time series of different lengths in the same
- * minibatch), it is necessary to provide the same of the network input that has the corresponding mask array. If this
- * input does not have a mask array, the last time step of the input will be used for all examples; otherwise, the time
- * step of the last non-zero entry in the mask array (for each example separately) will be used.
+ * minibatch), the last time step will take this into account. If the input to this layer does not have a mask array,
+ * the last time step of the input will be used for all examples; otherwise, the time step of the last non-zero entry
+ * in the mask array (for each example separately) will be used.
+ *
  * @author Alex Black
  */
 public class LastTimeStepVertex extends BaseGraphVertex {
 
-    private String inputName;
-    private int inputIdx;
     /** Shape of the forward pass activations */
     private int[] fwdPassShape;
     /** Indexes of the time steps that were extracted, for each example */
     private int[] fwdPassTimeSteps;
 
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, String inputName) {
-        this(graph, name, vertexIndex, null, null, inputName);
-    }
-
-
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
-        this.inputName = inputName;
-        this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if (inputIdx == -1)
-            throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-                            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
+    public LastTimeStepVertex(String name, int vertexIndex, int numInputs) {
+        super(name, vertexIndex, numInputs);
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
+    public Activations activate(boolean training) {
         //First: get the mask arrays for the given input, if any
-        INDArray[] inputMaskArrays = graph.getInputMaskArrays();
-        INDArray mask = (inputMaskArrays != null ? inputMaskArrays[inputIdx] : null);
+        INDArray mask = input.getMask(0);
 
         //Then: work out, from the mask array, which time step of activations we want, extract activations
         //Also: record where they came from (so we can do errors later)
-        fwdPassShape = inputs[0].shape();
+        fwdPassShape = input.get(0).shape();
 
         INDArray out;
         if (mask == null) {
             //No mask array -> extract same (last) column for all
-            int lastTS = inputs[0].size(2) - 1;
-            out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
+            int lastTS = input.get(0).size(2) - 1;
+            out = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1)};
+            int[] outShape = new int[] {input.get(0).size(0), input.get(0).size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array.
@@ -106,17 +83,17 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
             //Now, get and assign the corresponding subsets of 3d activations:
             for (int i = 0; i < fwdPassTimeSteps.length; i++) {
-                out.putRow(i, inputs[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                out.putRow(i, input.get(0).get(NDArrayIndex.point(i), NDArrayIndex.all(),
                                 NDArrayIndex.point(fwdPassTimeSteps[i])));
             }
         }
 
-        return out;
+        return ActivationsFactory.getInstance().create(out);
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.get(0);
         //Allocate the appropriate sized array:
         INDArray epsilonsOut = Nd4j.create(fwdPassShape);
 
@@ -131,7 +108,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
                                 NDArrayIndex.point(fwdPassTimeSteps[i])}, epsilon.getRow(i));
             }
         }
-        return new Pair<>(null, new INDArray[] {epsilonsOut});
+        return GradientsFactory.getInstance().create(epsilonsOut, null);
     }
 
     @Override
@@ -140,8 +117,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //Input: 2d mask array, for masking a time series. After extracting out the last time step, we no longer need the mask array
 
@@ -150,6 +126,6 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "LastTimeStepVertex(inputName=" + inputName + ")";
+        return "LastTimeStepVertex()";
     }
 }

@@ -55,7 +55,6 @@ public class Word2VecDataFetcher implements DataSetFetcher {
     private List<String> labels = new ArrayList<>();
     private int batch;
     private List<Window> cache = new ArrayList<>();
-    private static final Logger log = LoggerFactory.getLogger(Word2VecDataFetcher.class);
     private int totalExamples;
     private String path;
 

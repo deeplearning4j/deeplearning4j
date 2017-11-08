@@ -19,6 +19,7 @@
 package org.deeplearning4j.datasets.mnist.draw;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -51,7 +52,8 @@ public class LoadAndDraw {
         DataSet test = null;
         while (iter.hasNext()) {
             test = iter.next();
-            INDArray reconstructed = network.activate(test.getFeatureMatrix());
+            INDArray reconstructed = network.activate(
+                    ActivationsFactory.getInstance().create(test.getFeatures()), false).get(0);
             for (int i = 0; i < test.numExamples(); i++) {
                 INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
                 INDArray reconstructed2 = reconstructed.getRow(i);

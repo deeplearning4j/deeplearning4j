@@ -5,12 +5,10 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -488,22 +486,22 @@ public class ModelSerializer {
                 task.setNetworkType(Task.NetworkType.ComputationalGraph);
                 ComputationGraph network = (ComputationGraph) model;
                 try {
-                    if (network.getLayers() != null && network.getLayers().length > 0) {
-                        for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
-                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
-                                break;
-                            } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
-                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-                                break;
-                            }
-                        }
+                    if (false){ //network.getLayers() != null && network.getLayers().length > 0) {
+//                        for (Layer layer : network.getLayers()) {
+//                            if (layer instanceof RBM
+//                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+//                                task.setArchitectureType(Task.ArchitectureType.RBM);
+//                                break;
+//                            }
+//                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
+//                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
+//                                break;
+//                            } else if (layer.type().equals(Layer.Type.RECURRENT)
+//                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
+//                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+//                                break;
+//                            }
+//                        }
                     } else
                         task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
                 } catch (Exception e) {
@@ -513,22 +511,22 @@ public class ModelSerializer {
                 task.setNetworkType(Task.NetworkType.MultilayerNetwork);
                 MultiLayerNetwork network = (MultiLayerNetwork) model;
                 try {
-                    if (network.getLayers() != null && network.getLayers().length > 0) {
-                        for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
-                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
-                                break;
-                            } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
-                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-                                break;
-                            }
-                        }
+                    if (false) {//network.getLayers() != null && network.getLayers().length > 0) {
+//                        for (Layer layer : network.getLayers()) {
+//                            if (layer instanceof RBM
+//                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+//                                task.setArchitectureType(Task.ArchitectureType.RBM);
+//                                break;
+//                            }
+//                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
+//                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
+//                                break;
+//                            } else if (layer.type().equals(Layer.Type.RECURRENT)
+//                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
+//                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+//                                break;
+//                            }
+//                        }
                     } else
                         task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
                 } catch (Exception e) {

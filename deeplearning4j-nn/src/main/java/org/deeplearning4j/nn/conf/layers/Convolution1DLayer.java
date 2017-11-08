@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -36,59 +37,63 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     private Convolution1DLayer(Builder builder) {
         super(builder);
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
                         getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(this);
+//        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                            + inputType);
+                            + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        return InputType.recurrent(nOut);
+        return new InputType[]{InputType.recurrent(nOut)};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
-                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                            + "\"): expect RNN input type with size > 0. Got: "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType[0];
             this.nIn = r.getSize();
         }
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Convolution1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Convolution1D layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], getLayerName());
     }
 
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {

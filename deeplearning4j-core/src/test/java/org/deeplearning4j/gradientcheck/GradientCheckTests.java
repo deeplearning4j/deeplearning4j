@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -71,7 +72,8 @@ public class GradientCheckTests {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                     .seed(12345L)
-                                    .list().layer(0,
+                                    .list()
+                                  .layer(0,
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
                                                                     .weightInit(WeightInit.DISTRIBUTION)
                                                                     .dist(new NormalDistribution(0, 1))
@@ -87,13 +89,11 @@ public class GradientCheckTests {
 
                     if (doLearningFirst) {
                         //Run a number of iterations of learning
-                        mln.setInput(ds.getFeatures());
-                        mln.setLabels(ds.getLabels());
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(ds);
                         double scoreBefore = mln.score();
                         for (int j = 0; j < 10; j++)
                             mln.fit(ds);
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(ds);
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
@@ -181,13 +181,11 @@ public class GradientCheckTests {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
@@ -259,95 +257,6 @@ public class GradientCheckTests {
     }
 
     @Test
-    public void testRbm() {
-        //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
-        //Need to run gradient through updater, so that L2 can be applied
-
-        RBM.HiddenUnit[] hiddenFunc = {RBM.HiddenUnit.BINARY, RBM.HiddenUnit.RECTIFIED};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
-
-        LossFunction[] lossFunctions = {LossFunction.MSE, LossFunction.KL_DIVERGENCE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
-
-        DataNormalization scaler = new NormalizerMinMaxScaler();
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        scaler.fit(iter);
-        iter.setPreProcessor(scaler);
-        DataSet ds = iter.next();
-
-        INDArray input = ds.getFeatureMatrix();
-        INDArray labels = ds.getLabels();
-
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5}; //i.e., use l2vals[i] with l1vals[i]
-
-        for (RBM.HiddenUnit hidunit : hiddenFunc) {
-            for (boolean doLearningFirst : characteristic) {
-                for (int i = 0; i < lossFunctions.length; i++) {
-                    for (int k = 0; k < l2vals.length; k++) {
-                        LossFunction lf = lossFunctions[i];
-                        Activation outputActivation = outputActivations[i];
-                        double l2 = l2vals[k];
-                        double l1 = l1vals[k];
-
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(l2).l1(l1).updater(new NoOp())
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .updater(new NoOp())
-                                        .seed(12345L)
-                                        .list().layer(0,
-                                                        new RBM.Builder(hidunit, RBM.VisibleUnit.BINARY).nIn(4).nOut(3)
-                                                                        .weightInit(WeightInit.UNIFORM)
-                                                                        .build())
-                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                        .weightInit(WeightInit.XAVIER)
-                                                        .activation(outputActivation).build())
-                                        .pretrain(false).backprop(true).build();
-
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
-
-                        if (doLearningFirst) {
-                            //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
-                            double scoreBefore = mln.score();
-                            for (int j = 0; j < 10; j++)
-                                mln.fit(ds);
-                            mln.computeGradientAndScore();
-                            double scoreAfter = mln.score();
-                            //Can't test in 'characteristic mode of operation' if not learning
-                            String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
-                                            + hidunit.toString() + ", lossFn=" + lf + ", outputActivation="
-                                            + outputActivation + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2
-                                            + ", l1=" + l1 + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter
-                                            + ")";
-                            assertTrue(msg, scoreAfter < scoreBefore);
-                        }
-
-                        if (PRINT_RESULTS) {
-                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn="
-                                            + hidunit.toString() + ", lossFn=" + lf + ", outputActivation="
-                                            + outputActivation + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2
-                                            + ", l1=" + l1);
-                            for (int j = 0; j < mln.getnLayers(); j++)
-                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                        }
-
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + hidunit.toString() + ", lossFn="
-                                        + lf + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
-                        assertTrue(msg, gradOK);
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
     public void testAutoEncoder() {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
@@ -403,13 +312,11 @@ public class GradientCheckTests {
                         String msg;
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="

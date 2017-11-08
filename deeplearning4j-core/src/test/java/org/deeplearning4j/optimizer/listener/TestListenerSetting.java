@@ -4,18 +4,18 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 import java.util.List;
@@ -34,9 +34,8 @@ public class TestListenerSetting {
         //Pretrain layers should get copies of the listeners, in addition to the
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().nIn(10).nOut(10).build())
-                        .layer(1, new AutoEncoder.Builder().nIn(10).nOut(10).build())
-                        .layer(2, new VariationalAutoencoder.Builder().nIn(10).nOut(10).build()).build();
+                        .layer(0, new AutoEncoder.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new VariationalAutoencoder.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -44,7 +43,7 @@ public class TestListenerSetting {
         net.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
         for (Layer l : net.getLayers()) {
-            Collection<IterationListener> layerListeners = l.getListeners();
+            Collection<IterationListener> layerListeners = ((Model)l).getListeners();
             assertEquals(l.getClass().toString(), 2, layerListeners.size());
             IterationListener[] lArr = layerListeners.toArray(new IterationListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);
@@ -59,17 +58,16 @@ public class TestListenerSetting {
 
 
         ComputationGraphConfiguration gConf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addLayer("0", new RBM.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("1", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "0")
-                        .addLayer("2", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "1")
-                        .setOutputs("2").build();
+                        .addLayer("0", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "0")
+                        .setOutputs("1").build();
         ComputationGraph cg = new ComputationGraph(gConf);
         cg.init();
 
         cg.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
         for (Layer l : cg.getLayers()) {
-            Collection<IterationListener> layerListeners = l.getListeners();
+            Collection<IterationListener> layerListeners = ((Model)l).getListeners();
             assertEquals(2, layerListeners.size());
             lArr = layerListeners.toArray(new IterationListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);
@@ -92,16 +90,20 @@ public class TestListenerSetting {
         public void onEpochEnd(Model model) {}
 
         @Override
-        public void onForwardPass(Model model, List<INDArray> activations) {}
+        public void onForwardPass(Model model, List<Activations> activations) {
+
+        }
 
         @Override
-        public void onForwardPass(Model model, Map<String, INDArray> activations) {}
+        public void onForwardPass(Model model, Map<String, Activations> activations) {
+
+        }
 
         @Override
-        public void onGradientCalculation(Model model) {}
+        public void onGradientCalculation(Model model, Gradients g) {}
 
         @Override
-        public void onBackwardPass(Model model) {}
+        public void onBackwardPass(Model model, Gradients g) {}
 
         @Override
         public void setStorageRouter(StatsStorageRouter router) {}

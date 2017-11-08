@@ -22,13 +22,18 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Collection;
 
 /**
  * A ShiftVertex is used to shift the activations of a single layer<br>
@@ -50,7 +55,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = false)
-public class ShiftVertex extends GraphVertex {
+public class ShiftVertex extends BaseGraphVertex {
 
     public ShiftVertex(@JsonProperty("shiftFactor") double shiftFactor) {
         this.shiftFactor = shiftFactor;
@@ -64,40 +69,36 @@ public class ShiftVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
-
-    @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.ShiftVertex(graph, name, idx, shiftFactor);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ShiftVertex(name, idx, numInputs, shiftFactor);
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
-            return vertexInputs[0];
+            return vertexInputs;
         InputType first = vertexInputs[0];
 
-        return first; //Same output shape/size as
+        return new InputType[]{first}; //Same output shape/size as
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Do one dup on the forward pass (output activations). Accounted for in output activations.
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, ShiftVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

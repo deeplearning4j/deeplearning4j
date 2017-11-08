@@ -7,6 +7,7 @@ import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -61,7 +62,7 @@ public class ConvolutionLayerSetupTest {
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -83,7 +84,9 @@ public class ConvolutionLayerSetupTest {
                         FeatureUtil.toOutcomeMatrix(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
         network.init();
-        network.fit(d);
+        for( int i=0; i<iterations; i++ ) {
+            network.fit(d);
+        }
 
     }
 
@@ -94,8 +97,8 @@ public class ConvolutionLayerSetupTest {
         incomplete.setInputType(InputType.convolutionalFlat(28, 28, 1));
 
         MultiLayerConfiguration testConf = incomplete.build();
-        assertEquals(800, ((FeedForwardLayer) testConf.getConf(4).getLayer()).getNIn());
-        assertEquals(500, ((FeedForwardLayer) testConf.getConf(5).getLayer()).getNIn());
+        assertEquals(800, ((FeedForwardLayer) testConf.getConf(4)).getNIn());
+        assertEquals(500, ((FeedForwardLayer) testConf.getConf(5)).getNIn());
 
         //test instantiation
         DataSetIterator iter = new MnistDataSetIterator(10, 10);
@@ -115,7 +118,7 @@ public class ConvolutionLayerSetupTest {
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
         builder.setInputType(InputType.convolutional(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
-        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2).getLayer();
+        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2);
         assertEquals(6, layer2.getNIn());
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -137,7 +140,7 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(3).getLayer();
+        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(3);
         assertEquals(6, layer2.getNIn());
 
     }
@@ -229,7 +232,7 @@ public class ConvolutionLayerSetupTest {
         int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
@@ -252,7 +255,7 @@ public class ConvolutionLayerSetupTest {
         int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
@@ -279,14 +282,14 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        assertNotNull(conf.getInputPreProcess(2));
-        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertNotNull(conf.getConf(2).getPreProcessor());
+        assertTrue(conf.getConf(2).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getPreProcessor();
         assertEquals(8, proc.getInputHeight());
         assertEquals(8, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2)).getNIn());
     }
 
     @Test
@@ -300,14 +303,14 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        assertNotNull(conf.getInputPreProcess(2));
-        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertNotNull(conf.getConf(2).getPreProcessor());
+        assertTrue(conf.getConf(2).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getPreProcessor();
         assertEquals(42, proc.getInputHeight());
         assertEquals(42, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2)).getNIn());
     }
 
 
@@ -318,7 +321,7 @@ public class ConvolutionLayerSetupTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {1, 1}).nIn(1).nOut(6)
                                         .activation(Activation.IDENTITY).build())
@@ -336,10 +339,12 @@ public class ConvolutionLayerSetupTest {
         network.init();
 
         network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
+        INDArray activationsActual = network.activate(ActivationsFactory.getInstance().create(next.getFeatureMatrix())).get(0);
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
-        network.fit(next);
+        for( int i=0; i<2; i++ ) {
+            network.fit(next);
+        }
         INDArray actualGammaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.GAMMA);
         INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
         assertTrue(actualGammaParam != null);
@@ -360,14 +365,14 @@ public class ConvolutionLayerSetupTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        assertNotNull(conf.getInputPreProcess(2));
-        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
-        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertNotNull(conf.getConf(2).getPreProcessor());
+        assertTrue(conf.getConf(2).getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getConf(2).getPreProcessor();
         assertEquals(8, proc.getInputHeight());
         assertEquals(8, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2)).getNIn());
     }
 
 }

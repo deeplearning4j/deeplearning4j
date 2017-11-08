@@ -14,6 +14,8 @@ import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
+import java.util.Arrays;
+
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -54,9 +56,13 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         //Basically a dense layer...
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputTypes[0])[0];
 
         int numParams = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);

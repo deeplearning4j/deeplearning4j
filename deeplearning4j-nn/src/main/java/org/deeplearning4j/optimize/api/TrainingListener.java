@@ -1,6 +1,8 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -35,7 +37,7 @@ public interface TrainingListener extends IterationListener {
      * @param model       Model
      * @param activations Layer activations (including input)
      */
-    void onForwardPass(Model model, List<INDArray> activations);
+    void onForwardPass(Model model, List<Activations> activations);
 
     /**
      * Called once per iteration (forward pass) for activations (usually for a {@link org.deeplearning4j.nn.graph.ComputationGraph}),
@@ -44,7 +46,7 @@ public interface TrainingListener extends IterationListener {
      * @param model       Model
      * @param activations Layer activations (including input)
      */
-    void onForwardPass(Model model, Map<String, INDArray> activations);
+    void onForwardPass(Model model, Map<String, Activations> activations);
 
 
     /**
@@ -53,21 +55,20 @@ public interface TrainingListener extends IterationListener {
      * Note that gradients will likely be updated in-place - thus they should be copied or processed synchronously
      * in this method.
      * <p>
-     * For updates (gradients post learning rate/momentum/rmsprop etc) see {@link #onBackwardPass(Model)}
+     * For updates (gradients post learning rate/momentum/rmsprop etc) see {@link #onBackwardPass(Model, Gradients)}
      *
      * @param model Model
      */
-    void onGradientCalculation(Model model);
+    void onGradientCalculation(Model model, Gradients gradients);
 
     /**
      * Called once per iteration (backward pass) after gradients have been calculated, and updated
-     * Gradients are available via {@link Model#gradient()}.
      * <p>
-     * Unlike {@link #onGradientCalculation(Model)} the gradients at this point will be post-update, rather than
+     * Unlike {@link #onGradientCalculation(Model, Gradients)} the gradients at this point will be post-update, rather than
      * raw (pre-update) gradients at that method call.
      *
      * @param model Model
      */
-    void onBackwardPass(Model model);
+    void onBackwardPass(Model model, Gradients gradients);
 
 }

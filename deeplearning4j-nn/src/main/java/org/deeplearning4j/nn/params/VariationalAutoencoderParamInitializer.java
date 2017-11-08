@@ -58,8 +58,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
+    public int numParams(Layer l) {
+        VariationalAutoencoder layer = (VariationalAutoencoder) l;
 
         int nIn = layer.getNIn();
         int nOut = layer.getNOut();
@@ -171,14 +171,14 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     }
 
     @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String, INDArray> init(Layer conf, INDArray paramsView, boolean initializeParams) {
         if (paramsView.length() != numParams(conf)) {
             throw new IllegalArgumentException("Incorrect paramsView length: Expected length " + numParams(conf)
                             + ", got length " + paramsView.length());
         }
 
         Map<String, INDArray> ret = new LinkedHashMap<>();
-        VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
+        VariationalAutoencoder layer = (VariationalAutoencoder) conf;
 
         int nIn = layer.getNIn();
         int nOut = layer.getNOut();
@@ -212,9 +212,6 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
             String sB = "e" + i + BIAS_KEY_SUFFIX;
             ret.put(sW, layerWeights);
             ret.put(sB, layerBiases);
-
-            conf.addVariable(sW);
-            conf.addVariable(sB);
         }
 
         //Last encoder layer -> p(z|x)
@@ -231,8 +228,6 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         ret.put(PZX_MEAN_W, pzxWeightsMeanReshaped);
         ret.put(PZX_MEAN_B, pzxBiasMeanReshaped);
-        conf.addVariable(PZX_MEAN_W);
-        conf.addVariable(PZX_MEAN_B);
 
 
         //Pretrain params
@@ -248,8 +243,6 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         ret.put(PZX_LOGSTD2_W, pzxWeightsLogStdev2Reshaped);
         ret.put(PZX_LOGSTD2_B, pzxBiasLogStdev2Reshaped);
-        conf.addVariable(PZX_LOGSTD2_W);
-        conf.addVariable(PZX_LOGSTD2_B);
 
         for (int i = 0; i < decoderLayerSizes.length; i++) {
             int decoderLayerNIn;
@@ -274,8 +267,6 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
             String sB = "d" + i + BIAS_KEY_SUFFIX;
             ret.put(sW, layerWeights);
             ret.put(sB, layerBiases);
-            conf.addVariable(sW);
-            conf.addVariable(sB);
         }
 
         //Finally, p(x|z):
@@ -293,16 +284,14 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         ret.put(PXZ_W, pxzWeightsReshaped);
         ret.put(PXZ_B, pxzBiasReshaped);
-        conf.addVariable(PXZ_W);
-        conf.addVariable(PXZ_B);
 
         return ret;
     }
 
     @Override
-    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+    public Map<String, INDArray> getGradientsFromFlattened(Layer conf, INDArray gradientView) {
         Map<String, INDArray> ret = new LinkedHashMap<>();
-        VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
+        VariationalAutoencoder layer = (VariationalAutoencoder) conf;
 
         int nIn = layer.getNIn();
         int nOut = layer.getNOut();

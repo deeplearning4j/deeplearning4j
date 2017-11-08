@@ -70,7 +70,6 @@ public class KerasPooling2D extends KerasLayer {
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**
@@ -90,7 +89,7 @@ public class KerasPooling2D extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");

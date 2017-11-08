@@ -191,7 +191,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras separable convolution 2D layer accepts only one input (received " + inputType.length + ")");

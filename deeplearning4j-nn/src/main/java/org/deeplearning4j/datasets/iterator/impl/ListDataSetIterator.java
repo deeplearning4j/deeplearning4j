@@ -54,7 +54,6 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
      */
     public ListDataSetIterator(Collection<T> coll) {
         this(coll, 5);
-
     }
 
     @Override

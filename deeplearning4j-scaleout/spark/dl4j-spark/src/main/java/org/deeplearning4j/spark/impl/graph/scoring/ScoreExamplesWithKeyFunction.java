@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -63,10 +64,9 @@ public class ScoreExamplesWithKeyFunction<K>
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @see ScoreExamplesFunction
  */
+@Slf4j
 class ScoreExamplesWithKeyFunctionAdapter<K>
                 implements FlatMapFunctionAdapter<Iterator<Tuple2<K, MultiDataSet>>, Tuple2<K, Double>> {
-
-    protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;

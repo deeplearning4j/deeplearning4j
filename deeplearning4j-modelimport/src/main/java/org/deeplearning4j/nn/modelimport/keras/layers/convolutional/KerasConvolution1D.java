@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -44,6 +45,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasConvolution1D extends KerasConvolution {
 
     /**
@@ -134,7 +136,7 @@ public class KerasConvolution1D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");

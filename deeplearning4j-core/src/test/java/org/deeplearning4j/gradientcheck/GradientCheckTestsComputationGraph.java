@@ -1,7 +1,9 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -416,7 +418,7 @@ public class GradientCheckTestsComputationGraph {
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
                         .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
                                         "input")
-                        .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
+                        .addVertex("lastTS", new LastTimeStepVertex(), "lstm1")
                         .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lastTS")
                         .pretrain(false).backprop(true).build();
@@ -450,9 +452,9 @@ public class GradientCheckTestsComputationGraph {
         inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0}));
         inMask.putRow(1, Nd4j.create(new double[] {1, 1, 1, 1, 0}));
         inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1}));
-        graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
         gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                ActivationsFactory.getInstance().create(input, inMask), new INDArray[] {labels}, null);
 
         assertTrue(msg, gradOK);
     }
@@ -475,8 +477,8 @@ public class GradientCheckTestsComputationGraph {
                                                         new GravesLSTM.Builder().nIn(4).nOut(5)
                                                                         .activation(Activation.SOFTSIGN).build(),
                                                         "input2")
-                                        .addVertex("lastTS", new LastTimeStepVertex("input2"), "lstm2")
-                                        .addVertex("duplicate", new DuplicateToTimeSeriesVertex("input2"), "lastTS")
+                                        .addVertex("lastTS", new LastTimeStepVertex(), "lstm2")
+                                        .addVertex("duplicate", new DuplicateToTimeSeriesVertex(), "lastTS", "input2")
                                         .addLayer("out", new RnnOutputLayer.Builder().nIn(5 + 4).nOut(3)
                                                         .activation(Activation.SOFTMAX)
                                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
@@ -603,7 +605,7 @@ public class GradientCheckTestsComputationGraph {
                         .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                         .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
-                        .addVertex("m", new MergeVertex(), "d0", "d1", "d2")
+                        .add("m", new MergeVertex(), "d0", "d1", "d2")
                         .addLayer("D0", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
                         .addLayer("D1", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
                         .addLayer("D2", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
@@ -647,24 +649,27 @@ public class GradientCheckTestsComputationGraph {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("input")
-                        .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
-                        .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
-                        .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
-                        .addVertex("m", new MergeVertex(), "l1", "l2")
-                        .addLayer("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("m", new MergeVertex(), "l1", "l2")
+                        .add("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .add("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2)
+                        .add("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2)
                                         .build(), "l3", "l4")
                         .setOutputs("out").setInputTypes(InputType.convolutional(inH, inW, 2)).pretrain(false)
                         .backprop(true).build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
+
+        System.out.println(graph.getConfiguration().getTopologicalSortOrder());
+        System.out.println(graph.summary(InputType.convolutional(inH, inW, 2)));
 
         int[] minibatchSizes = {1, 3};
         for (int mb : minibatchSizes) {
@@ -1092,11 +1097,10 @@ public class GradientCheckTestsComputationGraph {
                     System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            graph.setLayerMaskArrays(new INDArray[] {inMask1, inMask2}, null);
-
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                            ActivationsFactory.getInstance().createPair(in1, in2, inMask1, inMask2, MaskState.Active, MaskState.Active),
+                            new INDArray[] {labels1, labels2}, null);
 
             assertTrue(testName, gradOK);
         }

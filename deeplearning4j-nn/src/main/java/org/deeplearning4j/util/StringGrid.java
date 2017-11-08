@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.primitives.Counter;
@@ -36,13 +37,13 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class StringGrid extends ArrayList<List<String>> {
 
 
     private static final long serialVersionUID = 4702427632483221813L;
     private String sep;
     private int numColumns = -1;
-    private static final Logger log = LoggerFactory.getLogger(StringGrid.class);
     public final static String NONE = "NONE";
 
 

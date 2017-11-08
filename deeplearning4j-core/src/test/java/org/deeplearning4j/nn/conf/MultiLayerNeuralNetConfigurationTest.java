@@ -51,7 +51,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                        .layer(0, new DenseLayer.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor()).build();
 
         String json = conf.toJson();
@@ -89,7 +89,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -123,7 +123,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                 .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                 .layer(new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -165,7 +165,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                        .layer(0, new DenseLayer.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor()).build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
@@ -194,7 +194,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testClone() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new RBM.Builder().build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new DenseLayer.Builder().build())
                         .layer(1, new OutputLayer.Builder().build())
                         .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
 
@@ -205,10 +205,6 @@ public class MultiLayerNeuralNetConfigurationTest {
         assertNotSame(conf.getConfs(), conf2.getConfs());
         for (int i = 0; i < conf.getConfs().size(); i++) {
             assertNotSame(conf.getConf(i), conf2.getConf(i));
-        }
-        assertNotSame(conf.getInputPreProcessors(), conf2.getInputPreProcessors());
-        for (Integer layer : conf.getInputPreProcessors().keySet()) {
-            assertNotSame(conf.getInputPreProcess(layer), conf2.getInputPreProcess(layer));
         }
     }
 
@@ -229,29 +225,10 @@ public class MultiLayerNeuralNetConfigurationTest {
         org.junit.Assert.assertArrayEquals(p1, p2, 0.0f);
     }
 
-    @Test
-    public void testIterationListener() {
-        MultiLayerNetwork model1 = new MultiLayerNetwork(getConf());
-        model1.init();
-        model1.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
-
-        MultiLayerNetwork model2 = new MultiLayerNetwork(getConf());
-        model2.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
-        model2.init();
-
-        Layer[] l1 = model1.getLayers();
-        for (int i = 0; i < l1.length; i++)
-            assertTrue(l1[i].getListeners() != null && l1[i].getListeners().size() == 1);
-
-        Layer[] l2 = model2.getLayers();
-        for (int i = 0; i < l2.length; i++)
-            assertTrue(l2[i].getListeners() != null && l2[i].getListeners().size() == 1);
-    }
-
 
     private static MultiLayerConfiguration getConf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345l).list()
-                        .layer(0, new RBM.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(1, new OutputLayer.Builder().nIn(2).nOut(1).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
@@ -319,10 +296,10 @@ public class MultiLayerNeuralNetConfigurationTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DenseLayer dl = (DenseLayer) conf.getConf(0).getLayer();
+        DenseLayer dl = (DenseLayer) conf.getConf(0);
         assertEquals(3, dl.getNIn());
         assertEquals(4, dl.getNOut());
-        OutputLayer ol = (OutputLayer) conf.getConf(1).getLayer();
+        OutputLayer ol = (OutputLayer) conf.getConf(1);
         assertEquals(4, ol.getNIn());
         assertEquals(5, ol.getNOut());
 
@@ -376,10 +353,10 @@ public class MultiLayerNeuralNetConfigurationTest {
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
 
-        org.deeplearning4j.nn.conf.layers.BaseLayer l0 = (BaseLayer) conf.getConf(0).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l1 = (BaseLayer) conf.getConf(1).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l0 = (BaseLayer) conf.getConf(0);
+        org.deeplearning4j.nn.conf.layers.BaseLayer l1 = (BaseLayer) conf.getConf(1);
+        org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2);
+        org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3);
 
         assertEquals(0.5, ((Adam)l0.getUpdaterByParam("b")).getLearningRate(), 1e-6);
         assertEquals(1e-2, ((Adam)l0.getUpdaterByParam("W")).getLearningRate(), 1e-6);

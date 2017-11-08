@@ -271,7 +271,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public MultiLayerNetwork fitLabeledPoint(JavaRDD<LabeledPoint> rdd) {
         int nLayers = network.getLayerWiseConfigurations().getConfs().size();
-        FeedForwardLayer ffl = (FeedForwardLayer) network.getLayerWiseConfigurations().getConf(nLayers - 1).getLayer();
+        FeedForwardLayer ffl = (FeedForwardLayer) network.getLayerWiseConfigurations().getConf(nLayers - 1);
         JavaRDD<DataSet> ds = MLLibUtil.fromLabeledPoint(sc, rdd, ffl.getNOut());
         return fit(ds);
     }
@@ -480,7 +480,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return     {@link RegressionEvaluation} instance with regression performance
      */
     public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize) {
-        int nOut = ((FeedForwardLayer) network.getOutputLayer().conf().getLayer()).getNOut();
+        int nOut = ((FeedForwardLayer) network.getOutputLayer().conf()).getNOut();
         return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
     }
 
@@ -545,8 +545,9 @@ public class SparkDl4jMultiLayer extends SparkListenable {
         Environment env = EnvironmentUtils.buildEnvironment();
         env.setNumCores(mr);
         env.setAvailableMemory(mg);
-        Task task = ModelSerializer.taskByModel(network);
-        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
+//        Task task = ModelSerializer.taskByModel(network);
+//        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**

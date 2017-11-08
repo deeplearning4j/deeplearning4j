@@ -31,8 +31,6 @@ import java.util.Map;
  */
 public interface ParamInitializer {
 
-    int numParams(NeuralNetConfiguration conf);
-
     int numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
 
     /**
@@ -76,23 +74,23 @@ public interface ParamInitializer {
     /**
      * Initialize the parameters
      *
-     * @param conf             the configuration
+     * @param layer            The layer to initialize the params for
      * @param paramsView       a view of the full network (backprop) parameters
      * @param initializeParams if true: initialize the parameters according to the configuration. If false: don't modify the
      *                         values in the paramsView array (but do select out the appropriate subset, reshape etc as required)
      * @return Map of parameters keyed by type (view of the 'paramsView' array)
      */
-    Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams);
+    Map<String, INDArray> init(org.deeplearning4j.nn.conf.layers.Layer layer, INDArray paramsView, boolean initializeParams);
 
     /**
      * Return a map of gradients (in their standard non-flattened representation), taken from the flattened (row vector) gradientView array.
      * The idea is that operates in exactly the same way as the the paramsView does in {@link #init(Map, NeuralNetConfiguration, INDArray)};
      * thus the position in the view (and, the array orders) must match those of the parameters
      *
-     * @param conf         Configuration
+     * @param layer            The layer to get the gradients (from flattened) for
      * @param gradientView The flattened gradients array, as a view of the larger array
      * @return A map containing an array by parameter type, that is a view of the full network gradients array
      */
-    Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView);
+    Map<String, INDArray> getGradientsFromFlattened(org.deeplearning4j.nn.conf.layers.Layer layer, INDArray gradientView);
 
 }

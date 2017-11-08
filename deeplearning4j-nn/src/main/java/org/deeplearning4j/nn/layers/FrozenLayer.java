@@ -3,7 +3,11 @@ package org.deeplearning4j.nn.layers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -51,12 +55,22 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public int numInputs() {
+        return 1;
+    }
+
+    @Override
+    public int numOutputs() {
+        return 1;
+    }
+
+    @Override
     public void setCacheMode(CacheMode mode) {
         // no-op
     }
 
     protected String layerId() {
-        String name = insideLayer.conf().getLayer().getLayerName();
+        String name = insideLayer.conf().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
 
@@ -70,106 +84,37 @@ public class FrozenLayer implements Layer {
         return 0;
     }
 
-    @Override
-    public Type type() {
-        return insideLayer.type();
-    }
-
     //FIXME
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return new Pair<>(zeroGradient, null);
+    public Gradients backpropGradient(Gradients epsilon) {
+        return GradientsFactory.getInstance().create(null, zeroGradient);
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return insideLayer.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(input, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        logTestMode(training);
-        return preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         logTestMode(training);
         return insideLayer.activate(false);
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public Activations activate(Activations input, boolean training) {
         logTestMode(training);
         return insideLayer.activate(input, false);
     }
 
     @Override
-    public INDArray activate() {
-        return insideLayer.activate();
+    public Activations activate(Activations input) {
+        return activate(input, false);
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        return insideLayer.activate(input);
+    public void setInput(Activations activations) {
+        insideLayer.setInput(activations);
     }
 
     @Override
-    public Layer transpose() {
-        return new FrozenLayer(insideLayer.transpose());
-    }
-
-    @Override
-    public Layer clone() {
-        OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
-        return new FrozenLayer(insideLayer.clone());
-    }
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return insideLayer.getListeners();
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
-    /**
-     * This method ADDS additional IterationListener to existing listeners
-     *
-     * @param listener
-     */
-    @Override
-    public void addListeners(IterationListener... listener) {
-        insideLayer.addListeners(listener);
-    }
-
-    @Override
-    public void fit() {
-        if (!logFit) {
-            OneTimeLogger.info(log, "Frozen layers cannot be fit. Warning will be issued only once per instance");
-            logFit = true;
-        }
-        //no op
+    public Activations getInput() {
+        return insideLayer.getInput();
     }
 
     @Override
@@ -182,33 +127,8 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void update(INDArray gradient, String paramType) {
-        if (!logUpdate) {
-            OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
-            logUpdate = true;
-        }
-        //no op
-    }
-
-    @Override
-    public double score() {
-        return insideLayer.score();
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        if (!logGradient) {
-            OneTimeLogger.info(log,
-                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        insideLayer.score();
-        //no op
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        insideLayer.accumulateScore(accum);
+    public String getName() {
+        return insideLayer.getName();
     }
 
     @Override
@@ -252,73 +172,18 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        if (!logFit) {
-            OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");
-            logFit = true;
-        }
-    }
-
-    //FIXME - what is iterate
-    @Override
-    public void iterate(INDArray input) {
-        insideLayer.iterate(input);
-    }
-
-    @Override
-    public Gradient gradient() {
-        return zeroGradient;
-    }
-
-    //FIXME
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        if (!logGradient) {
-            OneTimeLogger.info(log,
-                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        return new Pair<>(zeroGradient, insideLayer.score());
-    }
-
-    @Override
-    public int batchSize() {
-        return insideLayer.batchSize();
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
+    public org.deeplearning4j.nn.conf.layers.Layer conf() {
         return insideLayer.conf();
     }
 
     @Override
-    public void setConf(NeuralNetConfiguration conf) {
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
         insideLayer.setConf(conf);
-    }
-
-    @Override
-    public INDArray input() {
-        return insideLayer.input();
-    }
-
-    @Override
-    public void validateInput() {
-        insideLayer.validateInput();
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return insideLayer.getOptimizer();
     }
 
     @Override
     public INDArray getParam(String param) {
         return insideLayer.getParam(param);
-    }
-
-    @Override
-    public void initParams() {
-        insideLayer.initParams();
     }
 
     @Override
@@ -349,19 +214,6 @@ public class FrozenLayer implements Layer {
     @Override
     public void applyConstraints(int iteration, int epoch) {
         //No-op
-    }
-
-    /**
-     * Init the model
-     */
-    @Override
-    public void init() {
-
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        insideLayer.setListeners(listeners);
     }
 
     @Override
@@ -395,11 +247,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void setInput(INDArray input) {
-        insideLayer.setInput(input);
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size) {
         insideLayer.setInputMiniBatchSize(size);
     }
@@ -407,16 +254,6 @@ public class FrozenLayer implements Layer {
     @Override
     public int getInputMiniBatchSize() {
         return insideLayer.getInputMiniBatchSize();
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        insideLayer.setMaskArray(maskArray);
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return insideLayer.getMaskArray();
     }
 
     @Override
@@ -430,25 +267,12 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+    public InputPreProcessor getPreProcessor() {
+        return insideLayer.getPreProcessor();
     }
 
     public void logTestMode(boolean training) {
         if (!training)
-            return;
-        if (logTestMode) {
-            return;
-        } else {
-            OneTimeLogger.info(log,
-                            "Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
-    }
-
-    public void logTestMode(TrainingMode training) {
-        if (training.equals(TrainingMode.TEST))
             return;
         if (logTestMode) {
             return;

@@ -5,6 +5,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Sets;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
@@ -47,7 +49,7 @@ import static play.mvc.Results.ok;
  * @author Alex Black
  */
 @Slf4j
-@Data
+@Getter @Setter
 public class PlayUIServer extends UIServer {
 
     /**

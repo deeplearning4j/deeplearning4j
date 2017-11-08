@@ -61,12 +61,11 @@ public class BaseLayerTest {
         int nIn = 2;
         int nOut = 2;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
+        org.deeplearning4j.nn.conf.layers.Layer conf = new ConvolutionLayer.Builder().nIn(nIn).nOut(nOut).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        int numParams = conf.initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return conf.getLayer().instantiate(conf, null, 0, params, true);
+        return conf.instantiate(null, null, 0, 1, params, true);
     }
 
 

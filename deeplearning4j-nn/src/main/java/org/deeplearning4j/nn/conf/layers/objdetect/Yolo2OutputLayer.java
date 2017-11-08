@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.objdetect;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -42,6 +43,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     private double lambdaCoord;
@@ -66,14 +68,14 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret = new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf);
-        ret.setListeners(iterationListeners);
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret = new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
         return ret;
     }
 
@@ -83,25 +85,32 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
         return inputType;   //Same shape output as input
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        switch (inputType.getType()){
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Yolo2OutputLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
+        }
+        switch (inputType[0].getType()){
             case FF:
             case RNN:
                 throw new UnsupportedOperationException("Cannot use FF or RNN input types");
             case CNN:
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat)inputType;
+                InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat)inputType[0];
                 return new FeedForwardToCnnPreProcessor(cf.getHeight(), cf.getWidth(), cf.getDepth());
             default:
                 return null;
@@ -124,7 +133,11 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         long numValues = inputType.arrayElementsPerExample();
 
         //This is a VERY rough estimate...

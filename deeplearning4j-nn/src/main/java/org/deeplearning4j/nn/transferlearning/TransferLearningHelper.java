@@ -1,11 +1,11 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -130,7 +130,7 @@ public class TransferLearningHelper {
     public INDArray[] outputFromFeaturized(INDArray[] input) {
         if (!isGraph)
             errorIfGraphIfMLN();
-        return unFrozenSubsetGraph.output(input);
+        return unFrozenSubsetGraph.output(input).getAsArray();
     }
 
     /**
@@ -145,19 +145,24 @@ public class TransferLearningHelper {
                 throw new IllegalArgumentException(
                                 "Graph has more than one output. Expecting an input array with outputFromFeaturized method call");
             }
-            return unFrozenSubsetGraph.output(input)[0];
+            return unFrozenSubsetGraph.output(input).get(0);
         } else {
             return unFrozenSubsetMLN.output(input);
         }
     }
 
     /**
-     * Runs through the comp graph and saves off a new model that is simply the "unfrozen" part of the origModel
+     * Runs through the comp graph and saves off a new model that is simply the "frozen" part of the origModel
      * This "unfrozen" model is then used for training with featurized data
      */
     private void initHelperGraph() {
 
-        int[] backPropOrder = origGraph.topologicalSortOrder().clone();
+        List<String> topologicalOrder = origGraph.topologicalSortOrder();
+        int[] backPropOrder = new int[topologicalOrder.size()];
+        for( int i=0; i<backPropOrder.length; i++ ){
+            backPropOrder[i] = origGraph.getVerticesMap().get(topologicalOrder.get(i)).getIndex();
+        }
+
         ArrayUtils.reverse(backPropOrder);
 
         Set<String> allFrozen = new HashSet<>();
@@ -165,62 +170,50 @@ public class TransferLearningHelper {
             Collections.addAll(allFrozen, frozenOutputAt);
         }
         for (int i = 0; i < backPropOrder.length; i++) {
-            org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
-            if (applyFrozen && allFrozen.contains(gv.getVertexName())) {
-                if (gv.hasLayer()) {
-                    //Need to freeze this layer
-                    org.deeplearning4j.nn.api.Layer l = gv.getLayer();
-                    gv.setLayerAsFrozen();
+            Layer[] vertices = origGraph.getVertices();
+            Layer gv = vertices[backPropOrder[i]];
+            if (applyFrozen && allFrozen.contains(gv.getName())) {
+                //Need to freeze this layer
+                if(!(gv instanceof FrozenLayer)) {
+                    gv = new FrozenLayer(gv);
+                    vertices[backPropOrder[i]] = gv;
+                }
 
-                    //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
-                    //This could no doubt be done more efficiently
-                    org.deeplearning4j.nn.api.Layer[] layers = origGraph.getLayers();
-                    for (int j = 0; j < layers.length; j++) {
-                        if (layers[j] == l) {
-                            layers[j] = gv.getLayer(); //Place the new frozen layer to replace the original layer
-                            break;
-                        }
+                //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
+                //This could no doubt be done more efficiently
+                org.deeplearning4j.nn.api.Layer[] layers = origGraph.getLayers();
+                for (int j = 0; j < layers.length; j++) {
+                    if (layers[j] == gv) {
+                        layers[j] = gv; //Place the new frozen layer to replace the original layer
+                        break;
                     }
                 }
 
                 //Also: mark any inputs as to be frozen also
-                VertexIndices[] inputs = gv.getInputVertices();
-                if (inputs != null && inputs.length > 0) {
-                    for (int j = 0; j < inputs.length; j++) {
-                        int inputVertexIdx = inputs[j].getVertexIndex();
-                        String alsoFreeze = origGraph.getVertices()[inputVertexIdx].getVertexName();
-                        allFrozen.add(alsoFreeze);
-                    }
+                List<String> inputsToCurrent = origGraph.getConfiguration().getVertexInputs().get(gv.getName());
+                if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                    allFrozen.addAll(inputsToCurrent);
                 }
             } else {
-                if (gv.hasLayer()) {
-                    if (gv.getLayer() instanceof FrozenLayer) {
-                        allFrozen.add(gv.getVertexName());
-                        //also need to add parents to list of allFrozen
-                        VertexIndices[] inputs = gv.getInputVertices();
-                        if (inputs != null && inputs.length > 0) {
-                            for (int j = 0; j < inputs.length; j++) {
-                                int inputVertexIdx = inputs[j].getVertexIndex();
-                                String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getVertexName();
-                                allFrozen.add(alsoFrozen);
-                            }
-                        }
+                //Current layer is already frozen... so also free
+                if (gv instanceof FrozenLayer) {
+                    allFrozen.add(gv.getName());
+                    //also need to add parents to list of allFrozen
+                    List<String> inputsToCurrent = origGraph.getConfiguration().getVertexInputs().get(gv.getName());
+                    if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                        allFrozen.addAll(inputsToCurrent);
                     }
                 }
             }
         }
         for (int i = 0; i < backPropOrder.length; i++) {
-            org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
-            String gvName = gv.getVertexName();
+            Layer gv = origGraph.getVertices()[backPropOrder[i]];
+            String gvName = gv.getName();
             //is it an unfrozen vertex that has an input vertex that is frozen?
-            if (!allFrozen.contains(gvName) && !gv.isInputVertex()) {
-                VertexIndices[] inputs = gv.getInputVertices();
-                for (int j = 0; j < inputs.length; j++) {
-                    int inputVertexIdx = inputs[j].getVertexIndex();
-                    String inputVertex = origGraph.getVertices()[inputVertexIdx].getVertexName();
-                    if (allFrozen.contains(inputVertex)) {
-                        frozenInputVertices.add(inputVertex);
-                    }
+            if (!allFrozen.contains(gvName) && !(gv instanceof InputVertex)) {
+                List<String> inputsToCurrent = origGraph.getConfiguration().getVertexInputs().get(gvName);
+                if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                    allFrozen.addAll(inputsToCurrent);
                 }
             }
         }
@@ -243,7 +236,7 @@ public class TransferLearningHelper {
         }
         frozenInputVerticesSorted.addAll(frozenInputVertices);
         //Sort all inputs to the computation graph - in order to have a predictable order
-        graphInputs = new ArrayList(frozenInputVerticesSorted);
+        graphInputs = new ArrayList<>(frozenInputVerticesSorted);
         Collections.sort(graphInputs);
         for (String asInput : frozenInputVerticesSorted) {
             //add back in the right order
@@ -256,7 +249,6 @@ public class TransferLearningHelper {
         if (frozenInputVertices.isEmpty()) {
             throw new IllegalArgumentException("No frozen layers found");
         }
-
     }
 
     private void initHelperMLN() {
@@ -275,15 +267,17 @@ public class TransferLearningHelper {
         }
         List<NeuralNetConfiguration> allConfs = new ArrayList<>();
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
-            allConfs.add(origMLN.getLayer(i).conf());
+//            allConfs.add(origMLN.getLayer(i).conf());
+            throw new UnsupportedOperationException();
         }
 
         MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
 
-        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder().backprop(c.isBackprop())
-                        .inputPreProcessors(c.getInputPreProcessors()).pretrain(c.isPretrain())
-                        .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
-                        .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs).build());
+        unFrozenSubsetMLN = null;
+//        new MultiLayerNetwork(new MultiLayerConfiguration.Builder().backprop(c.isBackprop())
+//                        .pretrain(c.isPretrain())
+//                        .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
+//                        .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs).build());
         unFrozenSubsetMLN.init();
         //copy over params
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
@@ -317,6 +311,8 @@ public class TransferLearningHelper {
         Map<String, INDArray> activationsNow = origGraph.feedForward(features, false);
         for (int i = 0; i < graphInputs.size(); i++) {
             String anInput = graphInputs.get(i);
+            throw new UnsupportedOperationException();
+            /*
             if (origGraph.getVertex(anInput).isInputVertex()) {
                 //was an original input to the graph
                 int inputIndex = origGraph.getConfiguration().getNetworkInputs().indexOf(anInput);
@@ -324,7 +320,7 @@ public class TransferLearningHelper {
             } else {
                 //needs to be grabbed from the internal activations
                 featuresNow[i] = activationsNow.get(anInput);
-            }
+            }*/
         }
 
         return new MultiDataSet(featuresNow, labels, featureMasks, labelMasks);
@@ -402,19 +398,21 @@ public class TransferLearningHelper {
     }
 
     private void copyParamsFromSubsetGraphToOrig() {
-        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
-            if (!aVertex.hasLayer())
-                continue;
-            origGraph.getVertex(aVertex.getVertexName()).getLayer().setParams(aVertex.getLayer().params());
-        }
+        throw new UnsupportedOperationException();
+//        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
+//            if (!aVertex.hasLayer())
+//                continue;
+//            origGraph.getVertex(aVertex.getName()).getLayer().setParams(aVertex.getLayer().params());
+//        }
     }
 
     private void copyOrigParamsToSubsetGraph() {
-        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
-            if (!aVertex.hasLayer())
-                continue;
-            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params());
-        }
+        throw new UnsupportedOperationException();
+//        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
+//            if (!aVertex.hasLayer())
+//                continue;
+//            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getName()).params());
+//        }
     }
 
     private void copyParamsFromSubsetMLNToOrig() {

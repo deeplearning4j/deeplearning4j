@@ -19,6 +19,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -106,11 +107,18 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
 
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     public boolean hasBias(){
         return hasBias;
+    }
+
+    @Override
+    public void applyGlobalConfiguration(GlobalConfiguration globalConfiguration){
+        super.applyGlobalConfiguration(globalConfiguration);
+        if(convolutionMode == null)
+            this.convolutionMode = globalConfiguration.getConvolutionMode();
     }
 
     @Override
@@ -126,18 +134,18 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -147,37 +155,43 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+        return new InputType[]{InputTypeUtil.getOutputTypeCnnLayers(inputType[0], kernelSize, stride, padding, dilation,
+                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class)};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType[0];
             this.nIn = c.getDepth();
         }
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType[0], getLayerName());
     }
 
     @Override
@@ -205,12 +219,15 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
         int paramSize = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(paramSize);
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputTypes[0];
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputTypes[0])[0];
 
         //TODO convolution helper memory use... (CuDNN etc)
 
@@ -239,7 +256,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
             if (getIDropout() != null) {
                 //Dup on the input before dropout, but only for training
-                trainWorkingSizePerEx += inputType.arrayElementsPerExample();
+                trainWorkingSizePerEx += inputTypes[0].arrayElementsPerExample();
             }
 
             trainWorkingMemoryPerEx.put(cm, trainWorkingSizePerEx);
@@ -247,7 +264,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
 
-        return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputType, outputType)
+        return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputTypes[0], outputType)
                         .standardMemory(paramSize, updaterStateSize)
                         //im2col caching -> only variable size caching
                         .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)

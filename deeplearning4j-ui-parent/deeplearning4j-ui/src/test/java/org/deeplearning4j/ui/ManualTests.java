@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.LFWLoader;
@@ -62,9 +63,8 @@ import static org.junit.Assert.fail;
  * @author raver119@gmail.com
  */
 @Ignore
+@Slf4j
 public class ManualTests {
-
-    private static Logger log = LoggerFactory.getLogger(ManualTests.class);
 
     @Test
     public void testLaunch() throws Exception {
@@ -139,7 +139,7 @@ public class ManualTests {
                         outputNum, useSubset, true, 1.0, new Random(seed));
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .updater(new AdaGrad(0.01)).weightNoise(new DropConnect(0.5)).list()
@@ -175,7 +175,9 @@ public class ManualTests {
             trainInput = trainTest.getTrain(); // get feature matrix and labels for training
             testInput.add(trainTest.getTest().getFeatureMatrix());
             testLabels.add(trainTest.getTest().getLabels());
-            model.fit(trainInput);
+            for( int i=0; i<iterations; i++ ) {
+                model.fit(trainInput);
+            }
         }
 
         log.info("Evaluate model....");
@@ -253,7 +255,6 @@ public class ManualTests {
         int outputNum = 10;
         int batchSize = 64;
         int nEpochs = 10;
-        int iterations = 1;
         int seed = 123;
 
         log.info("Load data....");
@@ -261,7 +262,7 @@ public class ManualTests {
         DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9)).list()

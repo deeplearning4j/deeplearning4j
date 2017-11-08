@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Or;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,44 +38,26 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public class PoolHelperVertex extends BaseGraphVertex {
 
-    public PoolHelperVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
-    }
-
-    public PoolHelperVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public PoolHelperVertex(String name, int vertexIndex, int numInputs) {
+        super(name, vertexIndex, numInputs);
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalStateException("PoolHelper vertex requires a single input.");
 
-        INDArray strippedInput = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)));
-        return strippedInput;
+        INDArray strippedInput = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(1, input.get(0).size(2)), NDArrayIndex.interval(1, input.get(0).size(3)));
+        return ActivationsFactory.getInstance().create(strippedInput);
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set");
-
-        return new Pair<>(null, new INDArray[] {epsilon});
+    public Gradients backpropGradient(Gradients gradient) {
+        return gradient;
     }
 
     @Override
@@ -84,7 +66,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
+
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null) {
@@ -119,6 +101,6 @@ public class PoolHelperVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "PoolHelperVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\")";
+        return "PoolHelperVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\")";
     }
 }

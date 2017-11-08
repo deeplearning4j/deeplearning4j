@@ -32,10 +32,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 /**
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
@@ -61,9 +58,9 @@ public class GravesLSTM extends AbstractLSTM {
         initializeConstraints(builder);
     }
 
-    @Override
+
     protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
-        super.initializeConstraints(builder);
+        super.initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
         if(((Builder)builder).recurrentConstraints != null){
             if(constraints == null){
                 constraints = new ArrayList<>();
@@ -77,17 +74,17 @@ public class GravesLSTM extends AbstractLSTM {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         LayerValidation.assertNInNOutSet("GravesLSTM", getLayerName(), layerIndex, getNIn(), getNOut());
         org.deeplearning4j.nn.layers.recurrent.GravesLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -97,7 +94,11 @@ public class GravesLSTM extends AbstractLSTM {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
         //TODO - CuDNN etc
         return LSTMHelpers.getMemoryReport(this, inputType);
     }

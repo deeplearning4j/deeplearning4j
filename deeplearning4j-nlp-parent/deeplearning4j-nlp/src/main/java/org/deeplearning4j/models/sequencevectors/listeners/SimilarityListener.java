@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors.listeners;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -14,8 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SimilarityListener<T extends SequenceElement> implements VectorsListener<T> {
-    protected static final Logger logger = LoggerFactory.getLogger(SimilarityListener.class);
     private final ListenerEvent targetEvent;
     private final int frequency;
     private final String element1;
@@ -46,6 +47,6 @@ public class SimilarityListener<T extends SequenceElement> implements VectorsLis
 
         double similarity = sequenceVectors.similarity(element1, element2);
 
-        logger.info("Invocation: {}, similarity: {}", cnt, similarity);
+        log.info("Invocation: {}, similarity: {}", cnt, similarity);
     }
 }

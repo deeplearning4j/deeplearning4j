@@ -18,12 +18,11 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -38,49 +37,37 @@ public class ScaleVertex extends BaseGraphVertex {
 
     private double scaleFactor;
 
-    public ScaleVertex(ComputationGraph graph, String name, int vertexIndex, double scaleFactor) {
-        this(graph, name, vertexIndex, null, null, scaleFactor);
-    }
-
-    public ScaleVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double scaleFactor) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ScaleVertex(String name, int vertexIndex, int numInputs, double scaleFactor) {
+        super(name, vertexIndex, numInputs);
         this.scaleFactor = scaleFactor;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ScaleVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + getIndex() + ")");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalArgumentException(
-                            "ScaleVertex (name " + vertexName + " idx " + vertexIndex + ") only supports 1 input.");
+                            "ScaleVertex (name " + vertexName + " idx " + getIndex() + ") only supports 1 input.");
 
-        INDArray prod = inputs[0].dup();
+        INDArray prod = input.get(0).dup();
         prod.muli(scaleFactor);
 
-        return prod;
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(prod, masks.getFirst(), masks.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set (ScaleVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+    public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null) " + layerId());
 
-        return new Pair<>(null, new INDArray[] {epsilon.muli(scaleFactor)});
+        INDArray epsilon = gradient.get(0);
+        epsilon.muli(scaleFactor);
+
+        return gradient;
     }
 
     @Override
@@ -88,17 +75,16 @@ public class ScaleVertex extends BaseGraphVertex {
         if (backpropGradientsViewArray != null)
             throw new RuntimeException(
                             "Vertex does not have gradients; gradients view array cannot be set here (ScaleVertex "
-                                            + vertexName + " idx " + vertexIndex + ")");
+                                            + vertexName + " idx " + getIndex() + ")");
     }
 
     @Override
     public String toString() {
-        return "ScaleVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",scaleFactor="
+        return "ScaleVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",scaleFactor="
                         + scaleFactor + ")";
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

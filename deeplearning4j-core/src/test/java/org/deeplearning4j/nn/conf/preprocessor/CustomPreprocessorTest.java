@@ -16,6 +16,7 @@ import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Created by Alex on 09/09/2016.
@@ -62,8 +63,8 @@ public class CustomPreprocessorTest {
         MultiLayerConfiguration confFromYaml = MultiLayerConfiguration.fromYaml(yaml);
         assertEquals(conf, confFromYaml);
 
-        assertTrue(confFromJson.getInputPreProcess(0) instanceof MyCustomPreprocessor);
-
+//        assertTrue(confFromJson.getInputPreProcess(0) instanceof MyCustomPreprocessor);
+        fail();
     }
 
 }

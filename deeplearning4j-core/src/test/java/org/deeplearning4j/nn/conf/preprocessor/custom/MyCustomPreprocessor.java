@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.conf.preprocessor.custom;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,12 +16,13 @@ import org.nd4j.linalg.primitives.Pair;
 public class MyCustomPreprocessor implements InputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        return input.add(1.0);
+    public Activations preProcess(Activations input, int miniBatchSize, boolean train) {
+        input.get(0).add(1.0);
+        return input;
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public Gradients backprop(Gradients output, int miniBatchSize) {
         return output;
     }
 
@@ -29,11 +32,11 @@ public class MyCustomPreprocessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         return inputType;
     }
 
-    @Override
+
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         throw new UnsupportedOperationException();

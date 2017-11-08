@@ -20,6 +20,7 @@ package org.deeplearning4j.models.paragraphvectors;
 
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
@@ -65,8 +66,8 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 12/3/14.
  */
+@Slf4j
 public class ParagraphVectorsTest {
-    private static final Logger log = LoggerFactory.getLogger(ParagraphVectorsTest.class);
 
     @Before
     public void before() {

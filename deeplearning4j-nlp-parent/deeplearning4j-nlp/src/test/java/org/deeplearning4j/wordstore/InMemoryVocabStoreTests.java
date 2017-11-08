@@ -31,7 +31,6 @@ import static org.junit.Assert.*;
  * Created by agibsonccc on 8/31/14.
  */
 public class InMemoryVocabStoreTests {
-    private static final Logger log = LoggerFactory.getLogger(InMemoryVocabStoreTests.class);
 
     @Test
     public void testStorePut() {

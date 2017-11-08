@@ -4,6 +4,8 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -27,6 +29,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collections;
 
@@ -37,6 +40,8 @@ import static org.junit.Assert.*;
  */
 public class TestMasking {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     static {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
@@ -45,7 +50,7 @@ public class TestMasking {
     public void checkMaskArrayClearance() {
         for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345).list()
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
                             .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                             .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
                             .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard)
@@ -59,19 +64,25 @@ public class TestMasking {
 
             net.fit(data);
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                if(l.getInput() != null){
+                    assertNull(l.getInput().getMask(0));
+                }
             }
 
 
             net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(), data.getLabelsMaskArray());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                if(l.getInput() != null){
+                    assertNull(l.getInput().getMask(0));
+                }
             }
 
             DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(data).iterator());
             net.fit(iter);
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                if(l.getInput() != null){
+                    assertNull(l.getInput().getMask(0));
+                }
             }
         }
     }
@@ -127,6 +138,8 @@ public class TestMasking {
                 ILossFunction lf = lossFunctions[i];
                 Activation a = act[i];
 
+                System.out.println(i + "\t" + lf + "\t" + a);
+
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
@@ -140,17 +153,13 @@ public class TestMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
 
-                net.setInput(features);
-                net.setLabels(labels);
-
-                net.computeGradientAndScore();
+                Pair<Gradients,Double> p = net.computeGradientAndScore(af.create(features), af.create(labels,labelMask));
                 double score1 = net.score();
-                INDArray grad1 = net.gradient().gradient();
+                INDArray grad1 = p.getFirst().getParameterGradients().gradient();
 
                 //Now: change the label values for the masked steps. The
 
@@ -159,13 +168,12 @@ public class TestMasking {
 
                 INDArray newLabels = labels.add(rand.muli(maskZeroLocations)); //Only the masked values are changed
 
-                net.setLabels(newLabels);
-                net.computeGradientAndScore();
+                p = net.computeGradientAndScore(af.create(features), af.create(newLabels, labelMask));
 
                 assertNotEquals(labels, newLabels);
 
                 double score2 = net.score();
-                INDArray grad2 = net.gradient().gradient();
+                INDArray grad2 = p.getFirst().getParameterGradients().gradient();
 
                 assertEquals(score1, score2, 1e-6);
                 assertEquals(grad1, grad2);
@@ -185,20 +193,16 @@ public class TestMasking {
                 ComputationGraph graph = new ComputationGraph(conf2);
                 graph.init();
 
-                graph.setLayerMaskArrays(null, new INDArray[] {labelMask});
-
-                graph.setInputs(features);
-                graph.setLabels(labels);
-                graph.computeGradientAndScore();
+                p = graph.computeGradientAndScore(af.create(features), af.create(labels,labelMask));
 
                 double gScore1 = graph.score();
-                INDArray gGrad1 = graph.gradient().gradient();
+                INDArray gGrad1 = p.getFirst().getParameterGradients().gradient();
 
                 graph.setLabels(newLabels);
-                graph.computeGradientAndScore();
+                p = graph.computeGradientAndScore(af.create(features), af.create(newLabels,labelMask));
 
                 double gScore2 = graph.score();
-                INDArray gGrad2 = graph.gradient().gradient();
+                INDArray gGrad2 = p.getFirst().getParameterGradients().gradient();
 
                 assertEquals(gScore1, gScore2, 1e-6);
                 assertEquals(gGrad1, gGrad2);

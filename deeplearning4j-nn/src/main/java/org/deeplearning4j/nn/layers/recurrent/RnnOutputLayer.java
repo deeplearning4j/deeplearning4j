@@ -17,19 +17,19 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -44,170 +44,135 @@ import java.util.Arrays;
  */
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
-    public RnnOutputLayer(NeuralNetConfiguration conf) {
+    public RnnOutputLayer(org.deeplearning4j.nn.conf.layers.RnnOutputLayer conf) {
         super(conf);
     }
 
-    public RnnOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
+        INDArray input = this.input.get(0);
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray inputTemp = input;
-        this.input = TimeSeriesUtils.reshape3dTo2d(input);
-        Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon);
-        this.input = inputTemp;
-        INDArray epsilon2d = gradAndEpsilonNext.getSecond();
-        INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0));
+        this.input.set(0, TimeSeriesUtils.reshape3dTo2d(input));
+        Gradients gradAndEpsilonNext = super.backpropGradient(epsilon);
+        this.input.set(0, inputTemp);
+        INDArray epsilon2d = gradAndEpsilonNext.get(0);
+        INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, inputTemp.size(0));
 
         weightNoiseParams.clear();
 
-        return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
-    }
+        gradAndEpsilonNext.set(0, epsilon3d);
 
-    /**{@inheritDoc}
-     */
-    @Override
-    public double f1Score(INDArray examples, INDArray labels) {
-        if (examples.rank() == 3)
-            examples = TimeSeriesUtils.reshape3dTo2d(examples);
-        if (labels.rank() == 3)
-            labels = TimeSeriesUtils.reshape3dTo2d(labels);
-        return super.f1Score(examples, labels);
-    }
 
-    public INDArray getInput() {
-        return input;
-    }
 
-    @Override
-    public Layer.Type type() {
-        return Layer.Type.RECURRENT;
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        setInput(x);
-        return TimeSeriesUtils.reshape2dTo3d(preOutput2d(training), input.size(0));
+        if(getPreProcessor() != null){
+            return getPreProcessor().backprop(gradAndEpsilonNext, getInputMiniBatchSize());
+        }
+        return gradAndEpsilonNext;
     }
 
     @Override
     protected INDArray preOutput2d(boolean training) {
+        INDArray input = this.input.get(0);
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
-            input = TimeSeriesUtils.reshape3dTo2d(input);
-            INDArray out = super.preOutput(input, training);
-            this.input = inputTemp;
+            this.input.set(0, TimeSeriesUtils.reshape3dTo2d(input));
+            INDArray out = super.preOutput(training);
+            this.input.set(0, inputTemp);
             return out;
         } else {
             //Case when called from BaseOutputLayer
-            INDArray out = super.preOutput(input, training);
+            INDArray out = super.preOutput(training);
             return out;
         }
     }
 
     @Override
     protected INDArray getLabels2d() {
+        return getLabels2d(labels);
+    }
+
+    @Override
+    protected INDArray getLabels2d(INDArray labels){
         if (labels.rank() == 3)
             return TimeSeriesUtils.reshape3dTo2d(labels);
         return labels;
     }
 
     @Override
-    public INDArray output(INDArray input) {
-        if (input.rank() != 3)
-            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
-        //Returns 3d activations from 3d input
-        setInput(input);
-        return output(false);
+    protected INDArray getLabelsMask2d(INDArray labelMask) {
+        if(labelMask == null)
+            return null;
+        if(labelMask.isColumnVector()){
+            return labelMask;
+        }
+
+        //Two possibilites: per time step (2d) or per output (3d) label mask
+        if(labelMask.rank() == 3){
+            return TimeSeriesUtils.reshape3dTo2d(labelMask);
+        } else {
+            return TimeSeriesUtils.reshapeTimeSeriesMaskToVector(labelMask);
+        }
     }
 
     @Override
-    public INDArray output(boolean training) {
+    public Activations output(boolean training) {
+        applyPreprocessorIfNecessary(training);
+        INDArray input = this.input.get(0);
         //Assume that input is 3d
         if (input.rank() != 3)
-            throw new IllegalArgumentException(
-                            "input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray preOutput2d = preOutput2d(training);
-
-        //if(conf.getLayer().getActivationFunction().equals("softmax")) {
-        if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
-            INDArray out2d = Nd4j.getExecutioner().execAndReturn(new SoftMax(preOutput2d));
-            if (maskArray != null) {
-                out2d.muliColumnVector(maskArray);
-            }
-            return TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
-        }
+            throw new IllegalArgumentException("input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
 
         applyDropOutIfNecessary(training);
         INDArray origInput = input;
-        this.input = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray out = super.activate(true);
-        this.input = origInput;
-        if (maskArray != null) {
-            out.muliColumnVector(maskArray);
+        this.input.set(0, TimeSeriesUtils.reshape3dTo2d(input));
+        Activations out = super.activate(true);
+        this.input.set(0, origInput);
+        out.set(0, TimeSeriesUtils.reshape2dTo3d(out.get(0), input.size(0)));
+        if (labelMask != null) {
+            applyMask(out.get(0));
         }
-        return TimeSeriesUtils.reshape2dTo3d(out, input.size(0));
+        return out;
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public void applyMask(INDArray to){
+        if(to.rank() == 2){
+            super.applyMask(to);
+            return;
+        }
+
+        if(labelMask.rank() == 3){
+            //Per-output masking
+            to.muli(labelMask);
+        } else {
+            //Per-time step masking
+            Broadcast.mul(to, labelMask, to, 0, 2);
+        }
+    }
+
+    @Override
+    public Activations activate(boolean training) {
+        applyPreprocessorIfNecessary(training);
+        INDArray input = this.input.get(0);
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
-                            "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
+                            "Input must be rank 3. Got input with rank " + input.rank() + ", shape "
+                                    + Arrays.toString(input.shape()) + " - " + layerId());
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
 
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
 
-        //INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
-        //        input2d.mmul(W).addiRowVector(b)));
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
-        if (maskArray != null) {
-            act2d.muliColumnVector(maskArray);
+        INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
+        if (labelMask != null) {
+            applyLabelMask(ret);
         }
-        return TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        if (maskArray != null) {
-            //Two possible cases:
-            //(a) per time step masking - rank 2 mask array -> reshape to rank 1 (column vector)
-            //(b) per output masking - rank 3 mask array  -> reshape to rank 2 (
-            if (maskArray.rank() == 2) {
-                this.maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
-            } else if (maskArray.rank() == 3) {
-                this.maskArray = TimeSeriesUtils.reshape3dTo2d(maskArray);
-            } else {
-                throw new UnsupportedOperationException(
-                                "Invalid mask array: must be rank 2 or 3 (got: rank " + maskArray.rank() + ", shape = "
-                                                + Arrays.toString(maskArray.shape()) + ") " + layerId());
-            }
-        } else {
-            this.maskArray = null;
-        }
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-
-        //If the *input* mask array is present and active, we should use it to mask the output
-        if (maskArray != null && currentMaskState == MaskState.Active) {
-            this.inputMaskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
-            this.inputMaskArrayState = currentMaskState;
-        } else {
-            this.inputMaskArray = null;
-            this.inputMaskArrayState = null;
-        }
-
-        return null; //Last layer in network
+        return ActivationsFactory.getInstance().create(ret);    //TODO masks
     }
 
     /**Compute the score for each example individually, after labels and input have been set.
@@ -217,20 +182,22 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(Activations layerOutput, Activations labels, double fullNetworkL1, double fullNetworkL2) {
         //For RNN: need to sum up the score over each time step before returning.
-
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        setInput(layerOutput);
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
+        INDArray labels2d = getLabels2d(labels.get(0));
+        INDArray mask2d = getLabelsMask2d(labels.getMask(0));
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
+                        lossFunction.computeScoreArray(labels2d, preOut, layerConf().getActivationFn(), mask2d);
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 
-        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, input.size(0));
+        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, input.get(0).size(0));
         INDArray summedScores = scoreArrayTs.sum(1);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
@@ -238,6 +205,21 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             summedScores.addi(l1l2);
         }
 
+        clear();
         return summedScores;
+    }
+
+    protected void applyLabelMask(INDArray to){
+        if(labelMask == null){
+            return;
+        }
+        //Assumption: 3d input
+        if(labelMask.rank() == 2){
+            //Per time step masking
+            Broadcast.mul(to, labelMask, to, 0, 2);
+        } else {
+            //Per output masking
+            to.muli(labelMask);
+        }
     }
 }

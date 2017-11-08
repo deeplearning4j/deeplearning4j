@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -34,6 +35,7 @@ import java.util.List;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public abstract class BaseDataFetcher implements DataSetFetcher {
 
     /**
@@ -45,7 +47,6 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
     protected int inputColumns = -1;
     protected DataSet curr;
     protected int totalExamples;
-    protected static final Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
 
     /**
      * Creates a feature vector

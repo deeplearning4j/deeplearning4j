@@ -18,21 +18,21 @@
 
 package org.deeplearning4j.nn.layers;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
@@ -43,27 +43,40 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    protected INDArray input, preOutput;
-    protected NeuralNetConfiguration conf;
-    protected INDArray dropoutMask;
+    protected Activations input;
+    protected int inputMinibatchSize;   //TODO eventially this field should be removed somehow...
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    protected INDArray preOutput;
+    protected org.deeplearning4j.nn.conf.layers.Layer conf;
+    protected boolean preprocessorApplied = false;
     protected boolean dropoutApplied = false;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    @Getter @Setter
     protected int index = 0;
-    protected INDArray maskArray;
-    protected MaskState maskState;
+    protected int numInputs = 1;
+    protected int numOutput = 1;
     protected CacheMode cacheMode = CacheMode.NONE;
 
     protected int iterationCount;
     protected int epochCount;
 
-    public AbstractLayer(NeuralNetConfiguration conf) {
+    public AbstractLayer(org.deeplearning4j.nn.conf.layers.Layer conf) {
         this.conf = conf;
         cacheMode = conf.getCacheMode();
     }
 
-    public AbstractLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
-        this.input = input;
+    @Override
+    public int numInputs() {
+        return numInputs;
+    }
+
+    @Override
+    public int numOutputs() {
+        return numOutput;
+    }
+
+    @Override
+    public String getName(){
+        return conf.getLayerName();
     }
 
     @Override
@@ -75,106 +88,24 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected LayerConfT layerConf() {
-        return (LayerConfT) this.conf.getLayer();
+        return (LayerConfT) this.conf;
     }
 
     protected String layerId() {
-        String name = this.conf().getLayer().getLayerName();
+        String name = this.conf().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
 
-    public INDArray getInput() {
+    @Override
+    public Activations getInput(){
         return input;
     }
 
-    /**
-     * Init the model
-     */
     @Override
-    public void init() {
-
-    }
-
-    @Override
-    public abstract Layer clone();
-
-    @Override
-    public void setInput(INDArray input) {
+    public void setInput(Activations input){
         this.input = input;
-        dropoutApplied = false;
-    }
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return iterationListeners;
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
-    }
-
-    /**
-     * This method ADDS additional IterationListener to existing listeners
-     *
-     * @param listeners
-     */
-    @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.iterationListeners == null) {
-            setListeners(listeners);
-            return;
-        }
-
-        for (IterationListener listener : listeners)
-            iterationListeners.add(listener);
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        setListeners(Arrays.asList(listeners));
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
-    }
-
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
+        this.dropoutApplied = false;
+        this.preprocessorApplied = false;
     }
 
     @Override
@@ -183,18 +114,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void setConf(NeuralNetConfiguration conf) {
+    public void setConf(org.deeplearning4j.nn.conf.layers.Layer conf) {
         this.conf = conf;
     }
 
@@ -254,11 +174,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
-    }
-
-    @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
@@ -268,51 +183,22 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return Collections.emptyMap();
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        if (x == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
-        setInput(x);
-        return preOutput(training);
-    }
-
-
-    public abstract INDArray preOutput(boolean training);
-
     protected void applyMask(INDArray to) {
-        to.muliColumnVector(maskArray);
+        if(input.getMaskState(0) == MaskState.Active){
+            //See MaskState javadoc - Masks shouldn't always be applied, even if present
+            to.muliColumnVector(input.getMask(0));
+        }
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate(true);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public Activations activate(Activations input, boolean training) {
         setInput(input);
         return activate(training);
     }
 
     @Override
-    public INDArray activate() {
-        return activate(false);
-    }
-
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, true);
+    public Activations activate(Activations input){
+        return activate(input, false);
     }
 
     @Override
@@ -326,12 +212,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public int batchSize() {
-        return input.size(0);
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
+    public org.deeplearning4j.nn.conf.layers.Layer conf() {
         return conf;
     }
 
@@ -339,27 +220,42 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public void clear() {
         input = null;
+        dropoutApplied = false;
+        preprocessorApplied = false;
+        preOutput = null;
     }
 
     protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
         if(training && !dropoutApplied && layerConf().getIDropout() != null ){
-            //TODO: Epoch + iteration counters...
+            input = input.cloneShallow();   //Reason: some layers/vertices will pass through their activations objects without modification. Changes to this activations object should not impact other layers
+
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
                         .notifyScopeBorrowed()) {
-                    input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
+                    INDArray postDropout = layerConf().getIDropout().applyDropout(input.get(0), getIterationCount(), getEpochCount(), false);
+                    input.set(0, postDropout);
                 }
             } else {
-                input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
+                INDArray postDropout = layerConf().getIDropout().applyDropout(input.get(0), getIterationCount(), getEpochCount(), false);
+                input.set(0, postDropout);
             }
             dropoutApplied = true;
         }
     }
 
-    @Override
-    public Type type() {
-        return Type.FEED_FORWARD;
+    protected void applyPreprocessorIfNecessary(boolean training){
+        if(!preprocessorApplied && layerConf().getPreProcessor() != null){
+            input = layerConf().getPreProcessor().preProcess(input, getInputMiniBatchSize(), training);
+            preprocessorApplied = true;
+        }
+    }
+
+    protected Gradients backpropPreprocessor(Gradients gradients){
+        if(layerConf().getPreProcessor() != null){
+            return layerConf().getPreProcessor().backprop(gradients, getInputMiniBatchSize());
+        }
+        return gradients;
     }
 
     /**
@@ -378,84 +274,13 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void fit(INDArray input) {
-        throw new UnsupportedOperationException("Not supported");
+    public void setInputMiniBatchSize(int size) {
+        this.inputMinibatchSize = size;
     }
-
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public INDArray input() {
-        return input;
-    }
-
-    @Override
-    public void validateInput() {
-
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void setInputMiniBatchSize(int size) {}
 
     @Override
     public int getInputMiniBatchSize() {
-        return input.size(0);
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        this.maskArray = maskArray;
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return maskArray;
-    }
-
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        //Most layers: CNN, dense, activation, etc - set mask array, mask state and then leave the mask unmodified
-
-        this.maskArray = maskArray;
-        this.maskState = currentMaskState;
-
-        return new Pair<>(maskArray, currentMaskState);
-    }
-
-
-    @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public void fit() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public double score() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
+        return inputMinibatchSize;
     }
 
 
@@ -466,5 +291,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
                 lc.applyConstraint(this, iteration, epoch);
             }
         }
+    }
+
+
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        if(conf != null){
+            return conf.getPreProcessor();
+        }
+        return null;
     }
 }

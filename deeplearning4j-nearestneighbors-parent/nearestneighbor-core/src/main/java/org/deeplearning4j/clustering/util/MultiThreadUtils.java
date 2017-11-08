@@ -18,15 +18,15 @@
 
 package org.deeplearning4j.clustering.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.*;
 
+@Slf4j
 public class MultiThreadUtils {
-
-    private static Logger log = LoggerFactory.getLogger(MultiThreadUtils.class);
 
     private static ExecutorService instance;
 

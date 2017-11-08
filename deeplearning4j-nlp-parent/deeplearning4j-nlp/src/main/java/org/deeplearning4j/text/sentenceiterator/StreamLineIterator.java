@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class StreamLineIterator implements SentenceIterator {
     private DocumentIterator iterator;
     private int linesToFetch;
@@ -26,8 +28,6 @@ public class StreamLineIterator implements SentenceIterator {
     private SentencePreProcessor preProcessor;
 
     private BufferedReader currentReader;
-
-    protected Logger logger = LoggerFactory.getLogger(StreamLineIterator.class);
 
     private StreamLineIterator(DocumentIterator iterator) {
         this.iterator = iterator;

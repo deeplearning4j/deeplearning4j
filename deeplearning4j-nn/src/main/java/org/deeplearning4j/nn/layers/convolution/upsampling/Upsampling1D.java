@@ -19,11 +19,11 @@
 package org.deeplearning4j.nn.layers.convolution.upsampling;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 
 /**
@@ -40,49 +40,47 @@ import org.nd4j.linalg.primitives.Pair;
 public class Upsampling1D extends Upsampling2D {
 
 
-    public Upsampling1D(NeuralNetConfiguration conf) {
+    public Upsampling1D(org.deeplearning4j.nn.conf.layers.Upsampling1D conf) {
         super(conf);
-    }
-
-    public Upsampling1D(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
     }
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray origInput = this.input.get(0);
+        INDArray epsilon = gradients.get(0);
 
         int size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         // we replicate the error term times "size" so that backprop works properly on it
         epsilon = epsilon.repeat(3, size);
 
-        INDArray originalInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, origInput.reshape(origInput.size(0), origInput.size(1), origInput.size(2), 1));
 
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
-        INDArray epsNext = gradientEpsNext.getSecond();
-        Gradient gradient = gradientEpsNext.getFirst();
+        Gradients gradientEpsNext = super.backpropGradient(gradients);
+        INDArray epsNext = gradientEpsNext.get(0);
 
         epsNext = epsNext.slice(0, 3);
-        input = originalInput;
+        this.input.set(0, origInput);
 
         // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, epsNext.divi(size));
+        gradientEpsNext.set(0, epsNext.divi(size));
+        return gradientEpsNext;
     }
 
-    @Override
+
     public INDArray preOutput(boolean training) {
         return preOutput(training, false);
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
+        INDArray input = this.input.get(0);
         INDArray originalInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         INDArray preOutput = super.preOutput(training, forBackprop);
 
-        input = originalInput;
+        this.input.set(0, originalInput);
         preOutput = preOutput.slice(0, 3);
 
         return preOutput;

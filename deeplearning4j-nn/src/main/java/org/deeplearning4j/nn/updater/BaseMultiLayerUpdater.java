@@ -35,7 +35,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Getter
-public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater {
+public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater {
 
     protected final T network;
     protected Map<String, Layer> layersByName;
@@ -76,7 +76,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 for (int j = 0; j < variables.size(); j++) {
                     String var = variables.get(j);
                     int paramSizeThisVariable = layerParamTable.get(var).length();
-                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getUpdaterByParam(var)
+                    int updaterStateSizeThisVariable = (int) layers[i].conf().getUpdaterByParam(var)
                                     .stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;
@@ -205,8 +205,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     @Override
-    public void update(Layer layer, Gradient gradient, int iteration, int epoch, int batchSize) {
-        update(gradient, iteration, epoch, batchSize);
+    public void update(Layer layer, Gradient gradient, int iteration, int epoch, int batchSize, boolean isPretrain) {
+        update(gradient, iteration, epoch, batchSize, isPretrain);
     }
 
     /**
@@ -220,7 +220,10 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param iteration The current iteration (i.e., number of parameter updates so far)
      * @param batchSize The current minibatch size (number of examples)
      */
-    public void update(Gradient gradient, int iteration, int epoch, int batchSize) {
+    public void update(Gradient gradient, int iteration, int epoch, int batchSize, boolean isPretrain) {
+        if(batchSize <= 0){
+            throw new IllegalArgumentException("Cannot update gradients: minibatch size must be >= 1. Got: " + batchSize);
+        }
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array
@@ -232,7 +235,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         Layer[] layers = getOrderedLayers();
         if (layers.length == 1 && isSingleLayerUpdater()) {
-            layerGradients.put(layers[0].conf().getLayer().getLayerName(), gradient);
+            layerGradients.put(layers[0].conf().getLayerName(), gradient);
         } else {
             for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
                 String key = gradientPair.getKey();
@@ -265,7 +268,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         //
         for (UpdaterBlock ub : updaterBlocks) {
-            if (ub.skipDueToPretrainConfig()) {
+            if (ub.skipDueToPretrainConfig(isPretrain)) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
@@ -317,14 +320,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
-        if (!(layer.conf().getLayer() instanceof BaseLayer)) {
+        if (!(layer.conf() instanceof BaseLayer)) {
             //Layer does not have parameters -> no gradient
             return;
         }
-        BaseLayer bLayer = (BaseLayer) layer.conf().getLayer();
+        BaseLayer bLayer = (BaseLayer) layer.conf();
 
         GradientNormalization normalization = bLayer.getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain())
+        if (normalization == null || normalization == GradientNormalization.None /*|| layer.conf().isPretrain()*/)
             return; //no op
 
         final double threshold = bLayer.getGradientNormalizationThreshold();

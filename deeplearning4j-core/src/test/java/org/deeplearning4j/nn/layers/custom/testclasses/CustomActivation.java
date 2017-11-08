@@ -9,7 +9,7 @@ import org.nd4j.linalg.primitives.Pair;
 /**
  * Created by Alex on 19/12/2016.
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class CustomActivation extends BaseActivationFunction implements IActivation {
     @Override
     public INDArray getActivation(INDArray in, boolean training) {

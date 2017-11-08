@@ -30,7 +30,7 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         MultiLayerConfiguration conf = (MultiLayerConfiguration) defaultDeserializer.deserialize(jp, ctxt);
         Layer[] layers = new Layer[conf.getConfs().size()];
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = conf.getConf(i).getLayer();
+            layers[i] = conf.getConf(i);
         }
 
         //Now, check if we need to manually handle IUpdater deserialization from legacy format

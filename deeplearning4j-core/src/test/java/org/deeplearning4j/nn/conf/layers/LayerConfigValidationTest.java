@@ -100,7 +100,7 @@ public class LayerConfigValidationTest {
     public void testCompGraphNullLayer() {
         ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.01))
-                        .iterations(3).seed(42).miniBatch(false).l1(0.2).l2(0.2)
+                        .seed(42).miniBatch(false).l1(0.2).l2(0.2)
                         /* Graph Builder */
                         .updater(Updater.RMSPROP).graphBuilder().addInputs("in")
                         .addLayer("L" + 1,
@@ -136,27 +136,28 @@ public class LayerConfigValidationTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        BaseLayer layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
+        BaseLayer layerConf = (BaseLayer) net.getLayer(0).conf();
         assertEquals(expectedMomentum, ((Nesterovs)layerConf.getIUpdater()).getMomentum(), 1e-3);
         assertEquals(expectedL1, layerConf.getL1(), 1e-3);
         assertEquals(0.5, layerConf.getL2(), 1e-3);
 
-        BaseLayer layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
+        BaseLayer layerConf1 = (BaseLayer) net.getLayer(1).conf();
         assertEquals(0.4, ((Nesterovs)layerConf1.getIUpdater()).getMomentum(), 1e-3);
 
         // Adam Updater
         conf = new NeuralNetConfiguration.Builder().updater(new Adam(0.3))
-                        .weightInit(WeightInit.DISTRIBUTION).list()
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                        .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).l1(0.3).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
+        layerConf = (BaseLayer) net.getLayer(0).conf();
         assertEquals(0.3, layerConf.getL1(), 1e-3);
         assertEquals(0.5, layerConf.getL2(), 1e-3);
 
-        layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
+        layerConf1 = (BaseLayer) net.getLayer(1).conf();
         assertEquals(expectedAdamMeanDecay, ((Adam)layerConf1.getIUpdater()).getBeta1(), 1e-3);
         assertEquals(expectedAdamVarDecay, ((Adam)layerConf1.getIUpdater()).getBeta2(), 1e-3);
         assertEquals(expectedDist, layerConf1.getDist());
@@ -171,12 +172,12 @@ public class LayerConfigValidationTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
+        layerConf = (BaseLayer) net.getLayer(0).conf();
         assertEquals(expectedRmsDecay, ((RmsProp)layerConf.getIUpdater()).getRmsDecay(), 1e-3);
         assertEquals(expectedL1, layerConf.getL1(), 1e-3);
         assertEquals(expectedL2, layerConf.getL2(), 1e-3);
 
-        layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
+        layerConf1 = (BaseLayer) net.getLayer(1).conf();
         assertEquals(0.4, ((RmsProp)layerConf1.getIUpdater()).getRmsDecay(), 1e-3);
 
 

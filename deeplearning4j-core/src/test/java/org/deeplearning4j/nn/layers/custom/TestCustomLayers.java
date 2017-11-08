@@ -257,7 +257,7 @@ public class TestCustomLayers {
         testLabels.putScalar(0, 3, 1.0);
         DataSet ds = new DataSet(testFeatures, testLabels);
 
-        assertEquals(net2.output(testFeatures)[0], net.output(testFeatures)[0]);
+        assertEquals(net2.output(testFeatures).get(0), net.output(testFeatures).get(0));
         assertEquals(net2.score(ds), net.score(ds), 1e-6);
     }
 }

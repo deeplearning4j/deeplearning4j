@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.layers.normalization;
 
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -29,8 +30,8 @@ import org.nd4j.linalg.primitives.Pair;
 public interface LocalResponseNormalizationHelper {
     boolean checkSupported(double k, double n, double alpha, double beta);
 
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
-                    double beta);
+    Gradients backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
+                               double beta);
 
     INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta);
 }

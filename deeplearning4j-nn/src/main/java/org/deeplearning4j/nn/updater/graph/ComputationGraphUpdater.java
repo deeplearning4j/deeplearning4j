@@ -2,11 +2,12 @@ package org.deeplearning4j.nn.updater.graph;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Gradient updater for ComputationGraph. Most of the functionality is shared with
@@ -28,7 +29,7 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         layersByName = new HashMap<>();
         Layer[] layers = getOrderedLayers();
         for (Layer l : layers) {
-            layersByName.put(l.conf().getLayer().getLayerName(), l);
+            layersByName.put(l.conf().getLayerName(), l);
         }
     }
 
@@ -37,21 +38,20 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         if (orderedLayers != null) {
             return orderedLayers;
         }
-        GraphVertex[] vertices = network.getVertices();
+        Map<String,Layer> vertices = network.getVerticesMap();
 
         //In CompGraph: we need to know topological ordering, so we know how parameters are laid out in the 1d view arrays
-        int[] topologicalOrdering = network.topologicalSortOrder();
+        List<String> topologicalOrdering = network.topologicalSortOrder();
 
         Layer[] out = new Layer[network.getNumLayers()];
 
         int j = 0;
-        for (int i = 0; i < topologicalOrdering.length; i++) {
-            GraphVertex currentVertex = vertices[topologicalOrdering[i]];
-            if (!currentVertex.hasLayer()) {
+        for (int i = 0; i < topologicalOrdering.size(); i++) {
+            Layer currentVertex = vertices.get(topologicalOrdering.get(i));
+            if(currentVertex.numParams() == 0){
                 continue;
             }
-
-            out[j++] = currentVertex.getLayer();
+            out[j++] = currentVertex;
         }
 
         orderedLayers = out;
@@ -73,6 +73,6 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
 
     @Override
     protected boolean isMiniBatch() {
-        return network.conf().isMiniBatch();
+        return network.getOptimizationConfig().isMiniBatch();
     }
 }

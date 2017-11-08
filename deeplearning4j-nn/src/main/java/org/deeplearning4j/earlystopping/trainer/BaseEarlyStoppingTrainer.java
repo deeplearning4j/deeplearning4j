@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.earlystopping.trainer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -43,9 +44,8 @@ import java.util.Map;
  * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping
  * @author Alex Black
  */
+@Slf4j
 public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
-
-    private static Logger log = LoggerFactory.getLogger(BaseEarlyStoppingTrainer.class);
 
     protected T model;
 

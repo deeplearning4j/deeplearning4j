@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.config;
 
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * All relevant property fields of keras 1.x layers.
@@ -26,6 +27,7 @@ import lombok.Data;
  * @author Max Pumperla
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class Keras1LayerConfiguration extends KerasLayerConfiguration {
 
     /* Basic layer names */

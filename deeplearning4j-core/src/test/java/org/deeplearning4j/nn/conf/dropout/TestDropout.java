@@ -6,7 +6,6 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -43,9 +42,9 @@ public class TestDropout {
                 .layer(new DenseLayer.Builder().nIn(10).nOut(10).dropOut(new AlphaDropout(0.5)).build())
                 .build();
 
-        assertEquals(new Dropout(0.6), conf.getConf(0).getLayer().getIDropout());
-        assertEquals(new Dropout(0.7), conf.getConf(1).getLayer().getIDropout());
-        assertEquals(new AlphaDropout(0.5), conf.getConf(2).getLayer().getIDropout());
+        assertEquals(new Dropout(0.6), conf.getConf(0).getIDropout());
+        assertEquals(new Dropout(0.7), conf.getConf(1).getIDropout());
+        assertEquals(new AlphaDropout(0.5), conf.getConf(2).getIDropout());
 
 
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
@@ -58,9 +57,9 @@ public class TestDropout {
                 .setOutputs("2")
                 .build();
 
-        assertEquals(new Dropout(0.6), ((LayerVertex)conf2.getVertices().get("0")).getLayerConf().getLayer().getIDropout());
-        assertEquals(new Dropout(0.7), ((LayerVertex)conf2.getVertices().get("1")).getLayerConf().getLayer().getIDropout());
-        assertEquals(new AlphaDropout(0.5), ((LayerVertex)conf2.getVertices().get("2")).getLayerConf().getLayer().getIDropout());
+        assertEquals(new Dropout(0.6), conf2.getVertices().get("0").getIDropout());
+        assertEquals(new Dropout(0.7), conf2.getVertices().get("1").getIDropout());
+        assertEquals(new AlphaDropout(0.5), conf2.getVertices().get("2").getIDropout());
     }
 
     @Test

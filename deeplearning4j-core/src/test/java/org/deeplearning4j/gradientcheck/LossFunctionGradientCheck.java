@@ -138,7 +138,7 @@ public class LossFunctionGradientCheck {
                                 + minibatchSizes[j];
 
                 Nd4j.getRandom().setSeed(12345);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                 .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
@@ -292,7 +292,7 @@ public class LossFunctionGradientCheck {
                     assertEquals("Tests failed: serialization of " + lossFunctions[i], 0, 1);
                 }
                 Nd4j.getRandom().setSeed(12345);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                 .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
@@ -305,7 +305,7 @@ public class LossFunctionGradientCheck {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                assertTrue(((LossLayer) net.getLayer(1).conf().getLayer()).getLossFn().getClass() == lossFunctions[i]
+                assertTrue(((LossLayer) net.getLayer(1).conf()).getLossFn().getClass() == lossFunctions[i]
                                 .getClass());
 
                 INDArray[] inOut = getFeaturesAndLabels(lossFunctions[i], minibatchSizes[j], 4, nOut[i], 12345);
@@ -511,7 +511,7 @@ public class LossFunctionGradientCheck {
                                     + minibatchSizes[j] + "; weights = " + w;
 
                     Nd4j.getRandom().setSeed(12345);
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                     .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new UniformDistribution(-3, 3)).list()

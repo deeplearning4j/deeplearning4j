@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.documentiterator;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -18,9 +19,8 @@ import static org.junit.Assert.assertEquals;
  */
 
 @Ignore
+@Slf4j
 public class FileDocumentIteratorTest {
-
-    private static final Logger log = LoggerFactory.getLogger(FileDocumentIteratorTest.class);
 
     @Before
     public void setUp() throws Exception {

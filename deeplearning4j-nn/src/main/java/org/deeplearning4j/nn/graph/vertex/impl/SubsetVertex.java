@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -45,52 +45,45 @@ public class SubsetVertex extends BaseGraphVertex {
     private int to; //inclusive
     private int[] forwardShape;
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to) {
-        this(graph, name, vertexIndex, null, null, from, to);
-    }
-
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int from, int to) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public SubsetVertex(String name, int vertexIndex, int numInputs, int from, int to) {
+        super(name, vertexIndex, numInputs);
         this.from = from;
         this.to = to;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
+        forwardShape = Arrays.copyOf(input.get(0).shape(), input.get(0).rank());
 
-        switch (inputs[0].rank()) {
+        INDArray ret;
+        switch (input.get(0).rank()) {
             case 2:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                ret = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                break;
             case 3:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                ret = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                break;
             case 4:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
+                ret = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
                                 NDArrayIndex.all());
+                break;
             default:
                 throw new UnsupportedOperationException(
-                                "Cannot get subset for activations of rank " + inputs[0].rank());
+                                "Cannot get subset for activations of rank " + input.get(0).rank());
         }
+
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(ret, masks.getFirst(), masks.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: error not set");
+    public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
+        INDArray epsilon = gradient.get(0);
 
         INDArray out = Nd4j.zeros(forwardShape);
         switch (forwardShape.length) {
@@ -108,12 +101,12 @@ public class SubsetVertex extends BaseGraphVertex {
             default:
                 throw new RuntimeException("Invalid activation rank"); //Should never happen
         }
-        return new Pair<>(null, new INDArray[] {out});
+        return GradientsFactory.getInstance().create(out, null);
     }
 
     @Override
     public String toString() {
-        return "SubsetVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+        return "SubsetVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",fromIdx=" + from
                         + ",toIdx=" + to + ")";
     }
 
@@ -123,8 +116,8 @@ public class SubsetVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op: subset just provides part of the activations for each example (or time step)
         if (maskArrays == null || maskArrays.length == 0) {

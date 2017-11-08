@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by Alex on 14/07/2017.
@@ -49,9 +50,9 @@ public class TestMemoryReports {
         return l;
     }
 
-    public static List<Pair<? extends GraphVertex, InputType[]>> getTestVertices() {
+    public static List<Pair<? extends Layer, InputType[]>> getTestVertices() {
 
-        List<Pair<? extends GraphVertex, InputType[]>> out = new ArrayList<>();
+        List<Pair<? extends Layer, InputType[]>> out = new ArrayList<>();
         out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add),
                         new InputType[] {InputType.feedForward(10), InputType.feedForward(10)}));
         out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add),
@@ -68,9 +69,9 @@ public class TestMemoryReports {
                         new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
         out.add(new Pair<>(new UnstackVertex(0, 2), new InputType[] {InputType.recurrent(10, 10)}));
 
-        out.add(new Pair<>(new DuplicateToTimeSeriesVertex("0"),
-                        new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
-        out.add(new Pair<>(new LastTimeStepVertex("0"), new InputType[] {InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new DuplicateToTimeSeriesVertex(),
+                new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
+        out.add(new Pair<>(new LastTimeStepVertex(), new InputType[] {InputType.recurrent(10, 10)}));
 
         return out;
     }
@@ -112,7 +113,8 @@ public class TestMemoryReports {
         for (Pair<? extends Layer, InputType> p : l) {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                            .addLayer("0", p.getFirst().clone(), "in").addLayer("1", p.getFirst().clone(), "0")
+                            .add("0", p.getFirst().clone(), "in")
+                            .add("1", p.getFirst().clone(), "0")
                             .setOutputs("1").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
@@ -133,21 +135,18 @@ public class TestMemoryReports {
 
     @Test
     public void testMemoryReportsVerticesCG() {
-        List<Pair<? extends GraphVertex, InputType[]>> l = getTestVertices();
+        List<Pair<? extends Layer, InputType[]>> l = getTestVertices();
 
-        for (Pair<? extends GraphVertex, InputType[]> p : l) {
+        for (Pair<? extends Layer, InputType[]> p : l) {
             List<String> inputs = new ArrayList<>();
             for (int i = 0; i < p.getSecond().length; i++) {
                 inputs.add(String.valueOf(i));
             }
 
             String[] layerInputs = inputs.toArray(new String[inputs.size()]);
-            if (p.getFirst() instanceof DuplicateToTimeSeriesVertex) {
-                layerInputs = new String[] {"1"};
-            }
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs(inputs)
-                            .addVertex("gv", p.getFirst(), layerInputs).setOutputs("gv").build();
+                            .add("gv", p.getFirst(), layerInputs).setOutputs("gv").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
             //            System.out.println(mr.toString());

@@ -2,6 +2,9 @@ package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -32,6 +35,8 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestCompGraphCNN {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     protected ComputationGraphConfiguration conf;
     protected ComputationGraph graph;
@@ -94,7 +99,11 @@ public class TestCompGraphCNN {
     @Test
     public void testConfigBasic() {
         //Check the order. there are 2 possible valid orders here
-        int[] order = graph.topologicalSortOrder();
+        List<String> topoOrder = graph.topologicalSortOrder();
+        int[] order = new int[topoOrder.size()];
+        for( int i=0; i<order.length; i++ ){
+            order[i] = graph.getVerticesMap().get(topoOrder.get(i)).getIndex();
+        }
         int[] expOrder1 = new int[] {0, 1, 2, 4, 3, 5, 6}; //First of 2 possible valid orders
         int[] expOrder2 = new int[] {0, 2, 1, 4, 3, 5, 6}; //Second of 2 possible valid orders
         boolean orderOK = Arrays.equals(expOrder1, order) || Arrays.equals(expOrder2, order);
@@ -123,9 +132,7 @@ public class TestCompGraphCNN {
 
     @Test
     public void testForwardBasic() {
-
-        graph.setInput(0, ds.getFeatureMatrix());
-        Map<String, INDArray> activations = graph.feedForward(true);
+        Map<String, Activations> activations = graph.feedForward(af.create(ds.getFeatures()), true);
         assertEquals(6, activations.size()); //1 input, 2 CNN layers, 1 subsampling, 1 dense, 1 output -> 6
         assertTrue(activations.containsKey("input"));
         assertTrue(activations.containsKey("cnn1"));
@@ -147,8 +154,7 @@ public class TestCompGraphCNN {
         graph.setLabel(0, labels.dup());
 
         //Compute gradients
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> graphGradScore = graph.gradientAndScore();
+        Pair<Gradients, Double> graphGradScore = graph.computeGradientAndScore(af.create(input.dup()), af.create(labels.dup()));
 
         // Check gradients
     }
@@ -170,7 +176,7 @@ public class TestCompGraphCNN {
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(123).graphBuilder().addInputs("input")
+                                        .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(nChannels, imageWidth,
                                                         imageHeight))
                                         .addLayer("conv1", new ConvolutionLayer.Builder()
@@ -216,7 +222,7 @@ public class TestCompGraphCNN {
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(123).graphBuilder().addInputs("input")
+                                        .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(imageHeight, imageWidth,
                                                         nChannels))
                                         .addLayer("conv1",
@@ -256,7 +262,7 @@ public class TestCompGraphCNN {
         int nChannels = 1;
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
                         //-- kernel size, stride , padding

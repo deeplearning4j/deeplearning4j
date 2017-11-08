@@ -1,12 +1,9 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
-import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -36,8 +33,6 @@ public class LayerBuilderTest {
     int[] kernelSize = new int[] {2, 2};
     int[] stride = new int[] {2, 2};
     int[] padding = new int[] {1, 1};
-    HiddenUnit hidden = HiddenUnit.RECTIFIED;
-    VisibleUnit visible = VisibleUnit.GAUSSIAN;
     int k = 1;
     Convolution.Type convType = Convolution.Type.VALID;
     LossFunction loss = LossFunction.MCXENT;
@@ -88,18 +83,6 @@ public class LayerBuilderTest {
         assertArrayEquals(kernelSize, conv.getKernelSize());
         assertArrayEquals(stride, conv.getStride());
         assertArrayEquals(padding, conv.getPadding());
-    }
-
-    @Test
-    public void testRBM() throws Exception {
-        RBM rbm = new RBM.Builder(hidden, visible).sparsity(sparsity).k(k).build();
-
-        checkSerialization(rbm);
-
-        assertEquals(hidden, rbm.getHiddenUnit());
-        assertEquals(visible, rbm.getVisibleUnit());
-        assertEquals(k, rbm.getK());
-        assertEquals(sparsity, rbm.getSparsity(), DELTA);
     }
 
     @Test
@@ -203,33 +186,27 @@ public class LayerBuilderTest {
     }
 
     private void checkSerialization(Layer layer) throws Exception {
-        NeuralNetConfiguration confExpected = new NeuralNetConfiguration.Builder().layer(layer).build();
-        NeuralNetConfiguration confActual;
-
+        Layer l2;
         // check Java serialization
         byte[] data;
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
-            out.writeObject(confExpected);
+            out.writeObject(layer);
             data = bos.toByteArray();
         }
         try (ByteArrayInputStream bis = new ByteArrayInputStream(data); ObjectInput in = new ObjectInputStream(bis)) {
-            confActual = (NeuralNetConfiguration) in.readObject();
+            l2 = (Layer) in.readObject();
         }
-        assertEquals("unequal Java serialization", confExpected.getLayer(), confActual.getLayer());
+        assertEquals("unequal Java serialization", layer, l2);
 
         // check JSON
-        String json = confExpected.toJson();
-        confActual = NeuralNetConfiguration.fromJson(json);
-        assertEquals("unequal JSON serialization", confExpected.getLayer(), confActual.getLayer());
+        String json = layer.toJson();
+        l2 = Layer.fromJson(json);
+        assertEquals("unequal JSON serialization", layer, l2);
 
         // check YAML
-        String yaml = confExpected.toYaml();
-        confActual = NeuralNetConfiguration.fromYaml(yaml);
-        assertEquals("unequal YAML serialization", confExpected.getLayer(), confActual.getLayer());
-
-        // check the layer's use of callSuper on equals method
-        confActual.getLayer().setIDropout(new Dropout(new java.util.Random().nextDouble()));
-        assertNotEquals("broken equals method (missing callSuper?)", confExpected.getLayer(), confActual.getLayer());
+        String yaml = layer.toYaml();
+        l2 = Layer.fromYaml(yaml);
+        assertEquals("unequal YAML serialization", layer, l2);
     }
 
 }

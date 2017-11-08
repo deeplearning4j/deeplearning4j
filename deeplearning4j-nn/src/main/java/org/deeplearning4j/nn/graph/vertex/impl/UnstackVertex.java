@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -48,56 +48,50 @@ public class UnstackVertex extends BaseGraphVertex {
     private int forwardShape[];
     private int step;
 
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize) {
-        this(graph, name, vertexIndex, null, null, from, stackSize);
-    }
-
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int from, int stackSize) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public UnstackVertex(String name, int vertexIndex, int numInputs, int from, int stackSize) {
+        super(name, vertexIndex, numInputs);
         this.from = from;
         this.stackSize = stackSize;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         // once we know the inputs, save the shape and interval size for doBackward
-        this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-        this.step = inputs[0].size(0) / stackSize;
+        this.forwardShape = Arrays.copyOf(input.get(0).shape(), input.get(0).rank());
+        this.step = input.get(0).size(0) / stackSize;
         int start = from * step;
         int end = (from + 1) * step;
 
-        switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
+        INDArray ret;
+        switch (input.get(0).rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
             case 2:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
+                ret = input.get(0).get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
+                break;
             case 3:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                ret = input.get(0).get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                break;
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
+                ret = input.get(0).get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
                                 NDArrayIndex.all()).dup();
+                break;
             default:
                 throw new UnsupportedOperationException(
-                                "Cannot get subset for activations of rank " + inputs[0].rank());
+                                "Cannot get subset for activations of rank " + input.get(0).rank());
         }
+
+        Pair<INDArray,MaskState> p = feedForwardMaskArrays(input.getMaskAsArray(), input.getMaskState(0), getInputMiniBatchSize());
+
+        return ActivationsFactory.getInstance().create(ret, p.getFirst(), p.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: error not set");
+    public Gradients backpropGradient(Gradients gradient) {
+        if (gradient == null || gradient.get(0) == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available (null)");
+        INDArray epsilon = gradient.get(0);
 
         INDArray out = Nd4j.zeros(forwardShape);
         int start = from * step;
@@ -118,7 +112,7 @@ public class UnstackVertex extends BaseGraphVertex {
             default:
                 throw new RuntimeException("Invalid activation rank"); //Should never happen
         }
-        return new Pair<>(null, new INDArray[] {out});
+        return GradientsFactory.getInstance().create(out, null);
     }
 
     @Override
@@ -127,8 +121,8 @@ public class UnstackVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null || maskArrays.length == 0) {
             return new Pair<>(null, currentMaskState);
@@ -146,15 +140,16 @@ public class UnstackVertex extends BaseGraphVertex {
         }
 
         //Mask arrays are either 1d (column vector) or 2d...
-        int start = from * minibatchSize;
-        int end = (from + 1) * minibatchSize;
+        int mb = maskArrays[0].size(0) / stackSize;
+        int start = from * mb;
+        int end = (from + 1) * mb;
         INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
         return new Pair<>(outMask, currentMaskState);
     }
 
     @Override
     public String toString() {
-        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+        return "UnstackVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",fromIdx=" + from
                         + ",forwardShape=" + forwardShape + ")";
     }
 }

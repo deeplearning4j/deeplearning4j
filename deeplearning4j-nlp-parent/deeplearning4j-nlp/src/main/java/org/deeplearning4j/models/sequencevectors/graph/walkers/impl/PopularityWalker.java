@@ -34,8 +34,6 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
     protected int spread = 10;
     protected SpreadSpectrum spectrum;
 
-    private static final Logger logger = LoggerFactory.getLogger(PopularityWalker.class);
-
     /**
      * This method checks, if walker has any more sequences left in queue
      *

@@ -34,7 +34,6 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.ROC;
 import org.deeplearning4j.eval.ROCMultiClass;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -42,7 +41,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -99,7 +97,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         DataSet d = new IrisDataSetIterator(150, 150).next();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -117,7 +115,11 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 5, 1, 0));
 
-        MultiLayerNetwork network2 = master.fitLabeledPoint(data);
+        for( int i=0; i<10; i++ ){
+            master.fitLabeledPoint(data);
+        }
+
+        MultiLayerNetwork network2 = master.getNetwork();
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
         System.out.println(evaluation.stats());
@@ -142,14 +144,12 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         DataSet d = new IrisDataSetIterator(150, 150).next();
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(123)
-                                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
+                                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                         .miniBatch(true).maxNumLineSearchIterations(10)
                                         .list().layer(0,
-                                                        new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(100)
+                                                        new DenseLayer.Builder().nIn(4).nOut(100)
                                                                                         .weightInit(WeightInit.XAVIER)
                                                                                         .activation(Activation.RELU)
-                                                                                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                                                                                         .build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
@@ -165,7 +165,11 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc, getBasicConf(),
                         new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 5, 1, 0));
 
-        MultiLayerNetwork network2 = master.fitLabeledPoint(data);
+        for( int i = 0; i<10; i++ ){
+            master.fitLabeledPoint(data);
+        }
+        MultiLayerNetwork network2 = master.getNetwork();
+
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
         System.out.println(evaluation.stats());
@@ -197,14 +201,14 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         netCopy.fit(data);
-        IUpdater expectedUpdater = ((BaseLayer) netCopy.conf().getLayer()).getIUpdater();
-        double expectedLR = ((Nesterovs)((BaseLayer) netCopy.conf().getLayer()).getIUpdater()).getLearningRate();
-        double expectedMomentum = ((Nesterovs)((BaseLayer) netCopy.conf().getLayer()).getIUpdater()).getMomentum();
+        IUpdater expectedUpdater = ((BaseLayer) netCopy.conf()).getIUpdater();
+        double expectedLR = ((Nesterovs)((BaseLayer) netCopy.conf()).getIUpdater()).getLearningRate();
+        double expectedMomentum = ((Nesterovs)((BaseLayer) netCopy.conf()).getIUpdater()).getMomentum();
 
-        IUpdater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater();
+        IUpdater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf()).getIUpdater();
         sparkNet.fit(sparkData);
-        double actualLR = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater()).getLearningRate();
-        double actualMomentum = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater()).getMomentum();
+        double actualLR = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf()).getIUpdater()).getLearningRate();
+        double actualMomentum = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf()).getIUpdater()).getMomentum();
 
         assertEquals(expectedUpdater, actualUpdater);
         assertEquals(expectedLR, actualLR, 0.01);
@@ -220,7 +224,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         Evaluation evalExpected = new Evaluation();
-        INDArray outLocal = netCopy.output(input, Layer.TrainingMode.TEST);
+        INDArray outLocal = netCopy.output(input, false);
         evalExpected.eval(labels, outLocal);
 
         Evaluation evalActual = sparkNet.evaluate(sparkData);
@@ -250,7 +254,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         //in this case: by having fewer examples (2 DataSets) than executors (local[*])
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -360,7 +364,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -421,7 +425,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -487,7 +491,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -571,7 +575,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build(), "in")
@@ -638,7 +642,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     public void testSeedRepeatability() throws Exception {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(4)
                                         .activation(Activation.TANH).build())
@@ -717,7 +721,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -763,7 +767,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         }
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build(), "in")

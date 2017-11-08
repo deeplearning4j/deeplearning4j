@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -19,6 +21,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -26,6 +29,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
 public class BackPropMLPTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testMLPTrivial() {
@@ -270,10 +275,8 @@ public class BackPropMLPTest {
 
 
             //Calculate and get gradient, compare to expected
-            network.setInput(x);
-            network.setLabels(y);
-            network.computeGradientAndScore();
-            Gradient gradient = network.gradientAndScore().getFirst();
+            Pair<Gradients,Double> p = network.computeGradientAndScore(af.create(x), af.create(y));
+            Gradient gradient = p.getFirst().getParameterGradients();
 
             float eps = 1e-4f;
             for (int i = 0; i < hiddenLayerSizes.length; i++) {
@@ -298,7 +301,7 @@ public class BackPropMLPTest {
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes,
                     Activation activationFunction) {
-        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().iterations(1).updater(new Sgd(0.1))
+        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                     .seed(12345L).list();
 
         for (int i = 0; i < hiddenLayerSizes.length; i++) {

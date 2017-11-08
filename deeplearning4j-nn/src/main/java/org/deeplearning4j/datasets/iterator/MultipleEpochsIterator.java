@@ -21,6 +21,7 @@ package org.deeplearning4j.datasets.iterator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * A dataset iterator for doing multiple passes over a dataset
  */
+@Slf4j
 public class MultipleEpochsIterator implements DataSetIterator {
     @VisibleForTesting
     protected int epochs = 0;
@@ -44,7 +46,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected DataSetIterator iter;
     protected DataSet ds;
     protected List<DataSet> batchedDS = Lists.newArrayList();
-    protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     @Getter
     protected DataSetPreProcessor preProcessor;
     protected boolean newEpoch = false;

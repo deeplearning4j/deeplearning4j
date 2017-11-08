@@ -21,8 +21,8 @@ public abstract class BaseInputPreProcessor implements InputPreProcessor {
     }
 
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         //Default: pass-through, unmodified
         return new Pair<>(maskArray, currentMaskState);

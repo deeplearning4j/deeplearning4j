@@ -35,7 +35,7 @@ public class TestDropout {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .updater(new Sgd())
-                        .iterations(1).dropOut(0.5).list()
+                        .dropOut(0.5).list()
                         .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -109,7 +109,7 @@ public class TestDropout {
         int nOut = 4;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .iterations(1).dropOut(0.5).updater(new Sgd(1e-9))
+                        .dropOut(0.5).updater(new Sgd(1e-9))
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10, 11)) //Weight init to cause sigmoid saturation
                         .list()
                         .layer(0, new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(layerSize)
@@ -137,7 +137,7 @@ public class TestDropout {
 
             net.fit(new DataSet(in, out));
 
-            INDArray l0Input = net.getLayer(0).input().dup('c');
+            INDArray l0Input = net.getLayer(0).getInput().get(0).dup('c');
             //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
             NdIndexIterator iter = new NdIndexIterator(inCopy.shape());
             while (iter.hasNext()) {
@@ -154,7 +154,7 @@ public class TestDropout {
             //all be ~1.0 before dropout -> either 0 or ~2.0 after dropout
             for (int j = 1; j < 3; j++) {
 
-                INDArray ljInput = net.getLayer(j).input();
+                INDArray ljInput = net.getLayer(j).getInput().get(0);
                 for (int k = 0; k < ljInput.length(); k++) {
                     double doValue = ljInput.getDouble(j);
                     if (doValue > 0.0) {

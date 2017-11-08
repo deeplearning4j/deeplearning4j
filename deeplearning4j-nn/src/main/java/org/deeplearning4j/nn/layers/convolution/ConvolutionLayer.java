@@ -18,8 +18,12 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -41,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
 
 
@@ -50,8 +53,8 @@ import java.util.Properties;
  *
  * @author Adam Gibson (original impl), Alex Black (current version)
  */
+@Slf4j
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
-    protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
 
     protected INDArray i2d;
     protected ConvolutionHelper helper = null;
@@ -60,15 +63,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
 
-    public ConvolutionLayer(NeuralNetConfiguration conf) {
+    public ConvolutionLayer(org.deeplearning4j.nn.conf.layers.ConvolutionLayer conf) {
         super(conf);
         initializeHelper();
-        convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf().getLayer()).getConvolutionMode();
-    }
-
-    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
+        convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf()).getConvolutionMode();
     }
 
     void initializeHelper() {
@@ -94,40 +92,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l2 = conf.getL2ByParam(entry.getKey());
-            if (l2 > 0) {
-                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
-                l2Sum += 0.5 * l2 * norm2 * norm2;
-            }
-        }
-
-        return l2Sum;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l1 = conf.getL1ByParam(entry.getKey());
-            if (l1 > 0) {
-                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
-                l1Sum += l1 * norm1;
-            }
-        }
-
-        return l1Sum;
-    }
-
-    @Override
-    public Type type() {
-        return Type.CONVOLUTIONAL;
-    }
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
+        INDArray epsilon = gradients.get(0);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
@@ -180,7 +147,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 biasGradView = dummyBiasGrad;
             }
 
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
+            Gradients ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
                             biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode, dilation);
             if (ret != null) {
@@ -250,7 +217,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         weightNoiseParams.clear();
 
-        return new Pair<>(retGradient, epsNext);
+        Gradients g = GradientsFactory.getInstance().create(epsNext, retGradient);
+        return backpropPreprocessor(g);
     }
 
     /**
@@ -279,10 +247,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
+        INDArray input = this.input.get(0);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
-            String layerName = conf.getLayer().getLayerName();
+            String layerName = conf.getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -300,7 +269,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         if (input.size(1) != inDepth) {
-            String layerName = conf.getLayer().getLayerName();
+            String layerName = conf.getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
@@ -408,14 +377,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
-
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
@@ -435,17 +404,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
             INDArray ret = helper.activate(z, layerConf().getActivationFn());
             if (ret != null) {
-                return ret;
+                return ActivationsFactory.getInstance().create(ret, input.getMask(0), input.getMaskState(0));
             }
         }
 
         INDArray activation = afn.getActivation(z, training);
-        return activation;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
+        return ActivationsFactory.getInstance().create(activation, input.getMask(0), input.getMaskState(0));
     }
 
     @Override
@@ -457,9 +421,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public boolean isPretrainLayer() {
         return false;
     }
-
-    @Override
-    public void fit(INDArray input) {}
 
     @Override
     public INDArray params() {

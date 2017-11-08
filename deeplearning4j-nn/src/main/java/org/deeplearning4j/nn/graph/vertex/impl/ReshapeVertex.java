@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -41,48 +41,33 @@ public class ReshapeVertex extends BaseGraphVertex {
     private int[] maskShape;
 
 
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, char order, int[] newShape, int[] maskShape) {
-        this(graph, name, vertexIndex, null, null, order, newShape, maskShape);
-    }
-
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, char order, int[] newShape, int[] maskShape) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ReshapeVertex(String name, int vertexIndex, int numInputs, char order, int[] newShape, int[] maskShape) {
+        super(name, vertexIndex, numInputs);
         this.order = order;
         this.newShape = newShape;
         this.maskShape = maskShape;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
+            throw new IllegalStateException("Cannot do forward pass: inputs not net");
 
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
-            throw new IllegalStateException("Cannot do forward pass: inputs not set");
-
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalStateException("Reshape vertex requires a single input.");
 
 
-        return inputs[0].reshape(order, newShape);
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(input.get(0).reshape(order, newShape), masks.getFirst(), masks.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
+    public Gradients backpropGradient(Gradients gradients) {
+        if (gradients == null || gradients.get(0) == null)
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        INDArray[] out = new INDArray[1];
-        out[0] = epsilon.reshape(order, inputs[0].shape());
-        return new Pair<>(null, out);
+        INDArray out = gradients.get(0).reshape(order, input.get(0).shape());
+        return GradientsFactory.getInstance().create(out, null);
     }
 
     @Override
@@ -91,7 +76,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
+
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null || maskArrays.length < 1 || maskArrays[0] == null) {
@@ -135,7 +120,7 @@ public class ReshapeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ReshapeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",shape="
+        return "ReshapeVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",shape="
                         + newShape.toString() + ")";
     }
 }

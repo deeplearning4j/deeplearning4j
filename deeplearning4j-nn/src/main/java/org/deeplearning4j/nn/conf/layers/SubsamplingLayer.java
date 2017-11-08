@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.GlobalConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -16,6 +17,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -80,6 +82,13 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
+    public void applyGlobalConfiguration(GlobalConfiguration globalConfiguration){
+        super.applyGlobalConfiguration(globalConfiguration);
+        if(convolutionMode == null)
+            this.convolutionMode = globalConfiguration.getConvolutionMode();
+    }
+
+    @Override
     public SubsamplingLayer clone() {
         SubsamplingLayer clone = (SubsamplingLayer) super.clone();
 
@@ -93,17 +102,16 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -113,30 +121,35 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if(preProcessor != null){
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        ((InputType.InputTypeConvolutional) inputType).getDepth(), layerIndex, getLayerName(),
+        InputType ret = InputTypeUtil.getOutputTypeCnnLayers(inputType[0], kernelSize, stride, padding, dilation, convolutionMode,
+                        ((InputType.InputTypeConvolutional) inputType[0]).getDepth(), layerIndex, getLayerName(),
                         SubsamplingLayer.class);
+        return new InputType[]{ret};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType[0], getLayerName());
     }
 
     @Override
@@ -157,10 +170,14 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
-        int actElementsPerEx = outputType.arrayElementsPerExample();
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType)[0];
 
         //TODO Subsampling helper memory use... (CuDNN etc)
 

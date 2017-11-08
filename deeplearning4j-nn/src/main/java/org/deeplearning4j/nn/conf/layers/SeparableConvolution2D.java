@@ -77,17 +77,20 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
 
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints,
+                builder.pointWiseConstraints);
     }
 
-    @Override
-    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
-        super.initializeConstraints(builder);
-        if(((Builder)builder).pointWiseConstraints != null){
+    protected void initializeConstraints(List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> weightConstraints,
+                                         List<LayerConstraint> biasConstraints,
+                                         List<LayerConstraint> pointwiseConstraints){
+        super.initializeConstraints(allParamConstraints, weightConstraints, biasConstraints);
+        if(pointwiseConstraints != null){
             if(constraints == null){
                 constraints = new ArrayList<>();
             }
-            for (LayerConstraint constraint : ((Builder) builder).pointWiseConstraints) {
+            for (LayerConstraint constraint : pointwiseConstraints) {
                 LayerConstraint clonedConstraint = constraint.clone();
                 clonedConstraint.setParams(Collections.singleton(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY));
                 constraints.add(clonedConstraint);
@@ -140,18 +143,17 @@ public class SeparableConvolution2D extends ConvolutionLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(Collection<IterationListener> iterationListeners, String name,
+                             int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("SeparableConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf);
-        ret.setListeners(iterationListeners);
+                new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
 
         System.out.println(layerParamsView);
         return ret;
@@ -163,14 +165,18 @@ public class SeparableConvolution2D extends ConvolutionLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), SeparableConvolution2DLayer.class);
+        return new InputType[]{
+                InputTypeUtil.getOutputTypeCnnLayers(inputType[0], kernelSize, stride, padding, dilation,
+                convolutionMode, nOut, layerIndex, getLayerName(), SeparableConvolution2DLayer.class)};
     }
 
 

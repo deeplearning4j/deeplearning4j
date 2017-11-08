@@ -255,14 +255,14 @@ public class KerasModel {
         for (KerasLayer layer : this.layersOrdered) {
             InputType outputType;
             if (layer instanceof KerasInput) {
-                outputType = layer.getOutputType();
+                outputType = layer.getOutputType()[0];  //TODO multiple outputs
                 this.truncatedBPTT = ((KerasInput) layer).getTruncatedBptt();
             } else {
                 InputType[] inputTypes = new InputType[layer.getInboundLayerNames().size()];
                 int i = 0;
                 for (String inboundLayerName : layer.getInboundLayerNames())
                     inputTypes[i++] = this.outputTypes.get(inboundLayerName);
-                    outputType = layer.getOutputType(inputTypes);
+                    outputType = layer.getOutputType(inputTypes)[0];    //TODO multiple outputs
             }
             this.outputTypes.put(layer.getLayerName(), outputType);
         }
@@ -291,7 +291,7 @@ public class KerasModel {
         /* Build InputType array of input layer types, add to ComputationGraph. */
         List<InputType> inputTypeList = new ArrayList<InputType>();
         for (String inputLayerName : this.inputLayerNames)
-            inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
+            inputTypeList.add(this.layers.get(inputLayerName).getOutputType()[0]);      //TODO multiple outputs
         InputType[] inputTypes = new InputType[inputTypeList.size()];
         inputTypeList.toArray(inputTypes);
         graphBuilder.setInputTypes(inputTypes);
@@ -324,14 +324,6 @@ public class KerasModel {
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName()
-                            + " is not an IOutputLayer (no loss function specified)");
-            } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
-                if (preprocessor != null)
-                    preprocessors.put(layer.getLayerName(), preprocessor);
-                graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
-                if (this.outputLayerNames.contains(layer.getLayerName())
-                        && !(layer.getVertex() instanceof IOutputLayer))
-                    log.warn("Model cannot be trained: output vertex " + layer.getLayerName()
                             + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isInputPreProcessor()) {
                 if (preprocessor == null)

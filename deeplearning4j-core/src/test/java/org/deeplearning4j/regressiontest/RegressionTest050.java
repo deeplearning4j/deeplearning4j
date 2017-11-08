@@ -47,7 +47,7 @@ public class RegressionTest050 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
+        DenseLayer l0 = (DenseLayer) conf.getConf(0);
         assertEquals("relu", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
@@ -55,7 +55,7 @@ public class RegressionTest050 {
         assertEquals(new Nesterovs(0.15, 0.9), l0.getIUpdater());
         assertEquals(0.15, ((Nesterovs)l0.getIUpdater()).getLearningRate(), 1e-6);
 
-        OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
+        OutputLayer l1 = (OutputLayer) conf.getConf(1);
         assertEquals("softmax", l1.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
@@ -86,7 +86,7 @@ public class RegressionTest050 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
+        DenseLayer l0 = (DenseLayer) conf.getConf(0);
         assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
@@ -98,7 +98,7 @@ public class RegressionTest050 {
         assertEquals(0.1, l0.getL1(), 1e-6);
         assertEquals(0.2, l0.getL2(), 1e-6);
 
-        OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
+        OutputLayer l1 = (OutputLayer) conf.getConf(1);
         assertEquals("identity", l1.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
@@ -132,7 +132,7 @@ public class RegressionTest050 {
         assertTrue(conf.isBackprop());
         assertFalse(conf.isPretrain());
 
-        ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
+        ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0);
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
@@ -144,14 +144,14 @@ public class RegressionTest050 {
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
         assertEquals(l0.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
-        SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
+        SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1);
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l1.getStride());
         assertArrayEquals(new int[] {0, 0}, l1.getPadding());
         assertEquals(PoolingType.MAX, l1.getPoolingType());
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
-        OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
+        OutputLayer l2 = (OutputLayer) conf.getConf(2);
         assertEquals("sigmoid", l2.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO

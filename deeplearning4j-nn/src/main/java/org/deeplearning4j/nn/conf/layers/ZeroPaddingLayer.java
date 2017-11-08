@@ -36,16 +36,16 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
+                                                       String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(this);
+//        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -55,17 +55,17 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         int inH;
         int inW;
         int inDepth;
-        if (inputType instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+        if (inputType[0] instanceof InputType.InputTypeConvolutional) {
+            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType[0];
             inH = conv.getHeight();
             inW = conv.getWidth();
             inDepth = conv.getDepth();
-        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
-            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
+        } else if (inputType[0] instanceof InputType.InputTypeConvolutionalFlat) {
+            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType[0];
             inH = conv.getHeight();
             inW = conv.getWidth();
             inDepth = conv.getDepth();
@@ -78,22 +78,22 @@ public class ZeroPaddingLayer extends Layer {
         int outH = inH + padding[0] + padding[1];
         int outW = inW + padding[2] + padding[3];
 
-        return InputType.convolutional(outH, outW, inDepth);
+        return new InputType[]{InputType.convolutional(outH, outW, inDepth)};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for ZeroPaddingLayer layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for ZeroPaddingLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
         }
 
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType[0], getLayerName());
     }
 
     @Override
@@ -112,8 +112,13 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType outputType = getOutputType(-1, inputType);
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
                         .standardMemory(0, 0) //No params

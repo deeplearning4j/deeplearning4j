@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
@@ -21,6 +22,7 @@ import java.util.Map;
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class KerasMerge extends KerasLayer {
 
     private final String LAYER_FIELD_MODE = "mode";
@@ -69,9 +71,9 @@ public class KerasMerge extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         this.mergeMode = getMergeMode(layerConfig);
         if (this.mergeMode == null)
-            this.vertex = new MergeVertex();
+            this.layer = new MergeVertex();
         else
-            this.vertex = new ElementWiseVertex(mergeMode);
+            this.layer = new ElementWiseVertex(mergeMode);
     }
 
     public ElementWiseVertex.Op getMergeMode(Map<String, Object> layerConfig)
@@ -115,7 +117,7 @@ public class KerasMerge extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) {
-        return this.vertex.getOutputType(-1, inputType);
+    public InputType[] getOutputType(InputType... inputType) {
+        return this.layer.getOutputType(-1, inputType);
     }
 }

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.optimize.listeners;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Time Iteration Listener.
  * This listener displays into INFO logs the remaining time in minutes and the date of the end of the process. 
  */
+@Slf4j
 public class TimeIterationListener implements IterationListener {
 
     private static final long serialVersionUID = 1L;
@@ -37,8 +39,6 @@ public class TimeIterationListener implements IterationListener {
     private long start;
     private int iterationCount;
     private AtomicLong iterationCounter = new AtomicLong(0);
-
-    private static final Logger log = LoggerFactory.getLogger(TimeIterationListener.class);
 
     /**
      * Constructor

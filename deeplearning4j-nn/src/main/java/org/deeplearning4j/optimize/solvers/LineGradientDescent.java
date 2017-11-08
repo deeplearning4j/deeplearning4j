@@ -19,6 +19,7 @@
 package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
@@ -36,15 +37,13 @@ import java.util.Collection;
 public class LineGradientDescent extends BaseOptimizer {
     private static final long serialVersionUID = 6336124657542062284L;
 
-    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        super(conf, stepFunction, iterationListeners, model);
+    public LineGradientDescent(OptimizationConfig conf, StepFunction stepFunction, Model model) {
+        super(conf, stepFunction, model);
     }
 
-    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
+    public LineGradientDescent(OptimizationConfig conf, StepFunction stepFunction,
                     Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, iterationListeners, terminationConditions, model);
+        super(conf, stepFunction, terminationConditions, model);
     }
 
     @Override

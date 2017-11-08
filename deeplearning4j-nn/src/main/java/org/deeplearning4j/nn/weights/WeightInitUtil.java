@@ -65,9 +65,17 @@ public class WeightInitUtil {
                     Distribution dist, char order, INDArray paramView) {
         //Note: using f order here as params get flattened to f order
 
+        if(initScheme == null){
+            throw new IllegalStateException("Weight initialization scheme is null");
+        }
+
         INDArray ret;
         switch (initScheme) {
             case DISTRIBUTION:
+                if(dist == null){
+                    throw new IllegalStateException("Cannot perform initialization from weight init " +
+                            initScheme + ": distribution (dist) is null");
+                }
                 ret = dist.sample(shape);
                 break;
             case RELU:

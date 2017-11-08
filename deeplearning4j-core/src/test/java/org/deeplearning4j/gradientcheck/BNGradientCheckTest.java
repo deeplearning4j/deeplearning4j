@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,6 +34,8 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class BNGradientCheckTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-5;
@@ -181,13 +184,11 @@ public class BNGradientCheckTest {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int k = 0; k < 5; k++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = name
@@ -279,13 +280,11 @@ public class BNGradientCheckTest {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreBefore = mln.score();
                             for (int k = 0; k < 10; k++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(ds);
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = name
@@ -418,8 +417,9 @@ public class BNGradientCheckTest {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                        ActivationsFactory.getInstance().create(input),
+                        new INDArray[] {labels}, null);
 
         assertTrue(gradOK);
     }
@@ -486,13 +486,11 @@ public class BNGradientCheckTest {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            net.setInput(0, ds.getFeatures());
-                            net.setLabels(ds.getLabels());
-                            net.computeGradientAndScore();
+                            net.computeGradientAndScore(ds);
                             double scoreBefore = net.score();
                             for (int k = 0; k < 5; k++)
                                 net.fit(ds);
-                            net.computeGradientAndScore();
+                            net.computeGradientAndScore(ds);
                             double scoreAfter = net.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = name
@@ -513,7 +511,7 @@ public class BNGradientCheckTest {
 
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                        new INDArray[] {input}, new INDArray[] {labels});
+                                ActivationsFactory.getInstance().create(input), new INDArray[] {labels}, null);
 
                         assertTrue(gradOK);
                     }

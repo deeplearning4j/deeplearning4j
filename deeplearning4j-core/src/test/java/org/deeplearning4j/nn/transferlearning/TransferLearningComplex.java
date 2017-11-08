@@ -21,6 +21,8 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 /**
@@ -49,13 +51,16 @@ public class TransferLearningComplex {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-
-        int[] topologicalOrder = graph.topologicalSortOrder();
-        org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = graph.getVertices();
+        List<String> topoOrder = graph.topologicalSortOrder();
+        int[] topologicalOrder = new int[topoOrder.size()];
+        for( int i=0; i<topologicalOrder.length; i++ ){
+            topologicalOrder[i] = graph.getVerticesMap().get(topoOrder.get(i)).getIndex();
+        }
+        Layer[] vertices = graph.getVertices();
 
         for (int i = 0; i < topologicalOrder.length; i++) {
-            org.deeplearning4j.nn.graph.vertex.GraphVertex v = vertices[topologicalOrder[i]];
-            log.info(i + "\t" + v.getVertexName());
+            Layer v = vertices[topologicalOrder[i]];
+            log.info(i + "\t" + v.getName());
         }
 
         ComputationGraph graph2 =
@@ -67,9 +72,9 @@ public class TransferLearningComplex {
         Layer[] layers = graph2.getLayers();
 
         for (Layer l : layers) {
-            String name = l.conf().getLayer().getLayerName();
+            String name = l.conf().getLayerName();
             log.info(name + "\t frozen: " + (l instanceof FrozenLayer));
-            if ("C".equals(l.conf().getLayer().getLayerName())) {
+            if ("C".equals(l.conf().getLayerName())) {
                 //Only C should be frozen in this config
                 cFound = true;
                 assertTrue(name, l instanceof FrozenLayer);
@@ -78,7 +83,7 @@ public class TransferLearningComplex {
             }
 
             //Also check config:
-            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
+            BaseLayer bl = ((BaseLayer) l.conf());
             assertEquals(new Adam(2e-2), bl.getIUpdater());
             assertEquals(Activation.LEAKYRELU.getActivationFunction(), bl.getActivationFn());
         }
@@ -105,7 +110,7 @@ public class TransferLearningComplex {
         */
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
-                        .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
+                        .addLayer("denseCentre0", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(new DenseLayer.Builder().nIn(2).nOut(2).build()), "inCentre")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inRight")
                         .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
                         .addLayer("outRight",
@@ -122,21 +127,18 @@ public class TransferLearningComplex {
                         new MultiDataSet(new INDArray[] {denseCentre0, randData.getFeatures(1)}, randData.getLabels());
 
         ComputationGraphConfiguration otherConf =
-                        overallConf.graphBuilder().addInputs("denseCentre0", "inRight")
-                                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),
-                                                        "inRight")
-                                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
-                                        .addLayer("outRight",
-                                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4)
-                                                                        .nOut(2).build(),
-                                                        "mergeRight")
-                                        .setOutputs("outRight").build();
+                overallConf.graphBuilder()
+                        .addInputs("denseCentre0", "inRight")
+                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
+                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4) .nOut(2).build(),"mergeRight")
+                        .setOutputs("outRight")
+                        .build();
         ComputationGraph modelOther = new ComputationGraph(otherConf);
         modelOther.init();
         modelOther.getLayer("denseRight0").setParams(modelToTune.getLayer("denseRight0").params());
         modelOther.getLayer("outRight").setParams(modelToTune.getLayer("outRight").params());
 
-        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
         ComputationGraph modelNow =
                         new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
         int n = 0;
@@ -186,7 +188,8 @@ public class TransferLearningComplex {
         */
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
-                        .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
+                        .addLayer("denseCentre0", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(
+                                new DenseLayer.Builder().nIn(2).nOut(2).build()), "inCentre")
                         .addLayer("outCentre",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).build(),
                                         "denseCentre0")
@@ -198,7 +201,6 @@ public class TransferLearningComplex {
                         .setOutputs("outCentre", "outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
-        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
 
         MultiDataSet randData = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)},
                         new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)});
@@ -209,6 +211,7 @@ public class TransferLearningComplex {
         ComputationGraph modelNow =
                         new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
         assertTrue(modelNow.getLayer("denseCentre0") instanceof FrozenLayer);
+
         int n = 0;
         while (n < 5) {
             if (n == 0) {

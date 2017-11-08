@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.collection.CollectionReader;
@@ -43,12 +44,12 @@ import java.util.List;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class UimaSentenceIterator extends BaseSentenceIterator {
 
     protected volatile CollectionReader reader;
     protected volatile Iterator<String> sentences;
     protected String path;
-    private static final Logger log = LoggerFactory.getLogger(UimaSentenceIterator.class);
     private static AnalysisEngine defaultAnalysisEngine;
     private UimaResource resource;
 

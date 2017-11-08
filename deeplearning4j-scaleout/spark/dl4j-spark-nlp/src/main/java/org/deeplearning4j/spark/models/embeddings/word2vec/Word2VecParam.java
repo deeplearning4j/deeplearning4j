@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  */
 @Deprecated
+@Slf4j
 public class Word2VecParam implements Serializable {
 
     private boolean useAdaGrad = false;
@@ -42,7 +44,6 @@ public class Word2VecParam implements Serializable {
     private double alpha = 0.025;
     private double minAlpha = 1e-2;
     private int totalWords = 1;
-    private static transient final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
     private Broadcast<AtomicLong> wordCount;
     private InMemoryLookupTable weights;

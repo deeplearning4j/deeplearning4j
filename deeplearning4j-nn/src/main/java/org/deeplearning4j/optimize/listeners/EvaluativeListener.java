@@ -8,6 +8,8 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.InvocationType;
@@ -168,22 +170,22 @@ public class EvaluativeListener implements TrainingListener {
     }
 
     @Override
-    public void onForwardPass(Model model, List<INDArray> activations) {
+    public void onForwardPass(Model model, List<Activations> activations) {
         // no-op
     }
 
     @Override
-    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+    public void onForwardPass(Model model, Map<String, Activations> activations) {
         // no-op
     }
 
     @Override
-    public void onGradientCalculation(Model model) {
+    public void onGradientCalculation(Model model, Gradients g) {
         // no-op
     }
 
     @Override
-    public void onBackwardPass(Model model) {
+    public void onBackwardPass(Model model, Gradients g) {
         if (invocationType == InvocationType.ITERATION_END)
             invokeListener(model);
     }
@@ -221,10 +223,10 @@ public class EvaluativeListener implements TrainingListener {
             } else if (ds != null) {
                 for (IEvaluation evaluation : evaluations)
                     evalAtIndex(evaluation, new INDArray[] {ds.getLabels()},
-                                    ((ComputationGraph) model).output(ds.getFeatureMatrix()), 0);
+                                    ((ComputationGraph) model).output(ds.getFeatureMatrix()).getAsArray(), 0);
             } else if (mds != null) {
                 for (IEvaluation evaluation : evaluations)
-                    evalAtIndex(evaluation, mds.getLabels(), ((ComputationGraph) model).output(mds.getFeatures()), 0);
+                    evalAtIndex(evaluation, mds.getLabels(), ((ComputationGraph) model).output(mds.getFeatures()).getAsArray(), 0);
             }
         } else
             throw new DL4JInvalidInputException("Model is unknown: " + model.getClass().getCanonicalName());

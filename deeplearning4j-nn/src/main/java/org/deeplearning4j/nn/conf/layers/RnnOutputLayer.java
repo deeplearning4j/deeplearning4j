@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -29,18 +30,18 @@ public class RnnOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
-        ret.setListeners(iterationListeners);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -50,32 +51,43 @@ public class RnnOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
-                            + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
         }
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        if (inputType == null || inputType[0].getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
+                            + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + (inputType == null ? null : inputType[0]));
+        }
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType[0];
 
-        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
+        return new InputType[]{InputType.recurrent(nOut, itr.getTimeSeriesLength())};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+    public void setNIn(InputType[] inputType, boolean override) {
+        if(preProcessor != null){
+            inputType = preProcessor.getOutputType(inputType);
+        }
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName()
-                            + "\"): Expected RNN input, got " + inputType);
+                            + "\"): Expected RNN input, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType[0];
             this.nIn = r.getSize();
         }
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1) {
+            throw new IllegalStateException("Invalid input for RnnOutputLayer (layer name = \"" + getLayerName()
+                    + "\"): input type should be length 1 (got: " + (inputType == null ? null : Arrays.toString(inputType)) + ")");
+        }
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], getLayerName());
     }
 
 

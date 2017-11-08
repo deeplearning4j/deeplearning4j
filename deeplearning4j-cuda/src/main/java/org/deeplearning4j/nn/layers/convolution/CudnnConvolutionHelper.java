@@ -19,6 +19,8 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdDataAlgo;
@@ -117,10 +119,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private DataCache workSpace = new DataCache();
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
-                    int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode, int[] dilation) {
+    public Gradients backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
+                                      int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
+                                      AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                                      ConvolutionMode convolutionMode, int[] dilation) {
         if(dilation[0] > 2 || dilation[1] > 2){
             //CuDNN seems to not support all (valid) configurations...
             //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
@@ -293,7 +295,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
 
-        return new Pair<>(retGradient, epsNext);
+        return GradientsFactory.getInstance().create(epsNext, retGradient);
     }
 
     @Override

@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.impl.customlayer.layer;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -48,16 +49,14 @@ public class CustomLayer extends FeedForwardLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
-        CustomLayerImpl ret = new CustomLayerImpl(conf);
-        ret.setListeners(iterationListeners);
+    public Layer instantiate(Collection<IterationListener> iterationListeners, String name,
+                             int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
+        CustomLayerImpl ret = new CustomLayerImpl(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -67,22 +66,22 @@ public class CustomLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        return InputType.feedForward(10);
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
+        return new InputType[]{InputType.feedForward(10)};
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         return null;
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         throw new UnsupportedOperationException();
     }
 }

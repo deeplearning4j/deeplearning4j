@@ -26,13 +26,10 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public static final String GLOBAL_MEAN = "mean";
     public static final String GLOBAL_VAR = "var";
 
-    public static List<String> keys() {
-        return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
-    }
+    private static final List<String> KEYS = Collections.unmodifiableList(Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR));
 
-    @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        return numParams(conf.getLayer());
+    public static List<String> keys() {
+        return KEYS;
     }
 
     @Override
@@ -77,10 +74,10 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
+    public Map<String, INDArray> init(Layer l, INDArray paramView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // TODO setup for RNN
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        BatchNormalization layer = (BatchNormalization) l;
         int nOut = layer.getNOut();
 
         int meanOffset = 0;
@@ -88,10 +85,8 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
             INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));
 
-            params.put(GAMMA, createGamma(conf, gammaView, initializeParams));
-            conf.addVariable(GAMMA);
-            params.put(BETA, createBeta(conf, betaView, initializeParams));
-            conf.addVariable(BETA);
+            params.put(GAMMA, createGamma(layer, gammaView, initializeParams));
+            params.put(BETA, createBeta(layer, betaView, initializeParams));
 
             meanOffset = 2 * nOut;
         }
@@ -107,16 +102,14 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         }
 
         params.put(GLOBAL_MEAN, globalMeanView);
-        conf.addVariable(GLOBAL_MEAN);
         params.put(GLOBAL_VAR, globalVarView);
-        conf.addVariable(GLOBAL_VAR);
 
         return params;
     }
 
     @Override
-    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+    public Map<String, INDArray> getGradientsFromFlattened(Layer l, INDArray gradientView) {
+        BatchNormalization layer = (BatchNormalization)l;
         int nOut = layer.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
@@ -137,15 +130,13 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         return out;
     }
 
-    private INDArray createBeta(NeuralNetConfiguration conf, INDArray betaView, boolean initializeParams) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+    private INDArray createBeta(BatchNormalization layer, INDArray betaView, boolean initializeParams) {
         if (initializeParams)
             betaView.assign(layer.getBeta());
         return betaView;
     }
 
-    private INDArray createGamma(NeuralNetConfiguration conf, INDArray gammaView, boolean initializeParams) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+    private INDArray createGamma(BatchNormalization layer, INDArray gammaView, boolean initializeParams) {
         if (initializeParams)
             gammaView.assign(layer.getGamma());
         return gammaView;

@@ -21,11 +21,6 @@ public class EmptyParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        return 0;
-    }
-
-    @Override
     public int numParams(Layer layer) {
         return 0;
     }
@@ -56,12 +51,12 @@ public class EmptyParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String, INDArray> init(Layer layer, INDArray paramsView, boolean initializeParams) {
         return Collections.EMPTY_MAP;
     }
 
     @Override
-    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+    public Map<String, INDArray> getGradientsFromFlattened(Layer layer, INDArray gradientView) {
         return Collections.emptyMap();
     }
 }

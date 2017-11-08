@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.embeddings.loader;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -16,9 +17,8 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by fartovii on 21.11.15.
  */
+@Slf4j
 public class VectorsConfigurationTest {
-
-    protected static final Logger log = LoggerFactory.getLogger(VectorsConfigurationTest.class);
 
     @Before
     public void setUp() throws Exception {

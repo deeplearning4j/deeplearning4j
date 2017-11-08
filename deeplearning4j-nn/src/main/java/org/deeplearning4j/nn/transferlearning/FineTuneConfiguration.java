@@ -164,8 +164,6 @@ public class FineTuneConfiguration {
         }
         if (miniBatch != null)
             nnc.setMiniBatch(miniBatch);
-        if (numIterations != null)
-            nnc.setNumIterations(numIterations);
         if (maxNumLineSearchIterations != null)
             nnc.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)
@@ -232,45 +230,43 @@ public class FineTuneConfiguration {
     public NeuralNetConfiguration.Builder appliedNeuralNetConfigurationBuilder() {
         NeuralNetConfiguration.Builder confBuilder = new NeuralNetConfiguration.Builder();
         if (activationFn != null)
-            confBuilder.setActivationFn(activationFn);
+            confBuilder.getGlobalConf().setActivationFn(activationFn);
         if (weightInit != null)
-            confBuilder.setWeightInit(weightInit);
+            confBuilder.getGlobalConf().setWeightInit(weightInit);
         if (biasInit != null)
-            confBuilder.setBiasInit(biasInit);
+            confBuilder.getGlobalConf().setBiasInit(biasInit);
         if (dist != null)
-            confBuilder.setDist(dist);
+            confBuilder.getGlobalConf().setDist(dist);
         if (l1 != null)
-            confBuilder.setL1(l1);
+            confBuilder.getGlobalConf().setL1(l1);
         if (l2 != null)
-            confBuilder.setL2(l2);
+            confBuilder.getGlobalConf().setL2(l2);
         if (l1Bias != null)
-            confBuilder.setL1Bias(l1Bias);
+            confBuilder.getGlobalConf().setL1Bias(l1Bias);
         if (l2Bias != null)
-            confBuilder.setL2Bias(l2Bias);
+            confBuilder.getGlobalConf().setL2Bias(l2Bias);
         if (dropout != null)
-            confBuilder.setIdropOut(dropout);
+            confBuilder.getGlobalConf().setDropOut(dropout);
         if (iUpdater != null)
-            confBuilder.updater(iUpdater);
+            confBuilder.getGlobalConf().setUpdater(iUpdater);
         if(biasUpdater != null)
-            confBuilder.biasUpdater(biasUpdater);
+            confBuilder.getGlobalConf().setBiasUpdater(biasUpdater);
         if (miniBatch != null)
-            confBuilder.setMiniBatch(miniBatch);
-        if (numIterations != null)
-            confBuilder.setNumIterations(numIterations);
+            confBuilder.getGlobalConf().setMiniBatch(miniBatch);
         if (maxNumLineSearchIterations != null)
-            confBuilder.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
+            confBuilder.getGlobalConf().setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)
-            confBuilder.setSeed(seed);
+            confBuilder.getGlobalConf().setSeed(seed);
         if (optimizationAlgo != null)
-            confBuilder.setOptimizationAlgo(optimizationAlgo);
+            confBuilder.getGlobalConf().setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)
-            confBuilder.setStepFunction(stepFunction);
+            confBuilder.getGlobalConf().setStepFunction(stepFunction);
         if (minimize != null)
-            confBuilder.setMinimize(minimize);
+            confBuilder.getGlobalConf().setMinimize(minimize);
         if (gradientNormalization != null)
-            confBuilder.setGradientNormalization(gradientNormalization);
+            confBuilder.getGlobalConf().setGradientNormalization(gradientNormalization);
         if (gradientNormalizationThreshold != null)
-            confBuilder.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            confBuilder.getGlobalConf().setGradientNormalizationThreshold(gradientNormalizationThreshold);
         if (trainingWorkspaceMode != null)
             confBuilder.trainingWorkspaceMode(trainingWorkspaceMode);
         if (inferenceWorkspaceMode != null)

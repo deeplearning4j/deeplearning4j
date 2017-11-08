@@ -18,12 +18,11 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -47,49 +46,31 @@ public class ShiftVertex extends BaseGraphVertex {
 
     private double shiftFactor;
 
-    public ShiftVertex(ComputationGraph graph, String name, int vertexIndex, double shiftFactor) {
-        this(graph, name, vertexIndex, null, null, shiftFactor);
-    }
-
-    public ShiftVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double shiftFactor) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ShiftVertex(String name, int vertexIndex, int numInputs, double shiftFactor) {
+        super(name, vertexIndex,numInputs);
         this.shiftFactor = shiftFactor;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ShiftVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + index + ")");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalArgumentException(
-                            "ShiftVertex (name " + vertexName + " idx " + vertexIndex + ") only supports 1 input.");
+                            "ShiftVertex (name " + vertexName + " idx " + input.size() + ") only supports 1 input.");
 
-        INDArray shifted = inputs[0].dup();
+        INDArray shifted = input.get(0).dup();
         shifted.addi(shiftFactor);
 
-        return shifted;
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(shifted, masks.getFirst(), masks.getSecond());
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set (ShiftVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
-
-        return new Pair<>(null, new INDArray[] {epsilon.addi(0)});
+    public Gradients backpropGradient(Gradients gradients) {
+        return gradients;
     }
 
     @Override
@@ -97,17 +78,17 @@ public class ShiftVertex extends BaseGraphVertex {
         if (backpropGradientsViewArray != null)
             throw new RuntimeException(
                             "Vertex does not have gradients; gradients view array cannot be set here (ShiftVertex "
-                                            + vertexName + " idx " + vertexIndex + ")");
+                                            + vertexName + " idx " + input.size() + ")");
     }
 
     @Override
     public String toString() {
-        return "ShiftVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",shiftFactor="
+        return "ShiftVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",shiftFactor="
                         + shiftFactor + ")";
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {

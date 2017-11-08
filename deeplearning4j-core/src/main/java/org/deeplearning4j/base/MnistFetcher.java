@@ -20,6 +20,7 @@ package org.deeplearning4j.base;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -32,8 +33,8 @@ import java.net.URL;
 
 @Data
 @NoArgsConstructor
+@Slf4j
 public class MnistFetcher {
-    protected static final Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 
     protected File BASE_DIR = new File(System.getProperty("user.home"));
     protected static final String LOCAL_DIR_NAME = "MNIST";

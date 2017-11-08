@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.optimize.listeners;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.slf4j.Logger;
@@ -28,10 +29,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class ScoreIterationListener implements IterationListener {
     private int printIterations = 10;
-    private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
-    private boolean invoked = false;
     private long iterCount = 0;
 
     /**

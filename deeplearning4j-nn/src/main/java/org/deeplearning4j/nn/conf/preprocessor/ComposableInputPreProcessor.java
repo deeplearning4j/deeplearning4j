@@ -20,11 +20,10 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -43,14 +42,14 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public Activations preProcess(Activations input, int miniBatchSize, boolean training) {
         for (InputPreProcessor preProcessor : inputPreProcessors)
-            input = preProcessor.preProcess(input, miniBatchSize);
+            input = preProcessor.preProcess(input, miniBatchSize, training);
         return input;
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public Gradients backprop(Gradients output, int miniBatchSize) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
         for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
@@ -73,21 +72,10 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType[] getOutputType(InputType... inputType) {
         for (InputPreProcessor p : inputPreProcessors) {
             inputType = p.getOutputType(inputType);
         }
         return inputType;
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        for (InputPreProcessor preproc : inputPreProcessors) {
-            Pair<INDArray, MaskState> p = preproc.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-            maskArray = p.getFirst();
-            currentMaskState = p.getSecond();
-        }
-        return new Pair<>(maskArray, currentMaskState);
     }
 }

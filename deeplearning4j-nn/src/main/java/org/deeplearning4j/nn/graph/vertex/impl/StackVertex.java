@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -43,33 +43,18 @@ public class StackVertex extends BaseGraphVertex {
 
     private int[][] lastInputShapes;
 
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
-    }
-
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public StackVertex(String name, int vertexIndex, int numInputs) {
+        super(name, vertexIndex, numInputs);
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
+    public Activations activate(boolean training) {
         // stacking along dimension 0
         // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
         lastInputShapes = null;
-        int nStack = inputs.length;
-        int[] inShape = inputs[0].shape();
+        int nStack = input.size();
+        int[] inShape = input.get(0).shape();
         int[] outShape = new int[inShape.length];
 
         // create the new shape
@@ -81,48 +66,48 @@ public class StackVertex extends BaseGraphVertex {
         boolean variableLengthTS = false;
         if (inShape.length == 3) {
             //RNN data - check for variable length time series
-            int minLength = inputs[0].size(2);
+            int minLength = input.get(0).size(2);
             int maxLength = minLength;
-            for (int i = 1; i < inputs.length; i++) {
-                int thisLength = inputs[i].size(2);
+            for (int i = 1; i < input.size(); i++) {
+                int thisLength = input.get(i).size(2);
                 minLength = Math.min(minLength, thisLength);
                 maxLength = Math.max(maxLength, thisLength);
             }
             variableLengthTS = (minLength != maxLength);
 
             if (!variableLengthTS) {
-                return Nd4j.concat(0, inputs);
+                return ActivationsFactory.getInstance().create(Nd4j.concat(0, input.getAsArray()));
             }
 
             outShape[2] = maxLength;
             INDArray out = Nd4j.create(outShape);
-            int numExamples = inputs[0].size(0);
-            lastInputShapes = new int[inputs.length][0];
-            for (int i = 0; i < inputs.length; i++) {
+            int numExamples = input.get(0).size(0);
+            lastInputShapes = new int[input.size()][0];
+            for (int i = 0; i < input.size(); i++) {
                 out.put(new INDArrayIndex[] {NDArrayIndex.interval(i * numExamples, (i + 1) * numExamples),
-                                NDArrayIndex.all(), NDArrayIndex.interval(0, inputs[i].size(2))}, inputs[i]);
-                lastInputShapes[i] = inputs[i].shape();
+                                NDArrayIndex.all(), NDArrayIndex.interval(0, input.get(i).size(2))}, input.get(i));
+                lastInputShapes[i] = input.get(i).shape();
             }
 
-            return out;
+            Pair<INDArray, MaskState> p = feedForwardMaskArrays(input.getMaskAsArray(), input.getMaskState(0), getInputMiniBatchSize());
+            return ActivationsFactory.getInstance().create(out, p.getFirst(), p.getSecond());
         } else {
-            return Nd4j.concat(0, inputs);
+            return ActivationsFactory.getInstance().create(Nd4j.concat(0, input.getAsArray()));
         }
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        // this is basically doForward on UnstackVertex
-        if (!canDoForward())
-            throw new IllegalStateException("Cannot do forward pass: input not set");
+    public Gradients backpropGradient(Gradients gradient) {
+        // this is basically activate on UnstackVertex
+        INDArray epsilon = gradient.get(0);
 
         if (epsilon == null) {
             //Edge case for stack vertex: stack -> embedding
             //If the null epsilons are a problem in practice, this should be picked up by other layers
-            return new Pair<>(null, new INDArray[inputs.length]);
+            return GradientsFactory.getInstance().create(gradient.getParameterGradients(), new INDArray[input.size()]);
         }
 
-        int nStack = inputs.length;
+        int nStack = input.size();
         INDArray[] out = new INDArray[nStack];
 
         int step = epsilon.size(0) / nStack;
@@ -148,11 +133,11 @@ public class StackVertex extends BaseGraphVertex {
                     break;
                 default:
                     throw new UnsupportedOperationException(
-                                    "Cannot get subset for activations of rank " + inputs[0].rank());
+                                    "Cannot get subset for activations of rank " + input.get(0).rank());
             }
         }
 
-        return new Pair<>(null, out);
+        return GradientsFactory.getInstance().create(null, out);
     }
 
     @Override
@@ -161,8 +146,8 @@ public class StackVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         //Cases here: no mask arrays, or all mask arrays - all of the same size
         if (maskArrays == null) {
@@ -196,6 +181,6 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "StackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "StackVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ")";
     }
 }

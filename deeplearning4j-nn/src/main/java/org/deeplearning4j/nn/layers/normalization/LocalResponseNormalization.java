@@ -1,6 +1,12 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -12,7 +18,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +49,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * <p>
  * Created by nyghtowl on 10/29/15.
  */
+@Slf4j
 public class LocalResponseNormalization
                 extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
-    protected static final Logger log =
-                    LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
     LocalResponseNormalizationHelper helper = null;
 
@@ -58,17 +62,12 @@ public class LocalResponseNormalization
     private int halfN;
     private INDArray activations, unitScale, scale;
 
-    public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
-    }
-
     @Override
     public Layer clone() {
-        return new LocalResponseNormalization(conf.clone());
+        return new LocalResponseNormalization((org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)conf.clone());
     }
 
-    public LocalResponseNormalization(NeuralNetConfiguration conf) {
+    public LocalResponseNormalization(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization conf) {
         super(conf);
         initializeHelper();
     }
@@ -96,33 +95,16 @@ public class LocalResponseNormalization
         }
     }
 
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public Type type() {
-        return Type.NORMALIZATION;
-    }
-
-    @Override
-    public void fit(INDArray input) {}
-
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.get(0);
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
+            Gradients ret = helper.backpropGradient(input.get(0), epsilon, k, n, alpha, beta);
             if (ret != null) {
                 return ret;
             }
         }
 
-        int channel = input.size(1);
+        int channel = input.get(0).size(1);
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
         INDArray reverse = activations.mul(epsilon);
@@ -142,12 +124,13 @@ public class LocalResponseNormalization
         }
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
-        INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
-        return new Pair<>(retGradient, nextEpsilon);
+        INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input.get(0)).divi(unitScale).muli(2 * alpha * beta));
+        Gradients g = GradientsFactory.getInstance().create(nextEpsilon, retGradient);
+        return backpropPreprocessor(g);
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         k = layerConf().getK();
         n = layerConf().getN();
         alpha = layerConf().getAlpha();
@@ -155,16 +138,16 @@ public class LocalResponseNormalization
         halfN = (int) n / 2;
 
         if (helper != null) {
-            activations = helper.activate(input, training, k, n, alpha, beta);
+            activations = helper.activate(input.get(0), training, k, n, alpha, beta);
             if (activations != null) {
-                return activations;
+                return ActivationsFactory.getInstance().create(activations);
             }
         }
 
-        int channel = input.size(1);
+        int channel = input.get(0).size(1);
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2
-        INDArray activitySqr = input.mul(input);
+        INDArray activitySqr = input.get(0).mul(input.get(0));
         INDArray sumPart = activitySqr.dup();
 
         //sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
@@ -172,26 +155,19 @@ public class LocalResponseNormalization
             tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
             addVal = activitySqr.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
                             NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()}, tmp.addi(addVal));
+            tmp.addi(addVal);
 
             tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
             addVal = activitySqr.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()}, tmp.addi(addVal));
+            tmp.addi(addVal);
         }
 
         // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
         unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
         // y = x * unitScale**-beta
         scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
-        activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
-        return activations;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
+        activations = input.get(0).mul(scale).leverageTo(ComputationGraph.workspaceExternal);
+        return ActivationsFactory.getInstance().create(activations);
     }
 
     @Override
@@ -202,6 +178,11 @@ public class LocalResponseNormalization
     @Override
     public void clearNoiseWeightParams() {
         //No op
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        return layerConf().getPreProcessor();
     }
 
     @Override
@@ -218,11 +199,5 @@ public class LocalResponseNormalization
     public void setParams(INDArray params) {
 
     }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
-
 
 }

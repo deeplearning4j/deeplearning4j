@@ -19,15 +19,20 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
@@ -40,7 +45,8 @@ import java.util.Arrays;
  * @author Alex Black
  */
 @Data
-public class SubsetVertex extends GraphVertex {
+@EqualsAndHashCode(callSuper = false)
+public class SubsetVertex extends BaseGraphVertex {
 
     private int from;
     private int to;
@@ -60,51 +66,37 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof SubsetVertex))
-            return false;
-        SubsetVertex s = (SubsetVertex) o;
-        return s.from == from && s.to == to;
-    }
-
-    @Override
-    public int hashCode() {
-        return new Integer(from).hashCode() ^ new Integer(to).hashCode();
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
-
-    @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 1;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 1;
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph, name, idx, from, to);
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(name, idx, numInputs, from, to);
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) {
             throw new InvalidInputTypeException(
                             "SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
         }
 
+        InputType ret;
         switch (vertexInputs[0].getType()) {
             case FF:
-                return InputType.feedForward(to - from + 1);
+                ret = InputType.feedForward(to - from + 1);
+                break;
             case RNN:
-                return InputType.recurrent(to - from + 1);
+                ret = InputType.recurrent(to - from + 1);
+                break;
             case CNN:
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) vertexInputs[0];
                 int depth = conv.getDepth();
@@ -113,7 +105,8 @@ public class SubsetVertex extends GraphVertex {
                                     + "] inclusive from CNN activations with " + " [depth,width,height] = [" + depth
                                     + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
-                return InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);
+                ret = InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);
+                break;
             case CNNFlat:
                 //TODO work out how to do this - could be difficult...
                 throw new UnsupportedOperationException(
@@ -121,12 +114,13 @@ public class SubsetVertex extends GraphVertex {
             default:
                 throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }
+        return new InputType[]{ret};
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
         //Get op without dup - no additional memory use
-        InputType outputType = getOutputType(-1, inputTypes);
+        InputType outputType = getOutputType(-1, inputTypes)[0];
         return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
                         .build();

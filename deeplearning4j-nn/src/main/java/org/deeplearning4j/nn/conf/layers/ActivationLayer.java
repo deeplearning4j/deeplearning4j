@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     protected ActivationLayer(Builder builder) {
         super(builder);
         this.activationFn = builder.activationFn;
-        initializeConstraints(builder);
+        initializeConstraints(builder.allParamConstraints, builder.weightConstraints, builder.biasConstraints);
     }
 
     @Override
@@ -40,15 +41,15 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf);
-        ret.setListeners(iterationListeners);
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
+        ret.setConf(this);
         return ret;
     }
 
@@ -58,14 +59,17 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
+    public InputType[] getOutputType(int layerIndex, InputType... inputType) {
         if (inputType == null)
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        if (preProcessor != null) {
+            inputType = preProcessor.getOutputType(inputType);
+        }
         return inputType;
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(InputType... inputType) {
         //No input preprocessor required for any input
         return null;
     }
@@ -88,7 +92,12 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         int actElementsPerEx = inputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)
@@ -101,7 +110,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(InputType[] inputType, boolean override) {
         //No op
     }
 

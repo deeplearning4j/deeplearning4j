@@ -19,6 +19,7 @@
 package org.deeplearning4j.models;
 
 import com.google.common.primitives.Doubles;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.datavec.api.util.ClassPathResource;
@@ -64,12 +65,11 @@ import static org.junit.Assert.*;
  * @author jeffreytang
  * @author raver119@gmail.com
  */
+@Slf4j
 public class WordVectorSerializerTest {
 
     private File textFile, binaryFile, textFile2;
     String pathToWriteto;
-
-    private Logger logger = LoggerFactory.getLogger(WordVectorSerializerTest.class);
 
     @Before
     public void before() throws Exception {
@@ -263,9 +263,9 @@ public class WordVectorSerializerTest {
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
 
-        //logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
+        //log.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
 
-        //logger.info("Closest Words:");
+        //log.info("Closest Words:");
         Collection<String> lst = vec.wordsNearest("day", 10);
         System.out.println(lst);
 
@@ -284,8 +284,8 @@ public class WordVectorSerializerTest {
 
         assertEquals(vec.getConfiguration(), vec2.getConfiguration());
 
-        //logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
-        //logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
+        //log.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
+        //log.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
         assertTrue(ArrayUtils.isEquals(((InMemoryLookupTable) table).getExpTable(),
                         ((InMemoryLookupTable) vec2.getLookupTable()).getExpTable()));
 
@@ -293,12 +293,12 @@ public class WordVectorSerializerTest {
         InMemoryLookupTable restoredTable = (InMemoryLookupTable) vec2.lookupTable();
 
         /*
-        logger.info("Restored word 1: " + restoredTable.getVocab().wordFor(restoredTable.getVocab().wordAtIndex(1)));
-        logger.info("Restored word 'it': " + restoredTable.getVocab().wordFor("it"));
-        logger.info("Original word 1: " + cache.wordFor(cache.wordAtIndex(1)));
-        logger.info("Original word 'i': " + cache.wordFor("i"));
-        logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
-        logger.info("Restored word 0: " + restoredTable.getVocab().wordFor(restoredTable.getVocab().wordAtIndex(0)));
+        log.info("Restored word 1: " + restoredTable.getVocab().wordFor(restoredTable.getVocab().wordAtIndex(1)));
+        log.info("Restored word 'it': " + restoredTable.getVocab().wordFor("it"));
+        log.info("Original word 1: " + cache.wordFor(cache.wordAtIndex(1)));
+        log.info("Original word 'i': " + cache.wordFor("i"));
+        log.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
+        log.info("Restored word 0: " + restoredTable.getVocab().wordFor(restoredTable.getVocab().wordAtIndex(0)));
         */
         assertEquals(cache.wordAtIndex(1), restoredTable.getVocab().wordAtIndex(1));
         assertEquals(cache.wordAtIndex(7), restoredTable.getVocab().wordAtIndex(7));
@@ -318,8 +318,8 @@ public class WordVectorSerializerTest {
         INDArray rSyn0_1 = restoredTable.getSyn0().slice(1);
         INDArray oSyn0_1 = ((InMemoryLookupTable) table).getSyn0().slice(1);
 
-        //logger.info("Restored syn0: " + rSyn0_1);
-        //logger.info("Original syn0: " + oSyn0_1);
+        //log.info("Restored syn0: " + rSyn0_1);
+        //log.info("Original syn0: " + oSyn0_1);
 
         assertEquals(oSyn0_1, rSyn0_1);
 
@@ -337,8 +337,8 @@ public class WordVectorSerializerTest {
 
             assertEquals(rSyn1, oSyn1);
             if (arraysSimilarity(rSyn1, oSyn1) < 0.98) {
-                //   logger.info("Restored syn1: " + rSyn1);
-                //   logger.info("Original  syn1: " + oSyn1);
+                //   log.info("Restored syn1: " + rSyn1);
+                //   log.info("Original  syn1: " + oSyn1);
             }
             // we exclude word 222 since it has syn1 full of zeroes
             if (cnt != 222)
@@ -378,19 +378,19 @@ public class WordVectorSerializerTest {
         double simD = arraysSimilarity(day1, day2);
         double simN = arraysSimilarity(night1, night2);
 
-        logger.info("Vec1 day: " + day1);
-        logger.info("Vec2 day: " + day2);
+        log.info("Vec1 day: " + day1);
+        log.info("Vec2 day: " + day2);
 
-        logger.info("Vec1 night: " + night1);
-        logger.info("Vec2 night: " + night2);
+        log.info("Vec1 night: " + night1);
+        log.info("Vec2 night: " + night2);
 
-        logger.info("Day/day cross-model similarity: " + simD);
-        logger.info("Night/night cross-model similarity: " + simN);
+        log.info("Day/day cross-model similarity: " + simD);
+        log.info("Night/night cross-model similarity: " + simN);
 
 
 
-        logger.info("Vec1 day/night similiraty: " + vec.similarity("day", "night"));
-        logger.info("Vec2 day/night similiraty: " + vec2.similarity("day", "night"));
+        log.info("Vec1 day/night similiraty: " + vec.similarity("day", "night"));
+        log.info("Vec2 day/night similiraty: " + vec2.similarity("day", "night"));
 
         // check if cross-model values are not the same
         assertNotEquals(1.0, simD, 0.001);
@@ -408,7 +408,7 @@ public class WordVectorSerializerTest {
     public void testLoader() throws Exception {
         WordVectors vec = WordVectorSerializer.loadTxtVectors(new File("/home/raver119/Downloads/_vectors.txt"));
 
-        logger.info("Rewinding: " + Arrays.toString(vec.getWordVector("rewinding")));
+        log.info("Rewinding: " + Arrays.toString(vec.getWordVector("rewinding")));
     }
 
 
@@ -551,14 +551,14 @@ public class WordVectorSerializerTest {
     @Test
     @Ignore
     public void testStaticLoaderGoogleModel() throws Exception {
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         long time1 = System.currentTimeMillis();
         WordVectors vectors = WordVectorSerializer
                         .loadStaticModel(new File("C:\\Users\\raver\\develop\\GoogleNews-vectors-negative300.bin.gz"));
         long time2 = System.currentTimeMillis();
 
-        logger.info("Loading time: {} ms", (time2 - time1));
+        log.info("Loading time: {} ms", (time2 - time1));
     }
 
     /**
@@ -569,7 +569,7 @@ public class WordVectorSerializerTest {
     @Test
     public void testStaticLoaderBinary() throws Exception {
 
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(binaryFile);
@@ -588,7 +588,7 @@ public class WordVectorSerializerTest {
      */
     @Test
     public void testStaticLoaderText() throws Exception {
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
         WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(textFile);
@@ -607,7 +607,7 @@ public class WordVectorSerializerTest {
      */
     @Test
     public void testStaticLoaderArchive() throws Exception {
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
 
@@ -623,7 +623,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testUnifiedLoaderArchive1() throws Exception {
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
 
@@ -642,7 +642,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testUnifiedLoaderArchive2() throws Exception {
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         File w2v = new ClassPathResource("word2vec.dl4j/file.w2v").getFile();
 
@@ -665,7 +665,7 @@ public class WordVectorSerializerTest {
      */
     @Test
     public void testUnifiedLoaderText() throws Exception {
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         WordVectors vectorsLive = WordVectorSerializer.loadTxtVectors(textFile);
         WordVectors vectorsUnified = WordVectorSerializer.readWord2VecModel(textFile, true);
@@ -688,7 +688,7 @@ public class WordVectorSerializerTest {
     @Test
     public void testUnifiedLoaderBinary() throws Exception {
 
-        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+        log.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
         WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         WordVectors vectorsStatic = WordVectorSerializer.readWord2VecModel(binaryFile, false);

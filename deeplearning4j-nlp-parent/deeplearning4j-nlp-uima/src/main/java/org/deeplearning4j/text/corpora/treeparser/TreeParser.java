@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.corpora.treeparser;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.util.JCasUtil;
@@ -57,12 +58,12 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class TreeParser {
 
     private AnalysisEngine parser;
     private AnalysisEngine tokenizer;
     private CasPool pool;
-    private static final Logger log = LoggerFactory.getLogger(TreeParser.class);
     private TokenizerFactory tf;
 
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -171,7 +172,7 @@ public class VaeGradientCheckTests {
                     mln.init();
                     mln.initGradientsView();
 
-                    org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+                    Model layer = (Model)mln.getLayer(0);
 
                     String msg = "testVaePretrain() - activationFn=" + afn + ", p(z|x) afn = " + pzxAfn
                                     + ", p(x|z) afn = " + pxzAfn + ", encLayerSizes = " + Arrays.toString(encoderSizes)
@@ -268,7 +269,7 @@ public class VaeGradientCheckTests {
                 mln.init();
                 mln.initGradientsView();
 
-                org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+                Model layer = (Model)mln.getLayer(0);
 
                 String msg = "testVaePretrainReconstructionDistributions() - " + reconstructionDistributions[i];
                 if (PRINT_RESULTS) {
@@ -310,7 +311,7 @@ public class VaeGradientCheckTests {
                 mln.init();
                 mln.initGradientsView();
 
-                org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+                Model layer = (Model)mln.getLayer(0);
 
                 String msg = "testVaePretrainMultipleSamples() - numSamples = " + numSamples;
                 if (PRINT_RESULTS) {

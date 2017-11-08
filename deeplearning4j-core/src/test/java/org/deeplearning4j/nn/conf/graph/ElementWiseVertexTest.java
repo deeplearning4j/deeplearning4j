@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
@@ -24,11 +26,16 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
+import static org.deeplearning4j.TestUtils.nullsafe;
+
 /**
  * Created by binesh on 6/14/2017.
  */
 
 public class ElementWiseVertexTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testElementWiseVertexNumParams() {
         /*
@@ -41,8 +48,7 @@ public class ElementWiseVertexTest {
 
         for (ElementWiseVertex.Op op : ops) {
             ElementWiseVertex ewv = new ElementWiseVertex(op);
-            Assert.assertEquals(0, ewv.numParams(true));
-            Assert.assertEquals(0, ewv.numParams(false));
+            Assert.assertEquals(0, ewv.initializer().numParams(ewv));
         }
     }
 
@@ -175,29 +181,22 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(new Sgd())
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
-                        .addInputs("input1", "input2", "input3")
-                        .addLayer("dense1",
-                                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
-                                                        .activation(new ActivationTanH()).build(),
-                                        "input1")
-                        .addLayer("dense2",
-                                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
-                                                        .activation(new ActivationTanH()).build(),
-                                        "input2")
-                        .addLayer("dense3",
-                                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
-                                                        .activation(new ActivationTanH()).build(),
-                                        "input3")
-                        .addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
-                                        "dense2", "dense3")
-                        .addLayer("output",
-                                        new OutputLayer.Builder().nIn(midsz).nOut(outputsz)
-                                                        .activation(new ActivationSigmoid())
-                                                        .lossFunction(LossFunction.MSE).build(),
-                                        "elementwiseAdd")
-                        .setOutputs("output").backprop(true).build();
+                .biasInit(0.0).updater(new Sgd())
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
+                .addInputs("input1", "input2", "input3")
+                .addLayer("dense1",
+                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),
+                        "input1")
+                .addLayer("dense2",
+                        new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),"input2")
+                .addLayer("dense3",new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),"input3")
+                .addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2", "dense3")
+                .addLayer("output",
+                        new OutputLayer.Builder().nIn(midsz).nOut(outputsz)
+                                .activation(new ActivationSigmoid())
+                                .lossFunction(LossFunction.MSE).build(),
+                        "elementwiseAdd")
+                .setOutputs("output").backprop(true).build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -205,10 +204,8 @@ public class ElementWiseVertexTest {
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray input3 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
-        cg.setInputs(input1, input2, input3);
-        cg.setLabels(target);
 
-        cg.computeGradientAndScore();
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.createTriple(input1, input2, input3), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();
@@ -223,13 +220,13 @@ public class ElementWiseVertexTest {
 
         // Now, let's calculate what we expect the output to be.
 
-        INDArray mh = input1.mmul(dense1_W).addi(dense1_b.repmat(batchsz, 1));
+        INDArray mh = input1.mmul(dense1_W).addiRowVector(dense1_b);
         INDArray m = (Transforms.tanh(mh));
 
-        INDArray nh = input2.mmul(dense2_W).addi(dense2_b.repmat(batchsz, 1));
+        INDArray nh = input2.mmul(dense2_W).addiRowVector(dense2_b);
         INDArray n = (Transforms.tanh(nh));
 
-        INDArray oh = input3.mmul(dense3_W).addi(dense3_b.repmat(batchsz, 1));
+        INDArray oh = input3.mmul(dense3_W).addiRowVector(dense3_b);
         INDArray o = (Transforms.tanh(oh));
 
         INDArray middle = Nd4j.zeros(batchsz, midsz);
@@ -237,19 +234,17 @@ public class ElementWiseVertexTest {
 
 
         INDArray expect = Nd4j.zeros(batchsz, outputsz);
-        expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
+        expect.addi(Transforms.sigmoid(middle.mmul(output_W).addiRowVector(output_b)));
 
 
-        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
+        INDArray output = nullsafe(cg.output(input1, input2, input3).get(0));
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
-
-        Pair<Gradient, Double> pgd = cg.gradientAndScore();
 
         double score = pgd.getSecond();
         Assert.assertEquals(score, mse(output, target), this.epsilon);
 
-        Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
+        Map<String, INDArray> gradients = pgd.getFirst().getParameterGradients().gradientForVariable();
         /*
          * So. Let's say we have inputs a, b, c
          * mh = a W1 + b1
@@ -380,10 +375,8 @@ public class ElementWiseVertexTest {
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray input3 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
-        cg.setInputs(input1, input2, input3);
-        cg.setLabels(target);
 
-        cg.computeGradientAndScore();
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.createTriple(input1, input2, input3), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();
@@ -415,16 +408,14 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
+        INDArray output = nullsafe(cg.output(input1, input2, input3).get(0));
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
-
-        Pair<Gradient, Double> pgd = cg.gradientAndScore();
 
         double score = pgd.getSecond();
         Assert.assertEquals(score, mse(output, target), this.epsilon);
 
-        Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
+        Map<String, INDArray> gradients = pgd.getFirst().getParameterGradients().gradientForVariable();
         /*
          * So. Let's say we have inputs a, b, c
          * mh = a W1 + b1
@@ -549,10 +540,8 @@ public class ElementWiseVertexTest {
         INDArray input1 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray input2 = Nd4j.rand(new int[] {batchsz, featuresz}, new UniformDistribution(-1, 1));
         INDArray target = nullsafe(Nd4j.rand(new int[] {batchsz, outputsz}, new UniformDistribution(0, 1)));
-        cg.setInputs(input1, input2);
-        cg.setLabels(target);
 
-        cg.computeGradientAndScore();
+        Pair<Gradients, Double> pgd = cg.computeGradientAndScore(af.createPair(input1, input2), af.create(target));
 
         // Let's figure out what our params are now.
         Map<String, INDArray> params = cg.paramTable();
@@ -579,16 +568,14 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.output(input1, input2)[0]);
+        INDArray output = nullsafe(cg.output(input1, input2).get(0));
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
-
-        Pair<Gradient, Double> pgd = cg.gradientAndScore();
 
         double score = pgd.getSecond();
         Assert.assertEquals(score, mse(output, target), this.epsilon);
 
-        Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
+        Map<String, INDArray> gradients = pgd.getFirst().getParameterGradients().gradientForVariable();
         /*
          * So. Let's say we have inputs a, b, c
          * mh = a W1 + b1
@@ -673,13 +660,6 @@ public class ElementWiseVertexTest {
         double mse_expect = Transforms.pow(output.sub(target), 2.0).sumNumber().doubleValue()
                         / (output.columns() * output.rows());
         return mse_expect;
-    }
-
-    private static <T> T nullsafe(T obj) {
-        if (obj == null)
-            throw new NullPointerException();
-        T clean = obj;
-        return clean;
     }
 
     private double epsilon = 1e-10;

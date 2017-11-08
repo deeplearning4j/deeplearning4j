@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -34,9 +35,8 @@ import java.util.zip.ZipInputStream;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 public class ArchiveUtils {
-
-    private static final Logger log = LoggerFactory.getLogger(ArchiveUtils.class);
 
     private ArchiveUtils() {}
 

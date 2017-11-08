@@ -58,7 +58,7 @@ public class WeightNoise implements IWeightNoise {
     @Override
     public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train) {
 
-        ParamInitializer init = layer.conf().getLayer().initializer();
+        ParamInitializer init = layer.conf().initializer();
         INDArray param = layer.getParam(paramKey);
         if (train && init.isWeightParam(paramKey) || (applyToBias && init.isBiasParam(paramKey))) {
 

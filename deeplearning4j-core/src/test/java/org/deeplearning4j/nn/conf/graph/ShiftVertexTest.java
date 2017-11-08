@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
@@ -24,11 +26,16 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static org.deeplearning4j.TestUtils.nullsafe;
+
 /**
  * Created by binesh on 6/13/2017. 
  */
 
 public class ShiftVertexTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+
     @Test
     public void testShiftVertexNumParamsTrue() {
         /*
@@ -37,7 +44,7 @@ public class ShiftVertexTest {
          */
 
         ShiftVertex sv = new ShiftVertex(0.7); // The 0.7 doesn't really matter.
-        Assert.assertEquals(0, sv.numParams(true));
+        Assert.assertEquals(0, sv.initializer().numParams(sv));
     }
 
     @Test
@@ -48,7 +55,7 @@ public class ShiftVertexTest {
          */
 
         ShiftVertex sv = new ShiftVertex(0.7); // The 0.7 doesn't really matter.
-        Assert.assertEquals(0, sv.numParams(false));
+        Assert.assertEquals(0, sv.initializer().numParams(sv));
     }
 
     @Test
@@ -136,12 +143,11 @@ public class ShiftVertexTest {
                         .setOutputs("output").backprop(true).build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
-        cg.setInput(0, input);
-        cg.setLabel(0, target);
-        cg.computeGradientAndScore();
+
+        Pair<Gradients,Double> p = cg.computeGradientAndScore(af.create(input), af.create(target));
         double score_dl4j = cg.score();
         Map<String, INDArray> weights = cg.paramTable();
-        Gradient g = cg.gradient();
+        Gradient g = p.getFirst().getParameterGradients();
         Map<String, INDArray> gradients = g.gradientForVariable();
         Map<String, INDArray> manual_gradients = new TreeMap<String, INDArray>();
 
@@ -230,13 +236,6 @@ public class ShiftVertexTest {
     private static double sum_errors(INDArray a, INDArray b) {
         INDArray o = a.sub(b);
         return o.mul(o).sumNumber().doubleValue();
-    }
-
-    private static <T> T nullsafe(T obj) {
-        if (obj == null)
-            throw new NullPointerException();
-        T clean = obj;
-        return clean;
     }
 
     private double epsilon = 1e-10;

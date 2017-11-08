@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,6 +29,7 @@ import static org.junit.Assert.*;
  * Created by nyghtowl on 9/1/15.
  */
 public class CNNGradientCheckTest {
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
@@ -77,13 +79,11 @@ public class CNNGradientCheckTest {
 
                     if (doLearningFirst) {
                         //Run a number of iterations of learning
-                        mln.setInput(ds.getFeatures());
-                        mln.setLabels(ds.getLabels());
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                         double scoreBefore = mln.score();
                         for (int j = 0; j < 10; j++)
                             mln.fit(ds);
-                        mln.computeGradientAndScore();
+                        mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
@@ -165,13 +165,11 @@ public class CNNGradientCheckTest {
 
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                             double scoreBefore = mln.score();
                             for (int j = 0; j < 10; j++)
                                 mln.fit(ds);
-                            mln.computeGradientAndScore();
+                            mln.computeGradientAndScore(af.create(ds.getFeatures()), af.create(ds.getLabels()));
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = testName
@@ -437,7 +435,7 @@ public class CNNGradientCheckTest {
                                         .setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
 
                         assertEquals(ConvolutionMode.Truncate,
-                                        ((ConvolutionLayer) conf.getConf(0).getLayer()).getConvolutionMode());
+                                        ((ConvolutionLayer) conf.getConf(0)).getConvolutionMode());
 
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                         net.init();
@@ -632,7 +630,7 @@ public class CNNGradientCheckTest {
                                     (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
                     int[] expShape = new int[] {minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
                                     width + zeroPad[2] + zeroPad[3]};
-                    INDArray out = zpl.activate(input);
+                    INDArray out = zpl.activate(ActivationsFactory.getInstance().create(input), true).get(0);
                     assertArrayEquals(expShape, out.shape());
 
                     String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "

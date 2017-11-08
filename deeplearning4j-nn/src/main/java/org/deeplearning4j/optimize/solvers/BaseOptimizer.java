@@ -19,13 +19,16 @@
 package org.deeplearning4j.optimize.solvers;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -41,23 +44,23 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Base optimizer
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseOptimizer implements ConvexOptimizer {
 
-    protected NeuralNetConfiguration conf;
-    protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
+    protected OptimizationConfig conf;
     @Getter
     protected StepFunction stepFunction;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
@@ -80,12 +83,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      *
      * @param conf
      * @param stepFunction
-     * @param iterationListeners
      * @param model
      */
-    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        this(conf, stepFunction, iterationListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
+    public BaseOptimizer(OptimizationConfig conf, StepFunction stepFunction, Model model) {
+        this(conf, stepFunction, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
     }
 
 
@@ -93,16 +94,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      *
      * @param conf
      * @param stepFunction
-     * @param iterationListeners
      * @param terminationConditions
      * @param model
      */
-    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
-                    Collection<TerminationCondition> terminationConditions, Model model) {
+    public BaseOptimizer(OptimizationConfig conf, StepFunction stepFunction,
+                         Collection<TerminationCondition> terminationConditions, Model model) {
         this.conf = conf;
         this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
-        this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
@@ -118,12 +116,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public GradientsAccumulator getGradientsAccumulator() {
         return accumulator;
-    }
-
-    @Override
-    public double score() {
-        model.computeGradientAndScore();
-        return model.score();
     }
 
     @Override
@@ -155,51 +147,46 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        if (listeners == null)
-            this.iterationListeners = Collections.emptyList();
-        else
-            this.iterationListeners = listeners;
-    }
-
-    @Override
-    public NeuralNetConfiguration getConf() {
+    public OptimizationConfig getConf() {
         return conf;
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore() {
+    public Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels, boolean isPretrain) {
         oldScore = score;
-        model.computeGradientAndScore();
+        Pair<Gradients, Double> pair = model.computeGradientAndScore(input, labels);
 
-        if (iterationListeners != null && iterationListeners.size() > 0) {
+        if (model.getListeners() != null && model.getListeners().size() > 0) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener l : iterationListeners) {
+                for (IterationListener l : model.getListeners()) {
                     if (l instanceof TrainingListener) {
-                        ((TrainingListener) l).onGradientCalculation(model);
+                        ((TrainingListener) l).onGradientCalculation(model, pair.getFirst());
                     }
                 }
             }
         }
 
-        Pair<Gradient, Double> pair = model.gradientAndScore();
         score = pair.getSecond();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
-        return pair;
+        updateGradientAccordingToParams(pair.getFirst().getParameterGradients(), model, model.getInputMiniBatchSize(), isPretrain);
+        return new Pair<>(pair.getFirst().getParameterGradients(), score);
     }
 
     /**
      * Optimize call. This runs the optimizer.
      * @return whether it converged or not
      */
-    // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
-    public boolean optimize() {
+    public boolean optimize(boolean isPretrain) {
         //validate the input before training
         INDArray gradient;
         INDArray searchDirection;
         INDArray parameters;
-        Pair<Gradient, Double> pair = gradientAndScore();
+
+        //Get the original input/labels
+        Activations input = model.getInput();
+        Activations labels = model.getLabels();
+
+        Pair<Gradient, Double> pair = gradientAndScore(input, labels, isPretrain);
         if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
             setupSearchState(pair); //Only do this once
@@ -220,48 +207,47 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
         //calculate initial search direction
         preProcessLine();
+        gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        searchDirection = (INDArray) searchState.get(SEARCH_DIR);
+        parameters = (INDArray) searchState.get(PARAMS_KEY);
 
-        for (int i = 0; i < conf.getNumIterations(); i++) {
-            gradient = (INDArray) searchState.get(GRADIENT_KEY);
-            searchDirection = (INDArray) searchState.get(SEARCH_DIR);
-            parameters = (INDArray) searchState.get(PARAMS_KEY);
+        //perform one line search optimization
+        try {
+            step = lineMaximizer.optimize(input, labels, parameters, gradient, searchDirection);
+        } catch (InvalidStepException e) {
+            log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
+            step = 0.0;
+        }
 
-            //perform one line search optimization
-            try {
-                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
-            } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
-                step = 0.0;
-            }
+        //Update parameters based on final/best step size returned by line search:
+        if (step != 0.0) {
+            // TODO: inject accumulation use here
+            stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
+            model.setParams(parameters);
+        } else {
+            log.debug("Step size returned by line search is 0.0.");
+        }
 
-            //Update parameters based on final/best step size returned by line search:
-            if (step != 0.0) {
-                // TODO: inject accumulation use here
-                stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
-                model.setParams(parameters);
-            } else {
-                log.debug("Step size returned by line search is 0.0.");
-            }
+        pair = gradientAndScore(input, labels, isPretrain);
 
-            pair = gradientAndScore();
+        //updates searchDirection
+        postStep(pair.getFirst().gradient());
 
-            //updates searchDirection
-            postStep(pair.getFirst().gradient());
-
-            //invoke listeners
-            int iterationCount = BaseOptimizer.getIterationCount(model);
-            int epochCount = BaseOptimizer.getEpochCount(model);
+        //invoke listeners
+        int iterationCount = BaseOptimizer.getIterationCount(model);
+        int epochCount = BaseOptimizer.getEpochCount(model);
+        if(model.getListeners() != null ) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener listener : iterationListeners)
+                for (IterationListener listener : model.getListeners())
                     listener.iterationDone(model, iterationCount, epochCount);
             }
-
-
-            //check for termination conditions based on absolute change in score
-            checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
-            incrementIterationCount(model, 1);
-            applyConstraints(model);
         }
+
+
+        //check for termination conditions based on absolute change in score
+        checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, model.getIterationCount());
+        incrementIterationCount(model, 1);
+        applyConstraints(model);
         return true;
     }
 
@@ -311,7 +297,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, boolean isPretrain) {
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
             if (computationGraphUpdater == null) {
@@ -319,7 +305,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     computationGraphUpdater = new ComputationGraphUpdater(graph);
                 }
             }
-            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize);
+            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize, isPretrain);
         } else {
             if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -328,7 +314,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
             Layer layer = (Layer) model;
 
-            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize);
+            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize, isPretrain);
         }
     }
 
@@ -338,7 +324,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
-        INDArray gradient = pair.getFirst().gradient(conf.variables());
+        INDArray gradient = pair.getFirst().gradient(); //.gradient(conf.variables());
         INDArray params = model.params().dup(); //Need dup here: params returns an array that isn't a copy (hence changes to this are problematic for line search methods)
         searchState.put(GRADIENT_KEY, gradient);
         searchState.put(SCORE_KEY, pair.getSecond());
@@ -360,7 +346,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         } else if (model instanceof ComputationGraph) {
             return ((ComputationGraph) model).getConfiguration().getIterationCount();
         } else {
-            return model.conf().getIterationCount();
+            return model.getOptimizationConfig().getIterationCount();
         }
     }
 
@@ -372,7 +358,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             ComputationGraphConfiguration conf = ((ComputationGraph) model).getConfiguration();
             conf.setIterationCount(conf.getIterationCount() + incrementBy);
         } else {
-            model.conf().setIterationCount(model.conf().getIterationCount() + incrementBy);
+            model.getOptimizationConfig().setIterationCount(model.getOptimizationConfig().getIterationCount() + incrementBy);
         }
     }
 
@@ -382,7 +368,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         } else if (model instanceof ComputationGraph) {
             return ((ComputationGraph) model).getConfiguration().getEpochCount();
         } else {
-            return model.conf().getEpochCount();
+            return model.getOptimizationConfig().getEpochCount();
         }
     }
 

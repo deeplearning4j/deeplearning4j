@@ -56,8 +56,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Data
 @JsonIgnoreProperties({"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
                 "trainingMasterUID"})
-@EqualsAndHashCode(exclude = {"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
-                "trainingMasterUID"})
+@EqualsAndHashCode(exclude = {"iterationCount"}, callSuper = true)
 @Slf4j
 public class ParameterAveragingTrainingMaster
                 extends BaseTrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker>
@@ -866,12 +865,10 @@ public class ParameterAveragingTrainingMaster
             //Params may be null for edge case (empty RDD)
             if (network != null) {
                 MultiLayerConfiguration conf = network.getNetwork().getLayerWiseConfigurations();
-                int numUpdates = network.getNetwork().conf().getNumIterations() * averagingFrequency;
-                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+                conf.setIterationCount(conf.getIterationCount() + averagingFrequency);
             } else {
                 ComputationGraphConfiguration conf = graph.getNetwork().getConfiguration();
-                int numUpdates = graph.getNetwork().conf().getNumIterations() * averagingFrequency;
-                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+                conf.setIterationCount(conf.getIterationCount() + averagingFrequency);
             }
         }
     }

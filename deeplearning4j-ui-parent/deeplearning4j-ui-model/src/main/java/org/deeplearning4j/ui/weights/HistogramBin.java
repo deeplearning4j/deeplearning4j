@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Data
+@Slf4j
 public class HistogramBin implements Serializable {
     private transient INDArray sourceArray;
     private int numberOfBins;
@@ -25,8 +27,6 @@ public class HistogramBin implements Serializable {
     private double max;
     private double min;
     private Map<BigDecimal, AtomicInteger> data = new LinkedHashMap<>();
-
-    private static final Logger log = LoggerFactory.getLogger(HistogramBin.class);
 
     /**
      * No-Args constructor should be used only for serialization/deserialization purposes.

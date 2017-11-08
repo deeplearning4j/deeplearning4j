@@ -19,10 +19,18 @@
 package org.deeplearning4j.nn.layers;
 
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,33 +47,41 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
-                extends BaseLayer<LayerConfT> {
+                extends BaseLayer<LayerConfT> implements Model {
 
+    private List<IterationListener> listeners;
     protected Collection<TrainingListener> trainingListeners = null;
+    protected double score = 0.0;
+    protected ConvexOptimizer optimizer;
+    protected Solver solver;
 
-    public BasePretrainNetwork(NeuralNetConfiguration conf) {
+
+    public BasePretrainNetwork(org.deeplearning4j.nn.conf.layers.BasePretrainNetwork conf) {
         super(conf);
-    }
-
-    public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
     }
 
 
     @Override
+    public double score(){
+        return score;
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
-        if (iterationListeners == null)
-            iterationListeners = new ArrayList<>();
+        if (this.listeners == null)
+            this.listeners = new ArrayList<>();
         else
-            iterationListeners.clear();
+            this.listeners.clear();
         if (trainingListeners == null)
             trainingListeners = new ArrayList<>();
         else
             trainingListeners.clear();
 
         if (listeners != null && listeners.size() > 0) {
-            iterationListeners.addAll(listeners);
+            this.listeners.addAll(listeners);
             for (IterationListener il : listeners) {
                 if (il instanceof TrainingListener) {
                     trainingListeners.add((TrainingListener) il);
@@ -135,14 +151,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
      */
     public abstract Pair<INDArray, INDArray> sampleVisibleGivenHidden(INDArray h);
 
-    @Override
+
     protected void setScoreWithZ(INDArray z) {
         if (input == null || z == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
         //double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(input, z, layerConf().getActivationFn(), maskArray, false);
+        double score = lossFunction.computeScore(input.get(0), z, layerConf().getActivationFn(), input.getMask(0), false);
         score += calcL1(false) + calcL2(false);
         score /= getInputMiniBatchSize();
 
@@ -160,22 +176,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     public INDArray params() {
-        List<INDArray> list = new ArrayList<>(2);
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-            list.add(entry.getValue());
-        }
-        return Nd4j.toFlattened('f', list);
+        return paramsFlattened;
     }
 
-    /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
+    /**The number of parameters for the model
      * @return the number of parameters for the model (ex. visible bias)
      */
     public int numParams() {
-        int ret = 0;
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-            ret += entry.getValue().length();
-        }
-        return ret;
+        return paramsFlattened.length();
     }
 
     @Override
@@ -186,7 +194,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         //SetParams has two different uses: during pretrain vs. backprop.
         //pretrain = 3 sets of params (inc. visible bias); backprop = 2
 
-        List<String> parameterList = conf.variables();
+        List<String> parameterList = conf.initializer().paramKeys(conf);
         int paramLength = 0;
         for (String s : parameterList) {
             int len = getParam(s).length();
@@ -203,14 +211,15 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     }
 
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> result = super.backpropGradient(epsilon);
-        ((DefaultGradient) result.getFirst()).setFlattenedGradient(gradientsFlattened);
+    @Override
+    public Gradients backpropGradient(Gradients epsilon) {
+        Gradients result = super.backpropGradient(epsilon);
+        ((DefaultGradient) result.getParameterGradients()).setFlattenedGradient(gradientsFlattened);
 
         //During backprop, visible bias gradients are set to 0 - this is necessary due to the gradient view mechanics
         // that DL4J uses
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
+        result.getParameterGradients().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         vBiasGradient.assign(0);
 
         weightNoiseParams.clear();
@@ -218,27 +227,53 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         return result;
     }
 
-
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = super.calcL2(true);
-        if (backpropParamsOnly)
-            return l2Sum;
-        if (conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            double l2Norm = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
-        }
-        return l2Sum;
+    public void init() {
+
     }
 
     @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = super.calcL1(true);
-        if (conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            l1Sum += conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)
-                            * getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm1Number().doubleValue();
+    public void addListeners(IterationListener... listeners) {
+        if(this.listeners == null){
+            this.listeners = new ArrayList<>();
         }
-        return l1Sum;
+        if(this.trainingListeners == null){
+            this.trainingListeners = new ArrayList<>();
+        }
+
+        Collections.addAll(this.listeners, listeners);
+
+        for(IterationListener i : listeners){
+            if(i instanceof TrainingListener){
+                this.trainingListeners.add((TrainingListener) i);
+            }
+        }
     }
 
+    @Override
+    public void fit(Activations data) {
+        setInput(data);
+        setInputMiniBatchSize(data.get(0).size(0));
+        applyPreprocessorIfNecessary(true);
+        applyDropOutIfNecessary(true);
+        if (solver == null) {
+            solver = new Solver.Builder().model(this).configure(layerConf()).build();
+        }
+        this.optimizer = solver.getOptimizer();
+        solver.optimize(true);
+    }
+
+    @Override
+    public ConvexOptimizer getOptimizer() {
+        if (optimizer == null) {
+            Solver solver = new Solver.Builder().model(this).configure(layerConf()).build();
+            this.optimizer = solver.getOptimizer();
+        }
+        return optimizer;
+    }
+
+    @Override
+    public OptimizationConfig getOptimizationConfig() {
+        return layerConf();
+    }
 }

@@ -19,6 +19,7 @@
 package org.deeplearning4j.spark.util;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.mllib.linalg.Matrices;
 import org.apache.spark.mllib.linalg.Matrix;
@@ -41,8 +42,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 1/23/15.
  */
+@Slf4j
 public class MLLIbUtilTest extends BaseSparkTest {
-    private static final Logger log = LoggerFactory.getLogger(MLLIbUtilTest.class);
 
     @Test
     public void testMlLibTest() {

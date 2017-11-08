@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
@@ -17,17 +18,21 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -258,28 +263,28 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public int minVertexInputs() {
+        public int minInputs() {
             return 1;
         }
 
         @Override
-        public int maxVertexInputs() {
+        public int maxInputs() {
             return 1;
         }
 
         @Override
-        public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                        INDArray paramsView, boolean initializeParams) {
+        public Layer instantiate(Collection<IterationListener> iterationListeners, String name,
+                                 int layerIndex, int numInputs, INDArray layerParamsView, boolean initializeParams) {
             throw new UnsupportedOperationException("Not supported");
         }
 
         @Override
-        public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+        public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MemoryReport getMemoryReport(InputType... inputTypes) {
+        public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
             throw new UnsupportedOperationException();
         }
     }

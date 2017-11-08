@@ -19,12 +19,17 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -34,7 +39,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Justin Long (crockpotveggies)
  */
-public class L2Vertex extends GraphVertex {
+public class L2Vertex extends BaseGraphVertex {
     protected double eps;
 
     public L2Vertex() {
@@ -56,17 +61,12 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop) {
-        return 0;
-    }
-
-    @Override
-    public int minVertexInputs() {
+    public int minInputs() {
         return 2;
     }
 
     @Override
-    public int maxVertexInputs() {
+    public int maxInputs() {
         return 2;
     }
 
@@ -76,19 +76,20 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(graph, name, idx, null, null, eps);
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int idx, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(name, idx, numInputs,  eps);
     }
 
     @Override
-    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        return InputType.feedForward(1);
+    public InputType[] getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+        return new InputType[]{InputType.feedForward(1)};
     }
 
     @Override
-    public MemoryReport getMemoryReport(InputType... inputTypes) {
-        InputType outputType = getOutputType(-1, inputTypes);
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        InputType outputType = getOutputType(-1, inputTypes)[0];
 
         //Inference: only calculation is for output activations; no working memory
         //Working memory for training:

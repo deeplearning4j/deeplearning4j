@@ -58,7 +58,7 @@ public class TransferLearningMLNTest {
                         .build();
 
         for (org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()) {
-            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
+            BaseLayer bl = ((BaseLayer) l.conf());
             assertEquals(new RmsProp(0.5), bl.getIUpdater());
         }
 
@@ -126,9 +126,9 @@ public class TransferLearningMLNTest {
         //Will fail - expected because of dist and weight init changes
         //assertEquals(modelExpectedArch.getLayerWiseConfigurations().toJson(), modelNow.getLayerWiseConfigurations().toJson());
 
-        BaseLayer bl0 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(0).getLayer());
-        BaseLayer bl1 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(1).getLayer());
-        BaseLayer bl3 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(3).getLayer());
+        BaseLayer bl0 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(0));
+        BaseLayer bl1 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(1));
+        BaseLayer bl3 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(3));
         assertEquals(bl0.getWeightInit(), WeightInit.XAVIER);
         assertEquals(bl0.getDist(), null);
         assertEquals(bl1.getWeightInit(), WeightInit.DISTRIBUTION);
@@ -213,7 +213,7 @@ public class TransferLearningMLNTest {
         MultiLayerConfiguration confForArchitecture =
                         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).updater(new AdaGrad(0.4)).list()
+                                        .updater(new AdaGrad(0.4)).list()
                                         .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
@@ -246,7 +246,7 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelToTweak =
                         new MultiLayerNetwork(
                                         new NeuralNetConfiguration.Builder().seed(12345)
-                                                        .iterations(1).updater(new RmsProp(0.1))
+                                                        .updater(new RmsProp(0.1))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(10, 10) //Only keep the first layer the same
                                                                         .nIn(3) //3 channels: RGB
@@ -313,22 +313,23 @@ public class TransferLearningMLNTest {
                                         .weightInit(WeightInit.XAVIER)
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(10).build())
-                        .setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
-                        .setInputPreProcessor(4, new FeedForwardToRnnPreProcessor()).build();
+                        .setInputType(InputType.recurrent(V_HEIGHT*V_WIDTH*3))
+                        .build();
 
         //modelNow should have the same architecture as modelExpectedArch
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(0).toJson());
-        //some learning related info the subsampling layer will not be overwritten
-        //assertTrue(modelExpectedArch.getLayerWiseConfigurations().getConf(1).toJson().equals(modelNow.getLayerWiseConfigurations().getConf(1).toJson()));
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(2).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(2).toJson());
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(3).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(3).toJson());
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(4).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(4).toJson());
-        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(5).toJson(),
-                        modelNow.getLayerWiseConfigurations().getConf(5).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(0).toJson());
+//        //some learning related info the subsampling layer will not be overwritten
+//        //assertTrue(modelExpectedArch.getLayerWiseConfigurations().getConf(1).toJson().equals(modelNow.getLayerWiseConfigurations().getConf(1).toJson()));
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(2).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(2).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(3).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(3).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(4).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(4).toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(5).toJson(),
+//                        modelNow.getLayerWiseConfigurations().getConf(5).toJson());
+        fail();
 
         assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());
         assertArrayEquals(modelExpectedArch.getLayer(0).params().shape(), modelNow.getLayer(0).params().shape());
@@ -462,13 +463,13 @@ public class TransferLearningMLNTest {
 
 
         //Check original net isn't modified:
-        BaseLayer l0 = (BaseLayer) net.getLayer(0).conf().getLayer();
+        BaseLayer l0 = (BaseLayer) net.getLayer(0).conf();
         assertEquals(new Adam(1e-4), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
-        BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
+        BaseLayer l1 = (BaseLayer) net.getLayer(1).conf();
         assertEquals(new Adam(1e-4), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(WeightInit.RELU, l1.getWeightInit());
@@ -477,13 +478,13 @@ public class TransferLearningMLNTest {
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
         //Check new net has only the appropriate things modified (i.e., LR)
-        l0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
+        l0 = (BaseLayer) net2.getLayer(0).conf();
         assertEquals(new Adam(2e-2), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
-        l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
+        l1 = (BaseLayer) net2.getLayer(1).conf();
         assertEquals(new Adam(2e-2), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(WeightInit.RELU, l1.getWeightInit());
@@ -498,7 +499,7 @@ public class TransferLearningMLNTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         MultiLayerNetwork modelToFineTune =
                         new MultiLayerNetwork(
-                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1)
+                                        new NeuralNetConfiguration.Builder().seed(123)
                                                         .weightInit(WeightInit.XAVIER)
                                                         .updater(new Nesterovs(0.01, 0.9))
                                                         .list()
@@ -540,8 +541,10 @@ public class TransferLearningMLNTest {
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(300).nOut(150).build())
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(150).nOut(50).build())
                         .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .setInputPreProcessor(2, new CnnToFeedForwardPreProcessor(12, 12, 20)).build();
+                                .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
+                        .setInputType(InputType.convolutionalFlat(28, 28, 3))
+                        .build();
+//                        .setInputPreProcessor(2, new CnnToFeedForwardPreProcessor(12, 12, 20)).build();
 
 
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(equivalentConf.list()

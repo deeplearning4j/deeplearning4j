@@ -10,8 +10,6 @@ import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
@@ -860,13 +858,11 @@ public class TrainModule implements UIModule {
                 //TODO error handling...
                 String layerType = "";
                 Layer layer = null;
-                NeuralNetConfiguration nnc = null;
                 if (modelClass.endsWith("MultiLayerNetwork")) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(configJson);
                     int confIdx = layerIdx - 1; //-1 because of input
                     if (confIdx >= 0) {
-                        nnc = conf.getConf(confIdx);
-                        layer = nnc.getLayer();
+                        layer = conf.getConf(confIdx);
                     } else {
                         //Input layer
                         layerType = "Input";
@@ -876,15 +872,13 @@ public class TrainModule implements UIModule {
 
                     String vertexName = gi.getVertexNames().get(layerIdx);
 
-                    Map<String, GraphVertex> vertices = conf.getVertices();
-                    if (vertices.containsKey(vertexName) && vertices.get(vertexName) instanceof LayerVertex) {
-                        LayerVertex lv = (LayerVertex) vertices.get(vertexName);
-                        nnc = lv.getLayerConf();
-                        layer = nnc.getLayer();
+                    Map<String, Layer> vertices = conf.getVertices();
+                    if (vertices.containsKey(vertexName) ) {
+                        layer = vertices.get(vertexName);
                     } else if (conf.getNetworkInputs().contains(vertexName)) {
                         layerType = "Input";
                     } else {
-                        GraphVertex gv = conf.getVertices().get(vertexName);
+                        Layer gv = conf.getVertices().get(vertexName);
                         if (gv != null) {
                             layerType = gv.getClass().getSimpleName();
                         }
@@ -913,7 +907,7 @@ public class TrainModule implements UIModule {
                     if (layer instanceof BaseLayer) {
                         BaseLayer bl = (BaseLayer) layer;
                         activationFn = bl.getActivationFn().toString();
-                        int nParams = layer.initializer().numParams(nnc);
+                        int nParams = layer.initializer().numParams(bl);
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
                                         String.valueOf(nParams)});
                         if (nParams > 0) {

@@ -76,7 +76,7 @@ public class DL4jServeRouteBuilder extends RouteBuilder {
 
                 if (computationGraph) {
                     ComputationGraph graph = ModelSerializer.restoreComputationGraph(modelUri);
-                    INDArray[] output = graph.output(predict);
+                    INDArray[] output = graph.output(predict).getAsArray();
                     exchange.getOut().setBody(output);
                     exchange.getIn().setBody(output);
 

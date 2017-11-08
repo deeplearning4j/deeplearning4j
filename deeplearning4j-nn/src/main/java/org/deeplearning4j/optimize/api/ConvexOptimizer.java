@@ -19,8 +19,9 @@
 package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OptimizationConfig;
 import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
@@ -28,18 +29,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * Convex optimizer.
  * @author Adam Gibson
  */
 public interface ConvexOptimizer extends Serializable {
-    /**
-     * The score for the optimizer so far
-     * @return the score for this optimizer so far
-     */
-    double score();
 
     Updater getUpdater();
 
@@ -48,8 +43,6 @@ public interface ConvexOptimizer extends Serializable {
     void setUpdater(Updater updater);
 
     void setUpdaterComputationGraph(ComputationGraphUpdater updater);
-
-    void setListeners(Collection<IterationListener> listeners);
 
     /**
      * This method specifies GradientsAccumulator instance to be used for updates sharing across multiple models
@@ -72,20 +65,20 @@ public interface ConvexOptimizer extends Serializable {
      */
     GradientsAccumulator getGradientsAccumulator();
 
-    NeuralNetConfiguration getConf();
+    OptimizationConfig getConf();
 
     /**
      * The gradient and score for this optimizer
      * @return the gradient and score for this optimizer
      */
-    Pair<Gradient, Double> gradientAndScore();
+    Pair<Gradient, Double> gradientAndScore(Activations input, Activations labels, boolean isPretrain);
 
     /**
      * Calls optimize
      * @return whether the convex optimizer
      * converted or not
      */
-    boolean optimize();
+    boolean optimize(boolean isPretrain);
 
 
     /**
@@ -125,7 +118,7 @@ public interface ConvexOptimizer extends Serializable {
      * @param batchSize batchSize for update
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize);
+    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, boolean isPretrain);
 
     /**
      * Check termination conditions

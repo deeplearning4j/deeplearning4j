@@ -19,6 +19,7 @@
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,6 +34,7 @@ import java.util.Set;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 public class SpTree implements Serializable {
     private int D;
     private INDArray data;
@@ -50,7 +52,6 @@ public class SpTree implements Serializable {
     private boolean isLeaf = true;
     private Set<INDArray> indices;
     private SpTree[] children;
-    private static Logger log = LoggerFactory.getLogger(SpTree.class);
     private String similarityFunction = "euclidean";
 
 

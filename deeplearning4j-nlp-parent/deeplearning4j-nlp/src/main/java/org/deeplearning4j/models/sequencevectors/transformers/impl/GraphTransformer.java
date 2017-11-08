@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class GraphTransformer<T extends SequenceElement> implements Iterable<Sequence<T>> {
     protected IGraph<T, ?> sourceGraph;
     protected GraphWalker<T> walker;
@@ -27,8 +29,6 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
     protected AtomicInteger counter = new AtomicInteger(0);
     protected boolean shuffle = true;
     protected VocabCache<T> vocabCache;
-
-    protected static final Logger log = LoggerFactory.getLogger(GraphTransformer.class);
 
     protected GraphTransformer() {}
 

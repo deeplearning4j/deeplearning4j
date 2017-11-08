@@ -50,7 +50,6 @@ public class KerasLRN extends KerasLayer {
                         .dropOut(this.dropout).alpha((double) lrnParams.get("alpha"))
                         .beta((double) lrnParams.get("beta")).k((int) lrnParams.get("k")).n((int) lrnParams.get("n"));
         this.layer = builder.build();
-        this.vertex = null;
     }
 
     /**
@@ -70,7 +69,7 @@ public class KerasLRN extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType[] getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras LRN layer accepts only one input (received " + inputType.length + ")");

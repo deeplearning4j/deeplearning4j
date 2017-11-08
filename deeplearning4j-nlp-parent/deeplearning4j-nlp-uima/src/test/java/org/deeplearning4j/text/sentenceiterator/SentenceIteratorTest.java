@@ -42,8 +42,6 @@ import static org.junit.Assert.*;
  */
 public class SentenceIteratorTest {
 
-    private static final Logger log = LoggerFactory.getLogger(SentenceIteratorTest.class);
-
     @Before
     public void before() throws Exception {
         File test = new File("dir");

@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
@@ -28,6 +29,7 @@ import java.util.concurrent.locks.LockSupport;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VocabConstructor<T extends SequenceElement> {
     private List<VocabSource<T>> sources = new ArrayList<>();
     private VocabCache<T> cache;
@@ -40,8 +42,6 @@ public class VocabConstructor<T extends SequenceElement> {
     private boolean enableScavenger = false;
     private T unk;
     private boolean allowParallelBuilder = true;
-
-    protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
     private VocabConstructor() {
 

@@ -21,6 +21,10 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
@@ -36,7 +40,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -56,16 +59,10 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     protected SubsamplingHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
-    public SubsamplingLayer(NeuralNetConfiguration conf) {
+    public SubsamplingLayer(org.deeplearning4j.nn.conf.layers.SubsamplingLayer conf) {
         super(conf);
         initializeHelper();
-        this.convolutionMode =
-                        ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
-    }
-
-    public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
+        this.convolutionMode = conf.getConvolutionMode();
     }
 
     void initializeHelper() {
@@ -90,24 +87,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
     }
 
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
 
     @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public Type type() {
-        return Type.SUBSAMPLING;
-    }
-
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
+        INDArray epsilon = gradients.get(0);
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
@@ -131,7 +115,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
+            Gradients ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                             layerConf().getPoolingType(), convolutionMode, dilation);
             if (ret != null) {
                 return ret;
@@ -140,8 +124,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
-        int inputHeight = input().size(-2);
-        int inputWidth = input().size(-1);
+        int inputHeight = input.size(-2);
+        int inputWidth = input.size(-1);
         Gradient retGradient = new DefaultGradient();
 
         //Epsilons in shape: [miniBatch, depth, outH, outW]
@@ -231,7 +215,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
-                return new Pair<>(retGradient, epsilon);
+                return backpropPreprocessor(GradientsFactory.getInstance().create(epsilon, retGradient));
             default:
                 throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());
@@ -248,15 +232,16 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         if (layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
-        return new Pair<>(retGradient, outEpsilon);
+        Gradients g = GradientsFactory.getInstance().create(outEpsilon, retGradient);
+        return backpropPreprocessor(g);
     }
 
 
     @Override
-    public INDArray activate(boolean training) {
-        if (training && !dropoutApplied && layerConf().getIDropout() != null) {
-            applyDropOutIfNecessary(true);
-        }
+    public Activations activate(boolean training) {
+        applyPreprocessorIfNecessary(training);
+        applyDropOutIfNecessary(true);
+        INDArray input = this.input.get(0);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
@@ -290,7 +275,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
                             convolutionMode, dilation);
             if (ret != null) {
-                return ret;
+                return ActivationsFactory.getInstance().create(ret);
             }
         }
 
@@ -336,23 +321,18 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
                 break;
             case NONE:
-                return input;
+                return ActivationsFactory.getInstance().create(input);
             default:
                 throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());
         }
 
-        return output;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
+        return ActivationsFactory.getInstance().create(output);
     }
 
     @Override
     public Layer clone() {
-        return new SubsamplingLayer(conf.clone());
+        return new SubsamplingLayer((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.clone());
     }
 
     @Override
@@ -366,47 +346,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported - no parameters");
-    }
-
-    @Override
-    public void fit() {
-
-    }
-
-    @Override
     public int numParams() {
         return 0;
-    }
-
-    @Override
-    public void fit(INDArray input) {}
-
-    @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public double score() {
-        return 0;
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-
     }
 
     @Override
@@ -423,11 +364,5 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public void setParams(INDArray params) {
 
     }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
-
 
 }

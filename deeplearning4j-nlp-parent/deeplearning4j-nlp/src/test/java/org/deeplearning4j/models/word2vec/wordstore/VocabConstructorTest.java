@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -29,9 +30,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VocabConstructorTest {
-
-    protected static final Logger log = LoggerFactory.getLogger(VocabConstructorTest.class);
 
     TokenizerFactory t = new DefaultTokenizerFactory();
 

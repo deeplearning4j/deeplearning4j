@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  */
 @Deprecated
+@Slf4j
 public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>, AtomicLong>> {
 
     private static double MAX_EXP = 6;
@@ -55,7 +57,6 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>, Ato
     private double alpha = 0.025;
     private double minAlpha = 1e-2;
     private int totalWords = 1;
-    private static transient final Logger log = LoggerFactory.getLogger(Word2VecPerformer.class);
     private int lastChecked = 0;
     private Broadcast<AtomicLong> wordCount;
     private InMemoryLookupTable weights;

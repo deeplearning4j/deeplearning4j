@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -48,128 +48,123 @@ public class ElementWiseVertex extends BaseGraphVertex {
     private Op op;
     private int nInForwardPass;
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op) {
-        this(graph, name, vertexIndex, null, null, op);
-    }
-
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, Op op) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ElementWiseVertex(String name, int vertexIndex, int numInputs, Op op) {
+        super(name, vertexIndex, numInputs);
         this.op = op;
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray doForward(boolean training) {
-        if (!canDoForward())
+    public Activations activate(boolean training) {
+        if (input == null || input.anyActivationsNull())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        nInForwardPass = inputs.length;
-        if (inputs.length == 1)
-            return inputs[0];
+        nInForwardPass = input.size();
+        if (input.size() == 1)
+            return input;
 
+        INDArray ret;
         switch (op) {
             case Add:
-                INDArray sum = inputs[0].dup(inputs[0].ordering());
-                for (int i = 1; i < inputs.length; i++) {
-                    sum.addi(inputs[i]);
+                INDArray sum = input.get(0).dup();
+                for (int i = 1; i < input.size(); i++) {
+                    sum.addi(input.get(i));
                 }
-                return sum;
+                ret = sum;
+                break;
             case Average:
-                INDArray average = inputs[0].dup(inputs[0].ordering());
-                for (int i = 1; i < inputs.length; i++) {
-                    average.addi(inputs[i]);
+                INDArray average = input.get(0).dup(input.get(0).ordering());
+                for (int i = 1; i < input.size(); i++) {
+                    average.addi(input.get(i));
                 }
-                return average.divi(inputs.length);
+                ret = average.divi(input.size());
+                break;
             case Subtract:
-                if (inputs.length != 2)
+                if (input.size() != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return inputs[0].sub(inputs[1]);
+                ret =  input.get(0).sub(input.get(1));
+                break;
             case Product:
-                INDArray product = inputs[0].dup(inputs[0].ordering());
-                for (int i = 1; i < inputs.length; i++) {
-                    product.muli(inputs[i]);
+                INDArray product = input.get(0).dup();
+                for (int i = 1; i < input.size(); i++) {
+                    product.muli(input.get(i));
                 }
-                return product;
+                ret = product;
+                break;
             case Max:
-                INDArray max =  Nd4j.createUninitialized(inputs[0].shape(), inputs[0].ordering());
+                INDArray max =  Nd4j.createUninitialized(input.get(0).shape(), input.get(0).ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
-                        .addInputs(inputs)
+                        .addInputs(input.getAsArray())
                         .addOutputs(max)
                         .callInplace(false)
                         .build();
                 Nd4j.getExecutioner().exec(op);
-                return max;
+                ret = max;
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
+
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, getInputMiniBatchSize());
+        return ActivationsFactory.getInstance().create(ret, masks.getFirst(), masks.getSecond());
     }
 
+
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set");
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.get(0);
+        if (epsilon == null)
+            throw new IllegalStateException("Cannot do backward pass: activation gradients not available");
 
         if (nInForwardPass == 1)
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return gradients;
 
+        INDArray[] out = new INDArray[nInForwardPass];
         switch (op) {
             case Add:
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
-                INDArray[] out = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++)
                     out[i] = epsilon.dup();
-                return new Pair<>(null, out);
+                break;
             case Average:
-                INDArray[] outAverage = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++)
-                    outAverage[i] = epsilon.div(nInForwardPass);
-                return new Pair<>(null, outAverage);
+                    out[i] = epsilon.div(nInForwardPass);
+                break;
             case Subtract:
-                INDArray[] out2 = new INDArray[2];
-                out2[0] = epsilon;
-                out2[1] = epsilon.neg();
-                return new Pair<>(null, out2);
+                out = new INDArray[2];
+                out[0] = epsilon;
+                out[1] = epsilon.neg();
+                break;
             case Product:
-                INDArray[] out_product = new INDArray[nInForwardPass];
+                out = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++) {
-                    out_product[i] = epsilon.dup();
+                    out[i] = epsilon.dup();
                     for (int j = 0; j < nInForwardPass; ++j) {
                         if (i != j)
-                            out_product[i].muli(inputs[j]);
+                            out[i].muli(input.get(j));
                     }
                 }
-                return new Pair<>(null, out_product);
+                break;
             case Max:
-                INDArray[] outMax = new INDArray[nInForwardPass];
                 INDArray maxIndices = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
-                        .addInputs(inputs)
+                        .addInputs(input.getAsArray())
                         .addOutputs(maxIndices)
                         .callInplace(false)
                         .build();
                 Nd4j.getExecutioner().exec(op);
                 for (int i = 0; i < nInForwardPass; i++) {
                     //gradient is epsilon where the max index is the same as i and zero elsewhere
-                    outMax[i] = maxIndices.dup();
+                    out[i] = maxIndices.dup();
                     //generate a mask with 1s and 0s in the right places and muli with epsilon
-                    MatchConditionTransform nd4jop = new MatchConditionTransform(outMax[i], outMax[i], Conditions.equals(i));
+                    MatchConditionTransform nd4jop = new MatchConditionTransform(out[i], out[i], Conditions.equals(i));
                     Nd4j.getExecutioner().exec(nd4jop);
-                    outMax[i].muli(epsilon);
+                    out[i].muli(epsilon);
                 }
-                return new Pair<>(null, outMax);
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
+        return GradientsFactory.getInstance().create(null, out);
     }
 
     @Override
@@ -178,8 +173,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);
@@ -213,7 +208,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ElementWiseVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op
+        return "ElementWiseVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",op=" + op
                         + ")";
     }
 }

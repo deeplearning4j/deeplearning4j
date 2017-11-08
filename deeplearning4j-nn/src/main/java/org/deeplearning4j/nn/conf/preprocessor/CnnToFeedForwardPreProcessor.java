@@ -20,6 +20,10 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -76,9 +80,14 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     // return 2 dimensions
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public Activations preProcess(Activations activations, int miniBatchSize, boolean training) {
+        if(activations.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
+                    + activations.size());
+        }
+        INDArray input = activations.get(0);
         if (input.rank() == 2)
-            return input; //Should usually never happen
+            return activations; //Should usually never happen
 
         //Assume input is standard rank 4 activations out of CNN layer
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
@@ -88,24 +97,34 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         int[] outShape = new int[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return input.reshape('c', outShape);
+        INDArray ret = input.reshape('c', outShape);
+
+        Pair<INDArray, MaskState> p = feedForwardMaskArray(activations.getMask(0), activations.getMaskState(0), miniBatchSize);
+        return ActivationsFactory.getInstance().create(ret, p.getFirst(), p.getSecond() );
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+    public Gradients backprop(Gradients gradients, int miniBatchSize) {
+        if(gradients.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
+                    "exactly 1 array. Got: " + gradients.size());
+        }
+        INDArray epsilons = gradients.get(0);
         //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
             epsilons = epsilons.dup('c');
 
         if (epsilons.rank() == 4)
-            return epsilons; //Should never happen
+            return gradients; //Should never happen
 
         if (epsilons.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
                             + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
                             + Arrays.toString(epsilons.shape()));
 
-        return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+        INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+
+        return GradientsFactory.getInstance().create(ret, gradients.getParameterGradients());
     }
 
     @Override
@@ -119,18 +138,19 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
+    public InputType[] getOutputType(InputType... inputType) {
+        if (inputType == null || inputType.length != 1 || inputType[0].getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input type: Expected input of type CNN, got "
+                    + (inputType == null ? null : Arrays.toString(inputType)));
         }
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType[0];
         int outSize = c.getDepth() * c.getHeight() * c.getWidth();
-        return InputType.feedForward(outSize);
+        return new InputType[]{InputType.feedForward(outSize)};
     }
 
 
-    @Override
+
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)

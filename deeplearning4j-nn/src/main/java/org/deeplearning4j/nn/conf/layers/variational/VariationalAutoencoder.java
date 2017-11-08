@@ -21,6 +21,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -59,19 +60,19 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(Collection<IterationListener> iterationListeners,
+                             String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                             boolean initializeParams) {
         LayerValidation.assertNInNOutSet("VariationalAutoencoder", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret =
-                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
+                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(this);
 
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
-        ret.setConf(conf);
         return ret;
     }
 
@@ -109,10 +110,15 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes == null || inputTypes.length != 1){
+            throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
+        }
+        InputType inputType = inputTypes[0];
+
         //For training: we'll assume unsupervised pretraining, as this has higher memory requirements
 
-        InputType outputType = getOutputType(-1, inputType);
+        InputType outputType = getOutputType(-1, inputType)[0];
 
         int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);

@@ -4,10 +4,13 @@ import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -31,9 +34,12 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Collections;
 import java.util.Map;
 
+import static org.deeplearning4j.TestUtils.assertAllNull;
 import static org.junit.Assert.*;
 
 public class ComputationGraphTestRNN {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testRnnTimeStepGravesLSTM() {
@@ -186,7 +192,8 @@ public class ComputationGraphTestRNN {
         //4 layer network: 2 GravesLSTM + DenseLayer + RnnOutputLayer. Hence also tests preprocessors.
         //Network architecture: lstm0 -> Dense -> RnnOutputLayer0
         // and lstm1 -> Dense -> RnnOutputLayer1
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                .graphBuilder()
                         .addInputs("in0", "in1")
                         .addLayer("lstm0",
                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(5).nOut(6)
@@ -213,9 +220,8 @@ public class ComputationGraphTestRNN {
                                         .weightInit(WeightInit.DISTRIBUTION).nIn(9).nOut(4)
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "dense")
-                        .setOutputs("out0", "out1").inputPreProcessor("dense", new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor("out0", new FeedForwardToRnnPreProcessor())
-                        .inputPreProcessor("out1", new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                        .setOutputs("out0", "out1")
+                        .setInputTypes(InputType.recurrent(5), InputType.recurrent(4))
                         .build();
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -359,25 +365,17 @@ public class ComputationGraphTestRNN {
         graphTBPTT.init();
 
         assertTrue(graphTBPTT.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT);
-        assertTrue(graphTBPTT.getConfiguration().getTbpttFwdLength() == timeSeriesLength);
-        assertTrue(graphTBPTT.getConfiguration().getTbpttBackLength() == timeSeriesLength);
+        assertEquals(timeSeriesLength, graphTBPTT.getConfiguration().getTbpttFwdLength());
+        assertEquals(timeSeriesLength, graphTBPTT.getConfiguration().getTbpttBackLength());
 
         INDArray inputData = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         INDArray labels = Nd4j.rand(new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-        graph.setInput(0, inputData);
-        graph.setLabel(0, labels);
+        Pair<Gradients, Double> graphPair = graph.computeGradientAndScore(af.create(inputData), af.create(labels));
+        Pair<Gradients, Double> graphTbpttPair = graphTBPTT.computeGradientAndScore(af.create(inputData), af.create(labels));
 
-        graphTBPTT.setInput(0, inputData);
-        graphTBPTT.setLabel(0, labels);
-
-        graph.computeGradientAndScore();
-        graphTBPTT.computeGradientAndScore();
-
-        Pair<Gradient, Double> graphPair = graph.gradientAndScore();
-        Pair<Gradient, Double> graphTbpttPair = graphTBPTT.gradientAndScore();
-
-        assertEquals(graphPair.getFirst().gradientForVariable(), graphTbpttPair.getFirst().gradientForVariable());
+        assertEquals(graphPair.getFirst().getParameterGradients().gradientForVariable(),
+                graphTbpttPair.getFirst().getParameterGradients().gradientForVariable());
         assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond());
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be
@@ -494,7 +492,7 @@ public class ComputationGraphTestRNN {
     @Test
     public void testTbpttMasking() {
         //Simple "does it throw an exception" type test...
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                         .activation(Activation.IDENTITY).nIn(1).nOut(1).build(), "in")
@@ -516,7 +514,7 @@ public class ComputationGraphTestRNN {
     public void checkMaskArrayClearance() {
         for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345)
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                             .graphBuilder().addInputs("in")
                             .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                             .activation(Activation.IDENTITY).nIn(1).nOut(1).build(), "in")
@@ -531,44 +529,29 @@ public class ComputationGraphTestRNN {
                             new INDArray[] {Nd4j.ones(10)});
 
             net.fit(data);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0),
                             data.getLabelsMaskArray(0));
             net.fit(ds);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             MultiDataSetIterator iter = new IteratorMultiDataSetIterator(
                             Collections.singletonList((org.nd4j.linalg.dataset.api.MultiDataSet) data).iterator(), 1);
             net.fit(iter);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
 
             DataSetIterator iter2 = new IteratorDataSetIterator(Collections.singletonList(ds).iterator(), 1);
             net.fit(iter2);
-            assertNull(net.getInputMaskArrays());
-            assertNull(net.getLabelMaskArrays());
-            for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
-            }
+            assertAllNull(net.getInputMaskArrays());
+            assertAllNull(net.getLabelMaskArrays());
         }
     }
 
