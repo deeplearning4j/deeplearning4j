@@ -86,10 +86,10 @@ public class GradientCheckUtil {
             afn = o.layerConf().getActivationFn();
         }
 
-        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getSoftmaxClipEps() != 0) {
+        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getClipEps() != 0) {
             log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
-            ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+            ((LossMCXENT) lfn).setClipEps(0.0);
         } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
             log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
