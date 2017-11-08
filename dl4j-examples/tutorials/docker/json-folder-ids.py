@@ -4,10 +4,10 @@ import shutil
 import simplejson
 #from py4j.java_gateway import JavaGateway
 
-input_path_prefix = '../'
+input_path_prefix = 'notebook_json/'
 output_path_prefix = 'notebook/'
 
-files = [input_path_prefix + file for file in os.listdir("../")]
+files = [input_path_prefix + file for file in os.listdir("notebook_json")]
 
 if os.path.isdir(output_path_prefix):
     shutil.rmtree(output_path_prefix, ignore_errors=False, onerror=None)
