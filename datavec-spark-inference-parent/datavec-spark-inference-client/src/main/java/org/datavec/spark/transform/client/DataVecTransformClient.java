@@ -68,7 +68,7 @@ public class DataVecTransformClient implements DataVecTransformService {
     @Override
     public TransformProcess getCSVTransformProcess() {
         try {
-            return Unirest.get(url + "/transform").header("accept", "application/json")
+            return Unirest.get(url + "/transformprocess").header("accept", "application/json")
                     .header("Content-Type", "application/json").asObject(TransformProcess.class).getBody();
         } catch (UnirestException e) {
             e.printStackTrace();
