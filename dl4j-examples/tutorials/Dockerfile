@@ -88,14 +88,12 @@ RUN cd /usr/src/zeppelin \
  && rm -rf /usr/src/zeppelin \
  && rm -rf /root/.m2 \
  && rm -rf /root/.npm \
- && rm -rf /tmp/*
+ && find /tmp -maxdepth 1 -not -name 'apache-maven-3.5.0' -not -name "." -exec rm -rf {} \; \
+ # Removing extra interpreter folders
+  && find $ZEPPELIN_HOME/interpreter -maxdepth 1 -type d -not -name 'spark' -not -name 'md' -not -name "." -exec rm -rf {} \;
 
 RUN ln -s -f /usr/bin/pip3 /usr/bin/pip \
  && ln -s -f /usr/bin/python3 /usr/bin/python
-
-RUN curl -sL http://archive.apache.org/dist/maven/maven-3/3.5.0/binaries/apache-maven-3.5.0-bin.tar.gz \
-   | gunzip \
-   | tar x -C /tmp/
 
 # moves all additional zeppelin files to their respective locations
 # remaining files are notebooks, we move those once everything else is gone
@@ -105,7 +103,7 @@ RUN mkdir -p $ZEPPELIN_HOME/otherpoms \
 COPY . $ZEPPELIN_HOME/dockerfiles/.
 
 # switch lines if building for cuda or cpu
-RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-native.xml $ZEPPELIN_HOME/otherpoms/pom.xml
+RUN RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-native.xml $ZEPPELIN_HOME/otherpoms/pom.xml
 #RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-cuda-8.0.xml $ZEPPELIN_HOME/otherpoms/pom.xml
 
 RUN ls $ZEPPELIN_HOME/bin/ \
