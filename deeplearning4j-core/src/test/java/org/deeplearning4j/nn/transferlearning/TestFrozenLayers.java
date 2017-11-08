@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.transferlearning;
 
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -20,9 +23,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestFrozenLayers {
 
@@ -33,6 +34,7 @@ public class TestFrozenLayers {
 
         for(double l1 : new double[]{0.0, 0.3}){
             for( double l2 : new double[]{0.0, 0.4}){
+                System.out.println("--------------------");
                 String msg = "l1=" + l1 + ", l2=" + l2;
 
                 FineTuneConfiguration ftc = new FineTuneConfiguration.Builder()
