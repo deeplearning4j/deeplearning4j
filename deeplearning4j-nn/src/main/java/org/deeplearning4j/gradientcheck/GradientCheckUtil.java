@@ -47,7 +47,7 @@ import java.util.Map;
  * - https://code.google.com/p/cuda-convnet/wiki/CheckingGradients<br>
  *
  *
- * Is C is cost function, then dC/dw ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>
+ * If C is cost function, then dC/dw ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>
  * Method checks gradient calculation for every parameter separately by doing 2 forward pass
  * calculations for each parameter, so can be very time consuming for large networks.
  *
@@ -86,10 +86,10 @@ public class GradientCheckUtil {
             afn = o.layerConf().getActivationFn();
         }
 
-        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getClipEps() != 0) {
+        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getSoftmaxClipEps() != 0) {
             log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
-            ((LossMCXENT) lfn).setClipEps(0.0);
+            ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
         } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
             log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
