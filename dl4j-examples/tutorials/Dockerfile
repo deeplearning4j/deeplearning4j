@@ -103,7 +103,7 @@ RUN mkdir -p $ZEPPELIN_HOME/otherpoms \
 COPY . $ZEPPELIN_HOME/dockerfiles/.
 
 # switch lines if building for cuda or cpu
-RUN cp $ZEPPELIN_HOME/dockerfiles/docker/pom.xml $ZEPPELIN_HOME/otherpoms/.
+RUN RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-native.xml $ZEPPELIN_HOME/otherpoms/pom.xml
 #RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-cuda-8.0.xml $ZEPPELIN_HOME/otherpoms/pom.xml
 
 RUN ls $ZEPPELIN_HOME/bin/ \
