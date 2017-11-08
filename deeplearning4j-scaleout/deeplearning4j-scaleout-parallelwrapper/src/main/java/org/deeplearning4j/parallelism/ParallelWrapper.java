@@ -99,8 +99,6 @@ public class ParallelWrapper implements AutoCloseable {
     @Setter
     protected GradientsAccumulator gradientsAccumulator;
 
-    private MagicQueue mq;
-
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
