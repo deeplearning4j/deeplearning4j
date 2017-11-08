@@ -27,12 +27,13 @@ public interface TrainerContext {
      * @param threadId the thread id to use for this worker
      * @param model the model to start the trainer with
      * @param rootDevice the root device id
+     * @param useMDS whether to use the {@link org.deeplearning4j.parallelism.MagicQueue}
      *               or not
      * @param wrapper the wrapper instance to use with this trainer (this refernece is needed
      *                for coordination with the {@link ParallelWrapper} 's {@link org.deeplearning4j.optimize.api.IterationListener}
      * @return the created training instance
      */
-    Trainer create(int threadId, Model model, int rootDevice, ParallelWrapper wrapper,
+    Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
                     WorkspaceMode workspaceMode, int averagingFrequency);
 
 

@@ -125,6 +125,11 @@ public class ParameterServerTrainer extends DefaultTrainer {
         }
 
         @Override
+        public ParameterServerTrainerBuilder useMDS(boolean useMDS) {
+            return (ParameterServerTrainerBuilder) super.useMDS(useMDS);
+        }
+
+        @Override
         public ParameterServerTrainerBuilder onRootModel(boolean onRootModel) {
             return (ParameterServerTrainerBuilder) super.onRootModel(onRootModel);
         }

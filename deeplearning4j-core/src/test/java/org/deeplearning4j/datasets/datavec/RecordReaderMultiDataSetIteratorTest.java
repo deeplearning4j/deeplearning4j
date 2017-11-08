@@ -497,8 +497,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         assertEquals(3, count);
     }
 
-    //@Test
-    //TODO: fix me, iterator out of bounds
+    @Test
     public void testImagesRRDMSI() throws Exception {
         File parentDir = Files.createTempDir();
         parentDir.deleteOnExit();
