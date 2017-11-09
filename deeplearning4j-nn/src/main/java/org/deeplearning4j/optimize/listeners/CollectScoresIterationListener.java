@@ -49,7 +49,7 @@ public class CollectScoresIterationListener implements IterationListener {
     }
 
     public List<Pair<Integer, Double>> getScoreVsIter() {
-        return getScoreVsIter();
+        return scoreVsIter;
     }
 
     /**

@@ -57,11 +57,11 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
     public static int NUM_EXAMPLES = NUM_LABELS*500;
 
     @Override
-    public String remoteDataUrl() { return "http://blob.deeplearning4j.org/datasets/tinyimagenet_200_dl4j.v1.zip"; }
+    public String remoteDataUrl(DataSetType set) { return "http://blob.deeplearning4j.org/datasets/tinyimagenet_200_dl4j.v1.zip"; }
     @Override
     public String localCacheName(){ return "TINYIMAGENET_200"; }
     @Override
-    public long expectedChecksum() { return 33822361L; }
+    public long expectedChecksum(DataSetType set) { return 33822361L; }
     @Override
     public RecordReader getRecordReader(long rngSeed, int[] imgDim, DataSetType set, ImageTransform imageTransform) {
         // check empty cache

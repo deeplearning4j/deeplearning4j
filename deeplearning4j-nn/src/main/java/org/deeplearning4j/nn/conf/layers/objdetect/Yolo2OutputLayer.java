@@ -33,6 +33,12 @@ import java.util.Map;
  * currently support simultaneous training on both detection and classification datasets as described in the
  * YOlO9000 paper.
  *
+ * Note: Input activations to the Yolo2OutputLayer should have shape: [minibatch, b*(5+c), H, W], where:<br>
+ * b = number of bounding boxes (determined by config)<br>
+ * c = number of classes<br>
+ * H = output/label height<br>
+ * W = output/label width<br>
+ *
  * @author Alex Black
  */
 @Data

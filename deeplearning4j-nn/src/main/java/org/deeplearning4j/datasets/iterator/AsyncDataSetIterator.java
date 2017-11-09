@@ -97,7 +97,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this.backedIterator = iterator;
         this.workspaceId = "ADSI_ITER-" + java.util.UUID.randomUUID().toString();
 
-        if (iterator.resetSupported())
+        if (iterator.resetSupported() && !iterator.hasNext())
             this.backedIterator.reset();
 
         this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, null);
