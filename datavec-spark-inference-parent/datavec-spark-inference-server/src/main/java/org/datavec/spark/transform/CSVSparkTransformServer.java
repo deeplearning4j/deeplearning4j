@@ -67,11 +67,10 @@ public class CSVSparkTransformServer extends SparkTransformServer {
             try {
                 if (transform == null)
                     return badRequest();
-                log.info("Transform process initialized");
-                return ok(objectMapper.writeValueAsString(transform.getTransformProcess())).as(contentType);
+                return ok(transform.getTransformProcess().toJson()).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
-                return internalServerError();
+                log.error("Error in GET /transformprocess",e);
+                return internalServerError(e.getMessage());
             }
         })));
 
@@ -80,10 +79,10 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                 TransformProcess transformProcess = TransformProcess.fromJson(getJsonText());
                 setCSVTransformProcess(transformProcess);
                 log.info("Transform process initialized");
-                return ok(objectMapper.writeValueAsString(transformProcess)).as(contentType);
+                return ok();
             } catch (Exception e) {
-                e.printStackTrace();
-                return internalServerError();
+                log.error("Error in POST /transformprocess",e);
+                return internalServerError(e.getMessage());
             }
         })));
 
@@ -95,8 +94,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformSequenceIncremental(record))).as(contentType);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return internalServerError();
+                    log.error("Error in /transformincremental", e);
+                    return internalServerError(e.getMessage());
                 }
             } else {
                 try {
@@ -105,8 +104,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformIncremental(record))).as(contentType);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return internalServerError();
+                    log.error("Error in /transformincremental", e);
+                    return internalServerError(e.getMessage());
                 }
             }
         })));
@@ -119,8 +118,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(batch)).as(contentType);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return internalServerError();
+                    log.error("Error in /transform", e);
+                    return internalServerError(e.getMessage());
                 }
             } else {
                 try {
@@ -129,8 +128,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(batch)).as(contentType);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return internalServerError();
+                    log.error("Error in /transform", e);
+                    return internalServerError(e.getMessage());
                 }
             }
 
@@ -145,8 +144,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformSequenceArrayIncremental(record))).as(contentType);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return internalServerError();
+                    log.error("Error in /transformincrementalarray", e);
+                    return internalServerError(e.getMessage());
                 }
             } else {
                 try {
@@ -155,8 +154,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformArrayIncremental(record))).as(contentType);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return internalServerError();
+                    log.error("Error in /transformincrementalarray", e);
+                    return internalServerError(e.getMessage());
                 }
             }
 
@@ -170,7 +169,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformSequenceArray(batchCSVRecord))).as(contentType);
                 } catch (Exception e) {
-                    return internalServerError();
+                    log.error("Error in /transformarray", e);
+                    return internalServerError(e.getMessage());
                 }
             } else {
                 try {
@@ -179,7 +179,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformArray(batchCSVRecord))).as(contentType);
                 } catch (Exception e) {
-                    return internalServerError();
+                    log.error("Error in /transformarray", e);
+                    return internalServerError(e.getMessage());
                 }
             }
         })));
@@ -202,6 +203,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
 
     @Override
     public void setImageTransformProcess(ImageTransformProcess imageTransformProcess) {
+        log.error("Unsupported operation: setImageTransformProcess not supported for class", getClass());
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
@@ -215,6 +217,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
 
     @Override
     public ImageTransformProcess getImageTransformProcess() {
+        log.error("Unsupported operation: getImageTransformProcess not supported for class", getClass());
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
@@ -285,6 +288,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         try {
             return this.transform.toArray(batchCSVRecord);
         } catch (IOException e) {
+            log.error("Error in transformArray",e);
             throw new IllegalStateException("Transform array shouldn't throw exception");
         }
     }
@@ -298,17 +302,20 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         try {
             return this.transform.toArray(singleCsvRecord);
         } catch (IOException e) {
+            log.error("Error in transformArrayIncremental",e);
             throw new IllegalStateException("Transform array shouldn't throw exception");
         }
     }
 
     @Override
     public Base64NDArrayBody transformIncrementalArray(SingleImageRecord singleImageRecord) throws IOException {
+        log.error("Unsupported operation: transformIncrementalArray(SingleImageRecord) not supported for class", getClass());
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
     @Override
     public Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException {
+        log.error("Unsupported operation: transformArray(BatchImageRecord) not supported for class", getClass());
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 }
