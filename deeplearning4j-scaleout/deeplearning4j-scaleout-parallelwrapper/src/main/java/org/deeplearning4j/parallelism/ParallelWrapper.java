@@ -73,6 +73,7 @@ public class ParallelWrapper implements AutoCloseable {
         CUSTOM,
     }
 
+    protected final String uuid = java.util.UUID.randomUUID().toString();
     protected Model model;
     protected int workers = 2;
     protected int prefetchSize = 2;
@@ -98,8 +99,6 @@ public class ParallelWrapper implements AutoCloseable {
     @Getter
     @Setter
     protected GradientsAccumulator gradientsAccumulator;
-
-    private MagicQueue mq;
 
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
@@ -628,7 +627,7 @@ public class ParallelWrapper implements AutoCloseable {
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
-                zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                zoo[cnt] = trainerContext.create(this.uuid, cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                                 useMDS, this, workspaceMode, averagingFrequency);
 
                 /*
@@ -738,6 +737,7 @@ public class ParallelWrapper implements AutoCloseable {
          * Default value: TRUE
          *
          * PLEASE NOTE: This method is suitable for debugging purposes mostly. So don't change default value, unless you're sure why you need it.
+         * PLEASE NOTE: This method is suitable for parameters averaging training only. For gradients sharing mechanism it'll be ignored
          *
          * @param reallyAverage
          * @return
@@ -767,6 +767,10 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
+         *  This method allows you to specify training mode for this instance of PW.
+         *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models
+         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: https://deeplearning4j.org/distributed
+         *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.
          *
          * @param mode
          * @return
@@ -778,6 +782,8 @@ public class ParallelWrapper implements AutoCloseable {
 
         /**
          * This method allows you to specify GradientsAccumulator instance to be used in this ParallelWrapper instance
+         *
+         * PLEASE NOTE: This method is applicable only to gradients sharing mechanics. If parameters averaging is used, accumulator will be ignored
          *
          * @param accumulator
          * @return
@@ -824,8 +830,8 @@ public class ParallelWrapper implements AutoCloseable {
                 case SHARED_GRADIENTS: {
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
-                        log.info("Creating new GradientsAccumulator instance");
-                        this.accumulator = new EncodedGradientsAccumulator(workers, 1e-3);
+                        log.info("Creating new GradientsAccumulator instance with threshold of [5e-4");
+                        this.accumulator = new EncodedGradientsAccumulator(workers, 5e-4);
                     }
                 }
                     break;

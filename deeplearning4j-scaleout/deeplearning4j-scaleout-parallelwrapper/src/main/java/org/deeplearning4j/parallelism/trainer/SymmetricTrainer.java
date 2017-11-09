@@ -20,9 +20,10 @@ import org.deeplearning4j.parallelism.ParallelWrapper;
 public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTrainer {
     protected GradientsAccumulator accumulator;
 
-    public SymmetricTrainer(@NonNull Model originalModel, int threadIdx, @NonNull WorkspaceMode mode,
+    public SymmetricTrainer(@NonNull Model originalModel, String uuid, int threadIdx, @NonNull WorkspaceMode mode,
                     @NonNull ParallelWrapper wrapper, boolean useMDS) {
         super();
+        this.uuid = uuid + "_thread_" + threadIdx;
         this.useMDS = useMDS;
         this.originalModel = originalModel;
         this.threadId = threadIdx;
