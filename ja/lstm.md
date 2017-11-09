@@ -26,7 +26,7 @@ layout: default
 
 ## <a name="feedforward">順伝播型ネットワークとは？</a>
 
-再帰型ネットワークを理解するには、まず最初に[順伝播型（フィードフォワード）ニューラルネットワーク](../restrictedboltzmannmachine.html)の基礎も理解する必要があります。これら二種類のネットワークの名前の由来は、ノードでの一連の数学演算を使って情報を通過させる方法に関連しています。順伝播型ニューラルネットワークは、前方への一方向のみに情報を通過させ（同じノードを再び通過することはない）、再帰型ニューラルネットワークは、情報を繰り返しループ状に通過させます。
+再帰型ネットワークを理解するには、まず最初に[順伝播型（フィードフォワード）ニューラルネットワーク](https://deeplearning4j.org/ja/restrictedboltzmannmachine)の基礎も理解する必要があります。これら二種類のネットワークの名前の由来は、ノードでの一連の数学演算を使って情報を通過させる方法に関連しています。順伝播型ニューラルネットワークは、前方への一方向のみに情報を通過させ（同じノードを再び通過することはない）、再帰型ニューラルネットワークは、情報を繰り返しループ状に通過させます。
 
 順伝播型ニューラルネットワークの場合、入力されたサンプルは、ネットワークに入り、教師付きの学習を行い、出力にラベルが付きます。入力画像に「猫」や「象」などとラベルを付けるように信号を送るパターンを認識し、生のデータをカテゴリーにマッピングします。 
 
@@ -162,7 +162,7 @@ layout: default
 
 ## <a name="code">コードのサンプル</a>
 
-シェークスピアのドラマの複製方法を学習し、Deeplearning4jに実装したGraves長・短期記憶のコメント付きサンプルを、[こちら](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)でご覧いただけます。説明が必要と思われるAPIには、コメントが付けてあります。質問がある方は、是非[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)に参加してください。
+シェークスピアのドラマの複製方法を学習し、Deeplearning4jに実装したGraves長・短期記憶のコメント付きサンプルを、[こちら](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)でご覧いただけます。説明が必要と思われるAPIには、コメントが付けてあります。質問がある方は、是非[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)に参加してください。
 
 ## <a name="tuning">LSTMハイパーパラメーターの調整</a>
 
@@ -175,11 +175,11 @@ layout: default
 * 常にといっていいほど、データは多ければ多いほどいいでしょう。過剰適合を回避するのに役立つからです。 
 * 複数のエポックでトレーニングする（データセットを完全に通過）。 
 * いつ止めるかを知るために、各エポックで、テストセットの性能を評価する（早期終了）。
-* 学習係数は、最も重要な唯一のハイパーパラメータです。これを[deeplearning4j-ui](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui)を使って調整しましょう。[こちらのグラフ](http://cs231n.github.io/neural-networks-3/#baby)をご覧ください。
+* 学習係数は、最も重要な唯一のハイパーパラメータです。これを[deeplearning4j-ui](https://deeplearning4j.org/ja/visualization)を使って調整しましょう。[こちらのグラフ](http://cs231n.github.io/neural-networks-3/#baby)をご覧ください。
 * 一般的には、層を積み重ねるといいでしょう。
 * 長・短期記憶については、tanh関数でなく、softsign（ソフトマックスではありません）活性化機能を使用するのがいいでしょう。（そちらの方が速く、飽和状態になる可能性が低下します。(~0の勾配))
 * アップデーター: RMSProp、AdaGrad、モメンタム（Nesterovs）がおすすめです。AdaGradも学習係数を減衰させますが、これも役立ちます。
-* データ正常化、平均二乗誤差の損失関数と回帰問題用の恒等活性化関数、[Xavierの重み初期化](../glossary.html#xavier)をお忘れなく。
+* データ正常化、平均二乗誤差の損失関数と回帰問題用の恒等活性化関数、[Xavierの重み初期化](https://deeplearning4j.org/glossary.html#xavier)をお忘れなく。
 
 ## <a name="resources">リソース</a>
 * [DRAW: A Recurrent Neural Network For Image Generation(DRAW：画像世代の再帰型ニューラルネットワーク)](http://arxiv.org/pdf/1502.04623v2.pdf)（アテンションモデル）
