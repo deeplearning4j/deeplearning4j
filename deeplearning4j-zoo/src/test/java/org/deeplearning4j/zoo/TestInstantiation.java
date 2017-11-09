@@ -135,7 +135,7 @@ public class TestInstantiation {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 416, 416}));
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 416, 416})).getAsArray();
         assertArrayEquals(result[0].shape(), new int[] {1, 125, 13, 13});
     }
 
