@@ -105,9 +105,8 @@ public class TensorFlowImportTest {
         val p0 = Nd4j.create(10, 10).assign(2.0);
         val p1 = Nd4j.create(10, 10).assign(3.0);
 
-
-        graph.variableMap().get("Placeholder").setArr(p0);
-        graph.variableMap().get("Placeholder_1").setArr(p1);
+        graph.associateArrayWithVariable(p0,graph.variableMap().get("Placeholder"));
+        graph.associateArrayWithVariable(p1, graph.variableMap().get("Placeholder_1"));
 
 
         graph.var("Placeholder", p0);
@@ -301,6 +300,42 @@ public class TensorFlowImportTest {
             dos.write(array, offset, array.length - offset);
         }
         */
+    }
+
+    @Test
+    public void testIntermediateStridedSlice1() throws Exception {
+        Nd4j.create(1);
+        val tg = TensorFlowImport.importIntermediate(new ClassPathResource("tf_graphs/tensor_slice.pb.txt").getFile());
+
+        assertNotNull(tg);
+
+        val constIn = tg.getVariableSpace().getVariable("StridedSlice/input");
+        assertNotNull(constIn);
+
+        assertEquals(139.5, constIn.getArray().sumNumber().doubleValue(), 1e-5);
+
+
+        // now converting to FlatBuffer
+        val fb = tg.asFlatBuffers();
+        assertNotNull(fb);
+/*
+        val offset = fb.position();
+
+        log.info("Length: {}; Offset: {};", fb.capacity(), offset);
+        val array = fb.array();
+
+        try (val fos = new FileOutputStream("../../../libnd4j/tests_cpu/resources/tensor_slice.fb"); val dos = new DataOutputStream(fos)) {
+            dos.write(array, offset, array.length - offset);
+        }
+        */
+    }
+
+    @Test
+    public void testIntermediateTensorArrayLoop1() throws Exception {
+        Nd4j.create(1);
+        val tg = TensorFlowImport.importIntermediate(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getFile());
+
+        assertNotNull(tg);
     }
 
     @Test

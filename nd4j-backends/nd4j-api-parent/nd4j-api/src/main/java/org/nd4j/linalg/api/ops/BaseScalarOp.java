@@ -100,10 +100,12 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
+            addAsNewVertexId();
             f().addFunctionEdges(this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+
     }
 
 

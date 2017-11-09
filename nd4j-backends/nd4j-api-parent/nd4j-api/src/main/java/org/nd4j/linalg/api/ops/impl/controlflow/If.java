@@ -11,7 +11,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.util.*;
 
@@ -26,32 +28,74 @@ import java.util.*;
 public class If extends DifferentialFunction implements CustomOp {
 
     @Getter
-    private SameDiff loopBodyExecution,predicateExecution,falseBodyExecution;
+    protected SameDiff loopBodyExecution,predicateExecution,falseBodyExecution;
 
 
     @Getter
-    private SameDiff.SameDiffConditional predicate;
+    protected SameDiff.SameDiffConditional predicate;
     @Getter
-    private SameDiff.SameDiffFunctionDefinition trueBody,falseBody;
-
-    @Getter
-    private String blockName,trueBodyName,falseBodyName;
+    protected SameDiff.SameDiffFunctionDefinition trueBody,falseBody;
 
     @Getter
-    private SDVariable[] inputVars;
-
-
-    private Boolean trueBodyExecuted = null;
+    protected String blockName,trueBodyName,falseBodyName;
 
     @Getter
-    private SDVariable targetBoolean;
+    protected SDVariable[] inputVars;
 
-    private SDVariable dummyResult;
+    @Getter
+    protected Boolean trueBodyExecuted = null;
+
+    @Getter
+    protected SDVariable targetBoolean;
+
+    protected SDVariable dummyResult;
 
     @Getter
     @Setter
-    private SDVariable[] outputVars;
+    protected SDVariable[] outputVars;
 
+    public If(If ifStatement) {
+        this.sameDiff = ifStatement.sameDiff;
+        this.outputVars = ifStatement.outputVars;
+        this.falseBodyExecution = ifStatement.falseBodyExecution;
+        this.trueBodyExecuted = ifStatement.trueBodyExecuted;
+        this.falseBody = ifStatement.falseBody;
+        this.args = ifStatement.args;
+        this.trueBodyExecuted = ifStatement.trueBodyExecuted;
+        this.dummyResult = ifStatement.dummyResult;
+        this.shape = new int[] {1,1};
+        addAsNewVertexId();
+        f().addFunctionEdges(this);
+        this.inputVars = ifStatement.inputVars;
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
+        int[] inputEdges = new int[inputVars.length];
+        String[] opEdgeIds = new String[inputVars.length * 2];
+
+        for(int i = 0; i < inputEdges.length; i++) {
+            inputEdges[i] = inputVars[i].getVertexId()[0];
+        }
+
+        /**
+         * Setup the opstate ids
+         */
+        int opEdgeIdIdx = 0;
+        for(int i = 0; i < inputEdges.length; i++) {
+            opEdgeIds[opEdgeIdIdx++] = String.valueOf(inputEdges[i]);
+        }
+
+
+        OpState opState = OpState.builder()
+                .opName(opName())
+                .opType(Op.Type.CONDITIONAL)
+                .inPlace(false)
+                .id(UUID.randomUUID().toString())
+                .vertexIds(opEdgeIds)
+                .build();
+
+        this.sameDiff.graph().addEdge(inputEdges,vertexId,opState,true);
+
+
+    }
 
     @Builder
     public If(String blockName,
@@ -62,21 +106,22 @@ public class If extends DifferentialFunction implements CustomOp {
               SameDiff.SameDiffFunctionDefinition trueBody,
               SameDiff.SameDiffFunctionDefinition falseBody) {
         this.sameDiff = parent;
+
         this.inputVars = inputVars;
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.falseBody = falseBody;
         this.blockName = blockName;
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1});
-        this.dummyResult.setDifferentialFunction(this);
-        NDArrayVertex dummyVertex = dummyResult.getVertex();
-        this.vertex = dummyVertex;
-        this.vertexId = new int[] {dummyVertex.vertexID()};
+        //need to add the op to the list of ops to be executed when running backwards
+        this.args = inputVars;
+        int[] vertexId = {parent.graph().nextVertexId()};
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
+        this.vertexId = vertexId;
         int[] inputEdges = new int[inputVars.length];
         String[] opEdgeIds = new String[inputVars.length * 2];
 
         for(int i = 0; i < inputEdges.length; i++) {
-            inputEdges[i] = inputVars[i].getVertex().vertexID();
+            inputEdges[i] = inputVars[i].getVertexId()[0];
         }
 
         /**
@@ -105,16 +150,15 @@ public class If extends DifferentialFunction implements CustomOp {
         this.loopBodyExecution = parent.defineFunction(trueBodyName,trueBody,inputVars);
         this.falseBodyExecution = parent.defineFunction(falseBodyName,falseBody,inputVars);
         parent.defineFunction(blockName,conditionBody,inputVars);
-        parent.putSubFunction("predicate-eval-body",sameDiff);
+        parent.putSubFunction("predicate-eval-body-" + UUID.randomUUID().toString(),sameDiff);
         //get a reference to the actual loop body
         this.loopBodyExecution = parent.getFunction(trueBodyName);
+        parent.putFunction(vertexId,this);
 
         OpState opState = OpState.builder()
                 .opName(opName())
                 .opType(Op.Type.CONDITIONAL)
-                .differentialFunction(this)
                 .inPlace(false)
-                .results(new SDVariable[]{dummyResult})
                 .id(UUID.randomUUID().toString())
                 .vertexIds(opEdgeIds)
                 .build();
@@ -135,30 +179,11 @@ public class If extends DifferentialFunction implements CustomOp {
             this.trueBodyExecuted = false;
     }
 
-    @Override
-    public NDArrayVertex getVertex() {
-        return vertex;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         List<DifferentialFunction> ret = new ArrayList<>();
-        if(trueBodyExecuted != null) {
-            if(trueBodyExecuted) {
-                Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = loopBodyExecution.execBackwards();
-                for(SDVariable variable : outputVars) {
-
-                }
-
-            }
-            else {
-                Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = falseBodyExecution.execBackwards();
-
-            }
-        }
-        else {
-
-        }
+        ret.add(new IfDerivative(this));
         return ret;
     }
 
@@ -194,6 +219,11 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public Op.Type opType() {
+        return  Op.Type.CONDITIONAL;
+    }
+
+    @Override
     public List<Integer> getIArguments() {
         return Collections.emptyList();
     }
@@ -205,6 +235,6 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<int[]> calculateOutputShape() {
-        return Collections.emptyList();
+        return Arrays.asList(new int[]{1,1});
     }
 }

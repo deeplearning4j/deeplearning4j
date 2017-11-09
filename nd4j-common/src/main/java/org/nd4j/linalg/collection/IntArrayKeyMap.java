@@ -3,6 +3,7 @@ package org.nd4j.linalg.collection;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.util.*;
 
@@ -104,11 +105,12 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
 
 
     public static class IntArray implements Comparable<IntArray> {
+        @Getter
         private int[] backingArray;
 
         public IntArray(int[] backingArray) {
             Preconditions.checkNotNull(backingArray,"Backing array must not be null!");
-            this.backingArray = backingArray;
+            this.backingArray = Ints.toArray(new HashSet<>(Ints.asList(backingArray)));
         }
 
         @Override

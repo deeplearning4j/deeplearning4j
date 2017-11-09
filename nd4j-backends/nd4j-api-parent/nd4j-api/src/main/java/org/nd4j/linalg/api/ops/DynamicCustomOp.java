@@ -33,8 +33,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Getter private boolean inplaceCall;
     @Getter private long hash;
     @Getter
-    private NDArrayVertex[] outputs;
-    @Getter
     protected DifferentialFunction[] outputFunctions;
     private List<int[]> outputShapes;
 
@@ -48,6 +46,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        addAsNewVertexId();
         f().addFunctionEdges(this);
 
     }
@@ -121,21 +120,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public int[] getVertexId() {
-        return new int[] {getVertex().vertexID()};
+        return vertexId;
     }
 
-    @Override
-    public NDArrayVertex[] getVertices() {
-        return this.outputs;
-    }
 
-    @Override
-    public NDArrayVertex getVertex() {
-        if(this.outputs.length == 1)
-            return this.outputs[0];
-        else
-            throw new UnsupportedOperationException("This op has more than one output.");
-    }
 
     @Override
     public DifferentialFunction[] outputFunctions() {
@@ -272,10 +260,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
             ret.outputFunctions = outputs.toArray(new DifferentialFunction[outputs.size()]);
-            ret.outputs = new NDArrayVertex[ret.outputFunctions.length];
-            for(int i = 0; i < ret.outputs.length; i++) {
-                ret.outputs[i] = ret.outputFunctions[i].getVertex();
-            }
             return ret;
         }
     }
