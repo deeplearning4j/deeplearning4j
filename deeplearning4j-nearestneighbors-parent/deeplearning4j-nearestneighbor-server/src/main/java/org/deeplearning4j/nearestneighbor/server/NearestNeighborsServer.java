@@ -61,16 +61,30 @@ public class NearestNeighborsServer {
         try {
             jcmdr.parse(args);
         } catch (ParameterException e) {
+            log.error("Error in NearestNeighboursServer parameters", e);
+            StringBuilder sb = new StringBuilder();
+            jcmdr.usage(sb);
+            log.error("Usage: {}", sb.toString());
+
             //User provides invalid input -> print the usage info
             jcmdr.usage();
             if (ndarrayPath == null)
-                System.err.println("Json path parameter is missing.");
+                log.error("Json path parameter is missing (null)");
             try {
                 Thread.sleep(500);
             } catch (Exception e2) {
             }
             System.exit(1);
         }
+
+        try {
+            runHelper();
+        } catch (Throwable t){
+            log.error("Error in NearestNeighboursServer run method",t);
+        }
+    }
+
+    protected void runHelper() throws Exception {
 
         String[] pathArr = ndarrayPath.split(",");
         //INDArray[] pointsArr = new INDArray[pathArr.length];
@@ -138,9 +152,10 @@ public class NearestNeighborsServer {
 
                 return ok(Json.toJson(results));
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
+                log.error("Error in POST /knn",e);
                 e.printStackTrace();
-                return internalServerError();
+                return internalServerError(e.getMessage());
             }
         })));
 
@@ -182,9 +197,10 @@ public class NearestNeighborsServer {
                 NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();
                 return ok(Json.toJson(results2));
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
+                log.error("Error in POST /knnnew",e);
                 e.printStackTrace();
-                return internalServerError();
+                return internalServerError(e.getMessage());
             }
         })));
 
@@ -197,8 +213,10 @@ public class NearestNeighborsServer {
      * Stop the server
      */
     public void stop() {
-        if (server != null)
+        if (server != null) {
+            log.info("Attempting to stop server");
             server.stop();
+        }
     }
 
     public static void main(String[] args) throws Exception {
