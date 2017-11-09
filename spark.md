@@ -37,36 +37,36 @@ Note that if you want a parameter server based approach (requires more setup!), 
 
 ## <a name="prerequisites">Pre requisites</a>
 
-This page assumes a working knowledge of spark. If you are not familiar with how to both: setup spark clusters and run
-spark jobs, this page will not teach you that. Please consider understanding spark basics first. The [spark quick start](https://spark.apache.org/docs/latest/quick-start.html) is a great place to start with running spark jobs.
+This page assumes a working knowledge of Spark. If you are not familiar with setting up Spark clusters and running
+Spark jobs, this page will not teach you. Please consider studying Spark basics first, and then returning to this page. The [Spark quick start](https://spark.apache.org/docs/latest/quick-start.html) is a great place to start with running Spark jobs.
 
-If you are just looking for a way to run multiple models on the same server, consider using [parallelwrapper instead](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java).
+If you want to run multiple models on the same server, consider using [parallelwrapper instead](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java).
 
-Parallelwrapper implements the same concepts (parameter averaging and gradient sharing) optimized for a single server.
-You should use parallelwrapper when you have a big box (64 cores or more) or multiple gpus.
+<p align="center">
+<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
 
-Note that you can use multiple gpus AND cudnn with spark. The most difficult part of this will be cluster setup though. It is *not* dl4j's responsibility beyond being a spark job.
+`Parallelwrapper` implements the same concepts (parameter averaging and gradient sharing) optimized for a single server.
+You should use `parallelwrapper` when you have a big box (64 cores or more) or multiple GPUs.
 
-If you have not run JVM based spark jobs before, we recommend [building an uber jar using the maven shade plugin](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140) . 
+Note that you can use multiple GPUs *and* cuDNN with Spark. The most difficult part of this will be cluster setup. It is *not* DL4J's responsibility, beyond being a Spark job.
 
-The rest of this page covers the details for running a spark job including how to customize the spark job
-and how to use the spark interface for dl4j.
+If you have not run JVM-based Spark jobs before, we recommend [building an uber JAR using the Maven Shade plugin](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140) . 
 
-If you would like a managed spark cluster with someone to do it for you. [Please contact us](https://skymind.ai/)
+If you would like a managed Spark cluster set up for you, [please contact us](https://skymind.ai/contact). Various cloud services such as Elastic map reduce are another way of running and managing a Spark cluster.
 
-Various cloud services such as elastic map reduce are another way of running and managing a spark cluster.
-
+The rest of this page covers the details for running a Spark job including how to customize the Spark job and how to use the Spark interface for DL4J.
 
 ## <a name="overview">Overview</a>
 
 Deeplearning4j supports training neural networks on a Spark cluster, in order to accelerate network training.
 
-Similar to DL4J's MultiLayerNetwork and ComputationGraph classes, DL4J defines two classes for training neural networks on Spark:
+Similar to DL4J's `MultiLayerNetwork` and `ComputationGraph` classes, DL4J defines two classes for training neural networks on Spark:
 
 - SparkDl4jMultiLayer, a wrapper around MultiLayerNetwork
 - SparkComputationGraph, a wrapper around ComputationGraph
 
-Because these two classes are wrappers around the stardard single-machine classes, the network configuration process (i.e., creating a MultiLayerConfiguration or ComputationGraphConfiguration) is identical in both standard and distributed training. Distributed on Spark differs from local training in two respects, however: how data is loaded, and how training is set up (requiring some additional cluster-specific configuration).
+Because these two classes are wrappers around the stardard single-machine classes, the network configuration process (i.e., creating a `MultiLayerConfiguration` or `ComputationGraphConfiguration`) is identical in both standard and distributed training. Distributed on Spark differs from local training in two respects, however: how data is loaded, and how training is set up (requiring some additional cluster-specific configuration).
 
 The typical workflow for training a network on a Spark cluster (using spark-submit) is as follows.
 
