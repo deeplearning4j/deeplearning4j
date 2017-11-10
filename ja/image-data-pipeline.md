@@ -18,7 +18,7 @@ Deeplearning4jのサンプルに使用するベンチマークデータセット
 
 ## 全パイプラインのビデオシリーズ
 
-ビデオはシリーズでご覧いただくことができ、画像ディレクトリを処理するためのコード画面の録画を使って説明されます。ラベルをパスに基づいて生成し、画像でトレーニングするためのニューラルネットワークを構築します。その他のビデオ10回分には、トレーニングしたネットワークの保存や読み込み、インターネットから収集された未知の画像を使ったテストなどについての内容が含まれています。 
+ビデオはシリーズになっており、画像ディレクトリを処理するコードの画面を録画したものを使って説明されます。ラベルをパスに基づいて生成し、画像でトレーニングするためのニューラルネットワークを構築します。その他のビデオ10回分には、トレーニングしたネットワークの保存や読み込み、インターネットから収集された未知の画像を使ったテストなどについての内容が含まれています。 
 
 シリーズの初回はこちらからご覧ください。
 
@@ -70,16 +70,16 @@ DataSetIteratorはリスト内の要素を巡回するDeeplearning4Jのクラス
 
 DataSetIteratorは各イテレーションにつき、新しいサンプルを1つ（バッチサイズ）以上取り入れ、入力データベースをイテレートします。そしてそれらのサンプルをニューラルネットワークが使用できるDataSet(INDArray)オブジェクトに読み込みます。また、上記のラインは[RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.java)に画像を28 x 28のグリッド（行列など）でなく要素の直線（ベクトルなど）に変換するよう指示しています。ラベルの設定も明記しています。
 
-`RecordReaderDataSetIterator`はパレメータに、自分の望む特定のrecordReader（画像やサウンド用）やバッチサイズを使用することができます。 教師付き学習には、ラベルインデックスと入力に適用可能なラベル数も使用できます（LFWの場合、ラベル数は5,749）。 
+`RecordReaderDataSetIterator`はパラメータに、自分の望む特定のrecordReader（画像やサウンド用）やバッチサイズを使用することができます。 教師付き学習には、ラベルインデックスと入力に適用可能なラベル数も使用できます（LFWの場合、ラベル数は5,749）。 
 
 ## モデルの設定
 
-以下はニューラルネットワークの設定の一例です。ハイパーパラメターの多くは、[NeuralNetConfiguration Class glossary](./neuralnet-configuration.html)に説明があります。このため、ここでは一部の重要な特徴についてだけまとめます。
+以下はニューラルネットワークの設定の一例です。ハイパーパラメータの多くは、[NeuralNetConfiguration Class glossary](./neuralnet-configuration.html)に説明がありますので、ここでは一部の重要な特徴についてのみまとめます。
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 
 * *optimizationAlgo*はLBFGSよりLINE_GRADIENT_DESCENTを頼りにします。 
-* 画像の各画素を入力ノードにするために*nIn*は784に設定します。画像の寸法が変更すれば（その結果画素の総計もある程度変更します）、nlnも変更しなければなりません。
+* 画像の各画素を入力ノードにするために*nIn*は784に設定します。画像の寸法が変更すれば（果画素の総計がある程度変更）、nlnも変更しなければなりません。
 * *list*オペレータは4に設定。これは3つのRBM隠れ層と1つの出力層です。1つ以上のRBMがDBNになります。
 * **損失関数** は平均二乗誤差（RMSE）に設定。この損失関数は入力を適切に復元するためにネットワークのトレーニングに使用されます。 
 
