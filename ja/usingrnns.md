@@ -100,28 +100,28 @@ DL4Jは、パディングやマスキングを使い、再帰型ネットワー�
 
 #### マスキングを使った評価、スコア付け
 
-マスク配列は、スコア付けや評価にも必要です（再現型ネットワークの分類子の正確さを評価するため）。例えば、多対1のケースを考えてみましょう。各サンプルには、出力は1つしかありません。そしてどの評価もこれを考慮に入れなければならないのです。
+マスク配列は、スコア付けや評価にも必要です（再現型ネットワークの分類子の正確さを評価するため）。例えば、多数の入力から1つの出力のケースを考えてみましょう。各サンプルには、出力は1つしかありません。そしてどの評価もこれを考慮に入れなければならないのです。
 
-（出力）マスク配列を使った評価は、評価の間に以下の方法でサンプルを通過させることによって行うことができます。
+（出力）マスク配列を使った評価は、評価の間に以下の方法で通過させることによって行うことができます。
 
     Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask)
 
-この中のlabelsは、実際に行った出力（3次元の時系列）、pedictedはネットワークの予測（3次元の時系列、labelsと同じshape）、そしてoutputMaskは、出力の2次元のマスク配列です。入力マスク配列は、評価に必要ないことにご注意ください。
+この中のlabelsは、実際の出力（3次元の時系列）、pedictedはネットワークの予測（3次元の時系列、labelsと同じshape）、そしてoutputMaskは、出力の2次元のマスク配列です。入力マスク配列は、評価に必要ないことにご注意ください。
 
-スコアの計算にも、MultiLayerNetwork.score（DataSet）方法を使って、マスク配列が活用されます。また、DataSetが出力マスキング配列を含んでいると、ネットワークのスコアの計算（損失関数、平均二乗エラー、負の対数尤度など）に自動的に使用されます。
+スコアの計算にも、MultiLayerNetwork.score（DataSet）メソッドを使って、マスク配列が活用されます。また、DataSetが出力マスキング配列を含んでいると、ネットワークのスコアの計算（損失関数、平均二乗エラー、負の対数尤度など）に自動的に使用されます。
 
 ### <a name="otherlayertypes">再帰型ニューラルネットワークの層を他のタイプの層と組み合わせる</a>
 
-再帰型ニューラルネットワークは、他のタイプの層と組み合わせることが可能です。例えば、同じネット-ワークでDenseLayerとGravesLSTMの層を組み合わせたり、ビデオのデータに畳み込み（CNN）ニューラルネットワークの層とGravesLSTMの層を組み合わせることができます。
+再帰型ニューラルネットワークは、他のタイプの層と組み合わせることが可能です。例えば、同じネットワークでDenseLayerとGravesLSTMの層を組み合わせたり、ビデオのデータに畳み込み（CNN）ニューラルネットワークの層とGravesLSTMの層を組み合わせることができます。
 
-もちろん、DenseLayerと畳み込み層は、時系列データを扱いません。これとは異なるタイプの入力を求めています。このことに対処するためには、我々は層のプリプロセッサ機能を使用する必要があります。例えば、CnnToRnnPreProcessorとFeedForwardToRnnPreprocessorのクラスなどがあります。すべてのプリプロセッサについては、[こちら](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)をご覧ください。好都合なことに、ほとんどの場合、DL4Jの設定システムはこれらのプリプロセッサを必要に応じて自動的に追加します。また、プリプロセッサを手作業で追加することも可能です（各層につき、プリプロセッサの自動による追加をオーバーライドします）。
+もちろん、DenseLayerと畳み込み層は、時系列データを扱いません。これとは異なるタイプの入力を求めています。これに対応するためには、我々は層のプリプロセッサ機能を使用する必要があります。例えば、CnnToRnnPreProcessorとFeedForwardToRnnPreprocessorのクラスなどがあります。すべてのプリプロセッサについては、[こちら](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)をご覧ください。好都合なことに、ほとんどの場合、DL4Jの設定システムはこれらのプリプロセッサを必要に応じて自動追加します。また、プリプロセッサを手作業で追加することも可能です（これにより各層のプリプロセッサの自動追加が無効になります）。
 
 例えば、プリプロセッサを手作業で層の1と2の間に追加するには、コマンドの`.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())`をネットワーク設定に追加してください。
 
 ## <a name="rnntimestep">予測に使用するタイムステップ数</a>
-他のニューラルネットワークのタイプとともに、`MultiLayerNetwork.output()`と`MultiLayerNetwork.feedForward()`のメソッドを使って再帰型ネットワークの予測を立てることができます。これらのメソッドは多くの状況で対応することができますが、毎回最初から始める時系列の予測しか立てることができません。
+他の種類のニューラルネットワークと同じく、`MultiLayerNetwork.output()`と`MultiLayerNetwork.feedForward()`のメソッドを使って再帰型ネットワークの予測を立てることができます。これらのメソッドは多くの状況で役立ちますが、毎回最初から始める時系列の予測しか立てることができません。
 
-例えば、リアルタイムのシステムで膨大な量の過去データに基づいて予測を立てたい場合を考えてみましょう。この場合、MultiLayerNetwork.output()やMultiLayerNetwork.feedForward()のメソッドを使用するのは、非実用的でしょう。というのは、呼び出されるたびに、全部のデータ歴を対象として、フルの前方向パスを行うことになるからです。各タイムステップで1つのタイムステップの予測をする場合、これらのメソッドだと同じ計算を何度も行うため、(a) 非常にコストが掛かり、(b) 無駄も多くなります。
+例えば、リアルタイムのシステムで膨大な量の過去データに基づく予測を立てたい場合を考えてみましょう。この場合、MultiLayerNetwork.output()やMultiLayerNetwork.feedForward()のメソッドを使用するのは、非実用的です。というのは、呼び出されるたびに、全データ歴を対象として、フルの前方向パスを行うことになるからです。各タイムステップで1つのタイムステップの予測をする場合、これらのメソッドだと同じ計算を何度も行うため、(a) 非常にコストが掛かり、(b) 無駄も多くなります。
 
 これらの状況に対応するために、MultiLayerNetworkは4つのメソッドを提供しています。
 
@@ -150,20 +150,20 @@ rnnTimeStep()のメソッドは、1つ以上のステップで前方向パス（
 
 rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feedForward()のメソッドとには以下のように重要な違いがあります。
 
-1. 二つ目の図（rnnTimeStepの2つ目の呼び出し）にあるように、入力データは過去データすべてではなく、タイムステップ1つで構成されています。
-2. したがって、前方向伝播は、タイムステップ一つ（100やそれ以上でなく）です。
+1. 二つ目の図（rnnTimeStepの2つ目の呼び出し）にあるように、入力データは全データ歴ではなく、タイムステップ1つで構成されています。
+2. したがって、前方向伝播はタイムステップ一つ（100やそれ以上でなく）です。
 3. rnnTimeStepのメソッドが返った後、内部の状態が自動的に更新されます。従って、103時間目の予測は、102時間目やその他の時間と同じように行われます。
 
 しかし、新しい（全く別の）時系列の予測を開始したい場合は、保管された状態を`MultiLayerNetwork.rnnClearPreviousState()`のメソッドを使って、手動でクリアすることが必要となります。これにより、ネットワーク内すべての再帰層の内部状態がリセットされます。
 
-予測用に再帰型ニューラルネットワークの内部状態を保管する必要がある場合、各層にそれぞれrnnGetPreviousStateのメソッドとrnnSetPreviousStateのメソッドを使うことができます。これはシリアライゼーション（ネットワークの保存/ローディング）の際などに役立ちます。というのは、rnnTimeStepのメソッドからの内部状態はデフォルト設定では保存 **されない** ため、別々に保存、ロードする必要があるからです。これらの状態の獲得/設定メソッドは、活性化のタイプで適合されたマップを返し、受け取ります。例えば、長・短期記憶モデルには、出力活性化とメモリセル状態の両方を保管することが必要です。
+予測用に再帰型ニューラルネットワークの内部状態を保管する必要がある場合、各層にそれぞれrnnGetPreviousStateのメソッドとrnnSetPreviousStateのメソッドを使うことができます。これはシリアル化（ネットワークの保存/読み込み）の際などに役立ちます。というのは、rnnTimeStepのメソッドからのネットワーク内部状態はデフォルト設定では保存 **されない** ため、別々に保存、ロードする必要があるからです。これらの状態の獲得/設定メソッドは、活性化のタイプで適合されたマップを返し、受け取ります。例えば、長・短期記憶モデルには、出力活性化とメモリセル状態の両方を保管することが必要です。
 
 その他、重要なことを以下にまとめます。
 
 - rnnTimeStepのメソッドを複数の独立したサンプルやに同時に使用することができます。上述の天気の予測の場合、同じニューラルネットワークを使って複数の位置の予測をしたいこともあるでしょう。これはトレーニングとMultiLayerNetwork.output()やMultiLayerNetwork.feedForward()のメソッドと同じ方法で作動します。複数の行（インプットには次元0）が複数のサンプルで使用されます。
 - 履歴/保管された状態が設定されていない場合（最初に、またはrnnClearPreviousStateを呼び出した後）、デフォルト設定の初期化（ゼロ）が行われます。これは、トレーニング間でのものと同じアプローチです。
 - rnnTimeStepを、一つではなく任意の数のタイムステップに同時に使うことができます。しかし、以下のことに注意する必要があります。
-  - タイムステップ1つの予測：　データは2次元、[numExamples,nIn]というshapeです。この場合、出力も2次元で、[numExamples,nOut]というshapeです。
+  - タイムステップ1つの予測：　データは2次元の[numExamples,nIn]というshapeです。この場合、出力も2次元で、[numExamples,nOut]というshapeです。
   - 複数のタイムステップの予測：　データは3次元で[numExamples,nIn,numTimeSteps]というshapeです。出力は、[numExamples,nOut,numTimeSteps].というshapeです。最後のタイムステップ活性化は、以前のように保管されます。
 - rnnTimeStepnの呼び出し間でサンプル数を変更することはできません（最初にrnnTimeStepを3つのサンプルで使用した場合、後に続く呼び出しはすべて3つのサンプルでなければなりません。）内部状態を再設定した後で（rnnClearPreviousState()を使って）、次のrnnTimeStepのサンプルはいくつでも使用することができます。
 - rnnTimeStepのメソッドは、パラメータに変更をもたらすものではありません。ネットワークのトレーニングが終わってからのみ使用されます。
@@ -172,9 +172,9 @@ rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feed
 
 ## <a name="data">時系列データのインポート</a>
 
-再帰型ニューラルネットワークのデータインポートは複雑な過程を経ます。というのは、1つの入力から多数の出力、多数の入力から1つの出力、様々に変化する時系列の長さなど再帰型ニューラルネットワークに使用したいタイプのデータが複数あるからです。このセクションでは、現在実装されたDL4Jのメカニズムを説明します。
+再帰型ニューラルネットワークのデータインポートは複雑な過程を経ます。というのは、1つの入力から多数の出力、多数の入力から1つの出力、様々に変化する時系列の長さなど再帰型ニューラルネットワークに使用したいタイプのデータが複数あるからです。このセクションでは、現在実装されたDL4Jのデータインポートの仕組みを説明します。
 
-ここに説明するメソッドは、SequenceRecordReaderDataSetIteratorクラスをCanovaのCSVSequenceRecordReaderと合わせて使用します。このアプローチを使うと、時系列が別々のファイルにあっても、それら複数のファイルから（タブやコンマなどで）区切り文字で分けたデータをロードすることができます。
+ここに説明するメソッドは、SequenceRecordReaderDataSetIteratorクラスをCanovaのCSVSequenceRecordReaderを一緒に使用します。このアプローチを使うと、時系列が別々のファイルにあっても、それら複数のファイルからタブやコンマなどの区切り文字で分けたデータをロードすることができます。
 このメソッドは以下の状況にも対応します。
 
 * 様々の長さの時系列の入力
@@ -182,7 +182,7 @@ rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feed
 * 分類用にインデックスからワン・ホット（one-hot）の表示にラベルを変換（2を[0,0,1,0]に）
 * データファイルの最初に固定した/指定された行数のスキップ（コメントやヘッダーの行）
 
-すべてのケースにおいて、データの各行は1つのタイムステップを表していることに注意してください。
+すべてのケースにおいて、データファイルの各行は1タイムステップを表していることに注意してください。
 
 （以下の例に加えて、[これらのユニットテスト](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetiteratorTest.java)が役に立つかもしれません。）
 
@@ -195,7 +195,7 @@ rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feed
     SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
     SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
 
-このコンストラクターは、スキップする行（ここでは1行スキップ）と区切り文字（ここではコンマを使用）を使います。
+このコンストラクターは、スキップする行の数（ここでは1行スキップ）と区切り文字（ここではコンマを使用）を使います。
 
 次に、データをどこから得るかを教えることにより、これらの2つのリーダーを初期化する必要があります。我々は、これをInputSplitオブジェクトを使って行います。
 我々の時系列は、"myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv"などのようにファイル名と番号が付けられているとします。そのアプローチに[NumberedFileInputSplit](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/split/NumberedFileInputSplit.java)を使用する、というものがあります。
@@ -203,7 +203,7 @@ rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feed
     featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
     labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));
 
-このアプローチでは、「%d」に該当する数字が入り、数字の0から9（両方含む）が使用されます。
+このアプローチでは、該当する数字が「%d」に入り、数字の0から9（両方含む）が使用されます。
 
 これで自分のSequenceRecordReaderdataSetIteratorを作成することができます。
 
@@ -211,7 +211,7 @@ rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feed
 
 次に、このDataSetIteratorは、ネットワークをトレーニングするために、MultiLayerNetwork.fit()を通過することができます。
 
-miniBatchSizeの引数は、各ミニバッチのサンプル（時系列）の数を指定します。例えば、ファイルが全部で10ある場合、5のminiBatchSizeで2つのminibatch（DataSetオブジェクト）と5つの時系列のデータセットが2つが提供されます。
+miniBatchSizeの引数は、各ミニバッチのサンプル（時系列）の数を指定します。例えば、ファイルが全部で10ある場合、miniBatchSize5でminibatch（DataSetオブジェクト）2つと時系列5つのデータセットが2つが提供されます。
 
 この例では以下のことに注意してください。
 
@@ -226,7 +226,7 @@ miniBatchSizeの引数は、各ミニバッチのサンプル（時系列）の�
 
 次に入力データとラベルが別々のファイルでなく、同じファイルにあるとします。しかし、各時系列は別々のファイルにあります。
 
-DL4J 0.4-rc3.8以降、このアプローチでは、出力（1つのクラスインデックス、または実数値の回帰出力）が一列に制限されます。
+DL4J 0.4-rc3.8以降、このアプローチでは、出力（1つのクラスインデックス、実数値の回帰出力どちらでも）が一列に制限されます。
 
 この場合、1つのリーダーを作成し、初期化します。また、ヘッダー1行をスキップし、フォーマットには区切り文字にコンマを使用すると指定します。データファイル名は"myData_0.csv"、...、"myData_9.csv"とします。
 
@@ -262,7 +262,7 @@ AlignmentMode.ALIGN_ENDが追加されたことを除いては、ここの引数
 上述の例1、2と異なり、上記のvariableLengthIterインスタンスで産出されたDataSetオブジェクトは、前述したように、入力とマスキング配列を含みます。
 
 #### 例4：多数の入力から1つの出力、1つの入力から多数の出力の場合
-AlignmentMode機能を例3に使用して多対1の再帰型シーケンス分類子を実装することができます。この例では、以下のことを仮定します。
+AlignmentMode機能を例3に使用して多数の入力から1つを出力する再帰型シーケンス分類子を実装することができます。この例では、以下のことを仮定します。
 
 * 入力とラベルが別々の区切り文字で分けたファイルにある。
 * ラベルファイルに1行（タイムステップ）が含まれている（分類用のクラスインデックスか回帰用の1以上の数字）。
@@ -272,29 +272,29 @@ AlignmentMode機能を例3に使用して多対1の再帰型シーケンス分�
 
     DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
-アライメントモードは、比較的、単純です。短めの時系列の最初か最後にパディングを行うか否かを指定します。下図はその仕組みとマスキング配列を表したものです（上述した仕組みと同じです）。
+アライメントモードは、比較的、単純です。短めの時系列の最初か最後にパディングを行うか否かを指定します。下図はその仕組みとマスキング配列を表したものです（上記の仕組みと同じです）。
 
 ![Sequence Alignment](../img/rnn_seq_alignment.png)
 
-1対多のケース（上述の最後のケースに似ていますが、入力は一つ）は、AlignmentMode.ALIGN_STARTを使用します。
+1つの入力から多数の出力の場合（上記の最後のケースに似ていますが、入力は一つ）は、AlignmentMode.ALIGN_STARTを使用します。
 
-長さが異なる時系列を含むトレーニングデータの場合、ラベルと入力は各サンプルが別々に調整されます。そして必要に応じて短めの時系列がパディングされます。
+長さが異なる時系列を含むトレーニングデータの場合、ラベルと入力の各サンプルは別々に調整されます。そして必要に応じて短めの時系列がパディングされます。
 
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
-####その他の方法：カスタマイズされたDataSetIteratorを実装する
-一般的なデータインポートの方法を適用できない場合もあります。このような場合は、カスタマイズされた[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java).を実装することができます。DataSetIteratorは、入力をカプセル化し、INDArrays、（随意に）入力とラベルのマスク配列を対象とするDataSetオブジェクトをイテレートするインターフェイスです。
+#### その他の方法：カスタマイズされたDataSetIteratorを実装する
+一般的なデータインポートのシナリオには適合しないようにしなければならないこともあります。このようなシナリオには、カスタマイズされた[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java).を実装することができます。DataSetIteratorは、入力をカプセル化し、INDArrays、（随意に）入力とラベルのマスク配列を対象とするDataSetオブジェクトをイテレートするインターフェイスです。
 
-このアプローチはかなり低いレベルであることに注意してください。DataSetIteratorを実装する場合、入力とラベルに必要なINDArraysや（必要な場合は）入力とラベルのマスク配列を手作業で作成する必要があります。しかし、このアプローチだと、データの読み込み方法にかなりの柔軟性を持たせることができます。
+このアプローチはかなり低いレベルであることに注意してください。DataSetIteratorを実装する場合、入力とラベルに必要なINDArraysや（必要な場合は）入力とラベルのマスク配列を手作業で作成する必要があります。しかし、このアプローチだと、データの読み込み方法にかなりの柔軟性があります。
 
-実際のアプローチの例については、[tex/character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)や[Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)のイテレーターをご覧ください。
+このアプローチの実際のサンプルについては、[tex/character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)や[Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)のイテレーターをご覧ください。
 
-## <a name="examples">例</a>
+## <a name="examples">サンプル</a>
 
-現在、以下のようなDL4Jの[再帰型ネットワークの例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)があります。
+現在、以下のようなDL4Jの[再帰型ネットワークのサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)があります。
 
-* [登場人物のモデリング例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)は、シェークスピアの散文を各登場人物の台詞ごとに生成します。
-* [基本的なビデオフレーム分類例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)は、ビデオ（.mp4フォーマット）をインポートし、各フレームにあるシェイプを分類します。
-* [word2vec系列分類例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) は、あらかじめトレーニングした単語ベクトルと再帰型ニューラルネットワークを使用し、映画のレビューをポジティブかネガティブに分類します。
+* [登場人物のモデリングのサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)は、シェークスピアの散文を各登場人物の台詞ごとに生成します。
+* [基本的なビデオフレーム分類のサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)は、ビデオ（.mp4フォーマット）をインポートし、各フレームにあるシェイプを分類します。
+* [word2vec系列分類のサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) は、あらかじめトレーニングした単語ベクトルと再帰型ニューラルネットワークを使用し、映画のレビューをポジティブかネガティブに分類します。
 
 
