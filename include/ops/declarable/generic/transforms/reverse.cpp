@@ -142,5 +142,8 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     return ND4J_STATUS_OK;
 }
 
+
+
+
 }
 }

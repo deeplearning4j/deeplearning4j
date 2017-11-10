@@ -361,7 +361,7 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
 }
 
 
-
+    ////////////////////////////////////////////////////////////////////////
     template<typename T>
     NDArray<T>::NDArray(const char order, const std::vector<int> &shape, nd4j::memory::Workspace* workspace) {
 
@@ -403,6 +403,41 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         delete[] shapeOf;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    NDArray<T>::NDArray(T* buffer, const char order, const std::vector<int> &shape, nd4j::memory::Workspace* workspace) {
+
+        int rank = (int) shape.size();
+
+        if (rank > MAX_RANK)
+            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+        int *shapeOf = new int[rank];
+        int cnt = 0;
+
+        for (const auto& item: shape)
+            shapeOf[cnt++] = item;
+
+        _workspace = workspace;
+        _buffer = buffer;            
+        
+        if (workspace == nullptr) {
+            if (order == 'f')
+                _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+            else
+                _shapeInfo = shape::shapeBuffer(rank, shapeOf);            
+        } else {
+            int *shapeInfo = order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
+            _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
+            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));            
+            delete[] shapeInfo;
+        }
+        
+        _isBuffAlloc = false; 
+        _isShapeAlloc = true;
+
+        delete[] shapeOf;
+    }
 
 // This method assigns values of given NDArray to this one, wrt order
     template<typename T>
@@ -889,7 +924,7 @@ template <typename T>
     }
 
     template<typename T>
-    T NDArray<T>::getIndexedScalar(const Nd4jIndex i)  {
+    T NDArray<T>::getIndexedScalar(const Nd4jIndex i)  const {
         // throw something right here
         if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("Requested index above limit");
