@@ -23,12 +23,9 @@ import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -36,12 +33,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.primitives.Pair;
 
 /**
- *  Autoencoder.
+ * Autoencoder.
  * Add Gaussian noise to input and learn
  * a reconstruction function.
  *
  * @author Adam Gibson
- *
  */
 public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder> {
 
@@ -120,7 +116,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+    public Pair<Gradients, Double> computeGradientAndScore(Activations input, Activations labels) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
 
         double corruptionLevel = layerConf().getCorruptionLevel();
@@ -133,7 +129,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
         INDArray visibleLoss = input.get(0).sub(z);
         INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1))
-                        : visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
+                : visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
 
         INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
         INDArray hBiasGradient = hiddenLoss.sum(0);
@@ -147,7 +143,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public void fit(DataSetIterator iter) {
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             fit(iter.next());
         }
     }

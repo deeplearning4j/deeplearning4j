@@ -5,7 +5,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -25,9 +24,9 @@ import java.util.Map;
  * to be 2d, and are fed forward through the network during training or post-training forward pass:<br>
  * - Time series: mask arrays are shape [minibatchSize, maxTimeSeriesLength] and contain values 0 or 1 only<br>
  * - CNNs: mask have shape [minibatchSize, height] or [minibatchSize, width]. Important: the current implementation assumes
- *   that for CNNs + variable length (masking), the input shape is [minibatchSize, depth, height, 1] or
- *   [minibatchSize, depth, 1, width] respectively. This is the case with global pooling in architectures like CNN for
- *   sentence classification.<br>
+ * that for CNNs + variable length (masking), the input shape is [minibatchSize, depth, height, 1] or
+ * [minibatchSize, depth, 1, width] respectively. This is the case with global pooling in architectures like CNN for
+ * sentence classification.<br>
  * <p>
  * Behaviour with default settings:<br>
  * - 3d (time series) input with shape [minibatchSize, vectorSize, timeSeriesLength] -> 2d output [minibatchSize, vectorSize]<br>
@@ -63,7 +62,7 @@ public class GlobalPoolingLayer extends Layer {
                                                        String name, int layerIndex, int numInputs, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret =
-                        new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(this);
+                new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(this);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(this, layerParamsView, initializeParams);
@@ -87,8 +86,8 @@ public class GlobalPoolingLayer extends Layer {
         switch (inputType[0].getType()) {
             case FF:
                 throw new UnsupportedOperationException(
-                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                                + inputType);
+                        "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                + inputType);
             case RNN:
                 InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType[0];
                 if (collapseDimensions) {
@@ -136,8 +135,8 @@ public class GlobalPoolingLayer extends Layer {
         switch (inputType[0].getType()) {
             case FF:
                 throw new UnsupportedOperationException(
-                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                                + inputType[0]);
+                        "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                + inputType[0]);
             case RNN:
             case CNN:
                 //No preprocessor required
@@ -169,7 +168,7 @@ public class GlobalPoolingLayer extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
-        if(inputTypes == null || inputTypes.length != 1){
+        if (inputTypes == null || inputTypes.length != 1) {
             throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
         }
         InputType inputType = inputTypes[0];
@@ -186,11 +185,11 @@ public class GlobalPoolingLayer extends Layer {
         }
 
         return new LayerMemoryReport.Builder(layerName, GlobalPoolingLayer.class, inputType, outputType)
-                        .standardMemory(0, 0) //No params
-                        //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
-                        .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(0, 0) //No params
+                //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
+                .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {
@@ -233,7 +232,7 @@ public class GlobalPoolingLayer extends Layer {
          * If true:<br>
          * - 3d (time series) input with shape [minibatchSize, vectorSize, timeSeriesLength] -> 2d output [minibatchSize, vectorSize]<br>
          * - 4d (CNN) input with shape [minibatchSize, depth, height, width] -> 2d output [minibatchSize, depth]<br>
-         *
+         * <p>
          * If false:<br>
          * - 3d (time series) input with shape [minibatchSize, vectorSize, timeSeriesLength] -> 3d output [minibatchSize, vectorSize, 1]<br>
          * - 4d (CNN) input with shape [minibatchSize, depth, height, width] -> 2d output [minibatchSize, depth, 1, 1]<br>

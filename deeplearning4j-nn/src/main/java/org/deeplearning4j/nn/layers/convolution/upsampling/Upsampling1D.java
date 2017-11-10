@@ -20,9 +20,7 @@ package org.deeplearning4j.nn.layers.convolution.upsampling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.gradients.Gradients;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 

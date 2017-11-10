@@ -31,3 +31,5 @@ Jeffrey Tang
 @bennythedataguy - Bi-directional LSTMs
 
 Justin Long @crockpotveggies
+
+Max Pumperla - Keras model import & core layers

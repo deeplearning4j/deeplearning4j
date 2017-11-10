@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -221,10 +222,22 @@ public class ConvolutionUtils {
      * from the configuration
      * @param conf the configuration to get height and width from
      * @return the configuration to get height and width from
+     * @deprecated Use getHeightAndWidth(Layer layer) instead
      */
+    @Deprecated
     public static int[] getHeightAndWidth(NeuralNetConfiguration conf) {
         return getHeightAndWidth(
                         ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize());
+    }
+
+    /**
+     * Get height and width from a layer
+     * @param layer the layer to get height and width from
+     * @return height and width as int array
+     */
+    public static int[] getHeightAndWidth(Layer layer) {
+        return getHeightAndWidth(
+                ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer).getKernelSize());
     }
 
 
@@ -232,9 +245,21 @@ public class ConvolutionUtils {
      * @param conf the configuration to get
      *             the number of kernels from
      * @return the number of kernels/filters to apply
+     * @deprecated Use numFeatureMaps(Layer layer) instead
      */
+    @Deprecated
     public static int numFeatureMap(NeuralNetConfiguration conf) {
         return ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getNOut();
+    }
+
+    /**
+     * Return the number of feature maps for this convolution layer.
+     *
+     * @param layer the configuration to get the number of kernels/filters from
+     * @return the number of kernels/filters to apply
+     */
+    public static int numFeatureMaps(Layer layer) {
+        return ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer).getNOut();
     }
 
     /**
