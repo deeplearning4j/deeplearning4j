@@ -39,11 +39,12 @@ public class DefaultTrainerContext implements TrainerContext {
      * @return the created training instance
      */
     @Override
-    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
+    public Trainer create(String uuid, int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
                     WorkspaceMode mode, int averagingFrequency) {
 
         DefaultTrainer trainer = DefaultTrainer.builder().originalModel(model).replicatedModel(model).threadId(threadId)
                         .parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS)
+                        .uuid(uuid + "_thread_" + threadId)
                         .averagingFrequency(averagingFrequency).build();
 
         trainer.setName("DefaultTrainer thread " + threadId);
