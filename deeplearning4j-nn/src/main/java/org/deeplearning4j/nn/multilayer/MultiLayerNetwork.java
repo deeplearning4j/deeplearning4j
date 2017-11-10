@@ -224,6 +224,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (!layerWiseConfigurations.isPretrain())
             return;
 
+        for (TrainingListener tl : trainingListeners) {
+            tl.onEpochStart(this);
+        }
+
         for (int i = 0; i < getnLayers(); i++) {
             pretrainLayer(i, iter);
         }
@@ -1168,22 +1172,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for (TrainingListener tl : trainingListeners) {
             tl.onEpochStart(this);
         }
-
-        if (layerWiseConfigurations.isPretrain()) {
-            pretrain(iter);
-            if (iter.resetSupported()) {
-                iter.reset();
-            }
-            //            while (iter.hasNext()) {
-            //                DataSet next = iter.next();
-            //                if (next.getFeatureMatrix() == null || next.getLabels() == null)
-            //                    break;
-            //                setInput(next.getFeatureMatrix());
-            //                setLabels(next.getLabels());
-            //                finetune();
-            //            }
-        }
-
 
         MemoryWorkspace workspace =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
