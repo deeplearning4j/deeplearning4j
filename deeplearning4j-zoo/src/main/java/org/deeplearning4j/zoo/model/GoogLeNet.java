@@ -128,7 +128,7 @@ public class GoogLeNet extends ZooModel {
                         .addLayer(name + "-cnn4", conv3x3(config[1][0], config[1][1], 0.2), name + "-cnn2")
                         .addLayer(name + "-cnn5", conv5x5(config[2][0], config[2][1], 0.2), name + "-cnn3")
                         .addLayer(name + "-cnn6", conv1x1(inputSize, config[3][0], 0.2), name + "-max1")
-                        .addVertex(name + "-depthconcat1", new MergeVertex(), name + "-cnn1", name + "-cnn4",
+                        .add(name + "-depthconcat1", new MergeVertex(), name + "-cnn1", name + "-cnn4",
                                         name + "-cnn5", name + "-cnn6");
         return graph;
     }

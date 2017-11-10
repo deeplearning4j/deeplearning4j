@@ -111,11 +111,11 @@ public class ComputationGraphConfigurationTest {
                                                         new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
                                                                         .build(),
                                                         "input2")
-                                        .addVertex("merge1", new MergeVertex(), "cnn1", "cnn2")
-                                        .addVertex("subset1", new SubsetVertex(0, 1), "merge1")
+                                        .add("merge1", new MergeVertex(), "cnn1", "cnn2")
+                                        .add("subset1", new SubsetVertex(0, 1), "merge1")
                                         .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
                                         .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
-                                        .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
+                                        .add("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
                                                         "dense2")
                                         .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "add")
                                         .setOutputs("out").build();
@@ -207,8 +207,8 @@ public class ComputationGraphConfigurationTest {
         //Check a standard GraphVertex implementation, plus a static inner graph vertex
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addVertex("test", new TestGraphVertex(3, 7), "in")
-                        .addVertex("test2", new StaticInnerGraphVertex(4, 5), "in").setOutputs("test", "test2").build();
+                        .add("test", new TestGraphVertex(3, 7), "in")
+                        .add("test2", new StaticInnerGraphVertex(4, 5), "in").setOutputs("test", "test2").build();
 
         String json = conf.toJson();
         System.out.println(json);

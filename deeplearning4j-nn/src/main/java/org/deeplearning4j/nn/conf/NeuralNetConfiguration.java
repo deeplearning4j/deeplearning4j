@@ -33,7 +33,6 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
@@ -43,10 +42,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
@@ -231,7 +228,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             } else {
                 layerwise.put(ind, layer);
             }
-            if(layerCounter < ind){
+            if (layerCounter < ind) {
                 //Edge case: user is mixing .layer(Layer) and .layer(int, Layer) calls
                 //This should allow a .layer(A, X) and .layer(Y) to work such that layer Y is index (A+1)
                 layerCounter = ind;
@@ -239,7 +236,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public ListBuilder layer(Layer layer){
+        public ListBuilder layer(Layer layer) {
             return layer(++layerCounter, layer);
         }
 
@@ -248,22 +245,22 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         @Override
-        public ListBuilder setInputType(InputType inputType){
-            return (ListBuilder)super.setInputType(inputType);
+        public ListBuilder setInputType(InputType inputType) {
+            return (ListBuilder) super.setInputType(inputType);
         }
 
         /**
          * A convenience method for setting input types: note that for example .inputType().convolutional(h,w,d)
          * is equivalent to .setInputType(InputType.convolutional(h,w,d))
          */
-        public ListBuilder.InputTypeBuilder inputType(){
+        public ListBuilder.InputTypeBuilder inputType() {
             return new InputTypeBuilder();
         }
 
         /**
          * Build the multi layer network
          * based on this neural network and
-         * overr ridden parameters
+         * overridden parameters
          *
          * @return the configuration to build
          */
@@ -274,12 +271,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             for (int i = 0; i < layerwise.size(); i++) {
                 if (layerwise.get(i) == null) {
                     throw new IllegalStateException("Invalid configuration: layer number " + i
-                                    + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
-                                    + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                            + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
+                            + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
                 if (layerwise.get(i) == null)
                     throw new IllegalStateException("Cannot construct network: Layer config for" + "layer with index "
-                                    + i + " is not defined)");
+                            + i + " is not defined)");
 
                 //Layer names: set to default, if not set
                 if (layerwise.get(i).getLayerName() == null) {
@@ -289,42 +286,44 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 list.add(layerwise.get(i));
             }
             return new MultiLayerConfiguration.Builder()
-                            .globalConfiguration(globalConfig.globalConf)
-                            .backprop(backprop).inputPreProcessors(inputPreProcessors)
-                            .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-                            .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
-                            .trainingWorkspaceMode(globalConfig.globalConf.getTrainingWorkspaceMode())
-                            .cacheMode(globalConfig.globalConf.getCacheMode())
-                            .inferenceWorkspaceMode(globalConfig.globalConf.getInferenceWorkspaceMode()).confs(list).build();
+                    .globalConfiguration(globalConfig.globalConf)
+                    .backprop(backprop).inputPreProcessors(inputPreProcessors)
+                    .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+                    .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
+                    .trainingWorkspaceMode(globalConfig.globalConf.getTrainingWorkspaceMode())
+                    .cacheMode(globalConfig.globalConf.getCacheMode())
+                    .inferenceWorkspaceMode(globalConfig.globalConf.getInferenceWorkspaceMode()).confs(list).build();
         }
 
-        /** Helper class for setting input types */
+        /**
+         * Helper class for setting input types
+         */
         public class InputTypeBuilder {
             /**
              * See {@link InputType#convolutional(int, int, int)}
              */
-            public ListBuilder convolutional(int height, int width, int depth){
+            public ListBuilder convolutional(int height, int width, int depth) {
                 return ListBuilder.this.setInputType(InputType.convolutional(height, width, depth));
             }
 
             /**
              * * See {@link InputType#convolutionalFlat(int, int, int)}
              */
-            public ListBuilder convolutionalFlat(int height, int width, int depth){
+            public ListBuilder convolutionalFlat(int height, int width, int depth) {
                 return ListBuilder.this.setInputType(InputType.convolutionalFlat(height, width, depth));
             }
 
             /**
              * See {@link InputType#feedForward(int)}
              */
-            public ListBuilder feedForward(int size){
+            public ListBuilder feedForward(int size) {
                 return ListBuilder.this.setInputType(InputType.feedForward(size));
             }
 
             /**
              * See {@link InputType#recurrent(int)}}
              */
-            public ListBuilder recurrent(int size){
+            public ListBuilder recurrent(int size) {
                 return ListBuilder.this.setInputType(InputType.recurrent(size));
             }
         }
@@ -448,7 +447,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
             @Override
             public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
-                            JsonDeserializer<?> deserializer) {
+                                                          JsonDeserializer<?> deserializer) {
                 //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
                 if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
                     return new MultiLayerConfigurationDeserializer(deserializer);
@@ -468,7 +467,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         //Register concrete subtypes for JSON serialization
 
         List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
-                        IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
+                IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());
@@ -484,7 +483,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             } else {
 
                 List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
-                                IActivation.class, ReconstructionDistribution.class);
+                        IActivation.class, ReconstructionDistribution.class);
                 List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
                 Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -497,15 +496,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
 
                 Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(new FilterBuilder()
-                                .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                                //Exclude the following: the assumption here is that no custom functionality will ever be present
-                                // under these package name prefixes. These are all common dependencies for DL4J
-                                .exclude("^org.nd4j.*").exclude("^org.datavec.*").exclude("^org.bytedeco.*") //JavaCPP
-                                .exclude("^com.fasterxml.*")//Jackson
-                                .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
-                                .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*").exclude("^org.joda.*")
-                                .exclude("^org.slf4j.*").exclude("^com.google.*").exclude("^org.reflections.*")
-                                .exclude("^ch.qos.*") //Logback
+                        .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                        //Exclude the following: the assumption here is that no custom functionality will ever be present
+                        // under these package name prefixes. These are all common dependencies for DL4J
+                        .exclude("^org.nd4j.*").exclude("^org.datavec.*").exclude("^org.bytedeco.*") //JavaCPP
+                        .exclude("^com.fasterxml.*")//Jackson
+                        .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
+                        .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*").exclude("^org.joda.*")
+                        .exclude("^org.slf4j.*").exclude("^com.google.*").exclude("^org.reflections.*")
+                        .exclude("^ch.qos.*") //Logback
                 ).addUrls(scanUrls).setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
                 org.reflections.Store store = reflections.getStore();
 
@@ -527,10 +526,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         Set<Class<?>> registeredSubtypes = new HashSet<>();
         for (Class<?> c : classes) {
             AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
-                            null);
+                    null);
             Collection<NamedType> types =
-                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
-                                            mapper.getSerializationConfig().getAnnotationIntrospector());
+                    mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
+                            mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
                 registeredSubtypes.add(nt.getType());
             }
@@ -558,7 +557,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     for (Class<?> baseClass : classes) {
                         if (baseClass.isAssignableFrom(c)) {
                             log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
-                                            baseClass.getName());
+                                    baseClass.getName());
                             break;
                         }
                     }
@@ -888,7 +887,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
          * @return
          */
-        public Builder dropOut(IDropout dropout){
+        public Builder dropOut(IDropout dropout) {
             globalConf.setDropOut(dropout);
             return this;
         }
@@ -899,7 +898,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param weightNoise Weight noise instance to use
          */
-        public Builder weightNoise(IWeightNoise weightNoise){
+        public Builder weightNoise(IWeightNoise weightNoise) {
             globalConf.setWeightNoise(weightNoise);
             return this;
         }
@@ -930,7 +929,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param updater Updater to use for bias parameters
          */
-        public Builder biasUpdater(IUpdater updater){
+        public Builder biasUpdater(IUpdater updater) {
             globalConf.setBiasUpdater(updater);
             return this;
         }
@@ -961,6 +960,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         /**
          * Sets the convolution mode for convolutional layers, which impacts padding and output sizes.
          * See {@link ConvolutionMode} for details. Defaults to ConvolutionMode.TRUNCATE
+         *
          * @param convolutionMode Convolution mode to use
          */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
@@ -975,7 +975,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all parameters of all layers
          */
-        public Builder constrainAllParameters(LayerConstraint... constraints){
+        public Builder constrainAllParameters(LayerConstraint... constraints) {
             globalConf.setAllParamConstraints(Arrays.asList(constraints));
             return this;
         }

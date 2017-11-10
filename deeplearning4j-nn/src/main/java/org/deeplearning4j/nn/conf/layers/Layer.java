@@ -117,8 +117,8 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     /**
-     * Reset the learning related configs of the layer to default. When instantiated with a global neural network configuration
-     * the parameters specified in the neural network configuration will be used.
+     * Reset the learning related configs of the layer to default. When instantiated with a global neural network
+     * configuration the parameters specified in the neural network configuration will be used.
      * For internal use with the transfer learning API. Users should not have to call this method directly.
      */
     public void resetLayerDefaultConfig() {

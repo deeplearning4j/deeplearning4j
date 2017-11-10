@@ -112,7 +112,7 @@ public class InceptionResNetHelper {
                                                             .nOut(32).build(),
                                             nameLayer(blockName, "cnn6", i))
                             // --> 1x1 --> scaling -->
-                            .addVertex(nameLayer(blockName, "merge1", i), new MergeVertex(),
+                            .add(nameLayer(blockName, "merge1", i), new MergeVertex(),
                                             nameLayer(blockName, "batch1", i), nameLayer(blockName, "batch3", i),
                                             nameLayer(blockName, "batch6", i))
                             .addLayer(nameLayer(blockName, "cnn7", i),
@@ -125,13 +125,13 @@ public class InceptionResNetHelper {
                                             new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(192)
                                                             .nOut(192).build(),
                                             nameLayer(blockName, "cnn7", i))
-                            .addVertex(nameLayer(blockName, "scaling", i), new ScaleVertex(activationScale),
+                            .add(nameLayer(blockName, "scaling", i), new ScaleVertex(activationScale),
                                             nameLayer(blockName, "batch7", i))
                             // -->
                             .addLayer(nameLayer(blockName, "shortcut-identity", i),
                                             new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                             previousBlock)
-                            .addVertex(nameLayer(blockName, "shortcut", i),
+                            .add(nameLayer(blockName, "shortcut", i),
                                             new ElementWiseVertex(ElementWiseVertex.Op.Add),
                                             nameLayer(blockName, "scaling", i),
                                             nameLayer(blockName, "shortcut-identity", i));
@@ -213,7 +213,7 @@ public class InceptionResNetHelper {
                                                             .nOut(128).build(),
                                             nameLayer(blockName, "cnn4", i))
                             // --> 1x1 --> scaling -->
-                            .addVertex(nameLayer(blockName, "merge1", i), new MergeVertex(),
+                            .add(nameLayer(blockName, "merge1", i), new MergeVertex(),
                                             nameLayer(blockName, "batch1", i), nameLayer(blockName, "batch4", i))
                             .addLayer(nameLayer(blockName, "cnn5", i),
                                             new ConvolutionLayer.Builder(new int[] {1, 1})
@@ -225,13 +225,13 @@ public class InceptionResNetHelper {
                                             new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(576)
                                                             .nOut(576).build(),
                                             nameLayer(blockName, "cnn5", i))
-                            .addVertex(nameLayer(blockName, "scaling", i), new ScaleVertex(activationScale),
+                            .add(nameLayer(blockName, "scaling", i), new ScaleVertex(activationScale),
                                             nameLayer(blockName, "batch5", i))
                             // -->
                             .addLayer(nameLayer(blockName, "shortcut-identity", i),
                                             new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                             previousBlock)
-                            .addVertex(nameLayer(blockName, "shortcut", i),
+                            .add(nameLayer(blockName, "shortcut", i),
                                             new ElementWiseVertex(ElementWiseVertex.Op.Add),
                                             nameLayer(blockName, "scaling", i),
                                             nameLayer(blockName, "shortcut-identity", i));
@@ -309,7 +309,7 @@ public class InceptionResNetHelper {
                                                             .activation(Activation.TANH).nIn(192).nOut(192).build(),
                                             nameLayer(blockName, "cnn4", i))
                             // --> 1x1 --> scale -->
-                            .addVertex(nameLayer(blockName, "merge1", i), new MergeVertex(),
+                            .add(nameLayer(blockName, "merge1", i), new MergeVertex(),
                                             nameLayer(blockName, "batch1", i), nameLayer(blockName, "batch4", i))
                             .addLayer(nameLayer(blockName, "cnn5", i),
                                             new ConvolutionLayer.Builder(new int[] {1, 1})
@@ -321,13 +321,13 @@ public class InceptionResNetHelper {
                                             new BatchNormalization.Builder(false).decay(0.995).eps(0.001)
                                                             .activation(Activation.TANH).nIn(1344).nOut(1344).build(),
                                             nameLayer(blockName, "cnn5", i))
-                            .addVertex(nameLayer(blockName, "scaling", i), new ScaleVertex(activationScale),
+                            .add(nameLayer(blockName, "scaling", i), new ScaleVertex(activationScale),
                                             nameLayer(blockName, "batch5", i))
                             // -->
                             .addLayer(nameLayer(blockName, "shortcut-identity", i),
                                             new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                             previousBlock)
-                            .addVertex(nameLayer(blockName, "shortcut", i),
+                            .add(nameLayer(blockName, "shortcut", i),
                                             new ElementWiseVertex(ElementWiseVertex.Op.Add),
                                             nameLayer(blockName, "scaling", i),
                                             nameLayer(blockName, "shortcut-identity", i));

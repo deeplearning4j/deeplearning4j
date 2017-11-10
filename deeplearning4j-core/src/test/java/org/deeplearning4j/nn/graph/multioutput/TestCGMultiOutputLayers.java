@@ -133,7 +133,7 @@ public class TestCGMultiOutputLayers {
                 .addInputs("in")
                 .layer("first", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
                 .layer("second", new SplitDenseLayerConf.Builder().nIn(5).nOut(6).build(), "first")
-                .addVertex("ewise", new ElementWiseVertex(ElementWiseVertex.Op.Add), "second/0", "second/1")
+                .add("ewise", new ElementWiseVertex(ElementWiseVertex.Op.Add), "second/0", "second/1")
                 .layer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(3).build(), "ewise")
                 .setOutputs("out")
                 .build();

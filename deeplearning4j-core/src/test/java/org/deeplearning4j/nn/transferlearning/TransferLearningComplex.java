@@ -112,7 +112,7 @@ public class TransferLearningComplex {
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                         .addLayer("denseCentre0", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(new DenseLayer.Builder().nIn(2).nOut(2).build()), "inCentre")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inRight")
-                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .add("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
                                         "mergeRight")
@@ -130,7 +130,7 @@ public class TransferLearningComplex {
                 overallConf.graphBuilder()
                         .addInputs("denseCentre0", "inRight")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
-                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .add("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
                         .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4) .nOut(2).build(),"mergeRight")
                         .setOutputs("outRight")
                         .build();
@@ -194,7 +194,7 @@ public class TransferLearningComplex {
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).build(),
                                         "denseCentre0")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(3).nOut(2).build(), "inRight")
-                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .add("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
                                         "mergeRight")
@@ -246,7 +246,7 @@ public class TransferLearningComplex {
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                         .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inRight")
-                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .add("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
                                         "mergeRight")

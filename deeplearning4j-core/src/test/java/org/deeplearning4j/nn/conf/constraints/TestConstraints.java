@@ -13,11 +13,14 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -42,9 +45,13 @@ public class TestConstraints {
                     .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .list()
-                    .layer(new LSTM.Builder().nIn(12).nOut(10)
-                            .constrainRecurrent(lc).build())
-                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(8).build())
+                    .layer(new LSTM.Builder().nIn(12).nOut(10).activation(Activation.SIGMOID)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                            .constrainRecurrent(lc)
+                            .updater(new NoOp()).build())
+                    //.layer(new LSTM.Builder().nIn(12).nOut(10).constrainRecurrent(lc).build())
+                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                            .nIn(10).nOut(8).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

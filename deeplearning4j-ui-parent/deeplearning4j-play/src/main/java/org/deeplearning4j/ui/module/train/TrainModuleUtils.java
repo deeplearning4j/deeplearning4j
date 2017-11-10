@@ -9,7 +9,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
-import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.*;
 

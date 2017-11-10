@@ -60,14 +60,14 @@ public class TransferLearningHelperTest {
                         .addLayer("outCentre",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7).nOut(4).build(),
                                         "denseCentre3")
-                        .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
+                        .add("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
                         .addLayer("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "subsetLeft")
                         .addLayer("outLeft",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).build(),
                                         "denseLeft0")
                         .addLayer("denseRight", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "inRight")
-                        .addVertex("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
+                        .add("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
                         .addLayer("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(), "mergeRight")
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(5).build(),
@@ -89,7 +89,7 @@ public class TransferLearningHelperTest {
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7)
                                                                         .nOut(4).build(),
                                                         "denseCentre3")
-                                        .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
+                                        .add("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
                                         .addLayer("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(),
                                                         "subsetLeft")
                                         .addLayer("outLeft",
@@ -100,7 +100,7 @@ public class TransferLearningHelperTest {
                                                         "denseCentre2")
                                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(),
                                                         "inRight")
-                                        .addVertex("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
+                                        .add("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
                                         .addLayer("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(),
                                                         "mergeRight")
                                         .addLayer("outRight",
@@ -128,14 +128,14 @@ public class TransferLearningHelperTest {
                         .addLayer("outCentre",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7).nOut(4).build(),
                                         "denseCentre3")
-                        .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
+                        .add("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
                         .addLayer("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "subsetLeft")
                         .addLayer("outLeft",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).build(),
                                         "denseLeft0")
                         .addLayer("denseRight", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "inRight")
-                        .addVertex("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
+                        .add("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
                         .addLayer("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(), "mergeRight")
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(5).build(),
@@ -162,14 +162,14 @@ public class TransferLearningHelperTest {
                 .addLayer("outCentre",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7).nOut(4).build(),
                         "denseCentre3")
-                .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
+                .add("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
                 .addLayer("denseLeft0", new DenseLayer.Builder().nIn(4).nOut(5).build(), "subsetLeft")
                 .addLayer("outLeft",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).build(),
                         "denseLeft0")
                 .addLayer("denseRight", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
                 .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "inRight")
-                .addVertex("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
+                .add("mergeRight", new MergeVertex(), "denseRight", "denseRight0")
                 .addLayer("denseRight1", new DenseLayer.Builder().nIn(10).nOut(5).build(), "mergeRight")
                 .addLayer("outRight",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(5).nOut(5).build(),

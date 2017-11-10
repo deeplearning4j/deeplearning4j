@@ -329,7 +329,7 @@ public class KerasModel {
                 if (preprocessor == null)
                     throw new UnsupportedKerasConfigurationException("Layer " + layer.getLayerName()
                             + " could not be mapped to Layer, Vertex, or InputPreProcessor");
-                graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor),
+                graphBuilder.add(layer.getLayerName(), new PreprocessorVertex(preprocessor),
                         inboundLayerNamesArray);
             }
 

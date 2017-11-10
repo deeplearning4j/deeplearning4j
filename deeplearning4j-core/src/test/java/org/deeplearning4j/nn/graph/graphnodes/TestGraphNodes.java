@@ -55,7 +55,7 @@ public class TestGraphNodes {
 
         mergeNode.setInput(af.createPair(first, second));
         INDArray out = mergeNode.activate(false).get(0);
-        assertArrayEquals(new int[] {3, 10}, out.shape());
+        assertArrayEquals(new int[]{3, 10}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10)));
@@ -76,7 +76,7 @@ public class TestGraphNodes {
 
         mergeNode.setInput(af.createPair(first, second));
         INDArray out = mergeNode.activate(false).get(0);
-        assertArrayEquals(new int[] {3, 10, 5}, out.shape());
+        assertArrayEquals(new int[]{3, 10, 5}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4), NDArrayIndex.all()));
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10), NDArrayIndex.all()));
@@ -96,7 +96,7 @@ public class TestGraphNodes {
 
         mergeNode.setInput(af.createPair(first, second));
         INDArray out = mergeNode.activate(false).get(0);
-        assertArrayEquals(new int[] {1, 2, 2, 2}, out.shape());
+        assertArrayEquals(new int[]{1, 2, 2, 2}, out.shape());
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
@@ -117,7 +117,7 @@ public class TestGraphNodes {
 
         mergeNode.setInput(af.createPair(first, second));
         out = mergeNode.activate(false).get(0);
-        assertArrayEquals(new int[] {1, 4, 3, 3}, out.shape());
+        assertArrayEquals(new int[]{1, 4, 3, 3}, out.shape());
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -150,20 +150,20 @@ public class TestGraphNodes {
         assertEquals(Nd4j.zeros(5, 2), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8, 9, true)));
 
         //Test same for CNNs:
-        in = Nd4j.rand(new int[] {5, 10, 3, 3});
+        in = Nd4j.rand(new int[]{5, 10, 3, 3});
         subset.setInput(af.create(in));
         out = subset.activate(false).get(0);
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
-                        NDArrayIndex.all()), out);
+                NDArrayIndex.all()), out);
 
 
         backward = subset.backpropGradient(gf.create(out)).get(0);
         assertEquals(Nd4j.zeros(5, 4, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 2, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8, 9, true),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
     }
 
 
@@ -171,16 +171,17 @@ public class TestGraphNodes {
     public void testLastTimeStepVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addVertex("lastTS", new LastTimeStepVertex(), "in")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "lastTS").setOutputs("out")
-                        .build();
+                .add("lastTS", new LastTimeStepVertex(), "in")
+                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "lastTS")
+                .setOutputs("out")
+                .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
         //First: test without input mask array
         Nd4j.getRandom().setSeed(12345);
-        INDArray in = Nd4j.rand(new int[] {3, 5, 6});
+        INDArray in = Nd4j.rand(new int[]{3, 5, 6});
         INDArray expOut = in.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5));
 
         Layer gv = graph.getVertex("lastTS");
@@ -193,14 +194,14 @@ public class TestGraphNodes {
         INDArray eps = pair.get(0);
         assertArrayEquals(in.shape(), eps.shape());
         assertEquals(Nd4j.zeros(3, 5, 5),
-                        eps.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4, true)));
+                eps.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4, true)));
         assertEquals(expOut, eps.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5)));
 
         //Second: test with input mask array
         INDArray inMask = Nd4j.zeros(3, 6);
-        inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0, 0}));
-        inMask.putRow(1, Nd4j.create(new double[] {1, 1, 1, 1, 0, 0}));
-        inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1, 0}));
+        inMask.putRow(0, Nd4j.create(new double[]{1, 1, 1, 0, 0, 0}));
+        inMask.putRow(1, Nd4j.create(new double[]{1, 1, 1, 1, 0, 0}));
+        inMask.putRow(2, Nd4j.create(new double[]{1, 1, 1, 1, 1, 0}));
 
         expOut = Nd4j.zeros(3, 5);
         expOut.putRow(0, in.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(2)));
@@ -219,22 +220,22 @@ public class TestGraphNodes {
     public void testDuplicateToTimeSeriesVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
-                        .addInputs("in2d", "in3d")
-                        .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex(), "in2d", "in3d")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "duplicateTS")
-                        .setOutputs("out").build();
+                .addInputs("in2d", "in3d")
+                .add("duplicateTS", new DuplicateToTimeSeriesVertex(), "in2d", "in3d")
+                .add("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "duplicateTS")
+                .setOutputs("out").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
         INDArray in2d = Nd4j.rand(3, 5);
-        INDArray in3d = Nd4j.rand(new int[] {3, 2, 7});
+        INDArray in3d = Nd4j.rand(new int[]{3, 2, 7});
 
         graph.setInputs(in2d, in3d);
 
         INDArray expOut = Nd4j.zeros(3, 5, 7);
         for (int i = 0; i < 7; i++) {
-            expOut.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, in2d);
+            expOut.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, in2d);
         }
 
         Layer gv = graph.getVertex("duplicateTS");
@@ -267,7 +268,7 @@ public class TestGraphNodes {
     @Test
     public void testStackNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer unstack = new StackVertex( "", -1, 3);
+        Layer unstack = new StackVertex("", -1, 3);
 
         INDArray in1 = Nd4j.rand(5, 2);
         INDArray in2 = Nd4j.rand(5, 2);
@@ -288,7 +289,7 @@ public class TestGraphNodes {
     @Test
     public void testStackVertexEmbedding() {
         Nd4j.getRandom().setSeed(12345);
-        Layer unstack = new StackVertex( "", -1, 1);
+        Layer unstack = new StackVertex("", -1, 1);
 
         INDArray in1 = Nd4j.zeros(5, 1);
         INDArray in2 = Nd4j.zeros(5, 1);
@@ -298,25 +299,25 @@ public class TestGraphNodes {
         }
 
         INDArray l = Nd4j.rand(5, 5);
-        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[] {in1, in2}, new INDArray[] {l, l},
-                        null, null);
+        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{in1, in2}, new INDArray[]{l, l},
+                null, null);
 
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in1", "in2")
-                        .addVertex("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
-                        .addLayer("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
-                        .addVertex("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
-                        .addVertex("unstack2", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
-                        .addLayer("out1", new OutputLayer.Builder().activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack1")
-                        .addLayer("out2", new OutputLayer.Builder().activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack2")
-                        .setOutputs("out1", "out2").build();
+                .add("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
+                .add("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
+                .add("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
+                .add("unstack2", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
+                .add("out1", new OutputLayer.Builder().activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack1")
+                .add("out2", new OutputLayer.Builder().activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack2")
+                .setOutputs("out1", "out2").build();
 
         ComputationGraph g = new ComputationGraph(conf);
         g.init();
 
-        g.feedForward(new INDArray[] {in1, in2}, false);
+        g.feedForward(new INDArray[]{in1, in2}, false);
 
         g.fit(ds);
 
@@ -325,12 +326,12 @@ public class TestGraphNodes {
     @Test
     public void testStackUnstackNodeVariableLength() {
         Nd4j.getRandom().setSeed(12345);
-        Layer stack = new StackVertex( "", -1, 3);
+        Layer stack = new StackVertex("", -1, 3);
 
         //Test stack with variable length + mask arrays
-        INDArray in0 = Nd4j.rand(new int[] {5, 2, 5});
-        INDArray in1 = Nd4j.rand(new int[] {5, 2, 6});
-        INDArray in2 = Nd4j.rand(new int[] {5, 2, 7});
+        INDArray in0 = Nd4j.rand(new int[]{5, 2, 5});
+        INDArray in1 = Nd4j.rand(new int[]{5, 2, 6});
+        INDArray in2 = Nd4j.rand(new int[]{5, 2, 7});
 
         INDArray mask0 = Nd4j.ones(5, 5);
         INDArray mask1 = Nd4j.ones(5, 6);
@@ -342,7 +343,7 @@ public class TestGraphNodes {
         Activations a = af.createTriple(in0, in1, in2, mask0, mask1, mask2,
                 MaskState.Active, MaskState.Active, MaskState.Active);
         Activations out = stack.activate(a, false);
-        assertArrayEquals(new int[] {15, 7}, out.getMask(0).shape());
+        assertArrayEquals(new int[]{15, 7}, out.getMask(0).shape());
         assertEquals(MaskState.Active, out.getMaskState(0));
 
         assertEquals(in0, out.get(0).get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
@@ -358,11 +359,11 @@ public class TestGraphNodes {
         //Test unstack with variable length + mask arrays
         //Note that we don't actually need changes here - unstack has a single input, and the unstacked mask
         //might be a bit longer than we really need, but it'll still be correct
-        Layer unstack0 = new UnstackVertex( "u0", 0, 3, 0, 3);
-        Layer unstack1 = new UnstackVertex( "u1", 0, 3, 1, 3);
-        Layer unstack2 = new UnstackVertex( "u2", 0, 3, 2, 3);
+        Layer unstack0 = new UnstackVertex("u0", 0, 3, 0, 3);
+        Layer unstack1 = new UnstackVertex("u1", 0, 3, 1, 3);
+        Layer unstack2 = new UnstackVertex("u2", 0, 3, 2, 3);
 
-        Activations a0 = unstack0.activate(out,true);
+        Activations a0 = unstack0.activate(out, true);
         Activations a1 = unstack1.activate(out, true);
         Activations a2 = unstack2.activate(out, true);
 
@@ -378,9 +379,9 @@ public class TestGraphNodes {
     @Test
     public void testUnstackNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer unstack0 = new UnstackVertex( "", -1, 1, 0, 3);
-        Layer unstack1 = new UnstackVertex( "", -1, 1, 1, 3);
-        Layer unstack2 = new UnstackVertex( "", -1, 1, 2, 3);
+        Layer unstack0 = new UnstackVertex("", -1, 1, 0, 3);
+        Layer unstack1 = new UnstackVertex("", -1, 1, 1, 3);
+        Layer unstack2 = new UnstackVertex("", -1, 1, 2, 3);
 
         INDArray in = Nd4j.rand(15, 2);
         unstack0.setInput(af.create(in));
@@ -412,9 +413,8 @@ public class TestGraphNodes {
         assertEquals(out2, backward2.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
 
 
-
         //Test same for CNNs:
-        in = Nd4j.rand(new int[] {15, 10, 3, 3});
+        in = Nd4j.rand(new int[]{15, 10, 3, 3});
         unstack0.setInput(af.create(in));
         unstack1.setInput(af.create(in));
         unstack2.setInput(af.create(in));
@@ -423,40 +423,40 @@ public class TestGraphNodes {
         out2 = unstack2.activate(false).get(0);
 
         assertEquals(in.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
-                        out0);
+                out0);
         assertEquals(in.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
-                        out1);
+                out1);
         assertEquals(in.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
-                        out2);
+                out2);
 
         backward0 = unstack0.backpropGradient(gf.create(out0)).get(0);
         backward1 = unstack1.backpropGradient(gf.create(out1)).get(0);
         backward2 = unstack2.backpropGradient(gf.create(out2)).get(0);
         assertEquals(out0, backward0.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
 
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward1.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out1, backward1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward1.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
 
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward2.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward2.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out2, backward2.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
     }
 
     @Test
     public void testL2Node() {
         Nd4j.getRandom().setSeed(12345);
-        Layer l2 = new L2Vertex( "", -1, 2, 1e-8);
+        Layer l2 = new L2Vertex("", -1, 2, 1e-8);
 
         INDArray in1 = Nd4j.rand(5, 2);
         INDArray in2 = Nd4j.rand(5, 2);
@@ -478,7 +478,6 @@ public class TestGraphNodes {
         assertEquals(expOut, out);
 
 
-
         INDArray epsilon = Nd4j.rand(5, 1); //dL/dlambda
         INDArray diff = in1.sub(in2);
         //Out == sqrt(s) = s^1/2. Therefore: s^(-1/2) = 1/out
@@ -486,7 +485,6 @@ public class TestGraphNodes {
 
         INDArray dLda = diff.mulColumnVector(epsilon.mul(sNegHalf));
         INDArray dLdb = diff.mulColumnVector(epsilon.mul(sNegHalf)).neg();
-
 
 
         Gradients p = l2.backpropGradient(gf.create(epsilon));
@@ -497,15 +495,15 @@ public class TestGraphNodes {
     @Test
     public void testReshapeNode() {
         Nd4j.getRandom().setSeed(12345);
-        Layer reshapeVertex = new ReshapeVertex( "", -1, 1, 'c', new int[] {-1, 736}, null);
+        Layer reshapeVertex = new ReshapeVertex("", -1, 1, 'c', new int[]{-1, 736}, null);
 
-        int[] inputShape = new int[] {1, 1, 1, 736};
+        int[] inputShape = new int[]{1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);
 
         reshapeVertex.setInput(af.create(input));
         INDArray out = reshapeVertex.activate(false).get(0);
 
-        assertArrayEquals(new int[] {1, 736}, out.shape());
+        assertArrayEquals(new int[]{1, 736}, out.shape());
 
         INDArray[] backward = reshapeVertex.backpropGradient(gf.create(out)).getActivationGradAsArray();
         assert (Arrays.equals(backward[0].shape(), inputShape));
@@ -515,18 +513,18 @@ public class TestGraphNodes {
     public void testJSON() {
         //The config here is non-sense, but that doesn't matter for config -> json -> config test
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                                        .addVertex("v1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "in")
-                                        .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in", "in")
-                                        .addVertex("v3", new PreprocessorVertex(
-                                                        new CnnToFeedForwardPreProcessor(1, 2, 1)), "in")
-                                        .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0, 1), "in")
-                                        .addVertex("v5", new DuplicateToTimeSeriesVertex(), "in", "in")
-                                        .addVertex("v6", new LastTimeStepVertex(), "in")
-                                        .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
-                                        .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
-                                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
-                                        .setOutputs("out").build();
+                new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        .add("v1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "in")
+                        .add("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in", "in")
+                        .add("v3", new PreprocessorVertex(
+                                new CnnToFeedForwardPreProcessor(1, 2, 1)), "in")
+                        .add("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0, 1), "in")
+                        .add("v5", new DuplicateToTimeSeriesVertex(), "in", "in")
+                        .add("v6", new LastTimeStepVertex(), "in")
+                        .add("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
+                        .add("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                        .setOutputs("out").build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
@@ -535,7 +533,7 @@ public class TestGraphNodes {
 
 
     @Test
-    public void testLastTimeStepWithTransfer(){
+    public void testLastTimeStepWithTransfer() {
         int lstmLayerSize = 16;
         int numLabelClasses = 10;
         int numInputs = 5;
@@ -576,7 +574,7 @@ public class TestGraphNodes {
 
         assertArrayEquals(new int[]{10, numLabelClasses}, out[0].shape());
 
-        Map<String,INDArray> acts = updatedModel.feedForward(input, false);
+        Map<String, INDArray> acts = updatedModel.feedForward(input, false);
 
         assertEquals(4, acts.size());   //2 layers + input + vertex output
         assertNotNull(acts.get("laststepoutput"));

@@ -87,7 +87,7 @@ public class TestComputationGraphNetwork {
         //Get topological sort order
         List<String> topoOrder = graph.topologicalSortOrder();
         int[] order = new int[topoOrder.size()];
-        for( int i=0; i<order.length; i++ ){
+        for (int i = 0; i < order.length; i++) {
             order[i] = graph.getVerticesMap().get(topoOrder.get(i)).getIndex();
         }
         int[] expOrder = new int[]{0, 1, 2};
@@ -126,7 +126,7 @@ public class TestComputationGraphNetwork {
         DataSet ds = iris.next();
 
         Activations a = af.create(ds.getFeatures());
-        Map<String, Activations> activations = graph.feedForward(a,false);
+        Map<String, Activations> activations = graph.feedForward(a, false);
         assertEquals(3, activations.size()); //2 layers + 1 input node
         assertTrue(activations.containsKey("input"));
         assertTrue(activations.containsKey("firstLayer"));
@@ -485,14 +485,14 @@ public class TestComputationGraphNetwork {
                         .updater(new Sgd(1e-6))
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0", new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .encoderLayerSizes(5).decoderLayerSizes(5).build(), "in")
+                                .encoderLayerSizes(5).decoderLayerSizes(5).build(), "in")
                         .addLayer("layer1", new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .encoderLayerSizes(5).decoderLayerSizes(5).build(),"in")
+                                .encoderLayerSizes(5).decoderLayerSizes(5).build(), "in")
                         .addLayer("layer2", new VariationalAutoencoder.Builder().nIn(3).nOut(3)
                                         .encoderLayerSizes(5).decoderLayerSizes(5).build(),
                                 "layer1")
                         .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                        LossFunctions.LossFunction.MCXENT).nIn(3+3).nOut(3)
+                                        LossFunctions.LossFunction.MCXENT).nIn(3 + 3).nOut(3)
                                         .weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
@@ -599,10 +599,10 @@ public class TestComputationGraphNetwork {
         ComputationGraph e = new ComputationGraph(external);
         e.init();
 
-        Pair<Gradients,Double> p = s.computeGradientAndScore(af.create(inData), af.create(outData));
+        Pair<Gradients, Double> p = s.computeGradientAndScore(af.create(inData), af.create(outData));
         Gradient sGrad = p.getFirst().getParameterGradients();
 
-        Map<String,Activations> activations = s.feedForward(af.create(inData));
+        Map<String, Activations> activations = s.feedForward(af.create(inData));
         org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
         ol.setInput(activations.get("l0"));
         ol.setLabels(af.create(outData));
@@ -854,7 +854,7 @@ public class TestComputationGraphNetwork {
         ComputationGraph modelNow =
                 new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre2").build();
         System.out.println(modelNow.summary());
-        System.out.println(modelNow.summary(InputType.feedForward(10),InputType.feedForward(2)));
+        System.out.println(modelNow.summary(InputType.feedForward(10), InputType.feedForward(2)));
     }
 
     @Test
@@ -956,7 +956,6 @@ public class TestComputationGraphNetwork {
 
         //When a vertex supports only one input, and gets multiple inputs - we should automatically add a merge
         //vertex
-
         Layer[] singleInputVertices = new Layer[]{new L2NormalizeVertex(), new DenseLayer.Builder().build(),
                 new PoolHelperVertex(), new PreprocessorVertex(), new ReshapeVertex(1, 1),
                 new ScaleVertex(1.0),
@@ -965,7 +964,8 @@ public class TestComputationGraphNetwork {
 
         for (Layer gv : singleInputVertices) {
             ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder()
-                    .addInputs("in1", "in2").addVertex("gv", gv, "in1", "in2").setOutputs("gv").build();
+                    .addInputs("in1", "in2")
+                    .add("gv", gv, "in1", "in2").setOutputs("gv").build();
 
             boolean foundMerge = false;
             for (Layer g : c.getVertices().values()) {
@@ -997,7 +997,7 @@ public class TestComputationGraphNetwork {
                 .addInputs("input")
                 .addLayer("L1", new ConvolutionLayer.Builder(new int[]{1, 1}, new int[]{1, 1}, new int[]{0, 0}).nIn(depth).nOut(depth)
                         .build(), "input")
-                .addVertex("L2", new ReshapeVertex(minibatch, 1, 36, 48), "L1")
+                .add("L2", new ReshapeVertex(minibatch, 1, 36, 48), "L1")
                 .setOutputs("L2")
                 .build();
 
@@ -1031,10 +1031,10 @@ public class TestComputationGraphNetwork {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        for( int i=0; i<4; i++ ){
+        for (int i = 0; i < 4; i++) {
             assertEquals(i, net.getConfiguration().getEpochCount());
             net.fit(iter);
-            assertEquals(i+1, net.getConfiguration().getEpochCount());
+            assertEquals(i + 1, net.getConfiguration().getEpochCount());
         }
 
         assertEquals(4, net.getConfiguration().getEpochCount());
@@ -1061,9 +1061,9 @@ public class TestComputationGraphNetwork {
                         .addInputs("in")
                         .addLayer("layer0", new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                 .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
-                                        WeightInit.RELU).build(),"in") //Output: (130-10+0)/4+1 = 31 -> 31*31*30
+                                        WeightInit.RELU).build(), "in") //Output: (130-10+0)/4+1 = 31 -> 31*31*30
                         .addLayer("layer1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                .kernelSize(3, 3).stride(2, 2).build(),"layer0") //(31-3+0)/2+1 = 15
+                                .kernelSize(3, 3).stride(2, 2).build(), "layer0") //(31-3+0)/2+1 = 15
                         .addLayer("layer2", new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                 .activation(Activation.RELU).weightInit(WeightInit.RELU)
                                 .updater(Updater.ADAGRAD).build(), "layer1") //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
@@ -1091,6 +1091,6 @@ public class TestComputationGraphNetwork {
         ComputationGraph modelMow = new TransferLearning.GraphBuilder(modelExpectedArch).setFeatureExtractor("layer2").build();
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
-        System.out.println(modelExpectedArch.summary(InputType.recurrent(V_HEIGHT* V_WIDTH* 3)));
+        System.out.println(modelExpectedArch.summary(InputType.recurrent(V_HEIGHT * V_WIDTH * 3)));
     }
 }

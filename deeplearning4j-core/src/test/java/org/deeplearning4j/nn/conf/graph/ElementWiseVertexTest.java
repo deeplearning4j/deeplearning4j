@@ -71,7 +71,7 @@ public class ElementWiseVertexTest {
                          * at org.deeplearning4j.nn.graph.ComputationGraph.init(ComputationGraph.java:409)
                          * at org.deeplearning4j.nn.graph.ComputationGraph.init(ComputationGraph.java:341)
                          */
-                        .addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "input1",
+                        .add("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "input1",
                                         "input2", "input3")
                         .addLayer("Add", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "elementwiseAdd")
@@ -112,7 +112,7 @@ public class ElementWiseVertexTest {
                          * at org.deeplearning4j.nn.graph.ComputationGraph.init(ComputationGraph.java:409)
                          * at org.deeplearning4j.nn.graph.ComputationGraph.init(ComputationGraph.java:341)
                          */
-                        .addVertex("elementwiseProduct", new ElementWiseVertex(ElementWiseVertex.Op.Product), "input1",
+                        .add("elementwiseProduct", new ElementWiseVertex(ElementWiseVertex.Op.Product), "input1",
                                         "input2", "input3")
                         .addLayer("Product", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "elementwiseProduct")
@@ -153,7 +153,7 @@ public class ElementWiseVertexTest {
                          * at org.deeplearning4j.nn.graph.ComputationGraph.init(ComputationGraph.java:409)
                          * at org.deeplearning4j.nn.graph.ComputationGraph.init(ComputationGraph.java:341)
                          */
-                        .addVertex("elementwiseSubtract", new ElementWiseVertex(ElementWiseVertex.Op.Subtract),
+                        .add("elementwiseSubtract", new ElementWiseVertex(ElementWiseVertex.Op.Subtract),
                                         "input1", "input2")
                         .addLayer("Subtract", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "elementwiseSubtract")
@@ -190,7 +190,7 @@ public class ElementWiseVertexTest {
                 .addLayer("dense2",
                         new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),"input2")
                 .addLayer("dense3",new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(Activation.TANH).build(),"input3")
-                .addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2", "dense3")
+                .add("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2", "dense3")
                 .addLayer("output",
                         new OutputLayer.Builder().nIn(midsz).nOut(outputsz)
                                 .activation(new ActivationSigmoid())
@@ -360,8 +360,8 @@ public class ElementWiseVertexTest {
                                         new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
                                                         .activation(new ActivationTanH()).build(),
                                         "input3")
-                        .addVertex("elementwiseProduct", new ElementWiseVertex(ElementWiseVertex.Op.Product), "dense1",
-                                        "dense2", "dense3")
+                        .add("elementwiseProduct", new ElementWiseVertex(ElementWiseVertex.Op.Product),
+                                "dense1", "dense2", "dense3")
                         .addLayer("output",
                                         new OutputLayer.Builder().nIn(midsz).nOut(outputsz)
                                                         .activation(new ActivationSigmoid())
@@ -526,7 +526,7 @@ public class ElementWiseVertexTest {
                                         new DenseLayer.Builder().nIn(featuresz).nOut(midsz)
                                                         .activation(new ActivationTanH()).build(),
                                         "input2")
-                        .addVertex("elementwiseSubtract", new ElementWiseVertex(ElementWiseVertex.Op.Subtract),
+                        .add("elementwiseSubtract", new ElementWiseVertex(ElementWiseVertex.Op.Subtract),
                                         "dense1", "dense2")
                         .addLayer("output",
                                         new OutputLayer.Builder().nIn(midsz).nOut(outputsz)

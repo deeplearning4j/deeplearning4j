@@ -22,7 +22,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -114,7 +113,7 @@ public class ZeroPadding1DLayer extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
-        if(inputTypes == null || inputTypes.length != 1){
+        if (inputTypes == null || inputTypes.length != 1) {
             throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
         }
         InputType inputType = inputTypes[0];
@@ -129,17 +128,17 @@ public class ZeroPadding1DLayer extends Layer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
-        private int[] padding = new int[] {0, 0}; //Padding: left, right
+        private int[] padding = new int[]{0, 0}; //Padding: left, right
 
         /**
-         * @param padding  Padding for both the left and right
+         * @param padding Padding for both the left and right
          */
         public Builder(int padding) {
             this(padding, padding);
         }
 
         public Builder(int padLeft, int padRight) {
-            this(new int[] {padLeft, padRight});
+            this(new int[]{padLeft, padRight});
         }
 
         public Builder(int[] padding) {

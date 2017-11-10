@@ -5,16 +5,12 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Upsampling1D;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -41,19 +37,19 @@ public class Upsampling1DTest {
     @Test
     public void testUpsampling1D() throws Exception {
 
-        double[] outArray = new double[] {1., 1., 2., 2., 3., 3., 4., 4.};
-        INDArray containedExpectedOut = Nd4j.create(outArray, new int[] {1, 1, 8});
+        double[] outArray = new double[]{1., 1., 2., 2., 3., 3., 4., 4.};
+        INDArray containedExpectedOut = Nd4j.create(outArray, new int[]{1, 1, 8});
         INDArray containedInput = getContainedData();
         INDArray input = getData();
-        Layer layer =  getUpsampling1DLayer();
+        Layer layer = getUpsampling1DLayer();
 
         INDArray containedOutput = layer.activate(af.create(containedInput)).get(0);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
 
         INDArray output = layer.activate(af.create(input)).get(0);
-        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, outputLength},
-                        output.shape()));
+        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, outputLength},
+                output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4);
     }
 
@@ -61,11 +57,11 @@ public class Upsampling1DTest {
     @Test
     public void testUpsampling1DBackprop() throws Exception {
         INDArray expectedContainedEpsilonInput =
-                        Nd4j.create(new double[] {1., 3., 2., 6., 7., 2., 5., 5.},
-                                new int[] {1, 1, 8});
+                Nd4j.create(new double[]{1., 3., 2., 6., 7., 2., 5., 5.},
+                        new int[]{1, 1, 8});
 
-        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {4., 8., 9., 10.},
-                        new int[] {1, 1, 4});
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[]{4., 8., 9., 10.},
+                new int[]{1, 1, 4});
 
         INDArray input = getContainedData();
 
@@ -106,8 +102,8 @@ public class Upsampling1DTest {
 
     private INDArray getContainedData() {
         INDArray ret = Nd4j.create
-                (new double[] {1., 2., 3., 4.},
-                        new int[] {1, 1, 4});
+                (new double[]{1., 2., 3., 4.},
+                        new int[]{1, 1, 4});
         return ret;
     }
 

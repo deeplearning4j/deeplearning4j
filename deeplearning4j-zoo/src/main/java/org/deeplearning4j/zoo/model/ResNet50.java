@@ -116,7 +116,7 @@ public class ResNet50 extends ZooModel {
                                         activationName + "2b")
                         .addLayer(batchName + "2c", new BatchNormalization(), convName + "2c")
 
-                        .addVertex(shortcutName, new ElementWiseVertex(ElementWiseVertex.Op.Add), batchName + "2c",
+                        .add(shortcutName, new ElementWiseVertex(ElementWiseVertex.Op.Add), batchName + "2c",
                                         input)
                         .addLayer(convName, new ActivationLayer.Builder().activation(Activation.RELU).build(),
                                         shortcutName);
@@ -162,7 +162,7 @@ public class ResNet50 extends ZooModel {
                         .addLayer(batchName + "1", new BatchNormalization(), convName + "1")
 
 
-                        .addVertex(shortcutName, new ElementWiseVertex(ElementWiseVertex.Op.Add), batchName + "2c",
+                        .add(shortcutName, new ElementWiseVertex(ElementWiseVertex.Op.Add), batchName + "2c",
                                         batchName + "1")
                         .addLayer(convName, new ActivationLayer.Builder().activation(Activation.RELU).build(),
                                         shortcutName);

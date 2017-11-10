@@ -89,7 +89,7 @@ public class ShiftVertexTest {
                          */
                         .addLayer("identityinputactivation",
                                         new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "input")
-                        .addVertex("shiftvertex", new ShiftVertex(sf), "identityinputactivation")
+                        .add("shiftvertex", new ShiftVertex(sf), "identityinputactivation")
                         .addLayer("identityshiftvertex",
                                         new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "shiftvertex")
@@ -135,7 +135,7 @@ public class ShiftVertexTest {
                                         new DenseLayer.Builder().nIn(input.columns()).nOut(input.columns())
                                                         .activation(a1).build(),
                                         "input")
-                        .addVertex("shiftvertex", new ShiftVertex(sf), "denselayer")
+                        .add("shiftvertex", new ShiftVertex(sf), "denselayer")
                         .addLayer("output",
                                         new OutputLayer.Builder().nIn(input.columns()).nOut(target.columns())
                                                         .activation(a2).lossFunction(LossFunction.MSE).build(),

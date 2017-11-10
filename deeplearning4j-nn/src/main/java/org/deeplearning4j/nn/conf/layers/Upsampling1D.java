@@ -21,13 +21,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -99,7 +96,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType... inputTypes) {
-        if(inputTypes == null || inputTypes.length != 1){
+        if (inputTypes == null || inputTypes.length != 1) {
             throw new IllegalArgumentException("Expected 1 input type: got " + (inputTypes == null ? null : Arrays.toString(inputTypes)));
         }
         InputType inputType = inputTypes[0];
@@ -129,7 +126,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         /**
          * Upsampling size
          *
-         * @param size    upsampling size in height and width dimensions
+         * @param size upsampling size in height and width dimensions
          */
         public Builder size(int size) {
 

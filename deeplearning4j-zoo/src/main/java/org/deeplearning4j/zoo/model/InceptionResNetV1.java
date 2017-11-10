@@ -81,7 +81,7 @@ public class InceptionResNetV1 extends ZooModel {
                         .addLayer("bottleneck", new DenseLayer.Builder().nIn(5376).nOut(embeddingSize).build(),
                                         "avgpool")
                         // Embeddings
-                        .addVertex("embeddings", new L2NormalizeVertex(new int[] {1}, 1e-10), "bottleneck")
+                        .add("embeddings", new L2NormalizeVertex(new int[] {1}, 1e-10), "bottleneck")
                         // Output
                         .addLayer("outputLayer",
                                         new CenterLossOutputLayer.Builder()
@@ -213,7 +213,7 @@ public class InceptionResNetV1 extends ZooModel {
                                                         new int[] {2, 2}).build(),
                                         "resnetA")
                         // -->
-                        .addVertex("reduceA", new MergeVertex(), "reduceA-batch1", "reduceA-batch4", "reduceA-pool5");
+                        .add("reduceA", new MergeVertex(), "reduceA-batch1", "reduceA-batch4", "reduceA-pool5");
 
 
         // 10xInception-resnet-B
@@ -294,7 +294,7 @@ public class InceptionResNetV1 extends ZooModel {
                                                         .build(),
                                         "reduceB-cnn8")
                         // -->
-                        .addVertex("reduceB", new MergeVertex(), "reduceB-pool1", "reduceB-batch2", "reduceB-batch4",
+                        .add("reduceB", new MergeVertex(), "reduceB-pool1", "reduceB-batch2", "reduceB-batch4",
                                         "reduceB-batch7");
 
 

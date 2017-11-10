@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -15,12 +14,12 @@ import java.util.Arrays;
  * Specifically, since this layer accepts RNN (not CNN) InputTypes, we
  * need to add a singleton fourth dimension before calling the respective
  * superclass method, then remove it from the result.
- *
+ * <p>
  * This approach treats a multivariate time series with L timesteps and
  * P variables as an L x 1 x P image (L rows high, 1 column wide, P
  * channels deep). The kernel should be H<L pixels high and W=1 pixels
  * wide.
- *
+ * <p>
  * TODO: We will eventually want to add a 1D-specific im2col method.
  *
  * @author dave@skymind.io
@@ -35,9 +34,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
         INDArray epsilon = gradients.get(0);
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
-                            + " array as epsilon for Convolution1DLayer backprop with shape "
-                            + Arrays.toString(epsilon.shape())
-                            + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
+                    + " array as epsilon for Convolution1DLayer backprop with shape "
+                    + Arrays.toString(epsilon.shape())
+                    + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
 
         INDArray input = this.input.get(0);
 

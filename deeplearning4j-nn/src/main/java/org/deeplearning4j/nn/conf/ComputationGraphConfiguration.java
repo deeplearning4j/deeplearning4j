@@ -965,6 +965,14 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
             return this;
         }
 
+
+        /**
+         * Add a {@link Layer} (formerly a GraphVertex) to the network configuration.
+         *
+         * @param layerName   The name of the Layer to add
+         * @param layer      The Layer to add
+         * @param layerInputs The inputs/activations to this Layer
+         */
         public GraphBuilder add(String layerName, Layer layer, String... layerInputs){
             return layer(layerName, layer, layerInputs);
         }
@@ -975,7 +983,7 @@ public class ComputationGraphConfiguration implements OptimizationConfig, Serial
          * @param vertexName   The name of the Layer to add
          * @param vertex       The Layer to add
          * @param vertexInputs The inputs/activations to this Layer
-         * @deprecated Use
+         * @deprecated Use add instead
          */
         @Deprecated
         public GraphBuilder addVertex(String vertexName, Layer vertex, String... vertexInputs){

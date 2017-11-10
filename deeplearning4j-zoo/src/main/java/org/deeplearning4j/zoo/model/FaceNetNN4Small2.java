@@ -179,7 +179,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                         .addLayer("3c-pool", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX,
                                         new int[] {3, 3}, new int[] {2, 2}, new int[] {1, 1}).build(), "inception-3b")
 
-                        .addVertex("inception-3c", new MergeVertex(), "3c-transfer2", "3c-2-transfer4", "3c-pool");
+                        .add("inception-3c", new MergeVertex(), "3c-transfer2", "3c-2-transfer4", "3c-pool");
 
         // Inception 4a
         FaceNetHelper.appendGraph(graph, "4a", 640, new int[] {3, 5}, new int[] {1, 1}, new int[] {192, 64},
@@ -227,7 +227,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                         .addLayer("4e-pool", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX,
                                         new int[] {3, 3}, new int[] {2, 2}, new int[] {1, 1}).build(), "inception-4a")
 
-                        .addVertex("inception-4e", new MergeVertex(), "4e-transfer2", "4e-2-transfer4", "4e-pool");
+                        .add("inception-4e", new MergeVertex(), "4e-transfer2", "4e-2-transfer4", "4e-pool");
 
         // Inception 5a
         //    Inception.appendGraph(graph, "5a", 1024,
@@ -271,7 +271,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                         .addLayer("5a-3-transfer4", new ActivationLayer.Builder().activation(Activation.RELU).build(),
                                         "5a-3-1x1reduce-norm")
 
-                        .addVertex("inception-5a", new MergeVertex(), "5a-transfer1", "5a-transfer3", "5a-3-transfer4");
+                        .add("inception-5a", new MergeVertex(), "5a-transfer1", "5a-transfer3", "5a-3-transfer4");
 
 
         // Inception 5b
@@ -316,7 +316,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                         .addLayer("5b-3-transfer4", new ActivationLayer.Builder().activation(transferFunction).build(),
                                         "5b-3-1x1reduce-norm")
 
-                        .addVertex("inception-5b", new MergeVertex(), "5b-transfer1", "5b-2-transfer3",
+                        .add("inception-5b", new MergeVertex(), "5b-transfer1", "5b-2-transfer3",
                                         "5b-3-transfer4");
 
         graph.addLayer("avgpool",
@@ -327,7 +327,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                                         new DenseLayer.Builder().nIn(2944).nOut(embeddingSize)
                                                         .activation(Activation.IDENTITY).build(),
                                         "avgpool")
-                        .addVertex("embeddings", new L2NormalizeVertex(new int[] {}, 1e-6), "bottleneck")
+                        .add("embeddings", new L2NormalizeVertex(new int[] {}, 1e-6), "bottleneck")
                         .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                                         .activation(Activation.SOFTMAX).nIn(128).nOut(numLabels).lambda(1e-4).alpha(0.9)

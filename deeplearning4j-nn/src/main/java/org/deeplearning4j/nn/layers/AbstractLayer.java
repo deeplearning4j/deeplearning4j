@@ -22,12 +22,10 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
-import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -45,12 +43,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected Activations input;
     protected int inputMinibatchSize;   //TODO eventially this field should be removed somehow...
-    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     protected INDArray preOutput;
     protected org.deeplearning4j.nn.conf.layers.Layer conf;
     protected boolean preprocessorApplied = false;
     protected boolean dropoutApplied = false;
-    @Getter @Setter
+    @Getter
+    @Setter
     protected int index = 0;
     protected int numInputs = 1;
     protected int numOutput = 1;
@@ -75,7 +75,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public String getName(){
+    public String getName() {
         return conf.getLayerName();
     }
 
@@ -97,12 +97,12 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public Activations getInput(){
+    public Activations getInput() {
         return input;
     }
 
     @Override
-    public void setInput(Activations input){
+    public void setInput(Activations input) {
         this.input = input;
         this.dropoutApplied = false;
         this.preprocessorApplied = false;
@@ -118,7 +118,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         this.conf = conf;
     }
 
-    /**Returns the parameters of the neural network as a flattened row vector
+    /**
+     * Returns the parameters of the neural network as a flattened row vector
+     *
      * @return the parameters of the neural network
      */
     @Override
@@ -184,7 +186,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected void applyMask(INDArray to) {
-        if(input.getMaskState(0) == MaskState.Active){
+        if (input.getMaskState(0) == MaskState.Active) {
             //See MaskState javadoc - Masks shouldn't always be applied, even if present
             to.muliColumnVector(input.getMask(0));
         }
@@ -197,7 +199,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public Activations activate(Activations input){
+    public Activations activate(Activations input) {
         return activate(input, false);
     }
 
@@ -225,8 +227,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         preOutput = null;
     }
 
-    protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
-        if(training && !dropoutApplied && layerConf().getIDropout() != null ){
+    protected void applyDropOutIfNecessary(boolean training) {//} int iteration, int epoch) {
+        if (training && !dropoutApplied && layerConf().getIDropout() != null) {
             input = input.cloneShallow();   //Reason: some layers/vertices will pass through their activations objects without modification. Changes to this activations object should not impact other layers
 
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
@@ -244,15 +246,15 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         }
     }
 
-    protected void applyPreprocessorIfNecessary(boolean training){
-        if(!preprocessorApplied && layerConf().getPreProcessor() != null){
+    protected void applyPreprocessorIfNecessary(boolean training) {
+        if (!preprocessorApplied && layerConf().getPreProcessor() != null) {
             input = layerConf().getPreProcessor().preProcess(input, getInputMiniBatchSize(), training);
             preprocessorApplied = true;
         }
     }
 
-    protected Gradients backpropPreprocessor(Gradients gradients){
-        if(layerConf().getPreProcessor() != null){
+    protected Gradients backpropPreprocessor(Gradients gradients) {
+        if (layerConf().getPreProcessor() != null) {
             return layerConf().getPreProcessor().backprop(gradients, getInputMiniBatchSize());
         }
         return gradients;
@@ -285,9 +287,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
 
     @Override
-    public void applyConstraints(int iteration, int epoch){
-        if(layerConf().getConstraints() != null){
-            for(LayerConstraint lc : layerConf().getConstraints()){
+    public void applyConstraints(int iteration, int epoch) {
+        if (layerConf().getConstraints() != null) {
+            for (LayerConstraint lc : layerConf().getConstraints()) {
                 lc.applyConstraint(this, iteration, epoch);
             }
         }
@@ -296,7 +298,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public InputPreProcessor getPreProcessor() {
-        if(conf != null){
+        if (conf != null) {
             return conf.getPreProcessor();
         }
         return null;
