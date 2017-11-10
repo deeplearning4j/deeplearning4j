@@ -45,6 +45,35 @@ public class TestImageTransform {
     static final OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
     @Test
+    public void testBoxImageTransform() throws Exception {
+        ImageTransform transform = new BoxImageTransform(rng, 237, 242).borderValue(Scalar.GRAY);
+
+        for (int i = 0; i < 100; i++) {
+            ImageWritable writable = makeRandomImage(0, 0, i % 4 + 1);
+            Frame frame = writable.getFrame();
+
+            ImageWritable w = transform.transform(writable);
+            Frame f = w.getFrame();
+            assertEquals(237, f.imageWidth);
+            assertEquals(242, f.imageHeight);
+            assertEquals(frame.imageChannels, f.imageChannels);
+
+            float[] coordinates = {1, 2, 3, 4, 0, 0};
+            float[] transformed = transform.query(coordinates);
+            int x = (frame.imageWidth - f.imageWidth) / 2;
+            int y = (frame.imageHeight - f.imageHeight) / 2;
+
+            assertEquals(1 - x, transformed[0], 0);
+            assertEquals(2 - y, transformed[1], 0);
+            assertEquals(3 - x, transformed[2], 0);
+            assertEquals(4 - y, transformed[3], 0);
+            assertEquals(  - x, transformed[4], 0);
+            assertEquals(  - y, transformed[5], 0);
+        }
+        assertEquals(null, transform.transform(null));
+    }
+
+    @Test
     public void testCropImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 1);
         Frame frame = writable.getFrame();

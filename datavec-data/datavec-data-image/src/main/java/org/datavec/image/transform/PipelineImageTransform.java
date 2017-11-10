@@ -82,7 +82,7 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
 
     public PipelineImageTransform(Random random, long seed, List<Pair<ImageTransform, Double>> transforms,
                     boolean shuffle) {
-        super(null); // for perf reasons we ignore java Random, create our own
+        super(random); // used by the transforms in the pipeline
         this.imageTransforms = transforms;
         this.shuffle = shuffle;
         this.rng = Nd4j.getRandom();
@@ -104,7 +104,8 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         // execute each item in the pipeline
         for (Pair<ImageTransform, Double> tuple : imageTransforms) {
             if (tuple.getSecond() == 1.0 || rng.nextDouble() < tuple.getSecond()) { // probability of execution
-                image = tuple.getFirst().transform(image);
+                image = random != null ? tuple.getFirst().transform(image, random)
+                                       : tuple.getFirst().transform(image);
             }
         }
 
