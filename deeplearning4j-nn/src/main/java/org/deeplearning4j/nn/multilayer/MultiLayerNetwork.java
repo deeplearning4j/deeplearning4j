@@ -97,8 +97,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected INDArray input, labels;
 
     protected boolean initCalled = false;
-    private Collection<IterationListener> listeners = new ArrayList<>();
-    private Collection<TrainingListener> trainingListeners = new ArrayList<>();
+    protected Collection<IterationListener> listeners = new ArrayList<>();
+    protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
@@ -1015,8 +1015,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         return ret;
     }
-
-    private boolean hasAFrozenLayer() {
+    
+    protected boolean hasAFrozenLayer() {
         for (int i = 0; i < layers.length - 1; i++) {
             if (layers[i] instanceof FrozenLayer)
                 return true;
@@ -2953,8 +2953,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         return e;
     }
-
-    private void update(Task task) {
+    
+    protected void update(Task task) {
         if (!initDone) {
             initDone = true;
             Heartbeat heartbeat = Heartbeat.getInstance();
