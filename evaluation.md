@@ -74,7 +74,7 @@ By default the .stats() method displays the confusion matrix entries (one per li
 
 * Confusion Matrix
 * False Positive/Negative Rate
-* True Positive/Negatice
+* True Positive/Negative
 * Class Counts
 * F-beta, G-measure, Matthews Correlation Coefficient and more, see [Evaluation JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
 
@@ -221,7 +221,3 @@ Evaluation Classes useful for Multi-Task Network
 See [ROCMultiClass JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCMultiClass.html)
 
 See [ROCBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCBinary.html)
-
-
-
-
