@@ -15,6 +15,10 @@ import java.util.Map;
 @Builder
 public class EmrConfig {
 
+    protected String classification;
+    protected Map<String, String> properties;
+    protected List<EmrConfig> configs;
+
     Configuration toAwsConfig() {
         Configuration config = new Configuration().withClassification(classification).withProperties(properties);
         List<Configuration> subConfigs = new ArrayList<>();
@@ -23,9 +27,5 @@ public class EmrConfig {
         }
         return config.withConfigurations(subConfigs);
     }
-
-    protected String classification;
-    protected Map<String, String> properties;
-    protected List<EmrConfig> configs;
 
 }

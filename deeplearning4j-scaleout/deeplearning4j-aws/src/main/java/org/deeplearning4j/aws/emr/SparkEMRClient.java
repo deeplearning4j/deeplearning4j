@@ -6,6 +6,7 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuild
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -140,7 +141,7 @@ public class SparkEMRClient {
 
     // The actual job-sumission logic
     private void submitJob(AmazonElasticMapReduce emr, String mainClass, List<String> args, Map<String, String> sparkConfs, File uberJar) throws Exception {
-        S3Url s3Jar = new S3Url(sparkS3JarFolder + "/" + uberJar.getName());
+        AmazonS3URI s3Jar = new AmazonS3URI(sparkS3JarFolder + "/" + uberJar.getName());
         log.info(String.format("Placing uberJar %s to %s", uberJar.getPath(), s3Jar.toString()));
         PutObjectRequest putRequest = sparkS3PutObjectDecorator.call(
                 new PutObjectRequest(s3Jar.getBucket(), s3Jar.getKey(), uberJar)
