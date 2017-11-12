@@ -3074,6 +3074,74 @@ TEST_F(DeclarableOpsTests, Stack_6) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Test_Stack_Edge_1) {
+    float inBuff[]  = {1.0f, 2.0f, 3.0f};
+    float expBuff[] = {1.0f, 2.0f, 3.0f};
+
+    NDArray<float> input(inBuff, 'c', {1, 3});
+
+    NDArray<float> exp(expBuff, 'c', {1, 3});
+
+    nd4j::ops::stack<float> op;
+
+    auto result = op.execute({&input}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Test_Stack_Edge_2) {
+    float inBuff[]  = {1.0f, 2.0f, 3.0f};
+    float expBuff[] = {1.0f, 2.0f, 3.0f};
+
+    NDArray<float> input(inBuff, 'c', {1, 1, 3});
+
+    NDArray<float> exp(expBuff, 'c', {1, 1, 1, 3});
+
+    nd4j::ops::stack<float> op;
+
+    auto result = op.execute({&input}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Test_Stack_Edge_3) {
+    float inBuff[]  = {1.0f, 2.0f, 3.0f};
+    float expBuff[] = {1.0f, 2.0f, 3.0f};
+
+    NDArray<float> input(inBuff, 'c', {1, 3});
+
+    NDArray<float> exp(expBuff, 'c', {3, 1});
+
+    nd4j::ops::stack<float> op;
+
+    auto result = op.execute({&input}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    z->printShapeInfo();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, Reverse_1 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};

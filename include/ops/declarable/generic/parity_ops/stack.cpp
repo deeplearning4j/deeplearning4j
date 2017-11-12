@@ -27,11 +27,13 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 1) {
 		list->at(i)->assign(INPUT_VARIABLE(i));
 	
 	// remove unity from output shape if input arrays are vectors 
-	if(input->isVector())
+	if(input->isVector())	
 	{
-		std::vector<int> outShape(output->shapeOf(), output->shapeOf() + output->rankOf());
-		outShape.erase(std::remove(outShape.begin(), outShape.end(), 1), outShape.end());
+		std::vector<int> outShape(output->shapeOf(), output->shapeOf() + output->rankOf());		
+		outShape.erase(find(outShape.begin(), outShape.end(), 1));
 		output->reshapei(output->ordering(), outShape);
+		if(dim != 0 && (int)block.width() == 1)			// such is implemented by tensorFlow
+			output->permutei({1, 0});
 		output->getShapeInfo()[output->rankOf()*2 + 2] = 1;		
 	}
 	
@@ -63,8 +65,6 @@ DECLARE_SHAPE_FN(stack) {
 	outShape.insert(outShape.begin() + dim, inArrNum);
 	// if input arrays are vectors remove unity from shape
 	NDArray<T>* input = INPUT_VARIABLE(0);
-	// if(input->isVector())
-	// 	outShape.erase(std::remove(outShape.begin(), outShape.end(), 1), outShape.end());
 
 	// evaluate output ShapeInfo
 	int newRank = outShape.size();
