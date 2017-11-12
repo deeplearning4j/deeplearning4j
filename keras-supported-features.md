@@ -1,8 +1,10 @@
 ---
 title: Deeplearning4j Keras Model Import - supported features
 layout: default
+redirect_from: keras
 ---
-# Keras model import: supported features
+
+# Keras Model import: Supported Features
 
 While not every concept in DL4J has an equivalent in Keras and vice versa, many of the key concepts can be matched. Importing keras models into DL4J is done in our [deeplearning4j-modelimport](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) module. Below is a comprehensive list of currently supported features.
 
