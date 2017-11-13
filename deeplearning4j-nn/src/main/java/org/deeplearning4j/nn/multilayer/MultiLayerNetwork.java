@@ -338,7 +338,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             layer.fit(layerInput);
         }
-
+    
         // Turn off pretrain after it is complete
         layer.conf().setPretrain(false);
     }

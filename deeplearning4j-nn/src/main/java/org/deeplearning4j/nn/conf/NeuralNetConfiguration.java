@@ -1135,4 +1135,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
     }
 
+    /**
+     * If pretrain == true pretrain is allowed
+     * @return pretrain
+     */
+    public boolean doPretrain() {
+    	return pretrain;
+    }
 }
