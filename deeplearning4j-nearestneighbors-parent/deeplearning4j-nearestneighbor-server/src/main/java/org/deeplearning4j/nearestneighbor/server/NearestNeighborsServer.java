@@ -23,9 +23,7 @@ import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static play.mvc.Controller.request;
 import static play.mvc.Results.*;
@@ -203,6 +201,18 @@ public class NearestNeighborsServer {
                 return internalServerError(e.getMessage());
             }
         })));
+
+        //Set play secret key, if required
+        //http://www.playframework.com/documentation/latest/ApplicationSecret
+        String crypto = System.getProperty("play.crypto.secret");
+        if (crypto == null || "changeme".equals(crypto) || "".equals(crypto)) {
+            byte[] newCrypto = new byte[1024];
+
+            new Random().nextBytes(newCrypto);
+
+            String base64 = Base64.getEncoder().encodeToString(newCrypto);
+            System.setProperty("play.crypto.secret", base64);
+        }
 
         server = Server.forRouter(routingDsl.build(), Mode.PROD, port);
 
