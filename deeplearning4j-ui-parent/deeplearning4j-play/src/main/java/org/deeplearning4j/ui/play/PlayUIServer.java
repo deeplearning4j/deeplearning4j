@@ -189,6 +189,18 @@ public class PlayUIServer extends UIServer {
             }
         }
 
+        //Set play secret key, if required
+        //http://www.playframework.com/documentation/latest/ApplicationSecret
+        String crypto = System.getProperty("play.crypto.secret");
+        if (crypto == null || "changeme".equals(crypto) || "".equals(crypto) ) {
+            byte[] newCrypto = new byte[1024];
+
+            new Random().nextBytes(newCrypto);
+
+            String base64 = Base64.getEncoder().encodeToString(newCrypto);
+            System.setProperty("play.crypto.secret", base64);
+        }
+
         Router router = routingDsl.build();
         server = Server.forRouter(router, Mode.PROD, port);
         this.port = port;
