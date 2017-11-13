@@ -112,15 +112,15 @@ public class FineTuneConfiguration {
     }
 
 
-    public NeuralNetConfiguration appliedNeuralNetConfiguration(NeuralNetConfiguration nnc) {
-        applyToNeuralNetConfiguration(nnc);
-        nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
-        return nnc;
-    }
+//    public NeuralNetConfiguration appliedNeuralNetConfiguration(NeuralNetConfiguration nnc) {
+//
+//        applyToNeuralNetConfiguration(nnc);
+//        nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
+//        return nnc;
+//    }
 
-    public void applyToNeuralNetConfiguration(NeuralNetConfiguration nnc) {
+    public void applyToNeuralNetConfiguration(Layer l, MultiLayerConfiguration nnc) {
 
-        Layer l = nnc.getLayer();
         Updater originalUpdater = null;
         WeightInit origWeightInit = null;
 
@@ -194,11 +194,12 @@ public class FineTuneConfiguration {
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
-        if (nnc.variables(false) != null) {
-            for (String s : nnc.variables(false)) {
-                nnc.setLayerParamLR(s);
-            }
-        }
+        // TODO: fix me
+//        if (nnc.variables(false) != null) {
+//            for (String s : nnc.variables(false)) {
+//                nnc.setLayerParamLR(s);
+//            }
+//        }
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf) {

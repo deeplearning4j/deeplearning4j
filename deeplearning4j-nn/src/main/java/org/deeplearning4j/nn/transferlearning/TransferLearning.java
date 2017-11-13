@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
@@ -285,22 +286,24 @@ public class TransferLearning {
                     layers[i].setConf(layer);
                     layers[i] = new FrozenLayer(layers[i]);
 
-/*                    if (originalLayer.getVariables() != null) {
+                    List<String> keys = originalLayer.initializer().paramKeys(originalLayer);
+
+                    if (keys != null) {
+
+                        originalLayer.initializer().pa
                         List<String> vars = originalLayer.variables(true);
                         originalLayer.clearVariables();
                         layer.clearVariables();
                         for (String s : vars) {
                             originalLayer.variables(false).add(s);
-                            originalLayer.getL1ByParam().put(s, 0.0);
+                            originalLayer.getL1ByParam(s)
+                                    .put(s, 0.0);
                             originalLayer.getL2ByParam().put(s, 0.0);
 
                             layer.variables(false).add(s);
                             layer.getL1ByParam().put(s, 0.0);
                             layer.getL2ByParam().put(s, 0.0);
                         }
-                    }*/
-
-
 
                     Layer origLayer = editedModel.getLayerWiseConfigurations().getConf(i);
                     Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayer);
@@ -353,59 +356,59 @@ public class TransferLearning {
 
 
         private void fineTuneConfigurationBuild() {
-            throw new RuntimeException();
-            /*
+
             for (int i = 0; i < origConf.getConfs().size(); i++) {
-                NeuralNetConfiguration layerConf;
+                Layer layer;
                 if (finetuneConfiguration != null) {
-                    NeuralNetConfiguration nnc = origConf.getConf(i).clone();
-                    finetuneConfiguration.applyToNeuralNetConfiguration(nnc);
-                    layerConf = nnc;
+                    Layer originalLayer = origConf.getConf(i).clone();
+                    finetuneConfiguration.applyToNeuralNetConfiguration(originalLayer, origConf);
+                    layer = originalLayer;
                 } else {
-                    layerConf = origConf.getConf(i).clone();
+                    layer = origConf.getConf(i).clone();
                 }
-                editedConfs.add(layerConf);
-            }*/
+                editedConfs.add(layer);
+            }
         }
 
         private void nOutReplaceBuild(int layerNum, int nOut, Pair<WeightInit, Distribution> schemedist,
                         Pair<WeightInit, Distribution> schemedistNext) {
-            throw new RuntimeException();
-            /*
-            NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
-            Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
-            FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+
+            Layer layer = editedConfs.get(layerNum);
+            FeedForwardLayer layerImplF = (FeedForwardLayer) layer;
             layerImplF.setWeightInit(schemedist.getLeft());
             layerImplF.setDist(schemedist.getRight());
             layerImplF.setNOut(nOut);
-            int numParams = layerImpl.initializer().numParams(layerConf);
+            int numParams = layer.initializer().numParams(layer);
             INDArray params = Nd4j.create(1, numParams);
             String name = null;
-            if(layerConf.getLayer() != null){
-                name = layerConf.getLayer().getLayerName();
+
+
+            if(layer != null){
+                name = layer.getLayerName();
             }
-            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, name,0, 1, params, true);
+            org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(null, name,0,
+                    1, params, true);
             editedParams.set(layerNum, someLayer.params());
 
+
             if (layerNum + 1 < editedConfs.size()) {
-                layerConf = editedConfs.get(layerNum + 1);
-                layerImpl = layerConf.getLayer(); //modify in place
-                layerImplF = (FeedForwardLayer) layerImpl;
+                layer = editedConfs.get(layerNum + 1);
+                layerImplF = (FeedForwardLayer) layer;
                 layerImplF.setWeightInit(schemedistNext.getLeft());
                 layerImplF.setDist(schemedistNext.getRight());
                 layerImplF.setNIn(nOut);
-                numParams = layerImpl.initializer().numParams(layerConf);
+                numParams = layer.initializer().numParams(layer);
                 if (numParams > 0) {
                     params = Nd4j.create(1, numParams);
                     name = null;
-                    if(layerConf.getLayer() != null){
-                        name = layerConf.getLayer().getLayerName();
+                    if(layer != null){
+                        name = layer.getLayerName();
                     }
-                    someLayer = layerImpl.instantiate(layerConf, null, name,0, 1, params, true);
+                    someLayer = layer.instantiate(null, name,0, 1,
+                            params, true);
                     editedParams.set(layerNum + 1, someLayer.params());
                 }
             }
-            */
         }
 
         private INDArray constructParams() {

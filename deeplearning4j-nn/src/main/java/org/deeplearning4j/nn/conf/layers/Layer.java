@@ -54,6 +54,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected CacheMode cacheMode;
 
 
+
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.iDropout = builder.iDropout;
