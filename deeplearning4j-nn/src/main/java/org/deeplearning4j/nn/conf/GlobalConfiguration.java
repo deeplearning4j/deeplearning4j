@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf;
 
-import lombok.Builder;
 import lombok.Data;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;

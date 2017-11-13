@@ -25,7 +25,6 @@ public class SequentialConfiguration extends NeuralNetConfiguration {
         private Map<Integer, Layer> layerwise;
         private Builder globalConfig;
 
-        // Constructor
         public ListBuilder(Builder globalConfig, Map<Integer, Layer> layerMap) {
             this.globalConfig = globalConfig;
             this.layerwise = layerMap;

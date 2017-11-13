@@ -26,8 +26,6 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OldModel;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -63,7 +61,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
  * @author Adam Gibson
  */
 @Slf4j
-public class BarnesHutTsne implements OldModel {
+public class BarnesHutTsne {
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
     protected double initialMomentum = 0.5;
@@ -247,50 +245,40 @@ public class BarnesHutTsne implements OldModel {
 
     }
 
-    @Override
     public INDArray input() {
         return x;
     }
 
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
 
-    @Override
     public INDArray getParam(String param) {
         return null;
     }
 
-    @Override
     public void addListeners(IterationListener... listener) {
         // no-op
     }
 
-    @Override
     public Map<String, INDArray> paramTable() {
         return null;
     }
 
-    @Override
     public Map<String, INDArray> paramTable(boolean backprapParamsOnly) {
         return null;
     }
 
-    @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
 
     }
 
-    @Override
     public void setParam(String key, INDArray val) {
 
     }
 
-    @Override
     public void clear() {}
 
-    @Override
     public void applyConstraints(int iteration, int epoch) {
         //No op
     }
@@ -420,7 +408,6 @@ public class BarnesHutTsne implements OldModel {
     /**
      * Init the model
      */
-    @Override
     public void init() {
 
     }
@@ -430,7 +417,6 @@ public class BarnesHutTsne implements OldModel {
      *
      * @param listeners
      */
-    @Override
     public void setListeners(Collection<IterationListener> listeners) {
 
     }
@@ -440,12 +426,10 @@ public class BarnesHutTsne implements OldModel {
      *
      * @param listeners
      */
-    @Override
     public void setListeners(IterationListener... listeners) {
 
     }
 
-    @Override
     public void fit() {
         if (theta == 0.0) {
             log.debug("theta == 0, using decomposed version, might be slow");
@@ -482,7 +466,6 @@ public class BarnesHutTsne implements OldModel {
         }
     }
 
-    @Override
     public void update(Gradient gradient) {
 
     }
@@ -497,8 +480,6 @@ public class BarnesHutTsne implements OldModel {
         update(gradient().getGradientFor(Y_GRAD), Y_GRAD);
     }
 
-
-    @Override
     public void update(INDArray gradient, String paramType) {
         INDArray yGrads = gradient;
 
@@ -587,8 +568,6 @@ public class BarnesHutTsne implements OldModel {
         saveAsFile(labels, path);
     }
 
-
-    @Override
     public double score() {
         // Get estimate of normalization term
         INDArray buff = Nd4j.create(numDimensions);
@@ -618,47 +597,38 @@ public class BarnesHutTsne implements OldModel {
         return C;
     }
 
-    @Override
     public void computeGradientAndScore() {
 
     }
 
-    @Override
     public INDArray params() {
         return null;
     }
 
-    @Override
     public int numParams() {
         return 0;
     }
 
-    @Override
     public int numParams(boolean backwards) {
         return 0;
     }
 
-    @Override
     public void setParams(INDArray params) {
 
     }
 
-    @Override
     public void setParamsViewArray(INDArray params) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public INDArray getGradientsViewArray() {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public void fit(INDArray data) {
         this.x = data;
         fit();
@@ -676,7 +646,6 @@ public class BarnesHutTsne implements OldModel {
         fit();
     }
 
-    @Override
     public Gradient gradient() {
         if (yIncs == null)
             yIncs = zeros(Y.shape());
@@ -702,22 +671,18 @@ public class BarnesHutTsne implements OldModel {
         return ret;
     }
 
-    @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
     }
 
-    @Override
     public int batchSize() {
         return 0;
     }
 
-    @Override
     public NeuralNetConfiguration conf() {
         return null;
     }
 
-    @Override
     public void setConf(NeuralNetConfiguration conf) {
 
     }

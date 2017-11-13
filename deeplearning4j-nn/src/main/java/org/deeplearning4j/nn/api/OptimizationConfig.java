@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.api;
 
-import org.deeplearning4j.optimize.api.StepFunction;
 
 public interface OptimizationConfig {
 
