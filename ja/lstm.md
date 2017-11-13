@@ -200,7 +200,7 @@ layout: default
 * [固有値、共分散、PCA、エントロピー](https://deeplearning4j.org/ja/eigenvector)
 * [Word2vecとは？](https://deeplearning4j.org/ja/word2vec)
 * [ディープニューラルネットワークについて](https://deeplearning4j.org/ja/neuralnet-overview)
-* [ニューラルネットワークと回帰](https://deeplearning4j.org/ja/linear-regression)
+* [ニューラルネットワークを回帰に使用](https://deeplearning4j.org/ja/linear-regression)
 * [畳み込みネットワーク](https://deeplearning4j.org/ja/convolutionalnets)
 
 ### 脚注
