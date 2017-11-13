@@ -21,10 +21,10 @@ import java.util.*;
 /**
  * The transfer learning API can be used to modify the architecture or the learning parameters of an existing multilayernetwork or computation graph.
  * It allows one to
- *  - change nOut of an existing layer
- *  - remove and add existing layers/vertices
- *  - fine tune learning configuration (learning rate, updater etc)
- *  - hold parameters for specified layers as a constant
+ * - change nOut of an existing layer
+ * - remove and add existing layers/vertices
+ * - fine tune learning configuration (learning rate, updater etc)
+ * - hold parameters for specified layers as a constant
  */
 @Slf4j
 public class TransferLearning {
@@ -40,7 +40,7 @@ public class TransferLearning {
         private boolean prepDone = false;
         private Set<Integer> editedLayers = new HashSet<>();
         private Map<Integer, Triple<Integer, Pair<WeightInit, Distribution>, Pair<WeightInit, Distribution>>> editedLayersMap =
-                        new HashMap<>();
+                new HashMap<>();
         private List<INDArray> editedParams = new ArrayList<>();
         private List<Layer> editedConfs = new ArrayList<>();
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
@@ -49,6 +49,7 @@ public class TransferLearning {
 
         /**
          * Multilayer Network to tweak for transfer learning
+         *
          * @param origModel
          */
         public Builder(MultiLayerNetwork origModel) {
@@ -60,6 +61,7 @@ public class TransferLearning {
          * Fine tune configurations specified will overwrite the existing configuration if any
          * Usage example: specify a learning rate will set specified learning rate on all layers
          * Refer to the fineTuneConfiguration class for more details
+         *
          * @param finetuneConfiguration
          * @return Builder
          */
@@ -71,6 +73,7 @@ public class TransferLearning {
         /**
          * Specify a layer to set as a "feature extractor"
          * The specified layer and the layers preceding it will be "frozen" with parameters staying constant
+         *
          * @param layerNum
          * @return Builder
          */
@@ -170,11 +173,11 @@ public class TransferLearning {
         }
 
         private Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist,
-                        Distribution distNext) {
+                                    Distribution distNext) {
             editedLayers.add(layerNum);
             Triple<Integer, Pair<WeightInit, Distribution>, Pair<WeightInit, Distribution>> t =
-                            new Triple(nOut, new Pair<>(scheme, dist),
-                                            new Pair<>(schemeNext, distNext));
+                    new Triple(nOut, new Pair<>(scheme, dist),
+                            new Pair<>(schemeNext, distNext));
             editedLayersMap.put(layerNum, t);
             return this;
         }
@@ -194,6 +197,7 @@ public class TransferLearning {
         /**
          * Remove last "n" layers of the net
          * At least an output layer must be added back in
+         *
          * @param layerNum number of layers to remove
          * @return Builder
          */
@@ -241,7 +245,7 @@ public class TransferLearning {
             if (numParams > 0) {
                 params = Nd4j.create(1, numParams);
                 String name = null;
-                if(layerConf.getLayer() != null){
+                if (layerConf.getLayer() != null) {
                     name = layerConf.getLayer().getLayerName();
                 }
 
@@ -290,20 +294,20 @@ public class TransferLearning {
 
                     if (keys != null) {
 
-                        originalLayer.initializer().pa
-                        List<String> vars = originalLayer.variables(true);
-                        originalLayer.clearVariables();
-                        layer.clearVariables();
-                        for (String s : vars) {
-                            originalLayer.variables(false).add(s);
-                            originalLayer.getL1ByParam(s)
-                                    .put(s, 0.0);
-                            originalLayer.getL2ByParam().put(s, 0.0);
-
-                            layer.variables(false).add(s);
-                            layer.getL1ByParam().put(s, 0.0);
-                            layer.getL2ByParam().put(s, 0.0);
-                        }
+//                        originalLayer.initializer().paramKeys();
+//                        List<String> vars = originalLayer.variables(true);
+//                        originalLayer.clearVariables();
+//                        layer.clearVariables();
+//                        for (String s : vars) {
+//                            originalLayer.variables(false).add(s);
+//                            originalLayer.getL1ByParam(s)
+//                                    .put(s, 0.0);
+//                            originalLayer.getL2ByParam().put(s, 0.0);
+//
+//                            layer.variables(false).add(s);
+//                            layer.getL1ByParam().put(s, 0.0);
+//                            layer.getL2ByParam().put(s, 0.0);
+                    }
 
                     Layer origLayer = editedModel.getLayerWiseConfigurations().getConf(i);
                     Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayer);
@@ -337,8 +341,8 @@ public class TransferLearning {
                 for (int i = 0; i < editedLayersSorted.length; i++) {
                     int layerNum = editedLayersSorted[i];
                     nOutReplaceBuild(layerNum, editedLayersMap.get(layerNum).getLeft(),
-                                    editedLayersMap.get(layerNum).getMiddle(),
-                                    editedLayersMap.get(layerNum).getRight());
+                            editedLayersMap.get(layerNum).getMiddle(),
+                            editedLayersMap.get(layerNum).getRight());
                 }
             }
 
@@ -361,7 +365,8 @@ public class TransferLearning {
                 Layer layer;
                 if (finetuneConfiguration != null) {
                     Layer originalLayer = origConf.getConf(i).clone();
-                    finetuneConfiguration.applyToNeuralNetConfiguration(originalLayer, origConf);
+                    finetuneConfiguration.applyToLayer(originalLayer);
+                    finetuneConfiguration.applyToMultiLayerConfiguration(origConf);
                     layer = originalLayer;
                 } else {
                     layer = origConf.getConf(i).clone();
@@ -371,7 +376,7 @@ public class TransferLearning {
         }
 
         private void nOutReplaceBuild(int layerNum, int nOut, Pair<WeightInit, Distribution> schemedist,
-                        Pair<WeightInit, Distribution> schemedistNext) {
+                                      Pair<WeightInit, Distribution> schemedistNext) {
 
             Layer layer = editedConfs.get(layerNum);
             FeedForwardLayer layerImplF = (FeedForwardLayer) layer;
@@ -383,10 +388,10 @@ public class TransferLearning {
             String name = null;
 
 
-            if(layer != null){
+            if (layer != null) {
                 name = layer.getLayerName();
             }
-            org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(null, name,0,
+            org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(null, name, 0,
                     1, params, true);
             editedParams.set(layerNum, someLayer.params());
 
@@ -401,10 +406,10 @@ public class TransferLearning {
                 if (numParams > 0) {
                     params = Nd4j.create(1, numParams);
                     name = null;
-                    if(layer != null){
+                    if (layer != null) {
                         name = layer.getLayerName();
                     }
-                    someLayer = layer.instantiate(null, name,0, 1,
+                    someLayer = layer.instantiate(null, name, 0, 1,
                             params, true);
                     editedParams.set(layerNum + 1, someLayer.params());
                 }
@@ -444,15 +449,13 @@ public class TransferLearning {
                 }
             }
 
-            /*
+
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder()
-                            .setInputType(this.inputType).confs(allConfs).build();
+                    .setInputType(this.inputType).confs(allConfs).build();
             if (finetuneConfiguration != null) {
                 finetuneConfiguration.applyToMultiLayerConfiguration(conf);
             }
             return conf;
-            */
-            throw new RuntimeException();
         }
     }
 
@@ -470,6 +473,7 @@ public class TransferLearning {
 
         /**
          * Computation Graph to tweak for transfer learning
+         *
          * @param origGraph
          */
         public GraphBuilder(ComputationGraph origGraph) {
@@ -480,21 +484,24 @@ public class TransferLearning {
         /**
          * Set parameters to selectively override existing learning parameters
          * Usage eg. specify a lower learning rate. This will get applied to all layers
+         *
          * @param fineTuneConfiguration
          * @return GraphBuilder
          */
         public GraphBuilder fineTuneConfiguration(FineTuneConfiguration fineTuneConfiguration) {
             this.fineTuneConfiguration = fineTuneConfiguration;
             this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,
-                            fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
+                    fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
 
 
             Map<String, Layer> vertices = this.editedConfigBuilder.getVertices();
             for (Map.Entry<String, Layer> gv : vertices.entrySet()) {
                 Layer lv = gv.getValue();
                 Layer newLayer = lv.clone();
-//                fineTuneConfiguration.applyToNeuralNetConfiguration(newLayer);
-                vertices.put(gv.getKey(),newLayer);
+                fineTuneConfiguration.applyToLayer(newLayer);
+                fineTuneConfiguration.applyToComputationGraphConfiguration(origConfig);
+
+                vertices.put(gv.getKey(), newLayer);
                 newLayer.setLayerName(gv.getKey());
                 throw new RuntimeException();
             }
@@ -504,6 +511,7 @@ public class TransferLearning {
         /**
          * Specify a layer vertex to set as a "feature extractor"
          * The specified layer vertex and the layers on the path from an input vertex to it it will be "frozen" with parameters staying constant
+         *
          * @param layerName
          * @return Builder
          */
@@ -549,6 +557,7 @@ public class TransferLearning {
 
         /**
          * Modified nOut of specified layer. Also affects layers following layerName unless they are output layers
+         *
          * @param layerName The name of the layer to change nOut of
          * @param nOut      Value of nOut to change to
          * @param dist      Weight distribution scheme to use for layerName
@@ -574,22 +583,19 @@ public class TransferLearning {
         }
 
         private GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext,
-                        Distribution dist, Distribution distNext) {
+                                         Distribution dist, Distribution distNext) {
             initBuilderIfReq();
 
-            /*
-            NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
-            Layer layerImpl = layerConf.getLayer().clone();
-            layerImpl.resetLayerDefaultConfig();
-            FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
-            layerImplF.setWeightInit(scheme);
-            layerImplF.setDist(dist);
-            layerImplF.setNOut(nOut);
+            Layer layer = origGraph.getLayer(layerName).conf();
+            layer.resetLayerDefaultConfig();
+            FeedForwardLayer feedForwardLayer = (FeedForwardLayer) layer;
+            feedForwardLayer.setWeightInit(scheme);
+            feedForwardLayer.setDist(dist);
+            feedForwardLayer.setNOut(nOut);
 
             editedConfigBuilder.removeVertex(layerName, false);
-            LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
             String[] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
-            editedConfigBuilder.addLayer(layerName, layerImpl, null, lvInputs);
+            editedConfigBuilder.addLayer(layerName, layer, null, lvInputs);
             editedVertices.add(layerName);
 
             //collect other vertices that have this vertex as inputs
@@ -605,28 +611,25 @@ public class TransferLearning {
 
             //change nIn of fanout
             for (String fanoutVertexName : fanoutVertices) {
-                layerConf = origGraph.getLayer(fanoutVertexName).conf();
-                layerImpl = layerConf.getLayer().clone();
-                layerImplF = (FeedForwardLayer) layerImpl;
-                layerImplF.setWeightInit(schemeNext);
-                layerImplF.setDist(distNext);
-                layerImplF.setNIn(nOut);
+                layer = origGraph.getLayer(fanoutVertexName).conf();
+                feedForwardLayer = (FeedForwardLayer) layer;
+                feedForwardLayer.setWeightInit(schemeNext);
+                feedForwardLayer.setDist(distNext);
+                feedForwardLayer.setNIn(nOut);
 
                 editedConfigBuilder.removeVertex(fanoutVertexName, false);
-                lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);
                 lvInputs = origConfig.getVertexInputs().get(fanoutVertexName).toArray(new String[0]);
-                editedConfigBuilder.addLayer(fanoutVertexName, layerImpl, null, lvInputs);
+                editedConfigBuilder.addLayer(fanoutVertexName, layer, null, lvInputs);
                 editedVertices.add(fanoutVertexName);
             }
             return this;
-            */
-            throw new RuntimeException();
         }
 
         /**
          * Remove the specified vertex from the computation graph but keep it's connections.
          * Note the expectation here is to then add back another vertex with the same name or else the graph will be left in an invalid state
          * Possibly with references to vertices that no longer exist
+         *
          * @param outputName
          * @return
          */
@@ -638,6 +641,7 @@ public class TransferLearning {
 
         /**
          * Remove specified vertex and it's connections from the computation graph
+         *
          * @param vertexName
          * @return
          */
@@ -649,6 +653,7 @@ public class TransferLearning {
 
         /**
          * Add a layer of the specified configuration to the computation graph
+         *
          * @param layerName
          * @param layer
          * @param layerInputs
@@ -663,6 +668,7 @@ public class TransferLearning {
 
         /**
          * Add a layer with a specified preprocessor
+         *
          * @param layerName
          * @param layer
          * @param preProcessor
@@ -670,7 +676,7 @@ public class TransferLearning {
          * @return
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
-                        String... layerInputs) {
+                                     String... layerInputs) {
             initBuilderIfReq();
             editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
             editedVertices.add(layerName);
@@ -679,6 +685,7 @@ public class TransferLearning {
 
         /**
          * Add a vertex of the given configuration to the computation graph
+         *
          * @param vertexName
          * @param vertex
          * @param vertexInputs
@@ -694,6 +701,7 @@ public class TransferLearning {
         /**
          * Set outputs to the computation graph, will add to ones that are existing
          * Also determines the order, like in ComputationGraphConfiguration
+         *
          * @param outputNames
          * @return
          */
@@ -709,13 +717,14 @@ public class TransferLearning {
                 //So: create an empty finetune config, which won't override anything
                 //but keep the seed
                 fineTuneConfiguration(new FineTuneConfiguration.Builder()
-                                .seed(origConfig.getSeed()).build());
+                        .seed(origConfig.getSeed()).build());
             }
         }
 
         /**
          * Sets new inputs for the computation graph. This method will remove any
          * pre-existing inputs.
+         *
          * @param inputs String names of each graph input.
          * @return {@code GraphBuilder} instance.
          */
@@ -726,6 +735,7 @@ public class TransferLearning {
 
         /**
          * Sets the input type of corresponding inputs.
+         *
          * @param inputTypes The type of input (such as convolutional).
          * @return {@code GraphBuilder} instance.
          */
@@ -747,6 +757,7 @@ public class TransferLearning {
         /**
          * Returns a computation graph build to specifications.
          * Init has been internally called. Can be fit directly.
+         *
          * @return Computation graph
          */
         public ComputationGraph build() {
@@ -758,9 +769,8 @@ public class TransferLearning {
             ComputationGraph newGraph = new ComputationGraph(newConfig);
             newGraph.init();
 
-//            int[] topologicalOrder = newGraph.topologicalSortOrder();
             List<String> topologicalOrder = newGraph.topologicalSortOrder();
-            Map<String,org.deeplearning4j.nn.api.Layer> vertices = newGraph.getVerticesMap();
+            Map<String, org.deeplearning4j.nn.api.Layer> vertices = newGraph.getVerticesMap();
             if (!editedVertices.isEmpty()) {
                 //set params from orig graph as necessary to new graph
                 for (int i = 0; i < topologicalOrder.size(); i++) {
@@ -795,35 +805,36 @@ public class TransferLearning {
                     if (allFrozen.contains(gv.getName())) {
                         //Need to freeze this layer - both the layer implementation, and the layer configuration
                         org.deeplearning4j.nn.api.Layer l = gv;
-                        if(!(gv instanceof FrozenLayer)) {
+                        if (!(gv instanceof FrozenLayer)) {
                             gv = new FrozenLayer(gv);
                             vertices.put(topologicalOrder.get(i), gv);
                         }
 
-                        /*
                         //Freeze in the configuration
                         String layerName = gv.getName();
-                        LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
-                        if(!newConfig.getNetworkInputs().contains(layerName) && currLayerVertex.getLayerConf() != null) {
+                        Layer currentLayer = newConfig.getVertices().get(layerName);
+                        if(!newConfig.getNetworkInputs().contains(layerName) && currentLayer != null) {
                             //Skip input vertices, and vertices without layer configurations...
-                            Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
-                            Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
-                            newLayerConf.setLayerName(origLayerConf.getLayerName());
+                            Layer originalLayer = currentLayer.clone();
+                            Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(originalLayer);
+                            newLayer.setLayerName(originalLayer.getLayerName());
                             //Complication here(and reason for clone on next line): inner Layer (implementation)
                             // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
                             // NNC should have the frozen layer
-                            NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
-                            currLayerVertex.setLayerConf(newNNC);
-                            currLayerVertex.getLayerConf().setLayer(newLayerConf);
+                            Layer clonedLayer = currentLayer.clone();
+
+                            // TODO: what is needed here?
+//                            currentLayer.setLayerConf(clonedLayer);
+//                            currentLayer.getLayerConf().setLayer(newLayer);
 
                             //Make sure the underlying layer doesn't change:
-                            List<String> vars = currLayerVertex.getLayerConf().variables(true);
-                            currLayerVertex.getLayerConf().clearVariables();
-                            for (String s : vars) {
-                                newNNC.variables(false).add(s);
-                                newNNC.getL1ByParam().put(s, 0.0);
-                                newNNC.getL2ByParam().put(s, 0.0);
-                            }
+//                            List<String> vars = currentLayer.variables(true);
+//                            currentLayer.clearVariables();
+//                            for (String s : vars) {
+//                                clonedLayer.variables(false).add(s);
+//                                clonedLayer.getL1ByParam().put(s, 0.0);
+//                                clonedLayer.getL2ByParam().put(s, 0.0);
+//                            }
                         }
 
                         //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
@@ -842,8 +853,7 @@ public class TransferLearning {
                         if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
                             allFrozen.addAll(inputsToCurrent);
                         }
-                        */
-                        throw new RuntimeException();
+
                     }
                 }
                 newGraph.initGradientsView();

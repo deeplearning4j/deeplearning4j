@@ -112,16 +112,8 @@ public class FineTuneConfiguration {
     }
 
 
-//    public NeuralNetConfiguration appliedNeuralNetConfiguration(NeuralNetConfiguration nnc) {
-//
-//        applyToNeuralNetConfiguration(nnc);
-//        nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
-//        return nnc;
-//    }
+    void applyToLayer(Layer l) {
 
-    public void applyToNeuralNetConfiguration(Layer l, MultiLayerConfiguration nnc) {
-
-        Updater originalUpdater = null;
         WeightInit origWeightInit = null;
 
         if (l != null) {
@@ -162,18 +154,21 @@ public class FineTuneConfiguration {
                 bl.setWeightNoise(weightNoise);
             }
         }
-        if (miniBatch != null)
-            nnc.setMiniBatch(miniBatch);
-        if (maxNumLineSearchIterations != null)
-            nnc.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
-        if (seed != null)
-            nnc.setSeed(seed);
-        if (optimizationAlgo != null)
-            nnc.setOptimizationAlgo(optimizationAlgo);
-        if (stepFunction != null)
-            nnc.setStepFunction(stepFunction);
-        if (minimize != null)
-            nnc.setMinimize(minimize);
+
+
+        // Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now
+        // -> remove no longer needed distribution
+        if (l != null && l instanceof BaseLayer && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
+                && weightInit != WeightInit.DISTRIBUTION) {
+            ((BaseLayer) l).setDist(null);
+        }
+
+        // Perform validation. This also sets the defaults for updaters.
+        // For example, Updater.RMSProp -> set rmsDecay
+        if (l != null) {
+            LayerValidation.generalValidation(l.getLayerName(), l, dropout, l2, l2Bias,
+                    l1, l1Bias, dist, constraints, null, null);
+        }
 
         if (convolutionMode != null && l instanceof ConvolutionLayer) {
             ((ConvolutionLayer) l).setConvolutionMode(convolutionMode);
@@ -182,53 +177,60 @@ public class FineTuneConfiguration {
             ((SubsamplingLayer) l).setConvolutionMode(convolutionMode);
         }
 
-        //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
-        if (l != null && l instanceof BaseLayer && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
-                        && weightInit != WeightInit.DISTRIBUTION) {
-            ((BaseLayer) l).setDist(null);
-        }
-
-        //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
-        if (l != null) {
-            LayerValidation.generalValidation(l.getLayerName(), l, dropout, l2, l2Bias, l1, l1Bias, dist, constraints, null, null);
-        }
-
-        //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
-        // TODO: fix me
-//        if (nnc.variables(false) != null) {
-//            for (String s : nnc.variables(false)) {
-//                nnc.setLayerParamLR(s);
-//            }
-//        }
     }
 
-    public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf) {
+
+    public void applyToMultiLayerConfiguration(MultiLayerConfiguration config) {
+        if (miniBatch != null)
+            config.setMiniBatch(miniBatch);
+        if (maxNumLineSearchIterations != null)
+            config.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
+        if (seed != null)
+            config.setSeed(seed);
+        if (optimizationAlgo != null)
+            config.setOptimizationAlgo(optimizationAlgo);
+        if (stepFunction != null)
+            config.setStepFunction(stepFunction);
+        if (minimize != null)
+            config.setMinimize(minimize);
         if (pretrain != null)
-            conf.setPretrain(pretrain);
+            config.setPretrain(pretrain);
         if (backprop != null)
-            conf.setBackprop(backprop);
+            config.setBackprop(backprop);
         if (backpropType != null)
-            conf.setBackpropType(backpropType);
+            config.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
-            conf.setTbpttFwdLength(tbpttFwdLength);
+            config.setTbpttFwdLength(tbpttFwdLength);
         if (tbpttBackLength != null)
-            conf.setTbpttBackLength(tbpttBackLength);
+            config.setTbpttBackLength(tbpttBackLength);
     }
 
-    public void applyToComputationGraphConfiguration(ComputationGraphConfiguration conf) {
+    public void applyToComputationGraphConfiguration(ComputationGraphConfiguration config) {
+        if (miniBatch != null)
+            config.setMiniBatch(miniBatch);
+        if (maxNumLineSearchIterations != null)
+            config.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
+        if (seed != null)
+            config.setSeed(seed);
+        if (optimizationAlgo != null)
+            config.setOptimizationAlgo(optimizationAlgo);
+        if (stepFunction != null)
+            config.setStepFunction(stepFunction);
+        if (minimize != null)
+            config.setMinimize(minimize);
         if (pretrain != null)
-            conf.setPretrain(pretrain);
+            config.setPretrain(pretrain);
         if (backprop != null)
-            conf.setBackprop(backprop);
+            config.setBackprop(backprop);
         if (backpropType != null)
-            conf.setBackpropType(backpropType);
+            config.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
-            conf.setTbpttFwdLength(tbpttFwdLength);
+            config.setTbpttFwdLength(tbpttFwdLength);
         if (tbpttBackLength != null)
-            conf.setTbpttBackLength(tbpttBackLength);
+            config.setTbpttBackLength(tbpttBackLength);
     }
 
-    public NeuralNetConfiguration.Builder appliedNeuralNetConfigurationBuilder() {
+    NeuralNetConfiguration.Builder appliedNeuralNetConfigurationBuilder() {
         NeuralNetConfiguration.Builder confBuilder = new NeuralNetConfiguration.Builder();
         if (activationFn != null)
             confBuilder.getGlobalConf().setActivationFn(activationFn);
