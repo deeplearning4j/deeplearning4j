@@ -174,6 +174,10 @@ Here's what the LSTM configuration looks like:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java?slice=61:82"></script>
 
+<p align="center">
+<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
 ## <a name="tuning">LSTM Hyperparameter Tuning</a>
 
 Here are a few ideas to keep in mind when manually optimizing hyperparameters for RNNs:
