@@ -308,6 +308,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Layer layer = layers[layerIdx];
         if (!layer.isPretrainLayer())
             return;
+        layer.conf().setPretrain(true);
 
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
                         ? new DummyWorkspace()
@@ -337,7 +338,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             layer.fit(layerInput);
         }
-
+    
+        // Turn off pretrain after it is complete
+        layer.conf().setPretrain(false);
     }
 
 
