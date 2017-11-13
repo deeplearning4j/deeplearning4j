@@ -93,7 +93,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected OptimizationAlgorithm optimizationAlgo;
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
-    //whether to constrain the gradient to unit norm or not
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;

@@ -609,7 +609,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 Layer l = gv;
                 tempLayerList.add(l);
                 if(l.conf() == null){
-                    //No conf for thisgs like ElementwiseVertex
+                    //No conf for things like ElementwiseVertex
                     continue;
                 }
 //                List<String> layerVariables = l.conf().variables();

@@ -281,6 +281,11 @@ public class MultiLayerConfiguration implements OptimizationConfig, Serializable
         return confs.get(i);
     }
 
+
+    public void setConf(int i, Layer layer) {
+        confs.set(i, layer);
+    }
+
     @Override
     public MultiLayerConfiguration clone() {
         try {

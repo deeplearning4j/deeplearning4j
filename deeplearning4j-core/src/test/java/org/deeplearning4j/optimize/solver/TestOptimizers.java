@@ -36,7 +36,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.config.AdaGrad;
-import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -59,10 +58,10 @@ public class TestOptimizers {
         DataSetIterator iter = new IrisDataSetIterator(5, 50);
 
         OptimizationAlgorithm[] toTest =
-                        {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
+                {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
                         //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                };
 
         for (OptimizationAlgorithm oa : toTest) {
             MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
@@ -80,10 +79,10 @@ public class TestOptimizers {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         OptimizationAlgorithm[] toTest =
-                        {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
-                                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
+                {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+                        OptimizationAlgorithm.CONJUGATE_GRADIENT, OptimizationAlgorithm.LBFGS
                         //OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
-                        };
+                };
 
         DataSet ds = iter.next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -102,7 +101,7 @@ public class TestOptimizers {
             double[] scores = new double[nCallsToOptimizer + 1];
             scores[0] = score;
             for (int i = 0; i < nCallsToOptimizer; i++) {
-                for( int j=0; j<nIter; j++ ) {
+                for (int j = 0; j < nIter; j++) {
                     network.fit(ds);
                 }
                 double scoreAfter = network.score(ds);
@@ -118,17 +117,15 @@ public class TestOptimizers {
     }
 
     private static MultiLayerConfiguration getMLPConfigIris(OptimizationAlgorithm oa) {
-        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().optimizationAlgo(oa)
-                        .updater(new AdaGrad(1e-1)).seed(12345L)
-                        .list().layer(0,
-                                        new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                                        .activation(Activation.RELU)
-                                                        .build())
-                        .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false).build();
-
-        return c;
+        return new NeuralNetConfiguration.Builder().optimizationAlgo(oa)
+                .updater(new AdaGrad(1e-1)).seed(12345L)
+                .list().layer(0,
+                        new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                .activation(Activation.RELU)
+                                .build())
+                .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
+                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
+                .backprop(true).pretrain(false).build();
     }
 
     //==================================================
@@ -187,7 +184,7 @@ public class TestOptimizers {
 
         if (PRINT_OPT_RESULTS)
             System.out.println("---------\n Alg= " + oa + ", nIter= " + numLineSearchIter + ", nDimensions= "
-                            + nDimensions);
+                    + nDimensions);
 
         NeuralNetConfiguration conf = null;
         /*
@@ -199,9 +196,9 @@ public class TestOptimizers {
 
         Random rng = new DefaultRandom(12345L);
         org.nd4j.linalg.api.rng.distribution.Distribution dist =
-                        new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
+                new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
         Model m = new SphereFunctionModel(nDimensions, dist, conf);
-        Pair<Gradients,Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
+        Pair<Gradients, Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
         double scoreBefore = m.score();
         assertTrue(!Double.isNaN(scoreBefore) && !Double.isInfinite(scoreBefore));
         if (PRINT_OPT_RESULTS) {
@@ -228,13 +225,13 @@ public class TestOptimizers {
         //(a) score is better (lower) after optimization.
         //(b) Parameters are closer to minimum after optimization (TODO)
         assertTrue("Score did not improve after optimization (b= " + scoreBefore + " ,a= " + scoreAfter + ")",
-                        scoreAfter < scoreBefore);
+                scoreAfter < scoreBefore);
     }
 
     private static ConvexOptimizer getOptimizer(OptimizationAlgorithm oa, OptimizationConfig conf, Model m) {
         switch (oa) {
             case STOCHASTIC_GRADIENT_DESCENT:
-                return new StochasticGradientDescent(conf, new NegativeDefaultStepFunction(),  m);
+                return new StochasticGradientDescent(conf, new NegativeDefaultStepFunction(), m);
             case LINE_GRADIENT_DESCENT:
                 return new LineGradientDescent(conf, new NegativeDefaultStepFunction(), m);
             case CONJUGATE_GRADIENT:
@@ -275,13 +272,13 @@ public class TestOptimizers {
 
 
     private static void testSphereFnMultipleStepsHelper(OptimizationAlgorithm oa, int nOptIter,
-                    int maxNumLineSearchIter) {
+                                                        int maxNumLineSearchIter) {
         double[] scores = new double[nOptIter + 1];
 
         for (int i = 0; i <= nOptIter; i++) {
             Random rng = new DefaultRandom(12345L);
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
-                            new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
+                    new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
             NeuralNetConfiguration conf = null;
             /*new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).updater(new Sgd(0.1))
@@ -295,7 +292,7 @@ public class TestOptimizers {
             } else {
                 ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
                 opt.optimize(false);
-                Pair<Gradients,Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
+                Pair<Gradients, Double> p = m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -303,8 +300,8 @@ public class TestOptimizers {
 
         if (PRINT_OPT_RESULTS) {
             System.out.println("Multiple optimization iterations (" + nOptIter
-                            + " opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter + ": "
-                            + oa);
+                    + " opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter + ": "
+                    + oa);
             System.out.println(Arrays.toString(scores));
         }
 
@@ -315,7 +312,8 @@ public class TestOptimizers {
     }
 
 
-    /** A non-NN optimization problem. Optimization function (cost function) is
+    /**
+     * A non-NN optimization problem. Optimization function (cost function) is
      * \sum_i x_i^2. Has minimum of 0.0 at x_i=0 for all x_i
      * See: https://en.wikipedia.org/wiki/Test_functions_for_optimization
      */
@@ -323,13 +321,13 @@ public class TestOptimizers {
         private static final long serialVersionUID = -6963606137417355405L;
 
         private SphereFunctionModel(int nParams, org.nd4j.linalg.api.rng.distribution.Distribution distribution,
-                        NeuralNetConfiguration conf) {
-            super(distribution.sample(new int[] {1, nParams}), conf);
+                                    NeuralNetConfiguration conf) {
+            super(distribution.sample(new int[]{1, nParams}), conf);
         }
 
 
         @Override
-        public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        public Pair<Gradients, Double> computeGradientAndScore(Activations input, Activations labels) {
             // Gradients: d(x^2)/dx = 2x
             INDArray gradient = parameters.mul(2);
             Gradient g = new DefaultGradient();
@@ -479,7 +477,7 @@ public class TestOptimizers {
 
 
     private static void testRastriginFnMultipleStepsHelper(OptimizationAlgorithm oa, int nOptIter,
-                    int maxNumLineSearchIter) {
+                                                           int maxNumLineSearchIter) {
         double[] scores = new double[nOptIter + 1];
 
         for (int i = 0; i <= nOptIter; i++) {
@@ -497,7 +495,7 @@ public class TestOptimizers {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = null; //getOptimizer(oa, conf, m);
-                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
+                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[]{1, nParams}, 'c'), true);
                 opt.optimize(false);
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
@@ -507,8 +505,8 @@ public class TestOptimizers {
 
         if (PRINT_OPT_RESULTS) {
             System.out.println("Rastrigin: Multiple optimization iterations (" + nOptIter
-                            + " opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter + ": "
-                            + oa);
+                    + " opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter + ": "
+                    + oa);
             System.out.println(Arrays.toString(scores));
         }
         for (int i = 1; i < scores.length; i++) {
@@ -520,7 +518,8 @@ public class TestOptimizers {
         }
     }
 
-    /** Rastrigin function: A much more complex non-NN multi-dimensional optimization problem.
+    /**
+     * Rastrigin function: A much more complex non-NN multi-dimensional optimization problem.
      * Global minimum of 0 at x_i = 0 for all x_i.
      * Very large number of local minima. Can't expect to achieve global minimum with gradient-based (line search)
      * optimizers, but can expect significant improvement in score/cost relative to initial parameters.
@@ -538,13 +537,13 @@ public class TestOptimizers {
         private static INDArray initParams(int nDimensions) {
             Random rng = new DefaultRandom(12345L);
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
-                            new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -5.12, 5.12);
-            return dist.sample(new int[] {1, nDimensions});
+                    new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -5.12, 5.12);
+            return dist.sample(new int[]{1, nDimensions});
         }
 
 
         @Override
-        public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        public Pair<Gradients, Double> computeGradientAndScore(Activations input, Activations labels) {
             //Gradient decomposes due to sum, so:
             //d(x^2 - 10*cos(2*Pi*x))/dx
             // = 2x + 20*pi*sin(2*Pi*x)
@@ -730,7 +729,7 @@ public class TestOptimizers {
 
 
     private static void testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm oa, int nOptIter,
-                    int maxNumLineSearchIter) {
+                                                            int maxNumLineSearchIter) {
         double[] scores = new double[nOptIter + 1];
 
         for (int i = 0; i <= nOptIter; i++) {
@@ -753,14 +752,14 @@ public class TestOptimizers {
                 m.computeGradientAndScore(m.getInput(), m.getLabels());
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i],
-                                !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
+                        !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
         }
 
         if (PRINT_OPT_RESULTS) {
             System.out.println("Rosenbrock: Multiple optimization iterations ( " + nOptIter
-                            + " opt. iter.) score vs iteration, maxNumLineSearchIter= " + maxNumLineSearchIter + ": "
-                            + oa);
+                    + " opt. iter.) score vs iteration, maxNumLineSearchIter= " + maxNumLineSearchIter + ": "
+                    + oa);
             System.out.println(Arrays.toString(scores));
         }
         for (int i = 1; i < scores.length; i++) {
@@ -773,8 +772,8 @@ public class TestOptimizers {
     }
 
 
-
-    /**Rosenbrock function: a multi-dimensional 'valley' type function.
+    /**
+     * Rosenbrock function: a multi-dimensional 'valley' type function.
      * Has a single local/global minimum of f(x)=0 at x_i=1 for all x_i.
      * Expect gradient-based optimization functions to find global minimum eventually,
      * but optimization may be slow due to nearly flat gradient along valley.
@@ -793,12 +792,12 @@ public class TestOptimizers {
         private static INDArray initParams(int nDimensions) {
             Random rng = new DefaultRandom(12345L);
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
-                            new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -4.0, 4.0);
-            return dist.sample(new int[] {1, nDimensions});
+                    new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -4.0, 4.0);
+            return dist.sample(new int[]{1, nDimensions});
         }
 
         @Override
-        public Pair<Gradients,Double> computeGradientAndScore(Activations input, Activations labels) {
+        public Pair<Gradients, Double> computeGradientAndScore(Activations input, Activations labels) {
             int nDims = parameters.length();
             INDArray gradient = Nd4j.zeros(nDims);
             double x0 = parameters.getDouble(0);
@@ -973,7 +972,8 @@ public class TestOptimizers {
     }
 
 
-    /** Simple abstract class to deal with the fact that we don't care about the majority of the Model/Layer
+    /**
+     * Simple abstract class to deal with the fact that we don't care about the majority of the Model/Layer
      * methods here. Classes extending this model for optimizer tests need only implement the score() and
      * gradient() methods.
      */
@@ -985,7 +985,8 @@ public class TestOptimizers {
         protected Gradient gradient;
         protected double score;
 
-        /**@param parameterInit Initial parameters. Also determines dimensionality of problem. Should be row vector.
+        /**
+         * @param parameterInit Initial parameters. Also determines dimensionality of problem. Should be row vector.
          */
         private SimpleOptimizableModel(INDArray parameterInit, NeuralNetConfiguration conf) {
             this.parameters = parameterInit.dup();
@@ -1042,7 +1043,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public Activations activate(Activations input){
+        public Activations activate(Activations input) {
             return null;
         }
 
@@ -1062,7 +1063,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public Pair<Gradients,Double> computeGradientAndScore(Activations in, Activations labels) {
+        public Pair<Gradients, Double> computeGradientAndScore(Activations in, Activations labels) {
             throw new UnsupportedOperationException("Ensure you implement this function.");
         }
 
@@ -1142,7 +1143,8 @@ public class TestOptimizers {
         }
 
         @Override
-        public void setInputMiniBatchSize(int size) {}
+        public void setInputMiniBatchSize(int size) {
+        }
 
         @Override
         public int getInputMiniBatchSize() {

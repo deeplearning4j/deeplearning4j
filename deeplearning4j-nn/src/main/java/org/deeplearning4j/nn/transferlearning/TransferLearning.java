@@ -41,9 +41,9 @@ public class TransferLearning {
         private Map<Integer, Triple<Integer, Pair<WeightInit, Distribution>, Pair<WeightInit, Distribution>>> editedLayersMap =
                         new HashMap<>();
         private List<INDArray> editedParams = new ArrayList<>();
-        private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
+        private List<Layer> editedConfs = new ArrayList<>();
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
-        private List<NeuralNetConfiguration> appendConfs = new ArrayList<>();
+        private List<Layer> appendConfs = new ArrayList<>();
         private InputType inputType;
 
         /**
@@ -226,26 +226,33 @@ public class TransferLearning {
             //Build a nn config builder with settings from finetune. Set layer with the added layer
             //Issue: fine tune config has .learningRate(x), then I add a layer with .learningRate(y)...
             //We don't want that to be overridden
-//            NeuralNetConfiguration layerConf =
-//                            finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
-//
-//            int numParams = layer.initializer().numParams(layerConf);
-//            INDArray params;
-//            if (numParams > 0) {
-//                params = Nd4j.create(1, numParams);
-//                String name = null;
-//                if(layerConf.getLayer() != null){
-//                    name = layerConf.getLayer().getLayerName();
-//                }
-//                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, name,0, 1, params, true);
-//                appendParams.add(someLayer.params());
-//                appendConfs.add(someLayer.conf());
-//            } else {
-//                appendConfs.add(layerConf);
-//
-//            }
-//            return this;
-            throw new RuntimeException("Not yet reimplemented");
+            NeuralNetConfiguration.Builder builder = finetuneConfiguration.appliedNeuralNetConfigurationBuilder();
+
+            GlobalConfiguration globalConf = builder.getGlobalConf();
+            globalConf.setLayer(layer);
+
+            builder.setGlobalConf(globalConf);
+            NeuralNetConfiguration layerConf = builder.build();
+
+
+            int numParams = layer.initializer().numParams(layer);
+            INDArray params;
+            if (numParams > 0) {
+                params = Nd4j.create(1, numParams);
+                String name = null;
+                if(layerConf.getLayer() != null){
+                    name = layerConf.getLayer().getLayerName();
+                }
+
+                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(null, name,
+                        0, 1, params, true);
+                appendParams.add(someLayer.params());
+                appendConfs.add(someLayer.conf());
+            } else {
+                appendConfs.add(layer);
+
+            }
+            return this;
         }
 
         public Builder setInputType(InputType inputType) {
@@ -271,36 +278,35 @@ public class TransferLearning {
                 for (int i = frozenTill; i >= 0; i--) {
                     //Complication here: inner Layer (implementation) NeuralNetConfiguration.layer (config) should keep
                     // the original layer config. While network NNC should have the frozen layer, for to/from JSON etc
-                    /*
-                    NeuralNetConfiguration origNNC = editedModel.getLayerWiseConfigurations().getConf(i);
-                    NeuralNetConfiguration layerNNC = origNNC.clone();
-                    editedModel.getLayerWiseConfigurations().getConf(i).resetVariables();
-                    layers[i].setConf(layerNNC);
+
+                    Layer originalLayer = editedModel.getLayerWiseConfigurations().getConf(i);
+                    Layer layer = originalLayer.clone();
+                    editedModel.getLayerWiseConfigurations().getConf(i).resetLayerDefaultConfig();
+                    layers[i].setConf(layer);
                     layers[i] = new FrozenLayer(layers[i]);
 
-                    if (origNNC.getVariables() != null) {
-                        List<String> vars = origNNC.variables(true);
-                        origNNC.clearVariables();
-                        layerNNC.clearVariables();
+/*                    if (originalLayer.getVariables() != null) {
+                        List<String> vars = originalLayer.variables(true);
+                        originalLayer.clearVariables();
+                        layer.clearVariables();
                         for (String s : vars) {
-                            origNNC.variables(false).add(s);
-                            origNNC.getL1ByParam().put(s, 0.0);
-                            origNNC.getL2ByParam().put(s, 0.0);
+                            originalLayer.variables(false).add(s);
+                            originalLayer.getL1ByParam().put(s, 0.0);
+                            originalLayer.getL2ByParam().put(s, 0.0);
 
-                            layerNNC.variables(false).add(s);
-                            layerNNC.getL1ByParam().put(s, 0.0);
-                            layerNNC.getL2ByParam().put(s, 0.0);
+                            layer.variables(false).add(s);
+                            layer.getL1ByParam().put(s, 0.0);
+                            layer.getL2ByParam().put(s, 0.0);
                         }
-                    }
+                    }*/
 
 
 
-                    Layer origLayerConf = editedModel.getLayerWiseConfigurations().getConf(i).getLayer();
-                    Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
-                    newLayerConf.setLayerName(origLayerConf.getLayerName());
-                    editedModel.getLayerWiseConfigurations().getConf(i).setLayer(newLayerConf);
-                     */
-                    throw new RuntimeException("Not yet reimplemented");
+                    Layer origLayer = editedModel.getLayerWiseConfigurations().getConf(i);
+                    Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayer);
+                    newLayer.setLayerName(origLayer.getLayerName());
+                    editedModel.getLayerWiseConfigurations().setConf(i, newLayer);
+
                 }
                 editedModel.setLayers(layers);
             }
@@ -424,14 +430,14 @@ public class TransferLearning {
 
         private MultiLayerConfiguration constructConf() {
             //use the editedConfs list to make a new config
-            List<NeuralNetConfiguration> allConfs = new ArrayList<>();
+            List<Layer> allConfs = new ArrayList<>();
             allConfs.addAll(editedConfs);
             allConfs.addAll(appendConfs);
 
             //Set default layer names, if not set - as per SequentialConfiguration.ListBuilder.build()
             for (int i = 0; i < allConfs.size(); i++) {
-                if (allConfs.get(i).getLayer().getLayerName() == null) {
-                    allConfs.get(i).getLayer().setLayerName("layer" + i);
+                if (allConfs.get(i).getLayerName() == null) {
+                    allConfs.get(i).setLayerName("layer" + i);
                 }
             }
 
