@@ -47,6 +47,6 @@ Deeplearning4jのニューラルネットワークを使って回帰を行う場
 * [長・短期記憶ユニットと再帰型ネットワーク](https://deeplearning4j.org/ja/lstm)
 * [ディープニューラルネットワークについて](https://deeplearning4j.org/ja/neuralnet-overview)
 * [畳み込みネットワーク](https://deeplearning4j.org/ja/convolutionalnets)
-* [クイックスタートで見るDeeplearning4jの例](https://deeplearning4j.org/ja/quickstart)
+* [クイックスタートで見るDeeplearning4jのサンプル](https://deeplearning4j.org/ja/quickstart)
 * [ND4J:Numpy for the JVM（ND4J:Java仮想マシンで使用するNumpy）](http://nd4j.org)
 
