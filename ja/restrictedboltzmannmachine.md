@@ -196,5 +196,5 @@ RBMにより、すべての浅い層の順伝播型ネットワークが最も�
 
 * [ディープニュ―ラルネットワークについて](ja-neuralnet-overview)
 * [固有ベクトル、主成分分析、共分散、エントロピー入門](https://deeplearning4j.org/ja/eigenvector)
-* [回帰を使ったニューラルネットワーク](https://deeplearning4j.org/ja/linear-regression)
+* [ニューラルネットワークを回帰に使用](https://deeplearning4j.org/ja/linear-regression)
 * [畳み込みネットワーク](https://deeplearning4j.org/ja/convolutionalnets)
