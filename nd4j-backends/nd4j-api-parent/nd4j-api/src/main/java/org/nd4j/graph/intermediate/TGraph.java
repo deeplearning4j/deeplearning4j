@@ -53,6 +53,8 @@ public class TGraph {
     // here we store nodes which were already processed by
     @Getter protected Collection<String> skipSet = new ArrayList<>();
 
+    @Getter protected Collection<String> knownScopes = new ArrayList<>();
+
     protected void expandOnion(int layer) {
         onionMap.put(layer, new ArrayList<TNode>());
     }

@@ -237,6 +237,19 @@ public class TensorFlowImport {
         return importIntermediate(def);
     }
 
+    protected static TIndex indexByName(@NonNull TGraph graph, @NonNull String value) {
+        if (value.contains(":")) {
+            val split = value.split(":");
+            Integer lnode = graph.getReverseMap().get(split[0]).getNode();
+            Integer idx = Integer.valueOf(split[1]);
+
+            return TIndex.makeOf(lnode, idx);
+        } else {
+            Integer lnode = graph.getReverseMap().get(value).getNode();
+            return TIndex.makeOf(lnode);
+        }
+    }
+
     protected static TNode importWhileLoop(TGraph intermediateGraph, int startPosition, List<NodeDef> nodes) {
         val uniqueId = java.util.UUID.randomUUID().toString();
 
@@ -253,6 +266,7 @@ public class TensorFlowImport {
                 .opState(OpState.builder().opName("while").opNum(0).opType(Op.Type.LOOP).build())
                 .build();
 
+        log.info("WHILE id: {}", uniqueId);
         log.info("Adding 2 new scopes for WHILE {}", whileNode.getId());
 
 
@@ -270,6 +284,7 @@ public class TensorFlowImport {
 
         // parsing declarations first. they all come as Enter ops
         val whileInputs = new ArrayList<TIndex>();
+        int enterCnt = 0;
         for (; startPosition < nodes.size(); startPosition++) {
             val tfNode = nodes.get(startPosition);
 
@@ -278,19 +293,20 @@ public class TensorFlowImport {
                 break;
             }
 
-//            if (intermediateGraph.getSkipSet().contains(tfNode.getName()))
-//                continue;
-
             intermediateGraph.getSkipSet().add(tfNode.getName());
 
+            // enter should have only 1 input, but let's keep loop here.
             for (int e = 0; e < tfNode.getInputCount(); e++) {
                 val input = tfNode.getInput(e);
-                val idx = intermediateGraph.getReverseMap().get(input);
-                log.info("Mapping [{}] to [{}]", input, idx);
+                //val idx = intermediateGraph.getReverseMap().get(input);
+                val idx = indexByName(intermediateGraph, input);
+                log.info("Enter mapping [{}] to [{}]", input, idx);
 
                 // mapping this
                 whileInputs.add(idx);
             }
+
+            intermediateGraph.getReverseMap().put(tfNode.getName(), TIndex.makeOf(whileNode.getId(), enterCnt++));
         }
         whileInputs.add(TIndex.makeOf(scopeCondition.getId()));
         whileInputs.add(TIndex.makeOf(scopeLoop.getId()));
@@ -419,7 +435,18 @@ public class TensorFlowImport {
             } else {
                 log.info("starting on [{}]: {}", tfNode.getName(), tfNode.getOp());
 
+                boolean isNewLoop = false;
                 if (tfNode.getOp().equalsIgnoreCase("enter")) {
+                    val frame_name = tfNode.getAttrOrThrow("frame_name");
+
+                    val str = frame_name.getS().toStringUtf8();
+                    if (!intermediateGraph.getKnownScopes().contains(str)) {
+                        intermediateGraph.getKnownScopes().add(str);
+                        isNewLoop = true;
+                    }
+                }
+
+                if (isNewLoop) {
                     log.info("NEW LOOP ----------------------------------------");
                     val scopedWhile = importWhileLoop(intermediateGraph, startPosition, nodes);
                     scopedWhile.setScoped(true);
@@ -626,7 +653,19 @@ public class TensorFlowImport {
                 if (tfNode.getOp().equalsIgnoreCase("merge"))
                     continue;
 
+                boolean isNewLoop = false;
                 if (tfNode.getOp().equalsIgnoreCase("enter")) {
+                    val frame_name = tfNode.getAttrOrThrow("frame_name");
+
+                    val str = frame_name.getS().toStringUtf8();
+                    if (!intermediateGraph.getKnownScopes().contains(str)) {
+                        intermediateGraph.getKnownScopes().add(str);
+                        isNewLoop = true;
+                    }
+                }
+
+                if (isNewLoop) {
+                    log.info("NEW LOOP --------------------");
                     /*
                         on while/enter we'll open 2 scopes: 1st scope for condition, 2nd scope for loop body
                     */

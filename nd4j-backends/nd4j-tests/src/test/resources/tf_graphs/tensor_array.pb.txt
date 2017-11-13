@@ -12,7 +12,7 @@ node {
     value {
       shape {
         dim {
-          size: 5
+          size: 3
         }
         dim {
           size: 2
@@ -40,7 +40,7 @@ node {
             size: 2
           }
         }
-        tensor_content: "\005\000\000\000\002\000\000\000"
+        tensor_content: "\003\000\000\000\002\000\000\000"
       }
     }
   }
@@ -205,7 +205,7 @@ node {
   }
 }
 node {
-  name: "while/Const"
+  name: "strided_slice_1/stack"
   op: "Const"
   attr {
     key: "dtype"
@@ -219,6 +219,9 @@ node {
       tensor {
         dtype: DT_INT32
         tensor_shape {
+          dim {
+            size: 1
+          }
         }
         int_val: 0
       }
@@ -226,325 +229,8 @@ node {
   }
 }
 node {
-  name: "while/Enter"
-  op: "Enter"
-  input: "while/Const"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "frame_name"
-    value {
-      s: "while/while_context"
-    }
-  }
-  attr {
-    key: "is_constant"
-    value {
-      b: false
-    }
-  }
-  attr {
-    key: "parallel_iterations"
-    value {
-      i: 10
-    }
-  }
-}
-node {
-  name: "while/Enter_1"
-  op: "Enter"
-  input: "TensorArray:1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "frame_name"
-    value {
-      s: "while/while_context"
-    }
-  }
-  attr {
-    key: "is_constant"
-    value {
-      b: false
-    }
-  }
-  attr {
-    key: "parallel_iterations"
-    value {
-      i: 10
-    }
-  }
-}
-node {
-  name: "while/Merge"
-  op: "Merge"
-  input: "while/Enter"
-  input: "while/NextIteration"
-  attr {
-    key: "N"
-    value {
-      i: 2
-    }
-  }
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/Merge_1"
-  op: "Merge"
-  input: "while/Enter_1"
-  input: "while/NextIteration_1"
-  attr {
-    key: "N"
-    value {
-      i: 2
-    }
-  }
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "while/Less/Enter"
-  op: "Enter"
-  input: "strided_slice"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "frame_name"
-    value {
-      s: "while/while_context"
-    }
-  }
-  attr {
-    key: "is_constant"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "parallel_iterations"
-    value {
-      i: 10
-    }
-  }
-}
-node {
-  name: "while/Less"
-  op: "Less"
-  input: "while/Merge"
-  input: "while/Less/Enter"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/LoopCond"
-  op: "LoopCond"
-  input: "while/Less"
-}
-node {
-  name: "while/Switch"
-  op: "Switch"
-  input: "while/Merge"
-  input: "while/LoopCond"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@while/Merge"
-      }
-    }
-  }
-}
-node {
-  name: "while/Switch_1"
-  op: "Switch"
-  input: "while/Merge_1"
-  input: "while/LoopCond"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@while/Merge_1"
-      }
-    }
-  }
-}
-node {
-  name: "while/Identity"
-  op: "Identity"
-  input: "while/Switch:1"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/Identity_1"
-  op: "Identity"
-  input: "while/Switch_1:1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "while/add/y"
+  name: "strided_slice_1/stack_1"
   op: "Const"
-  input: "^while/Identity"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-        }
-        int_val: 1
-      }
-    }
-  }
-}
-node {
-  name: "while/add"
-  op: "Add"
-  input: "while/Identity"
-  input: "while/add/y"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/add_1/y"
-  op: "Const"
-  input: "^while/Identity"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-        }
-        int_val: 1
-      }
-    }
-  }
-}
-node {
-  name: "while/add_1"
-  op: "Add"
-  input: "while/Identity"
-  input: "while/add_1/y"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/strided_slice/stack"
-  op: "Pack"
-  input: "while/Identity"
-  attr {
-    key: "N"
-    value {
-      i: 1
-    }
-  }
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "axis"
-    value {
-      i: 0
-    }
-  }
-}
-node {
-  name: "while/strided_slice/stack_1"
-  op: "Pack"
-  input: "while/add_1"
-  attr {
-    key: "N"
-    value {
-      i: 1
-    }
-  }
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "axis"
-    value {
-      i: 0
-    }
-  }
-}
-node {
-  name: "while/strided_slice/stack_2"
-  op: "Const"
-  input: "^while/Identity"
   attr {
     key: "dtype"
     value {
@@ -567,41 +253,36 @@ node {
   }
 }
 node {
-  name: "while/strided_slice/Enter"
-  op: "Enter"
-  input: "input_matrix"
+  name: "strided_slice_1/stack_2"
+  op: "Const"
   attr {
-    key: "T"
+    key: "dtype"
     value {
-      type: DT_FLOAT
+      type: DT_INT32
     }
   }
   attr {
-    key: "frame_name"
+    key: "value"
     value {
-      s: "while/while_context"
-    }
-  }
-  attr {
-    key: "is_constant"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "parallel_iterations"
-    value {
-      i: 10
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 1
+      }
     }
   }
 }
 node {
-  name: "while/strided_slice"
+  name: "strided_slice_1"
   op: "StridedSlice"
-  input: "while/strided_slice/Enter"
-  input: "while/strided_slice/stack"
-  input: "while/strided_slice/stack_1"
-  input: "while/strided_slice/stack_2"
+  input: "input_matrix"
+  input: "strided_slice_1/stack"
+  input: "strided_slice_1/stack_1"
+  input: "strided_slice_1/stack_2"
   attr {
     key: "Index"
     value {
@@ -646,9 +327,420 @@ node {
   }
 }
 node {
-  name: "while/mul/y"
+  name: "mul/y"
   op: "Const"
-  input: "^while/Identity"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 1.0
+      }
+    }
+  }
+}
+node {
+  name: "mul"
+  op: "Mul"
+  input: "strided_slice_1"
+  input: "mul/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "TensorArrayWrite/TensorArrayWriteV3/index"
+  op: "Const"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@mul"
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 0
+      }
+    }
+  }
+}
+node {
+  name: "TensorArrayWrite/TensorArrayWriteV3"
+  op: "TensorArrayWriteV3"
+  input: "TensorArray"
+  input: "TensorArrayWrite/TensorArrayWriteV3/index"
+  input: "mul"
+  input: "TensorArray:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@mul"
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_2/stack"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_2/stack_1"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 2
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_2/stack_2"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_2"
+  op: "StridedSlice"
+  input: "input_matrix"
+  input: "strided_slice_2/stack"
+  input: "strided_slice_2/stack_1"
+  input: "strided_slice_2/stack_2"
+  attr {
+    key: "Index"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "begin_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "ellipsis_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "end_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "new_axis_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "shrink_axis_mask"
+    value {
+      i: 1
+    }
+  }
+}
+node {
+  name: "mul_1/y"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 2.0
+      }
+    }
+  }
+}
+node {
+  name: "mul_1"
+  op: "Mul"
+  input: "strided_slice_2"
+  input: "mul_1/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "TensorArrayWrite_1/TensorArrayWriteV3/index"
+  op: "Const"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@mul"
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "TensorArrayWrite_1/TensorArrayWriteV3"
+  op: "TensorArrayWriteV3"
+  input: "TensorArray"
+  input: "TensorArrayWrite_1/TensorArrayWriteV3/index"
+  input: "mul_1"
+  input: "TensorArrayWrite/TensorArrayWriteV3"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@mul"
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_3/stack"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 2
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_3/stack_1"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 3
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_3/stack_2"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "strided_slice_3"
+  op: "StridedSlice"
+  input: "input_matrix"
+  input: "strided_slice_3/stack"
+  input: "strided_slice_3/stack_1"
+  input: "strided_slice_3/stack_2"
+  attr {
+    key: "Index"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "begin_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "ellipsis_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "end_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "new_axis_mask"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "shrink_axis_mask"
+    value {
+      i: 1
+    }
+  }
+}
+node {
+  name: "mul_2/y"
+  op: "Const"
   attr {
     key: "dtype"
     value {
@@ -668,10 +760,10 @@ node {
   }
 }
 node {
-  name: "while/mul"
+  name: "mul_2"
   op: "Mul"
-  input: "while/strided_slice"
-  input: "while/mul/y"
+  input: "strided_slice_3"
+  input: "mul_2/y"
   attr {
     key: "T"
     value {
@@ -680,49 +772,41 @@ node {
   }
 }
 node {
-  name: "while/TensorArrayWrite/TensorArrayWriteV3/Enter"
-  op: "Enter"
-  input: "TensorArray"
-  attr {
-    key: "T"
-    value {
-      type: DT_RESOURCE
-    }
-  }
+  name: "TensorArrayWrite_2/TensorArrayWriteV3/index"
+  op: "Const"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@while/mul"
+        s: "loc:@mul"
       }
     }
   }
   attr {
-    key: "frame_name"
+    key: "dtype"
     value {
-      s: "while/while_context"
+      type: DT_INT32
     }
   }
   attr {
-    key: "is_constant"
+    key: "value"
     value {
-      b: true
-    }
-  }
-  attr {
-    key: "parallel_iterations"
-    value {
-      i: 10
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 2
+      }
     }
   }
 }
 node {
-  name: "while/TensorArrayWrite/TensorArrayWriteV3"
+  name: "TensorArrayWrite_2/TensorArrayWriteV3"
   op: "TensorArrayWriteV3"
-  input: "while/TensorArrayWrite/TensorArrayWriteV3/Enter"
-  input: "while/Identity"
-  input: "while/mul"
-  input: "while/Identity_1"
+  input: "TensorArray"
+  input: "TensorArrayWrite_2/TensorArrayWriteV3/index"
+  input: "mul_2"
+  input: "TensorArrayWrite_1/TensorArrayWriteV3"
   attr {
     key: "T"
     value {
@@ -733,52 +817,8 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@while/mul"
+        s: "loc:@mul"
       }
-    }
-  }
-}
-node {
-  name: "while/NextIteration"
-  op: "NextIteration"
-  input: "while/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/NextIteration_1"
-  op: "NextIteration"
-  input: "while/TensorArrayWrite/TensorArrayWriteV3"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "while/Exit"
-  op: "Exit"
-  input: "while/Switch"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "while/Exit_1"
-  op: "Exit"
-  input: "while/Switch_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
     }
   }
 }
@@ -786,7 +826,7 @@ node {
   name: "TensorArrayStack/TensorArraySizeV3"
   op: "TensorArraySizeV3"
   input: "TensorArray"
-  input: "while/Exit_1"
+  input: "TensorArrayWrite_2/TensorArrayWriteV3"
   attr {
     key: "_class"
     value {
@@ -880,7 +920,7 @@ node {
   op: "TensorArrayGatherV3"
   input: "TensorArray"
   input: "TensorArrayStack/range"
-  input: "while/Exit_1"
+  input: "TensorArrayWrite_2/TensorArrayWriteV3"
   attr {
     key: "_class"
     value {
