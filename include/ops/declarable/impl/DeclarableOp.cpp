@@ -120,9 +120,11 @@ namespace nd4j {
                 int cntIn = 0;
                 for (auto p: *block.inputs()) {
                     auto var = block.getVariableSpace()->getVariable(p);
-                    NDArray<T> *array = var->getNDArray();
-                    inSha.push_back(array->getShapeInfo());
+                    if (var->variableType() == VariableType::NDARRAY) {
+                        NDArray<T> *array = var->getNDArray();
+                        inSha.push_back(array->getShapeInfo());
 
+                    }
                     //array->printShapeInfo("prepOutput");
                     cntIn++;
                 }
@@ -144,11 +146,18 @@ namespace nd4j {
 
                     auto var = block.getVariableSpace()->getVariable(pair);
                     if (var == nullptr) {
-                        var = new Variable<T>(outArr);
+                        var = new Variable<T>(outArr, nullptr, pair.first, pair.second);
                         block.getVariableSpace()->putVariable(pair, var);
                     } else {
                         //block.getVariableSpace()->putVariable(pair, outArr);
+                        if (var->hasNDArray()) {
+                            nd4j_printf("Leaked array 318!\n","");
+                        }
+
                         var->setNDArray(outArr);
+
+                        // FIXME: this one should be removable
+                        var->markRemovable(false);
                     }
                 }
 
@@ -171,7 +180,7 @@ namespace nd4j {
                 T mean = array.meanNumber();
                 //if (mean == (T) 0.0f || (mean < (T) 1e-5f && mean > (T) -1e-5f))
                 //    nd4j_debug("node_%i:%i result has 0.0 as mean\n", block.getNodeId(), outputNumber);
-                nd4j_debug("node_%i:%i result mean [%f]\n", block.getNodeId(), outputNumber, (float) mean);
+                nd4j_debug("node_%i:%i result length: [%i]; mean [%f]\n", block.getNodeId(), outputNumber, (int) array.lengthOf(), (float) mean);
             }
 
             // if that's the only output - treat it as singular variable
@@ -233,7 +242,7 @@ namespace nd4j {
                 T* buffer;
                 ALLOCATE(buffer, workspace, len, T);
 
-                var ->setNDArray(new NDArray<T>(buffer, __shape, workspace));
+                var->setNDArray(new NDArray<T>(buffer, __shape, workspace));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             }
 
@@ -250,12 +259,12 @@ namespace nd4j {
             Nd4jIndex len = shape::length(shape);
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                var ->setNDArray(new NDArray<T>(order, shape, workspace));
+                var->setNDArray(new NDArray<T>(order, shape, workspace));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                var ->setNDArray(new NDArray<T>(order, shape, workspace));
+                var->setNDArray(new NDArray<T>(order, shape, workspace));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             }
 
@@ -292,6 +301,35 @@ namespace nd4j {
         }
 
         template <typename T>
+        void DeclarableOp<T>::overwriteResult(Block<T> &block, int outputIdx, NDArray<T> *array) {
+            auto varSpace = block.getVariableSpace();
+            if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+                auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+                if (var->getNDArray() != nullptr && var->isRemovable())
+                    delete var->getNDArray();
+
+                var->setNDArray(array);
+                var->markRemovable(true);
+            } else {
+                auto var = new Variable<T>(array, nullptr, block.getNodeId(), outputIdx);
+                varSpace->putVariable(block.getNodeId(), outputIdx, var);
+            }
+        }
+
+        template <typename T>
+        void DeclarableOp<T>::overwriteResult(Block<T> &block, int outputIdx, NDArrayList<T> *list) {
+            auto varSpace = block.getVariableSpace();
+            if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+                auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+                var->setNDArrayList(list);
+            } else {
+                auto var = new Variable<T>(nullptr, nullptr, block.getNodeId(), outputIdx);
+                var->setNDArrayList(list);
+                varSpace->putVariable(block.getNodeId(), outputIdx, var);
+            }
+        }
+
+        template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
             /*
              * We're checking number of T and I arguments. If number of args is finite number - we check strict equality
@@ -299,23 +337,27 @@ namespace nd4j {
              */
             if (_descriptor->getNumberOfTArgs() > 0) {
                 if ((int) block.getTArguments()->size() < _descriptor->getNumberOfTArgs()) {
-                    nd4j_debug("% T args expected, but %i received", _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
+                    nd4j_printf("%i T args expected, but %i received", _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
             } else
             if (_descriptor->getNumberOfTArgs() == -1)
-                if (block.getTArguments()->size() == 0)
+                if (block.getTArguments()->size() == 0) {
+                    nd4j_printf("Number of T arguments should be positive number, but got 0 arguments\n", "");
                     return ND4J_STATUS_BAD_PARAMS;
+                }
 
             if (_descriptor->getNumberOfIArgs() > 0) {
                 if ((int) block.getIArguments()->size() < _descriptor->getNumberOfIArgs()) {
-                    nd4j_debug("% int args expected, but %i received", _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
+                    nd4j_printf("%i int args expected, but %i received", _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
             } else
             if (_descriptor->getNumberOfIArgs() == -1)
-                if (block.getIArguments()->size() == 0)
+                if (block.getIArguments()->size() == 0) {
+                    nd4j_printf("Number of Integer arguments should be positive number, but got 0 arguments\n", "");
                     return ND4J_STATUS_BAD_PARAMS;
+                }
 
 
             return ND4J_STATUS_OK;
@@ -357,6 +399,9 @@ namespace nd4j {
 
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::validateNonEmptyInput(Block<T>& block) {
+            if (this->getOpDescriptor()->getNumberOfInputs() == -2)
+                return ND4J_STATUS_OK;
+
             if (block.width() < 1)
                 return ND4J_STATUS_BAD_INPUT;
 
@@ -373,10 +418,12 @@ namespace nd4j {
                     throw "Bad input";
                 }
 
-                NDArray<T> *aV = v->getNDArray();
+                if (v->variableType() == VariableType::NDARRAY) {
+                    NDArray<T> *aV = v->getNDArray();
 
-                if (aV == nullptr || !aV->nonNull())
-                    return ND4J_STATUS_BAD_INPUT;
+                    if (aV == nullptr || !aV->nonNull())
+                        return ND4J_STATUS_BAD_INPUT;
+                }
 
                 cnt++;
             }
@@ -401,7 +448,7 @@ namespace nd4j {
         }
 
         template<typename T>
-        nd4j::ArrayList<T>*  nd4j::ops::DeclarableOp<T>::execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
+        nd4j::ResultSet<T>*  nd4j::ops::DeclarableOp<T>::execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
             std::vector<NDArray<T>*> ins(inputs);
             std::vector<T> tas(tArgs);
             std::vector<int> ias(iArgs);
@@ -455,10 +502,10 @@ namespace nd4j {
         }
 
         template <typename T>
-        nd4j::ArrayList<T>* nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace) {
+        nd4j::ResultSet<T>* nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace) {
             VariableSpace<T> variableSpace;
-            auto arrayList = new ArrayList<T>();
-            //ArrayList<T> arrayList;
+            auto arrayList = new ResultSet<T>();
+            //ResultSet<T> arrayList;
 
             int cnt = -1;
             std::vector<int> in;

@@ -6,6 +6,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+#include "array_generated.h"
 #include "node_generated.h"
 
 namespace nd4j {

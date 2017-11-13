@@ -162,6 +162,11 @@ namespace nd4j {
             this->putVariable(pair, array);
         }
 
+        template <typename T>
+        void nd4j::graph::VariableSpace<T>::putVariable(int node, int idx, Variable<T> *variable) {
+            std::pair<int, int> pair(node, idx);
+            this->putVariable(pair, variable);
+        }
 
         template <typename T>
         void nd4j::graph::VariableSpace<T>::silentPutVariable(std::pair<int,int>& pair, Variable<T> *variable) {
@@ -194,6 +199,11 @@ namespace nd4j {
 
                 _varmap.unlock();
             }
+        }
+
+        template <typename T>
+        void VariableSpace<T>::trackList(nd4j::NDArrayList<T>* list) {
+            _lists.emplace_back(list);
         }
 
         template <typename T>
@@ -289,6 +299,9 @@ namespace nd4j {
             //_internal.clear();
             //_external.clear();
             //_temporary.clear();
+
+            for (auto p: _lists)
+                delete p;
         }
 
 

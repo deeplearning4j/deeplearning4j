@@ -62,7 +62,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto array = new NDArray<float>(5, 5, 'c');
     array->assign(-2.0f);
 
-    auto fShape = builder.CreateVector(array->getShapeAsVector());
+    auto fShape = builder.CreateVector(array->getShapeInfoAsVector());
     auto fBuffer = builder.CreateVector(array->getBufferAsVector());
 
     auto fVar = CreateFlatVariable(builder, -1, 0, fShape, fBuffer);
@@ -84,8 +84,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name1 = builder.CreateString("wow1");
     auto name2 = builder.CreateString("wow2");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, DataType_INHERIT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, in2, 0, DataType_INHERIT, vec2);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, in2, 0, nd4j::graph::DataType::DataType_FLOAT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -189,7 +189,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0f);
 
-    auto fXShape = builder.CreateVector(x->getShapeAsVector());
+    auto fXShape = builder.CreateVector(x->getShapeInfoAsVector());
     auto fXBuffer = builder.CreateVector(x->getBufferAsVector());
 
     auto fXVar = CreateFlatVariable(builder, -1, 0, fXShape, fXBuffer);
@@ -198,7 +198,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
     auto y = new NDArray<float>(5, 5, 'c');
     y->assign(-1.0f);
 
-    auto fYShape = builder.CreateVector(y->getShapeAsVector());
+    auto fYShape = builder.CreateVector(y->getShapeInfoAsVector());
     auto fYBuffer = builder.CreateVector(y->getBufferAsVector());
 
     auto fYVar = CreateFlatVariable(builder, -2, 0, fYShape, fYBuffer);
@@ -217,7 +217,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
     auto name1 = builder.CreateString("wow1");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, DataType_FLOAT, out1);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, out1);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fXVar);
@@ -286,7 +286,7 @@ TEST_F(FlatBuffersTest, ReadFile2) {
     uint8_t* data = nd4j::graph::readFlatBuffers("./resources/adam_sum.fb");
     Nd4jPointer result = GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) data);
 
-    ArrayList<float> arrays(GetFlatResult(result));
+    ResultSet<float> arrays(GetFlatResult(result));
 
     ASSERT_EQ(1, arrays.size());
     ASSERT_EQ(1, arrays.at(0)->lengthOf());
@@ -430,6 +430,58 @@ TEST_F(FlatBuffersTest, ReadStridedSlice_1) {
     auto z = graph->getVariableSpace()->getVariable(2)->getNDArray();
 
     ASSERT_NEAR(73.5f, z->getScalar(0), 1e-5);
+
+    delete graph;
+}
+
+TEST_F(FlatBuffersTest, ReadTensorArray_1) {
+    // TF graph: https://gist.github.com/raver119/3265923eed48feecc465d17ec842b6e2
+    float _expB[] = {1.000000, 1.000000, 2.000000, 2.000000, 3.000000, 3.000000};
+    NDArray<float> exp('c', {3, 2});
+    exp.setBuffer(_expB);
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_array.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(14));
+
+    auto z = graph->getVariableSpace()->getVariable(14)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete graph;
+}
+
+
+TEST_F(FlatBuffersTest, ReadTensorArrayLoop_1) {
+    NDArray<float> exp('c', {5, 2}, {3., 6., 9., 12., 15., 18., 21., 24., 27., 30.});
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_array_loop.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto variableSpace = graph->getVariableSpace();
+
+    ASSERT_TRUE(variableSpace->hasVariable(23,0));
+
+    auto z = variableSpace->getVariable(23)->getNDArray();
+
+    z->printShapeInfo("z shape");
+    z->printIndexedBuffer("z buffer");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
 }

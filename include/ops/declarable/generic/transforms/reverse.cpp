@@ -123,8 +123,8 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     std::vector<int>* argI = block.getIArguments();
     std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), *argI);       
 
-    ArrayList<T>* listOut = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
-    ArrayList<T>* listIn  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
+    auto listOut = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
+    auto listIn  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
        
     NDArray<T>* subArrIn  = nullptr;
     NDArray<T>* subArrOut = nullptr;    

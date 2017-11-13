@@ -7,9 +7,9 @@
 
 #include <op_boilerplate.h>
 #include <NativeOps.h>
-#include <Node.h>
-#include <Variable.h>
-#include <VariableSpace.h>
+#include <graph/Node.h>
+#include <graph/Variable.h>
+#include <graph/VariableSpace.h>
 #include <NDArray.h>
 #include <cnpy.h>
 #include <ops/ops.h>

@@ -17,6 +17,7 @@
 #define nd4j_logger(FORMAT, ...) if (nd4j::Environment::getInstance()->isDebug() && nd4j::Environment::getInstance()->isVerbose()) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_verbose(FORMAT, ...) if (nd4j::Environment::getInstance()->isVerbose()) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_printf(FORMAT, ...) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_printv(FORMAT, VECTOR)     nd4j::Logger::printv(FORMAT, VECTOR);
 
 #else
 
@@ -24,6 +25,7 @@
 #define nd4j_logger(FORMAT, A, ...)
 #define nd4j_verbose(FORMAT, ...)
 #define nd4j_printf(FORMAT, ...) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_printv(FORMAT, VECTOR)
 
 #endif
 

@@ -38,8 +38,8 @@ namespace nd4j {
                 return ND4J_STATUS_BAD_PARAMS;
             }
             
-            std::unique_ptr<ArrayList<T>> batchIn(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ArrayList<T>> batchOut(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> batchIn(NDArrayFactory<T>::allExamples(input));
+            std::unique_ptr<ResultSet<T>> batchOut(NDArrayFactory<T>::allExamples(output));
 
             // TODO: eventually we want OMP being used here
             for (int e = 0; e < batchIn->size(); e++) {
@@ -47,7 +47,7 @@ namespace nd4j {
                 auto tadOut = batchOut->at(e);
 
                 if (biasUsed) {
-                    std::unique_ptr<ArrayList<T>> outputBlock(NDArrayFactory<T>::allExamples(tadOut));
+                    std::unique_ptr<ResultSet<T>> outputBlock(NDArrayFactory<T>::allExamples(tadOut));
                     for (int i = 0; i < bias->lengthOf(); i++) {
                         auto oB = outputBlock->at(i);
                         oB->assign(bias->getScalar(i));

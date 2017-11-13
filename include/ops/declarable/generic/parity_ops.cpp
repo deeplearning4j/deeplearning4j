@@ -538,8 +538,8 @@ namespace nd4j {
                 indicesU.push_back(cnt++);
             }
 
-            std::unique_ptr<ArrayList<T>> tadsOperand(nd4j::NDArrayFactory<T>::multipleTensorsAlongDimension(operand, indices, tadDimension));
-            std::unique_ptr<ArrayList<T>> tadsUpdate(nd4j::NDArrayFactory<T>::multipleTensorsAlongDimension(updates, indicesU, tadDimension));
+            std::unique_ptr<ResultSet<T>> tadsOperand(nd4j::NDArrayFactory<T>::multipleTensorsAlongDimension(operand, indices, tadDimension));
+            std::unique_ptr<ResultSet<T>> tadsUpdate(nd4j::NDArrayFactory<T>::multipleTensorsAlongDimension(updates, indicesU, tadDimension));
 
 //#pragma omp parallel for schedule(dynamic) proc_bind(close) shared(tadsOperand, tadsUpdate)
             for (unsigned long x = 0; x < indices.size(); x++) {

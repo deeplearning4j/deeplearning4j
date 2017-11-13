@@ -994,7 +994,45 @@ struct __registratorDouble_##NAME {\
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 
+#define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      template <typename T> \
+                                                            class NAME: public nd4j::ops::DeclarableListOp<T> { \
+                                                            public:\
+                                                                NAME(); \
+                                                            protected: \
+                                                                Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block); \
+                                                            };
 
+#define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)         template <typename T>\
+                                                            NAME<T>::NAME() : nd4j::ops::DeclarableListOp<T>(NIN, NOUT, #NAME, TARGS, IARGS) { }; \
+                                                            template class ND4J_EXPORT NAME<float>;\
+                                                            template class ND4J_EXPORT NAME<float16>;\
+                                                            template class ND4J_EXPORT NAME<double>;\
+                                                            template <typename OpName>  \
+                                                            struct __registratorFloat_##NAME { \
+                                                                __registratorFloat_##NAME() { \
+                                                                    OpName *ptr = new OpName(); \
+                                                                    OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+                                                                } \
+                                                            }; \
+                                                            template <typename OpName>  \
+                                                            struct __registratorHalf_##NAME {\
+                                                                __registratorHalf_##NAME() {\
+                                                                    OpName *ptr = new OpName(); \
+                                                                    OpRegistrator::getInstance()->registerOperationHalf(ptr); \
+                                                                }\
+                                                            };\
+                                                            template <typename OpName>  \
+                                                            struct __registratorDouble_##NAME {\
+                                                                __registratorDouble_##NAME() {\
+                                                                    OpName *ptr = new OpName(); \
+                                                                    OpRegistrator::getInstance()->registerOperationDouble(ptr); \
+                                                                }\
+                                                            };\
+                                                            static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME; \
+                                                            static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME; \
+                                                            static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME; \
+                                                            template <typename T> \
+                                                            Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
 
 #define DECLARE_LOGIC_OP(NAME)   template <typename T> \
                                                 class NAME: public nd4j::ops::LogicOp<T> { \
@@ -1316,6 +1354,7 @@ struct __registratorDouble_##NAME {\
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
+#define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
 #define STORE_RESULT(A)     this->storeResult(block, 0, A)
 #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
@@ -1328,6 +1367,8 @@ struct __registratorDouble_##NAME {\
 
 #define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariable(INDEX)->getNDArray()
 #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
+
+#define INPUT_LIST(INDEX)     (nd4j::NDArrayList<T> *) block.getVariable(INDEX)->getNDArrayList()
 
 #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
 #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)

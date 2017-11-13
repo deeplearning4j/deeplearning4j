@@ -10,6 +10,7 @@ namespace nd4j {
         template <typename T>
         LogicOp<T>::LogicOp(const char *name) : DeclarableOp<T>::DeclarableOp(name, true) {
             // just using DeclarableOp constructor
+            //this->_descriptor->
         }
 
         template <typename T>

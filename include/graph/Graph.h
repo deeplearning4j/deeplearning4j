@@ -57,6 +57,8 @@ namespace nd4j {
             void injectNode(nd4j::graph::Node<T> *node);
 
             void pushToOutputOnce(int32_t id);
+
+            void printOutNode(Node<T>* node);
         public:
             Graph(const FlatGraph *flatGraph = nullptr);
 
@@ -131,6 +133,11 @@ namespace nd4j {
              * @return
              */
             std::vector<nd4j::graph::Node<T>*> *getAllNodes();
+
+            /**
+             * This method prints out Graph op-by-op, and respective inputs
+             */
+            void printOut();
 
             /**
              * This method returns Scope ptr specified with id

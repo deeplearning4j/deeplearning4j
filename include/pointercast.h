@@ -28,6 +28,9 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_BAD_ORDER      33
 #define ND4J_STATUS_BAD_ARGUMENTS      34
 
+#define ND4J_STATUS_DOUBLE_WRITE      40
+#define ND4J_STATUS_DOUBLE_READ       45
+
 
 #define ND4J_STATUS_KERNEL_FAILURE      50
 

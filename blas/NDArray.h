@@ -9,6 +9,7 @@
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
 #include <graph/Intervals.h>
+#include <array/DataType.h>
 
 namespace nd4j {
 
@@ -39,6 +40,7 @@ namespace nd4j {
         bool _isShapeAlloc = false;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside
         bool _isBuffAlloc = false; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside
 
+        DataType _dataType = DataType_FLOAT;
 
     public:
         void* operator new(size_t i);
@@ -88,6 +90,8 @@ namespace nd4j {
         //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
         NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
+        NDArray(const char order, const std::vector<int> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
+
         NDArray(T *buffer, const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
@@ -96,6 +100,8 @@ namespace nd4j {
         NDArray<T>* repeat(int dimension, const std::vector<int>& reps) const;
 
         void repeat(int dimension, NDArray<T>& target) const;
+
+        DataType dataType() const;
 
         NDArray<T>* getView();
 
@@ -106,6 +112,10 @@ namespace nd4j {
         NDArray<T>* subarray(const std::initializer_list<NDIndex*>& idx) const;
 
         NDArray<T>* subarray(const Intervals& idx) const;
+
+        NDArray<T>* cast(DataType dtype);
+
+        void cast(NDArray<T>* target, DataType dtype);
 
         nd4j::memory::Workspace* getWorkspace() const {
             return _workspace;
@@ -214,7 +224,7 @@ namespace nd4j {
         void assign(const T value);
 
         // This method returns new copy of this NDArray, optionally in different order
-        NDArray<T> *dup(const char newOrder);
+        NDArray<T> *dup(const char newOrder = 'a');
 
         // Returns true if these two NDArrays have same shape
         inline bool isSameShape(const NDArray<T> *other) const;
@@ -382,7 +392,8 @@ namespace nd4j {
         // these methods suited for FlatBuffers use.
         std::vector<T> getBufferAsVector();
 
-        std::vector<int32_t> getShapeAsVector();
+        std::vector<int> getShapeAsVector();
+        std::vector<int> getShapeInfoAsVector();
 		
 		// set new order and shape in case of suitable array length 
 		bool reshapei(const char order, const std::initializer_list<int>& shape);

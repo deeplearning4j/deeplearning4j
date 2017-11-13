@@ -88,6 +88,7 @@ namespace nd4j {
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
             int getNodeId();
+            int nodeId();
 
 
             std::vector<T>* getTArguments();
@@ -128,6 +129,7 @@ namespace nd4j {
              */
             Variable<T>* getVariable(int idx);
             Variable<T>* variable(int idx);
+            std::pair<int, int>* input(int idx);
 
             /**
              * This method fetches variable from Workspace DIRECTLY

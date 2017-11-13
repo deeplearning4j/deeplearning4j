@@ -25,8 +25,9 @@ namespace nd4j {
 
         template<typename T>
         Block<T>::~Block() {
-            //_variables.clear();
-            //_inputs.clear();
+            _iArgs.clear();
+            _tArgs.clear();
+            _inputs.clear();
         }
 
 
@@ -76,6 +77,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        int Block<T>::nodeId() {
+            return getNodeId();
+        }
+
+        template <typename T>
         int Block<T>::getNodeId() {
             return _nodeId;
         }
@@ -117,6 +123,11 @@ namespace nd4j {
         void Block<T>::pickInput(int input) {
             std::pair<int, int> pair(input, 0);
             _inputs.emplace_back(pair);
+        }
+
+        template <typename T>
+        std::pair<int, int>* Block<T>::input(int idx) {
+            return &(_inputs.at(idx));
         }
 
         template <typename T>

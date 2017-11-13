@@ -85,6 +85,7 @@ namespace nd4j {
 
                 if (var->getNDArray() == nullptr) {
                     var->setNDArray(new NDArray<T>('c', {1, 1}, block.getWorkspace()));
+                    var->markRemovable(true);
                 }
             }
 

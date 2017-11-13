@@ -183,7 +183,6 @@ template <typename T>
     std::vector<T> NDArray<T>::getBufferAsVector() {
         std::vector<T> vector;
 
-#pragma omp simd
         for (int e = 0; e < this->lengthOf(); e++) {
             vector.push_back(this->getScalar(e));
         }
@@ -192,14 +191,22 @@ template <typename T>
     }
 
     template<typename T>
-    std::vector<int32_t> NDArray<T>::getShapeAsVector() {
-        std::vector<int32_t> vector;
+    std::vector<int> NDArray<T>::getShapeAsVector() {
+        std::vector<int> vector;
 
-        int magicNumber = this->rankOf() * 2 + 4;
-#pragma omp simd
-        for (int e = 0; e < magicNumber; e++) {
+        for (int e = 0; e < this->rankOf(); e++)
+            vector.emplace_back(this->sizeAt(e));
+
+        return vector;
+    }
+
+    template<typename T>
+    std::vector<int> NDArray<T>::getShapeInfoAsVector() {
+        std::vector<int> vector;
+
+        int magicNumber = shape::shapeInfoLength(this->rankOf());
+        for (int e = 0; e < magicNumber; e++)
             vector.push_back(this->_shapeInfo[e]);
-        }
 
         return vector;
     }
@@ -360,8 +367,52 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
     }
 }
 
+    template<typename T>
+    NDArray<T>::NDArray(const char order, const std::vector<int> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace) {
+        int rank = (int) shape.size();
 
-    ////////////////////////////////////////////////////////////////////////
+        if (rank > MAX_RANK)
+            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+        int *shapeOf = new int[rank];
+        int cnt = 0;
+
+        for (auto &item: shape)
+            shapeOf[cnt++] = item;
+
+        _workspace = workspace;
+        if (workspace == nullptr) {
+            if (order == 'f')
+                _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+            else
+                _shapeInfo = shape::shapeBuffer(rank, shapeOf);
+
+            _buffer =  new T[shape::length(_shapeInfo)];
+        } else {
+            int *shapeInfo = order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
+
+            _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
+            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
+
+            _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
+
+            delete[] shapeInfo;
+        }
+
+        if (shape::length(_shapeInfo) != data.size()) {
+            nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(_shapeInfo));
+            throw "Data size doesn't match shape";
+        }
+
+        //memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
+        memcpy(_buffer, data.data(), sizeOfT() * shape::length(_shapeInfo));
+
+		_isBuffAlloc = true;
+		_isShapeAlloc = true;
+
+        delete[] shapeOf;
+    }
+
     template<typename T>
     NDArray<T>::NDArray(const char order, const std::vector<int> &shape, nd4j::memory::Workspace* workspace) {
 
@@ -419,21 +470,21 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
             shapeOf[cnt++] = item;
 
         _workspace = workspace;
-        _buffer = buffer;            
-        
+        _buffer = buffer;
+
         if (workspace == nullptr) {
             if (order == 'f')
                 _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
             else
-                _shapeInfo = shape::shapeBuffer(rank, shapeOf);            
+                _shapeInfo = shape::shapeBuffer(rank, shapeOf);
         } else {
             int *shapeInfo = order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
             _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));            
+            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
             delete[] shapeInfo;
         }
-        
-        _isBuffAlloc = false; 
+
+        _isBuffAlloc = false;
         _isShapeAlloc = true;
 
         delete[] shapeOf;
@@ -476,10 +527,15 @@ template <typename T>
     T* newBuffer;
     int* newShapeInfo;
 
+    char order = newOrder;
+
+    if (order == 'a')
+        order = this->ordering();
+
     if (_workspace == nullptr) {
         newBuffer = new T[newLength];
 
-        if (newOrder == 'f')
+        if (order == 'f')
             newShapeInfo = shape::shapeBufferFortran(rankOf(), shapeOf());
         else
             newShapeInfo = shape::shapeBuffer(rankOf(), shapeOf());
@@ -488,7 +544,7 @@ template <typename T>
         newBuffer = (T*) _workspace->allocateBytes(newLength * sizeOfT());
         newShapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(this->rankOf()));
 
-        if (newOrder == 'f')
+        if (order == 'f')
             shape::shapeBufferFortran(rankOf(), shapeOf(), newShapeInfo);
         else
             shape::shapeBuffer(rankOf(), shapeOf(), newShapeInfo);
@@ -2164,7 +2220,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
 
         Nd4jIndex offset = 0;
 
-        shape::printShapeInfoLinear(newShape);
+        //shape::printShapeInfoLinear(newShape);
 
         for (int d = 0; d < idx.size(); d++) {
             // building new shape first
@@ -2184,9 +2240,10 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
             }
         }
 
-        shape::printShapeInfoLinear(newShape);
+        //shape::printShapeInfoLinear(newShape);
 
         auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+        result->_isShapeAlloc = true;
 
         return result;
     }
@@ -2222,6 +2279,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         }
 
         auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+        result->_isShapeAlloc = true;
 
         return result;
     }
@@ -2252,7 +2310,23 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
                 offset += idx[d][0] * stridesOf[d];
             }
         }
-        return new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+
+        auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
+        result->_isShapeAlloc = true;
+
+        return result;
+    }
+
+    template <typename T>
+    NDArray<T>* NDArray<T>::cast(DataType dtype) {
+        // TODO: to be implemented
+        return nullptr;
+    }
+
+    template <typename T>
+    void NDArray<T>::cast(NDArray<T>* target, DataType dtype) {
+        // TODO: to be implemented properly
+        target->assign(this);
     }
 
     template<typename T>
@@ -2634,6 +2708,11 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         NDArray<T> result(*ptr);
         delete ptr;
         return result;
+    }
+
+    template<typename T>
+    DataType NDArray<T>::dataType() const {
+        return _dataType;
     }
 
     ////////////////////////////////////////////////////////////////////////

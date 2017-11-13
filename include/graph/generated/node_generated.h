@@ -6,6 +6,8 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+#include "array_generated.h"
+
 namespace nd4j {
 namespace graph {
 
@@ -56,6 +58,44 @@ inline OpType (&EnumValuesOpType())[13] {
   return values;
 }
 
+enum InputType {
+  InputType_UNDEFINED = 0,
+  InputType_NUMERIC = 1,
+  InputType_STRINGULAR = 2,
+  InputType_NUMERIC_SET = 3,
+  InputType_STRINGULAR_SET = 4,
+  InputType_MIN = InputType_UNDEFINED,
+  InputType_MAX = InputType_STRINGULAR_SET
+};
+
+inline InputType (&EnumValuesInputType())[5] {
+  static InputType values[] = {
+    InputType_UNDEFINED,
+    InputType_NUMERIC,
+    InputType_STRINGULAR,
+    InputType_NUMERIC_SET,
+    InputType_STRINGULAR_SET
+  };
+  return values;
+}
+
+inline const char **EnumNamesInputType() {
+  static const char *names[] = {
+    "UNDEFINED",
+    "NUMERIC",
+    "STRINGULAR",
+    "NUMERIC_SET",
+    "STRINGULAR_SET",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameInputType(InputType e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesInputType()[index];
+}
+
 enum OpClass {
   OpClass_TRANSFORM = 0,
   OpClass_REDUCTION = 1,
@@ -95,41 +135,6 @@ inline const char **EnumNamesOpClass() {
 inline const char *EnumNameOpClass(OpClass e) {
   const size_t index = static_cast<int>(e);
   return EnumNamesOpClass()[index];
-}
-
-enum DataType {
-  DataType_INHERIT = 0,
-  DataType_HALF = 1,
-  DataType_FLOAT = 2,
-  DataType_DOUBLE = 3,
-  DataType_MIN = DataType_INHERIT,
-  DataType_MAX = DataType_DOUBLE
-};
-
-inline DataType (&EnumValuesDataType())[4] {
-  static DataType values[] = {
-    DataType_INHERIT,
-    DataType_HALF,
-    DataType_FLOAT,
-    DataType_DOUBLE
-  };
-  return values;
-}
-
-inline const char **EnumNamesDataType() {
-  static const char *names[] = {
-    "INHERIT",
-    "HALF",
-    "FLOAT",
-    "DOUBLE",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameDataType(DataType e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesDataType()[index];
 }
 
 struct LongPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -427,8 +432,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *inputPaired() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *>(VT_INPUTPAIRED);
   }
-  DataType dataType() const {
-    return static_cast<DataType>(GetField<int8_t>(VT_DATATYPE, 0));
+  nd4j::graph::DataType dataType() const {
+    return static_cast<nd4j::graph::DataType>(GetField<int8_t>(VT_DATATYPE, 0));
   }
   const flatbuffers::Vector<int32_t> *output() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_OUTPUT);
@@ -505,7 +510,7 @@ struct FlatNodeBuilder {
   void add_inputPaired(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired) {
     fbb_.AddOffset(FlatNode::VT_INPUTPAIRED, inputPaired);
   }
-  void add_dataType(DataType dataType) {
+  void add_dataType(nd4j::graph::DataType dataType) {
     fbb_.AddElement<int8_t>(FlatNode::VT_DATATYPE, static_cast<int8_t>(dataType), 0);
   }
   void add_output(flatbuffers::Offset<flatbuffers::Vector<int32_t>> output) {
@@ -552,7 +557,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     int64_t opNum = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> input = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired = 0,
-    DataType dataType = DataType_INHERIT,
+    nd4j::graph::DataType dataType = nd4j::graph::DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> extraParams = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> extraInteger = 0,
@@ -588,7 +593,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     int64_t opNum = 0,
     const std::vector<int32_t> *input = nullptr,
     const std::vector<flatbuffers::Offset<IntPair>> *inputPaired = nullptr,
-    DataType dataType = DataType_INHERIT,
+    nd4j::graph::DataType dataType = nd4j::graph::DataType_INHERIT,
     const std::vector<int32_t> *output = nullptr,
     const std::vector<float> *extraParams = nullptr,
     const std::vector<int32_t> *extraInteger = nullptr,

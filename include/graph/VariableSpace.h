@@ -11,10 +11,12 @@
 #include <list>
 #include <map>
 #include <mutex>
-//#include <NDArray.h>
+#include <NDArray.h>
+#include <array/NDArrayList.h>
 #include <graph/Variable.h>
 #include <memory/Workspace.h>
 #include <graph/Stash.h>
+
 
 namespace nd4j {
     namespace graph {
@@ -28,11 +30,13 @@ namespace nd4j {
             // stash is NOT cloned
             nd4j::graph::Stash<T> _stash;
 
-            std::map<std::pair<int, int>, nd4j::graph::Variable<T> *> _paired;
-            std::map<std::string, nd4j::graph::Variable<T> *> _symbolic;
-            std::map<int, nd4j::graph::Variable<T> *> _variables;
-            std::vector<nd4j::graph::Variable<T> *> _external;
-            std::vector<nd4j::graph::Variable<T> *> _internal;
+            std::map<std::pair<int, int>, Variable<T> *> _paired;
+            std::map<std::string, Variable<T> *> _symbolic;
+            std::map<int, Variable<T> *> _variables;
+            std::vector<Variable<T> *> _external;
+            std::vector<Variable<T> *> _internal;
+
+            std::vector<nd4j::NDArrayList<T> *> _lists;
 
             std::vector<nd4j::graph::Variable<T> *> _placeholders;
 
@@ -50,7 +54,7 @@ namespace nd4j {
             ~VariableSpace();
 
             int numberOfPlaceholders();
-            std::vector<nd4j::graph::Variable<T>*>* getPlaceholders();
+            std::vector<Variable<T>*>* getPlaceholders();
 
             bool hasVariable(int id);
             bool hasVariable(int id, int idx);
@@ -67,7 +71,9 @@ namespace nd4j {
             void putVariable(int id, Variable<T> *variable);
             void putVariable(int id, NDArray<T> *array);
             void putVariable(int id, int idx, NDArray<T> *array);
+            void putVariable(int id, int idx, Variable<T> *array);
 
+            void trackList(nd4j::NDArrayList<T>* list);
 
             void putOutputVariable(Variable<T> *variable);
 

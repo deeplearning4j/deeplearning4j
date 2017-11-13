@@ -627,8 +627,13 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
             }
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
-                NDArray<T> * array = __variableSpace->getVariable(node->id())->getNDArray();
-                nd4j_debug("node_%i finished. result meanNumber: %f\n", node->id(), array->meanNumber());
+                auto array = __variableSpace->getVariable(node->id())->getNDArray();
+                auto list = __variableSpace->getVariable(node->id())->getNDArrayList();
+                if (array != nullptr) {
+                    nd4j_debug("node_%i finished. result length: [%i]; meanNumber: [%f]\n", node->id(), (int) array->lengthOf(), array->meanNumber());
+                } else if (list != nullptr) {
+                    nd4j_debug("node_% is ListOp, skipping evaluation", node->id());
+                }
             }
         }
     }
@@ -693,7 +698,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     for (int e = 0; e < (int) outputs->size(); e++) {
         auto var = outputs->at(e);
 
-        auto fShape = builder.CreateVector(var->getNDArray()->getShapeAsVector());
+        auto fShape = builder.CreateVector(var->getNDArray()->getShapeInfoAsVector());
         auto fBuffer = builder.CreateVector(var->getNDArray()->getBufferAsVector());
         auto fName = builder.CreateString(*(var->getName()));
 
@@ -967,6 +972,7 @@ Graph<T>* GraphExecutioner<T>::importFromFlatBuffers(const char *filename) {
     auto restoredGraph = new Graph<float>(fg);
 
     delete[] data;
+    //delete fg;
 
     return restoredGraph;
 }

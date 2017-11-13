@@ -15,7 +15,7 @@
 namespace nd4j {
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory<T>::allExamples(NDArray<T>* ndArray) {
+    ResultSet<T>* NDArrayFactory<T>::allExamples(NDArray<T>* ndArray) {
         std::vector<int> dimensions;
         for (int e = 1; e < ndArray->rankOf(); e++)
             dimensions.push_back(e);
@@ -24,8 +24,8 @@ namespace nd4j {
     }
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory<T>::multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions) {
-        auto result = new ArrayList<T>();
+    ResultSet<T>* NDArrayFactory<T>::multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions) {
+        auto result = new ResultSet<T>();
 
         if (indices.size() == 0)
             return result;
@@ -68,14 +68,14 @@ namespace nd4j {
     }
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions) {
+    ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions) {
         std::vector<int> vec(dimensions);
         return allTensorsAlongDimension(ndArray, vec);
     }
 
     template<typename T>
-    ArrayList<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions) {
-        auto result = new ArrayList<T>();
+    ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions) {
+        auto result = new ResultSet<T>();
 
         std::vector<int> copy(dimensions);
 
@@ -452,11 +452,11 @@ namespace nd4j {
     }
 
     template<typename T>
-    void NDArrayFactory<T>::linspace(T from, NDArray<T>& arr) {
+    void NDArrayFactory<T>::linspace(T from, NDArray<T>& arr, T step) {
         
         int size = arr.lengthOf();
         for (Nd4jIndex i = 0; i < size; ++i)
-            arr(i) = from++;
+            arr(i) = from + (step * i);
     }
 
     template<typename T>

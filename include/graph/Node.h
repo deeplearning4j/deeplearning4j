@@ -53,6 +53,9 @@ namespace nd4j {
             // this field is used to check, if op should be used in-place (so it can/will modify its inputs)
             bool _isInplace = false;
 
+            // this field is used to delete attached customOp
+            bool _isDeductable = false;
+
             OpClass _opClass;
 
             // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario

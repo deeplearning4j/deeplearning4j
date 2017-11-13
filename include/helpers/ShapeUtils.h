@@ -38,6 +38,10 @@ namespace nd4j {
         // return new (shorter) dimensions array without dimensions that are present in input vector
         static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);
 
+        // this method converts axis, to set of axes for TAD. i.e. for 0 axis of 3D array becomes {1, 2}
+        static std::vector<int> convertAxisToTadTarget(int rank, std::vector<int>& axis);
+
+        static std::vector<int> convertAxisToTadTarget(int rank, std::initializer_list<int> axis);
     };
 
 

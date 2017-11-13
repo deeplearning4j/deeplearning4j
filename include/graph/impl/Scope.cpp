@@ -12,11 +12,14 @@ namespace nd4j {
 
             if (name != nullptr)
                 _name = name;
+            else
+                name = "";
         }
 
         template <typename T>
         Scope<T>::~Scope() {
-
+            for (auto v: _nodes)
+                delete v;
         }
 
         template <typename T>
@@ -34,10 +37,19 @@ namespace nd4j {
             return (int) _nodes.size();
         }
 
+        template <typename T>
+        int Scope<T>::id() {
+            return _id;
+        }
+
+        template <typename T>
+        std::string* Scope<T>::name() {
+            return &_name;
+        }
 
         template class Scope<float>;
-        template class Scope<float16>;
-        template class Scope<double>;
+        //template class Scope<float16>;
+        //template class Scope<double>;
     }
 }
 

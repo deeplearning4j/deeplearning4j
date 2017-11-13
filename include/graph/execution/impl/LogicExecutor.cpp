@@ -8,6 +8,7 @@
 #include <graph/execution/LogicSwitch.h>
 #include <graph/execution/LogicConditional.h>
 #include <graph/execution/LogicReturn.h>
+#include <graph/execution/LogicExpose.h>
 
 
 namespace nd4j {
@@ -25,7 +26,10 @@ namespace nd4j {
                     return LogicSwitch<T>::processNode(graph, node);
                 case 40:
                     return LogicReturn<T>::processNode(graph, node);
+                case 50:
+                    return LogicExpose<T>::processNode(graph, node);
             }
+
             if (node->getName() == nullptr) {
                 nd4j_printf("Unknown LogicOp used at node [%i]: [%i]\n", node->id(), node->opNum());
             } else {

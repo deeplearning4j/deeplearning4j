@@ -1,3 +1,5 @@
+include "array.fbs";
+
 namespace nd4j.graph;
 
 table LongPair {
@@ -34,6 +36,14 @@ enum OpType:byte {
     LOGIC = 119, //
 }
 
+enum InputType:byte {
+    UNDEFINED,
+    NUMERIC,
+    STRINGULAR,
+    NUMERIC_SET,
+    STRINGULAR_SET,
+}
+
 enum OpClass:byte {
     TRANSFORM = 0, // ops of this class return the same shape as primary input
     REDUCTION = 1, // ops of this class return accumulation shape
@@ -43,13 +53,7 @@ enum OpClass:byte {
     LOOP = 5, // Various LOOPS
 }
 
-enum DataType:byte {
-    INHERIT,
-    HALF,
-    FLOAT,
-    DOUBLE,
-}
-
+// TODO: to be changed. Should include FlatArray instead
 table FlatVariable {
     id:int;
     name:string;

@@ -16,6 +16,7 @@
 #include <ops/declarable/LogicOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
 #include <ops/declarable/DeclarableCustomOp.h>
+#include <ops/declarable/DeclarableListOp.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <helpers/ArrayUtils.h>
 #include <ShapeList.h>
@@ -52,7 +53,7 @@ namespace nd4j {
         DECLARE_OP(maximum, 2, 1, true);
         DECLARE_OP(minimum, 2, 1, true);
         DECLARE_OP(square, 1, 1, true);
-
+        DECLARE_CUSTOM_OP(expose, -1, -1, true, 0, 0);
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
 
@@ -89,7 +90,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(unstack, 1, -1, false, 0, 1);
         DECLARE_CUSTOM_OP(im2col, 1, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(col2im, 1, 1, false, 0, 9);
-        DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, -1); // TODO: new op type needed. that returns VIEW
+        DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, 5); // TODO: new op type needed. that returns VIEW
         DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -1);
         DECLARE_CUSTOM_OP(upsampling2d, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(upsampling2d_bp, 2, 1, false, 0, 1);
@@ -105,6 +106,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(rank, 1, 1, false, 0, 0); // ^^^^
         DECLARE_CUSTOM_OP(onehot, 1, 1, false, 2, 2);
         DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(range, -2, 1, false, -2, -2);
+        DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(pad, 2, 1, false, 0, 1);
 
         // recurrent ops
@@ -127,10 +130,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
         DECLARE_CONFIGURABLE_OP(reverse, 1, 1, true, 0, -2);
 
-
         DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);
-
-
 
         DECLARE_BOOLEAN_OP(lt_scalar, 2, true);
         DECLARE_BOOLEAN_OP(gt_scalar, 2, true);
@@ -138,6 +138,19 @@ namespace nd4j {
         DECLARE_BOOLEAN_OP(gte_scalar, 2, true);
         DECLARE_BOOLEAN_OP(eq_scalar, 2, true);
         DECLARE_BOOLEAN_OP(neq_scalar, 2, true);
+
+
+        // list operations, basically all around NDArrayList
+        DECLARE_LIST_OP(write_list, 2, 1, 0, -2);
+        DECLARE_LIST_OP(stack_list, 1, 1, 0, 0);
+        DECLARE_LIST_OP(read_list, 1, 1, 0, 1);
+        DECLARE_LIST_OP(pick_list, 1, 1, -2, -2);
+        DECLARE_LIST_OP(size_list, 1, 1, 0, 0);
+        DECLARE_LIST_OP(create_list, 1, 2, 0, -2);
+        DECLARE_LIST_OP(scatter_list, 1, 1, 0, -2);
+        DECLARE_LIST_OP(split_list, 2, 1, 0, -2);
+        DECLARE_LIST_OP(gather_list, 2, 1, 0, -2);
+        DECLARE_LIST_OP(clone_list, 1, 1, 0, 0);
     }
 }
 

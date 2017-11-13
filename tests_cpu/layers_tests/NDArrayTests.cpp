@@ -463,7 +463,7 @@ TEST_F(NDArrayTest, TestVectors1) {
     auto *array = new NDArray<float>(c, cShape);
 
 
-    auto vecShape = array->getShapeAsVector();
+    auto vecShape = array->getShapeInfoAsVector();
     auto vecBuffer = array->getBufferAsVector();
 
     ASSERT_EQ(8, vecShape.size());
@@ -1086,7 +1086,7 @@ TEST_F(NDArrayTest, TestIndexedPut5) {
 TEST_F(NDArrayTest, TestAllTensors1) {
     NDArray<float> matrix(3, 5, 'c');
 
-    std::unique_ptr<ArrayList<float>> rows(NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1}));
+    std::unique_ptr<ResultSet<float>> rows(NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1}));
 
     ASSERT_EQ(3, rows->size());
 }

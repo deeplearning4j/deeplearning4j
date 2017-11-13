@@ -2,11 +2,11 @@
 // @author raver119@gmail.com
 //
 
-#include <graph/ArrayList.h>
+#include <array/ResultSet.h>
 
 namespace nd4j {
     template <typename T>
-    ArrayList<T>::ArrayList(const nd4j::graph::FlatResult* result) {
+    ResultSet<T>::ResultSet(const nd4j::graph::FlatResult* result) {
         if (result != nullptr) {
             for (int e = 0; e < result->variables()->size(); e++) {
                 auto var = result->variables()->Get(e);
@@ -33,38 +33,38 @@ namespace nd4j {
     }
 
     template <typename T>
-    ArrayList<T>::~ArrayList() {
+    ResultSet<T>::~ResultSet() {
         for (auto v: _content)
             delete v;
     }
 
     template <typename T>
-    int ArrayList<T>::size() {
+    int ResultSet<T>::size() {
         return (int) _content.size();
     }
 
     template <typename T>
-    nd4j::NDArray<T>* ArrayList<T>::at(unsigned long idx) {
+    nd4j::NDArray<T>* ResultSet<T>::at(unsigned long idx) {
         return _content.at(idx);
     }
 
     template <typename T>
-    void ArrayList<T>::push_back(nd4j::NDArray<T> *array) {
+    void ResultSet<T>::push_back(nd4j::NDArray<T> *array) {
         _content.emplace_back(array);
     }
 
     template <typename T>
-    Nd4jStatus ArrayList<T>::status() {
+    Nd4jStatus ResultSet<T>::status() {
         return _status;
     }
 
     template <typename T>
-    void ArrayList<T>::setStatus(Nd4jStatus status) {
+    void ResultSet<T>::setStatus(Nd4jStatus status) {
         _status = status;
     }
 
-    template class ND4J_EXPORT ArrayList<float>;
-    template class ND4J_EXPORT ArrayList<float16>;
-    template class ND4J_EXPORT ArrayList<double>;
+    template class ND4J_EXPORT ResultSet<float>;
+    template class ND4J_EXPORT ResultSet<float16>;
+    template class ND4J_EXPORT ResultSet<double>;
 }
 

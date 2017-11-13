@@ -3,6 +3,7 @@
 //
 
 #include "graph/execution/LogicReturn.h"
+#include <helpers/EnumUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -23,6 +24,8 @@ namespace nd4j {
 
                 auto varIn = __variableSpace->getVariable(inputAddr);
                 auto varOut = __variableSpace->getVariable(outputAddr);
+
+                nd4j_debug("Returning varType: [%s]\n", EnumUtils::_VariableTypeToString(varIn->variableType()));
 
                 // FIXME: this is obviously wrong, we should keep depth track for backprop here
                 varOut->getNDArray()->assign(varIn->getNDArray());

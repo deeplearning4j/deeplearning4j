@@ -175,7 +175,7 @@ namespace nd4j {
         template <typename T>
         void nd4j::graph::Node<T>::pickOutput(int outputId) {
             std::pair<int, int> pair(outputId, 0);
-            _output.push_back(pair);
+            _output.emplace_back(pair);
 
             if (outputId < 0)
                 _hasExternalOutputs = true;
@@ -335,12 +335,23 @@ namespace nd4j {
                     opType == OpType_SCALAR) {
 
                 this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), opNum, scalar));
+                this->_isDeductable = true;
 
                 auto block = new Block<T>(this->id(), nullptr, false);
 
                 // there's no other IArgs in legacy options, actually
                 for (auto v: dimensions)
                     block->getIArguments()->emplace_back(v);
+
+                for (auto v: iArgs)
+                    block->getIArguments()->emplace_back(v);
+
+                for (auto v: tArgs)
+                    block->getTArguments()->emplace_back(v);
+
+                this->setBlock(block);
+            } else if (opType == OpType_CUSTOM) {
+                auto block = new Block<T>(this->id(), nullptr, false);
 
                 for (auto v: iArgs)
                     block->getIArguments()->emplace_back(v);
@@ -380,9 +391,6 @@ namespace nd4j {
                     this->_name = node->name()->str();
                 }
 
-                if (node->id() == 12)
-                    nd4j_verbose("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
-
                 if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                     for (int e = 0; e < (int) node->inputPaired()->size(); e++) {
                         auto pair = node->inputPaired()->Get(e);
@@ -392,10 +400,12 @@ namespace nd4j {
                     for (int e = 0; e < (int) node->input()->size(); e++)
                         pickInput(node->input()->Get(e));
                 } else {
-                    if (this->_name.size() > 0) {
-                        nd4j_printf("Node [%i:<%s>] do not have any inputs defined\n", this->_id, this->_name.c_str());
-                    } else {
-                        nd4j_printf("Node [%i:<noname>] do not have any inputs defined\n", this->_id);
+                    if (this->opType() != OpType_LOGIC) {
+                        if (this->_name.size() > 0) {
+                            nd4j_printf("Node [%i:<%s>] do not have any inputs defined\n", this->_id, this->_name.c_str());
+                        } else {
+                            nd4j_printf("Node [%i:<noname>] do not have any inputs defined\n", this->_id);
+                        }
                     }
                 }
 
@@ -425,11 +435,12 @@ namespace nd4j {
                 // these ops allow in-place execution by design
                 if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
                     if (_output.size() <= 1) {
-                        //_isInplace = true;
+                        _isInplace = true;
                     }
 
                     if (node->input() != nullptr && node->input()->size() > 0) {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->input()->size(), _opNum, _scalar));
+                        this->_isDeductable = true;
 
                         auto block = new Block<T>(this->id(), nullptr, false);
 
@@ -445,6 +456,7 @@ namespace nd4j {
                         this->setBlock(block);
                     } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->inputPaired()->size(), _opNum, _scalar));
+                        this->_isDeductable = true;
 
                         auto block = new Block<T>(this->id(), nullptr, false);
 
@@ -477,12 +489,14 @@ namespace nd4j {
                     }
 
                     if (node->extraInteger() != nullptr)
-                        for (uint32_t e = 0; e < node->extraInteger()->size(); e++)
-                            block->getIArguments()->push_back(node->extraInteger()->Get(e));
+                        for (uint32_t e = 0; e < node->extraInteger()->size(); e++) {
+                            int v = node->extraInteger()->Get(e);
+                            block->getIArguments()->push_back(v);
+                        }
 
                     if (node->extraParams() != nullptr)
                         for (uint32_t e = 0; e < node->extraParams()->size(); e++)
-                            block->getTArguments()->push_back(node->extraParams()->Get(e));
+                            block->getTArguments()->emplace_back(node->extraParams()->Get(e));
 
                     this->setBlock(block);
 
@@ -503,6 +517,10 @@ namespace nd4j {
 
             if (_block != nullptr)
                 delete _block;
+
+            if (_isDeductable && _customOp != nullptr)
+                delete _customOp;
+
         }
 
         template <typename T>

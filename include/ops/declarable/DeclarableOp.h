@@ -12,8 +12,8 @@
 #include <Block.h>
 #include "OpDescriptor.h"
 #include <helpers/helper_hash.h>
-#include <ShapeList.h>
-#include <ArrayList.h>
+#include <graph/ShapeList.h>
+#include <array/ResultSet.h>
 //#include <ops/declarable/declarable_ops.h>
 
 #include <chrono>
@@ -63,6 +63,18 @@ namespace nd4j {
              */
             bool allocateResult(Block<T>& block, std::initializer_list<int>& shape, char order = 'c');
             bool allocateResult(Block<T>& block, int* shape);
+
+            /**
+             * This method overwrites existen NDArray or NDArrayList in VariableSpace
+             *
+             * PLEASE NOTE: This method is dangerous.
+             *
+             * @param block
+             * @param numOutput
+             * @param array
+             */
+            void overwriteResult(Block<T>& block, int outputIdx, NDArray<T>* array);
+            void overwriteResult(Block<T>& block, int outputIdx, NDArrayList<T>* list);
 
             /*
             * This method attaches array to specific Variable, identified by node ID and outputNumber (which is output index for multi-output operations)
@@ -131,10 +143,10 @@ namespace nd4j {
              */
             virtual Nd4jStatus execute(Block<T>* block);
 
-            nd4j::ArrayList<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
+            nd4j::ResultSet<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
             Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
 
-            nd4j::ArrayList<T>* execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
+            nd4j::ResultSet<T>* execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
             Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
 
             // There methods provide various validation options

@@ -144,6 +144,8 @@ if(CUDA_BLAS)
         endif()
 
 
+        file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
+        file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
         file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/*.cpp ../include/memory/*.h)
         file(GLOB_RECURSE GRAPH_SOURCES false ../include/graph/*.cpp ../include/graph/*.h)
         file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../include/ops/declarable/*.cpp)
@@ -158,7 +160,7 @@ if(CUDA_BLAS)
         CUDA_ADD_LIBRARY(nd4jcuda SHARED cuda/NativeOps.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/grid_strided.cu   ../include/loops/cuda/pairwise_transform.cu
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
                 cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
-                Environment.cpp Environment.h ${LOOPS_SOURCES}
+                Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${OPS_SOURCES})
         target_link_libraries(nd4jcuda ${CUDA_LIBRARIES})
 
@@ -168,6 +170,8 @@ if(CUDA_BLAS)
     endif(CUDA_FOUND)
 elseif(CPU_BLAS)
 
+    file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
+    file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
     file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/*.cpp ../include/memory/*.h)
     file(GLOB_RECURSE GRAPH_SOURCES false ../include/graph/*.cpp ../include/graph/*.h)
     file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../include/ops/declarable/*.cpp)
@@ -182,7 +186,7 @@ if(IOS)
     add_library(nd4jcpu STATIC cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
             cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES}
+            Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
             ${OPS_SOURCES})
 else()
@@ -190,7 +194,7 @@ else()
     add_library(nd4jcpu SHARED cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
             cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES}
+            Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
             ${OPS_SOURCES} )
 endif()

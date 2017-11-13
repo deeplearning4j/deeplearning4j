@@ -8,46 +8,29 @@
 #include <stdint.h>
 
 
-float cpu_uint82float(uint8_t data) {
-    return (float) ((int) data);
-}
-
-uint8_t cpu_float2uint8(float data) {
-    int t = (int) data;
-    if (t > 255) t = 255;
-    if (t < 0) t = 0;
-
-    return (uint8_t) t;
-}
-
-
 namespace nd4j {
+
+    float cpu_uint82float(uint8_t data);
+    uint8_t cpu_float2uint8(float data);
 
     struct uint8 {
         uint8_t data;
 
-        local_def uint8() { data = cpu_float2uint8(0.0f); }
+        uint8();
+        ~uint8() = default;
 
         template <class T>
-        local_def uint8(const T& rhs) {
-            assign(rhs);
-        }
+        uint8(const T& rhs);
 
         template <class T>
-        local_def uint8& operator=(const T& rhs) { assign(rhs); return *this; }
+        uint8& operator=(const T& rhs);
 
 
-        local_def operator float() const {
-            return cpu_uint82float(data);
-        }
+        operator float() const;
 
-        local_def void assign(double rhs) {
-            assign((float)rhs);
-        }
+        void assign(double rhs);
 
-        local_def void assign(float rhs) {
-            data = cpu_float2uint8(rhs);
-        }
+        void assign(float rhs);
     };
 }
 

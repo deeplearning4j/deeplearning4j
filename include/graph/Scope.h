@@ -60,6 +60,19 @@ namespace nd4j {
              * @return
              */
             int size();
+
+            /**
+             * Returns ID of this scope
+             * @return
+             */
+            int id();
+
+            /**
+             * Returns name of this scope
+             *
+             * @return
+             */
+            std::string* name();
         };
     }
 }

@@ -8,46 +8,29 @@
 #include <stdint.h>
 
 
-float cpu_int162float(int16_t data) {
-    return (float) ((int) data);
-}
-
-int16_t cpu_float2int16(float data) {
-    int t = (int) data;
-    if (t > 32767 ) t = 32767;
-    if (t < -32768) t = -32768;
-
-    return (int16_t) t;
-}
-
-
 namespace nd4j {
+
+    float cpu_int162float(int16_t data);
+    int16_t cpu_float2int16(float data);
 
     struct int16 {
         int16_t data;
 
-        local_def int16() { data = cpu_float2int16(0.0f); }
+        int16();
+        ~int16() = default;
 
         template <class T>
-        local_def int16(const T& rhs) {
-            assign(rhs);
-        }
+        int16(const T& rhs);
 
         template <class T>
-        local_def int16& operator=(const T& rhs) { assign(rhs); return *this; }
+        int16& operator=(const T& rhs);
 
 
-        local_def operator float() const {
-            return cpu_int162float(data);
-        }
+        operator float() const;
 
-        local_def void assign(double rhs) {
-            assign((float)rhs);
-        }
+        void assign(double rhs);
 
-        local_def void assign(float rhs) {
-            data = cpu_float2int16(rhs);
-        }
+        void assign(float rhs);
     };
 }
 

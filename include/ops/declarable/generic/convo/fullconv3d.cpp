@@ -66,8 +66,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isSameShape({ (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth}), 0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            std::unique_ptr<ArrayList<T>> inputs(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ArrayList<T>> outputs(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> inputs(NDArrayFactory<T>::allExamples(input));
+            std::unique_ptr<ResultSet<T>> outputs(NDArrayFactory<T>::allExamples(output));
             for (int e = 0; e < batchSize; e++) {
                 auto tadIn = inputs->at(e);
                 auto tadOut = outputs->at(e);
@@ -213,8 +213,8 @@ namespace nd4j {
             NDArray<T> *gradColumns;
             //auto gradColumns = finput->reshape('c', {nOutputPlane*kW*kH*kT, inputDepth*inputHeight*inputWidth });
 
-            std::unique_ptr<ArrayList<T>> tadsNext(NDArrayFactory<T>::allExamples(gradNext));
-            std::unique_ptr<ArrayList<T>> tadsOutput(NDArrayFactory<T>::allExamples(output));
+            std::unique_ptr<ResultSet<T>> tadsNext(NDArrayFactory<T>::allExamples(gradNext));
+            std::unique_ptr<ResultSet<T>> tadsOutput(NDArrayFactory<T>::allExamples(output));
             for (int e = 0; e < tadsNext->size(); e++) {
                 auto tadNext = tadsNext->at(e);
                 auto tadOutput = tadsOutput->at(e);
@@ -311,8 +311,8 @@ namespace nd4j {
 
             ones->assign(1.0);
 
-            std::unique_ptr<ArrayList<T>> tadsInput(NDArrayFactory<T>::allExamples(input));
-            std::unique_ptr<ArrayList<T>> tadsEpsilon(NDArrayFactory<T>::allExamples(epsilon));
+            std::unique_ptr<ResultSet<T>> tadsInput(NDArrayFactory<T>::allExamples(input));
+            std::unique_ptr<ResultSet<T>> tadsEpsilon(NDArrayFactory<T>::allExamples(epsilon));
 
             for (int e = 0; e < tadsInput->size(); e++) {
                 auto tadInput = tadsInput->at(e);
