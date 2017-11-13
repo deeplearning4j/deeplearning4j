@@ -1157,6 +1157,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
+    /**
+     * Method doesn't do layerwise  pretraining.<br>
+     * For pretraining use method pretrain.. {@link #pretrain(DataSetIterator)}<br>
+     * @param iterator Training data (DataSetIterator)
+     */
     public void fit(DataSetIterator iterator) {
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;

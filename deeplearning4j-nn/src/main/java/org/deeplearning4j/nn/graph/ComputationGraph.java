@@ -857,8 +857,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Fit the ComputationGraph using a DataSetIterator.
-     * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
+     * Fit the ComputationGraph using a DataSetIterator.<br>
+     * Note that this method can only be used with ComputationGraphs with 1 input and 1 output<br>
+     * Method doesn't do layerwise  pretraining.<br>
+     * For pretraining use method pretrain.. {@link #pretrain(DataSetIterator)}<br>
+     * @param iterator Training data (DataSetIterator)
      */
     public void fit(DataSetIterator iterator) {
         if (flattenedGradients == null) {
@@ -888,10 +891,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for (TrainingListener tl : trainingListeners) {
                 tl.onEpochStart(this);
             }
-        }
-
-        if (configuration.isPretrain()) {
-            pretrain(dataSetIterator);
         }
 
         MemoryWorkspace workspace =
@@ -984,6 +983,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     /**
      * Fit the ComputationGraph using a MultiDataSetIterator
+     * Method doesn't do layerwise  pretraining.<br>
+     * For pretraining use method pretrain.. {@link #pretrain(MultiDataSetIterator)}<br>
+     * @param multi Training data (MultiDataSetIterator)
      */
     public void fit(MultiDataSetIterator multi) {
         if (flattenedGradients == null) {
@@ -1000,11 +1002,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             destructable = true;
         } else
             multiDataSetIterator = multi;
-
-        if (configuration.isPretrain()) {
-            pretrain(multiDataSetIterator);
-        }
-
 
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
