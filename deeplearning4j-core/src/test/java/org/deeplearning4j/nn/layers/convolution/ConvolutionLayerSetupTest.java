@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.SequentialConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
@@ -115,7 +116,7 @@ public class ConvolutionLayerSetupTest {
         INDArray labels = Nd4j.rand(10, 2);
         DataSet next = new DataSet(in, labels);
 
-        NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
+        SequentialConfiguration.ListBuilder builder = (SequentialConfiguration.ListBuilder) incompleteLFW();
         builder.setInputType(InputType.convolutional(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
         ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2);
@@ -135,7 +136,7 @@ public class ConvolutionLayerSetupTest {
         reader.initialize(new FileSplit(new File(rootDir)));
         DataSetIterator recordReader = new RecordReaderDataSetIterator(reader, 10, 1, labels.size());
         labels.remove("lfwtest");
-        NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLRN();
+        SequentialConfiguration.ListBuilder builder = (SequentialConfiguration.ListBuilder) incompleteLRN();
         builder.setInputType(InputType.convolutional(28, 28, 3));
 
         MultiLayerConfiguration conf = builder.build();

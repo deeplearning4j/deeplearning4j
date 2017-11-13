@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.SequentialConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -479,7 +480,7 @@ public class CuDNNGradientChecks {
                                 labels.putScalar(new int[]{i, i % nOut}, 1.0);
                             }
 
-                            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                            SequentialConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
                                     .updater(new NoOp())
                                     .activation(Activation.TANH).convolutionMode(cm).list()
                                     .layer(new ConvolutionLayer.Builder().name("layer 0")

@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.SequentialConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -187,7 +188,7 @@ public class LSTMGradientCheckTests {
                             layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
                         }
 
-                        NeuralNetConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
+                        SequentialConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
                                 .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation)
                                         .nIn(layerSize).nOut(nOut).build())
                                 .pretrain(false).backprop(true);

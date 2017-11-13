@@ -428,7 +428,7 @@ public class TransferLearning {
             allConfs.addAll(editedConfs);
             allConfs.addAll(appendConfs);
 
-            //Set default layer names, if not set - as per NeuralNetConfiguration.ListBuilder.build()
+            //Set default layer names, if not set - as per SequentialConfiguration.ListBuilder.build()
             for (int i = 0; i < allConfs.size(); i++) {
                 if (allConfs.get(i).getLayer().getLayerName() == null) {
                     allConfs.get(i).getLayer().setLayerName("layer" + i);

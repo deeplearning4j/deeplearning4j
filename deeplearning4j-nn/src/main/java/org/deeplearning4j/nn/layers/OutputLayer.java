@@ -22,9 +22,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 /**
- * Output layer with different objective
- * incooccurrences for different objectives.
- * This includes classification as well as prediction
+ * Output layer for different objectives.
+ * This includes classification as well as regression.
+ *
  * @author Adam Gibson
  *
  */
