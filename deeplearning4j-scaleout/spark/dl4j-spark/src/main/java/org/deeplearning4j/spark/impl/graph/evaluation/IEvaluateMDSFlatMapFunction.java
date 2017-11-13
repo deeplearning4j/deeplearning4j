@@ -23,7 +23,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
-import org.deeplearning4j.eval.IEvaluation;
+import org.deeplearning4j.evaluation.IEvaluation;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.spark.iterator.SparkAMDSI;

@@ -28,7 +28,7 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
-import org.deeplearning4j.eval.*;
+import org.deeplearning4j.evaluation.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -45,16 +45,12 @@ import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunc
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
-import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
-import org.nd4j.linalg.heartbeat.reports.Event;
-import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import scala.Tuple2;
 

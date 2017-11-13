@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
-import org.deeplearning4j.eval.*;
+import org.deeplearning4j.evaluation.*;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.activations.Activations;

@@ -1,13 +1,10 @@
 package org.deeplearning4j.evaluation;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.eval.EvaluationCalibration;
-import org.deeplearning4j.eval.ROC;
-import org.deeplearning4j.eval.ROCMultiClass;
-import org.deeplearning4j.eval.curves.Histogram;
-import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
-import org.deeplearning4j.eval.curves.ReliabilityDiagram;
-import org.deeplearning4j.eval.curves.RocCurve;
+import org.deeplearning4j.evaluation.curves.Histogram;
+import org.deeplearning4j.evaluation.curves.PrecisionRecallCurve;
+import org.deeplearning4j.evaluation.curves.ReliabilityDiagram;
+import org.deeplearning4j.evaluation.curves.RocCurve;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.chart.ChartHistogram;

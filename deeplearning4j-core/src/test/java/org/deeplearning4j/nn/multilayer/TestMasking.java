@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
-import org.deeplearning4j.eval.EvaluationBinary;
+import org.deeplearning4j.evaluation.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;

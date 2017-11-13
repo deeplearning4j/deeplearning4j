@@ -549,6 +549,10 @@
             <id>kepricon</id>
             <name>Daehyun Kim</name>
         </developer>
+        <developer>
+            <id>maxpumperla</id>
+            <name>Max Pumperla</name>
+        </developer>
         <!--current & previous core contributers and company developers-->
         <developer>
             <id>smarthi</id>

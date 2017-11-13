@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.api;
 
-import org.deeplearning4j.eval.IEvaluation;
+import org.deeplearning4j.evaluation.IEvaluation;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;

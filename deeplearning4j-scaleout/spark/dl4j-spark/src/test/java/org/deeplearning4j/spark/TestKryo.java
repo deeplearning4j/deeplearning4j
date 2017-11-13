@@ -1,7 +1,7 @@
 package org.deeplearning4j.spark;
 
 import org.apache.spark.serializer.SerializerInstance;
-import org.deeplearning4j.eval.*;
+import org.deeplearning4j.evaluation.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;

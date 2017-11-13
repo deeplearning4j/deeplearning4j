@@ -11,6 +11,7 @@ public interface OptimizationConfig {
 
     org.deeplearning4j.nn.conf.stepfunctions.StepFunction getStepFunction();
 
+    // TODO: this is unused
     boolean isMinimize();
 
     int getIterationCount();

@@ -1,6 +1,6 @@
 package org.deeplearning4j.optimize.listeners.callbacks;
 
-import org.deeplearning4j.eval.IEvaluation;
+import org.deeplearning4j.evaluation.IEvaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.listeners.EvaluativeListener;
 
