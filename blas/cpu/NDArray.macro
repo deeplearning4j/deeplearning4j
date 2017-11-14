@@ -29,9 +29,9 @@ BUILD_CALL_1(template float nd4j::NDArray<float>::reduceNumber, float, (float *e
 BUILD_CALL_1(template double nd4j::NDArray<double>::reduceNumber, double, (double *extraParams), REDUCE_OPS)
 
 
-BUILD_CALL_1(template void nd4j::NDArray<float16>::applyBroadcast, float16, (std::initializer_list<int> list, nd4j::NDArray<float16>* a, nd4j::NDArray<float16>* b, float16* c), BROADCAST_OPS)
-BUILD_CALL_1(template void nd4j::NDArray<float>::applyBroadcast, float, (std::initializer_list<int> list, nd4j::NDArray<float>* a, nd4j::NDArray<float>* b, float* c), BROADCAST_OPS)
-BUILD_CALL_1(template void nd4j::NDArray<double>::applyBroadcast, double, (std::initializer_list<int> list, nd4j::NDArray<double>* a, nd4j::NDArray<double>* b, double* c), BROADCAST_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::applyBroadcast, float16, (std::initializer_list<int> list, const nd4j::NDArray<float16>* a, nd4j::NDArray<float16>* b, float16* c), BROADCAST_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float>::applyBroadcast, float, (std::initializer_list<int> list, const nd4j::NDArray<float>* a, nd4j::NDArray<float>* b, float* c), BROADCAST_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::applyBroadcast, double, (std::initializer_list<int> list, const nd4j::NDArray<double>* a, nd4j::NDArray<double>* b, double* c), BROADCAST_OPS)
 
 
 BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* target, float16* extraParams), TRANSFORM_OPS)

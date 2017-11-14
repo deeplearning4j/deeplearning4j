@@ -42,6 +42,19 @@ namespace nd4j {
         static std::vector<int> convertAxisToTadTarget(int rank, std::vector<int>& axis);
 
         static std::vector<int> convertAxisToTadTarget(int rank, std::initializer_list<int> axis);
+
+        // check the possibility of broadcast operation, if true return shapeInfo of resulting array
+        // the array with larger dimensions number has to be passed as first argument
+        static int* evalBroadcastShapeInfo(const NDArray<T>& max, const NDArray<T>& min);
+
+        // return sorted vector of dimensions of array with larger dimensions number along which two input arrays have same shape
+        static std::vector<int> getDimsWithSameShape(const NDArray<T>& max, const NDArray<T>& min);
+
+        // return absolute index of array min, min is sub-array of max, index to be returned is min index and it corresponds maxIdx of max array 
+        static int getSubArrayIndex(const int* maxShapeInfo, const int* minShapeInfo, const int maxIdx);
+
+        // evaluate shapeInfo for resulting array of tile operation
+        static int* evalTileShapeInfo(const NDArray<T>& arr, const std::vector<int>& reps);
     };
 
 

@@ -56,7 +56,7 @@ namespace nd4j {
         // modifying operator for matrix, i - absolute index
         // be careful this method doesn't check the boundaries of array
         T& operator()(const Nd4jIndex i);
-    
+
         // accessing operator for 2D array, i - row, j - column
         // be careful this method doesn't check the rank of array
         T operator()(const int i, const int j) const;        
@@ -283,10 +283,13 @@ namespace nd4j {
         void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
 
         template<typename OpName>
-        void applyBroadcast(std::initializer_list<int> dimensions, NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
+        void applyBroadcast(std::initializer_list<int> dimensions, const NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
 
-        template<typename OpName>
-        void applyBroadcast(std::vector<int>& dimensions, NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
+        template <typename OpName>
+        void applyBroadcast(std::vector<int> &dimensions, const NDArray<T> *tad, NDArray<T> *target = nullptr, T *extraArgs = nullptr);
+        
+        template <typename OpName>
+        NDArray<T> applyTrueBroadcast(const NDArray<T>& tad, T *extraArgs = nullptr) const;
 
         template<typename OpName>
         void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
@@ -411,7 +414,10 @@ namespace nd4j {
 		void tilei(const std::vector<int>& reps);
 
 		// tile an array by repeating it the number of times given by reps.
-		NDArray<T>*  tile(const std::vector<int>& reps);
+		NDArray<T> tile(const std::vector<int>& reps) const;
+
+        // tile an array by repeating it the number of times given by reps.
+        void tile(const std::vector<int>& reps, NDArray<T>& target) const;
         
 		// return array which is broadcasted from this and argument array  
 		NDArray<T>*  broadcast(const NDArray<T>& other);
@@ -485,6 +491,15 @@ namespace nd4j {
 
         // multiplication operator array*scalar
         void operator*=(const T scalar);
+
+        // division operator array1/array2
+        NDArray<T> operator/(const NDArray<T>& other) const;        
+
+        // division operator array1 /= array2
+        void operator/=(const NDArray<T>& other);
+
+        // division operator array*scalar
+        void operator/=(const T scalar);
 
         // mathematical multiplication of two arrays
         friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);

@@ -1483,94 +1483,78 @@ template <typename T>
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 template <typename T>
+void NDArray<T>::tilei(const std::vector<int>& reps) {
 
-    void NDArray<T>::tilei(const std::vector<int>& reps) {
-	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
-	int dim = reps.size();	
-	int product = 1;
-	for(const auto& item : reps)
-		product *= item;
-	if(product == 0)
-		throw "NDArray::tile method: one of the elements in reps array is zero !";
-	int rankOld = rankOf();
-	int diff = rankOld - dim;
-	if(product==1) {	    // in this case 2 possibilities are present: just reshape or nothing to do
-		if(diff < 0) {		// reshape to higher dimension			
-			std::vector<int> shapeNew = reps;				// need to have unities at first "diff" positions of new shape
-			memcpy(&shapeNew[-diff], _shapeInfo+1, rankOld*sizeof(int));   // put old shape numbers at rest of positions
-			reshapei(ordering(), shapeNew);
-		}		
-		return;				// nothing to do, if diff >= 0 -> identity tile 
-	}	
-	
-	// evaluate new shapeInfo
-	int* newShapeInfo = nullptr;	
-	if(diff < 0) {
-		newShapeInfo = new int[dim*2 + 4];
-		newShapeInfo[0] = dim;					// set new rank
-		for(int i=1; i <= -diff; ++i)
-			newShapeInfo[i] = 1;				// set unities to be new dimensions at left-hand side of newShapeInfo shape place
-		memcpy(newShapeInfo + 1 - diff, _shapeInfo + 1, rankOld*sizeof(int));		// copy old dimensions to the right-hand side of newShapeInfo shape place
-		for(int i=1; i <= dim; ++i)
-			newShapeInfo[i] *= reps[i - 1];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
-	}
-	else {
-		newShapeInfo = new int[rankOld*2 + 4];
-		memcpy(newShapeInfo, _shapeInfo, (rankOld*2 + 4)*sizeof(int));		// copy all elements of _shapeInfo to newShapeInfo
-		for(int i=1; i <= dim; ++i)
-			newShapeInfo[rankOld + 1 - i] *= reps[dim - i];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
-	}
-	int rankNew = newShapeInfo[0];
-	// create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
-	T* newBuff = new T[shape::length(newShapeInfo)];
-	char order = ordering();
-	int arrLengthNew = shape::length(newShapeInfo);		
-	int arrLengthOld = shape::length(_shapeInfo);		
-	int stepNew, stepOld, bitStepOld, numCopies;
-	if(order == 'c') {
-		stepNew = newShapeInfo[rankNew];
-		stepOld = _shapeInfo[rankOld];
-		bitStepOld = sizeOfT()*stepOld;
-		numCopies = reps[dim-1]*stepOld;
-	}
-	else {
-		stepNew = newShapeInfo[1];
-		stepOld = _shapeInfo[1];
-		bitStepOld = sizeOfT()*stepOld;
-		if(diff <= 0)
-			numCopies = reps[0]*stepOld;
-		else	
-			numCopies = stepOld;
-	}	
-	// fill newBuff, loop through all dimensions of newBuff except elementary dimension
-	// looping through _buffer goes automatically by means of "position" index 
-	int position = 0;
-	for(int i=0;  i<arrLengthNew; i+=stepNew) {		
-		for(int j=0; j<numCopies; j+=stepOld)
-				memcpy(newBuff + i + j, _buffer + position, bitStepOld);
-		position += stepOld;
-		if(position == arrLengthOld)		// if loop through _buffer has come to end then start it again from beginning
-			position = 0;
-	}
-	
-	// assign new shape to "this" array
-    // also check if current object is _shapeInfo and _buffer owner
-    if(_isShapeAlloc)       
-		delete []_shapeInfo;
-	else	
-		_isShapeAlloc = true;
-	_shapeInfo = newShapeInfo;    
-    // assign new buffer to "this" array
-    if(_isBuffAlloc)       
-		delete []_buffer;
-	else
-		_isBuffAlloc = true;
-	_buffer = newBuff;        
-
-	updateStrides(order);
+    *this = this->tile(reps);
 	
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// change an array by repeating it the number of times given by reps.
+template <typename T>
+NDArray<T> NDArray<T>::tile(const std::vector<int>& reps) const {
+    
+    int dim = reps.size();  
+    int product = 1;
+    for(const auto& item : reps)
+        product *= item;
+    if(product == 0)
+        throw "NDArray::tile method: one of the elements in reps array is zero !";
+
+    int rankOld = rankOf();
+    int diff = rankOld - dim;
+    if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
+        NDArray<T> result(*this);
+        if(diff < 0) {      // reshape to higher dimension          
+            std::vector<int> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
+            memcpy(&shapeNew[-diff], result._shapeInfo+1, rankOld*sizeof(int));   // put old shape numbers at rest of positions
+            result.reshapei(ordering(), shapeNew);
+        }       
+        return result;             // nothing to do, if diff >= 0 -> identity tile 
+    }   
+    
+    // evaluate shapeInfo for resulting array
+    int* newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps);    
+    // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer   
+    T* newBuff = nullptr;
+    ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), T);
+    // assign new shape and new buffer to resulting array
+    NDArray<T> result(newBuff, newShapeInfo, _workspace);
+    result._isShapeAlloc = true;
+    result._isBuffAlloc = true;
+
+    // fill newBuff, loop through all elements of newBuff 
+    // looping through _buffer goes automatically by means of getSubArrayIndex applying
+    for(int i=0;  i<result.lengthOf(); ++i)        
+        result.putIndexedScalar(i, this->getIndexedScalar(shape::subArrayIndex(result._shapeInfo, _shapeInfo, i)));
+        // result(i) = this->getIndexedScalar(shape::subArrayIndex(result._shapeInfo, _shapeInfo, i));
+        // result(i) = (*this)(shape::subArrayIndex(result._shapeInfo, _shapeInfo, i));
+              
+    return result;
+    
+}
+
+//////////////////////////////////////////////////////////////////////////
+// change an array by repeating it the number of times given by reps.
+template <typename T>
+void NDArray<T>::tile(const std::vector<int>& reps, NDArray<T>& target) const {
+        
+    // evaluate true tile shapeInfo for comparison with target shapeInfo
+    int* newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps);  
+    if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
+        delete newShapeInfo;    
+        throw "NDArray::tile method - shapeInfo of target array is not suitable for tile operation !";
+    }
+    delete newShapeInfo;
+
+    // fill newBuff, loop through all elements of newBuff 
+    // looping through _buffer goes automatically by means of getSubArrayIndex applying
+    for(int i=0;  i<target.lengthOf(); ++i)        
+        target.putIndexedScalar(i, this->getIndexedScalar(ShapeUtils<T>::getSubArrayIndex(target._shapeInfo, _shapeInfo, i)));
+}
+
+//////////////////////////////////////////////////////////////////////////
     template<typename T>
     int NDArray<T>::sizeAt(int dim) const {
         if (dim >= this->rankOf() || dim < -this->rankOf())
@@ -1731,125 +1715,89 @@ void NDArray<T>::permute(const std::vector<int>& dimensions, NDArray<T>& target)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// tile an array by repeating it the number of times given by reps.
 template<typename T>
-    NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) {
-	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
-	if(std::find(reps.begin(), reps.end(), 0) != reps.end())
-	    throw "Tile method: one of the elements in reps array is zero !";
+template<typename OpName>
+void NDArray<T>::applyBroadcast(std::initializer_list<int> dimensions, const NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
+    std::vector<int> vec(dimensions);
+    applyBroadcast<OpName>(vec, tadArray, target, extraArgs);
+}
 
-    bool wasReshaped = false;
-    std::vector<int> origShape(this->_shapeInfo+1, this->_shapeInfo + 1 + this->rankOf());
-    char origOrder = this->ordering();
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+template<typename OpName>
+void NDArray<T>::applyBroadcast(std::vector<int>& dimensions, const NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
+    if (dimensions.size() == 0)
+        return;
 
-    if (reps.size() > this->rankOf()) {
-        wasReshaped = true;
-        std::vector<int> newS;
-        for (int e = 0; e < (reps.size() - this->rankOf()); e++)
-            newS.push_back(1);
+    std::vector<int> copy(dimensions);
 
-        for (auto v: origShape)
-            newS.push_back(v);
+    if (dimensions.size() > 1)
+        std::sort(copy.begin(), copy.end());
 
-        this->reshapei('c', newS);
+    Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
+    if (tadLength != tadArray->lengthOf())
+       throw "Tad length mismatch";
+
+    shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+    tad.createTadOnlyShapeInfo();
+    tad.createOffsets();
+
+    NDArray<T>* result = target == nullptr ? this : target;
+
+    // TODO: eventually we want separate tads here
+    functions::broadcast::Broadcast<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+template <typename OpName>
+NDArray<T> NDArray<T>::applyTrueBroadcast(const NDArray<T>& other, T *extraArgs) const {
+
+    const NDArray<T>* min(nullptr), *max(nullptr);
+    if(this->rankOf() >= other.rankOf()) {
+        max = this;
+        min = &other;
+    }
+    else {
+        max = &other;
+        min = this;
     }
 
-    // evaluate new shape
-	int dim = reps.size();
-	int rank = this->rankOf();
-	int diff = rank - dim;
-	std::vector<int> shapeNew;
-	if(diff < 0) {
-	    shapeNew = reps;
-	    for(int i=0; i<rank; ++i)
-		    shapeNew[dim-1-i] *= this->_shapeInfo[rank-i];
-	} else {
-	    shapeNew = std::vector<int>(this->_shapeInfo + 1, this->_shapeInfo + 1 + rank);
-	    for(int i=1; i<=dim; ++i)
-		    shapeNew[rank-i] *= reps[dim-i];
-	}
-
-	// create empty array with new shape
-
-	// ret = this->repeat()
-
-    int d = reps.size();
-    int *shape = new int[this->rankOf()];
-    std::memcpy(shape, this->shapeOf(), this->rankOf() * sizeof(int));
-
-    int l = (int) this->lengthOf();
-    int n = nd4j::math::nd4j_max<int>(l, 1);
-    std::vector<int> repeats;
-    if (d < this->rankOf()) {
-        for (int e = 0; e < this->rankOf() - reps.size(); e++)
-            repeats.push_back(1);
+    int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min);          // the rank of new array = max->rankOf)()
+    NDArray<T> result(newShapeInfo, _workspace);
+    delete newShapeInfo;    
+    
+    // check whether min array have to be tiled        
+    if(!max->isSameShape(&result)) {            
+        // evaluate repeating dimensions for tile operation
+        std::vector<int> repeatMax(max->rankOf());
+        for(int i = 1; i <= max->rankOf(); ++i)
+            repeatMax[i-1] = (result._shapeInfo[i] / max->_shapeInfo[i]);
+        max->tile(repeatMax, result);
     }
-    for (auto r: reps)
-        repeats.push_back(r);
+    else 
+        result.assign(max);
 
-    int* repeat = repeats.data();
-    NDArray<T>* result = this;
-    for (int i = 0; i < rank; i++) {
-        if (repeat[i] != 1) {
-            result->reshapei('c', {-1, n});
-            NDArray<T> *tmp = result->repeat(0, {repeat[i]});
-
-            if (result->_shapeInfo != this->_shapeInfo)
-                delete result;
-
-            result = tmp;
-        }
-
-        //int in = shape[i];
-        //n /= nd4j::math::nd4j_max<int>(in, 1);
-        int in = shape[i];
-        int nOut = in * repeat[i];
-        shape[i] = nOut;
-        n /= nd4j::math::nd4j_max<int>(in, 1);
+    // check whether min array have to be tiled
+    std::vector<int> repeatMin(min->rankOf());
+    int product = 1;
+    for(int i = min->rankOf(); i >=1 ; --i) {        
+        repeatMin[i-1] = (result._shapeInfo[result.rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
+        product *= repeatMin[i-1];        
     }
-    delete[] shape;
-
-    result->reshapei('c', shapeNew);
-
-    if (wasReshaped)
-        this->reshapei(origOrder, origShape);
+    
+    if(product != 1 ) {                    
+        NDArray<T> tiledMin = min->tile(repeatMin);        
+        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(&result, &tiledMin);
+        result.template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
+    }
+    else {                    
+        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(&result, min);
+        result.template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
+    }
 
     return result;
 }
-
-
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyBroadcast(std::initializer_list<int> dimensions, NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
-        std::vector<int> vec(dimensions);
-        applyBroadcast<OpName>(vec, tadArray, target, extraArgs);
-    }
-
-
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyBroadcast(std::vector<int>& dimensions, NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
-        if (dimensions.size() == 0)
-            return;
-
-        std::vector<int> copy(dimensions);
-
-        if (dimensions.size() > 1)
-            std::sort(copy.begin(), copy.end());
-
-        Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
-        if (tadLength != tadArray->lengthOf())
-            throw "Tad length mismatch";
-
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-
-        NDArray<T>* result = target == nullptr ? this : target;
-
-        // TODO: eventually we want separate tads here
-        functions::broadcast::Broadcast<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int) copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
-    }
 
 //////////////////////////////////////////////////////////////////////////
 // return array which is broadcasted from this and argument array  
@@ -2558,24 +2506,21 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
 
         return result;
     }
-    ////////////////////////////////////////////////////////////////////////
-    // addition operator array + array
-    template<typename T>
-    NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
+    
+////////////////////////////////////////////////////////////////////////
+// addition operator array + array
+template<typename T>
+NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
+    if (other.lengthOf() == lengthOf()) {
         NDArray<T> result(this->_shapeInfo, this->_workspace);
-        if(other.isRowVector())
-            this->addRowVector (&other, &result);
-        else if(other.isColumnVector())
-            this->addColumnVector(&other, &result);
-        else {
-            if (other.lengthOf() != lengthOf())
-                throw std::invalid_argument("NDArray::operator+ : lengths of arrays are mismatched !");
-            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
-        }
-
+        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
         return result;
     }
+
+    return this->template applyTrueBroadcast<simdOps::Add<T>>(other);
+
+}
 
     ////////////////////////////////////////////////////////////////////////
     // addition operator array + scalar
@@ -2599,13 +2544,14 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     // subtraction operator array - array
     template<typename T>
     NDArray<T> NDArray<T>::operator-(const NDArray<T>& other) const {
-        if (other.lengthOf() != lengthOf())
-            throw std::invalid_argument("NDArray::operator- : lengths of arrays are mismatched !");
+        
+        if (other.lengthOf() == lengthOf()) {
+            NDArray<T> result(this->_shapeInfo, this->_workspace);
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
+            return result;
+        }
 
-        NDArray<T> result(this->_shapeInfo, this->_workspace);
-        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
-
-        return result;
+        return this->template applyTrueBroadcast<simdOps::Subtract<T>>(other);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -2672,23 +2618,25 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     // multiplication operator array*array
     template<typename T>
     NDArray<T> NDArray<T>::operator*(const NDArray<T>& other) const {
-        if (other.lengthOf() != lengthOf())
-            throw std::invalid_argument("NDArray::operator * method: lengths of arrays are mismatched !");
+        
+        if (other.lengthOf() == lengthOf()) {
+            NDArray<T> result(this->_shapeInfo, this->_workspace);
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
+            return result;
+        }
 
-        NDArray<T> result(this->_shapeInfo, this->_workspace);
-        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
-
-        return result;
+        return this->template applyTrueBroadcast<simdOps::Multiply<T>>(other);
     }
 
     ////////////////////////////////////////////////////////////////////////
     // multiplication operator array1 *= array2
     template<typename T>
     void NDArray<T>::operator*=(const NDArray<T>& other) {    
-        if (other.lengthOf() != lengthOf())
-            throw std::invalid_argument("NDArray::operator *= method: lengths of arrays are mismatched !");
-        
-        functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+
+        if (other.lengthOf() == lengthOf())
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+        else
+            *this = this->template applyTrueBroadcast<simdOps::Multiply<T>>(other);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -2697,6 +2645,40 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     void NDArray<T>::operator*=(const T scalar) {
         
         functions::scalar::ScalarTransform<T>::template transform<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, nullptr);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // division operator array/array
+    template<typename T>
+    NDArray<T> NDArray<T>::operator/(const NDArray<T>& other) const {
+        
+        if (other.lengthOf() == lengthOf()) {
+            NDArray<T> result(this->_shapeInfo, this->_workspace);
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
+            return result;
+        }
+
+        return this->template applyTrueBroadcast<simdOps::Divide<T>>(other);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // division operator array1 /= array2
+    template<typename T>
+    void NDArray<T>::operator/=(const NDArray<T>& other) {    
+
+        if (other.lengthOf() == lengthOf())
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+        else
+            *this = this->template applyTrueBroadcast<simdOps::Divide<T>>(other);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // division operator array/scalar
+    template<typename T>
+    void NDArray<T>::operator/=(const T scalar) {
+        
+        functions::scalar::ScalarTransform<T>::template transform<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, nullptr);
     }
 
     ////////////////////////////////////////////////////////////////////////

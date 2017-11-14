@@ -1393,6 +1393,15 @@ __host__ __device__
     // also sort input array of dimensions, this operation is also necessary for creating TAD object
     ND4J_EXPORT void checkDimensions(const int rank, std::vector<int>& dimensions);
 
+
+#ifdef __CUDACC__
+    __host__
+#endif
+    // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array 
+    ND4J_EXPORT Nd4jIndex subArrayIndex(const int* maxShapeInfo, const int* minShapeInfo, const int maxIdx);
+
+
+
 //END HEADERS
 
 
@@ -4599,10 +4608,31 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
         return;
     }
+
+
+#ifdef __CUDACC__
+    __host__
+#endif
+// return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
+INLINEDEF Nd4jIndex subArrayIndex(const int* maxShapeInfo, const int* minShapeInfo, const int maxIdx) {
+
+    int idxPerRank[maxShapeInfo[0]];
+    ind2subC(maxShapeInfo[0], const_cast<int*>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);    
+
+    Nd4jIndex minIdx = 0;
+    for(int i = 0; i < minShapeInfo[0]; ++i) {
+        if(minShapeInfo[minShapeInfo[0] - i] == 1 || idxPerRank[maxShapeInfo[0] - i - 1] == 0)
+            continue;
+        if(idxPerRank[maxShapeInfo[0] - i - 1] >= minShapeInfo[minShapeInfo[0] - i])
+            idxPerRank[maxShapeInfo[0] - i - 1] %= minShapeInfo[minShapeInfo[0] - i];
+        minIdx += idxPerRank[maxShapeInfo[0] - i - 1] * stride(const_cast<int*>(minShapeInfo))[minShapeInfo[0] - i - 1];
+    }
+    
+    return minIdx;
 }
 
 
 
-
+}
 
 #endif /* SHAPE_H_ */
