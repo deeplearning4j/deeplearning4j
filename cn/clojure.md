@@ -1,17 +1,17 @@
 ---
-title: Deep Learning With Clojure
-layout: default
+title: 基于Clojure的深度学习
+layout: cn-default
 ---
 
-# Deep Learning With Clojure
+# 基于Clojure的深度学习
 
-Deeplearning4j has been ported to Clojure with the [DL4CLJ project](https://github.com/engagor/dl4clj). The [present Github examples](https://github.com/engagor/dl4clj/tree/master/src/dl4clj/examples) illustrate how to configure recurrent neural networks, word2vec and ParaVec based on Deeplearning4j. More details on the [Clojar are here](https://clojars.org/dl4clj).
+Deeplearning4j已通过[DL4CLJ项目](https://github.com/engagor/dl4clj)移植至Clojure。[当前的Github示例](https://github.com/engagor/dl4clj/tree/master/src/dl4clj/examples)介绍了如何配置基于Deeplearning4j的循环神经网络、Word2Vec和ParaVec。关于Clojar的更多详情[参见此处](https://clojars.org/dl4clj)。
 
-## A Recurrent Neural Network in Clojure
+## 用Clojure编写的循环神经网络
 
-Here's what a recurrent neural network configuration looks like in Clojure with DL4CLJ:
+以下是用Clojure编写的基于DL4CLJ的循环神经网络配置：
 
-      ;; Set up network configuration:
+      ;; 设置网络配置：
       (def conf (neural-net-configuration
                  {:optimization-algo :stochastic-gradient-descent
                   :iterations 1
@@ -47,22 +47,22 @@ Here's what a recurrent neural network configuration looks like in Clojure with 
                   :backprop true}))
       (def net (multi-layer-network conf))
       (init net)
-      ;; not yet implemented:
+      ;; 尚未实现：
       ;; net.setListeners(new ScoreIterationListener(1));
 
-      ;; Print the  number of parameters in the network (and for each layer)
+      ;; 显示网络中（及每个层）的参数数量
       (dotimes [i (count (get-layers net))]
         (println "Number of parameters in layer "  i  ": "  (model/num-params (get-layer net i))))
       (println "Total number of network parameters: " (reduce + (map model/num-params (get-layers net))))
 
-## Clojure Resources
+## Clojure学习资源
 
-Those just beginning with Clojure may want to explore the resources below:
+Clojure初学者可以先参考下列资源：
 
-* [4Clojure](http://www.4clojure.com/) - Exercises in Clojure
-* [The Joy of Clojure](http://www.joyofclojure.com/)
-* [Clojure for the Brave and True](http://www.braveclojure.com/clojure-for-the-brave-and-true/)
+* [4Clojure](http://www.4clojure.com/)－Clojure练习
+* [The Joy of Clojure（Clojure编程乐趣）](http://www.joyofclojure.com/)
+* [Clojure for the Brave and True（真勇士的Clojure教程）](http://www.braveclojure.com/clojure-for-the-brave-and-true/)
 
-## Other Deeplearning4j Languages
+## 其他Deeplearning4j语言
 
-Deeplearning4j also offers APIs in [Java](https://github.com/deeplearning4j/deeplearning4j), [Scala](https://github.com/deeplearning4j/ScalNet) and [Python](./keras) with Keras.
+Deeplearning4j还提供[Java](https://github.com/deeplearning4j/deeplearning4j)、[Scala](https://github.com/deeplearning4j/ScalNet)和[Python](./keras)的API，其中Python的API为Keras。

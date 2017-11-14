@@ -13,6 +13,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [Google Audioset](https://research.google.com/audioset/): An expanding ontology of 632 audio event classes and a collection of 2,084,320 human-labeled 10-second sound clips drawn from YouTube videos.
 * [Uber 2B trip data](https://movement.uber.com/cities): Slow rollout of access to ride data for 2Bn trips.
 * [Yelp Open Dataset](https://www.yelp.com/dataset): The Yelp dataset is a subset of Yelp businesses, reviews, and user data for use in NLP.
+* [Kaggle Datasets Page](https://www.kaggle.com/datasets)
 
 ## Natural-Image Datasets
 

@@ -43,7 +43,7 @@ Affine is a fancy word for a fully connected layer in a neural network. "Fully c
 ### <a name="alex">AlexNet</a>
 AlexNet is a deep convolutional network named after Alex Krizhevsky, a former student of Geoff Hinton's at the University of Toronto, now at Google. AlexNet was used to win ILSVRC 2012, and foretold a wave of deep convolutional networks that would set new records in image recognition. AlexNet is now a standard architecture: it contains five convolutional layers, three of which are followed by max-pooling (downsampling) layers, two fully connected (affine) layers -- all of which ends in a softmax layer. Here is [Deeplearning4j's implementation of AlexNet](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/AlexNet.java).
 
-* [AlexNet Example in Deeplearning4j](https://github.com/deeplearning4j/ImageNet-Example/blob/master/src/main/java/imagenet/Models/AlexNet.java)
+* [AlexNet Example in Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/AlexNet.java)
 * [ImageNet Classification with Deep Convolutional Neural Networks](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf)
 
 ### <a name="attention">Attention Models</a> 
@@ -79,6 +79,11 @@ Batch Normalization does what is says: it normalizes mini-batches as they're fed
 * [Batch Normalization in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/layers/normalization/BatchNormalization.html)
 * [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](http://arxiv.org/abs/1502.03167)
 * [Overview	of mini-batch gradient descent (U. Toronto)](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+
+### <a name="bayes">Bayes Theorem</a> 
+Bayes’ Theorem is *a mathematical framework for integrating new evidence with prior beliefs.* For example, suppose you’re sitting in your quiet suburban home and you hear something that sounds like a lion roaring. You have some prior beliefs that lions are unlikely to be near your house, so you figure that it’s probably not a lion. Probably it’s some weird machine of your neighbor’s that just happens to sound like a lion, or some kids pranking you by playing lion noises, or something. You end up believing that there’s probably no lion nearby, but you do have a slightly higher probability of there being a lion nearby than you had before you heard the roaring noise. Bayes’ Theorem is just this kind of reasoning converted to math. [source](http://slatestarcodex.com/2016/09/12/its-bayes-all-the-way-up/)
+
+* [Bayes Rules: A Theoretical Guide](https://arbital.com/p/bayes_rule/?l=1zq)
 
 ### <a name="bidirectional">Bidirectional Recurrent Neural Networks</a> 
 A Bidirectional RNN is composed of two RNNs that process data in opposite directions. One reads a given sequence from start to finish; the other reads it from finish to start. Bidirectional RNNs are employed in NLP for translation problems, among other use cases. Deeplearning4j's implementation of [bidirectional Graves LSTMs is here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesBidirectionalLSTM.java).

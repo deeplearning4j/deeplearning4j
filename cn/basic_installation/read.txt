@@ -1,0 +1,1 @@
+the document introduce the installing ways about dl4j stack

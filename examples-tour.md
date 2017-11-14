@@ -48,13 +48,13 @@ This example is from the video below, which demonstrates the ParentPathLabelGene
 
 This example demonstrates preprocessing features available in DataVec.
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/PreprocessNormalizerExample.java)
+[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataexamples/PreprocessNormalizerExample.java)
 
 ### CSVExampleEvaluationMetaData.java
 
 DataMeta data tracking - i.e. seeing where data for each example comes from - is useful when tracking down malformed data that causes errors and other issues. This example demostrates the functionality in the RecordMetaData class. 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExampleEvaluationMetaData.java)
+[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataexamples/CSVExampleEvaluationMetaData.java)
 
 -------------------
 
@@ -221,7 +221,7 @@ This example trains a neural network to perform various math operations.
 
 A publicly available dataset of time series data of six classes, cyclic, up-trending, etc. Example of an RNN learning to classify the time series. 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqClassification/UCISequenceClassificationExample.java)
+[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqclassification/UCISequenceClassificationExample.java)
 
 ### VideoClassificationExample.java
 

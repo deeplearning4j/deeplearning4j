@@ -99,7 +99,7 @@ A more in depth discussion of RNN's including configuring your code to use RNN's
 
 An overview of loading VGG-16, testing and deploying as a web application
 
-[View the tutorial](Build_VGG_Webapp)
+[View the tutorial](https://deeplearning4j.org/build_vgg_webapp)
 
 ### IBM: Using Deeplearning4j for anomaly detection
 

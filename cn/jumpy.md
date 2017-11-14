@@ -1,20 +1,20 @@
 ---
-title: Jumpy: Numpy Arrays for the JVM
-layout: default
+title: Jumpy：面向JVM的NumPy
+layout: cn-default
 ---
 
-# Jumpy: Numpy Arrays for the JVM
+# Jumpy：面向JVM的NumPy
 
-Deeplearning4j and ND4J's Python interface has three main components:
+Deeplearning4j和ND4J的Python接口主要由三个部分组成：
 
-* Autodiff (WIP)
-* Model import from Keras
+* Autodiff（开发中）
+* Keras模型导入
 * Jumpy
 
-[Jumpy](https://github.com/deeplearning4j/jumpy) is a Python interface for the scientific computing library [ND4J](http://nd4j.org/) (n-dimensional arrays for the JVM) via pointers, which means no network communication is required, unlike other Python tools. 
+[Jumpy](https://github.com/deeplearning4j/jumpy)是科学计算库[ND4J](http://nd4j.org/)（面向JVM的N维数组）的Python接口，可以通过指针来使用ND4J，而不像其他Python工具那样需要依赖网络通信。 
 
-Jumpy accepts Numpy arrays and allows us to work with those arrays and tensors without copying data. In short, it is a better interface for anyone currently using MLlib or PySpark, because sidestepping data copying makes it faster and more efficient. 
+Jumpy接受NumPy数组，因此我们可以直接使用NumPy数组和张量，无需复制数据。总之，Jumpy对于MLlib或PySpark用户而言是一种更好的接口，因为免除数据复制可以提高工作速度和效率。 
 
-Jumpy is a thin wrapper around Numpy and [Pyjnius](https://pyjnius.readthedocs.io/en/latest/). Jumpy gives you autocomplete for the JVM while working in Python, just pass it the class path and JAR files, as well as dynamic Java class creation. While PySpark is consistently behind the latest developments in Scala, Jumpy allows developers to dynamically extend bindings themselves.
+Jumpy是对NumPy和[Pyjnius](https://pyjnius.readthedocs.io/en/latest/)的简单包装。Jumpy让您可以在Python工况下使用JVM的自动完成（只需给出类路径和JAR文件即可），同时还能动态生成Java类。PySpark始终在追赶Scala的最新进展，而Jumpy则允许开发者以动态方式自行拓展绑定。
 
-Think of Jumpy as one way to get tensors into the JVM where you can easily work with Spark and other big data frameworks there. 
+Jumpy相当于一种把张量导入JVM的方法，而在JVM中使用Spark及其他大数据框架是很容易的。 

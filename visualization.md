@@ -3,7 +3,7 @@ title: How to Visualize, Monitor and Debug Neural Network Learning
 layout: default
 ---
 
-# Visualize, Monitor and Debug Network Learning 
+# Visualize, Monitor and Debug Network Learning
 
 Contents
 
@@ -42,7 +42,7 @@ This is relatively straightforward:
 
     //Configure where the network information (gradients, score vs. time etc) is to be stored. Here: store in memory.
     StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
-    
+
     //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
     uiServer.attach(statsStorage);
 
@@ -53,7 +53,7 @@ This is relatively straightforward:
 To access the UI, open your browser and go to ```http://localhost:9000/train```.
 You can set the port by using the ```org.deeplearning4j.ui.port``` system property: i.e., to use port 9001, pass the following to the JVM on launch: ```-Dorg.deeplearning4j.ui.port=9001```
 
-Information will then be collected and routed to the UI when you call the ```fit``` method on your network. 
+Information will then be collected and routed to the UI when you call the ```fit``` method on your network.
 
 
 **Example:** [See a UI example here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/UIExample.java)
@@ -72,7 +72,7 @@ The overview page (one of 3 available pages) contains the following information:
 - Bottom left: Ratio of parameters to updates (by layer) for all network weights vs. iteration
 - Bottom right: Standard deviations (vs. time) of: activations, gradients and updates
 
-Note that for the bottom two charts, these are displayed as the logarithm (base 10) of the values. Thus a value of -3 on the update:parameter ratio chart corresponds to a ratio of 10<sup>-3</sup> = 0.001.
+Note that for the bottom two charts, these are displayed as the logarithm (base 10) of the values. Thus a value of -3 on the update: parameter ratio chart corresponds to a ratio of 10<sup>-3</sup> = 0.001.
 
 The ratio of parameters to updates is specifically the ratio of mean magnitudes of these values.
 
@@ -111,7 +111,7 @@ Two alternatives are available:
 
 ```
     SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
-    
+
     StatsStorage ss = new FileStatsStorage(new File("myNetworkTrainingStats.dl4j"));
     sparkNet.setListeners(ss, Collections.singletonList(new StatsListener(null)));
 ```
@@ -161,13 +161,13 @@ The score vs. iteration should (overall) go down over time.
 
 - If the score increases consistently, your learning rate is likely set too high. Try reducing it until scores become more stable.
 - Increasing scores can also be indicative of other network issues, such as incorrect data normalization
-- If the score is flat or decreases very slowly (over a few hundred iteratons) (a) your learning rate may be too low, or (b) you might be having diffulties with optimization. In the latter case, if you are using the SGD updater, try a different updater such as Nesterovs (momentum), RMSProp or Adagrad.
+- If the score is flat or decreases very slowly (over a few hundred iterations) (a) your learning rate may be too low, or (b) you might be having difficulties with optimization. In the latter case, if you are using the SGD updater, try a different updater such as Nesterovs (momentum), RMSProp or Adagrad.
 - Note that data that isn't shuffled (i.e., each minibatch contains only one class, for classification) can result in very rough or abnormal-looking score vs. iteration graphs
 - Some noise in this line chart is expected (i.e., the line will go up and down within a small range). However, if the scores vary quite significantly between runs variation is very large, this can be a problem
     - The issues mentioned above (learning rate, normalization, data shuffling) may contribute to this.
     - Setting the minibatch size to a very small number of examples can also contribute to noisy score vs. iteration graphs, and *might* lead to optimization difficulties
 
-**Overview Page and Model Page - Using the Update:Parameter Ratio Chart**
+**Overview Page and Model Page - Using the Update: Parameter Ratio Chart**
 
 - The ratio of mean magnitude of parameters to updates is provided on both the overview and model pages
     - "Mean magnitude" = the average of the absolute value of the parameters or updates at the current time step
@@ -199,7 +199,7 @@ The layer parameters histogram is displayed for the most recent iteration only.
 
 The layer update histogram is displayed for the most recent iteration only.
 
-- Note that these are the updates - i.e., the gradients *after* appling learning rate, momentum, regularization etc
+- Note that these are the updates - i.e., the gradients *after* applying learning rate, momentum, regularization etc
 - As with the parameter graphs, these should have an approximately Gaussian (normal) distribution
 - Keep an eye out for very large values: this can indicate exploding gradients in your network
     - Exploding gradients are problematic as they can 'mess up' the parameters of your network

@@ -5,7 +5,7 @@ layout: default
 
 # About Us
 
-Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots.
+Eclipse Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots.
 
 There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/).
 
@@ -29,22 +29,28 @@ Without the engagement of Skymind customers and community, and the generous back
 
 | Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
-| Adam Gibson | agibsonccc      | [Skymind](http://skymind.io) | GMT -8 |
+| Adam Gibson | agibsonccc      | [Skymind](http://skymind.io) | GMT +9 |
 | Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
 | Josh Patterson  |  jpatanooga | [Skymind](http://skymind.io) | GMT -5 |
 
-## Major DL4J Contributors
+## Major Contributors to DL4J Suite
 
 | Name    | [Gitter Id](https://gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
 | Alex Black  |  AlexDBlack | [Skymind](http://skymind.io) | GMT +10 |
-| Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
-| Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
-| Taisuke Oe  |  taisukeoe | Japan Scala Association  | GMT +9 |
 | NA  |  raver119 | NA | GMT +2 |
-| Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
-| Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
-| Eron Wright  |  EronWright | EMC  | GMT -8 |
+| Samuel Audet  |  saudet | [Skymind](http://skymind.io) | GMT +9 |
+| Susan Eraly  |  eraly | [Skymind](http://skymind.io) | GMT -8 |
+| Dave Kale  |  turambar | [Skymind](http://skymind.io) | GMT -8 |
+| Paul Dubs  | treo | NA | GMT +2 |
+| Dae Hyun Kim  | kepricon | [Skymind](http://skymind.io) | GMT +9 |
+| Francois Garillot  |  huitseeker | [Skymind](http://skymind.io) | GMT -8 |
+| Eduardo Gonzales  |  wmeddie | [Skymind](http://skymind.io) | GMT +9 |
+| Justin Long  |  crockpotveggies | [Skymind](http://skymind.io) | GMT -8 |
+| Max Pumperla  | maxpumperla | [Skymind](http://skymind.io) | GMT +2 |
+| Michael Katzenellenbogen  | emsixteen | [Skymind](http://skymind.io) | GMT -5 |
+| Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
+| Melanie Warrick | nyghtowl  | Google | GMT -8 |
 
 # Jobs @Skymind
 
