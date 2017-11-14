@@ -600,7 +600,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             for (int j = 0; j < toConcat[i].rank(); j++)
                 if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
                     throw new IllegalArgumentException(
-                                    "Illegal concatneation at array " + i + " and shape element " + j);
+                                    "Illegal concatenation at array " + i + " and shape element " + j);
                 }
 
             Pair<DataBuffer, DataBuffer> tadBuffers =
@@ -716,7 +716,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             for (int j = 0; j < toConcat[i].rank(); j++)
                 if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
                     throw new IllegalArgumentException(
-                            "Illegal concatneation at array " + i + " and shape element " + j);
+                            "Illegal concatenation at array " + i + " and shape element " + j);
                 }
         }
 
