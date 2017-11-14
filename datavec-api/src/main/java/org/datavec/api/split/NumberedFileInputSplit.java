@@ -14,6 +14,7 @@
  *  *    limitations under the License.
  */
 
+
 package org.datavec.api.split;
 
 import org.datavec.api.util.files.UriFromPathIterator;
@@ -26,6 +27,8 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**InputSplit for sequences of numbered files.
  * Example usages:<br>
@@ -39,15 +42,19 @@ public class NumberedFileInputSplit implements InputSplit {
     private final int minIdx;
     private final int maxIdx;
 
+    private static final Pattern p = Pattern.compile("\\%(0\\d)?d");
+
     /**
      * @param baseString String that defines file format. Must contain "%d", which will be replaced with
-     *                   the index of the file.
+     *                   the index of the file, possibly zero-padded to x digits if the pattern is in the form %0xd.
      * @param minIdxInclusive Minimum index/number (starting number in sequence of files, inclusive)
      * @param maxIdxInclusive Maximum index/number (last number in sequence of files, inclusive)
+     *                        @see {NumberedFileInputSplitTest}
      */
     public NumberedFileInputSplit(String baseString, int minIdxInclusive, int maxIdxInclusive) {
-        if (baseString == null || !baseString.contains("%d")) {
-            throw new IllegalArgumentException("Base String must contain  character sequence %d");
+        Matcher m = p.matcher(baseString);
+        if (baseString == null || !m.find()) {
+            throw new IllegalArgumentException("Base String must match this regular expression: " + p.toString());
         }
         this.baseString = baseString;
         this.minIdx = minIdxInclusive;
