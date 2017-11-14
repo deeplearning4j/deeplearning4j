@@ -591,7 +591,6 @@ template<typename OpType>
 //#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0;  i < resultLength; i++) {
 						Nd4jIndex baseOffset = tadOffsets[i];
-						nd4j_printf("TAD %i; offset: %lld;\n", i, baseOffset);
 						IndexValue<T> indexValue = OpType::startingIndexValue(&x[baseOffset]);
 
 // FIXME: proper reduction required here
