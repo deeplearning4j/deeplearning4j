@@ -52,8 +52,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected List<LayerConstraint> constraints;
     protected InputPreProcessor preProcessor;
     protected CacheMode cacheMode;
-
-
+    protected Map<String, Double> l1ByParam = new HashMap<>();
+    protected Map<String, Double> l2ByParam = new HashMap<>();
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
@@ -61,11 +61,11 @@ public abstract class Layer implements Serializable, Cloneable {
         this.preProcessor = builder.preProcessor;
     }
 
-    public int minInputs(){
+    public int minInputs() {
         return 1;
     }
 
-    public int maxInputs(){
+    public int maxInputs() {
         return 1;
     }
 
@@ -74,7 +74,7 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     protected void initializeConstraints(List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints,
-                                         List<LayerConstraint> biasConstraints){
+                                         List<LayerConstraint> biasConstraints) {
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
@@ -101,19 +101,19 @@ public abstract class Layer implements Serializable, Cloneable {
                 allConstraints.add(c2);
             }
         }
-        if(allConstraints.size() > 0) {
+        if (allConstraints.size() > 0) {
             this.constraints = allConstraints;
         } else {
             this.constraints = null;
         }
     }
 
-    public void applyGlobalConfiguration(GlobalConfiguration c){
-        if(iDropout == null)
+    public void applyGlobalConfiguration(GlobalConfiguration c) {
+        if (iDropout == null)
             iDropout = c.getDropOut();
-        if(constraints == null )
+        if (constraints == null)
             initializeConstraints(c.getAllParamConstraints(), c.getWeightConstraints(), c.getBiasConstraints());
-        if(cacheMode == null)
+        if (cacheMode == null)
             cacheMode = c.getCacheMode();
     }
 
@@ -128,7 +128,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.constraints = null;
     }
 
-    public int numOutputs(){
+    public int numOutputs() {
         return 1;
     }
 
@@ -142,8 +142,8 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     public abstract org.deeplearning4j.nn.api.Layer instantiate(Collection<IterationListener> iterationListeners,
-                    String name, int layerIndex, int numInputs, INDArray layerParamsView,
-                    boolean initializeParams);
+                                                                String name, int layerIndex, int numInputs, INDArray layerParamsView,
+                                                                boolean initializeParams);
 
     /**
      * @return The parameter initializer for this model
@@ -182,25 +182,43 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     public abstract InputPreProcessor getPreProcessorForInputType(InputType... inputTypes);
 
+
+    /**
+     * Set regularization parameters for this layer
+     *
+     * @param parameterName parameter name to set regularization for
+     * @param l1            double value for l1 regularization
+     * @param l2            double value for l2 regularization
+     */
+    public void setRegularizationParameters(String parameterName, double l1, double l2) {
+        l1ByParam.put(parameterName, l1);
+        l2ByParam.put(parameterName, l2);
+    }
+
+
     /**
      * Get the L1 coefficient for the given parameter.
      * Different parameters may have different L1 values, even for a single .l1(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
      *
-     * @param paramName    Parameter name
+     * @param paramName Parameter name
      * @return L1 value for that parameter
      */
-    public abstract double getL1ByParam(String paramName);
+    public double getL1ByParam(String paramName) {
+        return l1ByParam.get(paramName);
+    }
 
     /**
      * Get the L2 coefficient for the given parameter.
      * Different parameters may have different L2 values, even for a single .l2(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
      *
-     * @param paramName    Parameter name
+     * @param paramName Parameter name
      * @return L2 value for that parameter
      */
-    public abstract double getL2ByParam(String paramName);
+    public double getL2ByParam(String paramName) {
+        return l2ByParam.get(paramName);
+    }
 
     /**
      * Is the specified parameter a layerwise pretraining only parameter?<br>
@@ -217,12 +235,12 @@ public abstract class Layer implements Serializable, Cloneable {
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
      * is not necessarily the case
      *
-     * @param paramName    Parameter name
-     * @return             IUpdater for the parameter
+     * @param paramName Parameter name
+     * @return IUpdater for the parameter
      */
     public IUpdater getUpdaterByParam(String paramName) {
         throw new UnsupportedOperationException(
-                        "Not supported: all layers with parameters should override this method");
+                "Not supported: all layers with parameters should override this method");
     }
 
     /**
@@ -234,7 +252,7 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract LayerMemoryReport getMemoryReport(InputType... inputType);
 
 
-    public String toJson(){
+    public String toJson() {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             String ret = mapper.writeValueAsString(this);
@@ -245,7 +263,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-    public static Layer fromJson(String json){
+    public static Layer fromJson(String json) {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             Layer ret = mapper.readValue(json, Layer.class);
@@ -255,7 +273,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-    public String toYaml(){
+    public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
 
         try {
@@ -328,9 +346,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
          *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
          */
-        public T dropOut(IDropout dropout){
+        public T dropOut(IDropout dropout) {
             this.iDropout = dropout;
-            return (T)this;
+            return (T) this;
         }
 
         /**
@@ -375,7 +393,7 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param preProcessor Preprocessor to use for this layer
          */
-        public T preProcessor(InputPreProcessor preProcessor){
+        public T preProcessor(InputPreProcessor preProcessor) {
             this.preProcessor = preProcessor;
             return (T) this;
         }

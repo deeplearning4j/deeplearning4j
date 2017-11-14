@@ -79,6 +79,7 @@ public class GlobalConfiguration {
 
     @Override
     public GlobalConfiguration clone(){
+        // TODO: clone global config
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

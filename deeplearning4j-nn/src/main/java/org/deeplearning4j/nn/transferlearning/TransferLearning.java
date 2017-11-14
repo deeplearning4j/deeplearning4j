@@ -293,33 +293,22 @@ public class TransferLearning {
                     List<String> keys = originalLayer.initializer().paramKeys(originalLayer);
 
                     if (keys != null) {
+                        for (String k : keys) {
+                            originalLayer.setRegularizationParameters(k, 0.0, 0.0);
+                            layer.setRegularizationParameters(k, 0.0, 0.0);
+                        }
 
-//                        originalLayer.initializer().paramKeys();
-//                        List<String> vars = originalLayer.variables(true);
-//                        originalLayer.clearVariables();
-//                        layer.clearVariables();
-//                        for (String s : vars) {
-//                            originalLayer.variables(false).add(s);
-//                            originalLayer.getL1ByParam(s)
-//                                    .put(s, 0.0);
-//                            originalLayer.getL2ByParam().put(s, 0.0);
-//
-//                            layer.variables(false).add(s);
-//                            layer.getL1ByParam().put(s, 0.0);
-//                            layer.getL2ByParam().put(s, 0.0);
+                        Layer origLayer = editedModel.getLayerWiseConfigurations().getConf(i);
+                        Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayer);
+                        newLayer.setLayerName(origLayer.getLayerName());
+                        editedModel.getLayerWiseConfigurations().setConf(i, newLayer);
+
                     }
-
-                    Layer origLayer = editedModel.getLayerWiseConfigurations().getConf(i);
-                    Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayer);
-                    newLayer.setLayerName(origLayer.getLayerName());
-                    editedModel.getLayerWiseConfigurations().setConf(i, newLayer);
-
+                    editedModel.setLayers(layers);
                 }
-                editedModel.setLayers(layers);
             }
-
-            return editedModel;
-        }
+                return editedModel;
+            }
 
         private void doPrep() {
             //first set finetune configs on all layers in model
@@ -503,7 +492,6 @@ public class TransferLearning {
 
                 vertices.put(gv.getKey(), newLayer);
                 newLayer.setLayerName(gv.getKey());
-                throw new RuntimeException();
             }
             return this;
         }
@@ -813,7 +801,7 @@ public class TransferLearning {
                         //Freeze in the configuration
                         String layerName = gv.getName();
                         Layer currentLayer = newConfig.getVertices().get(layerName);
-                        if(!newConfig.getNetworkInputs().contains(layerName) && currentLayer != null) {
+                        if (!newConfig.getNetworkInputs().contains(layerName) && currentLayer != null) {
                             //Skip input vertices, and vertices without layer configurations...
                             Layer originalLayer = currentLayer.clone();
                             Layer newLayer = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(originalLayer);
@@ -827,14 +815,11 @@ public class TransferLearning {
 //                            currentLayer.setLayerConf(clonedLayer);
 //                            currentLayer.getLayerConf().setLayer(newLayer);
 
-                            //Make sure the underlying layer doesn't change:
-//                            List<String> vars = currentLayer.variables(true);
-//                            currentLayer.clearVariables();
-//                            for (String s : vars) {
-//                                clonedLayer.variables(false).add(s);
-//                                clonedLayer.getL1ByParam().put(s, 0.0);
-//                                clonedLayer.getL2ByParam().put(s, 0.0);
-//                            }
+                            // Make sure the underlying layer doesn't change:
+                            List<String> keys = currentLayer.initializer().paramKeys(currentLayer);
+                            for (String k : keys) {
+                                clonedLayer.setRegularizationParameters(k, 0.0, 0.0);
+                            }
                         }
 
                         //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
@@ -850,7 +835,7 @@ public class TransferLearning {
 
                         //Also: mark any inputs to the current vertex to be frozen also
                         List<String> inputsToCurrent = newConfig.getVertexInputs().get(gv.getName());
-                        if(inputsToCurrent != null && inputsToCurrent.size() > 0) {
+                        if (inputsToCurrent != null && inputsToCurrent.size() > 0) {
                             allFrozen.addAll(inputsToCurrent);
                         }
 

@@ -85,7 +85,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
 
     protected Layer layer;
-    //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
     //number of line search iterations
     protected int maxNumLineSearchIterations;
@@ -95,8 +94,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;
-    protected Map<String, Double> l1ByParam = new HashMap<>();
-    protected Map<String, Double> l2ByParam = new HashMap<>();
+
     protected boolean pretrain;
 
     // this field defines preOutput cache
@@ -128,33 +126,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 clone.layer = clone.layer.clone();
             if (clone.stepFunction != null)
                 clone.stepFunction = clone.stepFunction.clone();
-            if (clone.l1ByParam != null)
-                clone.l1ByParam = new HashMap<>(clone.l1ByParam);
-            if (clone.l2ByParam != null)
-                clone.l2ByParam = new HashMap<>(clone.l2ByParam);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void setLayerParamLR(String variable) {
-        double l1 = layer.getL1ByParam(variable);
-        if (Double.isNaN(l1))
-            l1 = 0.0; //Not set
-        double l2 = layer.getL2ByParam(variable);
-        if (Double.isNaN(l2))
-            l2 = 0.0; //Not set
-        l1ByParam.put(variable, l1);
-        l2ByParam.put(variable, l2);
-    }
-
-    public double getL1ByParam(String variable) {
-        return l1ByParam.get(variable);
-    }
-
-    public double getL2ByParam(String variable) {
-        return l2ByParam.get(variable);
     }
 
     /**
@@ -850,6 +825,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.pretrain = globalConf.getPretrain();
             conf.cacheMode = globalConf.getCacheMode();
 
+            // TODO: fix me
 //            configureLayer(layer);
 //            if (layer instanceof FrozenLayer) {
 //                configureLayer(((FrozenLayer) layer).getLayer());

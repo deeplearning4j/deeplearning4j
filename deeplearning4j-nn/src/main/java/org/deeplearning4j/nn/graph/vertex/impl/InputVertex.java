@@ -18,12 +18,10 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 /**
  * An InputVertex simply holds activations and passes them through to other layers when required.
