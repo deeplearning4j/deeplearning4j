@@ -92,7 +92,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected long seed;
     protected OptimizationAlgorithm optimizationAlgo;
     //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> variables = new ArrayList<>();
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;
@@ -129,8 +128,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 clone.layer = clone.layer.clone();
             if (clone.stepFunction != null)
                 clone.stepFunction = clone.stepFunction.clone();
-            if (clone.variables != null)
-                clone.variables = new ArrayList<>(clone.variables);
             if (clone.l1ByParam != null)
                 clone.l1ByParam = new HashMap<>(clone.l1ByParam);
             if (clone.l2ByParam != null)
@@ -138,35 +135,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    public List<String> variables() {
-        return new ArrayList<>(variables);
-    }
-
-    public List<String> variables(boolean copy) {
-        if (copy)
-            return variables();
-        return variables;
-    }
-
-    public void addVariable(String variable) {
-        if (!variables.contains(variable)) {
-            variables.add(variable);
-            setLayerParamLR(variable);
-        }
-    }
-
-    public void clearVariables() {
-        variables.clear();
-        l1ByParam.clear();
-        l2ByParam.clear();
-    }
-
-    public void resetVariables() {
-        for (String s : variables) {
-            setLayerParamLR(s);
         }
     }
 

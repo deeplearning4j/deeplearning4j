@@ -192,7 +192,7 @@ public class TestOptimizers {
                         //.iterations(100)
                         .updater(new Sgd(1e-2))
                         .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();*/
-        conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
+//        conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
         Random rng = new DefaultRandom(12345L);
         org.nd4j.linalg.api.rng.distribution.Distribution dist =
@@ -283,7 +283,7 @@ public class TestOptimizers {
             /*new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).updater(new Sgd(0.1))
                             .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();*/
-            conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
+//            conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new SphereFunctionModel(100, dist, conf);
             if (i == 0) {
@@ -486,7 +486,7 @@ public class TestOptimizers {
                             .maxNumLineSearchIterations(maxNumLineSearchIter).miniBatch(false)
                             .updater(new AdaGrad(1e-2))
                             .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();*/
-            conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
+//            conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(10, conf);
             int nParams = m.numParams();
@@ -740,7 +740,7 @@ public class TestOptimizers {
                             .stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
                             .layer(new RBM.Builder().nIn(1).nOut(1).build())
                             .build();*/
-            conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
+//            conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RosenbrockFunctionModel(100, conf);
             if (i == 0) {
