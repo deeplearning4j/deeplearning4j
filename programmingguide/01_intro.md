@@ -37,7 +37,7 @@ Eclipse Deeplearning4j (DL4J) is an open-source, JVM-based toolkit for building,
 
 Here are some reasons to use DeepLearning4j. 
 
-- You are a data scientist in the field, or student with a Java project, and you need to integrate with a JVM stack (Hadoop, Spark, Kafka, ElasticSearch, Cassandra). You need to explore data, conduct and monitor experiments that apply various algorithms to the data and perform training on clusters to quickly obtain an accurate model for that data.  
+- You are a data scientist in the field, or student with a Java project, and you need to integrate with a JVM stack (Hadoop, Spark, Kafka, ElasticSearch, Cassandra); for example, you want to scale out a neural net configured in Python with Keras for  training on [Spark](https://deeplearning4j.org/spark) over multi-[GPUs](https://deeplearning4j.org/gpu). You need to explore data, conduct and monitor experiments that apply various algorithms to the data and perform training on clusters to quickly obtain an accurate model for that data.  
 
 - You are a data engineer or software developer in an enterprise environment who needs stable, reusable data pipelines and scalable and accurate predictions about the data. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs.
 
