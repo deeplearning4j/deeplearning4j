@@ -44,8 +44,8 @@ namespace nd4j {
         data = cpu_float2int8(rhs);
     }
 
-    template int8::int8<float>(const float& rhs);
-    template int8::int8<double>(const double& rhs);
+    template int8::int8(const float& rhs);
+    template int8::int8(const double& rhs);
 
     template int8& int8::operator=<float>(const float& rhs);
     template int8& int8::operator=<double>(const double& rhs);

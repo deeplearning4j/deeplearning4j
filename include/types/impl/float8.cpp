@@ -120,8 +120,8 @@ namespace nd4j {
         data = cpu_float2quarter_rn(rhs);
     }
 
-    template float8::float8<float>(const float& rhs);
-    template float8::float8<double>(const double& rhs);
+    template float8::float8(const float& rhs);
+    template float8::float8(const double& rhs);
 
     template float8& float8::operator=<float>(const float& rhs);
     template float8& float8::operator=<double>(const double& rhs);
