@@ -60,7 +60,7 @@ bool debug = false;
 bool verbose = false;
 */
 
-// #include <graph/ShapeList.h>
+// #include <array/ShapeList.h>
 
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {

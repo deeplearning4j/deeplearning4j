@@ -13,6 +13,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_testreduction.class,
         float_argmax.class,
         float_argmin.class,
+        float_sum.class,
         float_noop.class,
         float_testop2i2o.class,
         float_softmax.class,
@@ -102,7 +103,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_scatter_update.class,
         float_relu.class,
         float_randomuniform.class,
-        float_sum.class,
         float_batchnorm.class,
         float_batchnorm_bp.class,
         float_conv3d_bp.class,
@@ -130,6 +130,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_testreduction.class,
         half_argmax.class,
         half_argmin.class,
+        half_sum.class,
         half_noop.class,
         half_testop2i2o.class,
         half_softmax.class,
@@ -219,7 +220,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_scatter_update.class,
         half_relu.class,
         half_randomuniform.class,
-        half_sum.class,
         half_batchnorm.class,
         half_batchnorm_bp.class,
         half_conv3d_bp.class,
@@ -247,6 +247,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_testreduction.class,
         double_argmax.class,
         double_argmin.class,
+        double_sum.class,
         double_noop.class,
         double_testop2i2o.class,
         double_softmax.class,
@@ -336,7 +337,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_scatter_update.class,
         double_relu.class,
         double_randomuniform.class,
-        double_sum.class,
         double_batchnorm.class,
         double_batchnorm_bp.class,
         double_conv3d_bp.class,
@@ -510,7 +510,7 @@ bool debug = false;
 bool verbose = false;
 */
 
-// #include <graph/ShapeList.h>
+// #include <array/ShapeList.h>
 
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
@@ -5783,7 +5783,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // modifying operator for matrix, i - absolute index
         // be careful this method doesn't check the boundaries of array
         public native @ByRef @Name("operator ()") FloatPointer apply(@Cast("const Nd4jIndex") long i);
-    
+
         // accessing operator for 2D array, i - row, j - column
         // be careful this method doesn't check the rank of array        
 
@@ -6153,9 +6153,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@StdVector int[] reps);
 
 		// tile an array by repeating it the number of times given by reps.
-		public native FloatNDArray tile(@StdVector IntPointer reps);
-		public native FloatNDArray tile(@StdVector IntBuffer reps);
-		public native FloatNDArray tile(@StdVector int[] reps);
+		public native @ByVal FloatNDArray tile(@StdVector IntPointer reps);
+		public native @ByVal FloatNDArray tile(@StdVector IntBuffer reps);
+		public native @ByVal FloatNDArray tile(@StdVector int[] reps);
+
+        // tile an array by repeating it the number of times given by reps.
+        public native void tile(@StdVector IntPointer reps, @ByRef FloatNDArray target);
+        public native void tile(@StdVector IntBuffer reps, @ByRef FloatNDArray target);
+        public native void tile(@StdVector int[] reps, @ByRef FloatNDArray target);
         
 		// return array which is broadcasted from this and argument array  
 		public native FloatNDArray broadcast(@Const @ByRef FloatNDArray other);
@@ -6213,6 +6218,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // multiplication operator array*scalar
         public native @Name("operator *=") void multiplyPut(float scalar);
 
+        // division operator array1/array2
+        public native @ByVal @Name("operator /") FloatNDArray divide(@Const @ByRef FloatNDArray other);        
+
+        // division operator array1 /= array2
+        public native @Name("operator /=") void dividePut(@Const @ByRef FloatNDArray other);
+
+        // division operator array*scalar
+        public native @Name("operator /=") void dividePut(float scalar);
+
         // mathematical multiplication of two arrays
         
 
@@ -6246,7 +6260,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // modifying operator for matrix, i - absolute index
         // be careful this method doesn't check the boundaries of array
         public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(@Cast("const Nd4jIndex") long i);
-    
+
         // accessing operator for 2D array, i - row, j - column
         // be careful this method doesn't check the rank of array        
 
@@ -6616,9 +6630,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@StdVector int[] reps);
 
 		// tile an array by repeating it the number of times given by reps.
-		public native HalfNDArray tile(@StdVector IntPointer reps);
-		public native HalfNDArray tile(@StdVector IntBuffer reps);
-		public native HalfNDArray tile(@StdVector int[] reps);
+		public native @ByVal HalfNDArray tile(@StdVector IntPointer reps);
+		public native @ByVal HalfNDArray tile(@StdVector IntBuffer reps);
+		public native @ByVal HalfNDArray tile(@StdVector int[] reps);
+
+        // tile an array by repeating it the number of times given by reps.
+        public native void tile(@StdVector IntPointer reps, @ByRef HalfNDArray target);
+        public native void tile(@StdVector IntBuffer reps, @ByRef HalfNDArray target);
+        public native void tile(@StdVector int[] reps, @ByRef HalfNDArray target);
         
 		// return array which is broadcasted from this and argument array  
 		public native HalfNDArray broadcast(@Const @ByRef HalfNDArray other);
@@ -6676,6 +6695,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // multiplication operator array*scalar
         public native @Name("operator *=") void multiplyPut(@Cast("const float16") short scalar);
 
+        // division operator array1/array2
+        public native @ByVal @Name("operator /") HalfNDArray divide(@Const @ByRef HalfNDArray other);        
+
+        // division operator array1 /= array2
+        public native @Name("operator /=") void dividePut(@Const @ByRef HalfNDArray other);
+
+        // division operator array*scalar
+        public native @Name("operator /=") void dividePut(@Cast("const float16") short scalar);
+
         // mathematical multiplication of two arrays
         
 
@@ -6709,7 +6737,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // modifying operator for matrix, i - absolute index
         // be careful this method doesn't check the boundaries of array
         public native @ByRef @Name("operator ()") DoublePointer apply(@Cast("const Nd4jIndex") long i);
-    
+
         // accessing operator for 2D array, i - row, j - column
         // be careful this method doesn't check the rank of array        
 
@@ -7079,9 +7107,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@StdVector int[] reps);
 
 		// tile an array by repeating it the number of times given by reps.
-		public native DoubleNDArray tile(@StdVector IntPointer reps);
-		public native DoubleNDArray tile(@StdVector IntBuffer reps);
-		public native DoubleNDArray tile(@StdVector int[] reps);
+		public native @ByVal DoubleNDArray tile(@StdVector IntPointer reps);
+		public native @ByVal DoubleNDArray tile(@StdVector IntBuffer reps);
+		public native @ByVal DoubleNDArray tile(@StdVector int[] reps);
+
+        // tile an array by repeating it the number of times given by reps.
+        public native void tile(@StdVector IntPointer reps, @ByRef DoubleNDArray target);
+        public native void tile(@StdVector IntBuffer reps, @ByRef DoubleNDArray target);
+        public native void tile(@StdVector int[] reps, @ByRef DoubleNDArray target);
         
 		// return array which is broadcasted from this and argument array  
 		public native DoubleNDArray broadcast(@Const @ByRef DoubleNDArray other);
@@ -7138,6 +7171,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         // multiplication operator array*scalar
         public native @Name("operator *=") void multiplyPut(double scalar);
+
+        // division operator array1/array2
+        public native @ByVal @Name("operator /") DoubleNDArray divide(@Const @ByRef DoubleNDArray other);        
+
+        // division operator array1 /= array2
+        public native @Name("operator /=") void dividePut(@Const @ByRef DoubleNDArray other);
+
+        // division operator array*scalar
+        public native @Name("operator /=") void dividePut(double scalar);
 
         // mathematical multiplication of two arrays
         
@@ -7202,6 +7244,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(int height);
 
         public native FloatNDArray read(int idx);
+        public native FloatNDArray readRaw(int idx);
         public native @Cast("Nd4jStatus") int write(int idx, FloatNDArray array);
         public native FloatNDArray pick(@StdVector IntPointer indices);
         public native FloatNDArray pick(@StdVector IntBuffer indices);
@@ -7221,6 +7264,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native int elements();
         public native int height();
+
+        public native int counter();
     }
     @Name("nd4j::NDArrayList<float16>") @NoOffset public static class HalfNDArrayList extends Pointer {
         static { Loader.load(); }
@@ -7233,6 +7278,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(int height);
 
         public native HalfNDArray read(int idx);
+        public native HalfNDArray readRaw(int idx);
         public native @Cast("Nd4jStatus") int write(int idx, HalfNDArray array);
         public native HalfNDArray pick(@StdVector IntPointer indices);
         public native HalfNDArray pick(@StdVector IntBuffer indices);
@@ -7252,6 +7298,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native int elements();
         public native int height();
+
+        public native int counter();
     }
     @Name("nd4j::NDArrayList<double>") @NoOffset public static class DoubleNDArrayList extends Pointer {
         static { Loader.load(); }
@@ -7264,6 +7312,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(int height);
 
         public native DoubleNDArray read(int idx);
+        public native DoubleNDArray readRaw(int idx);
         public native @Cast("Nd4jStatus") int write(int idx, DoubleNDArray array);
         public native DoubleNDArray pick(@StdVector IntPointer indices);
         public native DoubleNDArray pick(@StdVector IntBuffer indices);
@@ -7283,6 +7332,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native int elements();
         public native int height();
+
+        public native int counter();
     }
 
 
@@ -7325,6 +7376,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native @Cast("Nd4jStatus") int status();
         public native void setStatus(@Cast("Nd4jStatus") int status);
+        public native void purge();
+        public native void setNonRemovable();
     }
     @Name("nd4j::ResultSet<float16>") @NoOffset public static class HalfResultSet extends Pointer {
         static { Loader.load(); }
@@ -7347,6 +7400,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native @Cast("Nd4jStatus") int status();
         public native void setStatus(@Cast("Nd4jStatus") int status);
+        public native void purge();
+        public native void setNonRemovable();
     }
     @Name("nd4j::ResultSet<double>") @NoOffset public static class DoubleResultSet extends Pointer {
         static { Loader.load(); }
@@ -7369,6 +7424,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native @Cast("Nd4jStatus") int status();
         public native void setStatus(@Cast("Nd4jStatus") int status);
+        public native void purge();
+        public native void setNonRemovable();
     }
 
 
@@ -7608,6 +7665,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("bool") boolean isExternal();
             public native @Cast("bool") boolean isReadOnly();
             public native @Cast("bool") boolean isEmpty();
+            public native @Cast("bool") boolean isRemovable();
 
             public native @Cast("bool") boolean isPlaceholder();
 
@@ -7673,6 +7731,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("bool") boolean isExternal();
             public native @Cast("bool") boolean isReadOnly();
             public native @Cast("bool") boolean isEmpty();
+            public native @Cast("bool") boolean isRemovable();
 
             public native @Cast("bool") boolean isPlaceholder();
 
@@ -7738,6 +7797,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("bool") boolean isExternal();
             public native @Cast("bool") boolean isReadOnly();
             public native @Cast("bool") boolean isEmpty();
+            public native @Cast("bool") boolean isRemovable();
 
             public native @Cast("bool") boolean isPlaceholder();
 
@@ -7960,7 +8020,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <list>
 // #include <map>
 // #include <mutex>
-//#include <NDArray.h>
+// #include <NDArray.h>
+// #include <array/NDArrayList.h>
 // #include <graph/Variable.h>
 // #include <memory/Workspace.h>
 // #include <graph/Stash.h>
@@ -7999,6 +8060,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native void putVariable(int id, int idx, FloatNDArray array);
             public native void putVariable(int id, int idx, FloatVariable array);
 
+            public native void trackList(FloatNDArrayList list);
 
             public native void putOutputVariable(FloatVariable variable);
 
@@ -8054,6 +8116,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native void putVariable(int id, int idx, HalfNDArray array);
             public native void putVariable(int id, int idx, HalfVariable array);
 
+            public native void trackList(HalfNDArrayList list);
 
             public native void putOutputVariable(HalfVariable variable);
 
@@ -8109,6 +8172,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native void putVariable(int id, int idx, DoubleNDArray array);
             public native void putVariable(int id, int idx, DoubleVariable array);
 
+            public native void trackList(DoubleNDArrayList list);
 
             public native void putOutputVariable(DoubleVariable variable);
 
@@ -8456,7 +8520,7 @@ public static final long MAX_UINT = MAX_UINT();
 // #endif //LIBND4J_HELPER_GENERATOR_H
 
 
-// Parsed from graph/Block.h
+// Parsed from graph/Context.h
 
 //
 // @author raver119@gmail.com
@@ -8478,10 +8542,10 @@ public static final long MAX_UINT = MAX_UINT();
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        @Name("nd4j::graph::Block<float>") @NoOffset public static class FloatBlock extends Pointer {
+        @Name("nd4j::graph::Context<float>") @NoOffset public static class FloatContext extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatBlock(Pointer p) { super(p); }
+            public FloatContext(Pointer p) { super(p); }
         
             // TODO: maybe override new here as well?
 
@@ -8489,11 +8553,11 @@ public static final long MAX_UINT = MAX_UINT();
 // #ifdef __CUDACC__
 // #endif
 
-            public FloatBlock(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            public FloatContext(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
             private native void allocate(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/);
-            public FloatBlock(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            public FloatContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
             private native void allocate(int nodeId);
-            public FloatBlock(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            public FloatContext(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
             private native void allocate(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace);
 
             // default destructor
@@ -8520,6 +8584,7 @@ public static final long MAX_UINT = MAX_UINT();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
             public native int getNodeId();
+            public native int nodeId();
 
 
             public native @StdVector FloatPointer getTArguments();
@@ -8551,7 +8616,18 @@ public static final long MAX_UINT = MAX_UINT();
             * This method returns variableSpace used in this block
             * @return
             */
-            public native FloatVariableSpace getVariableSpace();
+            //VariableSpace<T>* getVariableSpace();
+
+            /**
+             *
+             * @return
+             */
+            public native FloatStash getStash();
+
+            /**
+             *
+             */
+            public native void trackList(FloatNDArrayList list);
 
 
             /**
@@ -8561,21 +8637,40 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native FloatVariable getVariable(int idx);
             public native FloatVariable variable(int idx);
+            public native IntIntPair input(int idx);
 
             /**
              * This method fetches variable from Workspace DIRECTLY
              * @param p
              * @return
              */
+            public native FloatVariable variable(int node, int index);
             public native FloatVariable variable(@ByRef IntIntPair p);
 
             public native int opNum();
             public native void setOpNum(int opNum);
+
+
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, FloatNDArray array);
+
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, FloatNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, FloatNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, FloatNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, FloatNDArrayList list);
+
+            public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
+            public native @Cast("bool") boolean isValueAvailable();
+
+            public native FloatVariable ensureVariable(int idx/*=0*/);
+            public native FloatVariable ensureVariable();
         }
-        @Name("nd4j::graph::Block<float16>") @NoOffset public static class HalfBlock extends Pointer {
+        @Name("nd4j::graph::Context<float16>") @NoOffset public static class HalfContext extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public HalfBlock(Pointer p) { super(p); }
+            public HalfContext(Pointer p) { super(p); }
         
             // TODO: maybe override new here as well?
 
@@ -8583,11 +8678,11 @@ public static final long MAX_UINT = MAX_UINT();
 // #ifdef __CUDACC__
 // #endif
 
-            public HalfBlock(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            public HalfContext(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
             private native void allocate(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/);
-            public HalfBlock(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            public HalfContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
             private native void allocate(int nodeId);
-            public HalfBlock(int nodeId, HalfVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            public HalfContext(int nodeId, HalfVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
             private native void allocate(int nodeId, HalfVariableSpace variableSpace, @Cast("bool") boolean isInplace);
 
             // default destructor
@@ -8614,6 +8709,7 @@ public static final long MAX_UINT = MAX_UINT();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
             public native int getNodeId();
+            public native int nodeId();
 
 
             public native @Cast("float16*") @StdVector ShortPointer getTArguments();
@@ -8645,7 +8741,18 @@ public static final long MAX_UINT = MAX_UINT();
             * This method returns variableSpace used in this block
             * @return
             */
-            public native HalfVariableSpace getVariableSpace();
+            //VariableSpace<T>* getVariableSpace();
+
+            /**
+             *
+             * @return
+             */
+            public native HalfStash getStash();
+
+            /**
+             *
+             */
+            public native void trackList(HalfNDArrayList list);
 
 
             /**
@@ -8655,21 +8762,40 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native HalfVariable getVariable(int idx);
             public native HalfVariable variable(int idx);
+            public native IntIntPair input(int idx);
 
             /**
              * This method fetches variable from Workspace DIRECTLY
              * @param p
              * @return
              */
+            public native HalfVariable variable(int node, int index);
             public native HalfVariable variable(@ByRef IntIntPair p);
 
             public native int opNum();
             public native void setOpNum(int opNum);
+
+
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, HalfNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, HalfNDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, HalfNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, HalfNDArray array);
+
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, HalfNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, HalfNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, HalfNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, HalfNDArrayList list);
+
+            public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
+            public native @Cast("bool") boolean isValueAvailable();
+
+            public native HalfVariable ensureVariable(int idx/*=0*/);
+            public native HalfVariable ensureVariable();
         }
-        @Name("nd4j::graph::Block<double>") @NoOffset public static class DoubleBlock extends Pointer {
+        @Name("nd4j::graph::Context<double>") @NoOffset public static class DoubleContext extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public DoubleBlock(Pointer p) { super(p); }
+            public DoubleContext(Pointer p) { super(p); }
         
             // TODO: maybe override new here as well?
 
@@ -8677,11 +8803,11 @@ public static final long MAX_UINT = MAX_UINT();
 // #ifdef __CUDACC__
 // #endif
 
-            public DoubleBlock(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            public DoubleContext(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
             private native void allocate(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/);
-            public DoubleBlock(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            public DoubleContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
             private native void allocate(int nodeId);
-            public DoubleBlock(int nodeId, DoubleVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            public DoubleContext(int nodeId, DoubleVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
             private native void allocate(int nodeId, DoubleVariableSpace variableSpace, @Cast("bool") boolean isInplace);
 
             // default destructor
@@ -8708,6 +8834,7 @@ public static final long MAX_UINT = MAX_UINT();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
             public native int getNodeId();
+            public native int nodeId();
 
 
             public native @StdVector DoublePointer getTArguments();
@@ -8739,7 +8866,18 @@ public static final long MAX_UINT = MAX_UINT();
             * This method returns variableSpace used in this block
             * @return
             */
-            public native DoubleVariableSpace getVariableSpace();
+            //VariableSpace<T>* getVariableSpace();
+
+            /**
+             *
+             * @return
+             */
+            public native DoubleStash getStash();
+
+            /**
+             *
+             */
+            public native void trackList(DoubleNDArrayList list);
 
 
             /**
@@ -8749,16 +8887,35 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native DoubleVariable getVariable(int idx);
             public native DoubleVariable variable(int idx);
+            public native IntIntPair input(int idx);
 
             /**
              * This method fetches variable from Workspace DIRECTLY
              * @param p
              * @return
              */
+            public native DoubleVariable variable(int node, int index);
             public native DoubleVariable variable(@ByRef IntIntPair p);
 
             public native int opNum();
             public native void setOpNum(int opNum);
+
+
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, DoubleNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, DoubleNDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, DoubleNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, DoubleNDArray array);
+
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, DoubleNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, DoubleNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, DoubleNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, DoubleNDArrayList list);
+
+            public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
+            public native @Cast("bool") boolean isValueAvailable();
+
+            public native DoubleVariable ensureVariable(int idx/*=0*/);
+            public native DoubleVariable ensureVariable();
         }
     
 
@@ -10294,6 +10451,16 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
     @Namespace("shape") public static native void checkDimensions(int rank, @StdVector int[] dimensions);
 
+
+// #ifdef __CUDACC__
+// #endif
+    // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array 
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const IntPointer maxShapeInfo, @Const IntPointer minShapeInfo, int maxIdx);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const IntBuffer maxShapeInfo, @Const IntBuffer minShapeInfo, int maxIdx);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const int[] maxShapeInfo, @Const int[] minShapeInfo, int maxIdx);
+
+
+
 //END HEADERS
 
 
@@ -11306,6 +11473,10 @@ public static final int PREALLOC_SIZE = 33554432;
     // also sort input array of dimensions, this operation is also necessary for creating TAD object
 
 
+// #ifdef __CUDACC__
+// #endif
+// return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
+
 
 
 
@@ -11313,7 +11484,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #endif /* SHAPE_H_ */
 
 
-// Parsed from graph/ShapeList.h
+// Parsed from array/ShapeList.h
 
 //
 // @author raver119@gmail.com
@@ -11345,6 +11516,7 @@ public static final int PREALLOC_SIZE = 33554432;
         private native void allocate(int[] shape/*=nullptr*/);
         public ShapeList(@Cast("int**") @StdVector PointerPointer shapes) { super((Pointer)null); allocate(shapes); }
         private native void allocate(@Cast("int**") @StdVector PointerPointer shapes);
+        //ShapeList(bool autoRemovable);
 
         public native @Cast("int**") @StdVector PointerPointer asVector();
         public native void destroy();
@@ -12313,9 +12485,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 class NAME: public nd4j::ops::DeclarableOp<T> {
 //                                                 public:
 //                                                     NAME();
-//                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block);
+//                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
 //                                                 protected:
-//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block);
+//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
 
 // #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   template <typename T>
@@ -12323,7 +12495,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 public:
 //                                                     NAME();
 //                                                 protected:
-//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block);
+//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
 
 // #define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)   template <typename T>
@@ -12356,14 +12528,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // 										        template class ND4J_EXPORT NAME<float16>;
 // 										        template class ND4J_EXPORT NAME<double>;
 //                                                 template <typename T>
-//                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+//                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // #define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      template <typename T>
 //                                                             class NAME: public nd4j::ops::DeclarableListOp<T> {
 //                                                             public:
 //                                                                 NAME();
 //                                                             protected:
-//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block);
+//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                             };
 
 // #define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)         template <typename T>
@@ -12396,14 +12568,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                             static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                             template <typename T>
-//                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+//                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // #define DECLARE_LOGIC_OP(NAME)   template <typename T>
 //                                                 class NAME: public nd4j::ops::LogicOp<T> {
 //                                                 public:
 //                                                     NAME();
 //                                                 protected:
-//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block);
+//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
 
 // #define LOGIC_OP_IMPL(NAME)     template <typename T>
@@ -12433,7 +12605,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                 template <typename T>
-//                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
+//                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
 //                                 template class ND4J_EXPORT NAME<float>;
 // 								template class ND4J_EXPORT NAME<float16>;
 // 								template class ND4J_EXPORT NAME<double>;
@@ -12443,11 +12615,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)   template <typename T>
 //                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { };
 //                                                 template <typename T>
-//                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) {
-//                                                     int* newshape;
-//                                                     ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-//                                                     memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-//                                                     auto shapeList = new nd4j::ShapeList(newshape);
+//                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+//                                                     auto shapeList = new nd4j::ShapeList();
+//                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                         int* newshape;
+//                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
+//                                                         memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(e)));
+//                                                         shapeList->push_back(newshape);
+//                                                     }
 //                                                     return shapeList;
 //                                                 }
 // 										template class ND4J_EXPORT NAME<float>;
@@ -12478,7 +12653,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                 template <typename T>
-//                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+//                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 
 // #define DECLARE_SYN(NAME, ORIGINAL)
@@ -12529,20 +12704,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             class NAME: public nd4j::ops::DeclarableOp<T> {
 //                                                             public:
 //                                                                 NAME();
-//                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block);
+//                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
 //                                                             protected:
-//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block);
+//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                             };
 
 
 // #define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)     template <typename T>
 //                                                             NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { };
 //                                                             template <typename T>
-//                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) {
-//                                                                 int* newshape;
-//                                                                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-//                                                                 memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-//                                                                 auto shapeList = new nd4j::ShapeList(newshape);
+//                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+//                                                                 auto shapeList = new nd4j::ShapeList();
+//                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                                     int* newshape;
+//                                                                     ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
+//                                                                     memcpy(newshape, inputShape->at(e), shape::shapeInfoByteLength(inputShape->at(e)));
+//                                                                     shapeList->push_back(newshape);
+//                                                                 }
 //                                                                 return shapeList;
 //                                                             }
 // 										template class ND4J_EXPORT NAME<float>;
@@ -12573,25 +12751,28 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                             static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                             template <typename T>
-//                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+//                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T>
 //                                                                                 class NAME: public nd4j::ops::DeclarableOp<T> {
 //                                                                                 public:
 //                                                                                     NAME();
-//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block);
+//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
 //                                                                                 protected:
-//                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block);
+//                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                                                 };
 
 // #define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>
 //                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
 //                                                                                 template <typename T>
-//                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) {
-//                                                                                     int* newshape;
-//                                                                                     ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-//                                                                                     memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-//                                                                                     auto shapeList = new nd4j::ShapeList(newshape);
+//                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+//                                                                                     auto shapeList = new nd4j::ShapeList();
+//                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                                                         int* newshape;
+//                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
+//                                                                                         memcpy(newshape, inputShape->at(e), shape::shapeInfoByteLength(inputShape->at(e)));
+//                                                                                         shapeList->push_back(newshape);
+//                                                                                     }
 //                                                                                     return shapeList;
 //                                                                                 }
 // 										template class ND4J_EXPORT NAME<float>;
@@ -12623,14 +12804,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 // 
 //                                                                                 template <typename T>
-//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Context<T>& block)
 
 // #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>
 //                                                                                 class NAME: public nd4j::ops::DeclarableReductionOp<T> {
 //                                                                                 public:
 //                                                                                     NAME();
 //                                                                                 protected:
-//                                                                                     Nd4jStatus validateAndExecute(Block<T>& block);
+//                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
 //                                                                                 };
 
 // #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T>
@@ -12663,16 +12844,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                                                 template <typename T>
-//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 
 // #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T>
 //                                                                                 class NAME: public nd4j::ops::DeclarableCustomOp<T> {
 //                                                                                 protected:
-//                                                                                     Nd4jStatus validateAndExecute(Block<T>& block);
+//                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
 //                                                                                 public:
 //                                                                                     NAME();
-//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block);
+//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
 //                                                                                 };
 
 
@@ -12706,11 +12887,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                                                 template <typename T>
-//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Block<T>& block)
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // this declaration MUST follow DECLARE_CUSTOM_OP
 // #define DECLARE_SHAPE_FN(NAME)                                              template<typename T>
-//                                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block)
+//                                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
 
 // #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
@@ -12725,9 +12906,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
 // #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
 
-// #define STASH(NAME, ARRAY)  block.getVariableSpace()->getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
-// #define CHECK_STASH(NAME)   block.getVariableSpace()->getStash()->checkStash(block.getNodeId(), NAME);
-// #define UNSTASH(NAME)       block.getVariableSpace()->getStash()->extractArray(block.getNodeId(), NAME);
+// #define STASH(NAME, ARRAY)  block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
+// #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
+// #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
 // #define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariable(INDEX)->getNDArray()
 // #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
@@ -12852,6 +13033,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             // this method returns opNum (applicable for legacy XYZ ops only)
             public native int getOpNum();
 
+            // this method allows to set specifc opNum
+            public native void setOpNum(int opNum);
+
             public native void setInputType(@Cast("nd4j::ops::InputType") int type);
             public native @Cast("nd4j::ops::InputType") int inputType();
         }
@@ -12874,10 +13058,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <types/float16.h>
 // #include <pointercast.h>
 // #include <NDArray.h>
-// #include <Block.h>
+// #include <Context.h>
 // #include "OpDescriptor.h"
 // #include <helpers/helper_hash.h>
-// #include <graph/ShapeList.h>
+// #include <array/ShapeList.h>
 // #include <array/ResultSet.h>
 //#include <ops/declarable/declarable_ops.h>
 
@@ -12910,7 +13094,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
             */
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
 
             /**
              * Returns opName
@@ -12940,7 +13124,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              * @param block
              * @return 0 if OK, error code otherwise
              */
-            public native @Cast("Nd4jStatus") int execute(FloatBlock block);
+            public native @Cast("Nd4jStatus") int execute(FloatContext block);
 
             public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
@@ -12956,31 +13140,31 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
-            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatContext block);
 
             // this method checks if all input arrays have equal lengths
-            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef FloatContext block);
 
             // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef FloatContext block);
 
             // this method check if all input arrays have the same orders
-            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef FloatContext block);
 
             // this method checks if all input arrays are 2D
-            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef FloatContext block);
 
             // this method checks if all input arrays are 3D
-            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef FloatContext block);
 
             // this method checks if all input arrays are 4D
-            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef FloatContext block);
 
             // this method checks if all input arrays are ND
-            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef FloatBlock block, int rank);
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef FloatContext block, int rank);
 
             // this method checks if number of available arguments matches op expectations
-            public native @Cast("Nd4jStatus") int validateArguments(@ByRef FloatBlock block);
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef FloatContext block);
         }
         @Name("nd4j::ops::DeclarableOp<float16>") @NoOffset public static class HalfDeclarableOp extends Pointer {
             static { Loader.load(); }
@@ -13001,7 +13185,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
             */
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
 
             /**
              * Returns opName
@@ -13031,7 +13215,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              * @param block
              * @return 0 if OK, error code otherwise
              */
-            public native @Cast("Nd4jStatus") int execute(HalfBlock block);
+            public native @Cast("Nd4jStatus") int execute(HalfContext block);
 
             public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
@@ -13047,31 +13231,31 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
-            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfContext block);
 
             // this method checks if all input arrays have equal lengths
-            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef HalfContext block);
 
             // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef HalfContext block);
 
             // this method check if all input arrays have the same orders
-            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef HalfContext block);
 
             // this method checks if all input arrays are 2D
-            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef HalfContext block);
 
             // this method checks if all input arrays are 3D
-            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef HalfContext block);
 
             // this method checks if all input arrays are 4D
-            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef HalfContext block);
 
             // this method checks if all input arrays are ND
-            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef HalfBlock block, int rank);
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef HalfContext block, int rank);
 
             // this method checks if number of available arguments matches op expectations
-            public native @Cast("Nd4jStatus") int validateArguments(@ByRef HalfBlock block);
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef HalfContext block);
         }
         @Name("nd4j::ops::DeclarableOp<double>") @NoOffset public static class DoubleDeclarableOp extends Pointer {
             static { Loader.load(); }
@@ -13092,7 +13276,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
             */
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
 
             /**
              * Returns opName
@@ -13122,7 +13306,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              * @param block
              * @return 0 if OK, error code otherwise
              */
-            public native @Cast("Nd4jStatus") int execute(DoubleBlock block);
+            public native @Cast("Nd4jStatus") int execute(DoubleContext block);
 
             public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
@@ -13138,31 +13322,31 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
-            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleContext block);
 
             // this method checks if all input arrays have equal lengths
-            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef DoubleContext block);
 
             // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef DoubleContext block);
 
             // this method check if all input arrays have the same orders
-            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef DoubleContext block);
 
             // this method checks if all input arrays are 2D
-            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef DoubleContext block);
 
             // this method checks if all input arrays are 3D
-            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef DoubleContext block);
 
             // this method checks if all input arrays are 4D
-            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef DoubleContext block);
 
             // this method checks if all input arrays are ND
-            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef DoubleBlock block, int rank);
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef DoubleContext block, int rank);
 
             // this method checks if number of available arguments matches op expectations
-            public native @Cast("Nd4jStatus") int validateArguments(@ByRef DoubleBlock block);
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef DoubleContext block);
         }
     
 
@@ -13180,7 +13364,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LIBND4J_DECLARABLE_LIST_OP_H
 
 // #include <array/ResultSet.h>
-// #include <graph/Block.h>
+// #include <graph/Context.h>
 // #include <ops/declarable/OpRegistrator.h>
 // #include <ops/declarable/DeclarableOp.h>
         @Name("nd4j::ops::DeclarableListOp<float>") public static class FloatDeclarableListOp extends FloatDeclarableOp {
@@ -13190,12 +13374,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
 
             
-            public native @Cast("Nd4jStatus") int execute(FloatBlock block);
+            public native @Cast("Nd4jStatus") int execute(FloatContext block);
             public native FloatResultSet execute(FloatNDArrayList list, @ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
             public native FloatResultSet execute(FloatNDArrayList list, @ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
             public native FloatResultSet execute(FloatNDArrayList list, @ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
         }
         @Name("nd4j::ops::DeclarableListOp<float16>") public static class HalfDeclarableListOp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13204,12 +13388,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
 
             
-            public native @Cast("Nd4jStatus") int execute(HalfBlock block);
+            public native @Cast("Nd4jStatus") int execute(HalfContext block);
             public native HalfResultSet execute(HalfNDArrayList list, @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
             public native HalfResultSet execute(HalfNDArrayList list, @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
             public native HalfResultSet execute(HalfNDArrayList list, @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
         }
         @Name("nd4j::ops::DeclarableListOp<double>") public static class DoubleDeclarableListOp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13218,12 +13402,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
 
             
-            public native @Cast("Nd4jStatus") int execute(DoubleBlock block);
+            public native @Cast("Nd4jStatus") int execute(DoubleContext block);
             public native DoubleResultSet execute(DoubleNDArrayList list, @ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
             public native DoubleResultSet execute(DoubleNDArrayList list, @ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
             public native DoubleResultSet execute(DoubleNDArrayList list, @ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
         }
     
 
@@ -13246,7 +13430,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public FloatDeclarableReductionOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
         }
         @Name("nd4j::ops::DeclarableReductionOp<float16>") public static class HalfDeclarableReductionOp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13254,7 +13438,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public HalfDeclarableReductionOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
         }
         @Name("nd4j::ops::DeclarableReductionOp<double>") public static class DoubleDeclarableReductionOp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13262,7 +13446,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public DoubleDeclarableReductionOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
         }
     
 
@@ -13286,7 +13470,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public FloatDeclarableCustomOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef FloatBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef FloatContext block);
         }
         @Name("nd4j::ops::DeclarableCustomOp<float16>") public static class HalfDeclarableCustomOp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13294,7 +13478,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public HalfDeclarableCustomOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef HalfBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef HalfContext block);
         }
         @Name("nd4j::ops::DeclarableCustomOp<double>") public static class DoubleDeclarableCustomOp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13302,7 +13486,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public DoubleDeclarableCustomOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef DoubleBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef DoubleContext block);
         }
     
 
@@ -13319,7 +13503,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifndef LIBND4J_BOOLEANOP_H
 // #define LIBND4J_BOOLEANOP_H
 
-// #include <Block.h>
+// #include <Context.h>
 // #include "OpDescriptor.h"
 // #include "DeclarableOp.h"
         @Name("nd4j::ops::BooleanOp<float>") @NoOffset public static class FloatBooleanOp extends FloatDeclarableOp {
@@ -13328,11 +13512,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public FloatBooleanOp(Pointer p) { super(p); }
         
             public native @Cast("bool") boolean evaluate(@ByRef FloatNDArrayVector args);
-            public native @Cast("bool") boolean evaluate(@ByRef FloatBlock block);
+            public native @Cast("bool") boolean evaluate(@ByRef FloatContext block);
 
-            public native @Cast("Nd4jStatus") int execute(FloatBlock block);
+            public native @Cast("Nd4jStatus") int execute(FloatContext block);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
         }
         @Name("nd4j::ops::BooleanOp<float16>") @NoOffset public static class HalfBooleanOp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13340,11 +13524,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public HalfBooleanOp(Pointer p) { super(p); }
         
             public native @Cast("bool") boolean evaluate(@ByRef HalfNDArrayVector args);
-            public native @Cast("bool") boolean evaluate(@ByRef HalfBlock block);
+            public native @Cast("bool") boolean evaluate(@ByRef HalfContext block);
 
-            public native @Cast("Nd4jStatus") int execute(HalfBlock block);
+            public native @Cast("Nd4jStatus") int execute(HalfContext block);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
         }
         @Name("nd4j::ops::BooleanOp<double>") @NoOffset public static class DoubleBooleanOp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13352,11 +13536,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public DoubleBooleanOp(Pointer p) { super(p); }
         
             public native @Cast("bool") boolean evaluate(@ByRef DoubleNDArrayVector args);
-            public native @Cast("bool") boolean evaluate(@ByRef DoubleBlock block);
+            public native @Cast("bool") boolean evaluate(@ByRef DoubleContext block);
 
-            public native @Cast("Nd4jStatus") int execute(DoubleBlock block);
+            public native @Cast("Nd4jStatus") int execute(DoubleContext block);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
         }
     
 
@@ -13392,7 +13576,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public FloatLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
             private native void allocate(@Cast("char*") BytePointer name);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
         }
         @Name("nd4j::ops::LogicOp<float16>") public static class HalfLogicOp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13404,7 +13588,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public HalfLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
             private native void allocate(@Cast("char*") BytePointer name);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
         }
         @Name("nd4j::ops::LogicOp<double>") public static class DoubleLogicOp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13416,7 +13600,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public DoubleLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
             private native void allocate(@Cast("char*") BytePointer name);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
         }
     
 
@@ -13518,7 +13702,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <types/float16.h>
 // #include <NDArray.h>
 // #include <NDArrayFactory.h>
-// #include <Block.h>
+// #include <Context.h>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/BooleanOp.h>
 // #include <ops/declarable/LogicOp.h>
@@ -13645,6 +13829,45 @@ private native void allocate();
         public double_argmin() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                 }
+        @Name("nd4j::ops::sum<float>") public static class float_sum extends FloatDeclarableReductionOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_sum(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_sum(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_sum position(long position) {
+                return (float_sum)super.position(position);
+            }
+        public float_sum() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::sum<float16>") public static class half_sum extends HalfDeclarableReductionOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_sum(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_sum(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_sum position(long position) {
+                return (half_sum)super.position(position);
+            }
+        public half_sum() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                }
+        @Name("nd4j::ops::sum<double>") public static class double_sum extends DoubleDeclarableReductionOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_sum(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_sum(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_sum position(long position) {
+                return (double_sum)super.position(position);
+            }
+        public double_sum() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                }
 
         @Name("nd4j::ops::noop<float>") public static class float_noop extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13658,7 +13881,7 @@ private native void allocate();
             }
         public float_noop() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
 
         @Name("nd4j::ops::noop<float16>") public static class half_noop extends HalfDeclarableOp {
@@ -13673,7 +13896,7 @@ private native void allocate();
             }
         public half_noop() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
 
         @Name("nd4j::ops::noop<double>") public static class double_noop extends DoubleDeclarableOp {
@@ -13688,7 +13911,7 @@ private native void allocate();
             }
         public double_noop() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::testop2i2o<float>") public static class float_testop2i2o extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13702,7 +13925,7 @@ private native void allocate();
             }
         public float_testop2i2o() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::testop2i2o<float16>") public static class half_testop2i2o extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13716,7 +13939,7 @@ private native void allocate();
             }
         public half_testop2i2o() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::testop2i2o<double>") public static class double_testop2i2o extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13730,7 +13953,7 @@ private native void allocate();
             }
         public double_testop2i2o() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::softmax<float>") public static class float_softmax extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13744,7 +13967,7 @@ private native void allocate();
             }
         public float_softmax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::softmax<float16>") public static class half_softmax extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13758,7 +13981,7 @@ private native void allocate();
             }
         public half_softmax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::softmax<double>") public static class double_softmax extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13772,7 +13995,7 @@ private native void allocate();
             }
         public double_softmax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::softmax_bp<float>") public static class float_softmax_bp extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13786,7 +14009,7 @@ private native void allocate();
             }
         public float_softmax_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::softmax_bp<float16>") public static class half_softmax_bp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13800,7 +14023,7 @@ private native void allocate();
             }
         public half_softmax_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::softmax_bp<double>") public static class double_softmax_bp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13814,7 +14037,7 @@ private native void allocate();
             }
         public double_softmax_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::biasadd<float>") public static class float_biasadd extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13828,7 +14051,7 @@ private native void allocate();
             }
         public float_biasadd() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::biasadd<float16>") public static class half_biasadd extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13842,7 +14065,7 @@ private native void allocate();
             }
         public half_biasadd() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::biasadd<double>") public static class double_biasadd extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13856,7 +14079,7 @@ private native void allocate();
             }
         public double_biasadd() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::floor<float>") public static class float_floor extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13870,7 +14093,7 @@ private native void allocate();
             }
         public float_floor() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::floor<float16>") public static class half_floor extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13884,7 +14107,7 @@ private native void allocate();
             }
         public half_floor() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::floor<double>") public static class double_floor extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13898,7 +14121,7 @@ private native void allocate();
             }
         public double_floor() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::realdiv<float>") public static class float_realdiv extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13912,7 +14135,7 @@ private native void allocate();
             }
         public float_realdiv() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::realdiv<float16>") public static class half_realdiv extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13926,7 +14149,7 @@ private native void allocate();
             }
         public half_realdiv() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::realdiv<double>") public static class double_realdiv extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13940,7 +14163,7 @@ private native void allocate();
             }
         public double_realdiv() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::merge<float>") public static class float_merge extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13954,7 +14177,7 @@ private native void allocate();
             }
         public float_merge() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::merge<float16>") public static class half_merge extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -13968,7 +14191,7 @@ private native void allocate();
             }
         public half_merge() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::merge<double>") public static class double_merge extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -13982,7 +14205,7 @@ private native void allocate();
             }
         public double_merge() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }         // should become custom
         @Name("nd4j::ops::broadcastgradientargs<float>") public static class float_broadcastgradientargs extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -13996,7 +14219,7 @@ private native void allocate();
             }
         public float_broadcastgradientargs() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::broadcastgradientargs<float16>") public static class half_broadcastgradientargs extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14010,7 +14233,7 @@ private native void allocate();
             }
         public half_broadcastgradientargs() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::broadcastgradientargs<double>") public static class double_broadcastgradientargs extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14024,7 +14247,7 @@ private native void allocate();
             }
         public double_broadcastgradientargs() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::assign<float>") public static class float_assign extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14038,7 +14261,7 @@ private native void allocate();
             }
         public float_assign() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::assign<float16>") public static class half_assign extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14052,7 +14275,7 @@ private native void allocate();
             }
         public half_assign() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::assign<double>") public static class double_assign extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14066,7 +14289,7 @@ private native void allocate();
             }
         public double_assign() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::mergemax<float>") public static class float_mergemax extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14080,7 +14303,7 @@ private native void allocate();
             }
         public float_mergemax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::mergemax<float16>") public static class half_mergemax extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14094,7 +14317,7 @@ private native void allocate();
             }
         public half_mergemax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::mergemax<double>") public static class double_mergemax extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14108,7 +14331,7 @@ private native void allocate();
             }
         public double_mergemax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::mergemaxindex<float>") public static class float_mergemaxindex extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14122,7 +14345,7 @@ private native void allocate();
             }
         public float_mergemaxindex() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::mergemaxindex<float16>") public static class half_mergemaxindex extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14136,7 +14359,7 @@ private native void allocate();
             }
         public half_mergemaxindex() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::mergemaxindex<double>") public static class double_mergemaxindex extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14150,7 +14373,7 @@ private native void allocate();
             }
         public double_mergemaxindex() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::mergeadd<float>") public static class float_mergeadd extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14164,7 +14387,7 @@ private native void allocate();
             }
         public float_mergeadd() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::mergeadd<float16>") public static class half_mergeadd extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14178,7 +14401,7 @@ private native void allocate();
             }
         public half_mergeadd() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::mergeadd<double>") public static class double_mergeadd extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14192,7 +14415,7 @@ private native void allocate();
             }
         public double_mergeadd() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::mergeavg<float>") public static class float_mergeavg extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14206,7 +14429,7 @@ private native void allocate();
             }
         public float_mergeavg() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::mergeavg<float16>") public static class half_mergeavg extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14220,7 +14443,7 @@ private native void allocate();
             }
         public half_mergeavg() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::mergeavg<double>") public static class double_mergeavg extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14234,7 +14457,7 @@ private native void allocate();
             }
         public double_mergeavg() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::identity<float>") public static class float_identity extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14248,7 +14471,7 @@ private native void allocate();
             }
         public float_identity() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::identity<float16>") public static class half_identity extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14262,7 +14485,7 @@ private native void allocate();
             }
         public half_identity() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::identity<double>") public static class double_identity extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14276,7 +14499,7 @@ private native void allocate();
             }
         public double_identity() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::add<float>") public static class float_add extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14290,7 +14513,7 @@ private native void allocate();
             }
         public float_add() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::add<float16>") public static class half_add extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14304,7 +14527,7 @@ private native void allocate();
             }
         public half_add() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::add<double>") public static class double_add extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14318,7 +14541,7 @@ private native void allocate();
             }
         public double_add() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::subtract<float>") public static class float_subtract extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14332,7 +14555,7 @@ private native void allocate();
             }
         public float_subtract() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::subtract<float16>") public static class half_subtract extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14346,7 +14569,7 @@ private native void allocate();
             }
         public half_subtract() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::subtract<double>") public static class double_subtract extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14360,7 +14583,7 @@ private native void allocate();
             }
         public double_subtract() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::reversesubtract<float>") public static class float_reversesubtract extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14374,7 +14597,7 @@ private native void allocate();
             }
         public float_reversesubtract() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::reversesubtract<float16>") public static class half_reversesubtract extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14388,7 +14611,7 @@ private native void allocate();
             }
         public half_reversesubtract() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::reversesubtract<double>") public static class double_reversesubtract extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14402,7 +14625,7 @@ private native void allocate();
             }
         public double_reversesubtract() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::multiply<float>") public static class float_multiply extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14416,7 +14639,7 @@ private native void allocate();
             }
         public float_multiply() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::multiply<float16>") public static class half_multiply extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14430,7 +14653,7 @@ private native void allocate();
             }
         public half_multiply() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::multiply<double>") public static class double_multiply extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14444,7 +14667,7 @@ private native void allocate();
             }
         public double_multiply() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::divide<float>") public static class float_divide extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14458,7 +14681,7 @@ private native void allocate();
             }
         public float_divide() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::divide<float16>") public static class half_divide extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14472,7 +14695,7 @@ private native void allocate();
             }
         public half_divide() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::divide<double>") public static class double_divide extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14486,7 +14709,7 @@ private native void allocate();
             }
         public double_divide() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::reversedivide<float>") public static class float_reversedivide extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14500,7 +14723,7 @@ private native void allocate();
             }
         public float_reversedivide() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::reversedivide<float16>") public static class half_reversedivide extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14514,7 +14737,7 @@ private native void allocate();
             }
         public half_reversedivide() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::reversedivide<double>") public static class double_reversedivide extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14528,7 +14751,7 @@ private native void allocate();
             }
         public double_reversedivide() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::zeros_as<float>") public static class float_zeros_as extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14542,7 +14765,7 @@ private native void allocate();
             }
         public float_zeros_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::zeros_as<float16>") public static class half_zeros_as extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14556,7 +14779,7 @@ private native void allocate();
             }
         public half_zeros_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::zeros_as<double>") public static class double_zeros_as extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14570,7 +14793,7 @@ private native void allocate();
             }
         public double_zeros_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::ones_as<float>") public static class float_ones_as extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14584,7 +14807,7 @@ private native void allocate();
             }
         public float_ones_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::ones_as<float16>") public static class half_ones_as extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14598,7 +14821,7 @@ private native void allocate();
             }
         public half_ones_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::ones_as<double>") public static class double_ones_as extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14612,7 +14835,7 @@ private native void allocate();
             }
         public double_ones_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::maximum<float>") public static class float_maximum extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14626,7 +14849,7 @@ private native void allocate();
             }
         public float_maximum() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::maximum<float16>") public static class half_maximum extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14640,7 +14863,7 @@ private native void allocate();
             }
         public half_maximum() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::maximum<double>") public static class double_maximum extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14654,7 +14877,7 @@ private native void allocate();
             }
         public double_maximum() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::minimum<float>") public static class float_minimum extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14668,7 +14891,7 @@ private native void allocate();
             }
         public float_minimum() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::minimum<float16>") public static class half_minimum extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14682,7 +14905,7 @@ private native void allocate();
             }
         public half_minimum() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::minimum<double>") public static class double_minimum extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14696,7 +14919,7 @@ private native void allocate();
             }
         public double_minimum() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
         @Name("nd4j::ops::square<float>") public static class float_square extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14710,7 +14933,7 @@ private native void allocate();
             }
         public float_square() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                 }
         @Name("nd4j::ops::square<float16>") public static class half_square extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -14724,7 +14947,7 @@ private native void allocate();
             }
         public half_square() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                 }
         @Name("nd4j::ops::square<double>") public static class double_square extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -14738,9 +14961,9 @@ private native void allocate();
             }
         public double_square() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
-        @Name("nd4j::ops::expose<float>") public static class float_expose extends FloatDeclarableOp {
+        @Name("nd4j::ops::expose<float>") public static class float_expose extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_expose(Pointer p) { super(p); }
@@ -14752,9 +14975,9 @@ private native void allocate();
             }
         public float_expose() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
-                                                }
-        @Name("nd4j::ops::expose<float16>") public static class half_expose extends HalfDeclarableOp {
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::expose<float16>") public static class half_expose extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_expose(Pointer p) { super(p); }
@@ -14766,9 +14989,9 @@ private native void allocate();
             }
         public half_expose() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
-                                                }
-        @Name("nd4j::ops::expose<double>") public static class double_expose extends DoubleDeclarableOp {
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::expose<double>") public static class double_expose extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_expose(Pointer p) { super(p); }
@@ -14780,8 +15003,8 @@ private native void allocate();
             }
         public double_expose() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
-                                                }
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 
         @Name("nd4j::ops::Switch<float>") public static class float_Switch extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -14795,7 +15018,7 @@ private native void allocate();
             }
         public float_Switch() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                             }
 
         @Name("nd4j::ops::Switch<float16>") public static class half_Switch extends HalfDeclarableOp {
@@ -14810,7 +15033,7 @@ private native void allocate();
             }
         public half_Switch() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                             }
 
         @Name("nd4j::ops::Switch<double>") public static class double_Switch extends DoubleDeclarableOp {
@@ -14825,7 +15048,7 @@ private native void allocate();
             }
         public double_Switch() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                             }
 
         @Name("nd4j::ops::While<float>") public static class float_While extends FloatLogicOp {
@@ -14999,7 +15222,7 @@ private native void allocate();
             }
         public float_testcustom() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
 
         @Name("nd4j::ops::testcustom<float16>") public static class half_testcustom extends HalfDeclarableCustomOp {
@@ -15014,7 +15237,7 @@ private native void allocate();
             }
         public half_testcustom() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
 
         @Name("nd4j::ops::testcustom<double>") public static class double_testcustom extends DoubleDeclarableCustomOp {
@@ -15029,7 +15252,7 @@ private native void allocate();
             }
         public double_testcustom() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::concat<float>") public static class float_concat extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15043,7 +15266,7 @@ private native void allocate();
             }
         public float_concat() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::concat<float16>") public static class half_concat extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15057,7 +15280,7 @@ private native void allocate();
             }
         public half_concat() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::concat<double>") public static class double_concat extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15071,7 +15294,7 @@ private native void allocate();
             }
         public double_concat() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::matmul<float>") public static class float_matmul extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15085,7 +15308,7 @@ private native void allocate();
             }
         public float_matmul() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::matmul<float16>") public static class half_matmul extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15099,7 +15322,7 @@ private native void allocate();
             }
         public half_matmul() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::matmul<double>") public static class double_matmul extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15113,7 +15336,7 @@ private native void allocate();
             }
         public double_matmul() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::conv2d<float>") public static class float_conv2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15127,7 +15350,7 @@ private native void allocate();
             }
         public float_conv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::conv2d<float16>") public static class half_conv2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15141,7 +15364,7 @@ private native void allocate();
             }
         public half_conv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::conv2d<double>") public static class double_conv2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15155,7 +15378,7 @@ private native void allocate();
             }
         public double_conv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::conv2d_bp<float>") public static class float_conv2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15169,7 +15392,7 @@ private native void allocate();
             }
         public float_conv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::conv2d_bp<float16>") public static class half_conv2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15183,7 +15406,7 @@ private native void allocate();
             }
         public half_conv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::conv2d_bp<double>") public static class double_conv2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15197,7 +15420,7 @@ private native void allocate();
             }
         public double_conv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::lrn<float>") public static class float_lrn extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15211,7 +15434,7 @@ private native void allocate();
             }
         public float_lrn() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::lrn<float16>") public static class half_lrn extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15225,7 +15448,7 @@ private native void allocate();
             }
         public half_lrn() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::lrn<double>") public static class double_lrn extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15239,7 +15462,7 @@ private native void allocate();
             }
         public double_lrn() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::reshape<float>") public static class float_reshape extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15253,7 +15476,7 @@ private native void allocate();
             }
         public float_reshape() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::reshape<float16>") public static class half_reshape extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15267,7 +15490,7 @@ private native void allocate();
             }
         public half_reshape() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::reshape<double>") public static class double_reshape extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15281,7 +15504,7 @@ private native void allocate();
             }
         public double_reshape() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sconv2d<float>") public static class float_sconv2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15295,7 +15518,7 @@ private native void allocate();
             }
         public float_sconv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sconv2d<float16>") public static class half_sconv2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15309,7 +15532,7 @@ private native void allocate();
             }
         public half_sconv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sconv2d<double>") public static class double_sconv2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15323,7 +15546,7 @@ private native void allocate();
             }
         public double_sconv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sconv2d_bp<float>") public static class float_sconv2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15337,7 +15560,7 @@ private native void allocate();
             }
         public float_sconv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sconv2d_bp<float16>") public static class half_sconv2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15351,7 +15574,7 @@ private native void allocate();
             }
         public half_sconv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sconv2d_bp<double>") public static class double_sconv2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15365,7 +15588,7 @@ private native void allocate();
             }
         public double_sconv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::deconv2d<float>") public static class float_deconv2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15379,7 +15602,7 @@ private native void allocate();
             }
         public float_deconv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::deconv2d<float16>") public static class half_deconv2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15393,7 +15616,7 @@ private native void allocate();
             }
         public half_deconv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::deconv2d<double>") public static class double_deconv2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15407,7 +15630,7 @@ private native void allocate();
             }
         public double_deconv2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::deconv2d_bp<float>") public static class float_deconv2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15421,7 +15644,7 @@ private native void allocate();
             }
         public float_deconv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::deconv2d_bp<float16>") public static class half_deconv2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15435,7 +15658,7 @@ private native void allocate();
             }
         public half_deconv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::deconv2d_bp<double>") public static class double_deconv2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15449,7 +15672,7 @@ private native void allocate();
             }
         public double_deconv2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool2d<float>") public static class float_maxpool2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15463,7 +15686,7 @@ private native void allocate();
             }
         public float_maxpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool2d<float16>") public static class half_maxpool2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15477,7 +15700,7 @@ private native void allocate();
             }
         public half_maxpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool2d<double>") public static class double_maxpool2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15491,7 +15714,7 @@ private native void allocate();
             }
         public double_maxpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool2d<float>") public static class float_avgpool2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15505,7 +15728,7 @@ private native void allocate();
             }
         public float_avgpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool2d<float16>") public static class half_avgpool2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15519,7 +15742,7 @@ private native void allocate();
             }
         public half_avgpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool2d<double>") public static class double_avgpool2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15533,7 +15756,7 @@ private native void allocate();
             }
         public double_avgpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::pnormpool2d<float>") public static class float_pnormpool2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15547,7 +15770,7 @@ private native void allocate();
             }
         public float_pnormpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::pnormpool2d<float16>") public static class half_pnormpool2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15561,7 +15784,7 @@ private native void allocate();
             }
         public half_pnormpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::pnormpool2d<double>") public static class double_pnormpool2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15575,7 +15798,7 @@ private native void allocate();
             }
         public double_pnormpool2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool3d_bp<float>") public static class float_maxpool3d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15589,7 +15812,7 @@ private native void allocate();
             }
         public float_maxpool3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool3d_bp<float16>") public static class half_maxpool3d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15603,7 +15826,7 @@ private native void allocate();
             }
         public half_maxpool3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool3d_bp<double>") public static class double_maxpool3d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15617,7 +15840,7 @@ private native void allocate();
             }
         public double_maxpool3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool3d<float>") public static class float_avgpool3d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15631,7 +15854,7 @@ private native void allocate();
             }
         public float_avgpool3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool3d<float16>") public static class half_avgpool3d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15645,7 +15868,7 @@ private native void allocate();
             }
         public half_avgpool3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool3d<double>") public static class double_avgpool3d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15659,7 +15882,7 @@ private native void allocate();
             }
         public double_avgpool3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool3d_bp<float>") public static class float_avgpool3d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15673,7 +15896,7 @@ private native void allocate();
             }
         public float_avgpool3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool3d_bp<float16>") public static class half_avgpool3d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15687,7 +15910,7 @@ private native void allocate();
             }
         public half_avgpool3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool3d_bp<double>") public static class double_avgpool3d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15701,7 +15924,7 @@ private native void allocate();
             }
         public double_avgpool3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d<float>") public static class float_fullconv3d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15715,7 +15938,7 @@ private native void allocate();
             }
         public float_fullconv3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d<float16>") public static class half_fullconv3d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15729,7 +15952,7 @@ private native void allocate();
             }
         public half_fullconv3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d<double>") public static class double_fullconv3d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15743,7 +15966,7 @@ private native void allocate();
             }
         public double_fullconv3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d_bp<float>") public static class float_fullconv3d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15757,7 +15980,7 @@ private native void allocate();
             }
         public float_fullconv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d_bp<float16>") public static class half_fullconv3d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15771,7 +15994,7 @@ private native void allocate();
             }
         public half_fullconv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d_bp<double>") public static class double_fullconv3d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15785,7 +16008,7 @@ private native void allocate();
             }
         public double_fullconv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d_grad<float>") public static class float_fullconv3d_grad extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15799,7 +16022,7 @@ private native void allocate();
             }
         public float_fullconv3d_grad() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d_grad<float16>") public static class half_fullconv3d_grad extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15813,7 +16036,7 @@ private native void allocate();
             }
         public half_fullconv3d_grad() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::fullconv3d_grad<double>") public static class double_fullconv3d_grad extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15827,7 +16050,7 @@ private native void allocate();
             }
         public double_fullconv3d_grad() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool2d_bp<float>") public static class float_maxpool2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15841,7 +16064,7 @@ private native void allocate();
             }
         public float_maxpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool2d_bp<float16>") public static class half_maxpool2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15855,7 +16078,7 @@ private native void allocate();
             }
         public half_maxpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::maxpool2d_bp<double>") public static class double_maxpool2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15869,7 +16092,7 @@ private native void allocate();
             }
         public double_maxpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::pooling2d<float>") public static class float_pooling2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15883,7 +16106,7 @@ private native void allocate();
             }
         public float_pooling2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::pooling2d<float16>") public static class half_pooling2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15897,7 +16120,7 @@ private native void allocate();
             }
         public half_pooling2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::pooling2d<double>") public static class double_pooling2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15911,7 +16134,7 @@ private native void allocate();
             }
         public double_pooling2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool2d_bp<float>") public static class float_avgpool2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15925,7 +16148,7 @@ private native void allocate();
             }
         public float_avgpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool2d_bp<float16>") public static class half_avgpool2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15939,7 +16162,7 @@ private native void allocate();
             }
         public half_avgpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::avgpool2d_bp<double>") public static class double_avgpool2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15953,7 +16176,7 @@ private native void allocate();
             }
         public double_avgpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::pnormpool2d_bp<float>") public static class float_pnormpool2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -15967,7 +16190,7 @@ private native void allocate();
             }
         public float_pnormpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::pnormpool2d_bp<float16>") public static class half_pnormpool2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -15981,7 +16204,7 @@ private native void allocate();
             }
         public half_pnormpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::pnormpool2d_bp<double>") public static class double_pnormpool2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -15995,7 +16218,7 @@ private native void allocate();
             }
         public double_pnormpool2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::tear<float>") public static class float_tear extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16009,7 +16232,7 @@ private native void allocate();
             }
         public float_tear() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::tear<float16>") public static class half_tear extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16023,7 +16246,7 @@ private native void allocate();
             }
         public half_tear() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::tear<double>") public static class double_tear extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16037,7 +16260,7 @@ private native void allocate();
             }
         public double_tear() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::unstack<float>") public static class float_unstack extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16051,7 +16274,7 @@ private native void allocate();
             }
         public float_unstack() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::unstack<float16>") public static class half_unstack extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16065,7 +16288,7 @@ private native void allocate();
             }
         public half_unstack() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::unstack<double>") public static class double_unstack extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16079,7 +16302,7 @@ private native void allocate();
             }
         public double_unstack() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::im2col<float>") public static class float_im2col extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16093,7 +16316,7 @@ private native void allocate();
             }
         public float_im2col() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::im2col<float16>") public static class half_im2col extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16107,7 +16330,7 @@ private native void allocate();
             }
         public half_im2col() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::im2col<double>") public static class double_im2col extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16121,7 +16344,7 @@ private native void allocate();
             }
         public double_im2col() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::col2im<float>") public static class float_col2im extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16135,7 +16358,7 @@ private native void allocate();
             }
         public float_col2im() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::col2im<float16>") public static class half_col2im extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16149,7 +16372,7 @@ private native void allocate();
             }
         public half_col2im() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::col2im<double>") public static class double_col2im extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16163,7 +16386,7 @@ private native void allocate();
             }
         public double_col2im() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::strided_slice<float>") public static class float_strided_slice extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16177,7 +16400,7 @@ private native void allocate();
             }
         public float_strided_slice() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::strided_slice<float16>") public static class half_strided_slice extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16191,7 +16414,7 @@ private native void allocate();
             }
         public half_strided_slice() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::strided_slice<double>") public static class double_strided_slice extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16205,7 +16428,7 @@ private native void allocate();
             }
         public double_strided_slice() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } // TODO: new op type needed. that returns VIEW
         @Name("nd4j::ops::slice<float>") public static class float_slice extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16219,7 +16442,7 @@ private native void allocate();
             }
         public float_slice() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::slice<float16>") public static class half_slice extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16233,7 +16456,7 @@ private native void allocate();
             }
         public half_slice() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::slice<double>") public static class double_slice extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16247,7 +16470,7 @@ private native void allocate();
             }
         public double_slice() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::upsampling2d<float>") public static class float_upsampling2d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16261,7 +16484,7 @@ private native void allocate();
             }
         public float_upsampling2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::upsampling2d<float16>") public static class half_upsampling2d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16275,7 +16498,7 @@ private native void allocate();
             }
         public half_upsampling2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::upsampling2d<double>") public static class double_upsampling2d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16289,7 +16512,7 @@ private native void allocate();
             }
         public double_upsampling2d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::upsampling2d_bp<float>") public static class float_upsampling2d_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16303,7 +16526,7 @@ private native void allocate();
             }
         public float_upsampling2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::upsampling2d_bp<float16>") public static class half_upsampling2d_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16317,7 +16540,7 @@ private native void allocate();
             }
         public half_upsampling2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::upsampling2d_bp<double>") public static class double_upsampling2d_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16331,7 +16554,7 @@ private native void allocate();
             }
         public double_upsampling2d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::tensormmul<float>") public static class float_tensormmul extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16345,7 +16568,7 @@ private native void allocate();
             }
         public float_tensormmul() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::tensormmul<float16>") public static class half_tensormmul extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16359,7 +16582,7 @@ private native void allocate();
             }
         public half_tensormmul() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::tensormmul<double>") public static class double_tensormmul extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16373,7 +16596,7 @@ private native void allocate();
             }
         public double_tensormmul() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }   
         @Name("nd4j::ops::repeat<float>") public static class float_repeat extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16387,7 +16610,7 @@ private native void allocate();
             }
         public float_repeat() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }   
         @Name("nd4j::ops::repeat<float16>") public static class half_repeat extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16401,7 +16624,7 @@ private native void allocate();
             }
         public half_repeat() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }   
         @Name("nd4j::ops::repeat<double>") public static class double_repeat extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16415,7 +16638,7 @@ private native void allocate();
             }
         public double_repeat() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }   
         @Name("nd4j::ops::conv3d<float>") public static class float_conv3d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16429,7 +16652,7 @@ private native void allocate();
             }
         public float_conv3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }   
         @Name("nd4j::ops::conv3d<float16>") public static class half_conv3d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16443,7 +16666,7 @@ private native void allocate();
             }
         public half_conv3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }   
         @Name("nd4j::ops::conv3d<double>") public static class double_conv3d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16457,7 +16680,7 @@ private native void allocate();
             }
         public double_conv3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } 
         @Name("nd4j::ops::maxpool3d<float>") public static class float_maxpool3d extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16471,7 +16694,7 @@ private native void allocate();
             }
         public float_maxpool3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 } 
         @Name("nd4j::ops::maxpool3d<float16>") public static class half_maxpool3d extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16485,7 +16708,7 @@ private native void allocate();
             }
         public half_maxpool3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 } 
         @Name("nd4j::ops::maxpool3d<double>") public static class double_maxpool3d extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16499,7 +16722,7 @@ private native void allocate();
             }
         public double_maxpool3d() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } 
         @Name("nd4j::ops::permute<float>") public static class float_permute extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16513,7 +16736,7 @@ private native void allocate();
             }
         public float_permute() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 } 
         @Name("nd4j::ops::permute<float16>") public static class half_permute extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16527,7 +16750,7 @@ private native void allocate();
             }
         public half_permute() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 } 
         @Name("nd4j::ops::permute<double>") public static class double_permute extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16541,7 +16764,7 @@ private native void allocate();
             }
         public double_permute() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }   
         @Name("nd4j::ops::reshapeas<float>") public static class float_reshapeas extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16555,7 +16778,7 @@ private native void allocate();
             }
         public float_reshapeas() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }   
         @Name("nd4j::ops::reshapeas<float16>") public static class half_reshapeas extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16569,7 +16792,7 @@ private native void allocate();
             }
         public half_reshapeas() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }   
         @Name("nd4j::ops::reshapeas<double>") public static class double_reshapeas extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16583,7 +16806,7 @@ private native void allocate();
             }
         public double_reshapeas() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }      
         @Name("nd4j::ops::transpose<float>") public static class float_transpose extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16597,7 +16820,7 @@ private native void allocate();
             }
         public float_transpose() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }      
         @Name("nd4j::ops::transpose<float16>") public static class half_transpose extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16611,7 +16834,7 @@ private native void allocate();
             }
         public half_transpose() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }      
         @Name("nd4j::ops::transpose<double>") public static class double_transpose extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16625,7 +16848,7 @@ private native void allocate();
             }
         public double_transpose() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::stack<float>") public static class float_stack extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16639,7 +16862,7 @@ private native void allocate();
             }
         public float_stack() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::stack<float16>") public static class half_stack extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16653,7 +16876,7 @@ private native void allocate();
             }
         public half_stack() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::stack<double>") public static class double_stack extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16667,7 +16890,7 @@ private native void allocate();
             }
         public double_stack() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::size<float>") public static class float_size extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16681,7 +16904,7 @@ private native void allocate();
             }
         public float_size() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::size<float16>") public static class half_size extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16695,7 +16918,7 @@ private native void allocate();
             }
         public half_size() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::size<double>") public static class double_size extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16709,7 +16932,7 @@ private native void allocate();
             }
         public double_size() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } // add DeclarableScalarOp?
         @Name("nd4j::ops::rank<float>") public static class float_rank extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16723,7 +16946,7 @@ private native void allocate();
             }
         public float_rank() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::rank<float16>") public static class half_rank extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16737,7 +16960,7 @@ private native void allocate();
             }
         public half_rank() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::rank<double>") public static class double_rank extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16751,7 +16974,7 @@ private native void allocate();
             }
         public double_rank() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } // ^^^^
         @Name("nd4j::ops::onehot<float>") public static class float_onehot extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16765,7 +16988,7 @@ private native void allocate();
             }
         public float_onehot() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::onehot<float16>") public static class half_onehot extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16779,7 +17002,7 @@ private native void allocate();
             }
         public half_onehot() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::onehot<double>") public static class double_onehot extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16793,7 +17016,7 @@ private native void allocate();
             }
         public double_onehot() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::expand_dims<float>") public static class float_expand_dims extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16807,7 +17030,7 @@ private native void allocate();
             }
         public float_expand_dims() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::expand_dims<float16>") public static class half_expand_dims extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16821,7 +17044,7 @@ private native void allocate();
             }
         public half_expand_dims() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::expand_dims<double>") public static class double_expand_dims extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16835,7 +17058,7 @@ private native void allocate();
             }
         public double_expand_dims() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::range<float>") public static class float_range extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16849,7 +17072,7 @@ private native void allocate();
             }
         public float_range() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::range<float16>") public static class half_range extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16863,7 +17086,7 @@ private native void allocate();
             }
         public half_range() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::range<double>") public static class double_range extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16877,7 +17100,7 @@ private native void allocate();
             }
         public double_range() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::cast<float>") public static class float_cast extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16891,7 +17114,7 @@ private native void allocate();
             }
         public float_cast() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::cast<float16>") public static class half_cast extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16905,7 +17128,7 @@ private native void allocate();
             }
         public half_cast() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::cast<double>") public static class double_cast extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16919,7 +17142,7 @@ private native void allocate();
             }
         public double_cast() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::pad<float>") public static class float_pad extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -16933,7 +17156,7 @@ private native void allocate();
             }
         public float_pad() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::pad<float16>") public static class half_pad extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16947,7 +17170,7 @@ private native void allocate();
             }
         public half_pad() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::pad<double>") public static class double_pad extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -16961,7 +17184,7 @@ private native void allocate();
             }
         public double_pad() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 
         // recurrent ops
@@ -16977,7 +17200,7 @@ private native void allocate();
             }
         public float_sru() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sru<float16>") public static class half_sru extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -16991,7 +17214,7 @@ private native void allocate();
             }
         public half_sru() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sru<double>") public static class double_sru extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -17005,7 +17228,7 @@ private native void allocate();
             }
         public double_sru() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sru_logic<float>") public static class float_sru_logic extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -17019,7 +17242,7 @@ private native void allocate();
             }
         public float_sru_logic() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sru_logic<float16>") public static class half_sru_logic extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -17033,7 +17256,7 @@ private native void allocate();
             }
         public half_sru_logic() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sru_logic<double>") public static class double_sru_logic extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -17047,7 +17270,7 @@ private native void allocate();
             }
         public double_sru_logic() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bi<float>") public static class float_sru_bi extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -17061,7 +17284,7 @@ private native void allocate();
             }
         public float_sru_bi() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bi<float16>") public static class half_sru_bi extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -17075,7 +17298,7 @@ private native void allocate();
             }
         public half_sru_bi() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bi<double>") public static class double_sru_bi extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -17089,7 +17312,7 @@ private native void allocate();
             }
         public double_sru_bi() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bp<float>") public static class float_sru_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -17103,7 +17326,7 @@ private native void allocate();
             }
         public float_sru_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bp<float16>") public static class half_sru_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -17117,7 +17340,7 @@ private native void allocate();
             }
         public half_sru_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bp<double>") public static class double_sru_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -17131,7 +17354,7 @@ private native void allocate();
             }
         public double_sru_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bp_logic<float>") public static class float_sru_bp_logic extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -17145,7 +17368,7 @@ private native void allocate();
             }
         public float_sru_bp_logic() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bp_logic<float16>") public static class half_sru_bp_logic extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -17159,7 +17382,7 @@ private native void allocate();
             }
         public half_sru_bp_logic() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bp_logic<double>") public static class double_sru_bp_logic extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -17173,7 +17396,7 @@ private native void allocate();
             }
         public double_sru_bp_logic() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bi_bp<float>") public static class float_sru_bi_bp extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -17187,7 +17410,7 @@ private native void allocate();
             }
         public float_sru_bi_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bi_bp<float16>") public static class half_sru_bi_bp extends HalfDeclarableCustomOp {
             static { Loader.load(); }
@@ -17201,7 +17424,7 @@ private native void allocate();
             }
         public half_sru_bi_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::sru_bi_bp<double>") public static class double_sru_bi_bp extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
@@ -17215,7 +17438,7 @@ private native void allocate();
             }
         public double_sru_bi_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
                 
         @Name("nd4j::ops::clipbyvalue<float>") public static class float_clipbyvalue extends FloatDeclarableOp {
@@ -17230,7 +17453,7 @@ private native void allocate();
             }
         public float_clipbyvalue() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
                 
         @Name("nd4j::ops::clipbyvalue<float16>") public static class half_clipbyvalue extends HalfDeclarableOp {
@@ -17245,7 +17468,7 @@ private native void allocate();
             }
         public half_clipbyvalue() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
                 
         @Name("nd4j::ops::clipbyvalue<double>") public static class double_clipbyvalue extends DoubleDeclarableOp {
@@ -17260,7 +17483,7 @@ private native void allocate();
             }
         public double_clipbyvalue() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::scatter_update<float>") public static class float_scatter_update extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17274,7 +17497,7 @@ private native void allocate();
             }
         public float_scatter_update() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::scatter_update<float16>") public static class half_scatter_update extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17288,7 +17511,7 @@ private native void allocate();
             }
         public half_scatter_update() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::scatter_update<double>") public static class double_scatter_update extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17302,7 +17525,7 @@ private native void allocate();
             }
         public double_scatter_update() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::relu<float>") public static class float_relu extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17316,7 +17539,7 @@ private native void allocate();
             }
         public float_relu() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::relu<float16>") public static class half_relu extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17330,7 +17553,7 @@ private native void allocate();
             }
         public half_relu() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::relu<double>") public static class double_relu extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17344,7 +17567,7 @@ private native void allocate();
             }
         public double_relu() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }        
         @Name("nd4j::ops::randomuniform<float>") public static class float_randomuniform extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17358,7 +17581,7 @@ private native void allocate();
             }
         public float_randomuniform() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }        
         @Name("nd4j::ops::randomuniform<float16>") public static class half_randomuniform extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17372,7 +17595,7 @@ private native void allocate();
             }
         public half_randomuniform() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }        
         @Name("nd4j::ops::randomuniform<double>") public static class double_randomuniform extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17386,50 +17609,8 @@ private native void allocate();
             }
         public double_randomuniform() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
-                                                                                }        
-        @Name("nd4j::ops::sum<float>") public static class float_sum extends FloatDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_sum(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_sum(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public float_sum position(long position) {
-                return (float_sum)super.position(position);
-            }
-        public float_sum() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
-                                                                                }        
-        @Name("nd4j::ops::sum<float16>") public static class half_sum extends HalfDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_sum(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_sum(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public half_sum position(long position) {
-                return (half_sum)super.position(position);
-            }
-        public half_sum() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
-                                                                                }        
-        @Name("nd4j::ops::sum<double>") public static class double_sum extends DoubleDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_sum(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_sum(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public double_sum position(long position) {
-                return (double_sum)super.position(position);
-            }
-        public double_sum() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
-                                                                                }       // should become reduction
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
         @Name("nd4j::ops::batchnorm<float>") public static class float_batchnorm extends FloatDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17442,7 +17623,7 @@ private native void allocate();
             }
         public float_batchnorm() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::batchnorm<float16>") public static class half_batchnorm extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17456,7 +17637,7 @@ private native void allocate();
             }
         public half_batchnorm() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::batchnorm<double>") public static class double_batchnorm extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17470,7 +17651,7 @@ private native void allocate();
             }
         public double_batchnorm() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::batchnorm_bp<float>") public static class float_batchnorm_bp extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17484,7 +17665,7 @@ private native void allocate();
             }
         public float_batchnorm_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::batchnorm_bp<float16>") public static class half_batchnorm_bp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17498,7 +17679,7 @@ private native void allocate();
             }
         public half_batchnorm_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::batchnorm_bp<double>") public static class double_batchnorm_bp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17512,7 +17693,7 @@ private native void allocate();
             }
         public double_batchnorm_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }                
         @Name("nd4j::ops::conv3d_bp<float>") public static class float_conv3d_bp extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17526,7 +17707,7 @@ private native void allocate();
             }
         public float_conv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }                
         @Name("nd4j::ops::conv3d_bp<float16>") public static class half_conv3d_bp extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17540,7 +17721,7 @@ private native void allocate();
             }
         public half_conv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }                
         @Name("nd4j::ops::conv3d_bp<double>") public static class double_conv3d_bp extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17554,7 +17735,7 @@ private native void allocate();
             }
         public double_conv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } // TODO: to be implemented        
         @Name("nd4j::ops::ismax<float>") public static class float_ismax extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17568,7 +17749,7 @@ private native void allocate();
             }
         public float_ismax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::ismax<float16>") public static class half_ismax extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17582,7 +17763,7 @@ private native void allocate();
             }
         public half_ismax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::ismax<double>") public static class double_ismax extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17596,7 +17777,7 @@ private native void allocate();
             }
         public double_ismax() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::fill_as<float>") public static class float_fill_as extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17610,7 +17791,7 @@ private native void allocate();
             }
         public float_fill_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::fill_as<float16>") public static class half_fill_as extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17624,7 +17805,7 @@ private native void allocate();
             }
         public half_fill_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::fill_as<double>") public static class double_fill_as extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17638,7 +17819,7 @@ private native void allocate();
             }
         public double_fill_as() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
         @Name("nd4j::ops::reverse<float>") public static class float_reverse extends FloatDeclarableOp {
             static { Loader.load(); }
@@ -17652,7 +17833,7 @@ private native void allocate();
             }
         public float_reverse() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
         @Name("nd4j::ops::reverse<float16>") public static class half_reverse extends HalfDeclarableOp {
             static { Loader.load(); }
@@ -17666,7 +17847,7 @@ private native void allocate();
             }
         public half_reverse() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
         @Name("nd4j::ops::reverse<double>") public static class double_reverse extends DoubleDeclarableOp {
             static { Loader.load(); }
@@ -17680,7 +17861,7 @@ private native void allocate();
             }
         public double_reverse() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 
         @Name("nd4j::ops::firas_sparse<float>") public static class float_firas_sparse extends FloatDeclarableOp {
@@ -17695,7 +17876,7 @@ private native void allocate();
             }
         public float_firas_sparse() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
 
         @Name("nd4j::ops::firas_sparse<float16>") public static class half_firas_sparse extends HalfDeclarableOp {
@@ -17710,7 +17891,7 @@ private native void allocate();
             }
         public half_firas_sparse() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
 
         @Name("nd4j::ops::firas_sparse<double>") public static class double_firas_sparse extends DoubleDeclarableOp {
@@ -17725,7 +17906,7 @@ private native void allocate();
             }
         public double_firas_sparse() { super((Pointer)null); allocate(); }
 private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleBlock block);
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 
         @Name("nd4j::ops::lt_scalar<float>") public static class float_lt_scalar extends FloatBooleanOp {

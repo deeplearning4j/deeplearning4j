@@ -156,6 +156,7 @@
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
+                        <includePath>${libnd4jhome}/include/array</includePath>
                         <includePath>${libnd4jhome}/include/memory</includePath>
                         <includePath>${libnd4jhome}/include/graph</includePath>
                         <includePath>${libnd4jhome}/include/cnpy</includePath>
