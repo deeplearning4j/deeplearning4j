@@ -15,11 +15,21 @@ Neural networks can process high dimensional numerical and cateogorical data and
 
 ## Where Eclipse DeepLearning4j Fits In
 
-[Eclipse Deeplearning4j](https://deeplearning4j.org/) (DL4J) is an open-source, JVM-based toolkit for building, training, and deploying neural networks. It was built to serve the Java and Scala communities and is user-friendly, stable, and well integrated with technologies such as Spark, CUDA, and cuDNN. Deeplearning4j also integrates with Python tools like Keras and TensorFlow to deploy their models to a production environment on the JVM.
+[Eclipse Deeplearning4j](https://deeplearning4j.org/) (DL4J) is an open-source, JVM-based toolkit for building, training, and deploying neural networks. It was built to serve the Java and Scala communities and is user-friendly, stable, and well integrated with technologies such as Spark, CUDA, and cuDNN. Deeplearning4j also integrates with Python tools like [Keras](https://deeplearning4j.org/keras-supported-features) and TensorFlow to deploy their models to a production environment on the JVM. It also comes with a group of open-source libraries that Skymind bundles in an enterprise distribution called the [Skymind Intelligence Layer (SKIL)](https://skymind.ai/quickstart). Those libraries are:
+
+* [Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/): Neural network DSL (facilitates building neural networks integrated with data pipelines and Spark) 
+* [ND4J](https://github.com/deeplearning4j/nd4j/): N-dimensional arrays for Java, a tensor library: "Eclipse January with C code and wider scope". The goal is to provide tensor operations and optimized support for various hardware platforms
+* [DataVec](https://github.com/deeplearning4j/datavec/): An ETL library that vectorizes and "tensorizes" data. Extract transform load with support for connecting to various data sources and outputting n-dimensional arrays via a series of data transformations 
+* [libnd4j](https://github.com/deeplearning4j/libnd4j/): Pure C++ library for tensor operations, which works closely with the open-source library JavaCPP (JavaCPP was created and is maintained by a Skymind engineer, but it is not part of this project).
+* [RL4J](https://github.com/deeplearning4j/rl4j/): Reinforcement learning on the JVM, integrated with Deeplearning4j. Includes Deep-Q learning used in AlphaGo and A3C.
+* [Jumpy](https://github.com/deeplearning4j/jumpy/): A Python interface to the ND4J library integrating with Numpy
+* [Arbiter](https://github.com/deeplearning4j/arbiter): Automatic tuning of neural networks via hyperparameter search. Hyperparameter optimization using grid search, random search and Bayesian methods. 
+* [ScalNet](https://github.com/deeplearning4j/scalnet): A Scala API for Deeplearning4j, similar to Torch or Keras in look and feel. 
+* [ND4S](https://github.com/deeplearning4j/nd4s/): N-Dimensional Arrays for Scala, based on ND4J.
 
 Here are some reasons to use DeepLearning4j.
 
-You are a data scientist in the field, or student with a Java project, and you need to integrate with a JVM stack (Hadoop, Spark, Kafka, ElasticSearch, Cassandra); for example, you want to scale out your neural net training on [Spark](https://deeplearning4j.org/spark) over multi-[GPUs](https://deeplearning4j.org/gpu). You need to explore data, conduct and monitor experiments that apply various algorithms to the data and perform training on clusters to quickly obtain an accurate model for that data.
+You are a data scientist in the field, or student with a Java, Scala or Python project, and you need to integrate with a JVM stack (Hadoop, Spark, Kafka, ElasticSearch, Cassandra); for example, you want to scale out your neural net training on [Spark](https://deeplearning4j.org/spark) over multi-[GPUs](https://deeplearning4j.org/gpu). You need to explore data, conduct and monitor experiments that apply various algorithms to the data and perform training on clusters to quickly obtain an accurate model for that data.
 
 You are a data engineer or software developer in an enterprise environment who needs stable, reusable data pipelines and scalable and accurate predictions about the data. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs.
 
