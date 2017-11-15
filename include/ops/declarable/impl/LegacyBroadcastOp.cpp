@@ -8,7 +8,7 @@
 namespace nd4j {
     namespace ops {
         template <typename T>
-        Nd4jStatus LegacyBroadcastOp<T>::validateAndExecute(Block<T> &block) {
+        Nd4jStatus LegacyBroadcastOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
@@ -57,7 +57,7 @@ namespace nd4j {
         *   If external NDArray wasn't specified - the same shape is returned by all broadcast ops.
         */
         template <typename T>
-        ShapeList* LegacyBroadcastOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList* LegacyBroadcastOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
             int *newShape;

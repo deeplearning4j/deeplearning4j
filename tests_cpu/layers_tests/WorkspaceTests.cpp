@@ -129,6 +129,8 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 
+    delete ast;
+
     MemoryRegistrator::getInstance()->forgetWorkspace();
 
     ASSERT_FALSE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());

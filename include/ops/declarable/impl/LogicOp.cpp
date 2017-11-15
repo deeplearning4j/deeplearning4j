@@ -14,13 +14,13 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jStatus LogicOp<T>::validateAndExecute(nd4j::graph::Block<T> &block) {
+        Nd4jStatus LogicOp<T>::validateAndExecute(nd4j::graph::Context<T> &block) {
             nd4j_logger("WARNING: LogicOps should NOT be ever called\n", "");
             return ND4J_STATUS_BAD_INPUT;
         }
 
         template <typename T>
-        ShapeList* LogicOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList* LogicOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             // FIXME: we probably want these ops to evaluate scopes
             return new ShapeList();
         }

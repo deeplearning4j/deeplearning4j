@@ -23,7 +23,7 @@ namespace nd4j {
                 array = INPUT_VARIABLE(0);
                 indices = INPUT_VARIABLE(1);
                 list = new NDArrayList<T>(indices->lengthOf(), false);
-                block.getVariableSpace()->trackList(list);
+                block.trackList(list);
             }
 
             REQUIRE_TRUE(indices->isVector(), 0, "Indices for Scatter should be a vector")

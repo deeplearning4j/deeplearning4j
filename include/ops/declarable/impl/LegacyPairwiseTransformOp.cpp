@@ -19,7 +19,7 @@ namespace nd4j {
 
 
         template <typename T>
-        Nd4jStatus LegacyPairwiseTransformOp<T>::validateAndExecute(Block<T> &block) {
+        Nd4jStatus LegacyPairwiseTransformOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
@@ -39,7 +39,7 @@ namespace nd4j {
         *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
         */
         template <typename T>
-        ShapeList *LegacyPairwiseTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList *LegacyPairwiseTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
             int *newShape;

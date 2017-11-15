@@ -53,20 +53,7 @@ namespace nd4j {
                 auto array = new nd4j::NDArray<T>(1, data.size(), 'c', block.getWorkspace());
                 memcpy(array->buffer(), data.data(), data.size() * sizeof(T));    
     
-                // we have to override existing ndarray in node variable in this case
-                auto varSpace = block.getVariableSpace();
-                if (varSpace->hasVariable(block.getNodeId())) {
-                    auto var = varSpace->getVariable(block.getNodeId());
-                    auto arr = var->getNDArray();
-
-                    if (arr != nullptr && var->isRemovable())
-                        delete arr;
-                        
-                    var->setNDArray(array);
-                    var->markRemovable(true);
-                } else {
-                    varSpace->putVariable(block.getNodeId(), array);
-                }
+                block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
             } else {
                 REQUIRE_TRUE(false, 0, "Runtime range should have inputs defined in any possible way: T_args, INT_args, or INPUT variables")
             }

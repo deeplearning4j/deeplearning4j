@@ -21,11 +21,11 @@ namespace nd4j {
         public:
             CudaLauncherOp(int nIn, int nOut, const char *name, bool inplaceable, int numTargs, int numIargs) : nd4j::ops::DeclarableOp<T>(nIn, nOut, name, inplaceable, numTargs, numIargs) { };
         protected:
-            Nd4jStatus validateAndExecute(Block<T>& block);
+            Nd4jStatus validateAndExecute(Context<T>& block);
         };
 
         template <typename T>
-        Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block) {
+        Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Context<T>& block) {
             cudaStream_t* stream = block->_stream;
 
             // step 1: validate whatever can be validated

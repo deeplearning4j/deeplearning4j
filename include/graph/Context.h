@@ -27,7 +27,7 @@ namespace nd4j {
          * This class defines input desired for any given node/operation within graph
          */
         template <typename T>
-        class Block {
+        class Context {
         protected:
             nd4j::memory::Workspace* _workspace;
 
@@ -60,11 +60,11 @@ namespace nd4j {
             cudaStream_t* _stream;
 #endif
 
-            Block(int nodeId, VariableSpace<T> *variableSpace = nullptr);
-            Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
+            Context(int nodeId, VariableSpace<T> *variableSpace = nullptr);
+            Context(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
 
             // default destructor
-            ~Block();
+            ~Context();
 
             // these methods are for execution timing
             void setOuterTime(Nd4jIndex time);
@@ -119,7 +119,18 @@ namespace nd4j {
             * This method returns variableSpace used in this block
             * @return
             */
-            VariableSpace<T>* getVariableSpace();
+            //VariableSpace<T>* getVariableSpace();
+
+            /**
+             *
+             * @return
+             */
+            Stash<T>* getStash();
+
+            /**
+             *
+             */
+            void trackList(NDArrayList<T>* list);
 
 
             /**
@@ -136,10 +147,23 @@ namespace nd4j {
              * @param p
              * @return
              */
+            Variable<T>* variable(int node, int index);
             Variable<T>* variable(std::pair<int,int>& p);
+            Variable<T>* variable(std::initializer_list<int> p);
 
             int opNum();
             void setOpNum(int opNum);
+
+
+            void pushNDArrayToVariableSpace(int nodeId, int index, NDArray<T>* array, bool removable = true);
+            void pushNDArrayToVariableSpace(std::pair<int, int>& pair, NDArray<T>* array, bool removable = true);
+
+            void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList<T>* list, bool track = true);
+            void pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList<T>* list, bool track = true);
+
+            bool isValueAvailable(int idx = 0);
+
+            Variable<T>* ensureVariable(int idx = 0);
         };
     }
 }

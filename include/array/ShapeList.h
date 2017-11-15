@@ -12,12 +12,15 @@ namespace nd4j {
     class ND4J_EXPORT ShapeList {
     protected:
         std::vector<int*> _shapes;
+
+        bool _autoremovable = false;
     public:
         ShapeList(int* shape = nullptr);
         ShapeList(std::initializer_list<int*> shapes);
         ShapeList(std::vector<int*>& shapes);
+        //ShapeList(bool autoRemovable);
 
-        ~ShapeList() = default;
+        ~ShapeList();
 
         std::vector<int*>* asVector();
         void destroy();

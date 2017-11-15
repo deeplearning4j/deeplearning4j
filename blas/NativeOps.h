@@ -47,7 +47,7 @@ bool debug = false;
 bool verbose = false;
 */
 
-#include <graph/ShapeList.h>
+#include <array/ShapeList.h>
 
 
 class ND4J_EXPORT NativeOps {

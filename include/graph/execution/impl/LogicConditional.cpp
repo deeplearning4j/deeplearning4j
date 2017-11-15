@@ -26,7 +26,7 @@ namespace nd4j {
             // now we should take result of the Scope run, and evaluate it
             //nd4j_debug("", "");
             auto result = __variableSpace->getVariable(lastNode)->getNDArray();
-            result->printBuffer("Result of the last node:");
+            //result->printBuffer("Result of the last node:");
 
             // now we're executing one of the scopes, depending on condition evaluation
             if (result->getScalar(0) == (T) 0.0f) {

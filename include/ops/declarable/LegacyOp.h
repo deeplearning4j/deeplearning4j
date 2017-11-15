@@ -24,13 +24,13 @@ namespace nd4j {
             int _opNum = -1;
 
             // All Op classes provide own specific implementation for this method
-            virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+            virtual Nd4jStatus validateAndExecute(Context<T>& block) = 0;
         public:
             LegacyOp(int numInputs);
             LegacyOp(int numInputs, int opNum);
 
             // All Op classes provide own specific implementation for this method
-            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block) = 0;
+            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) = 0;
         };
     }
 }

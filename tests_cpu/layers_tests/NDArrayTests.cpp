@@ -22,6 +22,12 @@ public:
 	float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
 	int shape2[10] = {3,2,4,6,24,6,1,0,1,99};
 	const std::vector<int> tileShape1 = {2,2,2};
+
+
+    ~NDArrayTest() {
+        delete[] cShape;
+        delete[] fShape;
+    }
 };
 
 
@@ -32,13 +38,16 @@ TEST_F(NDArrayTest, TestDup1) {
     auto arrC = array.dup('c');
     auto arrF = array.dup('f');
 
-    arrC->printShapeInfo("C shape");
-    arrF->printShapeInfo("F shape");
+    //arrC->printShapeInfo("C shape");
+    //arrF->printShapeInfo("F shape");
 
     ASSERT_TRUE(array.equalsTo(arrF));
     ASSERT_TRUE(array.equalsTo(arrC));
 
     ASSERT_TRUE(arrF->equalsTo(arrC));
+
+    delete arrC;
+    delete arrF;
 }
 
 
@@ -51,6 +60,8 @@ TEST_F(NDArrayTest, AssignScalar1) {
     for (int i = 0; i < array->lengthOf(); i++) {
         ASSERT_EQ(2.0f, array->getScalar(i));
     }
+
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -84,6 +95,12 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     for (int i = 0; i < 8; i++) {
         ASSERT_EQ(cShape[i], arrayC2->getShapeInfo()[i]);
     }
+
+    delete[] c;
+    delete[] f;
+    delete arrayC;
+    delete arrayF;
+    delete arrayC2;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -109,6 +126,11 @@ TEST_F(NDArrayTest, TestGetScalar1) {
     arrayC->putScalar(1, 1, 9.0f);
     ASSERT_EQ(9.0f, arrayC->getScalar(1, 1));
 
+    delete[] c;
+    delete[] cShape;
+
+    delete arrayC;
+    delete arrayF;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -147,6 +169,12 @@ TEST_F(NDArrayTest, EqualityTest1) {
     ASSERT_FALSE(arrayD->equalsTo(arrayB, 1e-5));
 
     ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
+
+    delete arrayA;
+    delete arrayB;
+    delete arrayC;
+    delete arrayD;
+    delete arrayE;
 }
 
 TEST_F(NDArrayTest, TestTad1) {
@@ -159,13 +187,14 @@ TEST_F(NDArrayTest, TestTad1) {
 
     row2->assign(1.0);
 
-    row2->printBuffer();
+    //row2->printBuffer();
 
     ASSERT_NEAR(3.0f, array->sumNumber(), 1e-5);
 
-    array->printBuffer();
+    //array->printBuffer();
 
     delete row2;
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -173,6 +202,8 @@ TEST_F(NDArrayTest, TestTad2) {
     auto array = new NDArray<float>(3, 3, 'c');
 
     ASSERT_EQ(3, array->tensorsAlongDimension({1}));
+
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -186,13 +217,14 @@ TEST_F(NDArrayTest, TestTad3) {
 
     row2->putScalar(1, 1.0);
 
-    array->printBuffer();
+    //array->printBuffer();
 
     row2->putIndexedScalar(2, 1.0);
 
-    array->printBuffer();
+    //array->printBuffer();
 
     delete row2;
+    delete array;
 }
 
 
@@ -240,16 +272,22 @@ TEST_F(NDArrayTest, TestRepeat1) {
     for (int e = 0; e < array->lengthOf(); e++)
         array->putScalar(e, e + 1);
 
-    array->printBuffer();
+    //array->printBuffer();
 
     auto rep = array->repeat(0, {2});
 
     ASSERT_EQ(4, rep->sizeAt(0));
     ASSERT_EQ(2, rep->sizeAt(1));
 
-    rep->printBuffer();
+    //rep->printBuffer();
 
     ASSERT_TRUE(exp->equalsTo(rep));
+
+    delete[] eBuffer;
+    delete[] eShape;
+    delete array;
+    delete exp;
+    delete rep;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -258,7 +296,9 @@ TEST_F(NDArrayTest, TestIndexedPut1) {
 
     array->putIndexedScalar(4, 1.0f);
     ASSERT_EQ(1.0f, array->getIndexedScalar(4));
-    array->printBuffer();
+    //array->printBuffer();
+
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -269,6 +309,9 @@ TEST_F(NDArrayTest, TestSum1) {
 
     ASSERT_EQ(10.0f, array->sumNumber());
     ASSERT_EQ(2.5f, array->meanNumber());
+
+    delete[] c;
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -284,6 +327,13 @@ TEST_F(NDArrayTest, TestAddiRowVector) {
     array->addiRowVector(row);
 
     ASSERT_TRUE(exp->equalsTo(array));
+
+    delete[] c;
+    delete[] e;
+
+    delete array;
+    delete row;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -330,6 +380,9 @@ TEST_F(NDArrayTest, Test3D_1) {
 
     ASSERT_EQ('c', arrayC->ordering());
     ASSERT_EQ('f', arrayF->ordering());
+
+    delete arrayC;
+    delete arrayF;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -346,6 +399,10 @@ TEST_F(NDArrayTest, TestTranspose1) {
         ASSERT_EQ(shape::shapeOf(expT)[e], arrayT->sizeAt(e));
     }
 
+    delete arrayC;
+    delete[] expC;
+    delete[] expT;
+    delete arrayT;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -362,6 +419,9 @@ TEST_F(NDArrayTest, TestTranspose2) {
         ASSERT_EQ(shape::shapeOf(expT)[e], arrayC->sizeAt(e));
     }
 
+    delete arrayC;
+    delete[] expC;
+    delete[] expT;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -375,6 +435,10 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
 
     ASSERT_EQ(4.0f, res->getScalar(0));
     ASSERT_EQ(6.0f, res->getScalar(1));
+
+    delete[] c;
+    delete array;
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -388,6 +452,10 @@ TEST_F(NDArrayTest, TestSumAlongDimension2) {
 
     ASSERT_EQ(3.0f, res->getScalar(0));
     ASSERT_EQ(7.0f, res->getScalar(1));
+
+    delete[] c;
+    delete array;
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -405,6 +473,10 @@ TEST_F(NDArrayTest, TestReduceAlongDimension1) {
     ASSERT_EQ(3.0f, res->getScalar(0));
     ASSERT_EQ(7.0f, res->getScalar(1));
 
+    delete[] c;
+    delete array;
+    delete exp;
+    delete res;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -418,6 +490,11 @@ TEST_F(NDArrayTest, TestTransform1) {
     array->applyTransform<simdOps::Abs<float>>();
 
     ASSERT_TRUE(exp->equalsTo(array));
+
+    delete[] c;
+    delete array;
+    delete[] e;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -426,6 +503,9 @@ TEST_F(NDArrayTest, TestReduceScalar1) {
     auto *array = new NDArray<float>(c, cShape);
 
     ASSERT_EQ(-4, array->reduceNumber<simdOps::Min<float>>(nullptr));
+
+    delete[] c;
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -434,6 +514,9 @@ TEST_F(NDArrayTest, TestReduceScalar2) {
     auto *array = new NDArray<float>(c, cShape);
 
     ASSERT_EQ(-10, array->reduceNumber<simdOps::Sum<float>>(nullptr));
+
+    delete[] c;
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -441,6 +524,8 @@ TEST_F(NDArrayTest, TestReduceScalar3) {
     auto *array = new NDArray<float>(arr1, shape1);
 
     ASSERT_EQ(21, array->reduceNumber<simdOps::Sum<float>>(nullptr));
+
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -455,6 +540,12 @@ TEST_F(NDArrayTest, TestApplyTransform1) {
 
 
     ASSERT_TRUE(exp->equalsTo(array));
+
+    delete[] c;
+    delete array;
+
+    delete[] e;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -476,6 +567,9 @@ TEST_F(NDArrayTest, TestVectors1) {
     for (int e = 0; e < vecShape.size(); e++) {
         ASSERT_EQ(cShape[e], vecShape.at(e));
     }
+
+    delete[] c;
+    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -592,9 +686,9 @@ TEST_F(NDArrayTest, TestTile1) {
 
     auto tiled = array1.tile(tileShape1);
 
-    array2.printShapeInfo("Expct shape");
-    tiled.printShapeInfo("Tiled shape");
-    tiled.printBuffer();
+    //array2.printShapeInfo("Expct shape");
+    //tiled.printShapeInfo("Tiled shape");
+    //tiled.printBuffer();
 
 	ASSERT_TRUE(tiled.isSameShape(&array2));
 	ASSERT_TRUE(tiled.equalsTo(&array2));
@@ -671,7 +765,7 @@ TEST_F(NDArrayTest, TestTile6)
     NDArrayFactory<double>::linspace(10, x);    
 
     NDArray<double> result = x.tile({1,4,1});
-    result.printBuffer();
+//    result.printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -695,6 +789,10 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
 
     delete z;
     delete[] xBuffer;
+    delete[] xShape;
+    delete[] yBuffer;
+    delete[] yShape;
+    delete y;
     delete x;
 }
 
@@ -841,7 +939,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 
     NDArrayFactory<float>::mmulHelper(x, y, z);
 
-    z->printBuffer();
+    //z->printBuffer();
 
     ASSERT_TRUE(z->equalsTo(exp));
 
@@ -870,9 +968,20 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 
     NDArrayFactory<float>::mmulHelper(x, y, z);
 
-    z->printBuffer();
+    //z->printBuffer();
 
     ASSERT_TRUE(z->equalsTo(exp));
+
+    delete[] expBuffer;
+    delete[] xBuffer;
+    delete[] yBuffer;
+    delete[] xShape;
+    delete[] yShape;
+
+    delete x;
+    delete y;
+    delete z;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -892,6 +1001,17 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
 
     NDArrayFactory<float>::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
+
+    delete[] expBuffer;
+    delete[] xBuffer;
+    delete[] yBuffer;
+    delete[] xShape;
+    delete[] yShape;
+
+    delete x;
+    delete y;
+    delete z;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -911,6 +1031,17 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
 
     NDArrayFactory<float>::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
+
+    delete[] expBuffer;
+    delete[] xBuffer;
+    delete[] yBuffer;
+    delete[] xShape;
+    delete[] yShape;
+
+    delete x;
+    delete y;
+    delete z;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -930,6 +1061,18 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
 
     NDArrayFactory<float>::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
+
+
+    delete[] expBuffer;
+    delete[] xBuffer;
+    delete[] yBuffer;
+    delete[] xShape;
+    delete[] yShape;
+
+    delete x;
+    delete y;
+    delete z;
+    delete exp;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -949,8 +1092,19 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
 
     NDArrayFactory<float>::mmulHelper(y, x, z);
 
-    z->printBuffer();
+    //z->printBuffer();
     ASSERT_TRUE(z->equalsTo(exp));
+
+    delete[] expBuffer;
+    delete[] xBuffer;
+    delete[] yBuffer;
+    delete[] xShape;
+    delete[] yShape;
+
+    delete x;
+    delete y;
+    delete z;
+    delete exp;
 }
 
 
@@ -972,8 +1126,8 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
     auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
-    c->printShapeInfo("Result shape");
-    c->printBuffer("Result buffer");
+    //c->printShapeInfo("Result shape");
+    //c->printBuffer("Result buffer");
 
     ASSERT_TRUE(exp.equalsTo(c));
 
@@ -999,7 +1153,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
     auto c = NDArrayFactory<float>::mmulHelper(&a, &b);
 
     ASSERT_TRUE(exp.isSameShapeStrict(c));
-    c->printShapeInfo("Result shape");
+    //c->printShapeInfo("Result shape");
     //c->printBuffer("Result buffer");
     //exp.printBuffer("Expctd buffer");
     ASSERT_TRUE(exp.equalsTo(c, 1e1));
@@ -1092,17 +1246,23 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
 
     x.applyBroadcast<simdOps::Add<float>>({1}, row);
 
-    x.printBuffer("Result");
+    //x.printBuffer("Result");
 
     ASSERT_TRUE(x.equalsTo(&exp));
+
+    delete[] brow;
+    delete[] bshape;
+    delete[] ebuf;
+    delete[] eshape;
+    delete row;
 }
 
 TEST_F(NDArrayTest, TestIndexedPut2) {
     NDArray<float> x(2, 2, 'f');
-    x.printShapeInfo("x shape");
+    //x.printShapeInfo("x shape");
     x.putIndexedScalar(1, 1.0f);
 
-    x.printBuffer("after");
+    //x.printBuffer("after");
     ASSERT_NEAR(x.getBuffer()[2], 1.0, 1e-5);
 }
 
@@ -1110,7 +1270,7 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
     NDArray<float> x(2, 2, 'c');
     x.putIndexedScalar(1, 1.0f);
 
-    x.printBuffer("after");
+    //x.printBuffer("after");
     ASSERT_NEAR(x.getBuffer()[1], 1.0, 1e-5);
 }
 
@@ -1118,7 +1278,7 @@ TEST_F(NDArrayTest, TestIndexedPut4) {
     NDArray<float> x(2, 2, 'f');
     x.putScalar(0, 1, 1.0f);
 
-    x.printBuffer("after");
+    //x.printBuffer("after");
     ASSERT_NEAR(x.getBuffer()[2], 1.0, 1e-5);
 }
 
@@ -1127,7 +1287,7 @@ TEST_F(NDArrayTest, TestIndexedPut5) {
     NDArray<float> x(2, 2, 'c');
     x.putScalar(0, 1, 1.0f);
 
-    x.printBuffer("after");
+    //x.printBuffer("after");
     ASSERT_NEAR(x.getBuffer()[1], 1.0, 1e-5);
 }
 
@@ -1193,7 +1353,7 @@ TEST_F(NDArrayTest, TestIndexing3) {
     ASSERT_EQ(2, sub.rows());
     ASSERT_EQ(5, sub.columns());
 
-    ASSERT_NEAR(10, sub.getScalar(0), 1e-5);    
+    ASSERT_NEAR(10, sub.getScalar(0), 1e-5);
 }
 
 
@@ -1549,11 +1709,11 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
 
     auto result = NDArrayFactory<double>::tensorDot(&weights, &input, {0}, {1});
 
-    result->printShapeInfo("result shape");
+    //result->printShapeInfo("result shape");
     ASSERT_TRUE(exp.isSameShape(result));
 
-        exp.printBuffer("Expctd buffer");
-    result->printBuffer("Result buffer");
+//        exp.printBuffer("Expctd buffer");
+//    result->printBuffer("Result buffer");
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete result;
@@ -1665,6 +1825,8 @@ TEST_F(NDArrayTest, TestMatmMul_Again_1) {
 
     ASSERT_TRUE(c.isSameShape(c_));
     ASSERT_TRUE(c.equalsTo(c_));
+
+    delete c_;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1684,9 +1846,9 @@ TEST_F(NDArrayTest, TestMatmMul_Again_2) {
 
     ASSERT_TRUE(c.isSameShape(c_));
 
-    c_->printBuffer("c_");
-
     ASSERT_TRUE(c.equalsTo(c_));
+
+    delete c_;
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -132,5 +132,6 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
     ASSERT_TRUE(reshaped->equalsTo(z));
 
     delete result;
+    delete reshaped;
 
 }

@@ -7,7 +7,7 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
-#include <Block.h>
+#include <Context.h>
 #include <Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
@@ -42,7 +42,7 @@ TEST_F(ConvolutionTests, TestConv2D_1) {
     variableSpace->putVariable(-1, input);
     variableSpace->putVariable(-2, weights);
 
-    auto block = new Block<double>(1, variableSpace, false);  // not-in-place
+    auto block = new Context<double>(1, variableSpace, false);  // not-in-place
     block->fillInputs({-1, -2});
 
     // 5,5 kernel
@@ -82,24 +82,25 @@ TEST_F(ConvolutionTests, TestConv2D_1) {
     ASSERT_TRUE(res->isSameShape(exp));
 
     // just for visual validation
-    exp->printBuffer("Expected");
-    res->printBuffer("Actual  ");
-    res->printShapeInfo("Result shape");
+    //exp->printBuffer("Expected");
+    //res->printBuffer("Actual  ");
+    //res->printShapeInfo("Result shape");
 
     // final check
     ASSERT_TRUE(res->equalsTo(exp));
 
     delete block;
     delete variableSpace;
+    delete exp;
 }
 
 
 TEST_F(ConvolutionTests, TestAvgFF1) {
-    NDArray<float> input('c', {4, 2, 1, 11, 11});
+    auto input = new NDArray<float>('c', {4, 2, 1, 11, 11});
 
-    input.assign(451.0);
+    input->assign(451.0);
 
-    NDArray<float> output('c', {4, 2, 1, 10, 10});
+    auto output = new NDArray<float>('c', {4, 2, 1, 10, 10});
 
 
     std::pair<int, int> pair0(1,0);
@@ -107,11 +108,11 @@ TEST_F(ConvolutionTests, TestAvgFF1) {
 
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    variableSpace->putVariable(-1, &input);
+    variableSpace->putVariable(-1, input);
 
-    variableSpace->putVariable(pair0, &output);
+    variableSpace->putVariable(pair0, output);
 
-    Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+    Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
     block->fillInputs({-1});
 
     // kernel params
@@ -144,30 +145,32 @@ TEST_F(ConvolutionTests, TestAvgFF1) {
 
     //output.printBuffer("Result");
 
-    ASSERT_NEAR(451.0f, output.template reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(451.0f, output->template reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
+    delete variableSpace;
+    delete block;
 }
 
 
 TEST_F(ConvolutionTests, TestFullConv3D_1) {
-    NDArray<float> input('c', {4, 3, 3, 56, 56});
-    NDArray<float> weights('f', {2, 3, 3, 5, 5});
-    NDArray<float> bias('c', {1, 2});
+    auto input = new NDArray<float>('c', {4, 3, 3, 56, 56});
+    auto weights = new NDArray<float>('f', {2, 3, 3, 5, 5});
+    auto bias = new NDArray<float>('c', {1, 2});
 
-    input.assign(1.0);
-    weights.assign(2.0);
-    bias.putScalar(0, 1.0f);
-    bias.putScalar(1, 1.0f);
+    input->assign(1.0);
+    weights->assign(2.0);
+    bias->putScalar(0, 1.0f);
+    bias->putScalar(1, 1.0f);
 
-    NDArray<float> output('c', {4, 2, 1, 11, 11});
+    auto output = new NDArray<float>('c', {4, 2, 1, 11, 11});
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    variableSpace->putVariable(-1, &input);
-    variableSpace->putVariable(-2, &weights);
-    variableSpace->putVariable(-3, &bias);
+    variableSpace->putVariable(-1, input);
+    variableSpace->putVariable(-2, weights);
+    variableSpace->putVariable(-3, bias);
 
-    variableSpace->putVariable(1, &output);
-    Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+    variableSpace->putVariable(1, output);
+    Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
     block->fillInputs({-1, -2, -3});
 
     block->getIArguments()->push_back(1);
@@ -179,6 +182,10 @@ TEST_F(ConvolutionTests, TestFullConv3D_1) {
     block->getIArguments()->push_back(0);
 
     nd4j::ops::conv3d<float> conv3d;
+
+
+    delete variableSpace;
+    delete block;
 }
 
 
@@ -212,7 +219,7 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
     variableSpace->putVariable(-1, input);
     variableSpace->putVariable(-2, weights);
 
-    auto block = new Block<float>(1, variableSpace, false);
+    auto block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1, -2});
 
     block->getIArguments()->push_back(kY);
@@ -239,13 +246,16 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
 
     NDArray<float>* output = variableSpace->getVariable(1)->getNDArray();
 
-    exp.printShapeInfo("Expected shape");
-    output->printShapeInfo("Result shape");
+    //exp.printShapeInfo("Expected shape");
+    //output->printShapeInfo("Result shape");
     ASSERT_TRUE(exp.isSameShape(output));
 
         //exp.printBuffer("Expctd buffer");
     //output->printBuffer("Result buffer");
     ASSERT_TRUE(exp.equalsTo(output));
+
+    delete block;
+    delete variableSpace;
 }
 
 TEST_F(ConvolutionTests, SeparableConv2D_BP_NoBias_1) {
@@ -297,7 +307,7 @@ TEST_F(ConvolutionTests, SeparableConv2D_BP_NoBias_1) {
     variableSpace->putVariable(-3, weights);
     variableSpace->putVariable(-2, epsilonNext);
 
-    auto block = new Block<double>(1, variableSpace, false);
+    auto block = new Context<double>(1, variableSpace, false);
     block->fillInputs({-1, -2, -3});
 
     block->getIArguments()->push_back(kY);
@@ -365,7 +375,7 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
     variableSpace->putVariable(-1, input);
     variableSpace->putVariable(-2, weights);
 
-    auto block = new Block<double>(1, variableSpace, false);
+    auto block = new Context<double>(1, variableSpace, false);
     block->fillInputs({-1, -2});
 
     block->getIArguments()->push_back(5);
@@ -397,6 +407,9 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
     //    exp.printBuffer("Expctd buffer");
     //output->printBuffer("Result buffer");
     ASSERT_TRUE(exp.equalsTo(output));
+
+    delete variableSpace;
+    delete block;
 }
 
 TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
@@ -451,6 +464,8 @@ TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
     ASSERT_TRUE(expBGrad.isSameShape(gradB));
 
     ASSERT_TRUE(expBGrad.equalsTo(gradB));
+
+    delete results;
 }
 
 
@@ -494,6 +509,8 @@ TEST_F(ConvolutionTests, conv2D_BP_NoBias_1) {
     //  expEps.printBuffer("Expctd buffer");
     //epsilon->printBuffer("Result buffer");
     ASSERT_TRUE(expEps.equalsTo(epsilon));
+
+    delete results;
 }
 
 TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
@@ -523,11 +540,11 @@ TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
     auto resultFF = op.execute({&input, &weightsD}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
 
     auto z = resultFF->at(0);
-    z->printShapeInfo("FF shape");
+    //z->printShapeInfo("FF shape");
 
     ASSERT_TRUE(z->isSameShape(&expFF));
 
-    expFF.printBuffer("e");
+//    expFF.printBuffer("e");
     //z->printBuffer("z");
     ASSERT_TRUE(z->equalsTo(&expFF, 1));
 
@@ -536,7 +553,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
     auto result2D = op2d.execute({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0});
 
     auto z2d = result2D->at(0);
-    z2d->printShapeInfo("z2d shape");
+    //z2d->printShapeInfo("z2d shape");
     ASSERT_TRUE(z2d->isSameShape(&exp2FF));
 
     //exp2FF.printBuffer("e2d");
@@ -570,7 +587,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_pointwise_1) {
     auto resultFF = op.execute({&input, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
 
     auto z = resultFF->at(0);
-    z->printShapeInfo("FF shape");
+    //z->printShapeInfo("FF shape");
 
 
     ASSERT_TRUE(z->isSameShape(&expFF));
@@ -671,14 +688,14 @@ TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
 
     auto z = result->at(0);
 
-    printf("\n");
-    output.printBuffer("output");
-    z->printBuffer("z");
+    //printf("\n");
+    //output.printBuffer("output");
+    //z->printBuffer("z");
 
 
     //ASSERT_TRUE(expOutput.isSameShape(z));
 
-    //delete result;
+    delete result;
 }
 
 TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
@@ -807,6 +824,7 @@ TEST_F(ConvolutionTests, TestDeconv_bp_1) {
     ASSERT_TRUE(expGradB.isSameShape(gradB));
     ASSERT_TRUE(expGradB.equalsTo(gradB));
 
+    delete result;
 }
 
 TEST_F(ConvolutionTests, TestDeconv_bp_2) {
@@ -876,6 +894,8 @@ TEST_F(ConvolutionTests, TestDeconv_ff_2) {
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
 }
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H

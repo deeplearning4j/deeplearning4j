@@ -7,7 +7,7 @@
 
 #include <thread>
 #include "VariableSpace.h"
-#include "Block.h"
+#include "Context.h"
 #include "Stash.h"
 #include <memory/Workspace.h>
 
@@ -30,7 +30,7 @@ namespace nd4j{
         public:
             SessionLocalStorage(VariableSpace<T>* variableSpace = nullptr, Stash<T>* stash = nullptr);
 
-            ~SessionLocalStorage() = default;
+            ~SessionLocalStorage();
 
             VariableSpace<T>* localVariableSpace();
             VariableSpace<T>* localVariableSpace(Nd4jIndex sessionId);

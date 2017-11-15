@@ -10,7 +10,7 @@
 #include <types/float16.h>
 #include <NDArray.h>
 #include <NDArrayFactory.h>
-#include <Block.h>
+#include <Context.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/BooleanOp.h>
 #include <ops/declarable/LogicOp.h>
@@ -26,6 +26,7 @@ namespace nd4j {
         DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1);
         DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
         DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
+        DECLARE_REDUCTION_OP(sum, 1, 1, false, 0, -1);
 
         DECLARE_OP(noop, -1, -1, true);
         DECLARE_OP(testop2i2o, 2, 2, true);
@@ -121,8 +122,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0);
         DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1);
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0);        
-        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);        
-        DECLARE_CONFIGURABLE_OP(sum, 1, 1, false, 0, -1);       // should become reduction
+        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);
         DECLARE_CONFIGURABLE_OP(batchnorm, 1, 1, true, 4, 3);
         DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                
         DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented        

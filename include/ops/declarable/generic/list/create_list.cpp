@@ -24,17 +24,10 @@ namespace nd4j {
             // we recieve input array for graph integrity purposes only
             auto input = INPUT_VARIABLE(0);
 
-            block.getVariableSpace()->trackList(list);
-
             OVERWRITE_RESULT(list);
 
-            if (!block.getVariableSpace()->hasVariable(block.nodeId(), 1)) {
-                block.getVariableSpace()->putVariable(block.nodeId(), 1, new Variable<T>(nullptr, nullptr, block.nodeId(), 1));
-            }
-
-            auto var = block.getVariableSpace()->getVariable(block.getNodeId(), 1);
             auto scalar = NDArrayFactory<T>::scalar(list->counter());
-            var->setNDArray(scalar);
+            block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
 
             return ND4J_STATUS_OK;
         }

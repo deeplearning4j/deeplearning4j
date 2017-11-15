@@ -46,7 +46,7 @@ bool experimentalSupport = false;
 #include "../Environment.h"
 #include <TAD.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <Block.h>
+#include <Context.h>
 
 
 void NativeOps::setElementThreshold(int num) {
@@ -3099,7 +3099,7 @@ const char* NativeOps::getAllCustomOps() {
 
 template<typename T>
 Nd4jPointer* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, int *iArgs, int numIArgs) {
-    Block<T> block(1);
+    Context<T> block(1);
     ShapeList inShapes;
 
     for (int e = 0; e < numIArgs; e++)
@@ -3188,6 +3188,9 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 
             tmp.assign(result->at(e));
         }
+    } else {
+        // if op is inplace, our ResultSet holds pointers
+        result->purge();
     }
 
     delete result;
@@ -3201,6 +3204,11 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 
     return ND4J_STATUS_OK;
 }
+
+template Nd4jStatus realExec<float16>(nd4j::ops::DeclarableOp<float16>*, Nd4jPointer*, Nd4jIndex, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, float16*, int, int*, int, bool);
+template Nd4jStatus realExec<float> (nd4j::ops::DeclarableOp<float>*, Nd4jPointer*, Nd4jIndex, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, float*, int, int*, int, bool);
+template Nd4jStatus realExec<double>(nd4j::ops::DeclarableOp<double>*, Nd4jPointer*, Nd4jIndex, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, double*, int, int*, int, bool);
+
 
 int NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
@@ -3236,11 +3244,6 @@ template void tearGeneric<double>(double*, int*, Nd4jPointer*, int*, int*, Nd4jI
 template void shuffleGeneric<float16>(float16**, int**, float16**, int**, int, int*, int**, Nd4jIndex**);
 template void shuffleGeneric<float>(float**, int**, float**, int**, int, int*, int**, Nd4jIndex**);
 template void shuffleGeneric<double>(double**, int**, double**, int**, int, int*, int**, Nd4jIndex**);
-
-template Nd4jStatus realExec<float16>(nd4j::ops::DeclarableOp<float16>*, Nd4jPointer*, Nd4jIndex, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, float16*, int, int*, int, bool);
-template Nd4jStatus realExec<float> (nd4j::ops::DeclarableOp<float>*, Nd4jPointer*, Nd4jIndex, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, float*, int, int*, int, bool);
-template Nd4jStatus realExec<double>(nd4j::ops::DeclarableOp<double>*, Nd4jPointer*, Nd4jIndex, Nd4jPointer*, Nd4jPointer*, int, Nd4jPointer*, Nd4jPointer*, int, double*, int, int*, int, bool);
-
 
 
 

@@ -15,7 +15,7 @@ namespace nd4j {
         template <typename T>
         class LegacyScalarOp : public LegacyOp<T>{
         protected:
-            Nd4jStatus validateAndExecute(Block<T>& block);
+            Nd4jStatus validateAndExecute(Context<T>& block);
 
             T _scalar;
         public:
@@ -23,7 +23,7 @@ namespace nd4j {
             LegacyScalarOp(int opNum);
             LegacyScalarOp(int opNum, T scalar);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block);
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
         };
     }
 }

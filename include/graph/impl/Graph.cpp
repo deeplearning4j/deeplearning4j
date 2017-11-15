@@ -70,7 +70,6 @@ namespace nd4j {
                                 inputShapes.push_back(_variableSpace->getVariable(v.first)->getNDArray()->getShapeInfo());
                             } else {
                                 inputShapes.push_back(shapesMap.at(v));
-                                shape::printShapeInfoLinear(shapesMap.at(v));
                             }
                         }
 
@@ -86,8 +85,6 @@ namespace nd4j {
 
                             if (!block->isInplace() && !node->isInplace())
                                 result += shape::length(newShape) * sizeof(T);
-
-                            shape::printShapeInfoLinear(newShape);
 
                             shapes.push_back(newShape);
                         }
@@ -321,10 +318,10 @@ namespace nd4j {
                 // custom ops require Block inside. but we'll set it inside buildGraph
 
                 // TODO: we want to change this, to make blocks thread-local/session-local
-                Block<T>* block = nullptr;
+                Context<T>* block = nullptr;
 
                 if (!node->hasBlockAttached()) {
-                    block = new Block<T>(node->id(), _variableSpace);
+                    block = new Context<T>(node->id(), _variableSpace);
                     node->setBlock(block);
                 } else
                     block = node->getBlock();
@@ -520,10 +517,10 @@ namespace nd4j {
                             this->injectNode(node);
 
                             if (node->hasCustomOp()) {
-                                Block<T>* block = nullptr;
+                                Context<T>* block = nullptr;
 
                                 if (!node->hasBlockAttached()) {
-                                    block = new Block<T>(node->id(), _variableSpace);
+                                    block = new Context<T>(node->id(), _variableSpace);
                                     node->setBlock(block);
                                 } else
                                     block = node->getBlock();
@@ -551,10 +548,10 @@ namespace nd4j {
                             this->injectNode(node);
 
                             if (node->hasCustomOp()) {
-                                Block<T>* block = nullptr;
+                                Context<T>* block = nullptr;
 
                                 if (!node->hasBlockAttached()) {
-                                    block = new Block<T>(node->id(), _variableSpace);
+                                    block = new Context<T>(node->id(), _variableSpace);
                                     node->setBlock(block);
                                 } else
                                     block = node->getBlock();
@@ -614,10 +611,10 @@ namespace nd4j {
                         injectNode(node);
 
                         if (node->hasCustomOp()) {
-                            Block<T>* block = nullptr;
+                            Context<T>* block = nullptr;
 
                             if (!node->hasBlockAttached()) {
-                                block = new Block<T>(node->id(), _variableSpace);
+                                block = new Context<T>(node->id(), _variableSpace);
                                 node->setBlock(block);
                             } else
                                 block = node->getBlock();

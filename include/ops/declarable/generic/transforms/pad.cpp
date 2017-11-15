@@ -11,7 +11,7 @@ namespace nd4j {
 
 // declare auxiliary function which serves for recursion purpose
 template<typename T>
-void recursiveLoop(const int mode, Block<T>& block, NDArray<T>* input, const NDArray<T>* paddings, NDArray<T>* output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
+void recursiveLoop(const int mode, Context<T>& block, NDArray<T>* input, const NDArray<T>* paddings, NDArray<T>* output, std::vector<int> dimensions, int dim, int inIdx, int outIdx);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ DECLARE_SHAPE_FN(pad) {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-void recursiveLoop(const int mode, Block<T>& block, NDArray<T>* input, const NDArray<T>* paddings, NDArray<T>* output, std::vector<int> dimensions, int dim, int inIdx, int outIdx ) {   // initial values of inIdx,outIdx,dim must be equal to zero
+void recursiveLoop(const int mode, Context<T>& block, NDArray<T>* input, const NDArray<T>* paddings, NDArray<T>* output, std::vector<int> dimensions, int dim, int inIdx, int outIdx ) {   // initial values of inIdx,outIdx,dim must be equal to zero
 	
 	int leftOffset;
 	// dimensions are array of input dimensions, it is sorted by increasing order

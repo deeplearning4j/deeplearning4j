@@ -8,14 +8,14 @@
 namespace nd4j {
     namespace ops {
         template <typename T>
-        Nd4jStatus LegacyReduce3Op<T>::validateAndExecute(Block<T> &block) {
+        Nd4jStatus LegacyReduce3Op<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT))) {
+            if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar
                 T scalar = NativeOpExcutioner<T>::execReduce3Scalar(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), y->buffer(), y->shapeInfo());
                 z->putScalar(0, scalar);
@@ -49,13 +49,13 @@ namespace nd4j {
         *   It solely depends on input shape, and requested dimensions
         */
         template <typename T>
-        ShapeList *LegacyReduce3Op<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList *LegacyReduce3Op<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto xShape = inputShape->at(0);
             auto yShape = inputShape->at(1);
 
             int *zShape = nullptr;
 
-            if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT))) {
+            if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar case
                 ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
                 zShape[0] = 2;

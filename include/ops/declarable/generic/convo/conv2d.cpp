@@ -25,15 +25,15 @@ namespace nd4j {
             if (block.width() == 3)
                 bias = INPUT_VARIABLE(2);
 
-            const int kY = block.getIArguments()->at(0);
-            const int kX = block.getIArguments()->at(1);
-            const int sY = block.getIArguments()->at(2);
-            const int sX = block.getIArguments()->at(3);
-            int pY = block.getIArguments()->at(4);
-            int pX = block.getIArguments()->at(5);
-            const int dY = block.getIArguments()->at(6);
-            const int dX = block.getIArguments()->at(7);
-            const bool isSameMode = block.getIArguments()->at(8) != 0;
+            const int kY = INT_ARG(0);
+            const int kX = INT_ARG(1);
+            const int sY = INT_ARG(2);
+            const int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
+            const int dY = INT_ARG(6);
+            const int dX = INT_ARG(7);
+            const bool isSameMode = INT_ARG(8) != 0;
 
             int oY = 0;
             int oX = 0;
@@ -96,15 +96,15 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
             auto wShape = inputShape->at(1);
 
-            const int kY = block.getIArguments()->at(0);
-            const int kX = block.getIArguments()->at(1);
-            const int sY = block.getIArguments()->at(2);
-            const int sX = block.getIArguments()->at(3);
-            int pY = block.getIArguments()->at(4);
-            int pX = block.getIArguments()->at(5);
-            const int dY = block.getIArguments()->at(6);
-            const int dX = block.getIArguments()->at(7);
-            const bool isSameMode = block.getIArguments()->at(8) != 0;
+            const int kY = INT_ARG(0);
+            const int kX = INT_ARG(1);
+            const int sY = INT_ARG(2);
+            const int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
+            const int dY = INT_ARG(6);
+            const int dX = INT_ARG(7);
+            const bool isSameMode = INT_ARG(8) != 0;
 
             int oY = 0;
             int oX = 0;
@@ -153,15 +153,15 @@ namespace nd4j {
             REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "Conv2D expects 4D epsilons, but got %i instead", epsilonNext->rankOf());
 
 
-            const int kY = block.getIArguments()->at(0);
-            const int kX = block.getIArguments()->at(1);
-            const int sY = block.getIArguments()->at(2);
-            const int sX = block.getIArguments()->at(3);
-            int pY = block.getIArguments()->at(4);
-            int pX = block.getIArguments()->at(5);
-            const int dY = block.getIArguments()->at(6);
-            const int dX = block.getIArguments()->at(7);
-            const bool isSameMode = block.getIArguments()->at(8) != 0;
+            const int kY = INT_ARG(0);
+            const int kX = INT_ARG(1);
+            const int sY = INT_ARG(2);
+            const int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
+            const int dY = INT_ARG(6);
+            const int dX = INT_ARG(7);
+            const bool isSameMode = INT_ARG(8) != 0;
 
             int oY, oX;
 

@@ -19,12 +19,12 @@ namespace nd4j {
         template <typename T>
         class LogicOp : public DeclarableOp<T> {
         protected:
-            Nd4jStatus validateAndExecute(nd4j::graph::Block<T>& block) override;
+            Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block) override;
         public:
             LogicOp(const char *name);
             ~LogicOp() = default;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) override;
         };
     }
 }

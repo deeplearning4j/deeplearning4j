@@ -23,7 +23,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        ShapeList *LegacyScalarOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList *LegacyScalarOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
             int *newShape;
@@ -35,7 +35,7 @@ namespace nd4j {
 
 
         template <typename T>
-        Nd4jStatus LegacyScalarOp<T>::validateAndExecute(Block<T> &block) {
+        Nd4jStatus LegacyScalarOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
             T scalar = (T) 0.0f;
             int offset = 0;

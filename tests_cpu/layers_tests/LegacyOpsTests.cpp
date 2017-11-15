@@ -87,7 +87,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
 
     auto z = result->at(0);
 
-    z->printBuffer("Z");
+    //z->printBuffer("Z");
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
@@ -118,6 +118,8 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
 
     auto z = result->at(0);
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
 }
 
 

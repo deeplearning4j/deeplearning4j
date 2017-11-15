@@ -17,6 +17,12 @@ class VariableSpaceTest : public testing::Test {
 public:
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+
+
+    ~VariableSpaceTest() {
+        delete[] cShape;
+        delete[] fShape;
+    }
 };
 
 

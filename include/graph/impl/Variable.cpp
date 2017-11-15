@@ -153,7 +153,7 @@ namespace nd4j {
             _external = true;
             _readOnly = false;
 
-#pragma omp simd
+#pragma omp parallel for simd
             for (int e = 0; e < shapeLen; e++) {
                 shape[e] = flatVariable->shape()->Get(e);
             }
@@ -161,7 +161,7 @@ namespace nd4j {
             int bufLen = flatVariable->values()->Length();
             T *buffer = new T[bufLen];
 
-#pragma omp simd
+#pragma omp parallel for simd
             for (int e = 0; e < bufLen; e++) {
                 buffer[e] = (T) flatVariable->values()->Get(e);
             }

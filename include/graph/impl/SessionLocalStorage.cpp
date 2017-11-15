@@ -31,6 +31,13 @@ namespace nd4j {
             return localVariableSpace(getSessionId());
         }
 
+        template <typename T>
+        SessionLocalStorage<T>::~SessionLocalStorage() {
+            for (const auto & v: _threadVariableSpace) {
+                delete v.second;
+            }
+        }
+
 
         template <typename T>
         Nd4jIndex SessionLocalStorage<T>::getThreadId() {

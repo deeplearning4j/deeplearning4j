@@ -22,7 +22,7 @@ namespace nd4j {
         * Output shape of any BooleanOp is ALWAYS scalar
         */
         template <typename T>
-        ShapeList *BooleanOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList *BooleanOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             int *shapeNew;
             ALLOCATE(shapeNew, block.getWorkspace(), shape::shapeInfoLength(2), int);
             shapeNew[0] = 2;
@@ -38,7 +38,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        bool BooleanOp<T>::evaluate(nd4j::graph::Block<T> &block) {
+        bool BooleanOp<T>::evaluate(nd4j::graph::Context<T> &block) {
             // check if scalar or not
 
             // validation?
@@ -67,24 +67,15 @@ namespace nd4j {
         }
 
         template <typename T>
-        bool BooleanOp<T>::prepareOutputs(Block<T>& block) {
+        bool BooleanOp<T>::prepareOutputs(Context<T>& ctx) {
 
-            auto variableSpace = block.getVariableSpace();
             for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
-                std::pair<int, int> pair(block.getNodeId(), e);
+                std::pair<int, int> pair(ctx.nodeId(), e);
 
-                Variable<T>* var = nullptr;
-                if (variableSpace->hasVariable(pair))
-                    var = variableSpace->getVariable(pair);
-                else {
-                    if (block.getNodeId() == 0)
-                        nd4j_debug("Zero node!\n", "");
-                    var = new Variable<T>(nullptr, nullptr, block.getNodeId());
-                    variableSpace->putVariable(pair, var);
-                }
+                Variable<T>* var = ctx.variable(pair);
 
                 if (var->getNDArray() == nullptr) {
-                    var->setNDArray(new NDArray<T>('c', {1, 1}, block.getWorkspace()));
+                    var->setNDArray(new NDArray<T>('c', {1, 1}, ctx.getWorkspace()));
                     var->markRemovable(true);
                 }
             }
@@ -93,11 +84,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jStatus nd4j::ops::BooleanOp<T>::execute(Block<T>* block)  {
-            if (block != nullptr)
-                this->_block = block;
-            else
-                throw std::invalid_argument("Block is NULL");
+        Nd4jStatus nd4j::ops::BooleanOp<T>::execute(Context<T>* block)  {
 
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
@@ -117,11 +104,9 @@ namespace nd4j {
             block->setInnerTime(outerTime);
 
             // basically we're should be putting 0.0 as FALSE, and any non-0.0 value will be treated as TRUE
-            if (status == ND4J_STATUS_TRUE){
-                block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray()->putScalar(0, (T) 1.0f);
-            } else {
-                block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray()->putScalar(0, (T) 0.0f);
-            }
+            std::pair<int,int> p(block->nodeId(), 0);
+            auto var = block->variable(p);
+            var->getNDArray()->putScalar(0, status == ND4J_STATUS_TRUE ? (T) 1.0f : (T) 0.0f);
 
             if (status == ND4J_STATUS_FALSE || status == ND4J_STATUS_TRUE)
                 return ND4J_STATUS_OK;
@@ -142,7 +127,7 @@ namespace nd4j {
                 variableSpace.putVariable(cnt--, var);
             }
 
-            Block<T> block(1, &variableSpace, false);
+            Context<T> block(1, &variableSpace, false);
             block.fillInputs(in);
 
             return this->evaluate(block);

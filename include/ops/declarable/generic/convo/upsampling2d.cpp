@@ -17,7 +17,7 @@ namespace nd4j {
         CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 1) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* output = this->getZ(block);
-            int scale_factor = block.getIArguments()->at(0);
+            int scale_factor = INT_ARG(0);
 
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Upsampling input should be 4D, but got %i instead", input->rankOf());
@@ -106,7 +106,7 @@ namespace nd4j {
             //NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* gradientNext = INPUT_VARIABLE(1);
             NDArray<T>* output = this->getZ(block);
-            int scale_factor = block.getIArguments()->at(0);
+            int scale_factor = INT_ARG(0);
 
 
             int dW = scale_factor;

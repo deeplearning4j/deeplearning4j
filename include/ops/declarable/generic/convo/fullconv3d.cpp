@@ -19,19 +19,19 @@ namespace nd4j {
             REQUIRE_TRUE(weights->rankOf() == 5, 0, "Weights should be 5D, got %i instead", weights->rankOf());
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
-            int dT = block.getIArguments()->at(0);
-            int dW = block.getIArguments()->at(1);
-            int dH = block.getIArguments()->at(2);
-            int pT = block.getIArguments()->at(3);
-            int pW = block.getIArguments()->at(4);
-            int pH = block.getIArguments()->at(5);
-            int dilationT = block.getIArguments()->at(6);
-            int dilationW = block.getIArguments()->at(7);
-            int dilationH = block.getIArguments()->at(8);
-            int aT = block.getIArguments()->at(9);
-            int aW = block.getIArguments()->at(10);
-            int aH = block.getIArguments()->at(11);
-            bool biasUsed = block.getIArguments()->at(12) != 0;
+            int dT = INT_ARG(0);
+            int dW = INT_ARG(1);
+            int dH = INT_ARG(2);
+            int pT = INT_ARG(3);
+            int pW = INT_ARG(4);
+            int pH = INT_ARG(5);
+            int dilationT = INT_ARG(6);
+            int dilationW = INT_ARG(7);
+            int dilationH = INT_ARG(8);
+            int aT = INT_ARG(9);
+            int aW = INT_ARG(10);
+            int aH = INT_ARG(11);
+            bool biasUsed = INT_ARG(12) != 0;
 
 
             REQUIRE_TRUE(dT > 0 && dW > 0 && dH > 0, 11,
@@ -116,19 +116,19 @@ namespace nd4j {
             int* input = inputShape->at(0);
             int* weights = inputShape->at(1);
 
-            int dT = block.getIArguments()->at(0);
-            int dW = block.getIArguments()->at(1);
-            int dH = block.getIArguments()->at(2);
-            int pT = block.getIArguments()->at(3);
-            int pW = block.getIArguments()->at(4);
-            int pH = block.getIArguments()->at(5);
-            int dilationT = block.getIArguments()->at(6);
-            int dilationW = block.getIArguments()->at(7);
-            int dilationH = block.getIArguments()->at(8);
-            int aT = block.getIArguments()->at(9);
-            int aW = block.getIArguments()->at(10);
-            int aH = block.getIArguments()->at(11);
-            bool biasUsed = block.getIArguments()->at(12) != 0;
+            int dT = INT_ARG(0);
+            int dW = INT_ARG(1);
+            int dH = INT_ARG(2);
+            int pT = INT_ARG(3);
+            int pW = INT_ARG(4);
+            int pH = INT_ARG(5);
+            int dilationT = INT_ARG(6);
+            int dilationW = INT_ARG(7);
+            int dilationH = INT_ARG(8);
+            int aT = INT_ARG(9);
+            int aW = INT_ARG(10);
+            int aH = INT_ARG(11);
+            bool biasUsed = INT_ARG(12) != 0;
 
             int *shapeOf;
             int *newShape;
@@ -175,19 +175,19 @@ namespace nd4j {
 
             NDArray<T> *output = this->getZ(block);
 
-            int dT = block.getIArguments()->at(0);
-            int dW = block.getIArguments()->at(1);
-            int dH = block.getIArguments()->at(2);
-            int pT = block.getIArguments()->at(3);
-            int pW = block.getIArguments()->at(4);
-            int pH = block.getIArguments()->at(5);
-            int dilationT = block.getIArguments()->at(6);
-            int dilationW = block.getIArguments()->at(7);
-            int dilationH = block.getIArguments()->at(8);
-            int aT = block.getIArguments()->at(9);
-            int aW = block.getIArguments()->at(10);
-            int aH = block.getIArguments()->at(11);
-            bool biasUsed = block.getIArguments()->at(12) != 0;
+            int dT = INT_ARG(0);
+            int dW = INT_ARG(1);
+            int dH = INT_ARG(2);
+            int pT = INT_ARG(3);
+            int pW = INT_ARG(4);
+            int pH = INT_ARG(5);
+            int dilationT = INT_ARG(6);
+            int dilationW = INT_ARG(7);
+            int dilationH = INT_ARG(8);
+            int aT = INT_ARG(9);
+            int aW = INT_ARG(10);
+            int aH = INT_ARG(11);
+            bool biasUsed = INT_ARG(12) != 0;
 
             const int nInputPlane  = (int)weights->shapeOf()[0];
             const int nOutputPlane = (int)weights->shapeOf()[1];
@@ -272,19 +272,19 @@ namespace nd4j {
 
             REQUIRE_TRUE(gradBias->sizeAt(0) == gradWeight->sizeAt(1), 0, "Bias shape mismatch");
 
-            int dT = block.getIArguments()->at(0);
-            int dW = block.getIArguments()->at(1);
-            int dH = block.getIArguments()->at(2);
-            int pT = block.getIArguments()->at(3);
-            int pW = block.getIArguments()->at(4);
-            int pH = block.getIArguments()->at(5);
-            int dilationT = block.getIArguments()->at(6);
-            int dilationW = block.getIArguments()->at(7);
-            int dilationH = block.getIArguments()->at(8);
-            int aT = block.getIArguments()->at(9);
-            int aW = block.getIArguments()->at(10);
-            int aH = block.getIArguments()->at(11);
-            bool biasUsed = block.getIArguments()->at(12) != 0;
+            int dT = INT_ARG(0);
+            int dW = INT_ARG(1);
+            int dH = INT_ARG(2);
+            int pT = INT_ARG(3);
+            int pW = INT_ARG(4);
+            int pH = INT_ARG(5);
+            int dilationT = INT_ARG(6);
+            int dilationW = INT_ARG(7);
+            int dilationH = INT_ARG(8);
+            int aT = INT_ARG(9);
+            int aW = INT_ARG(10);
+            int aH = INT_ARG(11);
+            bool biasUsed = INT_ARG(12) != 0;
 
             T scale = block.getTArguments()->at(0);
 

@@ -12,12 +12,12 @@ namespace nd4j {
         template <typename T>
         class LegacyReduceOp : public LegacyOp<T> {
         protected:
-            Nd4jStatus validateAndExecute(Block<T>& block);
+            Nd4jStatus validateAndExecute(Context<T>& block);
         public:
             LegacyReduceOp();
             LegacyReduceOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block);
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
         };
     }
 }

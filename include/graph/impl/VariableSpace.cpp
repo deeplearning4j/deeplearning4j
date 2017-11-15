@@ -300,8 +300,11 @@ namespace nd4j {
             //_external.clear();
             //_temporary.clear();
 
+            //nd4j_printf("Number of NDArrayLists in this space: [%i]\n", _lists.size())
             for (auto p: _lists)
                 delete p;
+
+            _lists.clear();
         }
 
 

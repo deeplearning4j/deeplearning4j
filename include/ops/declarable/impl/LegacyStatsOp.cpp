@@ -9,7 +9,7 @@
 namespace nd4j {
     namespace ops {
         template <typename T>
-        Nd4jStatus LegacyStatsOp<T>::validateAndExecute(Block<T> &block) {
+        Nd4jStatus LegacyStatsOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
@@ -19,9 +19,9 @@ namespace nd4j {
             // bias goes as first argument, unlike all other reductions
             bool biasCorrected = false;
             if (block.getIArguments()->size() > 0)
-                biasCorrected = block.getIArguments()->at(0) > 0;
+                biasCorrected = INT_ARG(0) > 0;
 
-            if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && block.getIArguments()->at(1) == MAX_INT)) {
+            if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
                 // scalar
                 T res = NativeOpExcutioner<T>::execSummaryStatsScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),  biasCorrected);
                 z->putScalar(0, res);
@@ -30,7 +30,7 @@ namespace nd4j {
                 // we should skip first argument here, because it's addressing bias correction
                 std::vector<int> dims;
                 for (int e = 1; e < block.getIArguments()->size(); e++)
-                    dims.emplace_back(block.getIArguments()->at(e));
+                    dims.emplace_back(INT_ARG(e));
 
                 if (dims.size() > 1)
                     std::sort(dims.begin(), dims.end());
@@ -60,11 +60,11 @@ namespace nd4j {
         *   It solely depends on input shape, and requested dimensions
         */
         template <typename T>
-        ShapeList *LegacyStatsOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList *LegacyStatsOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
             int *newShape;
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT)) {
+            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
                 // in this case we just return scalar
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
                 newShape[0] = 2;

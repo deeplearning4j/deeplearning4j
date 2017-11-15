@@ -19,7 +19,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jStatus LegacyReduceOp<T>::validateAndExecute(Block<T> &block) {
+        Nd4jStatus LegacyReduceOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
@@ -30,7 +30,7 @@ namespace nd4j {
                 allAxes = true;
 
             if ((block.getIArguments()->size() == 0) ||
-                (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT) || allAxes) {
+                (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                 // scalar
                 T res = NativeOpExcutioner<T>::execReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data());
                 z->putScalar(0, res);
@@ -58,7 +58,7 @@ namespace nd4j {
         *   It solely depends on input shape, and requested dimensions
         */
         template <typename T>
-        ShapeList *LegacyReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) {
+        ShapeList *LegacyReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
             int *newShape;
@@ -68,7 +68,7 @@ namespace nd4j {
             if (block.getIArguments()->size() == shape::rank(inShape))
                 allAxes = true;
 
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && block.getIArguments()->at(0) == MAX_INT) || allAxes) {
+            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                 // in this case we just return scalar
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
                 newShape[0] = 2;

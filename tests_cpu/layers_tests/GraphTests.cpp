@@ -17,8 +17,10 @@ using namespace nd4j::graph;
 
 class GraphTests : public testing::Test {
 public:
-    int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
-    int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+    /*
+    int cShape[] = {2, 2, 2, 2, 1, 0, 1, 99};
+    int fShape[] = {2, 2, 2, 1, 2, 0, 1, 102};
+     */
 };
 
 TEST_F(GraphTests, SingleInput1) {
@@ -45,6 +47,8 @@ TEST_F(GraphTests, SingleInput1) {
     auto node3 = graph->getVariableSpace()->getVariable(3)->getNDArray();
 
     ASSERT_NEAR(0.4161468, node3->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, DoubleInput1) {
@@ -108,6 +112,8 @@ TEST_F(GraphTests, SingleInput3) {
 
     ASSERT_NEAR(1.4142135, v0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(1.0, v1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, SingleInput4) {
@@ -143,6 +149,8 @@ TEST_F(GraphTests, SingleInput4) {
 
     ASSERT_NEAR(1.0, v0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.4142135, v1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 
@@ -186,6 +194,8 @@ TEST_F(GraphTests, DoubleInput2) {
 
     ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 
@@ -240,6 +250,8 @@ TEST_F(GraphTests, DoubleInput3) {
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
     ASSERT_NEAR(2.4142135, w->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 
@@ -291,6 +303,8 @@ TEST_F(GraphTests, QuadInput1) {
     GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(6.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, InternalBranching1) {
@@ -337,6 +351,8 @@ TEST_F(GraphTests, InternalBranching1) {
     ASSERT_EQ(3, nodeZ->getLayer());
 
     ASSERT_NEAR(3.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 
@@ -368,6 +384,8 @@ TEST_F(GraphTests, ReductionsTest1) {
     GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 
@@ -399,6 +417,8 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(4.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 
@@ -431,6 +451,9 @@ TEST_F(GraphTests, AutoOutput1) {
     ASSERT_TRUE(outputs->at(0) != nullptr);
 
     ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete outputs;
+    delete graph;
 }
 
 
@@ -468,6 +491,9 @@ TEST_F(GraphTests, AutoOutput2) {
 
     ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-2.0, outputs->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
+    delete outputs;
 }
 
 
@@ -497,6 +523,7 @@ TEST_F(GraphTests, BroadcastTest1) {
 
     ASSERT_NEAR(-2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
+    delete graph;
 }
 
 
@@ -525,6 +552,8 @@ TEST_F(GraphTests, ScalarTest1) {
     GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(2.714213, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, SymbolicLookupTest1) {
@@ -535,31 +564,39 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
 
-    nodeA->setName(new std::string("phi"));
-    nodeB->setName(new std::string("theta"));
+    std::string p("phi");
+    std::string t("theta");
+
+    nodeA->setName(&p);
+    nodeB->setName(&t);
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
 
 
-    auto rX = graph->getVariableSpace()->getVariable(new std::string("alpha"));
-    auto rZ = graph->getVariableSpace()->getVariable(new std::string("omega"));
+    auto rX = graph->getVariableSpace()->getVariable(&a);
+    auto rZ = graph->getVariableSpace()->getVariable(&o);
 
-    ASSERT_TRUE(rX->getNDArray() == vX.getNDArray());
-    ASSERT_TRUE(rZ->getNDArray() == vZ.getNDArray());
-    ASSERT_FALSE(graph->getVariableSpace()->hasVariable(new std::string("omicron")));
+    std::string om("omicron");
+
+    ASSERT_TRUE(rX->getNDArray() == vX->getNDArray());
+    ASSERT_TRUE(rZ->getNDArray() == vZ->getNDArray());
+    ASSERT_FALSE(graph->getVariableSpace()->hasVariable(&om));
 
 
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
@@ -567,10 +604,12 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
 
     GraphExecutioner<float>::execute(graph);
 
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(new std::string("phi")));
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(new std::string("theta")));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(&p));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(&t));
 
     ASSERT_NEAR(1.4142135, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, OutputValidation1) {
@@ -583,14 +622,17 @@ TEST_F(GraphTests, OutputValidation1) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
@@ -598,7 +640,13 @@ TEST_F(GraphTests, OutputValidation1) {
     graph->addNode(nodeA);
     graph->addNode(nodeB);
 
-    ASSERT_EQ(0, graph->fetchOutputs()->size());
+
+    auto outputs = graph->fetchOutputs();
+
+    ASSERT_EQ(0, outputs->size());
+
+    delete graph;
+    delete outputs;
 }
 
 TEST_F(GraphTests, OutputValidation2) {
@@ -611,14 +659,17 @@ TEST_F(GraphTests, OutputValidation2) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
@@ -630,9 +681,14 @@ TEST_F(GraphTests, OutputValidation2) {
 
     GraphExecutioner<float>::execute(graph);
 
-    ASSERT_EQ(1, graph->fetchOutputs()->size());
+    auto outputs = graph->fetchOutputs();
 
-    ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_EQ(1, outputs->size());
+
+    ASSERT_NEAR(1.4142135, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
+    delete outputs;
 }
 
 TEST_F(GraphTests, OutputValidation3) {
@@ -645,14 +701,17 @@ TEST_F(GraphTests, OutputValidation3) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
@@ -662,9 +721,14 @@ TEST_F(GraphTests, OutputValidation3) {
 
     GraphExecutioner<float>::execute(graph);
 
-    ASSERT_EQ(1, graph->fetchOutputs()->size());
+    auto outputs = graph->fetchOutputs();
 
-    ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_EQ(1, outputs->size());
+
+    ASSERT_NEAR(1.4142135, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
+    delete outputs;
 }
 
 TEST_F(GraphTests, OutputValidation4) {
@@ -677,14 +741,17 @@ TEST_F(GraphTests, OutputValidation4) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
@@ -699,9 +766,14 @@ TEST_F(GraphTests, OutputValidation4) {
 
     GraphExecutioner<float>::execute(graph);
 
-    ASSERT_EQ(2, graph->fetchOutputs()->size());
+    auto outputs = graph->fetchOutputs();
 
-    ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_EQ(2, outputs->size());
+
+    ASSERT_NEAR(1.4142135, outputs->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    delete graph;
+    delete outputs;
 }
 
 
@@ -715,14 +787,17 @@ TEST_F(GraphTests, OutputValidation5) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
@@ -734,9 +809,12 @@ TEST_F(GraphTests, OutputValidation5) {
 
     GraphExecutioner<float>::execute(graph);
 
-    ASSERT_EQ(3, graph->fetchOutputs()->size());
+    auto outputs = graph->fetchOutputs();
 
-    //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_EQ(3, outputs->size());
+
+    delete graph;
+    delete outputs;
 }
 
 TEST_F(GraphTests, OutputValidation6) {
@@ -749,14 +827,17 @@ TEST_F(GraphTests, OutputValidation6) {
 
     auto z = new NDArray<float>(5, 5, 'c');
 
-    Variable<float> vX(x);
-    Variable<float> vZ(z);
+    auto vX = new Variable<float>(x);
+    auto vZ = new Variable<float>(z);
 
-    vX.setName(new std::string("alpha"));
-    vZ.setName(new std::string("omega"));
+    std::string a("alpha");
+    std::string o("omega");
 
-    graph->getVariableSpace()->putVariable(-1, &vX);
-    graph->getVariableSpace()->putVariable(-2, &vZ);
+    vX->setName(&a);
+    vZ->setName(&o);
+
+    graph->getVariableSpace()->putVariable(-1, vX);
+    graph->getVariableSpace()->putVariable(-2, vZ);
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {});
@@ -768,16 +849,19 @@ TEST_F(GraphTests, OutputValidation6) {
 
     GraphExecutioner<float>::execute(graph);
 
+    auto outputs = graph->fetchOutputs();
 
-    nd4j_printf("Returned variables: \n", "");
-    for (int e = 0; e < graph->fetchOutputs()->size(); e++) {
-        printf("%i, ", graph->fetchOutputs()->at(e)->id());
-    }
-    printf("\n");
+//    nd4j_printf("Returned variables: \n", "");
+//    for (int e = 0; e < outputs->size(); e++) {
+//        printf("%i, ", outputs->at(e)->id());
+//    }
+//    printf("\n");
 
-    ASSERT_EQ(4, graph->fetchOutputs()->size());
+    ASSERT_EQ(4, outputs->size());
 
     //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    delete graph;
+    delete outputs;
 }
 
 TEST_F(GraphTests, TestMultiOutput1) {
@@ -795,22 +879,27 @@ TEST_F(GraphTests, TestMultiOutput1) {
 
     // Abs
     auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {11});
+    nodeA0->markInplace(false);
     auto nodeB0 = new Node<float>(OpType_TRANSFORM, 0, 2, {-2}, {11});
+    nodeB0->markInplace(false);
 
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("TestOp2i2o");
 
     // this op will add 1.0 to first input, and 2.0 for second input
     auto nodeT = new Node<float>(OpType_CUSTOM, 0, 11, {1, 2}, {21, 31}, {}, 0.0f);
     nodeT->setName("TestOp2i2o");
+    nodeT->markInplace(false);
     nodeT->setCustomOp(op);
 
 
     // this op will subtract this value from 1.0
     auto nodeX = new Node<float>(OpType_TRANSFORM, 35, 21);
+    nodeX->markInplace(false);
     nodeX->pickInput(11, 0);
 
     // this op will subtract this value from 1.0
     auto nodeY = new Node<float>(OpType_TRANSFORM, 35, 31);
+    nodeY->markInplace(false);
     nodeY->pickInput(11, 1);
 
     graph->addNode(nodeA0);
@@ -825,10 +914,14 @@ TEST_F(GraphTests, TestMultiOutput1) {
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(pair0));
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(pair1));
 
-    GraphExecutioner<float>::execute(graph);
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
 
     ASSERT_NEAR(-2.0f, graph->getVariableSpace()->getVariable(21)->getNDArray()->meanNumber(), 1e-5);
     ASSERT_NEAR(-4.0f, graph->getVariableSpace()->getVariable(31)->getNDArray()->meanNumber(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(GraphTests, TestDivergentNode1) {
@@ -838,6 +931,8 @@ TEST_F(GraphTests, TestDivergentNode1) {
 
     ASSERT_TRUE(nodeY->isDivergencePoint());
     ASSERT_TRUE(nodeY->isActive());
+
+    delete nodeY;
 }
 
 
@@ -1027,7 +1122,7 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
 
     float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber();
 
-    nd4j_printf("OpResult: %f\n", m);
+    //nd4j_printf("OpResult: %f\n", m);
 
     ASSERT_NEAR(-11.0, m, 1e-5);
 }
@@ -1098,7 +1193,7 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
 
     float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber();
 
-    nd4j_printf("OpResult: %f\n", m);
+    //nd4j_printf("OpResult: %f\n", m);
 
     ASSERT_NEAR(-11.0, m, 1e-5);
 }

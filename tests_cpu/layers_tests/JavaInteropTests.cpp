@@ -40,6 +40,10 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
     ASSERT_EQ(exp.sizeAt(1), shape::shapeOf((int *)shapeList[0])[1]);
     ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((int *)shapeList[0])[2]);
     ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((int *)shapeList[0])[3]);
+
+    int *ptr = (int *) shapeList[0];
+    delete[] ptr;
+    delete[] shapeList;
 }
 
 
@@ -75,7 +79,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
     nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
                                 nullptr, 0, exp, 9, false);
 
-    output.printBuffer("output");
+    //output.printBuffer("output");
 
     ASSERT_NEAR(17551, output.getScalar(0), 1e-5);
 }
@@ -107,7 +111,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
 
-    output.printBuffer("output");
+    //output.printBuffer("output");
 
     ASSERT_NEAR(1, output.getScalar(0), 1e-5);
 }

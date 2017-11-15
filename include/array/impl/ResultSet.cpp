@@ -34,8 +34,14 @@ namespace nd4j {
 
     template <typename T>
     ResultSet<T>::~ResultSet() {
-        for (auto v: _content)
-            delete v;
+        if (_removable)
+            for (auto v: _content)
+                delete v;
+    }
+
+    template <typename T>
+    void ResultSet<T>::setNonRemovable() {
+        _removable = false;
     }
 
     template <typename T>
@@ -61,6 +67,11 @@ namespace nd4j {
     template <typename T>
     void ResultSet<T>::setStatus(Nd4jStatus status) {
         _status = status;
+    }
+
+    template <typename T>
+    void ResultSet<T>::purge() {
+        _content.clear();
     }
 
     template class ND4J_EXPORT ResultSet<float>;

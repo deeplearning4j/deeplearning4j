@@ -53,6 +53,9 @@ TEST_F(FlatBuffersTest, BasicTest1) {
     auto gB = new Node<float>(restored);
 
     ASSERT_TRUE(gA->equals(gB));
+
+    delete gA;
+    delete gB;
 }
 
 
@@ -158,7 +161,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(1, flatResults->variables()->size());
     ASSERT_TRUE(flatResults->variables()->Get(0)->name() != nullptr);
     ASSERT_TRUE(flatResults->variables()->Get(0)->name()->c_str() != nullptr);
-    nd4j_printf("VARNAME: %s\n", flatResults->variables()->Get(0)->name()->c_str());
+    //nd4j_printf("VARNAME: %s\n", flatResults->variables()->Get(0)->name()->c_str());
 
     auto var0 = new Variable<float>(flatResults->variables()->Get(0));
     //auto var1 = new Variable<float>(flatResults->variables()->Get(1));
@@ -166,6 +169,10 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_NEAR(-0.4161468, var0->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
     //ASSERT_TRUE(var->equalsTo(var0->getNDArray()));
+
+    delete array;
+    delete var0;
+    delete[] result;
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {
@@ -180,6 +187,12 @@ TEST_F(FlatBuffersTest, ExecutionTest1) {
     //gA->execute(array, nullptr, array);
 
     //ASSERT_TRUE(exp->equalsTo(array));
+
+    delete gA;
+    delete[] c;
+    delete array;
+    delete[] e;
+    delete exp;
 }
 
 
@@ -256,6 +269,11 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
     //ASSERT_EQ(-1, results->at(0)->id());
     //ASSERT_EQ(-2, results->at(1)->id());
+
+    delete restoredGraph;
+    delete results;
+    delete x;
+    delete y;
 }
 
 
@@ -280,6 +298,9 @@ TEST_F(FlatBuffersTest, ReadFile1) {
     auto result = restoredGraph->getVariableSpace()->getVariable(2)->getNDArray();
     ASSERT_EQ(1, result->lengthOf());
     ASSERT_EQ(8, result->getScalar(0));
+
+    delete[] data;
+    delete restoredGraph;
 }
 
 TEST_F(FlatBuffersTest, ReadFile2) {
@@ -291,6 +312,9 @@ TEST_F(FlatBuffersTest, ReadFile2) {
     ASSERT_EQ(1, arrays.size());
     ASSERT_EQ(1, arrays.at(0)->lengthOf());
     ASSERT_EQ(8, arrays.at(0)->getScalar(0));
+
+    delete[] data;
+    delete[] (char *) result;
 }
 
 TEST_F(FlatBuffersTest, ReadFile3) {
@@ -303,6 +327,8 @@ TEST_F(FlatBuffersTest, ReadFile3) {
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_EQ(8, z->getScalar(0));
+
+    delete graph;
 }
 
 
@@ -320,10 +346,10 @@ TEST_F(FlatBuffersTest, ReadInception1) {
 
     auto argMax = lastNode->argMax();
 
-    nd4j_printf("Predicted class: %i\n", (int) argMax);
-    nd4j_printf("Probability: %f\n", lastNode->getScalar(argMax));
-    nd4j_printf("Probability ipod: %f\n", lastNode->getScalar(980));
-    lastNode->printBuffer("Whole output");
+    //nd4j_printf("Predicted class: %i\n", (int) argMax);
+    //nd4j_printf("Probability: %f\n", lastNode->getScalar(argMax));
+    //nd4j_printf("Probability ipod: %f\n", lastNode->getScalar(980));
+    //lastNode->printBuffer("Whole output");
 
     ASSERT_EQ(561, (int) argMax);
 
@@ -348,7 +374,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
     auto result = variableSpace->getVariable(1)->getNDArray();
 
 
-    result->printShapeInfo("result shape");
+//    result->printShapeInfo("result shape");
 
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
@@ -363,6 +389,8 @@ TEST_F(FlatBuffersTest, ReadLoops_3argsWhile_1) {
 
     ASSERT_TRUE(graph != nullptr);
 
+    //graph->printOut();
+
     NDArray<float> expPhi('c', {2, 2});
 
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(-1));
@@ -372,8 +400,8 @@ TEST_F(FlatBuffersTest, ReadLoops_3argsWhile_1) {
     auto constA = graph->getVariableSpace()->getVariable(-5)->getNDArray();
     auto lessY = graph->getVariableSpace()->getVariable(-6)->getNDArray();
 
-    constA->printBuffer("constA");
-    lessY->printBuffer("lessY");
+    //constA->printBuffer("constA");
+    //lessY->printBuffer("lessY");
 
     ASSERT_TRUE(expPhi.isSameShape(phi));
 
@@ -388,6 +416,8 @@ TEST_F(FlatBuffersTest, ReadLoops_3argsWhile_1) {
 
     ASSERT_NEAR(110.0f, x->getNDArray()->meanNumber(), 1e-5);
     ASSERT_NEAR(33.0f, y->getNDArray()->meanNumber(), 1e-5);
+
+    delete graph;
 }
 
 TEST_F(FlatBuffersTest, ReadLoops_NestedWhile_1) {
@@ -465,7 +495,7 @@ TEST_F(FlatBuffersTest, ReadTensorArrayLoop_1) {
 
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    //graph->printOut();
 
     Nd4jStatus status = GraphExecutioner<float>::execute(graph);
 
@@ -477,8 +507,8 @@ TEST_F(FlatBuffersTest, ReadTensorArrayLoop_1) {
 
     auto z = variableSpace->getVariable(23)->getNDArray();
 
-    z->printShapeInfo("z shape");
-    z->printIndexedBuffer("z buffer");
+    //z->printShapeInfo("z shape");
+    //z->printIndexedBuffer("z buffer");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

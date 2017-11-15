@@ -33,7 +33,7 @@ namespace nd4j {
                 elements = dim_values / 3;
 
                 for (int e = 5; e < block.getIArguments()->size(); e++)
-                    args.emplace_back(block.getIArguments()->at(e));
+                    args.emplace_back(INT_ARG(e));
 
             } else if (block.width() >= 3) {
                 auto v_begin = INPUT_VARIABLE(1);
@@ -148,7 +148,7 @@ namespace nd4j {
 
             std::vector<int> args;
             for (int e = 5; e < block.getIArguments()->size(); e++)
-                args.emplace_back(block.getIArguments()->at(e));
+                args.emplace_back(INT_ARG(e));
 
             ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
             ShapeUtils<T>::copyVectorPart(end, args, elements, elements);

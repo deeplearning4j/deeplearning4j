@@ -43,6 +43,8 @@ TEST_F(IndexingTests, StridedSlice_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
 }
 
 
@@ -64,6 +66,8 @@ TEST_F(IndexingTests, StridedSlice_2) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
 }
 
 
@@ -85,6 +89,8 @@ TEST_F(IndexingTests, StridedSlice_3) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
 }
 
 
@@ -284,7 +290,7 @@ TEST_F(IndexingTests, Live_Slice_1) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z shape");
+    //z->printShapeInfo("z shape");
     
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

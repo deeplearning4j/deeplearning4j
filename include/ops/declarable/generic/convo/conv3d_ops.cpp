@@ -23,14 +23,14 @@ namespace nd4j {
 
             NDArray<T>* output = OUTPUT_VARIABLE(0);                
 
-            bool biasUsed = block.getIArguments()->at(0) != 0 && bias != nullptr;
+            bool biasUsed = INT_ARG(0) != 0 && bias != nullptr;
             // TODO change width/height order  height/width
-            int dT = block.getIArguments()->at(1);
-            int dW = block.getIArguments()->at(2);
-            int dH = block.getIArguments()->at(3);
-            int pT = block.getIArguments()->at(4);
-            int pW = block.getIArguments()->at(5);
-            int pH = block.getIArguments()->at(6);
+            int dT = INT_ARG(1);
+            int dW = INT_ARG(2);
+            int dH = INT_ARG(3);
+            int pT = INT_ARG(4);
+            int pW = INT_ARG(5);
+            int pH = INT_ARG(6);
 
 
             if (pT != 0 || pW != 0 || pH != 0) {
@@ -82,9 +82,9 @@ namespace nd4j {
             int kT           = weightShapeInfo[3];
             int kH           = weightShapeInfo[4];
             int kW           = weightShapeInfo[5];
-            int dT           = block.getIArguments()->at(1);
-            int dW           = block.getIArguments()->at(2);
-            int dH           = block.getIArguments()->at(3);
+            int dT           = INT_ARG(1);
+            int dW           = INT_ARG(2);
+            int dH           = INT_ARG(3);
 
             int outputDepth  = (inputDepth  - kT) / dT + 1;
             int outputHeight = (inputHeight - kH) / dH + 1;

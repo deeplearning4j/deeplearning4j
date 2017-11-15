@@ -21,11 +21,11 @@ namespace nd4j {
 
 
         template <typename T>
-        nd4j::ShapeList* DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block)  {
-           // int numDims = block.getIArguments()->at(0);
+        nd4j::ShapeList* DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)  {
+           // int numDims = INT_ARG(0);
             std::vector<int> dims;
             for (int e = 0; e < block.getIArguments()->size(); e++)
-                dims.push_back(block.getIArguments()->at(e));
+                dims.push_back(INT_ARG(e));
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());

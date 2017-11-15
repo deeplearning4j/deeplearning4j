@@ -23,7 +23,7 @@ namespace nd4j {
                 array = INPUT_VARIABLE(0);
                 sizes = INPUT_VARIABLE(1);
                 list = new NDArrayList<T>(sizes->lengthOf(), false);
-                block.getVariableSpace()->trackList(list);
+                block.trackList(list);
             }
 
             // now let's build subarrays

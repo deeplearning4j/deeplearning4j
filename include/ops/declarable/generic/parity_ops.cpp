@@ -20,7 +20,7 @@
 #include <ops/declarable/DeclarableCustomOp.h>
 #include <NDArrayFactory.h>
 #include <ops/declarable/CustomOperations.h>
-#include <graph/Block.h>
+#include <graph/Context.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <helpers/ShapeUtils.h>
 
@@ -31,7 +31,7 @@ namespace nd4j {
         CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1){
             // do something here{
 
-            int _dimension = block.getIArguments()->at(0);
+            int _dimension = INT_ARG(0);
 
             // we want to ensure that all
             NDArray<T> *first = INPUT_VARIABLE(0);
@@ -78,7 +78,7 @@ namespace nd4j {
         DECLARE_SYN(concatv2, concat);
         DECLARE_SHAPE_FN(concat) {
             int* inp = inputShape->at(0);
-            int _dimension = block.getIArguments()->at(0);
+            int _dimension = INT_ARG(0);
 
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
@@ -261,14 +261,14 @@ namespace nd4j {
             NDArray<T>* c = OUTPUT_VARIABLE(0);                // 
 
             // building axes
-            int axe0_size = block.getIArguments()->at(0);
-            int axe1_size = block.getIArguments()->at(axe0_size+1);
+            int axe0_size = INT_ARG(0);
+            int axe1_size = INT_ARG(axe0_size+1);
             std::vector<int> axes_0, axes_1;
             for (int e = 0; e < axe0_size; e++)
-                axes_0.emplace_back((int) block.getIArguments()->at(e+1));
+                axes_0.emplace_back((int) INT_ARG(e+1));
 
             for (int e = 0; e < axe1_size; e++)
-                axes_1.emplace_back((int) block.getIArguments()->at(e + axe0_size + 2));
+                axes_1.emplace_back((int) INT_ARG(e + axe0_size + 2));
 
             nd4j_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
 
@@ -286,13 +286,13 @@ namespace nd4j {
             NDArray<T> *a = INPUT_VARIABLE(0);
             NDArray<T> *b = INPUT_VARIABLE(1);  
             // building axes
-            int axe0_size = block.getIArguments()->at(0);
-            int axe1_size = block.getIArguments()->at(axe0_size+1);
+            int axe0_size = INT_ARG(0);
+            int axe1_size = INT_ARG(axe0_size+1);
             std::vector<int> axes_0, axes_1;
             for (int e = 0; e < axe0_size; e++)
-                axes_0.emplace_back((int) block.getIArguments()->at(e+1));
+                axes_0.emplace_back((int) INT_ARG(e+1));
             for (int e = 0; e < axe1_size; e++)
-                axes_1.emplace_back((int) block.getIArguments()->at(e + axe0_size + 2));        
+                axes_1.emplace_back((int) INT_ARG(e + axe0_size + 2));
 
             // evaluate shapes 
             std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
@@ -312,14 +312,17 @@ namespace nd4j {
         //////////////////////////////////////////////////////////////////////////
         // test op, non-divergent
         OP_IMPL(testop2i2o, 2, 2, true) {
-            nd4j_printf("CPU op used!\n","");
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
+            //nd4j_printf("CPU op used!\n","");
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
 
-            x->template applyScalar<simdOps::Add<T>>(1.0);
-            y->template applyScalar<simdOps::Add<T>>(2.0);
+            auto xO = OUTPUT_VARIABLE(0);
+            auto yO = OUTPUT_VARIABLE(1);
 
-            STORE_2_RESULTS(*x, *y);
+            x->template applyScalar<simdOps::Add<T>>(1.0, xO, nullptr);
+            y->template applyScalar<simdOps::Add<T>>(2.0, yO, nullptr);
+
+            STORE_2_RESULTS(*xO, *yO);
 
             return ND4J_STATUS_OK;
         }
@@ -365,18 +368,20 @@ namespace nd4j {
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);
 
+            auto z = OUTPUT_VARIABLE(0);
+
             if (y->isScalar()) {
 
-                x->assign(y->getScalar(0));
+                z->assign(y->getScalar(0));
             } else {
                 REQUIRE_OK(this->validateInputLengthMatch(block));
                 REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-                x->assign(y);
+                z->assign(y);
             }
 
 
-            STORE_RESULT(*x);
+            STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
         }
@@ -520,13 +525,13 @@ namespace nd4j {
             NDArray<T> *updates = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
-            int opCode = block.getIArguments()->at(0);
-            int dimSize = block.getIArguments()->at(1);
+            int opCode = INT_ARG(0);
+            int dimSize = INT_ARG(1);
             std::vector<int> tadDimension;
             unsigned long e;
             unsigned long limg = 2 + dimSize;
             for (e = 2; e < limg; e++)
-                tadDimension.push_back((int) block.getIArguments()->at(e));
+                tadDimension.push_back((int) INT_ARG(e));
 
             // increasing counter to skip numIndices
             e++;
@@ -534,7 +539,7 @@ namespace nd4j {
             std::vector<int> indicesU;
             int cnt = 0;
             for (; e< block.getIArguments()->size(); e++) {
-                indices.push_back((int) block.getIArguments()->at(e));
+                indices.push_back((int) INT_ARG(e));
                 indicesU.push_back(cnt++);
             }
 
@@ -807,23 +812,19 @@ namespace nd4j {
         }
 
 		//////////////////////////////////////////////////////////////////////////
-		CONFIGURABLE_OP_IMPL(sum, 1, 1, false, 0, -1) {
+		REDUCTION_OP_IMPL(sum, 1, 1, false, 0, -1) {
 
 			std::vector<int> argI = *(block.getIArguments());
 			std::vector<int> argItrunc(argI.size()-1);
 			for(int i=0; i< (int) argItrunc.size(); ++i)
-				argItrunc[i] = argI[i+1];	
-			NDArray<T>* x = INPUT_VARIABLE(0);
-			NDArray<T> *z = this->getZ(block);
+				argItrunc[i] = argI[i+1];
 
-			if((argItrunc.size()==1 && argItrunc[0]==INT_MAX) || argItrunc.size()==0) {
-				z->putScalar(0, 0, x->template reduceNumber<simdOps::Sum<T>>(nullptr));
-				STORE_RESULT(*z);
-			}
-			else {
-				z = x->template reduceAlongDimension<simdOps::Sum<T>>(argItrunc);
-				STORE_RESULT(*z);
-			}
+			auto x = INPUT_VARIABLE(0);
+			auto z = OUTPUT_VARIABLE(0);
+
+            //nd4j_printv("argi", argItrunc);
+
+            x->template reduceAlongDimension<simdOps::Sum<T>>(z, argItrunc);
 
 			return ND4J_STATUS_OK;
 		}

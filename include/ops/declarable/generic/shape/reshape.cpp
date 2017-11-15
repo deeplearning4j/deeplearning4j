@@ -25,12 +25,12 @@ namespace nd4j {
             for (int e = 1; e < (int) argumets->size(); e++)
                 shapeNew.push_back((int) argumets->at(e));
 
-            nd4j::Logger::printv("shapeNew: ", shapeNew);
+            //nd4j::Logger::printv("shapeNew: ", shapeNew);
 
             if(block.isInplace()) {
                 if (x->reshapei(order, shapeNew)) {
                     STORE_RESULT(*x);
-                    x->printShapeInfo("New shape");
+//                    x->printShapeInfo("New shape");
                     return ND4J_STATUS_OK;
                 }
             }
@@ -38,7 +38,7 @@ namespace nd4j {
                 auto ret = new NDArray<T>(*x);
                 if (ret->reshapei(order, shapeNew)) {
                     STORE_RESULT(*ret);
-                    ret->printShapeInfo("New shape");
+//                    ret->printShapeInfo("New shape");
                     return ND4J_STATUS_OK;
                 }
             }

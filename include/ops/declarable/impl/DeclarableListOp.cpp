@@ -4,7 +4,7 @@
 
 #include <ops/declarable/OpDescriptor.h>
 #include <ops/declarable/DeclarableListOp.h>
-#include <graph/Block.h>
+#include <graph/Context.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 
@@ -35,7 +35,7 @@ namespace nd4j {
          * @return
          */
         template <typename T>
-        ShapeList* DeclarableListOp<T>::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block) {
+        ShapeList* DeclarableListOp<T>::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) {
             // TODO: ensure this method isn't ever called
 
             std::vector<int> shape({1, 1});
@@ -47,7 +47,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        nd4j::NDArray<T>* nd4j::ops::DeclarableListOp<T>::getZ(Block<T>& block, int inputId) {
+        nd4j::NDArray<T>* nd4j::ops::DeclarableListOp<T>::getZ(Context<T>& block, int inputId) {
             //nd4j_printf("wow\n","");
             return nullptr;
         }
@@ -61,7 +61,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jStatus DeclarableListOp<T>::execute(Block<T>* block) {
+        Nd4jStatus DeclarableListOp<T>::execute(Context<T>* block) {
             if (block == nullptr)
                 throw std::invalid_argument("Block is NULL");
 
@@ -114,7 +114,7 @@ namespace nd4j {
                 varSpace.putVariable(cnt--, var);
             }
 
-            Block<T> block(1, &varSpace, false);
+            Context<T> block(1, &varSpace, false);
             block.fillInputs(in);
 
             for (int e = 0; e < tArgs.size(); e++)

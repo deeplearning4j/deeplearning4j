@@ -25,7 +25,7 @@ namespace nd4j {
             int pY = argI[4];
             int pX = argI[5];
 
-            const bool isSameMode = block.getIArguments()->at(8) > 0;
+            const bool isSameMode = INT_ARG(8) > 0;
             if (isSameMode)
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, z->sizeAt(2), z->sizeAt(3), inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 
@@ -72,7 +72,7 @@ namespace nd4j {
             int oH, oW;
             ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-            const bool bisSameMode = block.getIArguments()->at(8) > 0;
+            const bool bisSameMode = INT_ARG(8) > 0;
             if (bisSameMode)
                 ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 

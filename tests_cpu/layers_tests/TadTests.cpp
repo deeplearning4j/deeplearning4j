@@ -26,14 +26,14 @@ TEST_F(TadTests, Test4DTad1) {
     std::unique_ptr<NDArray<float>> arrayBad(new NDArray<float>('c', {2, 1, 4, 4}));
 
     arrayExp->setBuffer(arraySource->getBuffer());
-    arrayExp->printShapeInfo("Exp shapeBuffer: ");
+    //arrayExp->printShapeInfo("Exp shapeBuffer: ");
 
 
     std::vector<int> badShape({4, 2, 1, 4, 4, 80, 16, 4, 1, 0, -1, 99});
 
     arrayBad->setBuffer(arraySource->getBuffer());
     arrayBad->setShapeInfo(badShape.data());
-    arrayBad->printShapeInfo("Bad shapeBuffer: ");
+    //arrayBad->printShapeInfo("Bad shapeBuffer: ");
 
 
     int dim = 1;

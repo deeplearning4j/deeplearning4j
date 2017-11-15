@@ -370,7 +370,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     // gradW [bS x 3K x K]
     input->permutei({0, 2, 1});                                               // [bS x N x K]
     NDArrayFactory<T>::mmulHelper(gradU, input, gradW, (T)1., (T)0.);          // [bS x 3K x K]
-        
+
+    delete gradUR; delete gradBF; delete gradUZ; delete gradUF; delete gradBR;
 
     delete gct;   delete gradU; delete gradHX; delete wiZ; delete wiF; delete wiR; delete bF; delete bR;
     delete temp1; delete temp2; delete temp3; delete gradCt; delete wi;

@@ -531,9 +531,11 @@ namespace nd4j {
                 throw "Boom";
             //return ND4J_STATUS_BAD_PARAMS;
 
+            bool kD = false;
             input = t_->isContiguous() ? t_ : t_->dup(t_->ordering());
             if (!(k_->stridesOf()[4] == 1 || k_->stridesOf()[3] == k_->sizeAt(4))) {
                 kernel = k_->isContiguous() ? k_ : k_->dup(k_->ordering());
+                kD = true;
             } else {
                 kernel = k_;
             }
@@ -602,6 +604,8 @@ namespace nd4j {
                 output_data += nOutputDepth*nOutputCols*nOutputRows;
             }
 
+            if (kD)
+                delete kernel;
 
             return ND4J_STATUS_OK;
         }

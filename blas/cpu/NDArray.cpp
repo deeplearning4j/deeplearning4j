@@ -641,8 +641,10 @@ template <typename T>
         std::vector<int> copy(dimensions);
 
         int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
-        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
-            throw "NDArray::reduceAlongDimension method: wrong target shape !";
+        if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
+            nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
+            throw "NDArray::reduceAlongDimension method: wrong target shape!";
+        }
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size())
@@ -1546,7 +1548,7 @@ void NDArray<T>::tile(const std::vector<int>& reps, NDArray<T>& target) const {
         delete newShapeInfo;    
         throw "NDArray::tile method - shapeInfo of target array is not suitable for tile operation !";
     }
-    delete newShapeInfo;
+    delete[] newShapeInfo;
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
@@ -1765,7 +1767,7 @@ NDArray<T> NDArray<T>::applyTrueBroadcast(const NDArray<T>& other, T *extraArgs)
 
     int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min);          // the rank of new array = max->rankOf)()
     NDArray<T> result(newShapeInfo, _workspace);
-    delete newShapeInfo;    
+    delete[] newShapeInfo;
     
     // check whether min array have to be tiled        
     if(!max->isSameShape(&result)) {            
@@ -1917,14 +1919,19 @@ bool NDArray<T>::isIdentityMatrix() {
 template<typename T>
 bool NDArray<T>::isUnitary() {
 
-	if(rankOf() !=2 || rows() != columns())
-		throw "isUnitary method: matrix must be square and have rank = 2 !";
+    if(rankOf() !=2 || rows() != columns())
+        throw "isUnitary method: matrix must be square and have rank = 2 !";
 
-	NDArray<T> tr = *(this->transpose());
-	tr = *nd4j::NDArrayFactory<T>::mmulHelper(this, &tr, &tr, 1.f, 0.f);
+    NDArray<T>* tr = this->transpose();
+    NDArray<T>* trMul = nd4j::NDArrayFactory<T>::mmulHelper(this, tr, nullptr, 1.f, 0.f);
 
-	return tr.isIdentityMatrix();
+    bool result = trMul->isIdentityMatrix();
+    delete tr;
+    delete trMul;
+    
+    return result;
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // Singular value decomposition program from "Numerical Recipes, The Art of Scientific Computing, 3d edition"
@@ -2229,6 +2236,10 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
         auto result = new NDArray<T>(this->_buffer + offset, newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
+        for (auto v: idx) {
+            delete v;
+        }
+
         return result;
     }
 
@@ -2503,6 +2514,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
             }
         }
         NDArray<T> result(this->_buffer + offset, newShape, this->_workspace);
+        result._isShapeAlloc = true;
 
         return result;
     }

@@ -15,12 +15,12 @@ namespace nd4j {
             /**
              * This method executes this Op
              */
-            virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+            virtual Nd4jStatus validateAndExecute(Context<T>& block) = 0;
         public:
             DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
             ~DeclarableReductionOp();
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block);
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
         };
     }
 }

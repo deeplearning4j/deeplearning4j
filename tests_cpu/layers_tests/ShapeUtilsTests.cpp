@@ -113,9 +113,9 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
     NDArray<float> y(yShapeInfo);
 
     int *newShapeInfo = ShapeUtils<float>::evalBroadcastShapeInfo(x, y);
-    for(int i=0; i<2*newShapeInfo[0]+4; ++i)
-        std::cout<<newShapeInfo[i]<<" ";
-    std::cout<<std::endl;
+    //for(int i=0; i<2*newShapeInfo[0]+4; ++i)
+    //        std::cout<<newShapeInfo[i]<<" ";
+    //  std::cout<<std::endl;
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 

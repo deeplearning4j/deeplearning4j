@@ -3,12 +3,21 @@
 //
 
 #include <pointercast.h>
-#include <graph/ShapeList.h>
+#include <array/ShapeList.h>
 
 namespace nd4j {
+    //ShapeList::ShapeList(bool autoRemovable) {
+//        _autoremovable = autoRemovable;
+//    }
+
     ShapeList::ShapeList(int* shape) {
         if (shape != nullptr)
             _shapes.push_back(shape);
+    }
+
+    ShapeList::~ShapeList() {
+        if (_autoremovable)
+            destroy();
     }
 
     ShapeList::ShapeList(std::initializer_list<int*> shapes) {

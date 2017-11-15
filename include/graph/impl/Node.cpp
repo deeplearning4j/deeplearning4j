@@ -87,12 +87,12 @@ namespace nd4j {
         }
 
         template <typename T>
-        Block<T> * nd4j::graph::Node<T>::getBlock() {
+        Context<T> * nd4j::graph::Node<T>::getBlock() {
             return _block;
         }
 
         template <typename T>
-        void nd4j::graph::Node<T>::setBlock(Block<T> *block) {
+        void nd4j::graph::Node<T>::setBlock(Context<T> *block) {
             if (_block != nullptr)
                 throw "Block already exists";
 
@@ -337,7 +337,7 @@ namespace nd4j {
                 this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), opNum, scalar));
                 this->_isDeductable = true;
 
-                auto block = new Block<T>(this->id(), nullptr, false);
+                auto block = new Context<T>(this->id(), nullptr, false);
 
                 // there's no other IArgs in legacy options, actually
                 for (auto v: dimensions)
@@ -351,7 +351,7 @@ namespace nd4j {
 
                 this->setBlock(block);
             } else if (opType == OpType_CUSTOM) {
-                auto block = new Block<T>(this->id(), nullptr, false);
+                auto block = new Context<T>(this->id(), nullptr, false);
 
                 for (auto v: iArgs)
                     block->getIArguments()->emplace_back(v);
@@ -442,7 +442,7 @@ namespace nd4j {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->input()->size(), _opNum, _scalar));
                         this->_isDeductable = true;
 
-                        auto block = new Block<T>(this->id(), nullptr, false);
+                        auto block = new Context<T>(this->id(), nullptr, false);
 
                         // there's no other IArgs in legacy options, actually
                         for (auto v: _dimensions)
@@ -458,7 +458,7 @@ namespace nd4j {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->inputPaired()->size(), _opNum, _scalar));
                         this->_isDeductable = true;
 
-                        auto block = new Block<T>(this->id(), nullptr, false);
+                        auto block = new Context<T>(this->id(), nullptr, false);
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -482,7 +482,7 @@ namespace nd4j {
                         throw "Boom";
                     }
 
-                    auto block = new Block<T>(this->id(), nullptr);
+                    auto block = new Context<T>(this->id(), nullptr);
 
                     for (int e = 0; e < this->input()->size(); e++) {
                         block->inputs()->emplace_back(this->input()->at(e));

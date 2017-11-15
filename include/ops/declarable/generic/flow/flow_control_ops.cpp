@@ -23,10 +23,10 @@ namespace nd4j {
             // but we'll ensure only one node is active, and other is disabled
             if (condition->getScalar(0) == (T) 0.0f) {
                 block.setBranch(0);
-                this->storeResult(block, 0, *input);
+                this->storeResult(block, 0, input->dup());
             } else {
                 block.setBranch(1);
-                this->storeResult(block, 1, *input);
+                this->storeResult(block, 1, *input->dup());
             }
 
             return ND4J_STATUS_OK;

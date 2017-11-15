@@ -8,7 +8,7 @@
 #include <atomic>
 #include <string>
 #include <NDArray.h>
-#include "Block.h"
+#include "Context.h"
 #include <ops/declarable/DeclarableOp.h>
 #include <graph/generated/node_generated.h>
 
@@ -24,7 +24,7 @@ namespace nd4j {
         protected:
             DataType _dataType;
             OpType _opType;
-            Block<T>* _block = nullptr;
+            Context<T>* _block = nullptr;
             Nd4jIndex _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
@@ -118,8 +118,8 @@ namespace nd4j {
             std::string * getName();
 
 
-            void setBlock(Block<T> *block);
-            Block<T>* getBlock();
+            void setBlock(Context<T> *block);
+            Context<T>* getBlock();
             bool hasBlockAttached();
 
             void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);

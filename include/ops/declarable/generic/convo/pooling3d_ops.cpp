@@ -10,16 +10,16 @@ namespace nd4j {
         DECLARE_SHAPE_FN(avgpool3d) {
             int* input = inputShape->at(0);
 
-            int kT = block.getIArguments()->at(0);
-            int kW = block.getIArguments()->at(1);
-            int kH = block.getIArguments()->at(2);
-            int dT = block.getIArguments()->at(3);
-            int dW = block.getIArguments()->at(4);
-            int dH = block.getIArguments()->at(5);
-            int padT = block.getIArguments()->at(6);
-            int padW = block.getIArguments()->at(7);
-            int padH = block.getIArguments()->at(8);
-            bool ceil_mode = block.getIArguments()->at(9) != 0;
+            int kT = INT_ARG(0);
+            int kW = INT_ARG(1);
+            int kH = INT_ARG(2);
+            int dT = INT_ARG(3);
+            int dW = INT_ARG(4);
+            int dH = INT_ARG(5);
+            int padT = INT_ARG(6);
+            int padW = INT_ARG(7);
+            int padH = INT_ARG(8);
+            bool ceil_mode = INT_ARG(9) != 0;
 
             Nd4jIndex nslices;
             Nd4jIndex itime;
@@ -96,17 +96,17 @@ namespace nd4j {
             Nd4jIndex owidth;
             T *gradInput_data;
             T *gradOutput_data;
-            int kT = block.getIArguments()->at(0);
-            int kW = block.getIArguments()->at(1);
-            int kH = block.getIArguments()->at(2);
-            int dT = block.getIArguments()->at(3);
-            int dW = block.getIArguments()->at(4);
-            int dH = block.getIArguments()->at(5);
-            int padT = block.getIArguments()->at(6);
-            int padW = block.getIArguments()->at(7);
-            int padH = block.getIArguments()->at(8);
-            bool ceil_mode = block.getIArguments()->at(9) != 0;
-            bool count_include_pad  = block.getIArguments()->at(10) != 0;
+            int kT = INT_ARG(0);
+            int kW = INT_ARG(1);
+            int kH = INT_ARG(2);
+            int dT = INT_ARG(3);
+            int dW = INT_ARG(4);
+            int dH = INT_ARG(5);
+            int padT = INT_ARG(6);
+            int padW = INT_ARG(7);
+            int padH = INT_ARG(8);
+            bool ceil_mode = INT_ARG(9) != 0;
+            bool count_include_pad  = INT_ARG(10) != 0;
 
             REQUIRE_TRUE(output->isSameShape(input), 0, "Output gradients should have the same dimensionality as input");
 
@@ -170,17 +170,17 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
-            int kT = block.getIArguments()->at(0);
-            int kW = block.getIArguments()->at(1);
-            int kH = block.getIArguments()->at(2);
-            int dT = block.getIArguments()->at(3);
-            int dW = block.getIArguments()->at(4);
-            int dH = block.getIArguments()->at(5);
-            int padT = block.getIArguments()->at(6);
-            int padW = block.getIArguments()->at(7);
-            int padH = block.getIArguments()->at(8);
-            bool ceil_mode = block.getIArguments()->at(9) != 0;
-            bool count_include_pad  = block.getIArguments()->at(10) != 0;
+            int kT = INT_ARG(0);
+            int kW = INT_ARG(1);
+            int kH = INT_ARG(2);
+            int dT = INT_ARG(3);
+            int dW = INT_ARG(4);
+            int dH = INT_ARG(5);
+            int padT = INT_ARG(6);
+            int padW = INT_ARG(7);
+            int padH = INT_ARG(8);
+            bool ceil_mode = INT_ARG(9) != 0;
+            bool count_include_pad  = INT_ARG(10) != 0;
 
 
             Nd4jIndex nslices;
@@ -274,19 +274,19 @@ namespace nd4j {
             REQUIRE_TRUE(output->rankOf() == 5, 0, "Output should be 5D, got rank %i instead", output->rankOf());
 
             // TODO change width/height order  height/width
-            int kT = block.getIArguments()->at(0);
-            int kW = block.getIArguments()->at(1);
-            int kH = block.getIArguments()->at(2);
-            int dT = block.getIArguments()->at(3);
-            int dW = block.getIArguments()->at(4);
-            int dH = block.getIArguments()->at(5);
-            int pT = block.getIArguments()->at(6);
-            int pW = block.getIArguments()->at(7);
-            int pH = block.getIArguments()->at(8);
-            int dilationT = block.getIArguments()->at(9);
-            int dilationW = block.getIArguments()->at(10);
-            int dilationH = block.getIArguments()->at(11);
-            bool ceilMode = block.getIArguments()->at(12) != 0;
+            int kT = INT_ARG(0);
+            int kW = INT_ARG(1);
+            int kH = INT_ARG(2);
+            int dT = INT_ARG(3);
+            int dW = INT_ARG(4);
+            int dH = INT_ARG(5);
+            int pT = INT_ARG(6);
+            int pW = INT_ARG(7);
+            int pH = INT_ARG(8);
+            int dilationT = INT_ARG(9);
+            int dilationW = INT_ARG(10);
+            int dilationH = INT_ARG(11);
+            bool ceilMode = INT_ARG(12) != 0;
 
 
             REQUIRE_TRUE(kT > 0 && kW > 0 && kH > 0, 0,
@@ -405,20 +405,20 @@ namespace nd4j {
             int itime   = inputShapeInfo[3];
             int iheight = inputShapeInfo[4];
             int iwidth  = inputShapeInfo[5];
-            int dilationT = block.getIArguments()->at(9);
-            int dilationW = block.getIArguments()->at(10);
-            int dilationH = block.getIArguments()->at(11);
-            int kT = block.getIArguments()->at(0);
-            int kW = block.getIArguments()->at(1);
-            int kH = block.getIArguments()->at(2);
-            int dT = block.getIArguments()->at(3);
-            int dW = block.getIArguments()->at(4);
-            int dH = block.getIArguments()->at(5);
-            int pT = block.getIArguments()->at(6);
-            int pW = block.getIArguments()->at(7);
-            int pH = block.getIArguments()->at(8);
+            int dilationT = INT_ARG(9);
+            int dilationW = INT_ARG(10);
+            int dilationH = INT_ARG(11);
+            int kT = INT_ARG(0);
+            int kW = INT_ARG(1);
+            int kH = INT_ARG(2);
+            int dT = INT_ARG(3);
+            int dW = INT_ARG(4);
+            int dH = INT_ARG(5);
+            int pT = INT_ARG(6);
+            int pW = INT_ARG(7);
+            int pH = INT_ARG(8);
 
-            bool ceilMode = block.getIArguments()->at(12) != 0;
+            bool ceilMode = INT_ARG(12) != 0;
             
             int otime, oheight, owidth;
             if (ceilMode) {
@@ -469,19 +469,19 @@ namespace nd4j {
             REQUIRE_TRUE(output->isSameShape(input), 1, "Output gradient should have the same dimensionality as input");
 
 
-            int kT = block.getIArguments()->at(0);
-            int kW = block.getIArguments()->at(1);
-            int kH = block.getIArguments()->at(2);
-            int dT = block.getIArguments()->at(3);
-            int dW = block.getIArguments()->at(4);
-            int dH = block.getIArguments()->at(5);
-            int pT = block.getIArguments()->at(6);
-            int pW = block.getIArguments()->at(7);
-            int pH = block.getIArguments()->at(8);
-            int dilationT = block.getIArguments()->at(9);
-            int dilationW = block.getIArguments()->at(10);
-            int dilationH = block.getIArguments()->at(11);
-            bool ceilMode = block.getIArguments()->at(12) != 0;
+            int kT = INT_ARG(0);
+            int kW = INT_ARG(1);
+            int kH = INT_ARG(2);
+            int dT = INT_ARG(3);
+            int dW = INT_ARG(4);
+            int dH = INT_ARG(5);
+            int pT = INT_ARG(6);
+            int pW = INT_ARG(7);
+            int pH = INT_ARG(8);
+            int dilationT = INT_ARG(9);
+            int dilationW = INT_ARG(10);
+            int dilationH = INT_ARG(11);
+            bool ceilMode = INT_ARG(12) != 0;
 
 
             REQUIRE_TRUE(kT > 0 && kW > 0 && kH > 0, 0,

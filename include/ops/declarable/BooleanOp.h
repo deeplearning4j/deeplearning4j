@@ -5,7 +5,7 @@
 #ifndef LIBND4J_BOOLEANOP_H
 #define LIBND4J_BOOLEANOP_H
 
-#include <Block.h>
+#include <Context.h>
 #include "OpDescriptor.h"
 #include "DeclarableOp.h"
 
@@ -21,15 +21,15 @@ namespace nd4j {
 
             bool evaluate(std::initializer_list<nd4j::NDArray<T> *> args);
             bool evaluate(std::vector<nd4j::NDArray<T> *>& args);
-            bool evaluate(nd4j::graph::Block<T>& block);
+            bool evaluate(nd4j::graph::Context<T>& block);
 
-            Nd4jStatus execute(Block<T>* block) override;
+            Nd4jStatus execute(Context<T>* block) override;
 
-            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Block<T> &block) override;
+            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) override;
 
         protected:
-            bool prepareOutputs(Block<T>& block);
-            virtual Nd4jStatus validateAndExecute(Block<T> &block) = 0;
+            bool prepareOutputs(Context<T>& block);
+            virtual Nd4jStatus validateAndExecute(Context<T> &block) = 0;
         };
     }
 }

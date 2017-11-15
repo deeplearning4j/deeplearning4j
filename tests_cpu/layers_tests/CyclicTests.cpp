@@ -7,7 +7,7 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
-#include <Block.h>
+#include <Context.h>
 #include <Node.h>
 #include <memory/MemoryRegistrator.h>
 #include <graph/Variable.h>

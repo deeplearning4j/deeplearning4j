@@ -16,7 +16,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 1) {
     NDArray<T>* input = INPUT_VARIABLE(0);
     NDArray<T>* output = OUTPUT_VARIABLE(0);
 
-    int dim = block.getIArguments()->at(0);
+    int dim = INT_ARG(0);
     if(dim < 0)
     	dim += input->rankOf();                	
 
@@ -56,7 +56,7 @@ DECLARE_SHAPE_FN(stack) {
 	// check whether input dimension is within rank range
 	int* inShapeInfo = inputShape->at(0);
 	int rank = inShapeInfo[0];
-	int dim = block.getIArguments()->at(0);
+	int dim = INT_ARG(0);
 	if(dim < 0 ) dim += rank;
 	if(dim >= rank)
 		throw "CUSTOM_OP stack: the input dimension is greater/equal than rank of input input arrays shapes !";
