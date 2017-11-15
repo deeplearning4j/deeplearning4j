@@ -138,7 +138,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [C-RNN-GAN: Continuous recurrent neural networks with adversarial training] [Paper](https://arxiv.org/abs/1611.09904)[Code](https://github.com/olofmogren/c-rnn-gan)
 
-### Conditional adversarial
+### Conditional Adversarial Nets
 
 * [Conditional Generative Adversarial Nets] [Paper](https://arxiv.org/abs/1411.1784)[Code](https://github.com/zhangqianhui/Conditional-Gans)
 
@@ -154,7 +154,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [StackGAN: Text to Photo-realistic Image Synthesis with Stacked Generative Adversarial Networks] [Paper](https://arxiv.org/pdf/1612.03242v1.pdf)[Code](https://github.com/hanzhanggit/StackGAN)
 
-### Video Prediction and Generation
+### Video Prediction & Generation
 
 * [Deep multi-scale video prediction beyond mean square error] [Paper](https://arxiv.org/abs/1511.05440)[Code](https://github.com/dyelax/Adversarial_Video_Generation)(Yann LeCun's paper)
 
@@ -162,7 +162,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [MoCoGAN: Decomposing Motion and Content for Video Generation] [Paper](https://arxiv.org/abs/1707.04993)
 
-### Texture Synthesis & style transfer
+### Texture Synthesis & Style Transfer
 
 * [Precomputed real-time texture synthesis with markovian generative adversarial networks] [Paper](https://arxiv.org/abs/1604.04382)[Code](https://github.com/chuanli11/MGANs)(ECCV 2016)
 
@@ -251,7 +251,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [GANS for Sequences of Discrete Elements with the Gumbel-softmax Distribution] [Paper](https://arxiv.org/abs/1611.04051)
 
-### Improving Classification And Recognition
+### Improving Classification & Recognition
 
 * [Generative OpenMax for Multi-Class Open Set Classification] [Paper](https://arxiv.org/pdf/1707.07418.pdf)(BMVC 2017)
 
@@ -281,7 +281,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 ### Tutorials
 
-* [1] (Ian Goodfellow's GAN Slides)[http://www.iangoodfellow.com/slides/2016-12-04-NIPS.pdf] (NIPS Goodfellow Slides)[Chinese Trans](http://c.m.163.com/news/a/C7UE2MLT0511AQHO.html?spss=newsapp&spsw=1)[details](https://arxiv.org/pdf/1701.00160v1.pdf)
+* [1] [Ian Goodfellow's GAN Slides](http://www.iangoodfellow.com/slides/2016-12-04-NIPS.pdf) (NIPS Goodfellow Slides)[Chinese Trans](http://c.m.163.com/news/a/C7UE2MLT0511AQHO.html?spss=newsapp&spsw=1)[details](https://arxiv.org/pdf/1701.00160v1.pdf)
 
 * [2] [PDF](https://drive.google.com/file/d/0BxKBnD5y2M8NbzBUbXRwUDBZOVU/view)(NIPS Lecun Slides)
 
