@@ -4,7 +4,7 @@ layout: default
 redirect_from: gan
 ---
 
-# Generative Adversarial Networks
+# Generative Adversarial Networks (GANs)
 
 Generative adversarial networks (GANs) are two-part neural networks capable of unsupervised learning that pit one net against the other, thus the "adversarial." 
 
