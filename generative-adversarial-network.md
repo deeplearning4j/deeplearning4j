@@ -16,3 +16,9 @@ For example, the generative network might create images and the evaluating netwo
 
 While difficult to tune and therefore to use, GANs have stimulated a lot of [interesting research and writing](https://blog.openai.com/generative-models/). 
 
+## GAN Use Cases
+
+* [Text to Image Generation](https://arxiv.org/abs/1605.05396)
+* [Image to Image Translation](https://arxiv.org/abs/1611.07004)
+* [Increasing Image Resolution](https://arxiv.org/abs/1609.04802)
+* [Predicting Next Video Frame]( https://arxiv.org/abs/1511.06380)
