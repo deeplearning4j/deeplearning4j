@@ -28,7 +28,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 * [Generative Adversarial Nets] [Paper](https://arxiv.org/abs/1406.2661)
 [Code](https://github.com/goodfeli/adversarial)(Ian Goodfellow's breakthrough paper)
 
-### Unclassified
+### Unsupervised Learning
 
 * Deep Generative Image Models using a Laplacian Pyramid of Adversarial Networks] [Paper](https://arxiv.org/abs/1506.05751)[Code](https://github.com/facebook/eyescream)
 
@@ -82,7 +82,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [Semi-Supervised QA with Generative Domain-Adaptive Nets] [Paper](https://arxiv.org/abs/1702.02206)(ACL 2017)
 
-### Ensemble
+### Ensembles
 
 * [AdaGAN: Boosting Generative Models] [Paper](https://arxiv.org/abs/1701.02386)[Code]（Google Brain）
 
@@ -118,7 +118,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [EnhanceGAN] [Docs](https://medium.com/@richardherbert/faces-from-noise-super-enhancing-8x8-images-with-enhancegan-ebda015bb5e0#.io6pskvin)[Code]
 
-### Disocclusion
+### De-occlusion
 
 * [Robust LSTM-Autoencoders for Face De-Occlusion in the Wild] [Paper](https://arxiv.org/abs/1612.08534)
 
@@ -134,7 +134,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [A-Fast-RCNN: Hard Positive Generation via Adversary for Object Detection] [Paper](http://abhinavsh.info/papers/pdfs/adversarial_object_detection.pdf)[Code](https://github.com/xiaolonw/adversarial-frcnn)(CVPR2017)
 
-### RNN
+### RNN-GANs
 
 * [C-RNN-GAN: Continuous recurrent neural networks with adversarial training] [Paper](https://arxiv.org/abs/1611.09904)[Code](https://github.com/olofmogren/c-rnn-gan)
 
@@ -166,7 +166,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [Precomputed real-time texture synthesis with markovian generative adversarial networks] [Paper](https://arxiv.org/abs/1604.04382)[Code](https://github.com/chuanli11/MGANs)(ECCV 2016)
 
-# Image translation 
+### Image Translation 
 
 * [UNSUPERVISED CROSS-DOMAIN IMAGE GENERATION] [Paper](https://arxiv.org/abs/1611.02200)[Code](https://github.com/yunjey/domain-transfer-network)
 
@@ -214,17 +214,17 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 * [Generalization and Equilibrium in Generative Adversarial Nets] [Paper](https://arxiv.org/abs/1703.00573)（ICML 2017）
 
 
-### 3D
+### 3-Dimensional GANs
 
 * [Learning a Probabilistic Latent Space of Object Shapes via 3D Generative-Adversarial Modeling] [Paper](https://arxiv.org/abs/1610.07584)[[Web]](http://3dgan.csail.mit.edu/)[Code](https://github.com/zck119/3dgan-release)(2016 NIPS)
 
 * [Transformation-Grounded Image Generation Network for Novel 3D View Synthesis] [[Web]](http://www.cs.unc.edu/%7Eeunbyung/tvsn/)(CVPR 2017)
 
-### MUSIC
+### Music
 
 * [MidiNet: A Convolutional Generative Adversarial Network for Symbolic-domain Music Generation using 1D and 2D Conditions] [Paper](https://arxiv.org/abs/1703.10847)[[HOMEPAGE]](https://richardyang40148.github.io/TheBlog/midinet_arxiv_demo.html)
 
-### Face Generative and Editing
+### Face Generation & Editing
 
 * [Autoencoding beyond pixels using a learned similarity metric] [Paper](https://arxiv.org/abs/1512.09300)[Code](https://github.com/andersbll/autoencoding_beyond_pixels)[[Tensorflow code]](https://github.com/zhangqianhui/vae-gan-tensorflow)
 
@@ -243,7 +243,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 * [Beyond Face Rotation: Global and Local Perception GAN for Photorealistic and Identity Preserving Frontal View Synthesis] [Paper](https://arxiv.org/abs/1704.04086)(ICCV 2017)
 
 
-### For discrete distributions
+### For Discrete Distributions
 
 * [Maximum-Likelihood Augmented Discrete Generative Adversarial Networks] [Paper](https://arxiv.org/abs/1702.07983v1)
 
@@ -251,7 +251,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [GANS for Sequences of Discrete Elements with the Gumbel-softmax Distribution] [Paper](https://arxiv.org/abs/1611.04051)
 
-### Improving Classification And Recong
+### Improving Classification And Recognition
 
 * [Generative OpenMax for Multi-Class Open Set Classification] [Paper](https://arxiv.org/pdf/1707.07418.pdf)(BMVC 2017)
 
@@ -261,7 +261,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [Learning from Simulated and Unsupervised Images through Adversarial Training] [Paper](https://arxiv.org/abs/1612.07828)[Code](https://github.com/carpedm20/simulated-unsupervised-tensorflow)（Apple paper, CVPR 2017 Best Paper）
 
-# Project
+### Projects
 
 * [cleverhans] [Code](https://github.com/openai/cleverhans)(A library for benchmarking vulnerability to adversarial examples)
 
@@ -269,7 +269,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [HyperGAN] [Code](https://github.com/255bits/HyperGAN)(Open source GAN focused on scale and usability)
 
-# Blogs
+### Blogs
 | Author | Address |
 |:----:|:---:|
 | **inFERENCe** |  [Adversarial network](http://www.inference.vc/)  |
@@ -279,7 +279,7 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 | **OpenAI** |  [Generative model](https://openai.com/blog/generative-models/)  |
 
 
-# Tutorial
+### Tutorials
 
 * [1] (Ian Goodfellow's GAN Slides)[http://www.iangoodfellow.com/slides/2016-12-04-NIPS.pdf] (NIPS Goodfellow Slides)[Chinese Trans](http://c.m.163.com/news/a/C7UE2MLT0511AQHO.html?spss=newsapp&spsw=1)[details](https://arxiv.org/pdf/1701.00160v1.pdf)
 
