@@ -6,7 +6,7 @@ Native operations for nd4j. Build using cmake
 
 * GCC 4.9 or 5.x
 * CUDA 7.5 or 8.0 (if desired)
-* CMake 3.2
+* CMake 3.8 (as of Nov 2017, in near future will require 3.9)
 
 ### Additional build arguments
 
