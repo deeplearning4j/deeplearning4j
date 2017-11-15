@@ -18,8 +18,10 @@ namespace nd4j {
 // return 2d array evaluated though last dimension interval t1-t2
 template <typename T>
 NDArray<T>* timestep(const NDArray<T>* const arr, const int t1, const int t2) {
-        NDArray<T>* result = arr->subarray( { NDIndex::all(), NDIndex::all(), NDIndex::interval(t1,t2) } );     
-        result->reshapei(result->ordering(), {arr->shapeOf()[0], arr->shapeOf()[1]} );                                          
+
+        IndicesList list({ NDIndex::all(), NDIndex::all(), NDIndex::interval(t1,t2)});
+        NDArray<T>* result = arr->subarray(list);     
+        result->reshapei(result->ordering(), {arr->shapeOf()[0], arr->shapeOf()[1]} );
 
         return result;
 }

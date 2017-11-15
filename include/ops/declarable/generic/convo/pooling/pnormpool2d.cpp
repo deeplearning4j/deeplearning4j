@@ -143,7 +143,8 @@ namespace nd4j {
 
             T extraParams11[] = {(T)pnorm};
             pNorm->template applyTransform<simdOps::Pow<T>>(extraParams11);
-            *pNorm = *(pNorm->sum({1}));
+            NDArray<T>* sumArr = pNorm->sum({1});
+            *pNorm = *sumArr;
             T extraParams2[] = {1.f/pnorm};
             pNorm->template applyTransform<simdOps::Pow<T>>(extraParams2);
 
@@ -171,6 +172,7 @@ namespace nd4j {
 
             if(isEpsilonDup)
                 delete epsilon;
+            delete sumArr;
             delete col6d;
             delete col6dPermuted;
             delete epsilon1d;
