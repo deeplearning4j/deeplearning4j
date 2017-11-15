@@ -226,7 +226,11 @@ A neural network that takes the initial input and triggers the [activation](#act
 ### <a name="gaussian">Gaussian Distribution</a>
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
 
-### <a name="glove">Gloval Vectores (GloVe)</a>
+### <a name="gan">Generative Adversarial Networks (GANs)</a>
+
+[Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network) are a tool to conduct unsupervised learning, essentially pitting a generative net against a discriminative net. The first net tries to fool the second by mimicking the probability distribution of a training dataset in order to fool the discriminative net into judging that the generated data instance actually belongs to the training set. 
+
+### <a name="glove">Global Vectors (GloVe)</a>
 GloVe is a generalization of Tomas Mikolov's word2vec algorithms, a technique for creating neural word embeddings. It was first presented at NIPS by Jeffrey Pennington, Richard Socher and Christopher Manning of Stanford's NLP department. [Deeplearning4j's implementation of GloVe is here](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/glove/GloVeExample.java). 
 
 * [GloVe: Global Vectors for Word Representation](http://nlp.stanford.edu/pubs/glove.pdf)
