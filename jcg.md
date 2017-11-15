@@ -35,7 +35,7 @@ You are a data engineer or software developer in an enterprise environment who n
 
 # Example: Building a Feed-Forward Network
 
-A feed forward network is the simplest form of neural networks and was also one of the first ever created. Here we will outline an example of a feed forward neural network based off an example located <a href=https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierMoon.java>here using moon data</a>. The data is located <a href=https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/classification>here</a>.
+A feed forward network is the simplest form of neural networks and was also one of the first ever created. Here we will outline an example of a feed forward neural network based off an example located [here using moon data](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierMoon.java). The data is located [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/resources/classification).
 
 The raw data consists of CSV files with two numerical features and two labels. The training and test sets are in different CSV files with 2000 observations in the training set and 1000 observations in the test set. The goal of the task is to predict the label given the two input features. Thus, we are interested in classification.
 
