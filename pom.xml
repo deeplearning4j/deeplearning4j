@@ -260,7 +260,7 @@
                         <versionRange>[0.0.11,)</versionRange>
                         <goals>
                           <goal>check</goal>
-                        </goals
+                        </goals>
                       </pluginExecutionFilter>
                       <action>
                         <ignore/>
