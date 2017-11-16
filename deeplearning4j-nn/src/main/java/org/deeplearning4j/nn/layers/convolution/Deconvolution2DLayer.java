@@ -139,6 +139,10 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop) {
 
+        if (convolutionMode == ConvolutionMode.Same) {
+            throw new IllegalArgumentException("Border mode Same currently not supported.");
+        }
+
         INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, training);
         INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, training);
 

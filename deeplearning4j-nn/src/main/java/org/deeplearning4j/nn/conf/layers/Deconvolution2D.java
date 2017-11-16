@@ -145,6 +145,9 @@ public class Deconvolution2D extends ConvolutionLayer {
          */
         @Override
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
+            if (convolutionMode == ConvolutionMode.Same) {
+                throw new IllegalArgumentException("Border mode Same currently not supported.");
+            }
             this.convolutionMode = convolutionMode;
             return this;
         }
