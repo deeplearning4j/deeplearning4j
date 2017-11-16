@@ -334,9 +334,10 @@ cd ..
 # build and install nd4j to maven locally
 git clone https://github.com/deeplearning4j/nd4j.git
 cd nd4j
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
-# or cross-build across Scala versions
-# bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
+# cross-build across Scala versions (recommended)
+bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
+# or build for a single scala version
+# mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
 # or when using GPU
 # mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 cd ..
@@ -354,12 +355,13 @@ cd ..
 # build and install deeplearning4j
 git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-# or cross-build across Scala versions
-# ./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
-## If you skipped CUDA you may need to add 
-## -pl '!:deeplearning4j-cuda-9.0'
-## to the mvn clean install command to prevent the build from looking for cuda libs
+# cross-build across Scala versions (recommended)
+./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+# or build for a single scala version
+# mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+# If you skipped CUDA you may need to add
+# -pl '!./deeplearning4j-cuda/'
+# to the mvn clean install command to prevent the build from looking for cuda libs
 cd ..
 ```
 
