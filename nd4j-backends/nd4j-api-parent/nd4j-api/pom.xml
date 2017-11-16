@@ -162,6 +162,12 @@
             <groupId>net.ericaro</groupId>
             <artifactId>neoitertools</artifactId>
             <version>1.0.0</version>
+            <exclusions>
+              <exclusion>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.reflections</groupId>
