@@ -75,8 +75,9 @@ Add the dependency information into your pom.xml.
 The following code shows how to work with one example, raw images, transforming them into a format that will work well with DL4J and ND4J:
 
 ``` java
-// Instantiating RecordReader. Specify height and width of images.
-RecordReader recordReader = new ImageRecordReader(28, 28, true, labels);
+// Instantiating RecordReader. Specify height, width and channels of images.
+// Note that for grayscale output, channels = 1, whereas for RGB images, channels = 3
+RecordReader recordReader = new ImageRecordReader(28, 28, 3);
 
 // Point to data path. 
 recordReader.initialize(new FileSplit(new File(labeledPath)));
@@ -97,7 +98,8 @@ The DataSetIterator is a Deeplearning4J class that traverses the elements of a l
 DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
 ```
 
-The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
+The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. Note that ImageRecordReader produces image data with 4 dimensions that matches DL4J's expected activations layout. Thus, each 28x28 RGB image is represented as a 4d array, with dimensions [minibatch, channels, height, width] = [1, 3, 28, 28]. Note that the constructor line above also specifies the number of labels possible.
+Note also that ImageRecordReader does not normalize the image data, thus each pixel/channel value will be in the range 0 to 255 (and generally should be normalized separately - for example using ND4J's ImagePreProcessingScaler or another normalizer.
 
 `RecordReaderDataSetIterator` can take as parameters the specific recordReader you want (for images, sound, etc.) and the batch size. For supervised learning, it will also take a label index and the number of possible labels that can be applied to the input (for LFW, the number of labels is 5,749). 
 
