@@ -7829,6 +7829,52 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #endif //LIBND4J_VARIABLE_H
 
 
+// Parsed from graph/FlowPath.h
+
+//
+// Created by raver119 on 16/11/17.
+//
+
+// #ifndef LIBND4J_FLOWPATH_H
+// #define LIBND4J_FLOWPATH_H
+
+// #include <map>
+// #include <pointercast.h>
+// #include <graph/NodeState.h>
+        @Namespace("nd4j::graph") @NoOffset public static class FlowPath extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FlowPath(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FlowPath(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FlowPath position(long position) {
+                return (FlowPath)super.position(position);
+            }
+        
+            public FlowPath() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native void setInnerTime(int nodeId, @Cast("Nd4jIndex") long time);
+            public native void setOuterTime(int nodeId, @Cast("Nd4jIndex") long time);
+
+            public native @Cast("Nd4jIndex") long innerTime(int nodeId);
+            public native @Cast("Nd4jIndex") long outerTime(int nodeId);
+
+            public native @Cast("bool") boolean isActive(int nodeId);
+            
+            public native void markActive(int nodeId, @Cast("bool") boolean isActive);
+
+            public native int branch(int nodeId);
+            public native void markBranch(int nodeId, int index);
+        }
+    
+
+
+
+// #endif //LIBND4J_FLOWPATH_H
+
+
 // Parsed from graph/Intervals.h
 
 //
@@ -8025,6 +8071,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <graph/Variable.h>
 // #include <memory/Workspace.h>
 // #include <graph/Stash.h>
+// #include <graph/FlowPath.h>
 
         @Name("nd4j::graph::VariableSpace<float>") @NoOffset public static class FloatVariableSpace extends Pointer {
             static { Loader.load(); }
@@ -8079,7 +8126,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getExternalVariables();
 
-
+            public native void setFlowPath(FlowPath timers);
+            public native FlowPath flowPath();
         }
 
         @Name("nd4j::graph::VariableSpace<float16>") @NoOffset public static class HalfVariableSpace extends Pointer {
@@ -8135,7 +8183,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getExternalVariables();
 
-
+            public native void setFlowPath(FlowPath timers);
+            public native FlowPath flowPath();
         }
 
         @Name("nd4j::graph::VariableSpace<double>") @NoOffset public static class DoubleVariableSpace extends Pointer {
@@ -8191,7 +8240,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getExternalVariables();
 
-
+            public native void setFlowPath(FlowPath timers);
+            public native FlowPath flowPath();
         }
     
 
@@ -8530,8 +8580,9 @@ public static final long MAX_UINT = MAX_UINT();
 // #define LIBND4J_BLOCK_H
 
 // #include <vector>
-// #include "Variable.h"
-// #include "VariableSpace.h"
+// #include <graph/Variable.h>
+// #include <graph/VariableSpace.h>
+// #include <graph/ContextPrototype.h>
 // #include <memory/Workspace.h>
 
 
@@ -8542,7 +8593,7 @@ public static final long MAX_UINT = MAX_UINT();
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        @Name("nd4j::graph::Context<float>") @NoOffset public static class FloatContext extends Pointer {
+        @Name("nd4j::graph::Context<float>") @NoOffset public static class FloatContext extends FloatContextPrototype {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public FloatContext(Pointer p) { super(p); }
@@ -8552,6 +8603,9 @@ public static final long MAX_UINT = MAX_UINT();
             // CUDA-specific fields
 // #ifdef __CUDACC__
 // #endif
+
+            public FloatContext(FloatContextPrototype prototype, FloatVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(FloatContextPrototype prototype, FloatVariableSpace variableSpace);
 
             public FloatContext(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
             private native void allocate(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/);
@@ -8568,10 +8622,6 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("Nd4jIndex") long getOuterTime();
             public native @Cast("Nd4jIndex") long getInnerTime();
 
-            // this method returns true, if inputs are defined
-            public native @Cast("bool") boolean hasVariablesFilled();
-
-
             // these methods are related to Workspace abstraction
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
@@ -8583,40 +8633,13 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
-            public native int getNodeId();
-            public native int nodeId();
-
-
-            public native @StdVector FloatPointer getTArguments();
-            public native @StdVector IntPointer getIArguments();
 
             // these fields define, if we can execute specific node in-place, without generating new array
-            public native @Cast("bool") boolean isInplace();
-            public native void markInplace(@Cast("bool") boolean reallyInplace);
 
-            public native void pickInput(int input);
-            public native void pickInput(int input, int index);
-            public native void pickInput(@ByRef IntIntPair p);
-            public native void fillInputs(@StdVector IntPointer inputs);
-            public native void fillInputs(@StdVector IntBuffer inputs);
-            public native void fillInputs(@StdVector int[] inputs);
-            public native @StdVector IntIntPair inputs();
 
             // these variables are only for Divergent Nodes
             public native int getBranch();
             public native void setBranch(int branch);
-
-            /**
-             * This method returns number of inputs available in this block
-             * @return
-             */
-            public native @Cast("unsigned long") long width();
-
-            /**
-            * This method returns variableSpace used in this block
-            * @return
-            */
-            //VariableSpace<T>* getVariableSpace();
 
             /**
              *
@@ -8637,7 +8660,7 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native FloatVariable getVariable(int idx);
             public native FloatVariable variable(int idx);
-            public native IntIntPair input(int idx);
+
 
             /**
              * This method fetches variable from Workspace DIRECTLY
@@ -8646,9 +8669,6 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native FloatVariable variable(int node, int index);
             public native FloatVariable variable(@ByRef IntIntPair p);
-
-            public native int opNum();
-            public native void setOpNum(int opNum);
 
 
             public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
@@ -8667,7 +8687,7 @@ public static final long MAX_UINT = MAX_UINT();
             public native FloatVariable ensureVariable(int idx/*=0*/);
             public native FloatVariable ensureVariable();
         }
-        @Name("nd4j::graph::Context<float16>") @NoOffset public static class HalfContext extends Pointer {
+        @Name("nd4j::graph::Context<float16>") @NoOffset public static class HalfContext extends HalfContextPrototype {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public HalfContext(Pointer p) { super(p); }
@@ -8677,6 +8697,9 @@ public static final long MAX_UINT = MAX_UINT();
             // CUDA-specific fields
 // #ifdef __CUDACC__
 // #endif
+
+            public HalfContext(HalfContextPrototype prototype, HalfVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(HalfContextPrototype prototype, HalfVariableSpace variableSpace);
 
             public HalfContext(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
             private native void allocate(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/);
@@ -8693,10 +8716,6 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("Nd4jIndex") long getOuterTime();
             public native @Cast("Nd4jIndex") long getInnerTime();
 
-            // this method returns true, if inputs are defined
-            public native @Cast("bool") boolean hasVariablesFilled();
-
-
             // these methods are related to Workspace abstraction
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
@@ -8708,40 +8727,13 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
-            public native int getNodeId();
-            public native int nodeId();
-
-
-            public native @Cast("float16*") @StdVector ShortPointer getTArguments();
-            public native @StdVector IntPointer getIArguments();
 
             // these fields define, if we can execute specific node in-place, without generating new array
-            public native @Cast("bool") boolean isInplace();
-            public native void markInplace(@Cast("bool") boolean reallyInplace);
 
-            public native void pickInput(int input);
-            public native void pickInput(int input, int index);
-            public native void pickInput(@ByRef IntIntPair p);
-            public native void fillInputs(@StdVector IntPointer inputs);
-            public native void fillInputs(@StdVector IntBuffer inputs);
-            public native void fillInputs(@StdVector int[] inputs);
-            public native @StdVector IntIntPair inputs();
 
             // these variables are only for Divergent Nodes
             public native int getBranch();
             public native void setBranch(int branch);
-
-            /**
-             * This method returns number of inputs available in this block
-             * @return
-             */
-            public native @Cast("unsigned long") long width();
-
-            /**
-            * This method returns variableSpace used in this block
-            * @return
-            */
-            //VariableSpace<T>* getVariableSpace();
 
             /**
              *
@@ -8762,7 +8754,7 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native HalfVariable getVariable(int idx);
             public native HalfVariable variable(int idx);
-            public native IntIntPair input(int idx);
+
 
             /**
              * This method fetches variable from Workspace DIRECTLY
@@ -8771,9 +8763,6 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native HalfVariable variable(int node, int index);
             public native HalfVariable variable(@ByRef IntIntPair p);
-
-            public native int opNum();
-            public native void setOpNum(int opNum);
 
 
             public native void pushNDArrayToVariableSpace(int nodeId, int index, HalfNDArray array, @Cast("bool") boolean removable/*=true*/);
@@ -8792,7 +8781,7 @@ public static final long MAX_UINT = MAX_UINT();
             public native HalfVariable ensureVariable(int idx/*=0*/);
             public native HalfVariable ensureVariable();
         }
-        @Name("nd4j::graph::Context<double>") @NoOffset public static class DoubleContext extends Pointer {
+        @Name("nd4j::graph::Context<double>") @NoOffset public static class DoubleContext extends DoubleContextPrototype {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public DoubleContext(Pointer p) { super(p); }
@@ -8802,6 +8791,9 @@ public static final long MAX_UINT = MAX_UINT();
             // CUDA-specific fields
 // #ifdef __CUDACC__
 // #endif
+
+            public DoubleContext(DoubleContextPrototype prototype, DoubleVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(DoubleContextPrototype prototype, DoubleVariableSpace variableSpace);
 
             public DoubleContext(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
             private native void allocate(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/);
@@ -8818,10 +8810,6 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("Nd4jIndex") long getOuterTime();
             public native @Cast("Nd4jIndex") long getInnerTime();
 
-            // this method returns true, if inputs are defined
-            public native @Cast("bool") boolean hasVariablesFilled();
-
-
             // these methods are related to Workspace abstraction
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
@@ -8833,40 +8821,13 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
-            public native int getNodeId();
-            public native int nodeId();
-
-
-            public native @StdVector DoublePointer getTArguments();
-            public native @StdVector IntPointer getIArguments();
 
             // these fields define, if we can execute specific node in-place, without generating new array
-            public native @Cast("bool") boolean isInplace();
-            public native void markInplace(@Cast("bool") boolean reallyInplace);
 
-            public native void pickInput(int input);
-            public native void pickInput(int input, int index);
-            public native void pickInput(@ByRef IntIntPair p);
-            public native void fillInputs(@StdVector IntPointer inputs);
-            public native void fillInputs(@StdVector IntBuffer inputs);
-            public native void fillInputs(@StdVector int[] inputs);
-            public native @StdVector IntIntPair inputs();
 
             // these variables are only for Divergent Nodes
             public native int getBranch();
             public native void setBranch(int branch);
-
-            /**
-             * This method returns number of inputs available in this block
-             * @return
-             */
-            public native @Cast("unsigned long") long width();
-
-            /**
-            * This method returns variableSpace used in this block
-            * @return
-            */
-            //VariableSpace<T>* getVariableSpace();
 
             /**
              *
@@ -8887,7 +8848,7 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native DoubleVariable getVariable(int idx);
             public native DoubleVariable variable(int idx);
-            public native IntIntPair input(int idx);
+
 
             /**
              * This method fetches variable from Workspace DIRECTLY
@@ -8896,9 +8857,6 @@ public static final long MAX_UINT = MAX_UINT();
              */
             public native DoubleVariable variable(int node, int index);
             public native DoubleVariable variable(@ByRef IntIntPair p);
-
-            public native int opNum();
-            public native void setOpNum(int opNum);
 
 
             public native void pushNDArrayToVariableSpace(int nodeId, int index, DoubleNDArray array, @Cast("bool") boolean removable/*=true*/);
@@ -8923,6 +8881,162 @@ public static final long MAX_UINT = MAX_UINT();
 
 // #endif //LIBND4J_BLOCK_H
 
+
+// Parsed from graph/ContextPrototype.h
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef ND4J_CONTEXT_PROTOTYPE_H
+// #define ND4J_CONTEXT_PROTOTYPE_H
+
+// #include <vector>
+        @Name("nd4j::graph::ContextPrototype<float>") @NoOffset public static class FloatContextPrototype extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatContextPrototype(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatContextPrototype position(long position) {
+                return (FloatContextPrototype)super.position(position);
+            }
+        
+            public FloatContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
+            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public FloatContextPrototype() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int getNodeId();
+            public native int nodeId();
+
+            // this method returns true, if inputs are defined
+            public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native @Cast("bool") boolean isInplace();
+            public native void markInplace(@Cast("bool") boolean reallyInplace);
+
+            public native void pickInput(int input);
+            public native void pickInput(int input, int index);
+            public native void pickInput(@ByRef IntIntPair p);
+            public native void fillInputs(@StdVector IntPointer inputs);
+            public native void fillInputs(@StdVector IntBuffer inputs);
+            public native void fillInputs(@StdVector int[] inputs);
+            public native @StdVector IntIntPair inputs();
+
+            public native @StdVector FloatPointer getTArguments();
+            public native @StdVector IntPointer getIArguments();
+
+            public native IntIntPair input(int idx);
+
+            public native int opNum();
+            public native void setOpNum(int opNum);
+
+            /**
+             * This method returns number of inputs available in this block
+             * @return
+             */
+            public native @Cast("unsigned long") long width();
+        }
+        @Name("nd4j::graph::ContextPrototype<float16>") @NoOffset public static class HalfContextPrototype extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfContextPrototype(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfContextPrototype position(long position) {
+                return (HalfContextPrototype)super.position(position);
+            }
+        
+            public HalfContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
+            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public HalfContextPrototype() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int getNodeId();
+            public native int nodeId();
+
+            // this method returns true, if inputs are defined
+            public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native @Cast("bool") boolean isInplace();
+            public native void markInplace(@Cast("bool") boolean reallyInplace);
+
+            public native void pickInput(int input);
+            public native void pickInput(int input, int index);
+            public native void pickInput(@ByRef IntIntPair p);
+            public native void fillInputs(@StdVector IntPointer inputs);
+            public native void fillInputs(@StdVector IntBuffer inputs);
+            public native void fillInputs(@StdVector int[] inputs);
+            public native @StdVector IntIntPair inputs();
+
+            public native @Cast("float16*") @StdVector ShortPointer getTArguments();
+            public native @StdVector IntPointer getIArguments();
+
+            public native IntIntPair input(int idx);
+
+            public native int opNum();
+            public native void setOpNum(int opNum);
+
+            /**
+             * This method returns number of inputs available in this block
+             * @return
+             */
+            public native @Cast("unsigned long") long width();
+        }
+        @Name("nd4j::graph::ContextPrototype<double>") @NoOffset public static class DoubleContextPrototype extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleContextPrototype(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleContextPrototype position(long position) {
+                return (DoubleContextPrototype)super.position(position);
+            }
+        
+            public DoubleContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
+            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public DoubleContextPrototype() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int getNodeId();
+            public native int nodeId();
+
+            // this method returns true, if inputs are defined
+            public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native @Cast("bool") boolean isInplace();
+            public native void markInplace(@Cast("bool") boolean reallyInplace);
+
+            public native void pickInput(int input);
+            public native void pickInput(int input, int index);
+            public native void pickInput(@ByRef IntIntPair p);
+            public native void fillInputs(@StdVector IntPointer inputs);
+            public native void fillInputs(@StdVector IntBuffer inputs);
+            public native void fillInputs(@StdVector int[] inputs);
+            public native @StdVector IntIntPair inputs();
+
+            public native @StdVector DoublePointer getTArguments();
+            public native @StdVector IntPointer getIArguments();
+
+            public native IntIntPair input(int idx);
+
+            public native int opNum();
+            public native void setOpNum(int opNum);
+
+            /**
+             * This method returns number of inputs available in this block
+             * @return
+             */
+            public native @Cast("unsigned long") long width();
+        }
+    
+
+
+// #endif //ND4J_CONTEXT_PROTOTYPE_H
 
 // Parsed from helpers/shape.h
 
