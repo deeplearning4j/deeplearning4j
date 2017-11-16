@@ -45,6 +45,12 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         super(conf, input);
     }
 
+
+    @Override
+    void initializeHelper() {
+        // no op
+    }
+
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
@@ -152,7 +158,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to SeparableConvolution2D (layer name = " + layerName + ", layer index = "
+                    + " array as input to Deconvolution2D (layer name = " + layerName + ", layer index = "
                     + index + ") with shape " + Arrays.toString(input.shape()) + ". "
                     + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
                     + (input.rank() == 2
@@ -195,28 +201,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int outH = outSize[0];
         int outW = outSize[1];
 
-
-        if (helper != null) {
-            if (preOutput != null && forBackprop) {
-                return new Pair<>(preOutput, null);
-            }
-
-            //For no-bias convolutional layers: use an empty (all 0s) value for biases
-            if(!hasBias()){
-                if(dummyBias == null){
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        dummyBias = Nd4j.create(1, layerConf().getNOut());
-                    }
-                }
-                bias = dummyBias;
-            }
-
-            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                    layerConf().getCudnnFwdAlgo(), convolutionMode, dilation);
-            if (ret != null) {
-                return new Pair<>(ret, null);
-            }
-        }
 
         int miniBatch = input.size(0);
         INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);

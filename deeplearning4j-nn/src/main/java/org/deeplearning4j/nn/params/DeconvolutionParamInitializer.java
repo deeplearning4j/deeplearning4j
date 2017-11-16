@@ -60,8 +60,8 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.Deconvolution2D layerConf =
+                (org.deeplearning4j.nn.conf.layers.Deconvolution2D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
@@ -69,7 +69,6 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         if(layerConf.hasBias()){
-            //Standard case
             INDArray biasGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray weightGradientView =
                     gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf)))
