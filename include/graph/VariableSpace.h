@@ -16,6 +16,7 @@
 #include <graph/Variable.h>
 #include <memory/Workspace.h>
 #include <graph/Stash.h>
+#include <graph/FlowPath.h>
 
 
 namespace nd4j {
@@ -49,6 +50,9 @@ namespace nd4j {
             std::map<int, nd4j::graph::Variable<T> *> _temporary;
 
             std::vector<nd4j::graph::Variable<T> *> *_handles;
+
+            FlowPath* _flow = nullptr;
+
         public:
             VariableSpace();
             ~VariableSpace();
@@ -92,7 +96,8 @@ namespace nd4j {
 
             std::vector<nd4j::graph::Variable<T> *> * getExternalVariables();
 
-
+            void setFlowPath(FlowPath* timers);
+            FlowPath* flowPath();
         };
     }
 }

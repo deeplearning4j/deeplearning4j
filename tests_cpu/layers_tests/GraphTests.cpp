@@ -44,6 +44,8 @@ TEST_F(GraphTests, SingleInput1) {
 
     GraphExecutioner<float>::execute(graph);
 
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(3));
+
     auto node3 = graph->getVariableSpace()->getVariable(3)->getNDArray();
 
     ASSERT_NEAR(0.4161468, node3->reduceNumber<simdOps::Mean<float>>(), 1e-5);

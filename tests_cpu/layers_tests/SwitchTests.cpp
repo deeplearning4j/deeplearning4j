@@ -17,7 +17,10 @@ public:
 TEST_F(SwitchTests, SwitchTest1) {
     Graph<float> graph;
 
+    FlowPath flowPath;
+
     auto variableSpace = graph.getVariableSpace();
+    variableSpace->setFlowPath(&flowPath);
 
     auto input = new NDArray<float>('c',{32, 100});
     input->assign(-119.0f);
@@ -84,11 +87,13 @@ TEST_F(SwitchTests, SwitchTest1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
+    nd4j_printf("Z0: [%i]; Z1: [%i]\n", flowPath.isActive(nodeZ0->id()), flowPath.isActive(nodeZ1->id()));
+
     // we know that Switch got TRUE evaluation, so :0 should be inactive
-    ASSERT_FALSE(nodeZ0->isActive());
+    ASSERT_FALSE(flowPath.isActive(nodeZ0->id()));
 
     // and :1 should be active
-    ASSERT_TRUE(nodeZ1->isActive());
+    ASSERT_TRUE(flowPath.isActive(nodeZ1->id()));
 
     std::pair<int,int> unexpected(4,0);
     std::pair<int,int> expectedResultIndex(5,0);
@@ -104,7 +109,9 @@ TEST_F(SwitchTests, SwitchTest1) {
 TEST_F(SwitchTests, SwitchTest2) {
     Graph<float> graph;
 
+    FlowPath flowPath;
     auto variableSpace = graph.getVariableSpace();
+    variableSpace->setFlowPath(&flowPath);
 
     auto input = new NDArray<float>('c',{32, 100});
     input->assign(-119.0f);
@@ -156,8 +163,8 @@ TEST_F(SwitchTests, SwitchTest2) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_TRUE(!nodeZ0->isActive());
-    ASSERT_TRUE(nodeZ1->isActive());
+    ASSERT_TRUE(!flowPath.isActive(nodeZ0->id()));
+    ASSERT_TRUE(flowPath.isActive(nodeZ1->id()));
 
     auto z = graph.getVariableSpace()->getVariable(7)->getNDArray();
 
@@ -168,7 +175,9 @@ TEST_F(SwitchTests, SwitchTest2) {
 TEST_F(SwitchTests, SwitchTest3) {
     Graph<float> graph;
 
+    FlowPath flowPath;
     auto variableSpace = graph.getVariableSpace();
+    variableSpace->setFlowPath(&flowPath);
 
     auto input = new NDArray<float>('c',{32, 100});
     input->assign(-119.0f);
@@ -220,8 +229,8 @@ TEST_F(SwitchTests, SwitchTest3) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_TRUE(nodeZ0->isActive());
-    ASSERT_TRUE(!nodeZ1->isActive());
+    ASSERT_TRUE(flowPath.isActive(nodeZ0->id()));
+    ASSERT_TRUE(!flowPath.isActive(nodeZ1->id()));
 
     auto z = graph.getVariableSpace()->getVariable(6)->getNDArray();
 

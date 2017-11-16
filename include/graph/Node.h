@@ -24,7 +24,7 @@ namespace nd4j {
         protected:
             DataType _dataType;
             OpType _opType;
-            Context<T>* _block = nullptr;
+            ContextPrototype<T>* _protoContext = nullptr;
             Nd4jIndex _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
@@ -118,8 +118,8 @@ namespace nd4j {
             std::string * getName();
 
 
-            void setBlock(Context<T> *block);
-            Context<T>* getBlock();
+            void setContextPrototype(ContextPrototype<T> *block);
+            ContextPrototype<T>* getContextPrototype();
             bool hasBlockAttached();
 
             void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);

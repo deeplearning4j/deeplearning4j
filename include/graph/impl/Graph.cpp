@@ -61,7 +61,7 @@ namespace nd4j {
                         auto op = node->getCustomOp();
                         auto in = node->input()->at(0);
 
-                        auto block = node->getBlock();
+                        auto block = node->getContextPrototype();
                         std::vector<int*> inputShapes;
                         int *oldShape;
                         for (auto v: *node->input()) {
@@ -73,8 +73,10 @@ namespace nd4j {
                             }
                         }
 
+                        Context<T> ctx(block, _variableSpace);
+
                         ShapeList inSha(inputShapes);
-                        auto outSha = op->calculateOutputShape(&inSha, *block);
+                        auto outSha = op->calculateOutputShape(&inSha, ctx);
 
                         int cnt = 0;
                         for (auto newShape: *outSha->asVector()) {
@@ -318,23 +320,20 @@ namespace nd4j {
                 // custom ops require Block inside. but we'll set it inside buildGraph
 
                 // TODO: we want to change this, to make blocks thread-local/session-local
-                Context<T>* block = nullptr;
+                ContextPrototype<T>* block = nullptr;
 
                 if (!node->hasBlockAttached()) {
-                    block = new Context<T>(node->id(), _variableSpace);
-                    node->setBlock(block);
+                    block = new ContextPrototype<T>(node->id());
+                    node->setContextPrototype(block);
                 } else
-                    block = node->getBlock();
+                    block = node->getContextPrototype();
 
 
                 if (!block->hasVariablesFilled()) {
-                    block->setVariableSpace(_variableSpace);
 
                     for (uint32_t e = 0; e < node->input()->size(); e++) {
                         auto p = node->input()->at(e);
-                        //auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                        //block->getVariables()->push_back(var);
                         block->pickInput(p);
                     }
                 }
@@ -517,23 +516,20 @@ namespace nd4j {
                             this->injectNode(node);
 
                             if (node->hasCustomOp()) {
-                                Context<T>* block = nullptr;
+                                ContextPrototype<T>* block = nullptr;
 
                                 if (!node->hasBlockAttached()) {
-                                    block = new Context<T>(node->id(), _variableSpace);
-                                    node->setBlock(block);
+                                    block = new ContextPrototype<T>(node->id());
+                                    node->setContextPrototype(block);
                                 } else
-                                    block = node->getBlock();
+                                    block = node->getContextPrototype();
 
 
                                 if (!block->hasVariablesFilled()) {
-                                    block->setVariableSpace(_variableSpace);
 
                                     for (int e = 0; e < node->input()->size(); e++) {
                                         auto p = node->input()->at(e);
-                                        //auto var = _variableSpace->getVariable(node->input()->at(e));
-
-                                        //block->getVariables()->emplace_back(var);
+;
                                         block->pickInput(p);
                                     }
                                 }
@@ -548,23 +544,20 @@ namespace nd4j {
                             this->injectNode(node);
 
                             if (node->hasCustomOp()) {
-                                Context<T>* block = nullptr;
+                                ContextPrototype<T>* block = nullptr;
 
                                 if (!node->hasBlockAttached()) {
-                                    block = new Context<T>(node->id(), _variableSpace);
-                                    node->setBlock(block);
+                                    block = new ContextPrototype<T>(node->id());
+                                    node->setContextPrototype(block);
                                 } else
-                                    block = node->getBlock();
+                                    block = node->getContextPrototype();
 
 
                                 if (!block->hasVariablesFilled()) {
-                                    block->setVariableSpace(_variableSpace);
 
                                     for (uint32_t e = 0; e < node->input()->size(); e++) {
                                         auto p = node->input()->at(e);
-                                        //auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                                        //block->getVariables()->emplace_back(var);
                                         block->pickInput(p);
                                     }
                                 }
@@ -611,23 +604,19 @@ namespace nd4j {
                         injectNode(node);
 
                         if (node->hasCustomOp()) {
-                            Context<T>* block = nullptr;
+                            ContextPrototype<T>* block = nullptr;
 
                             if (!node->hasBlockAttached()) {
-                                block = new Context<T>(node->id(), _variableSpace);
-                                node->setBlock(block);
+                                block = new ContextPrototype<T>(node->id());
+                                node->setContextPrototype(block);
                             } else
-                                block = node->getBlock();
-
+                                block = node->getContextPrototype();
 
                             if (!block->hasVariablesFilled()) {
-                                block->setVariableSpace(_variableSpace);
 
                                 for (uint32_t e = 0; e < node->input()->size(); e++) {
                                     auto p = node->input()->at(e);
-                                    //auto var = _variableSpace->getVariable(node->input()->at(e));
 
-                                    //block->getVariables()->push_back(var);
                                     block->pickInput(p);
                                 }
                             }

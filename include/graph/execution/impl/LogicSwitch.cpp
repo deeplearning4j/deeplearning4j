@@ -11,10 +11,11 @@ namespace nd4j {
         template <typename T>
         Nd4jStatus LogicSwitch<T>::processNode(Graph<T>* graph, Node<T>* node) {
             auto __variableSpace = graph->getVariableSpace();
-
+            auto __flowPath = __variableSpace->flowPath();
+            Context<T> ctx(node->getContextPrototype(), __variableSpace);
 
             int scopeConditionIndex = node->input()->at(0).first;
-            auto input = node->getBlock()->variable(1);
+            auto input = ctx.variable(1);
 
             auto scopeCondition = graph->scopeById(scopeConditionIndex);
             int lastNode = 0;
@@ -38,11 +39,11 @@ namespace nd4j {
                 __variableSpace->putVariable(pair1, new Variable<T>(nullptr, nullptr, node->id(), 1));
 
             if (result->getScalar(0) == (T) 0.0f) {
-                node->getBlock()->setBranch(0);
+                __flowPath->markBranch(node->id(), 0);
                 __variableSpace->getVariable(pair0)->setNDArray(input->getNDArray());
                 __variableSpace->getVariable(pair0)->markRemovable(false);
             } else {
-                node->getBlock()->setBranch(1);
+                __flowPath->markBranch(node->id(),1);
                 __variableSpace->getVariable(pair1)->setNDArray(input->getNDArray());
                 __variableSpace->getVariable(pair1)->markRemovable(false);
             }

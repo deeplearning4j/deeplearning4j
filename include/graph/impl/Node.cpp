@@ -18,14 +18,14 @@ namespace nd4j {
 
         template <typename T>
         void nd4j::graph::Node<T>::setOuterTime(Nd4jIndex time){
-            if (hasBlockAttached())
-                _block->setOuterTime(time);
+//            if (hasBlockAttached())
+//                _block->setOuterTime(time);
         }
 
         template <typename T>
         void nd4j::graph::Node<T>::setInnerTime(Nd4jIndex time){
-            if (hasBlockAttached())
-                _block->setInnerTime(time);
+//            if (hasBlockAttached())
+//                _block->setInnerTime(time);
         }
 
         template <typename T>
@@ -46,8 +46,8 @@ namespace nd4j {
         template <typename T>
         void nd4j::graph::Node<T>::markInplace(bool reallyInplace) {
             _isInplace = reallyInplace;
-            if (_block != nullptr) {
-                _block->markInplace(reallyInplace);
+            if (_protoContext != nullptr) {
+                _protoContext->markInplace(reallyInplace);
             }
         }
 
@@ -58,7 +58,7 @@ namespace nd4j {
 
         template <typename T>
         bool nd4j::graph::Node<T>::hasBlockAttached() {
-            return _block != nullptr;
+            return _protoContext != nullptr;
         }
 
 
@@ -87,16 +87,16 @@ namespace nd4j {
         }
 
         template <typename T>
-        Context<T> * nd4j::graph::Node<T>::getBlock() {
-            return _block;
+        ContextPrototype<T> * nd4j::graph::Node<T>::getContextPrototype() {
+            return _protoContext;
         }
 
         template <typename T>
-        void nd4j::graph::Node<T>::setBlock(Context<T> *block) {
-            if (_block != nullptr)
+        void nd4j::graph::Node<T>::setContextPrototype(ContextPrototype<T> *block) {
+            if (_protoContext != nullptr)
                 throw "Block already exists";
 
-            _block = block;
+            _protoContext = block;
         }
 
         template <typename T>
@@ -337,7 +337,7 @@ namespace nd4j {
                 this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), opNum, scalar));
                 this->_isDeductable = true;
 
-                auto block = new Context<T>(this->id(), nullptr, false);
+                auto block = new ContextPrototype<T>(this->id(), false);
 
                 // there's no other IArgs in legacy options, actually
                 for (auto v: dimensions)
@@ -349,9 +349,9 @@ namespace nd4j {
                 for (auto v: tArgs)
                     block->getTArguments()->emplace_back(v);
 
-                this->setBlock(block);
+                this->setContextPrototype(block);
             } else if (opType == OpType_CUSTOM) {
-                auto block = new Context<T>(this->id(), nullptr, false);
+                auto block = new ContextPrototype<T>(this->id(), false);
 
                 for (auto v: iArgs)
                     block->getIArguments()->emplace_back(v);
@@ -359,7 +359,7 @@ namespace nd4j {
                 for (auto v: tArgs)
                     block->getTArguments()->emplace_back(v);
 
-                this->setBlock(block);
+                this->setContextPrototype(block);
             }
         };
 
@@ -442,7 +442,7 @@ namespace nd4j {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->input()->size(), _opNum, _scalar));
                         this->_isDeductable = true;
 
-                        auto block = new Context<T>(this->id(), nullptr, false);
+                        auto block = new ContextPrototype<T>(this->id(), false);
 
                         // there's no other IArgs in legacy options, actually
                         for (auto v: _dimensions)
@@ -453,12 +453,12 @@ namespace nd4j {
                                 block->getTArguments()->emplace_back((T) node->extraParams()->Get(e));
                             }
 
-                        this->setBlock(block);
+                        this->setContextPrototype(block);
                     } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->inputPaired()->size(), _opNum, _scalar));
                         this->_isDeductable = true;
 
-                        auto block = new Context<T>(this->id(), nullptr, false);
+                        auto block = new ContextPrototype<T>(this->id(), false);
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -473,7 +473,7 @@ namespace nd4j {
                                 block->getTArguments()->emplace_back((T) node->extraParams()->Get(e));
                             }
 
-                        this->setBlock(block);
+                        this->setContextPrototype(block);
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
                     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(this->opNum());
@@ -482,7 +482,7 @@ namespace nd4j {
                         throw "Boom";
                     }
 
-                    auto block = new Context<T>(this->id(), nullptr);
+                    auto block = new ContextPrototype<T>(this->id());
 
                     for (int e = 0; e < this->input()->size(); e++) {
                         block->inputs()->emplace_back(this->input()->at(e));
@@ -498,7 +498,7 @@ namespace nd4j {
                         for (uint32_t e = 0; e < node->extraParams()->size(); e++)
                             block->getTArguments()->emplace_back(node->extraParams()->Get(e));
 
-                    this->setBlock(block);
+                    this->setContextPrototype(block);
 
                     this->setCustomOp(op);
                 }
@@ -515,8 +515,8 @@ namespace nd4j {
             if (_dim != nullptr)
                 delete[] _dim;
 
-            if (_block != nullptr)
-                delete _block;
+            if (_protoContext != nullptr)
+                delete _protoContext;
 
             if (_isDeductable && _customOp != nullptr)
                 delete _customOp;

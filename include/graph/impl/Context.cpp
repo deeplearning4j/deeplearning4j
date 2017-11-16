@@ -8,42 +8,60 @@ namespace nd4j {
     namespace graph {
 
         template <typename T>
-        Context<T>::Context(int nodeId, VariableSpace<T> *variableSpace) {
-            _nodeId = nodeId;
+        Context<T>::Context(ContextPrototype<T>* prototype, VariableSpace<T>* variableSpace) {
             _variableSpace = variableSpace;
-            _isInplace = false;
-            _workspace = nullptr;
 
-            _executionTime.first = 0;
-            _executionTime.second = 0;
+            if (prototype != nullptr) {
+                for (const auto &v: *(prototype->inputs())) {
+                    this->_inputs.push_back(v);
+                }
+
+                for (const auto &v: *(prototype->getTArguments())) {
+                    this->_tArgs.push_back(v);
+                }
+
+                for (const auto &v: *(prototype->getIArguments())) {
+                    this->_iArgs.push_back(v);
+                }
+
+                this->_opNum = prototype->opNum();
+                this->_isInplace = prototype->isInplace();
+                this->_nodeId = prototype->nodeId();
+            }
+        }
+
+
+        template <typename T>
+        Context<T>::Context(int nodeId, VariableSpace<T> *variableSpace) {
+            this->_nodeId = nodeId;
+            this->_variableSpace = variableSpace;
+            this->_isInplace = false;
+            this->_workspace = nullptr;
+
+            this->_executionTime.first = 0;
+            this->_executionTime.second = 0;
         }
 
         template <typename T>
         Context<T>::Context(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {
-            _isInplace = isInplace;
+            this->_isInplace = isInplace;
         }
 
         template<typename T>
         Context<T>::~Context() {
-            _iArgs.clear();
-            _tArgs.clear();
-            _inputs.clear();
+            this->_iArgs.clear();
+            this->_tArgs.clear();
+            this->_inputs.clear();
         }
-
 
         template <typename T>
         bool Context<T>::hasWorkspaceProvided() {
-            return _workspace != nullptr;
-        }
-
-        template <typename T>
-        void Context<T>::markInplace(bool reallyInplace) {
-            _isInplace = reallyInplace;
+            return this->_workspace != nullptr;
         }
 
         template <typename T>
         void Context<T>::attachWorkspace(nd4j::memory::Workspace* workspace) {
-            _workspace = workspace;
+            this->_workspace = workspace;
         }
 
         template <typename T>
@@ -76,25 +94,6 @@ namespace nd4j {
             _rng = rng;
         }
 
-        template <typename T>
-        int Context<T>::nodeId() {
-            return getNodeId();
-        }
-
-        template <typename T>
-        int Context<T>::getNodeId() {
-            return _nodeId;
-        }
-
-        /**
-         * This method returns number of inputs available in this block
-         * @return
-         */
-        template <typename T>
-        unsigned long Context<T>::width() {
-            return _inputs.size();
-        };
-
         /**
          * This method returns variableSpace used in this block
          * @return
@@ -115,38 +114,6 @@ namespace nd4j {
             _variableSpace->trackList(list);
         }
 
-        template <typename T>
-        bool Context<T>::isInplace() {
-            return _isInplace;
-        }
-
-        template <typename T>
-        std::vector<T>* Context<T>::getTArguments() {
-            return &_tArgs;
-        }
-
-        template <typename T>
-        std::vector<int>* Context<T>::getIArguments() {
-            return &_iArgs;
-        }
-
-        template <typename T>
-        void Context<T>::pickInput(int input) {
-            std::pair<int, int> pair(input, 0);
-            _inputs.emplace_back(pair);
-        }
-
-        template <typename T>
-        std::pair<int, int>* Context<T>::input(int idx) {
-            return &(_inputs.at(idx));
-        }
-
-        template <typename T>
-        void Context<T>::fillInputs(std::initializer_list<int> inputs) {
-            for (auto v: inputs) {
-                pickInput(v);
-            }
-        }
 /*
         template <typename T>
         void Block<T>::updateVariables() {
@@ -160,71 +127,44 @@ namespace nd4j {
 */
         template <typename T>
         int Context<T>::getBranch() {
-            return _branch;
+            return _variableSpace->flowPath()->branch(this->nodeId());
         }
 
         template <typename T>
         void Context<T>::setBranch(int branch) {
-            _branch = branch;
-        }
-
-        template <typename T>
-        void Context<T>::fillInputs(std::vector<int>& inputs) {
-            for (int e = 0; e < inputs.size(); e++) {
-                auto v = inputs.at(e);
-                pickInput(v);
-            }
+            //_branch = branch;
+            _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
         }
 
         template <typename T>
         Nd4jIndex nd4j::graph::Context<T>::getOuterTime(){
-            return _executionTime.first;
+            return this->_executionTime.first;
         }
 
         template <typename T>
         Nd4jIndex nd4j::graph::Context<T>::getInnerTime(){
-            return _executionTime.second;
-        }
-
-        template <typename T>
-        std::vector<std::pair<int, int>>* nd4j::graph::Context<T>::inputs() {
-            return &_inputs;
+            return this->_executionTime.second;
         }
 
         template <typename T>
         void nd4j::graph::Context<T>::setOuterTime(Nd4jIndex time){
-            _executionTime.first = time;
+            this->_executionTime.first = time;
         }
 
         template <typename T>
         void nd4j::graph::Context<T>::setInnerTime(Nd4jIndex time){
-            _executionTime.second = time;
+            this->_executionTime.second = time;
         }
 
-        template <typename T>
-        bool nd4j::graph::Context<T>::hasVariablesFilled() {
-            return _inputs.size() > 0;
-        }
-
-
-        template <typename T>
-        int Context<T>::opNum() {
-            return _opNum;
-        }
-
-        template <typename T>
-        void Context<T>::setOpNum(int opNum) {
-            _opNum = opNum;
-        }
 
         template <typename T>
         Variable<T>* Context<T>::getVariable(int idx) {
-            if (idx >= _inputs.size()) {
-                nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", _nodeId, idx, _inputs.size());
+            if (idx >= this->_inputs.size()) {
+                nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx, this->_inputs.size());
                 throw "Bad index";
             }
 
-            auto p = _inputs[idx];
+            auto p = this->_inputs[idx];
             return variable(p);
         }
 
@@ -253,22 +193,11 @@ namespace nd4j {
         template <typename T>
         Variable<T>* Context<T>::variable(std::pair<int,int>& p) {
             if (!_variableSpace->hasVariable(p)) {
-                nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", _nodeId, p.first, p.second);
+                nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
                 throw "Bad variable";
             }
 
             return _variableSpace->getVariable(p);
-        }
-
-        template <typename T>
-        void Context<T>::pickInput(std::pair<int, int>& p) {
-            _inputs.emplace_back(p);
-        }
-
-        template <typename T>
-        void Context<T>::pickInput(int input, int index) {
-            std::pair<int, int> pair(input, index);
-            pickInput(pair);
         }
 
 
@@ -319,9 +248,9 @@ namespace nd4j {
 
         template <typename T>
         Variable<T>* Context<T>::ensureVariable(int idx) {
-            std::pair<int, int> pair(nodeId(), idx);
+            std::pair<int, int> pair(this->nodeId(), idx);
             if (!_variableSpace->hasVariable(pair)) {
-                auto var = new Variable<T>(nullptr, nullptr, nodeId(), idx);
+                auto var = new Variable<T>(nullptr, nullptr, this->nodeId(), idx);
                 _variableSpace->putVariable(pair, var);
                 return var;
             } else {

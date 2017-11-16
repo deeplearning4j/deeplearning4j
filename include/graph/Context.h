@@ -6,8 +6,9 @@
 #define LIBND4J_BLOCK_H
 
 #include <vector>
-#include "Variable.h"
-#include "VariableSpace.h"
+#include <graph/Variable.h>
+#include <graph/VariableSpace.h>
+#include <graph/ContextPrototype.h>
 #include <memory/Workspace.h>
 
 
@@ -27,31 +28,15 @@ namespace nd4j {
          * This class defines input desired for any given node/operation within graph
          */
         template <typename T>
-        class Context {
+        class Context : public nd4j::graph::ContextPrototype<T> {
         protected:
-            nd4j::memory::Workspace* _workspace;
-
-            // int ids of the input nodes
-            std::vector<std::pair<int, int>> _inputs;
-
-            //std::vector<nd4j::graph::Variable<T> *> _variables;
-
-            nd4j::graph::VariableSpace<T>* _variableSpace;
+            nd4j::memory::Workspace* _workspace = nullptr;
+            nd4j::graph::VariableSpace<T>* _variableSpace = nullptr;
             std::pair<Nd4jIndex, Nd4jIndex> _executionTime;
-            nd4j::random::RandomBuffer* _rng;
-            int _nodeId;
-
-            std::vector<T> _tArgs;
-            std::vector<int> _iArgs;            
-			
-			bool _isInplace;
+            nd4j::random::RandomBuffer* _rng = nullptr;
 
             // branch for divergent_op
             int _branch = 0;
-
-            // opNum for legacy XYZ ops
-            int _opNum = -1;
-
         public:
             // TODO: maybe override new here as well?
 
@@ -59,6 +44,8 @@ namespace nd4j {
 #ifdef __CUDACC__
             cudaStream_t* _stream;
 #endif
+
+            Context(ContextPrototype<T>* prototype, VariableSpace<T>* variableSpace);
 
             Context(int nodeId, VariableSpace<T> *variableSpace = nullptr);
             Context(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
@@ -72,10 +59,6 @@ namespace nd4j {
             Nd4jIndex getOuterTime();
             Nd4jIndex getInnerTime();
 
-            // this method returns true, if inputs are defined
-            bool hasVariablesFilled();
-
-
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();
             void attachWorkspace(nd4j::memory::Workspace* workspace);
@@ -87,39 +70,13 @@ namespace nd4j {
 
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
-            int getNodeId();
-            int nodeId();
-
-
-            std::vector<T>* getTArguments();
-            std::vector<int>* getIArguments();
 
             // these fields define, if we can execute specific node in-place, without generating new array
-            bool isInplace();
-            void markInplace(bool reallyInplace);
 
-            void pickInput(int input);
-            void pickInput(int input, int index);
-            void pickInput(std::pair<int, int>& p);
-            void fillInputs(std::initializer_list<int> inputs);
-            void fillInputs(std::vector<int>& inputs);
-            std::vector<std::pair<int, int>>* inputs();
 
             // these variables are only for Divergent Nodes
             int getBranch();
             void setBranch(int branch);
-
-            /**
-             * This method returns number of inputs available in this block
-             * @return
-             */
-            unsigned long width();
-
-            /**
-            * This method returns variableSpace used in this block
-            * @return
-            */
-            //VariableSpace<T>* getVariableSpace();
 
             /**
              *
@@ -140,7 +97,7 @@ namespace nd4j {
              */
             Variable<T>* getVariable(int idx);
             Variable<T>* variable(int idx);
-            std::pair<int, int>* input(int idx);
+
 
             /**
              * This method fetches variable from Workspace DIRECTLY
@@ -150,9 +107,6 @@ namespace nd4j {
             Variable<T>* variable(int node, int index);
             Variable<T>* variable(std::pair<int,int>& p);
             Variable<T>* variable(std::initializer_list<int> p);
-
-            int opNum();
-            void setOpNum(int opNum);
 
 
             void pushNDArrayToVariableSpace(int nodeId, int index, NDArray<T>* array, bool removable = true);

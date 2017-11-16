@@ -4629,7 +4629,7 @@ INLINEDEF Nd4jIndex subArrayIndex(const int* maxShapeInfo, const int* minShapeIn
         minIdx += idxPerRank[maxShapeInfo[0] - i - 1] * stride(const_cast<int*>(minShapeInfo))[minShapeInfo[0] - i - 1];
     }
 
-    delete idxPerRank;
+    delete[] idxPerRank;
 
     return minIdx;
 }

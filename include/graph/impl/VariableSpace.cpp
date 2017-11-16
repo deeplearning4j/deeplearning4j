@@ -307,9 +307,18 @@ namespace nd4j {
             _lists.clear();
         }
 
+        template <typename T>
+        void VariableSpace<T>::setFlowPath(FlowPath* flow) {
+            _flow = flow;
+        }
 
         template <typename T>
-        nd4j::graph::VariableSpace<T>::VariableSpace() {
+        FlowPath* VariableSpace<T>::flowPath() {
+            return _flow;
+        }
+
+        template <typename T>
+        VariableSpace<T>::VariableSpace() {
             _handles = new std::vector<Variable<T> *>;
         }
 
