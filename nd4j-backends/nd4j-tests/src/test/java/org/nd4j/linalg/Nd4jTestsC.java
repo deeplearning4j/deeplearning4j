@@ -5513,6 +5513,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(im2colOp);
     }
 
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testReshapeFailure() {
+        val a = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        val b = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        val score = a.mmul(b);
+        val reshaped1 = score.reshape(2,100);
+        val reshaped2 = score.reshape(2,1);
+    }
+
     @Override
     public char ordering() {
         return 'c';

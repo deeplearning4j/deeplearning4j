@@ -3825,7 +3825,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray reshape(char order, int... newShape) {
         Nd4j.getCompressor().autoDecompress(this);
 
-
+        long prod = ArrayUtil.prodLong(newShape);
+        if (prod != this.lengthLong())
+            throw new ND4JIllegalStateException("New shape length doesn't match original length");
 
         if (newShape == null || newShape.length < 2)
             throw new ND4JIllegalStateException(
@@ -3857,8 +3859,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 break;
 
             }
-
         }
+
+
+
 
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
