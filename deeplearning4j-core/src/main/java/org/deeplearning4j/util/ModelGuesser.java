@@ -76,7 +76,8 @@ public class ModelGuesser {
                             try {
                                 return ComputationGraphConfiguration.fromYaml(input);
                             } catch (Exception e5) {
-                                throw e5;
+                                throw new ModelGuesserException("Unable to load configuration from path " + path
+                                        + " (invalid config file or not a known config type)");
                             }
                         }
                     }
@@ -135,7 +136,8 @@ public class ModelGuesser {
                                 return KerasModelImport.importKerasSequentialModelAndWeights(path);
 
                             } catch (Exception e3) {
-                                throw e3;
+                                throw new ModelGuesserException("Unable to load model from path " + path
+                                        + " (invalid model file or not a known model type)");
                             }
                         }
                     }
@@ -162,9 +164,11 @@ public class ModelGuesser {
         File f = File.createTempFile("loadModelGuess",".bin");
         f.deleteOnExit();
 
-        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f))){
+        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f))) {
             IOUtils.copy(stream, os);
             return loadModelGuess(f.getAbsolutePath());
+        } catch (ModelGuesserException e){
+            throw new ModelGuesserException("Unable to load model from input stream (invalid model file not a known model type)");
         } finally {
             f.delete();
         }
