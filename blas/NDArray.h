@@ -51,19 +51,23 @@ namespace nd4j {
         
         // accessing operator for matrix, i - absolute index
         // be careful this method doesn't check the boundaries of array
-        T operator()(const Nd4jIndex i) const;
+        FORCEINLINE T operator()(const Nd4jIndex i) const;
 
         // modifying operator for matrix, i - absolute index
         // be careful this method doesn't check the boundaries of array
-        T& operator()(const Nd4jIndex i);
+        FORCEINLINE T& operator()(const Nd4jIndex i);
 
         // accessing operator for 2D array, i - row, j - column
-        // be careful this method doesn't check the rank of array
-        T operator()(const int i, const int j) const;        
+        FORCEINLINE T operator()(const int i, const int j) const;        
 
         // modifying operator for 2D array, i - row, j - column
-        // be careful this method doesn't check the rank of array
-        T& operator()(const int i, const int j);
+        FORCEINLINE T& operator()(const int i, const int j);
+
+        // accessing operator for 3D array
+        FORCEINLINE T operator()(const int i, const int j, const int k) const;        
+
+        // modifying operator for 3D array
+        FORCEINLINE T& operator()(const int i, const int j, const int k);
 
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
@@ -227,14 +231,14 @@ namespace nd4j {
         NDArray<T> *dup(const char newOrder = 'a');
 
         // Returns true if these two NDArrays have same shape
-        inline bool isSameShape(const NDArray<T> *other) const;
-        inline bool isSameShape(std::initializer_list<int> shape);
-        inline bool isSameShape(std::initializer_list<Nd4jIndex> shape);
-        inline bool isSameShape(std::vector<int>& shape);
-        inline bool isSameShape(std::vector<Nd4jIndex >& shape);
+        FORCEINLINE bool isSameShape(const NDArray<T> *other) const;
+        FORCEINLINE bool isSameShape(std::initializer_list<int> shape);
+        FORCEINLINE bool isSameShape(std::initializer_list<Nd4jIndex> shape);
+        FORCEINLINE bool isSameShape(std::vector<int>& shape);
+        FORCEINLINE bool isSameShape(std::vector<Nd4jIndex >& shape);
 
 		// Returns true if these two NDArrays have same shape
-        inline bool isSameShapeStrict(const NDArray<T> *other) const;
+        FORCEINLINE bool isSameShapeStrict(const NDArray<T> *other) const;
 
         // This method returns sum of all elements of this NDArray
         T sumNumber() const;
@@ -324,27 +328,27 @@ namespace nd4j {
         bool equalsTo(const NDArray<T> *other, T eps = (T) 1e-5f) const;
 
         // Return value from linear buffer
-        T getScalar(const Nd4jIndex i) const;
+        FORCEINLINE T getScalar(const Nd4jIndex i) const;
+        
+        FORCEINLINE T getIndexedScalar(const Nd4jIndex i) const;
 
-        T getIndexedScalar(const Nd4jIndex i) const;
+        // Returns value from 2D matrix by coordinates/indexes         
+        FORCEINLINE T getScalar(const int i, const int j) const;
 
-        // Returns value from 2D matrix by coordinates/indexes 
-        T getScalar(const int i, const int j) const;
+        // returns value from 3D tensor by coordinates        
+        FORCEINLINE T getScalar(const int i, const int j, const int k) const;        
+        
+        FORCEINLINE void putIndexedScalar(const Nd4jIndex i, const T value);        
 
-        // returns value from 3D tensor by coordinates
-        T getScalar(const int i, const int k, const int j) const;
+        // This method sets value in linear buffer to position i        
+        FORCEINLINE void putScalar(const Nd4jIndex i, const T value);        
 
-        void putIndexedScalar(const Nd4jIndex i, const T value);
+        // This method sets value in 2D matrix to position i, j         
+        FORCEINLINE void putScalar(const int i, const int j, const T value);        
 
-        // This method sets value in linear buffer to position i
-        void putScalar(const Nd4jIndex i, const T value);
-
-        // This method sets value in 2D matrix to position i, j 
-        void putScalar(const int i, const int j, const T value);
-
-        // This method sets value in 3D matrix to position i,j,k
-        void putScalar(const int i, const int k, const int j, const T value);
-
+        // This method sets value in 3D matrix to position i,j,k        
+        FORCEINLINE void putScalar(const int i, const int j, const int k, const T value);
+        
         // This method adds given row to all rows in this NDArray, that is this array becomes affected
         void addiRowVector(const NDArray<T> *row);
 
@@ -512,76 +516,222 @@ namespace nd4j {
     };
 
 
-    template<typename T>
-    Nd4jIndex inline NDArray<T>::memoryFootprint() {
-        Nd4jIndex size = this->lengthOf() * this->sizeOfT();
-        size += (this->rankOf() * 2 + 4) * sizeof(int);
+//////////////////////////////////////////////////////////////////////////
+///// IMLEMENTATION OF INLINE METHODS ///// 
+//////////////////////////////////////////////////////////////////////////
 
-        return size;
+
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for matrix, i - absolute index
+template<typename T>
+FORCEINLINE T NDArray<T>::operator()(const Nd4jIndex i) const { 
+
+    if (i >= shape::length(_shapeInfo))
+            throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
+
+    int  ews   = shape::elementWiseStride(_shapeInfo);   
+    char order = ordering();   
+
+    if(ews == 1 && order == 'c')
+        return _buffer[i];
+    else if(ews > 1 && order == 'c')
+        return _buffer[i*ews];
+    else {
+        int idx[MAX_RANK];
+        shape::ind2subC(rankOf(), shapeOf(), i, idx);
+        Nd4jIndex offset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+        return _buffer[offset];        
     }
+}
 
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for matrix, i - absolute index
+template<typename T>
+FORCEINLINE T& NDArray<T>::operator()(const Nd4jIndex i) {
 
+    if (i >= shape::length(_shapeInfo))
+            throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
+
+    int  ews   = shape::elementWiseStride(_shapeInfo);   
+    char order = ordering();   
+
+    if(ews == 1 && order == 'c')
+        return _buffer[i];
+    else if(ews > 1 && order == 'c')
+        return _buffer[i*ews];
+    else {
+        int idx[MAX_RANK];
+        shape::ind2subC(rankOf(), shapeOf(), i, idx);
+        Nd4jIndex offset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+        return _buffer[offset];        
+    }    
+}
+
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for 2D matrix, i - row, j - column
+template<typename T>
+FORCEINLINE T NDArray<T>::operator()(const int i, const int j) const {
+    
+    if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
+       throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
+    
+    int coords[2] = {i, j};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for 2D matrix, i - row, j - column
+template<typename T>
+FORCEINLINE T& NDArray<T>::operator()(const int i, const int j) {
+    
+    if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
+       throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
+
+    int coords[2] = {i, j};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for 3D array, i - row, j - column
+template<typename T>
+FORCEINLINE T NDArray<T>::operator()(const int i, const int j, const int k) const {
+    
+    if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
+       throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
+    
+    int coords[3] = {i, j, k};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for 3D array
+template<typename T>
+FORCEINLINE T& NDArray<T>::operator()(const int i, const int j, const int k) {
+    
+    if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
+       throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
+
+    int coords[3] = {i, j, k};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Return value from linear buffer
+template<typename T>
+FORCEINLINE T NDArray<T>::getScalar(const Nd4jIndex i) const
+{ return (*this)(i); }
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE T NDArray<T>::getIndexedScalar(const Nd4jIndex i) const
+{ return (*this)(i); }
+
+//////////////////////////////////////////////////////////////////////////
+// Returns value from 2D matrix by coordinates/indexes         
+template<typename T>
+FORCEINLINE T NDArray<T>::getScalar(const int i, const int j) const
+{ return (*this)(i, j); }
+
+//////////////////////////////////////////////////////////////////////////
+// returns value from 3D tensor by coordinates        
+template<typename T>
+FORCEINLINE T NDArray<T>::getScalar(const int i, const int j, const int k) const
+{ return (*this)(i, j, k); }
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE void NDArray<T>::putIndexedScalar(const Nd4jIndex i, const T value)
+{ (*this)(i) = value; }
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in linear buffer to position i        
+template<typename T>
+FORCEINLINE void NDArray<T>::putScalar(const Nd4jIndex i, const T value)
+{ (*this)(i) = value; }
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 2D matrix to position i, j         
+template<typename T>
+FORCEINLINE void NDArray<T>::putScalar(const int i, const int j, const T value)
+{ (*this)(i,j) = value; }
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 3D matrix to position i,j,k        
+template<typename T>
+FORCEINLINE void NDArray<T>::putScalar(const int i, const int j, const int k, const T value)
+{ (*this)(i,j,k) = value; }
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+Nd4jIndex FORCEINLINE NDArray<T>::memoryFootprint() {    
+
+    Nd4jIndex size = this->lengthOf() * this->sizeOfT();
+    size += (this->rankOf() * 2 + 4) * sizeof(int);
+    return size;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // returns true if these two NDArrays have same shape
 // still the definition of inline function must be in header file
-    template<typename T>
-    inline bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
-
-        if (this->rankOf() != other->rankOf())
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
+    if (this->rankOf() != other->rankOf())
+        return false;
+    for (int e = 0; e < this->rankOf(); e++)
+        if (this->shapeOf()[e] != other->shapeOf()[e])
             return false;
+    return true;
+}
 
-        for (int e = 0; e < this->rankOf(); e++)
-            if (this->shapeOf()[e] != other->shapeOf()[e])
-                return false;
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShape(std::initializer_list<int> other) {
+    std::vector<int> shp(other);
+    return isSameShape(shp);
+}
 
-        return true;
-    }
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShape(std::initializer_list<Nd4jIndex> other) {
+    std::vector<Nd4jIndex> shp(other);
+    return isSameShape(shp);
+}
 
-    template<typename T>
-    inline bool NDArray<T>::isSameShape(std::initializer_list<int> other) {
-        std::vector<int> shp(other);
-        return isSameShape(shp);
-    }
-
-    template<typename T>
-    inline bool NDArray<T>::isSameShape(std::initializer_list<Nd4jIndex> other) {
-        std::vector<Nd4jIndex> shp(other);
-        return isSameShape(shp);
-    }
-
-    template<typename T>
-    inline bool NDArray<T>::isSameShape(std::vector<Nd4jIndex>& other) {
-        if (this->rankOf() != other.size())
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShape(std::vector<Nd4jIndex>& other) {
+    if (this->rankOf() != other.size())
+        return false;
+    for (int e = 0; e < this->rankOf(); e++) {
+        if (this->shapeOf()[e] != (int) other.at(e))
             return false;
-
-        for (int e = 0; e < this->rankOf(); e++) {
-            if (this->shapeOf()[e] != (int) other.at(e))
-                return false;
-        }
-
-        return true;
     }
+    return true;
+}
 
-
-    template<typename T>
-    inline bool NDArray<T>::isSameShape(std::vector<int>& other) {
-        if (this->rankOf() != (int) other.size())
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShape(std::vector<int>& other) {
+    if (this->rankOf() != (int) other.size())
+        return false;
+    for (int e = 0; e < this->rankOf(); e++) {
+        if (this->shapeOf()[e] != other.at(e))
             return false;
-
-        for (int e = 0; e < this->rankOf(); e++) {
-            if (this->shapeOf()[e] != other.at(e))
-                return false;
-        }
-
-        return true;
     }
+    return true;
+}
 
-    // returns true if these two NDArrays have same _shapeInfo
-    // still the definition of inline function must be in header file
-    template<typename T>
-    inline bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {        
-    
-		return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
-    }
+//////////////////////////////////////////////////////////////////////////
+// returns true if these two NDArrays have same _shapeInfo
+// still the definition of inline function must be in header file
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {        
+  return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
+}
 
 
 

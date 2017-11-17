@@ -1382,4 +1382,21 @@ struct __registratorDouble_##NAME {\
 #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
 #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
 
+
+// define macros for compiler enforcement to make function inline  
+#ifdef __clang__
+#define FORCEINLINE inline 
+#elif _MSC_VER
+#define FORCEINLINE __forceinline inline 
+#elif __GNUC__
+#define FORCEINLINE __attribute__((always_inline)) inline 
+#elif __CUDACC__
+#define FORCEINLINE __forceinline__ inline 
+#else
+#define FORCEINLINE inline 
+#endif
+
+
+
+
 #endif

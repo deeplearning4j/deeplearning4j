@@ -176,8 +176,10 @@ TEST_F(DeclarableOpsTests1, TestTensorDot2) {
     NDArray<float>* y = new NDArray<float>('f', {2, 3, 4});
 
     for (int i = 0; i < x->lengthOf(); i++) {
-        x->putScalar(i, i + 1);
-        y->putScalar(i, i + 1);
+        // x->putScalar(i, i + 1);
+        // y->putScalar(i, i + 1);
+        x->getBuffer()[i] = i + 1;
+        y->getBuffer()[i] = i + 1;
     }
 
     NDArray<float> exp(2, 2, 'c');
@@ -219,14 +221,19 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
 
     for (int i = 0; i < x->lengthOf(); i++) {
         x->putScalar(i, i + 1);
-        y->putScalar(i, i + 1);
+        // y->putScalar(i, i + 1);
+        y->getBuffer()[i] = i + 1;
     }
 
     NDArray<float>* exp = new NDArray<float>(2, 2, 'f');
-    exp->putScalar(0, 1090.0);
-    exp->putScalar(1, 2818.0);
-    exp->putScalar(2, 1168.0);
-    exp->putScalar(3, 3040.0);
+    // exp->putScalar(0, 1090.0);
+    // exp->putScalar(1, 2818.0);
+    // exp->putScalar(2, 1168.0);
+    // exp->putScalar(3, 3040.0);
+    exp->getBuffer()[0] = 1090.0;
+    exp->getBuffer()[1] = 2818.0;
+    exp->getBuffer()[2] = 1168.0;
+    exp->getBuffer()[3] = 3040.0;
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, x);
@@ -261,15 +268,20 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     NDArray<float>* y =  new NDArray<float>('c', {2, 3, 4});
 
     for (int i = 0; i < x->lengthOf(); i++) {
-        x->putScalar(i, i + 1);
+        // x->putScalar(i, i + 1);
+        x->getBuffer()[i] = i + 1;
         y->putScalar(i, i + 1);
     }
 
     NDArray<float>* exp = new NDArray<float>(2, 2, 'f');
-    exp->putScalar(0, 1090.0);
-    exp->putScalar(1, 1168.0);
-    exp->putScalar(2, 2818.0);
-    exp->putScalar(3, 3040.0);
+    // exp->putScalar(0, 1090.0);
+    // exp->putScalar(1, 1168.0);
+    // exp->putScalar(2, 2818.0);
+    // exp->putScalar(3, 3040.0);
+    exp->getBuffer()[0] = 1090.0;
+    exp->getBuffer()[1] = 1168.0;
+    exp->getBuffer()[2] = 2818.0;
+    exp->getBuffer()[3] = 3040.0;
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, x);
