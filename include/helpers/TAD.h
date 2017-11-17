@@ -728,10 +728,12 @@ namespace shape {
             return shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo);
 
         // case when tad coincides with whole array
-        if( this->numTads == 1 ) {
-            int* ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo); 
-            if(shape::isDimPermuted(dimension, dimensionLength))    // check whether we need permutation
+        if( this->numTads == 1 && shape::rank(originalShapeInfo) == originalDimensionLength) {
+            // we might have special case here: skipped dimensions might be just full of ones
+            int *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
+            if (shape::isDimPermuted(dimension, dimensionLength))    // check whether we need permutation
                 shape::doPermuteShapeBuffer(ret, dimension);
+
             return ret;
         }
 

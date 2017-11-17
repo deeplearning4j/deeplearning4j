@@ -93,4 +93,18 @@ TEST_F(TadTests, TestShapeTad_1) {
     
 }
 
+TEST_F(TadTests, TadEdgeCase_1) {
+    NDArray<float> array('c', {5, 4, 1});
+    NDArray<float> exp('c', {5, 4});
+    NDArrayFactory<float>::linspace(1, array);
+
+    auto tad = array.tensorAlongDimension(0, {0, 1});
+
+    ASSERT_TRUE(exp.isSameShape(tad));
+
+    delete tad;
+}
+
+
+
 #endif //LIBND4J_TADTESTS_H

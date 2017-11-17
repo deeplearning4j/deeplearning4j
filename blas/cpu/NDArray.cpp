@@ -804,19 +804,21 @@ template <typename T>
         if (index >= numTads)
             throw "Can't get index higher than total number of TADs";
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(this->_shapeInfo, copy.data(), copy.size()));
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
+        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        tad.createTadOnlyShapeInfo();
+        tad.createOffsets();
 
-        T* buffer = this->_buffer + tad->tadOffsets[index];
+        shape::printShapeInfoLinear(tad.tadOnlyShapeInfo);
+
+        T* buffer = this->_buffer + tad.tadOffsets[index];
 
         int* shapeInfo;
         if (_workspace == nullptr) {
-            shapeInfo = new int[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+            shapeInfo = new int[shape::shapeInfoLength(tad.tadOnlyShapeInfo[0])];
         } else {
-            shapeInfo = (int *) _workspace->allocateBytes(shape::shapeInfoByteLength(tad->tadOnlyShapeInfo[0]));
+            shapeInfo = (int *) _workspace->allocateBytes(shape::shapeInfoByteLength(tad.tadOnlyShapeInfo[0]));
         }
-        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
 
         auto array = new NDArray<T>(buffer, shapeInfo, _workspace);
         array->_isBuffAlloc = false;
