@@ -93,6 +93,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_range.class,
         float_cast.class,
         float_pad.class,
+        float_gather.class,
         float_sru.class,
         float_sru_logic.class,
         float_sru_bi.class,
@@ -210,6 +211,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_range.class,
         half_cast.class,
         half_pad.class,
+        half_gather.class,
         half_sru.class,
         half_sru_logic.class,
         half_sru_bi.class,
@@ -327,6 +329,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_range.class,
         double_cast.class,
         double_pad.class,
+        double_gather.class,
         double_sru.class,
         double_sru_logic.class,
         double_sru_bi.class,
@@ -511,7 +514,13 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
+// #include <cblas.h>
 
+// #ifdef _WIN32
+// #define CUBLASWINAPI __stdcall
+// #else
+// #define CUBLASWINAPI 
+// #endif
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -3398,6 +3407,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void initializeDevicesAndFunctions();
 
+    public native void initializeDevicesAndFunctions(@Cast("Nd4jPointer*") PointerPointer functions);
 
     /**
      * This method acquires memory chunk of requested size on host side
@@ -17297,6 +17307,48 @@ private native void allocate();
                 return (double_pad)super.position(position);
             }
         public double_pad() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::gather<float>") public static class float_gather extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_gather(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_gather(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_gather position(long position) {
+                return (float_gather)super.position(position);
+            }
+        public float_gather() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::gather<float16>") public static class half_gather extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_gather(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_gather(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_gather position(long position) {
+                return (half_gather)super.position(position);
+            }
+        public half_gather() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::gather<double>") public static class double_gather extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_gather(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_gather(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_gather position(long position) {
+                return (double_gather)super.position(position);
+            }
+        public double_gather() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
