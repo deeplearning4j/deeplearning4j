@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -156,36 +157,16 @@ public class ModelGuesser {
      * @throws Exception
      */
     public static Model loadModelGuess(InputStream stream) throws Exception {
-        try {
-            return ModelSerializer.restoreMultiLayerNetwork(stream, true);
-        } catch (Exception e) {
-            try {
-                return ModelSerializer.restoreComputationGraph(stream, true);
-            } catch (Exception e1) {
-                try {
-                    return ModelSerializer.restoreMultiLayerNetwork(stream, false);
+        //Currently (Nov 2017): KerasModelImport doesn't support loading from input streams
+        //Simplest solution here: write to a temporary file
+        File f = File.createTempFile("loadModelGuess",".bin");
+        f.deleteOnExit();
 
-                } catch (Exception e5) {
-                    try {
-                        return ModelSerializer.restoreComputationGraph(stream, false);
-
-                    } catch (Exception e6) {
-                        try {
-                            return KerasModelImport.importKerasModelAndWeights(stream);
-                        } catch (Exception e2) {
-                            try {
-                                return KerasModelImport.importKerasSequentialModelAndWeights(stream);
-
-                            } catch (Exception e3) {
-                                throw e3;
-                            }
-                        }
-                    }
-
-                }
-
-
-            }
+        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f))){
+            IOUtils.copy(stream, os);
+            return loadModelGuess(f.getAbsolutePath());
+        } finally {
+            f.delete();
         }
     }
 
