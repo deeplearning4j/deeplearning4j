@@ -135,3 +135,249 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
     delete reshaped;
 
 }
+
+TEST_F(ParityOpsTests, Test_Shape_1) {
+    NDArray<float> x('c', {3, 4, 5, 6});
+    NDArray<float> exp('c', {1, 4}, {3, 4, 5, 6});
+
+    nd4j::ops::shape_of<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ParityOpsTests, Test_Equals_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> y('c', {1, 5}, {1, 0, 3, 0, 5});
+    NDArray<float> exp('c', {1, 5}, {1, 0, 1, 0, 1});
+
+    nd4j::ops::equals<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ParityOpsTests, Test_NotEquals_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> y('c', {1, 5}, {1, 0, 3, 0, 5});
+    NDArray<float> exp('c', {1, 5}, {0, 1, 0, 1, 0});
+
+    nd4j::ops::not_equals<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Less_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> y('c', {1, 5}, {5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {1, 5}, {1, 1, 0, 0, 0});
+
+    nd4j::ops::less<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_LessEquals_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> y('c', {1, 5}, {5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {1, 5}, {1, 1, 1, 0, 0});
+
+    nd4j::ops::less_equal<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> y('c', {1, 5}, {5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {1, 5}, {0, 0, 1, 1, 1});
+
+    nd4j::ops::greater_equal<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Greater_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> y('c', {1, 5}, {5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {1, 5}, {0, 0, 0, 1, 1});
+
+    nd4j::ops::greater<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Where_1) {
+    NDArray<float> mask('c', {3, 3}, {1, 1, 1,  0, 0, 0,  1, 1, 1});
+    NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<float> y('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {3, 3}, {1, 2, 3, 6, 5, 4, 7, 8, 9});
+
+    nd4j::ops::where<float> op;
+    auto result = op.execute({&mask, &x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Where_2) {
+    NDArray<float> mask('c', {1, 3}, {1, 0, 0});
+    NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<float> y('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
+
+    nd4j::ops::where<float> op;
+    auto result = op.execute({&mask, &x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ParityOpsTests, Test_Where_3) {
+    NDArray<float> mask('c', {2, 2, 3}, {0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0});
+    NDArray<float> exp('c', {5, 3}, {0, 0, 1, 0, 0, 2, 0, 1, 1, 1, 0, 0, 1, 1, 2});
+
+    nd4j::ops::where<float> op;
+    auto result = op.execute({&mask}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Select_1) {
+    NDArray<float> mask('c', {1, 3}, {1, 0, 0});
+    NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<float> y('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
+    NDArray<float> exp('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
+
+    nd4j::ops::select<float> op;
+    auto result = op.execute({&mask, &x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Select_2) {
+    NDArray<float> mask('c', {2, 2}, {1, 0, 1, 0});
+    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4 });
+    NDArray<float> y('c', {2, 2}, {9, 8, 7, 6});
+    NDArray<float> exp('c', {2, 2}, {1, 8, 3, 6});
+
+    nd4j::ops::select<float> op;
+    auto result = op.execute({&mask, &x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Select_3) {
+    NDArray<float> mask('c', {1, 1}, {0});
+    NDArray<float> x('c', {1, 1}, {1});
+    NDArray<float> y('c', {1, 1}, {2});
+    NDArray<float> exp('c', {1, 1}, {2});
+
+    nd4j::ops::select<float> op;
+    auto result = op.execute({&mask, &x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
+    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> shape('c', {1, 3}, {1, 2, 2});
+
+    NDArray<float> exp('c', {1, 2, 2}, {1, 2, 3, 4});
+    
+    nd4j::ops::reshape<float> op;
+
+    auto result = op.execute({&x, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

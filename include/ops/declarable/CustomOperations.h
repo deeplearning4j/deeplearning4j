@@ -19,7 +19,8 @@
 #include <ops/declarable/DeclarableListOp.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <helpers/ArrayUtils.h>
-#include <ShapeList.h>
+#include <helpers/ShapeUtils.h>
+#include <array/ShapeList.h>
 
 namespace nd4j {
     namespace ops {
@@ -54,7 +55,13 @@ namespace nd4j {
         DECLARE_OP(maximum, 2, 1, true);
         DECLARE_OP(minimum, 2, 1, true);
         DECLARE_OP(square, 1, 1, true);
-        DECLARE_CUSTOM_OP(expose, -1, -1, true, 0, 0);
+        DECLARE_OP(equals, 2, 1, true);
+        DECLARE_OP(not_equals, 2, 1, true);
+        DECLARE_OP(less_equal, 2, 1, true);
+        DECLARE_OP(greater_equal, 2, 1, true);
+        DECLARE_OP(less, 2, 1, true);
+        DECLARE_OP(greater, 2, 1, true);
+
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
 
@@ -69,7 +76,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(conv2d_bp, 3, 2, false, 0, 9);
         DECLARE_CUSTOM_OP(lrn, 1, 3, true, 4, 0);
-        DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -1);
+        DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -2);
         DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(sconv2d_bp, 4, 2, false, 0, 9);
         DECLARE_CUSTOM_OP(deconv2d, 2, 1, false, 0, 9);
@@ -110,6 +117,10 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(range, -2, 1, false, -2, -2);
         DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(pad, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(expose, -1, -1, true, 0, 0);
+        DECLARE_CUSTOM_OP(where, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(select, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(shape_of, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(gather, 2, 1, false, 0, 1);
 
         // recurrent ops
@@ -152,6 +163,8 @@ namespace nd4j {
         DECLARE_LIST_OP(split_list, 2, 1, 0, -2);
         DECLARE_LIST_OP(gather_list, 2, 1, 0, -2);
         DECLARE_LIST_OP(clone_list, 1, 1, 0, 0);
+
+
     }
 }
 
