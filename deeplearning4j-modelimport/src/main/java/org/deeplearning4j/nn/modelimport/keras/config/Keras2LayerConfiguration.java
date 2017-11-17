@@ -31,6 +31,8 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = "Conv1D";
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Conv2D";
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = "SeparableConv2D";
+    private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = "Conv2DTranspose";
+
 
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_OUTPUT_DIM = "units";

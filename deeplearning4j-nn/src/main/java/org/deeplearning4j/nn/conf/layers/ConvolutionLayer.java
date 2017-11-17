@@ -478,7 +478,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         protected boolean hasBias = true;
         protected ConvolutionMode convolutionMode = null;
         protected int[] dilation = new int[]{1, 1};
-        protected int[] kernelSize = new int[] {5, 5};
+        public int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
         protected int[] padding = new int[] {0, 0};
         protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
