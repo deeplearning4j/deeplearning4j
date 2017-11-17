@@ -5,6 +5,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 #include <vector>
+#include <numeric>
 
 
 namespace nd4j {
