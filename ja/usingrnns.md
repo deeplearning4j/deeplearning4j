@@ -115,7 +115,7 @@ DL4Jは、パディングやマスキング機能を使い、再帰型ネット�
 
 再帰型ニューラルネットワークは、他のタイプの層と組み合わせることが可能です。例えば、同じネット-ワークでDenseLayerとGravesLSTMの層を組み合わせたり、ビデオのデータに畳み込み（CNN）ニューラルネットワークの層とGravesLSTMの層を組み合わせることができます。
 
-もちろん、DenseLayerと畳み込み層は、時系列データを扱いません。これとは異なるタイプの入力を求めています。このことに対処するためには、我々は層のプリプロセッサ関数を使用する必要があります。例えば、CnnToRnnPreProcessorとFeedForwardToRnnPreprocessorのクラスなどがあります。すべてのプリプロセッサについては、[こちら](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)でをご覧ください。好都合なことに、ほとんどの場合、DL4Jの設定システムはこれらのプリプロセッサを必要に応じて自動的に追加します。また、プリプロセッサを手作業で追加することも可能です（各層につき、プリプロセッサの自動による追加をオーバーライドします）。
+もちろん、DenseLayerと畳み込み層は、時系列データを扱いません。これとは異なるタイプの入力を求めています。このことに対処するためには、我々は層のプリプロセッサ関数を使用する必要があります。例えば、CnnToRnnPreProcessorとFeedForwardToRnnPreprocessorのクラスなどがあります。すべてのプリプロセッサについては、[こちら](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)でをご覧ください。好都合なことに、ほとんどの場合、DL4Jの設定システムはこれらのプリプロセッサを必要に応じて自動的に追加します。また、プリプロセッサを手作業で追加することも可能です（各層につき、プリプロセッサの自動による追加をオーバーライドします）。
 
 例えば、プリプロセッサを手作業で層の1と2の間に追加するには、コマンドの`.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())`をネットワーク設定に追加してください。
 

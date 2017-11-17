@@ -130,7 +130,7 @@ Now, to implement a new layer type, you need to implement all of the following:
 * A Layer (configuration) class, with a Builder class. Follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers)
 * A Layer (implementation) class. Again, follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers)
 * A [ParameterInitializer](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/params) for your layer (which is responsible for initializing the initial parameters, given the configuration)
-* A [LayerFactory](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/factory) which extends DefaultLayerFactory, plus add your layer to DefaultLayerFactory.getInstance()
+* A [LayerFactory](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/factory) which extends DefaultLayerFactory, plus add your layer to DefaultLayerFactory.getInstance()
 
 In DL4J, we do not currently have symbolic automatic differentiation. This means that both the forward pass (predictions) and backward pass (backpropagation) code must be implemented manually.
 
