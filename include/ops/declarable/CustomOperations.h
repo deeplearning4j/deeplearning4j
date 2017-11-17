@@ -110,6 +110,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(range, -2, 1, false, -2, -2);
         DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(pad, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(gather, 2, 1, false, 0, 1);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);

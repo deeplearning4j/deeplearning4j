@@ -68,13 +68,13 @@ namespace nd4j {
     }
 
     template<typename T>
-    ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions) {
+    ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, const std::initializer_list<int> dimensions) {
         std::vector<int> vec(dimensions);
         return allTensorsAlongDimension(ndArray, vec);
     }
 
     template<typename T>
-    ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions) {
+    ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(NDArray<T>* ndArray, const std::vector<int> &dimensions) {
         auto result = new ResultSet<T>();
 
         std::vector<int> copy(dimensions);

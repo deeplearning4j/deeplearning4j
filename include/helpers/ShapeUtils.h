@@ -35,7 +35,7 @@ namespace nd4j {
 
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
-        // return new (shorter) dimensions array without dimensions that are present in input vector
+        // return new (shorter) sorted dimensions array without dimensions that are present in input vector
         static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);
 
         // this method converts axis, to set of axes for TAD. i.e. for 0 axis of 3D array becomes {1, 2}

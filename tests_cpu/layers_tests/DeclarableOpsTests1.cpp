@@ -19,7 +19,7 @@
 using namespace nd4j;
 using namespace nd4j::graph;
 
-class DeclarableOpsTests : public testing::Test {
+class DeclarableOpsTests1 : public testing::Test {
 public:
 
     const int bS = 2;       // batch size
@@ -38,13 +38,13 @@ public:
     const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     // output height
     const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
 
-    DeclarableOpsTests() {
+    DeclarableOpsTests1() {
         printf("\n");
     }
 };
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BasicInitialization1) {
+TEST_F(DeclarableOpsTests1, BasicInitialization1) {
     auto concat = new nd4j::ops::concat<float>();
     std::string expName("concat");
     ASSERT_EQ(expName, *(concat->getOpName()));
@@ -95,7 +95,7 @@ TEST_F(DeclarableOpsTests, BasicInitialization1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BasicInitialization2) {
+TEST_F(DeclarableOpsTests1, BasicInitialization2) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("concat");
 
     ASSERT_TRUE(op != nullptr);
@@ -107,7 +107,7 @@ TEST_F(DeclarableOpsTests, BasicInitialization2) {
 }
 
 
-TEST_F(DeclarableOpsTests, BasicInitialization3) {
+TEST_F(DeclarableOpsTests1, BasicInitialization3) {
     auto op1 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("concat");
     std::string expName("concat");
     auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(expName);
@@ -118,7 +118,7 @@ TEST_F(DeclarableOpsTests, BasicInitialization3) {
 }
 
 
-TEST_F(DeclarableOpsTests, SynonymInitialization2) {
+TEST_F(DeclarableOpsTests1, SynonymInitialization2) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Mul");
     auto op2 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("multiply");
 
@@ -129,7 +129,7 @@ TEST_F(DeclarableOpsTests, SynonymInitialization2) {
 }
 
 
-TEST_F(DeclarableOpsTests, TestTensorMmul1) {
+TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
     NDArray<float>* x = new NDArray<float>('c', {2, 3, 4});
     NDArray<float>* y = new NDArray<float>('c', {2, 3, 4});
 
@@ -171,7 +171,7 @@ TEST_F(DeclarableOpsTests, TestTensorMmul1) {
     delete variableSpace;
 }
 
-TEST_F(DeclarableOpsTests, TestTensorDot2) {
+TEST_F(DeclarableOpsTests1, TestTensorDot2) {
     NDArray<float>* x = new NDArray<float>('f', {2, 3, 4});
     NDArray<float>* y = new NDArray<float>('f', {2, 3, 4});
 
@@ -213,7 +213,7 @@ TEST_F(DeclarableOpsTests, TestTensorDot2) {
     delete variableSpace;
 }
 
-TEST_F(DeclarableOpsTests, TestTensorDot3) {
+TEST_F(DeclarableOpsTests1, TestTensorDot3) {
     NDArray<float>* x = new NDArray<float>('c', {2, 3, 4});
     NDArray<float>* y = new NDArray<float>('f', {2, 3, 4});
 
@@ -256,7 +256,7 @@ TEST_F(DeclarableOpsTests, TestTensorDot3) {
     delete variableSpace;
 }
 
-TEST_F(DeclarableOpsTests, TestTensorDot4) {
+TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     NDArray<float>* x =  new NDArray<float>('f', {2, 3, 4});
     NDArray<float>* y =  new NDArray<float>('c', {2, 3, 4});
 
@@ -300,7 +300,7 @@ TEST_F(DeclarableOpsTests, TestTensorDot4) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivergentCheck1) {
+TEST_F(DeclarableOpsTests1, DivergentCheck1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("switch");
 
     ASSERT_TRUE(op != nullptr);
@@ -311,7 +311,7 @@ TEST_F(DeclarableOpsTests, DivergentCheck1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddMatrices1) {
+TEST_F(DeclarableOpsTests1, AddMatrices1) {
     
     NDArray<float>* x = new NDArray<float>(5, 3, 'c');
     NDArray<float>* y = new NDArray<float>(5, 3, 'c');
@@ -339,7 +339,7 @@ TEST_F(DeclarableOpsTests, AddMatrices1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddMatrixVector1) {
+TEST_F(DeclarableOpsTests1, AddMatrixVector1) {
     
     NDArray<float>* x = new NDArray<float>(5, 3, 'c');
     NDArray<float>* y = new NDArray<float>(1, 15, 'c');
@@ -366,7 +366,7 @@ TEST_F(DeclarableOpsTests, AddMatrixVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddVectorVector1) {
+TEST_F(DeclarableOpsTests1, AddVectorVector1) {
     
     NDArray<float>* x = new NDArray<float>(1, 15, 'c');
     NDArray<float>* y = new NDArray<float>(1, 15, 'c');
@@ -393,7 +393,7 @@ TEST_F(DeclarableOpsTests, AddVectorVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddMatrixScalar1) {
+TEST_F(DeclarableOpsTests1, AddMatrixScalar1) {
 
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -419,7 +419,7 @@ TEST_F(DeclarableOpsTests, AddMatrixScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddScalarScalar1) {
+TEST_F(DeclarableOpsTests1, AddScalarScalar1) {
     
     auto x = new NDArray<float>(1, 1, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -445,7 +445,7 @@ TEST_F(DeclarableOpsTests, AddScalarScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractMatrices1) {
+TEST_F(DeclarableOpsTests1, SubtractMatrices1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(5, 3, 'c');
@@ -471,7 +471,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrices1) {
     delete block;
 }
 
-TEST_F(DeclarableOpsTests, TestRng1) {
+TEST_F(DeclarableOpsTests1, TestRng1) {
     Nd4jIndex *buffer = new Nd4jIndex[100000];
 
     NativeOps nativeOps;
@@ -506,7 +506,7 @@ TEST_F(DeclarableOpsTests, TestRng1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractMatrixVector1) {
+TEST_F(DeclarableOpsTests1, SubtractMatrixVector1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -533,7 +533,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrixVector1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MergeSumTest1) {
+TEST_F(DeclarableOpsTests1, MergeSumTest1) {
 
     auto x = new NDArray<float>(5, 5, 'c');
     auto y = new NDArray<float>(5, 5, 'c');
@@ -566,7 +566,7 @@ TEST_F(DeclarableOpsTests, MergeSumTest1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ClipByValue1) {
+TEST_F(DeclarableOpsTests1, ClipByValue1) {
 
     auto x = new NDArray<float>(5, 5, 'c');
     NDArray<float> exp(5, 5, 'c');
@@ -598,7 +598,7 @@ TEST_F(DeclarableOpsTests, ClipByValue1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MergeMaxTest1) {
+TEST_F(DeclarableOpsTests1, MergeMaxTest1) {
 
     NDArray<float>* x = new NDArray<float>(5, 5, 'c');
     NDArray<float>* y = new NDArray<float>(5, 5, 'c');
@@ -634,7 +634,7 @@ TEST_F(DeclarableOpsTests, MergeMaxTest1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractVectorVector1) {
+TEST_F(DeclarableOpsTests1, SubtractVectorVector1) {
     
     NDArray<float>* x = new NDArray<float>(1, 15, 'c');
     NDArray<float>* y = new NDArray<float>(1, 15, 'c');
@@ -662,7 +662,7 @@ TEST_F(DeclarableOpsTests, SubtractVectorVector1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractMatrixScalar1) {
+TEST_F(DeclarableOpsTests1, SubtractMatrixScalar1) {
     
     NDArray<float>* x = new NDArray<float>(5, 3, 'c');
     NDArray<float>* y = new NDArray<float>(1, 1, 'c');
@@ -689,7 +689,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrixScalar1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractScalarScalar1) {
+TEST_F(DeclarableOpsTests1, SubtractScalarScalar1) {
     
     NDArray<float>* x = new NDArray<float>(1, 1, 'c');
     NDArray<float>* y = new NDArray<float>(1, 1, 'c');
@@ -715,7 +715,7 @@ TEST_F(DeclarableOpsTests, SubtractScalarScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractMatrices1) {
+TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(5, 3, 'c');
@@ -741,7 +741,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrices1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector1) {
+TEST_F(DeclarableOpsTests1, ReverseSubtractMatrixVector1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float> (1, 15, 'c');
@@ -768,7 +768,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector1) {
+TEST_F(DeclarableOpsTests1, ReverseSubtractVectorVector1) {
     
     auto x = new NDArray<float> (1, 15, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -796,7 +796,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar1) {
+TEST_F(DeclarableOpsTests1, ReverseSubtractMatrixScalar1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -824,7 +824,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar1) {
+TEST_F(DeclarableOpsTests1, ReverseSubtractScalarScalar1) {
     
     auto x = new NDArray<float>(1, 1, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -851,7 +851,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyMatrices1) {
+TEST_F(DeclarableOpsTests1, MultiplyMatrices1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(5, 3, 'c');
@@ -878,7 +878,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrices1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyMatrixVector1) {
+TEST_F(DeclarableOpsTests1, MultiplyMatrixVector1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -905,7 +905,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrixVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyVectorVector1) {
+TEST_F(DeclarableOpsTests1, MultiplyVectorVector1) {
     
     auto x = new NDArray<float>(1, 15, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -932,7 +932,7 @@ TEST_F(DeclarableOpsTests, MultiplyVectorVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyMatrixScalar) {
+TEST_F(DeclarableOpsTests1, MultiplyMatrixScalar) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -959,7 +959,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrixScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyScalarScalar1) {
+TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
     
     auto x = new NDArray<float>(1, 1, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -985,7 +985,7 @@ TEST_F(DeclarableOpsTests, MultiplyScalarScalar1) {
     delete exp;
 }
 
-TEST_F(DeclarableOpsTests, TestMatMul1) {
+TEST_F(DeclarableOpsTests1, TestMatMul1) {
     auto x = new NDArray<float>(3, 5, 'c');
     for (int e = 0; e < x->lengthOf(); e++)
         x->putScalar(e, e+1);
@@ -1026,7 +1026,7 @@ TEST_F(DeclarableOpsTests, TestMatMul1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, TestSoftMax_bp_1) {
+TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
 
     auto input = new NDArray<double>(2,2,'c');
     for (int e = 0; e < input->lengthOf(); e++)
@@ -1070,7 +1070,7 @@ TEST_F(DeclarableOpsTests, TestSoftMax_bp_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideMatrices1) {
+TEST_F(DeclarableOpsTests1, DivideMatrices1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(5, 3, 'c');
@@ -1097,7 +1097,7 @@ TEST_F(DeclarableOpsTests, DivideMatrices1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideMatrixVector1) {
+TEST_F(DeclarableOpsTests1, DivideMatrixVector1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -1123,7 +1123,7 @@ TEST_F(DeclarableOpsTests, DivideMatrixVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideVectorVector1) {
+TEST_F(DeclarableOpsTests1, DivideVectorVector1) {
     
     auto x = new NDArray<float>(1, 15, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -1149,7 +1149,7 @@ TEST_F(DeclarableOpsTests, DivideVectorVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideMatrixScalar1) {
+TEST_F(DeclarableOpsTests1, DivideMatrixScalar1) {
     
     NDArray<float>* x = new NDArray<float>(5, 3, 'c');
     NDArray<float>* y = new NDArray<float>(1, 1, 'c');
@@ -1176,7 +1176,7 @@ TEST_F(DeclarableOpsTests, DivideMatrixScalar1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideScalarScalar1) {
+TEST_F(DeclarableOpsTests1, DivideScalarScalar1) {
     
     auto x = new NDArray<float>(5, 1, 'c');
     auto y = new NDArray<float>(5, 1, 'c');
@@ -1203,7 +1203,7 @@ TEST_F(DeclarableOpsTests, DivideScalarScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideMatrices1) {
+TEST_F(DeclarableOpsTests1, ReverseDivideMatrices1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(5, 3, 'c');
@@ -1229,7 +1229,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrices1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector1) {
+TEST_F(DeclarableOpsTests1, ReverseDivideMatrixVector1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -1255,7 +1255,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideVectorVector1) {
+TEST_F(DeclarableOpsTests1, ReverseDivideVectorVector1) {
     
     auto x = new NDArray<float>(1, 15, 'c');
     auto y = new NDArray<float>(1, 15, 'c');
@@ -1281,7 +1281,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideVectorVector1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar1) {
+TEST_F(DeclarableOpsTests1, ReverseDivideMatrixScalar1) {
     
     auto x = new NDArray<float>(5, 3, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -1307,7 +1307,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar1) {
+TEST_F(DeclarableOpsTests1, ReverseDivideScalarScalar1) {
     
     auto x = new NDArray<float>(1, 1, 'c');
     auto y = new NDArray<float>(1, 1, 'c');
@@ -1333,7 +1333,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reshapeas1) {
+TEST_F(DeclarableOpsTests1, Reshapeas1) {
     const std::vector<int> xShape = {5,4,3};
     const std::vector<int> yShape = {3,5,4};
     
@@ -1357,7 +1357,7 @@ TEST_F(DeclarableOpsTests, Reshapeas1) {
     delete block;
 }
 
-TEST_F(DeclarableOpsTests, Test_Cast_1) {
+TEST_F(DeclarableOpsTests1, Test_Cast_1) {
     // TODO: right now there's no real cast implementation, but genera idea should be the same: arrays equality to be expected
     NDArray<float> x('c', {5, 5});
     NDArrayFactory<float>::linspace(1, x);
@@ -1375,14 +1375,14 @@ TEST_F(DeclarableOpsTests, Test_Cast_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, TestRegistrator1) {
+TEST_F(DeclarableOpsTests1, TestRegistrator1) {
     auto res = nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 
     // nd4j_printf("Ops: %s\n", res)
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
+TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
     NativeOps nativeOps;
 
     auto x = new NDArray<float>(10, 10, 'c');
@@ -1435,7 +1435,7 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, TestLegacyExecution2) {
+TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
     NativeOps nativeOps;
 
     auto x = new NDArray<float>(10, 10, 'c');
@@ -1482,7 +1482,7 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, TestGemv1) {
+TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
     auto xShape = new int[8] {2, 5, 3, 3, 1, 0, 1, 99};
     auto x = new NDArray<float>(xBuffer, xShape);
@@ -1507,7 +1507,7 @@ TEST_F(DeclarableOpsTests, TestGemv1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reshape1) {
+TEST_F(DeclarableOpsTests1, Reshape1) {
     const std::vector<int> xShape = {5,4,3};
     const std::vector<int> yShape = {3,5,4};    
     
@@ -1537,7 +1537,7 @@ TEST_F(DeclarableOpsTests, Reshape1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reshape2) {
+TEST_F(DeclarableOpsTests1, Reshape2) {
     const std::vector<int> xShape = {5,4,3};
     const std::vector<int> yShape = {3,5,4};    
     
@@ -1569,7 +1569,7 @@ TEST_F(DeclarableOpsTests, Reshape2) {
     delete variableSpace;
 }
 
-TEST_F(DeclarableOpsTests, TestScatterUpdate1) {
+TEST_F(DeclarableOpsTests1, TestScatterUpdate1) {
     NDArray<float>* matrix  = new NDArray<float>(3, 2, 'c');
     NDArray<float>* updates = new NDArray<float>(2, 2, 'c');
     updates->assign(1.0);
@@ -1604,7 +1604,7 @@ TEST_F(DeclarableOpsTests, TestScatterUpdate1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Repeat1) {
+TEST_F(DeclarableOpsTests1, Repeat1) {
     
     float eBuffer[8] = {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
     int eShape[8] = {2, 4, 2, 2, 1, 0, 1, 99};
@@ -1637,7 +1637,7 @@ TEST_F(DeclarableOpsTests, Repeat1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Transpose1) {
+TEST_F(DeclarableOpsTests1, Transpose1) {
 
     NDArray<float>* x = new NDArray<float>('c', {3,5,2});
     NDArray<float>* exp = new NDArray<float>('f', {2,5,3});
@@ -1666,7 +1666,7 @@ TEST_F(DeclarableOpsTests, Transpose1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Transpose2) {
+TEST_F(DeclarableOpsTests1, Transpose2) {
     NDArray<float>* x = new NDArray<float>('c', {3,5,2});
     NDArray<float>* exp = new NDArray<float>('f', {2,5,3});
 
@@ -1697,7 +1697,7 @@ TEST_F(DeclarableOpsTests, Transpose2) {
 
 //////////////////////////////////////////////////////////////////////
 // in-place
-TEST_F(DeclarableOpsTests, Permute1) {
+TEST_F(DeclarableOpsTests1, Permute1) {
 
     const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
@@ -1726,7 +1726,7 @@ TEST_F(DeclarableOpsTests, Permute1) {
 
 //////////////////////////////////////////////////////////////////////
 // not-in-place
-TEST_F(DeclarableOpsTests, Permute2) {      
+TEST_F(DeclarableOpsTests1, Permute2) {      
 
     const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
@@ -1756,7 +1756,7 @@ TEST_F(DeclarableOpsTests, Permute2) {
 }
 
 
-TEST_F(DeclarableOpsTests, TestArgumentsValidation1) {
+TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
     const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
     const std::vector<int> perm = {2, 0, 1};
@@ -1780,7 +1780,7 @@ TEST_F(DeclarableOpsTests, TestArgumentsValidation1) {
     delete variableSpace;    
 }
 
-TEST_F(DeclarableOpsTests, Conv3D_ff_Test1) {
+TEST_F(DeclarableOpsTests1, Conv3D_ff_Test1) {
     NDArray<float>* input = new NDArray<float>('c', {4, 3, 3, 56, 56});
     NDArray<float>* weights = new NDArray<float>('f', {2, 3, 3, 5, 5});
     NDArray<float>* bias = new NDArray<float>('c', {1, 2});
@@ -1822,7 +1822,7 @@ TEST_F(DeclarableOpsTests, Conv3D_ff_Test1) {
     delete variableSpace;
 }
 
-TEST_F(DeclarableOpsTests, TestReductionShape1) {
+TEST_F(DeclarableOpsTests1, TestReductionShape1) {
     auto input = new NDArray<float>('c', {4, 5, 5, 10, 10});
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
@@ -1857,7 +1857,7 @@ TEST_F(DeclarableOpsTests, TestReductionShape1) {
 
 }
 
-TEST_F(DeclarableOpsTests, TestReductionShape2) {
+TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     auto input = new NDArray<float>('c', {4, 5, 5, 10, 10});
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
@@ -1890,7 +1890,7 @@ TEST_F(DeclarableOpsTests, TestReductionShape2) {
     delete inshapes;
 }
 
-TEST_F(DeclarableOpsTests, TestCustomShape1) {
+TEST_F(DeclarableOpsTests1, TestCustomShape1) {
     auto input = new NDArray<float>('c', {2, 3, 4});
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
@@ -1920,7 +1920,7 @@ TEST_F(DeclarableOpsTests, TestCustomShape1) {
 }
 
 
-TEST_F(DeclarableOpsTests, DilatedMaxPool3D_ff_Test1) {
+TEST_F(DeclarableOpsTests1, DilatedMaxPool3D_ff_Test1) {
     auto input = new NDArray<float>('c', {4, 2, 1, 11, 11});
 
     input->assign(451.0);
@@ -1981,7 +1981,7 @@ TEST_F(DeclarableOpsTests, DilatedMaxPool3D_ff_Test1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Sum1) {
+TEST_F(DeclarableOpsTests1, Sum1) {
 
     float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
     int xShape[]  = {2, 4, 2, 2, 1, 0, 1, 99};
@@ -2016,7 +2016,7 @@ TEST_F(DeclarableOpsTests, Sum1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Maxpool2d1) {
+TEST_F(DeclarableOpsTests1, Maxpool2d1) {
 
     auto x = new NDArray<float>('c', {bS,iD,iH,iW});
     NDArray<float> exp('c',{bS,iD,oH,oW});
@@ -2044,7 +2044,7 @@ TEST_F(DeclarableOpsTests, Maxpool2d1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Avgpool2d1) {
+TEST_F(DeclarableOpsTests1, Avgpool2d1) {
 
     auto x = new NDArray<float>('c', {bS,iD,iH,iW});
     NDArray<float> exp('c',{bS,iD,oH,oW});
@@ -2073,7 +2073,7 @@ TEST_F(DeclarableOpsTests, Avgpool2d1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Pnormpool2d1) {
+TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
 
     auto x = new NDArray<float>('c', {bS,iD,iH,iW});
     NDArray<float> exp('c',{bS,iD,oH,oW});
@@ -2100,7 +2100,7 @@ TEST_F(DeclarableOpsTests, Pnormpool2d1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, IsMax1) {
+TEST_F(DeclarableOpsTests1, IsMax1) {
 
     float xBuff[]   = {1,2,3,4,5,6,7,8,9};
     int xShape[]    = {2,3,3,3,1,0,1,99};
@@ -2129,7 +2129,7 @@ TEST_F(DeclarableOpsTests, IsMax1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Pooling2d1) {
+TEST_F(DeclarableOpsTests1, Pooling2d1) {
 
     auto x = new NDArray<float>('c', {bS,iD,iH,iW});
     NDArray<float> exp('c',{bS,iD,oH,oW});
@@ -2157,7 +2157,7 @@ TEST_F(DeclarableOpsTests, Pooling2d1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MaxPool2d_bp1) {
+TEST_F(DeclarableOpsTests1, MaxPool2d_bp1) {
 
     auto input = new NDArray<float>('c', {bS,iD,iH,iW});
     auto epsilon = new NDArray<float>('c', {bS,iD,oH,oW});
@@ -2186,7 +2186,7 @@ TEST_F(DeclarableOpsTests, MaxPool2d_bp1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AvgPool2dBP) {
+TEST_F(DeclarableOpsTests1, AvgPool2dBP) {
 
     auto input = new NDArray<float>('c', {bS,iD,iH,iW});
     auto epsilon = new NDArray<float>('c', {bS,iD,oH,oW});
@@ -2215,7 +2215,7 @@ TEST_F(DeclarableOpsTests, AvgPool2dBP) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, PnormPool2dBP) {
+TEST_F(DeclarableOpsTests1, PnormPool2dBP) {
 
     auto input = new NDArray<float>('c', {bS,iD,iH,iW});
     auto epsilon = new NDArray<float>('c', {bS,iD,oH,oW});
@@ -2246,7 +2246,7 @@ TEST_F(DeclarableOpsTests, PnormPool2dBP) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, CompactLaunchTests1) {
+TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
     int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
     double _expB[] = {6276.0,   12831.0,   19668.0,   26790.0,   27012.0,   20703.0,   14100.0,    7200.0,    13719.0,   28023.0,   42918.0,   58410.0,   58902.0,   45105.0,   30693.0,   15660.0,    22389.0,   45696.0,   69930.0,   95100.0,   95910.0,   73386.0,   49899.0,   25440.0,    32346.0,   65970.0,  100884.0,  137100.0,  138276.0,  105726.0,   71838.0,   36600.0,    33726.0,   68790.0,  105204.0,  142980.0,  144156.0,  110226.0,   74898.0,   38160.0,    27555.0,   56154.0,   85806.0,  116520.0,  117474.0,   89748.0,   60933.0,   31020.0,    19917.0,   40557.0,   61926.0,   84030.0,   84714.0,   64671.0,   43875.0,   22320.0,    10752.0,   21879.0,   33384.0,   45270.0,   45636.0,   34815.0,   23604.0,   12000.0,    7551.0,   15456.0,   23718.0,   32340.0,   32562.0,   24978.0,   17025.0,    8700.0,    16569.0,   33873.0,   51918.0,   70710.0,   71202.0,   54555.0,   37143.0,   18960.0,    27114.0,   55371.0,   84780.0,  115350.0,  116160.0,   88911.0,   60474.0,   30840.0,    39246.0,   80070.0,  122484.0,  166500.0,  167676.0,  128226.0,   87138.0,   44400.0,    40626.0,   82890.0,  126804.0,  172380.0,  173556.0,  132726.0,   90198.0,   45960.0,    33180.0,   67629.0,  103356.0,  140370.0,  141324.0,  107973.0,   73308.0,   37320.0,    23967.0,   48807.0,   74526.0,  101130.0,  101814.0,   77721.0,   52725.0,   26820.0,    12927.0,   26304.0,   40134.0,   54420.0,   54786.0,   41790.0,   28329.0,   14400.0,    8826.0,   18081.0,   27768.0,   37890.0,   38112.0,   29253.0,   19950.0,   10200.0,    19419.0,   39723.0,   60918.0,   83010.0,   83502.0,   64005.0,   43593.0,   22260.0,    31839.0,   65046.0,   99630.0,  135600.0,  136410.0,  104436.0,   71049.0,   36240.0,    46146.0,   94170.0,  144084.0,  195900.0,  197076.0,  150726.0,  102438.0,   52200.0,    47526.0,   96990.0,  148404.0,  201780.0,  202956.0,  155226.0,  105498.0,   53760.0,    38805.0,   79104.0,  120906.0,  164220.0,  165174.0,  126198.0,   85683.0,   43620.0,    28017.0,   57057.0,   87126.0,  118230.0,  118914.0,   90771.0,   61575.0,   31320.0,    15102.0,   30729.0,   46884.0,   63570.0,   63936.0,   48765.0,   33054.0,   16800.0,    17220.0,   34863.0,   52932.0,   71430.0,   72228.0,   54831.0,   36996.0,   18720.0,    36327.0,   73527.0,  111606.0,  150570.0,  152214.0,  115521.0,   77925.0,   39420.0,    57381.0,  116112.0,  176202.0,  237660.0,  240198.0,  182250.0,  122907.0,   62160.0,    80442.0,  162738.0,  246900.0,  332940.0,  336420.0,  255198.0,  172062.0,   87000.0,    84702.0,  171318.0,  259860.0,  350340.0,  353820.0,  268338.0,  180882.0,   91440.0,    66867.0,  135210.0,  205038.0,  276360.0,  279042.0,  211572.0,  142581.0,   72060.0,    46845.0,   94701.0,  143574.0,  193470.0,  195306.0,  148047.0,   99747.0,   50400.0,    24576.0,   49671.0,   75288.0,  101430.0,  102372.0,   77583.0,   52260.0,   26400.0,    22095.0,   44688.0,   67782.0,   91380.0,   92178.0,   69906.0,   47121.0,   23820.0,    46377.0,   93777.0,  142206.0,  191670.0,  193314.0,  146571.0,   98775.0,   49920.0,    72906.0,  147387.0,  223452.0,  301110.0,  303648.0,  230175.0,  155082.0,   78360.0,    101742.0,  205638.0,  311700.0,  419940.0,  423420.0,  320898.0,  216162.0,  109200.0,    106002.0,  214218.0,  324660.0,  437340.0,  440820.0,  334038.0,  224982.0,  113640.0,    83292.0,  168285.0,  254988.0,  343410.0,  346092.0,  262197.0,  176556.0,   89160.0,    58095.0,  117351.0,  177774.0,  239370.0,  241206.0,  182697.0,  122997.0,   62100.0,    30351.0,   61296.0,   92838.0,  124980.0,  125922.0,   95358.0,   64185.0,   32400.0,    26970.0,   54513.0,   82632.0,  111330.0,  112128.0,   84981.0,   57246.0,   28920.0,    56427.0,  114027.0,  172806.0,  232770.0,  234414.0,  177621.0,  119625.0,   60420.0,    88431.0,  178662.0,  270702.0,  364560.0,  367098.0,  278100.0,  187257.0,   94560.0,    123042.0,  248538.0,  376500.0,  506940.0,  510420.0,  386598.0,  260262.0,  131400.0,    127302.0,  257118.0,  389460.0,  524340.0,  527820.0,  399738.0,  269082.0,  135840.0,    99717.0,  201360.0,  304938.0,  410460.0,  413142.0,  312822.0,  210531.0,  106260.0,    69345.0,  140001.0,  211974.0,  285270.0,  287106.0,  217347.0,  146247.0,   73800.0,    36126.0,   72921.0,  110388.0,  148530.0,  149472.0,  113133.0,   76110.0,   38400.0,};
     NDArray<double> exp(_expB, _expS);
@@ -2271,7 +2271,7 @@ TEST_F(DeclarableOpsTests, CompactLaunchTests1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, CompactLaunchTests2) {
+TEST_F(DeclarableOpsTests1, CompactLaunchTests2) {
     int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
     double _expB[] = {6276.0,   12831.0,   19668.0,   26790.0,   27012.0,   20703.0,   14100.0,    7200.0,    13719.0,   28023.0,   42918.0,   58410.0,   58902.0,   45105.0,   30693.0,   15660.0,    22389.0,   45696.0,   69930.0,   95100.0,   95910.0,   73386.0,   49899.0,   25440.0,    32346.0,   65970.0,  100884.0,  137100.0,  138276.0,  105726.0,   71838.0,   36600.0,    33726.0,   68790.0,  105204.0,  142980.0,  144156.0,  110226.0,   74898.0,   38160.0,    27555.0,   56154.0,   85806.0,  116520.0,  117474.0,   89748.0,   60933.0,   31020.0,    19917.0,   40557.0,   61926.0,   84030.0,   84714.0,   64671.0,   43875.0,   22320.0,    10752.0,   21879.0,   33384.0,   45270.0,   45636.0,   34815.0,   23604.0,   12000.0,    7551.0,   15456.0,   23718.0,   32340.0,   32562.0,   24978.0,   17025.0,    8700.0,    16569.0,   33873.0,   51918.0,   70710.0,   71202.0,   54555.0,   37143.0,   18960.0,    27114.0,   55371.0,   84780.0,  115350.0,  116160.0,   88911.0,   60474.0,   30840.0,    39246.0,   80070.0,  122484.0,  166500.0,  167676.0,  128226.0,   87138.0,   44400.0,    40626.0,   82890.0,  126804.0,  172380.0,  173556.0,  132726.0,   90198.0,   45960.0,    33180.0,   67629.0,  103356.0,  140370.0,  141324.0,  107973.0,   73308.0,   37320.0,    23967.0,   48807.0,   74526.0,  101130.0,  101814.0,   77721.0,   52725.0,   26820.0,    12927.0,   26304.0,   40134.0,   54420.0,   54786.0,   41790.0,   28329.0,   14400.0,    8826.0,   18081.0,   27768.0,   37890.0,   38112.0,   29253.0,   19950.0,   10200.0,    19419.0,   39723.0,   60918.0,   83010.0,   83502.0,   64005.0,   43593.0,   22260.0,    31839.0,   65046.0,   99630.0,  135600.0,  136410.0,  104436.0,   71049.0,   36240.0,    46146.0,   94170.0,  144084.0,  195900.0,  197076.0,  150726.0,  102438.0,   52200.0,    47526.0,   96990.0,  148404.0,  201780.0,  202956.0,  155226.0,  105498.0,   53760.0,    38805.0,   79104.0,  120906.0,  164220.0,  165174.0,  126198.0,   85683.0,   43620.0,    28017.0,   57057.0,   87126.0,  118230.0,  118914.0,   90771.0,   61575.0,   31320.0,    15102.0,   30729.0,   46884.0,   63570.0,   63936.0,   48765.0,   33054.0,   16800.0,    17220.0,   34863.0,   52932.0,   71430.0,   72228.0,   54831.0,   36996.0,   18720.0,    36327.0,   73527.0,  111606.0,  150570.0,  152214.0,  115521.0,   77925.0,   39420.0,    57381.0,  116112.0,  176202.0,  237660.0,  240198.0,  182250.0,  122907.0,   62160.0,    80442.0,  162738.0,  246900.0,  332940.0,  336420.0,  255198.0,  172062.0,   87000.0,    84702.0,  171318.0,  259860.0,  350340.0,  353820.0,  268338.0,  180882.0,   91440.0,    66867.0,  135210.0,  205038.0,  276360.0,  279042.0,  211572.0,  142581.0,   72060.0,    46845.0,   94701.0,  143574.0,  193470.0,  195306.0,  148047.0,   99747.0,   50400.0,    24576.0,   49671.0,   75288.0,  101430.0,  102372.0,   77583.0,   52260.0,   26400.0,    22095.0,   44688.0,   67782.0,   91380.0,   92178.0,   69906.0,   47121.0,   23820.0,    46377.0,   93777.0,  142206.0,  191670.0,  193314.0,  146571.0,   98775.0,   49920.0,    72906.0,  147387.0,  223452.0,  301110.0,  303648.0,  230175.0,  155082.0,   78360.0,    101742.0,  205638.0,  311700.0,  419940.0,  423420.0,  320898.0,  216162.0,  109200.0,    106002.0,  214218.0,  324660.0,  437340.0,  440820.0,  334038.0,  224982.0,  113640.0,    83292.0,  168285.0,  254988.0,  343410.0,  346092.0,  262197.0,  176556.0,   89160.0,    58095.0,  117351.0,  177774.0,  239370.0,  241206.0,  182697.0,  122997.0,   62100.0,    30351.0,   61296.0,   92838.0,  124980.0,  125922.0,   95358.0,   64185.0,   32400.0,    26970.0,   54513.0,   82632.0,  111330.0,  112128.0,   84981.0,   57246.0,   28920.0,    56427.0,  114027.0,  172806.0,  232770.0,  234414.0,  177621.0,  119625.0,   60420.0,    88431.0,  178662.0,  270702.0,  364560.0,  367098.0,  278100.0,  187257.0,   94560.0,    123042.0,  248538.0,  376500.0,  506940.0,  510420.0,  386598.0,  260262.0,  131400.0,    127302.0,  257118.0,  389460.0,  524340.0,  527820.0,  399738.0,  269082.0,  135840.0,    99717.0,  201360.0,  304938.0,  410460.0,  413142.0,  312822.0,  210531.0,  106260.0,    69345.0,  140001.0,  211974.0,  285270.0,  287106.0,  217347.0,  146247.0,   73800.0,    36126.0,   72921.0,  110388.0,  148530.0,  149472.0,  113133.0,   76110.0,   38400.0,};
     NDArray<double> exp(_expB, _expS);
@@ -2296,7 +2296,7 @@ TEST_F(DeclarableOpsTests, CompactLaunchTests2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BatchNorm2D) {
+TEST_F(DeclarableOpsTests1, BatchNorm2D) {
 
     const int training = 1;
     const int isLockGammaBeta = 0;
@@ -2368,7 +2368,7 @@ TEST_F(DeclarableOpsTests, BatchNorm2D) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BatchNorm4D) {
+TEST_F(DeclarableOpsTests1, BatchNorm4D) {
 
     const int training = 1;
     const int isLockGammaBeta = 0;
@@ -2436,7 +2436,7 @@ TEST_F(DeclarableOpsTests, BatchNorm4D) {
 
     
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BatchNorm2D_BP) {
+TEST_F(DeclarableOpsTests1, BatchNorm2D_BP) {
     
     const int isLockGammaBeta = 0;
     const int bS = 2; 
@@ -2539,7 +2539,7 @@ TEST_F(DeclarableOpsTests, BatchNorm2D_BP) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, BatchNorm4D_BP) {
+TEST_F(DeclarableOpsTests1, BatchNorm4D_BP) {
     
     const int isLockGammaBeta = 0;
     const int bS = 2; 
@@ -2648,7 +2648,7 @@ TEST_F(DeclarableOpsTests, BatchNorm4D_BP) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru1) {
+TEST_F(DeclarableOpsTests1, sru1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2687,7 +2687,7 @@ TEST_F(DeclarableOpsTests, sru1) {
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_logic1) {
+TEST_F(DeclarableOpsTests1, sru_logic1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2726,7 +2726,7 @@ TEST_F(DeclarableOpsTests, sru_logic1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_bp) {
+TEST_F(DeclarableOpsTests1, sru_bp) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2782,7 +2782,7 @@ TEST_F(DeclarableOpsTests, sru_bp) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_bp_logic1) {
+TEST_F(DeclarableOpsTests1, sru_bp_logic1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2838,7 +2838,7 @@ TEST_F(DeclarableOpsTests, sru_bp_logic1) {
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, sru_bi_1) {
+TEST_F(DeclarableOpsTests1, sru_bi_1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2875,7 +2875,7 @@ TEST_F(DeclarableOpsTests, sru_bi_1) {
     delete results;
 }
 
-TEST_F(DeclarableOpsTests, sru_bi_bp_1) {
+TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2934,7 +2934,7 @@ TEST_F(DeclarableOpsTests, sru_bi_bp_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Maxpool2d_bp2) {
+TEST_F(DeclarableOpsTests1, Maxpool2d_bp2) {
     
     int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
     int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     
@@ -2965,7 +2965,7 @@ TEST_F(DeclarableOpsTests, Maxpool2d_bp2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Avgpool2d_bp2) {
+TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     
     int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
     int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     
@@ -2995,7 +2995,7 @@ TEST_F(DeclarableOpsTests, Avgpool2d_bp2) {
     delete results;
 }
 
-TEST_F(DeclarableOpsTests, ArgMax1) {
+TEST_F(DeclarableOpsTests1, ArgMax1) {
     NDArray<float> x('c', {3, 5});
     NDArrayFactory<float>::linspace(1, x);
     NDArray<float> exp('c', {3, 1});
@@ -3016,7 +3016,7 @@ TEST_F(DeclarableOpsTests, ArgMax1) {
 }
 
 
-TEST_F(DeclarableOpsTests, ArgMax2) {
+TEST_F(DeclarableOpsTests1, ArgMax2) {
     NDArray<float> x('c', {3, 5});
     NDArrayFactory<float>::linspace(1, x);
     NDArray<float> exp('c', {1, 5});
@@ -3037,7 +3037,7 @@ TEST_F(DeclarableOpsTests, ArgMax2) {
 }
 
 
-TEST_F(DeclarableOpsTests, ArgMin1) {
+TEST_F(DeclarableOpsTests1, ArgMin1) {
     NDArray<float> x('c', {3, 5});
     NDArrayFactory<float>::linspace(1, x);
     NDArray<float> exp('c', {3, 1});
@@ -3058,7 +3058,7 @@ TEST_F(DeclarableOpsTests, ArgMin1) {
 }
 
 
-TEST_F(DeclarableOpsTests, SquareTests1) {
+TEST_F(DeclarableOpsTests1, SquareTests1) {
     NDArray<float> x('c', {3, 5});
     NDArrayFactory<float>::linspace(1, x);
 
@@ -3078,7 +3078,7 @@ TEST_F(DeclarableOpsTests, SquareTests1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests, OneHotTests_1) {
+TEST_F(DeclarableOpsTests1, OneHotTests_1) {
     NDArray<float> indices('c', {1, 4});
     indices.putScalar(0, 0.0);
     indices.putScalar(1, 2.0);
@@ -3102,7 +3102,7 @@ TEST_F(DeclarableOpsTests, OneHotTests_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests, OneHotTests_2) {
+TEST_F(DeclarableOpsTests1, OneHotTests_2) {
     NDArray<float> indices('c', {2, 2});
     indices.putScalar(0, 0.0);
     indices.putScalar(1, 2.0);
@@ -3127,7 +3127,7 @@ TEST_F(DeclarableOpsTests, OneHotTests_2) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests, FillAs_1) {
+TEST_F(DeclarableOpsTests1, FillAs_1) {
     NDArray<float> x('c', {2, 2});
     x.assign(117);
 
@@ -3146,14 +3146,14 @@ TEST_F(DeclarableOpsTests, FillAs_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, LRN1) {
+TEST_F(DeclarableOpsTests1, LRN1) {
     nd4j::ops::lrn<double> lrn;
 
     lrn.getOpName();
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Stack_1) {
+TEST_F(DeclarableOpsTests1, Stack_1) {
 
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
@@ -3178,7 +3178,7 @@ TEST_F(DeclarableOpsTests, Stack_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Stack_2) {
+TEST_F(DeclarableOpsTests1, Stack_2) {
 
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
@@ -3203,7 +3203,7 @@ TEST_F(DeclarableOpsTests, Stack_2) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Stack_3) {
+TEST_F(DeclarableOpsTests1, Stack_3) {
 
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
@@ -3227,7 +3227,7 @@ TEST_F(DeclarableOpsTests, Stack_3) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Stack_4) {
+TEST_F(DeclarableOpsTests1, Stack_4) {
 
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
@@ -3251,7 +3251,7 @@ TEST_F(DeclarableOpsTests, Stack_4) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Stack_5) {
+TEST_F(DeclarableOpsTests1, Stack_5) {
 
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
@@ -3275,7 +3275,7 @@ TEST_F(DeclarableOpsTests, Stack_5) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Stack_6) {
+TEST_F(DeclarableOpsTests1, Stack_6) {
 
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
@@ -3298,7 +3298,7 @@ TEST_F(DeclarableOpsTests, Stack_6) {
     delete results;
 }
 
-TEST_F(DeclarableOpsTests, Test_Range_Integer_1) {
+TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
     NDArray<float> exp('c', {1, 4});
     NDArrayFactory<float>::linspace(1, exp);
 
@@ -3318,7 +3318,7 @@ TEST_F(DeclarableOpsTests, Test_Range_Integer_1) {
 }
 
 
-TEST_F(DeclarableOpsTests, Test_Range_Integer_2) {
+TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
     NDArray<float> exp('c', {1, 4});
     NDArrayFactory<float>::linspace(1, exp);
 
@@ -3345,7 +3345,7 @@ TEST_F(DeclarableOpsTests, Test_Range_Integer_2) {
 }
 
 
-TEST_F(DeclarableOpsTests, Test_Range_Integer_3) {
+TEST_F(DeclarableOpsTests1, Test_Range_Integer_3) {
     NDArray<float> exp('c', {1, 4});
     NDArrayFactory<float>::linspace(1, exp);
 
@@ -3364,7 +3364,7 @@ TEST_F(DeclarableOpsTests, Test_Range_Integer_3) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests, Test_SoftMax_2) {
+TEST_F(DeclarableOpsTests1, Test_SoftMax_2) {
     NDArray<float> input('c', {10, 10});
     NDArray<float> exp('c', {10, 10});
     NDArrayFactory<float>::linspace(1, input);
@@ -3386,7 +3386,7 @@ TEST_F(DeclarableOpsTests, Test_SoftMax_2) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests, Test_SoftMax_3) {
+TEST_F(DeclarableOpsTests1, Test_SoftMax_3) {
     NDArray<float> input('c', {10, 10});
     NDArray<float> exp('c', {10, 10});
     NDArrayFactory<float>::linspace(1, input);
@@ -3405,7 +3405,7 @@ TEST_F(DeclarableOpsTests, Test_SoftMax_3) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Test_Stack_Edge_1) {
+TEST_F(DeclarableOpsTests1, Test_Stack_Edge_1) {
     float inBuff[]  = {1.0f, 2.0f, 3.0f};
     float expBuff[] = {1.0f, 2.0f, 3.0f};
 
@@ -3427,7 +3427,7 @@ TEST_F(DeclarableOpsTests, Test_Stack_Edge_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Test_Stack_Edge_2) {
+TEST_F(DeclarableOpsTests1, Test_Stack_Edge_2) {
     float inBuff[]  = {1.0f, 2.0f, 3.0f};
     float expBuff[] = {1.0f, 2.0f, 3.0f};
 
@@ -3449,7 +3449,7 @@ TEST_F(DeclarableOpsTests, Test_Stack_Edge_2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Test_Stack_Edge_3) {
+TEST_F(DeclarableOpsTests1, Test_Stack_Edge_3) {
     float inBuff[]  = {1.0f, 2.0f, 3.0f};
     float expBuff[] = {1.0f, 2.0f, 3.0f};
 
@@ -3473,7 +3473,7 @@ TEST_F(DeclarableOpsTests, Test_Stack_Edge_3) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_1 ) {
+TEST_F(DeclarableOpsTests1, Reverse_1 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
@@ -3498,7 +3498,7 @@ TEST_F(DeclarableOpsTests, Reverse_1 ) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_2 ) {
+TEST_F(DeclarableOpsTests1, Reverse_2 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
@@ -3523,7 +3523,7 @@ TEST_F(DeclarableOpsTests, Reverse_2 ) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_3 ) {
+TEST_F(DeclarableOpsTests1, Reverse_3 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., 24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13.};
@@ -3548,7 +3548,7 @@ TEST_F(DeclarableOpsTests, Reverse_3 ) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_4 ) {
+TEST_F(DeclarableOpsTests1, Reverse_4 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {16,15,14,13,    20,19,18,17,       24,23,22,21,    4,3,2,1,    8,7,6,5,      12,11,10,9,};
@@ -3573,7 +3573,7 @@ TEST_F(DeclarableOpsTests, Reverse_4 ) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_5 ) {
+TEST_F(DeclarableOpsTests1, Reverse_5 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16., 9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4.};
@@ -3597,7 +3597,7 @@ TEST_F(DeclarableOpsTests, Reverse_5 ) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_6 ) {
+TEST_F(DeclarableOpsTests1, Reverse_6 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {4., 3., 2., 1., 8., 7., 6., 5., 12., 11., 10., 9., 16., 15., 14., 13., 20., 19., 18., 17., 24., 23., 22., 21.};
@@ -3623,7 +3623,7 @@ TEST_F(DeclarableOpsTests, Reverse_6 ) {
 
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_7 ) {
+TEST_F(DeclarableOpsTests1, Reverse_7 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
@@ -3649,7 +3649,7 @@ TEST_F(DeclarableOpsTests, Reverse_7 ) {
 
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_8 ) {
+TEST_F(DeclarableOpsTests1, Reverse_8 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
@@ -3675,7 +3675,7 @@ TEST_F(DeclarableOpsTests, Reverse_8 ) {
 
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reverse_9 ) {
+TEST_F(DeclarableOpsTests1, Reverse_9 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.};
@@ -3700,7 +3700,7 @@ TEST_F(DeclarableOpsTests, Reverse_9 ) {
 
 ////////////////////////////////////////////////////////////////////
 // CONSTANT mode 2D
-TEST_F(DeclarableOpsTests, Pad_1) {
+TEST_F(DeclarableOpsTests1, Pad_1) {
 
     float inBuff[]  = {1,2,3,4,5,6};
     float padBuff[] = {1,1,2,2};
@@ -3727,7 +3727,7 @@ TEST_F(DeclarableOpsTests, Pad_1) {
 
 ////////////////////////////////////////////////////////////////////
 // REFLECT mode 2D
-TEST_F(DeclarableOpsTests, Pad_2) {
+TEST_F(DeclarableOpsTests1, Pad_2) {
 
     float inBuff[]  = {1,2,3,4,5,6};
     float padBuff[] = {1,1,2,2};
@@ -3754,7 +3754,7 @@ TEST_F(DeclarableOpsTests, Pad_2) {
 
 ////////////////////////////////////////////////////////////////////
 // SYMMETRIC mode 2D
-TEST_F(DeclarableOpsTests, Pad_3) {
+TEST_F(DeclarableOpsTests1, Pad_3) {
 
     float inBuff[]  = {1,2,3,4,5,6};
     float padBuff[] = {1,1,2,2};
@@ -3781,7 +3781,7 @@ TEST_F(DeclarableOpsTests, Pad_3) {
 
 ////////////////////////////////////////////////////////////////////
 // CONSTANT mode 3D
-TEST_F(DeclarableOpsTests, Pad_4) {
+TEST_F(DeclarableOpsTests1, Pad_4) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
     float padBuff[] = {1,1,2,2,2,2};
@@ -3809,7 +3809,7 @@ TEST_F(DeclarableOpsTests, Pad_4) {
 
 ////////////////////////////////////////////////////////////////////
 // REFLECT mode 3D
-TEST_F(DeclarableOpsTests, Pad_5) {
+TEST_F(DeclarableOpsTests1, Pad_5) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
     float padBuff[] = {1,1,2,2,2,2};
@@ -3835,7 +3835,7 @@ TEST_F(DeclarableOpsTests, Pad_5) {
 
 ////////////////////////////////////////////////////////////////////
 // SYMMETRIC mode 3D
-TEST_F(DeclarableOpsTests, Pad_6) {
+TEST_F(DeclarableOpsTests1, Pad_6) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
     float padBuff[] = {1,1,2,2,2,2};
@@ -3861,7 +3861,7 @@ TEST_F(DeclarableOpsTests, Pad_6) {
 
 ////////////////////////////////////////////////////////////////////
 // CONSTANT mode 4D
-TEST_F(DeclarableOpsTests, Pad_7)
+TEST_F(DeclarableOpsTests1, Pad_7)
 {
 
     float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -3887,7 +3887,7 @@ TEST_F(DeclarableOpsTests, Pad_7)
 
 ////////////////////////////////////////////////////////////////////
 // REFLECT mode 4D
-TEST_F(DeclarableOpsTests, Pad_8)
+TEST_F(DeclarableOpsTests1, Pad_8)
 {
 
     float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -3913,7 +3913,7 @@ TEST_F(DeclarableOpsTests, Pad_8)
 
 //////////////////////////////////////////////////////////////////
 // SYMMETRIC mode 4D 
-TEST_F(DeclarableOpsTests, Pad_9)
+TEST_F(DeclarableOpsTests1, Pad_9)
 {
 
     float inBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -3937,7 +3937,7 @@ TEST_F(DeclarableOpsTests, Pad_9)
     delete results;
 }
 
-TEST_F(DeclarableOpsTests, Test_Expose_1) {
+TEST_F(DeclarableOpsTests1, Test_Expose_1) {
     NDArray<float> input0('c', {2, 3}, {1, 2, 3, 6, 5, 4});
     NDArray<float> input1('c', {2, 3}, {3, 2, 1, 4, 5, 6});
 
@@ -3956,7 +3956,7 @@ TEST_F(DeclarableOpsTests, Test_Expose_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests, Test_Expose_2) {
+TEST_F(DeclarableOpsTests1, Test_Expose_2) {
     auto list = new NDArrayList<float>(0, true);
 
     auto var = new Variable<float>(nullptr, "arraylist", -1, 0);

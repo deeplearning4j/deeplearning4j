@@ -76,7 +76,7 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
         return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), arr.getWorkspace());
     }
 
-    //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 // evaluate resulting shape after reduce operation
 template<typename T>
 int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int *shape , nd4j::memory::Workspace* workspace) {
@@ -197,6 +197,7 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
         return shapeInfoNew;
     }
 
+//////////////////////////////////////////////////////////////////////////
     template<typename T>
     bool ShapeUtils<T>::insertDimension(int rank, int *shape, int axis, int dimension) {
         if (axis >= rank || axis <= -rank)
@@ -217,6 +218,7 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
         return true;
     }
 
+//////////////////////////////////////////////////////////////////////////
     template<typename T>
     bool ShapeUtils<T>::copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset) {
         if (source.size() < offset + rank)
@@ -230,7 +232,7 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
 
 
 //////////////////////////////////////////////////////////////////////////
-// return new (shorter) dimensions array without dimensions that are present in input vector
+// return new (shorter) sorted dimensions array without dimensions that are present in input vector
     template<typename T>
     std::vector<int> ShapeUtils<T>::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
 
@@ -370,6 +372,7 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
         return convertAxisToTadTarget(rank, newAxis);
     }
 
+//////////////////////////////////////////////////////////////////////////
     template<typename T>
     std::vector<int> ShapeUtils<T>::convertAxisToTadTarget(int rank, std::vector<int>& axis) {
         std::vector<int> newAxis;
