@@ -515,6 +515,17 @@ public abstract class DifferentialFunction implements Differential {
     protected OpState getOpStateFromNodeDef(OnnxProto3.NodeProto tfNode, int numInputs, TOp tOp, TVariableSpace variableSpace) {
         String lc = tfNode.getOpType().toLowerCase();
 
+        if (Nd4j.getExecutioner().getCustomOperations().containsKey(lc)) {
+            OpState opState = OpState.builder()
+                    .opType(Op.Type.CUSTOM)
+                    .opNum(-1)
+                    .opName(tfNode.getOpType())
+                    .build();
+
+            return opState;
+        }
+
+
         log.debug("Looking for [{}] op...", lc);
         if (numInputs > 0 && numInputs <= 2) {
             int opNum = Nd4j.getOpFactory().getOpNumIfExists(lc);
@@ -536,14 +547,9 @@ public abstract class DifferentialFunction implements Differential {
             }
         }
 
-        OpState opState = OpState.builder()
-                .opType(Op.Type.CUSTOM)
-                .opNum(-1)
-                .opName(tfNode.getOpType())
-                .build();
 
-        if (!Nd4j.getExecutioner().getCustomOperations().containsKey(lc))
-            log.warn("Unknown op: [{}]", lc);
+
+        log.warn("Unknown op: [{}]", lc);
         //throw new ND4JIllegalStateException("Unknown operation requested: ["+ tfNode.getOp() +"]");
 
         return opState;
