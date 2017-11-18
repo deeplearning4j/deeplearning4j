@@ -18,6 +18,9 @@ import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -57,11 +60,14 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     private transient List<GarbageCollectorMXBean> gcBeans;
     private Map<String, Pair<Long, Long>> gcStatsAtLastReport;
 
-    private Map<String, INDArray> activationsMap;
+    private Map<String, INDArray> activationsMap = new HashMap<>();
     private Map<String, INDArray> gradientsPreUpdateMap = new HashMap<>();
 
     //NOTE: may have multiple models, due to multiple pretrain layers all using the same StatsListener
     private List<ModelInfo> modelInfos = new ArrayList<>();
+
+    private final MemoryWorkspace statsMemoryWorkspace;
+    private boolean statsMemoryWorkspaceBorrowed;
 
     private static class ModelInfo implements Serializable {
         private final Model model;
@@ -142,6 +148,12 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         } else {
             this.workerID = workerID;
         }
+
+        WorkspaceConfiguration statsMemoryWorkspaceConfig = WorkspaceConfiguration.builder()
+                        .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
+                        .build();
+        statsMemoryWorkspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(statsMemoryWorkspaceConfig,
+                        "Statistics MemoryWorkspace");
     }
 
     public abstract StatsInitializationReport getNewInitializationReport();
@@ -219,13 +231,30 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
     }
 
+    private void ensureLeavingMemoryWorkspace() {
+        statsMemoryWorkspaceBorrowed = true;
+    }
+
+    private void leaveMemoryWorkspace() {
+        if (statsMemoryWorkspaceBorrowed) {
+            // Leaving scope evidently works even though it was not ever properly entered (we only "borrow" the MWS).
+            // Note: notifyScopeLeft() is equivalent with close().
+            statsMemoryWorkspace.notifyScopeLeft();
+            activationsMap.clear();
+            gradientsPreUpdateMap.clear();
+            statsMemoryWorkspaceBorrowed = false;
+        }
+    }
+
     @Override
     public void onForwardPass(Model model, List<INDArray> activations) {
         int iterCount = getModelInfo(model).iterCount;
-        if (storeActivations() && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
+        if (storeActivations() && updateConfig.reportingFrequency() > 0
+                        && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             //Assumption: we have input, layer 0, layer 1, ...
-            activationsMap = new HashMap<>();
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            ensureLeavingMemoryWorkspace();
+            // Borrowing MemoryWorkspace, so that subsequent close() is run "without reset applied".
+            try (MemoryWorkspace ws = statsMemoryWorkspace.notifyScopeBorrowed()) {
                 int count = 0;
                 for (INDArray arr : activations) {
                     String layerName = (count == 0 ? "input" : String.valueOf(count - 1));
@@ -241,8 +270,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
-            activationsMap = new HashMap<>();
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            ensureLeavingMemoryWorkspace();
+            // Borrowing MemoryWorkspace, so that subsequent close() is run "without reset applied".
+            try (MemoryWorkspace ws = statsMemoryWorkspace.notifyScopeBorrowed()) {
                 for (Map.Entry<String, INDArray> e : activations.entrySet()) {
                     activationsMap.put(e.getKey(), e.getValue().dup());
                 }
@@ -256,8 +286,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         if (storeGradients() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             Gradient g = model.gradient();
-            gradientsPreUpdateMap.clear();
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            ensureLeavingMemoryWorkspace();
+            // Borrowing MemoryWorkspace, so that subsequent close() is run "without reset applied".
+            try (MemoryWorkspace ws = statsMemoryWorkspace.notifyScopeBorrowed()) {
                 for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
                     gradientsPreUpdateMap.put(entry.getKey(), entry.getValue().dup()); //Need to clone: will be modified (updated) in-place soon...
                 }
@@ -544,7 +575,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         this.router.putUpdate(report);
 
         modelInfo.iterCount = iteration;
-        activationsMap = null;
+
+        leaveMemoryWorkspace();
     }
 
     private long getTime() {
