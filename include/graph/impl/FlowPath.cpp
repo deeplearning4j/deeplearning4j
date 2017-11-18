@@ -29,13 +29,13 @@ namespace nd4j {
         Nd4jIndex FlowPath::innerTime(int nodeId) {
             ensureNode(nodeId);
 
-            _states[nodeId].innerTime();
+            return _states[nodeId].innerTime();
         }
 
         Nd4jIndex FlowPath::outerTime(int nodeId) {
             ensureNode(nodeId);
 
-            _states[nodeId].outerTime();
+            return _states[nodeId].outerTime();
         }
 
         bool FlowPath::isActive(int nodeId) {
