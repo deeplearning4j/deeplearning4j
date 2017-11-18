@@ -73,7 +73,7 @@ public abstract class DifferentialFunction implements Differential {
      */
     public DifferentialFunction(SameDiff sameDiff,NodeDef nodeDef) {
         this.sameDiff = sameDiff;
-        initFromTensorFlow(nodeDef, );
+        initFromTensorFlow(nodeDef, sameDiff);
     }
 
     /**
@@ -83,7 +83,7 @@ public abstract class DifferentialFunction implements Differential {
      */
     public DifferentialFunction(SameDiff sameDiff,onnx.OnnxProto3.NodeProto node) {
         this.sameDiff = sameDiff;
-        initFromOnnx(node, );
+        initFromOnnx(node, sameDiff);
     }
 
 
