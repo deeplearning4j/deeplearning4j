@@ -77,7 +77,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                     arity = 1)
     private String publishMasterUrl = "localhost:40123";
     @Parameter(names = {"-md", "--mediadriverdirectory"},
-                    description = "The media driver directory name. This is for when the media driver is started as a separate process.",
+                    description = "The media driver directory opName. This is for when the media driver is started as a separate process.",
                     arity = 1)
     private String mediaDriverDirectoryName;
     @Parameter(names = {"-sp", "--statusserverport"}, description = "The status server port, defaults to 9000.",

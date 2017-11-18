@@ -42,7 +42,7 @@ public class PostulateMetaOp extends BaseMetaOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "meta_postulate";
     }
 

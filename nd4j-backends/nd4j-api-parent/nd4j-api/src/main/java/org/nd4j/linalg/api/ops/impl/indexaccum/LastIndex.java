@@ -22,10 +22,9 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
@@ -78,45 +77,7 @@ public class LastIndex extends BaseIndexAccumulation {
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
-    @Override
-    public int update(double accum, int accumIdx, double x, int xIdx) {
-        return (accum >= x ? accumIdx : xIdx);
-    }
 
-    @Override
-    public int update(float accum, int accumIdx, float x, int xIdx) {
-        return (accum >= x ? accumIdx : xIdx);
-    }
-
-    @Override
-    public int update(double accum, int accumIdx, double x, double y, int idx) {
-        return (accum >= x ? accumIdx : idx);
-    }
-
-    @Override
-    public int update(float accum, int accumIdx, float x, float y, int idx) {
-        return (accum >= x ? accumIdx : idx);
-    }
-
-    @Override
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx) {
-        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accumIdx : xIdx);
-    }
-
-    @Override
-    public int update(IComplexNumber accum, int accumIdx, double x, int idx) {
-        return (accum.absoluteValue().doubleValue() >= x ? accumIdx : idx);
-    }
-
-    @Override
-    public int update(IComplexNumber accum, int accumIdx, double x, double y, int idx) {
-        return (accum.absoluteValue().doubleValue() >= x ? accumIdx : idx);
-    }
-
-    @Override
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx) {
-        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accumIdx : idx);
-    }
 
 
     @Override
@@ -125,88 +86,29 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "last_index";
     }
 
+
+
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin;
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin;
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(-Double.MAX_VALUE, 0);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        return new LastIndex(x.vectorAlongDimension(index, dimension), condition, eps);
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        return new LastIndex(x.tensorAlongDimension(index, dimension), condition, eps);
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
+    }
+
+    @Override
+    public float zeroHalf() {
+        return 0;
     }
 }

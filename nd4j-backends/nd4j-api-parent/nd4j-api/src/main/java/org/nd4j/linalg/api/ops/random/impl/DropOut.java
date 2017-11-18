@@ -59,7 +59,7 @@ public class DropOut extends BaseRandomOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "dropout";
     }
 
@@ -69,6 +69,21 @@ public class DropOut extends BaseRandomOp {
         this.extraArgs = new Object[] {p, (double) n};
     }
 
+
+    @Override
+    public String onnxName() {
+        return "Dropout";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return opName();
+    }
+
+    @Override
+    public Type opType() {
+        return Type.TRANSFORM;
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

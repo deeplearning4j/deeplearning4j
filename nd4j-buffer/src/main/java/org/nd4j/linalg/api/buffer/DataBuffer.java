@@ -39,7 +39,7 @@ import java.util.Collection;
 public interface DataBuffer extends Serializable {
 
     enum Type {
-        DOUBLE, FLOAT, INT, HALF, COMPRESSED, LONG,
+        DOUBLE, FLOAT, INT, HALF, COMPRESSED, LONG,UNKNOWN
     }
 
     enum TypeEx {

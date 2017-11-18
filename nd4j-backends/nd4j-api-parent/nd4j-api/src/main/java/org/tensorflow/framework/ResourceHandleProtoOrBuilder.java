@@ -9,7 +9,7 @@ public interface ResourceHandleProtoOrBuilder extends
 
   /**
    * <pre>
-   * Unique name for the device containing the resource.
+   * Unique opName for the device containing the resource.
    * </pre>
    *
    * <code>string device = 1;</code>
@@ -17,7 +17,7 @@ public interface ResourceHandleProtoOrBuilder extends
   String getDevice();
   /**
    * <pre>
-   * Unique name for the device containing the resource.
+   * Unique opName for the device containing the resource.
    * </pre>
    *
    * <code>string device = 1;</code>
@@ -45,18 +45,18 @@ public interface ResourceHandleProtoOrBuilder extends
 
   /**
    * <pre>
-   * Unique name of this resource.
+   * Unique opName of this resource.
    * </pre>
    *
-   * <code>string name = 3;</code>
+   * <code>string opName = 3;</code>
    */
   String getName();
   /**
    * <pre>
-   * Unique name of this resource.
+   * Unique opName of this resource.
    * </pre>
    *
-   * <code>string name = 3;</code>
+   * <code>string opName = 3;</code>
    */
   com.google.protobuf.ByteString
       getNameBytes();
@@ -73,7 +73,7 @@ public interface ResourceHandleProtoOrBuilder extends
 
   /**
    * <pre>
-   * For debug-only, the name of the opType pointed to by this handle, if
+   * For debug-only, the opName of the opType pointed to by this handle, if
    * available.
    * </pre>
    *
@@ -82,7 +82,7 @@ public interface ResourceHandleProtoOrBuilder extends
   String getMaybeTypeName();
   /**
    * <pre>
-   * For debug-only, the name of the opType pointed to by this handle, if
+   * For debug-only, the opName of the opType pointed to by this handle, if
    * available.
    * </pre>
    *

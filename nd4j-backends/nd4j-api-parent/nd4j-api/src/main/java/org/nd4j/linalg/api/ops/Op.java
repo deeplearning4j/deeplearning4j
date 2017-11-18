@@ -20,14 +20,13 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.nio.Buffer;
 
 /**
  * An op is defined as follows:
- * name: name of the operation
+ * opName: opName of the operation
  * x: the origin ndarray
  * y: the ndarray to parse in parallel
  * z: the resulting buffer
@@ -96,11 +95,11 @@ public interface Op {
     int opNum();
 
     /**
-     * The name of this operation
+     * The opName of this operation
      *
-     * @return the name of this operation
+     * @return the opName of this operation
      */
-    String name();
+    String opName();
 
     /**
      * The origin ndarray
@@ -132,93 +131,7 @@ public interface Op {
      */
     long n();
 
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    IComplexNumber op(IComplexNumber origin, double other);
 
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    IComplexNumber op(IComplexNumber origin, float other);
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    IComplexNumber op(IComplexNumber origin, IComplexNumber other);
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    float op(float origin, float other);
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    double op(double origin, double other);
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    double op(double origin);
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    float op(float origin);
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    IComplexNumber op(IComplexNumber origin);
-
-
-    /**
-     * A copy of this operation for a particular dimension of the input
-     *
-     * @param index     the index of the op to iterate over
-     * @param dimension the dimension to ge the input for
-     * @return the operation for that dimension
-     */
-    Op opForDimension(int index, int dimension);
-
-    /**
-     * A copy of this operation for a particular dimension of the input
-     *
-     * @param index     the index of the op to iterate over
-     * @param dimension the dimension to ge the input for
-     * @return the operation for that dimension
-     */
-    Op opForDimension(int index, int... dimension);
 
     /**
      * Initialize the operation based on the parameters
@@ -299,7 +212,7 @@ public interface Op {
      * meant for multiple inputs and outputs.
      * The default implementation in {@link BaseOp}
      * converts a simple op to a multi input/output operation
-     * by mapping the x and y on to inputs , the op name
+     * by mapping the x and y on to inputs , the op opName
      * and the z on to outputs.
      * @return the equivalent {@link CustomOp}
      */

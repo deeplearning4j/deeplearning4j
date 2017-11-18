@@ -24,7 +24,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Arrays;
 import java.util.List;
@@ -76,73 +75,21 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "rsub_scalar";
     }
 
+
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        if (complexNumber != null)
-            return complexNumber.rsub(origin);
-        return complexNumber.rsub(num);
+    public String onnxName() {
+        return "Sub";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        if (complexNumber != null)
-            return origin.rsub(complexNumber);
-        return complexNumber.rsub(num);
+    public String tensorflowName() {
+        return "sub";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if (complexNumber != null)
-            return origin.div(complexNumber);
-        return complexNumber.rsub(num);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (num.floatValue() - origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return num.doubleValue() - origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        return num.doubleValue() - origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return (num.floatValue() - origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        if (complexNumber != null)
-            return origin.rsub(complexNumber);
-        return complexNumber.rsub(num);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        if (num != null)
-            return new ScalarReverseSubtraction(x.vectorAlongDimension(index, dimension), num);
-        else
-            return new ScalarReverseSubtraction(x.vectorAlongDimension(index, dimension), complexNumber);
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        if (num != null)
-            return new ScalarReverseSubtraction(x.tensorAlongDimension(index, dimension), num);
-        else
-            return new ScalarReverseSubtraction(x.tensorAlongDimension(index, dimension), complexNumber);
-    }
 
 
     @Override

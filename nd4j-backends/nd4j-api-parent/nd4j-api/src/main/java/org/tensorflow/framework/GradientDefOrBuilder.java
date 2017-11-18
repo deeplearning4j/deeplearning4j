@@ -9,7 +9,7 @@ public interface GradientDefOrBuilder extends
 
   /**
    * <pre>
-   * The function name.
+   * The function opName.
    * </pre>
    *
    * <code>string function_name = 1;</code>
@@ -17,7 +17,7 @@ public interface GradientDefOrBuilder extends
   String getFunctionName();
   /**
    * <pre>
-   * The function name.
+   * The function opName.
    * </pre>
    *
    * <code>string function_name = 1;</code>
@@ -27,7 +27,7 @@ public interface GradientDefOrBuilder extends
 
   /**
    * <pre>
-   * The gradient function's name.
+   * The gradient function's opName.
    * </pre>
    *
    * <code>string gradient_func = 2;</code>
@@ -35,7 +35,7 @@ public interface GradientDefOrBuilder extends
   String getGradientFunc();
   /**
    * <pre>
-   * The gradient function's name.
+   * The gradient function's opName.
    * </pre>
    *
    * <code>string gradient_func = 2;</code>

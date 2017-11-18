@@ -8,6 +8,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -22,27 +24,26 @@ public class BatchNorm extends DynamicCustomOp {
     private boolean isLockGammaBeta;
     private boolean isMiniBatch;
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public BatchNorm(SameDiff sameDiff, DifferentialFunction[] inputs, boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
-        super(null,sameDiff, inputs, inPlace);
+    @Builder(builderMethodName = "builder")
+    public BatchNorm(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputArrays,boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
+        super(null,sameDiff, inputFunctions, inPlace);
         this.training = training;
         this.isLockGammaBeta = isLockGammaBeta;
         this.isMiniBatch = isMiniBatch;
+        if(inputArrays != null) {
+            getInputArguments().addAll(Arrays.asList(inputArrays));
+        }
+
+        if(outputArrays != null) {
+            getOutputArguments().addAll(Arrays.asList(outputArrays));
+        }
+
         getIArguments().add(fromBoolean(training));
         getIArguments().add(fromBoolean(isLockGammaBeta));
         getIArguments().add(fromBoolean(isMiniBatch));
     }
 
-    @Builder(builderMethodName = "execBuilder")
-    public BatchNorm(INDArray[] inputs, INDArray[] outputs, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
-        super(null,inputs,outputs);
-        this.training = training;
-        this.isLockGammaBeta = isLockGammaBeta;
-        this.isMiniBatch = isMiniBatch;
-        getIArguments().add(fromBoolean(training));
-        getIArguments().add(fromBoolean(isLockGammaBeta));
-        getIArguments().add(fromBoolean(isMiniBatch));
-    }
+
 
     public BatchNorm() {}
 
@@ -52,13 +53,29 @@ public class BatchNorm extends DynamicCustomOp {
         return "batchnorm";
     }
 
+    @Override
+    public String onnxName() {
+        return "BatchNormalization";
+    }
 
-
-
+    @Override
+    public String tensorflowName() {
+        return "batch_norm";
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+        List<DifferentialFunction> ret = new ArrayList<>();
+        List<DifferentialFunction> inputs = new ArrayList<>();
+        inputs.addAll(Arrays.asList(args()));
+        inputs.add(f1.get(0));
+        BatchNormDerivative batchNormDerivative = BatchNormDerivative.derivativeBuilder()
+                .isLockGammaBeta(isLockGammaBeta)
+                .isMiniBatch(isMiniBatch)
+                .training(training)
+                .build();
+        ret.addAll(Arrays.asList(batchNormDerivative.getOutputFunctions()));
+        return ret;
     }
 
 }

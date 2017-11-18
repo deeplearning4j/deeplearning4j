@@ -133,12 +133,12 @@ private static final long serialVersionUID = 0L;
   private volatile Object name_;
   /**
    * <pre>
-   * The name given to this operator. Used for naming inputs,
+   * The opName given to this operator. Used for naming inputs,
    * logging, visualization, etc.  Unique within a single GraphDef.
    * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public String getName() {
     Object ref = name_;
@@ -154,12 +154,12 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * The name given to this operator. Used for naming inputs,
+   * The opName given to this operator. Used for naming inputs,
    * logging, visualization, etc.  Unique within a single GraphDef.
    * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public com.google.protobuf.ByteString
       getNameBytes() {
@@ -179,7 +179,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object op_;
   /**
    * <pre>
-   * The operation name.  There may be custom parameters in attrs.
+   * The operation opName.  There may be custom parameters in attrs.
    * Op names starting with an underscore are reserved for internal use.
    * </pre>
    *
@@ -199,7 +199,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * The operation name.  There may be custom parameters in attrs.
+   * The operation opName.  There may be custom parameters in attrs.
    * Op names starting with an underscore are reserved for internal use.
    * </pre>
    *
@@ -223,7 +223,7 @@ private static final long serialVersionUID = 0L;
   private com.google.protobuf.LazyStringList input_;
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -238,7 +238,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -252,7 +252,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -266,7 +266,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -895,12 +895,12 @@ private static final long serialVersionUID = 0L;
     private Object name_ = "";
     /**
      * <pre>
-     * The name given to this operator. Used for naming inputs,
+     * The opName given to this operator. Used for naming inputs,
      * logging, visualization, etc.  Unique within a single GraphDef.
      * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -916,12 +916,12 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The name given to this operator. Used for naming inputs,
+     * The opName given to this operator. Used for naming inputs,
      * logging, visualization, etc.  Unique within a single GraphDef.
      * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -938,12 +938,12 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The name given to this operator. Used for naming inputs,
+     * The opName given to this operator. Used for naming inputs,
      * logging, visualization, etc.  Unique within a single GraphDef.
      * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setName(
         String value) {
@@ -957,12 +957,12 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The name given to this operator. Used for naming inputs,
+     * The opName given to this operator. Used for naming inputs,
      * logging, visualization, etc.  Unique within a single GraphDef.
      * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder clearName() {
       
@@ -972,12 +972,12 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The name given to this operator. Used for naming inputs,
+     * The opName given to this operator. Used for naming inputs,
      * logging, visualization, etc.  Unique within a single GraphDef.
      * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setNameBytes(
         com.google.protobuf.ByteString value) {
@@ -994,7 +994,7 @@ private static final long serialVersionUID = 0L;
     private Object op_ = "";
     /**
      * <pre>
-     * The operation name.  There may be custom parameters in attrs.
+     * The operation opName.  There may be custom parameters in attrs.
      * Op names starting with an underscore are reserved for internal use.
      * </pre>
      *
@@ -1014,7 +1014,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The operation name.  There may be custom parameters in attrs.
+     * The operation opName.  There may be custom parameters in attrs.
      * Op names starting with an underscore are reserved for internal use.
      * </pre>
      *
@@ -1035,7 +1035,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The operation name.  There may be custom parameters in attrs.
+     * The operation opName.  There may be custom parameters in attrs.
      * Op names starting with an underscore are reserved for internal use.
      * </pre>
      *
@@ -1053,7 +1053,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The operation name.  There may be custom parameters in attrs.
+     * The operation opName.  There may be custom parameters in attrs.
      * Op names starting with an underscore are reserved for internal use.
      * </pre>
      *
@@ -1067,7 +1067,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The operation name.  There may be custom parameters in attrs.
+     * The operation opName.  There may be custom parameters in attrs.
      * Op names starting with an underscore are reserved for internal use.
      * </pre>
      *
@@ -1094,7 +1094,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1109,7 +1109,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1123,7 +1123,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1137,7 +1137,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1152,7 +1152,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1173,7 +1173,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1194,7 +1194,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1213,7 +1213,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format
@@ -1230,7 +1230,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Each input is "node:src_output" with "node" being a string name and
+     * Each input is "node:src_output" with "node" being a string opName and
      * "src_output" indicating which output tensor to use from "node". If
      * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
      * may optionally be followed by control inputs that have the format

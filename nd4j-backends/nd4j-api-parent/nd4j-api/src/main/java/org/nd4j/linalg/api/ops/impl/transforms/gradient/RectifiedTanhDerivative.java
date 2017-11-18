@@ -22,10 +22,9 @@ package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.List;
 
@@ -72,79 +71,19 @@ public class RectifiedTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "rectified_tanh_derivative";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin) {
-        return 0;
-    }
-
-    @Override
-    public float op(float origin) {
-        return 0;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return null;
-    }
-
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new RectifiedTanhDerivative(x.vectorAlongDimension(index, dimension),
-                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            return new RectifiedTanhDerivative(x.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new RectifiedTanhDerivative(x.tensorAlongDimension(index, dimension),
-                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            return new RectifiedTanhDerivative(x.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

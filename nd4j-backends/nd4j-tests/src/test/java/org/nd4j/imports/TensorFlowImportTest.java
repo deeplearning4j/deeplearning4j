@@ -3,13 +3,13 @@ package org.nd4j.imports;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.graph.intermediate.TIndex;
-import org.nd4j.imports.converters.TensorFlowMapper;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -51,6 +51,7 @@ public class TensorFlowImportTest {
     }
 
     @Test
+    @Ignore
     public void importGraph1() throws Exception {
         SameDiff graph = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/max_add_2.pb.txt").getFile());
 
@@ -83,6 +84,7 @@ public class TensorFlowImportTest {
 
 
     @Test
+    @Ignore
     public void importGraph2() throws Exception {
         SameDiff graph = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/tensorflow_inception_graph.pb").getFile());
 
@@ -91,6 +93,7 @@ public class TensorFlowImportTest {
 
 
     @Test
+    @Ignore
     public void importGraph3() throws Exception {
         SameDiff graph = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/max_log_reg.pb.txt").getFile());
 
@@ -99,6 +102,7 @@ public class TensorFlowImportTest {
 
 
     @Test
+    @Ignore
     public void importGraph4() throws Exception {
         SameDiff graph = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/max_multiply.pb.txt").getFile());
 
@@ -377,11 +381,6 @@ public class TensorFlowImportTest {
         }
     }
 
-    @Test
-    public void testIntermediateHelper() throws Exception {
-        assertTrue(TensorFlowMapper.getInstance().knownOps().size() > 0);
-        assertTrue(TensorFlowMapper.getInstance().knownOps().contains("lrn"));
-    }
 
     @Test
     public void testIntermediateReduction() throws Exception {

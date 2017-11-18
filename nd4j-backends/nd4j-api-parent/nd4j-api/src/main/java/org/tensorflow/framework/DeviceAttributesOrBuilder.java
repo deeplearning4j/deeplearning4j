@@ -9,18 +9,18 @@ public interface DeviceAttributesOrBuilder extends
 
   /**
    * <pre>
-   * Fully specified name of the device within a cluster.
+   * Fully specified opName of the device within a cluster.
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   String getName();
   /**
    * <pre>
-   * Fully specified name of the device within a cluster.
+   * Fully specified opName of the device within a cluster.
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   com.google.protobuf.ByteString
       getNameBytes();

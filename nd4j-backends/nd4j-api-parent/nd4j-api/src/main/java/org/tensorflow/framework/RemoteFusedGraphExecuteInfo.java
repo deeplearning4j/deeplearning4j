@@ -997,7 +997,7 @@ private static final long serialVersionUID = 0L;
   private com.google.protobuf.LazyStringList graphInputNodeName_;
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -1008,7 +1008,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -1018,7 +1018,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -1028,7 +1028,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -1042,7 +1042,7 @@ private static final long serialVersionUID = 0L;
   private com.google.protobuf.LazyStringList graphOutputNodeName_;
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -1053,7 +1053,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -1063,7 +1063,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -1073,7 +1073,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -1087,7 +1087,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object executorName_;
   /**
    * <pre>
-   * Executor's name
+   * Executor's opName
    * </pre>
    *
    * <code>string executor_name = 4;</code>
@@ -1106,7 +1106,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Executor's name
+   * Executor's opName
    * </pre>
    *
    * <code>string executor_name = 4;</code>
@@ -1948,7 +1948,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -1959,7 +1959,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -1969,7 +1969,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -1979,7 +1979,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -1990,7 +1990,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -2007,7 +2007,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -2024,7 +2024,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -2039,7 +2039,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -2052,7 +2052,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph input node name
+     * Remote fused graph input node opName
      * </pre>
      *
      * <code>repeated string graph_input_node_name = 2;</code>
@@ -2078,7 +2078,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2089,7 +2089,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2099,7 +2099,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2109,7 +2109,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2120,7 +2120,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2137,7 +2137,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2154,7 +2154,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2169,7 +2169,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2182,7 +2182,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Remote fused graph output node name
+     * Remote fused graph output node opName
      * </pre>
      *
      * <code>repeated string graph_output_node_name = 3;</code>
@@ -2202,7 +2202,7 @@ private static final long serialVersionUID = 0L;
     private Object executorName_ = "";
     /**
      * <pre>
-     * Executor's name
+     * Executor's opName
      * </pre>
      *
      * <code>string executor_name = 4;</code>
@@ -2221,7 +2221,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Executor's name
+     * Executor's opName
      * </pre>
      *
      * <code>string executor_name = 4;</code>
@@ -2241,7 +2241,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Executor's name
+     * Executor's opName
      * </pre>
      *
      * <code>string executor_name = 4;</code>
@@ -2258,7 +2258,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Executor's name
+     * Executor's opName
      * </pre>
      *
      * <code>string executor_name = 4;</code>
@@ -2271,7 +2271,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Executor's name
+     * Executor's opName
      * </pre>
      *
      * <code>string executor_name = 4;</code>

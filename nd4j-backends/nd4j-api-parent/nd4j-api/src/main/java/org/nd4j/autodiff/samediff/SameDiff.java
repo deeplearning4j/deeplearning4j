@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -331,14 +330,13 @@ public class SameDiff {
     /**
      * Associate a {@link SameDiff}
      * namespace as a sub function.
-     * @param name the name of the function
+     * @param name the opName of the function
      * @param nameSpace the namespace
      */
     public void putSubFunction(String name,SameDiff nameSpace) {
         if(sameDiffFunctionInstances.containsKey(name) && sameDiffFunctionInstances.get(name) != nameSpace) {
-            throw new ND4JIllegalStateException("Unable to replace samediff namespace. Please choose another name");
+            throw new ND4JIllegalStateException("Unable to replace samediff namespace. Please choose another opName");
         }
-
 
         sameDiffFunctionInstances.put(name,nameSpace);
     }
@@ -353,33 +351,6 @@ public class SameDiff {
     }
 
 
-    private void ensureSameDiffInstance(SameDiff sameDiff,DifferentialFunction val) {
-        val.setSameDiff(sameDiff);
-        if(val instanceof SDVariable) {
-            SDVariable variable1 = (SDVariable) val;
-            variable1.setSameDiff(sameDiff);
-            variable1.setVertexId(val.getVertexId());
-            sameDiff.setupFunction(variable1);
-
-
-        }
-        else if(val instanceof Constant) {
-            Constant constant = (Constant) val;
-            constant.setSameDiff(sameDiff);
-            sameDiff.setupFunction(constant);
-        }
-
-        //recursive case
-        else if(val.args() != null) {
-            for(DifferentialFunction equation  : val.args()) {
-                sameDiff.setupFunction(equation);
-                ensureSameDiffInstance(sameDiff,equation);
-
-            }
-        }
-
-    }
-
     /**
      * Returns the {@link SDGraph}
      * asociated with this samediff instance.
@@ -390,33 +361,33 @@ public class SameDiff {
     }
 
     /**
-     * Invoke an op by name
+     * Invoke an op by opName
      * @param op the op
      * @param x the first input
      * @param y the second input
      * @return the result variable
      */
     public SDVariable invoke(Op op,SDVariable x,SDVariable y) {
-        if(!opMethods.containsKey(op.name())) {
-            throw new ND4JIllegalStateException("Illegal method name " + op.name());
+        if(!opMethods.containsKey(op.opName())) {
+            throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
         }
 
         if(x != null && y != null) {
             try {
-                return (SDVariable) opMethods.get(op.name()).invoke(this, x, y);
+                return (SDVariable) opMethods.get(op.opName()).invoke(this, x, y);
             }catch(Exception e) {
 
             }
         }
         else {
             try {
-                return (SDVariable) opMethods.get(op.name()).invoke(this, x);
+                return (SDVariable) opMethods.get(op.opName()).invoke(this, x);
             }catch(Exception e) {
 
             }
         }
 
-        throw new ND4JIllegalStateException("Illegal method name " + op.name());
+        throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
 
     }
 
@@ -454,7 +425,7 @@ public class SameDiff {
     }
 
     /**
-     * Invoke an op by name
+     * Invoke an op by opName
      * @param op the op
      * @param x the first input
      * @return the result variable
@@ -703,7 +674,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with 1.0
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @return the created variable
      */
@@ -716,7 +687,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with 0.0
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @return the created variable
      */
@@ -730,7 +701,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a  constant
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param constant the value to be initialized with
      * @return the created variable
@@ -744,7 +715,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @return the created variable
@@ -758,7 +729,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @param vertexId  the vertex id to use for the variable
@@ -772,7 +743,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @param vertexId  the vertex id to use for the variable
@@ -814,7 +785,7 @@ public class SameDiff {
      * Variable initialization
      * with a specified {@link WeightInitScheme}
      * , depth, and vertex id of{@link SDGraph#nextVertexId}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @param depth the depth in the graph (default 0)
@@ -845,7 +816,7 @@ public class SameDiff {
      * with the given shape
      * and a depth of 0.
      *
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the variable
      * @return the created variable
      */
@@ -961,8 +932,8 @@ public class SameDiff {
     }
 
     /**
-     * Get the variable based on the name
-     * @param name the name of the variable
+     * Get the variable based on the opName
+     * @param name the opName of the variable
      * @return the variabel instance if there is one
      *
      */
@@ -1015,11 +986,11 @@ public class SameDiff {
 
     /**
      * Gradient with respect
-     * to the given variable name.
+     * to the given variable opName.
      * Note that in order to run this function,
      * {@link #execBackwards()} must be executed first.
      * All gradient functions are obtained within that time.
-     * @param varName the variable name to get the gradient for.
+     * @param varName the variable opName to get the gradient for.
      * @return
      */
     public SDVariable grad(String varName) {
@@ -1443,7 +1414,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
-        return gradientBackwardsMarker(generateVariableName(new GradientBackwardsMarker().name(),true,iX),iX);
+        return gradientBackwardsMarker(generateVariableName(new GradientBackwardsMarker().opName(),true,iX),iX);
     }
 
 
@@ -2838,12 +2809,12 @@ public class SameDiff {
          * because more than one input can have the same
          * vertex id as a result.
          *
-         * We validate based on variable name instead
+         * We validate based on variable opName instead
          * which takes in to account function names as well
          * as input ids
          */
         if(variableMap.containsKey(variable.getVarName()) && !variableMap.get(variable.getVarName()).equals(variable)) {
-            throw new IllegalArgumentException("Variable already found with variable name " + variable.getVarName());
+            throw new IllegalArgumentException("Variable already found with variable opName " + variable.getVarName());
         }
 
         Preconditions.checkState(variable.getSameDiff() == this,"Same diff instance for variable must be the same!");
@@ -2924,10 +2895,10 @@ public class SameDiff {
 
     /**
      * Get a function instance
-     * given the name
-     * @param functionName the name of the function
+     * given the opName
+     * @param functionName the opName of the function
      * @return the same diff function instance
-     * defined for the given name
+     * defined for the given opName
      */
     public SameDiff getFunction(String functionName) {
         return sameDiffFunctionInstances.get(functionName);
@@ -2952,7 +2923,7 @@ public class SameDiff {
             this.vertexIdToVariable.put(vertexId,sdVariable);
         }
         else {
-            this.functionInstances.put(vertexId,function);
+            this. functionInstances.put(vertexId,function);
         }
     }
 
@@ -3226,7 +3197,7 @@ public class SameDiff {
 
     /**
      * Exec a given function
-     * @param functionName the name of the function
+     * @param functionName the opName of the function
      *                     to invoke
      * @return
      */
@@ -3237,7 +3208,7 @@ public class SameDiff {
 
     /**
      * Exec a given function
-     * @param functionName the name of the function
+     * @param functionName the opName of the function
      *                     to invoke
      * @return
      */
@@ -3253,7 +3224,7 @@ public class SameDiff {
     /**
      * Exec the given function
      * given the ops
-     * @param functionName the name of the function to
+     * @param functionName the opName of the function to
      *                     exec
      * @param cachedOps the cached operations
      * @return
@@ -3390,11 +3361,11 @@ public class SameDiff {
         for(int i = 0; i < opExecActions.size(); i++) {
 
             OpExecAction opExecAction = opExecActions.get(i);
-            if(!onBackward && opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().name())) {
+            if(!onBackward && opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().opName())) {
                 onBackward = true;
             }
 
-            if(opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().name()))
+            if(opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().opName()))
                 continue;
 
             DifferentialFunction differentialFunction = createOp(
@@ -3567,10 +3538,10 @@ public class SameDiff {
 
 
     /**
-     * Update the name for the variable
+     * Update the opName for the variable
      * with the given vertex id
      * @param vertexId the vertex id to update
-     * @param withName thew new name
+     * @param withName thew new opName
      */
     public void updateVariableName(int[] vertexId,String withName) {
         SDVariable oldVarNameRef = getVariableForVertexId(vertexId);

@@ -19,14 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.List;
 
@@ -85,77 +82,23 @@ public class LogX extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "log_x";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.log(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.log(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.log(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) FastMath.log(origin) / (float) FastMath.log((float) base);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.log(origin) / FastMath.log(base);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.log(origin) / FastMath.log(base);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) FastMath.log(origin) / (float) FastMath.log(base);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.log(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new LogX(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), base, xAlongDimension.length());
-        else
-            return new LogX(xAlongDimension, z.vectorAlongDimension(index, dimension), base, x.lengthLong());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new LogX(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), base, xAlongDimension.length());
-        else
-            return new LogX(xAlongDimension, z.tensorAlongDimension(index, dimension), base, x.lengthLong());
-
-    }
-
-
-    @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+
+    @Override
+    public String tensorflowName() {
+        return "log1p";
     }
 }

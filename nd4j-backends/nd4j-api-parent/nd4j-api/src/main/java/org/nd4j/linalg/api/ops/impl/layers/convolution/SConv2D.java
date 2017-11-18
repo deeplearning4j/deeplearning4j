@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
@@ -42,6 +43,17 @@ public class SConv2D extends Conv2D {
                 .build();
         ret.addAll(Arrays.asList(conv2DDerivative.getOutputFunctions()));
         return ret;
+    }
+
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for op " + opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "separable_conv2d";
     }
 
 }

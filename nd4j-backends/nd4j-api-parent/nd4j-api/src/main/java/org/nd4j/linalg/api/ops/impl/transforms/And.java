@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
@@ -87,10 +88,19 @@ public class And extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "boolean_and";
     }
 
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "all";
+    }
 
 
     @Override

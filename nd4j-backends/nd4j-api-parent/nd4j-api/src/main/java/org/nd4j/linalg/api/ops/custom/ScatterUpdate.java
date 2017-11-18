@@ -57,7 +57,7 @@ public class ScatterUpdate implements CustomOp {
     }
 
     /**
-     * This method returns op name as string
+     * This method returns op opName as string
      *
      * @return
      */

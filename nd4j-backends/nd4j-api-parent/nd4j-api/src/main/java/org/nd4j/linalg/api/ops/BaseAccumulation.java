@@ -19,16 +19,20 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Base class for accumulation, initiates the initial entry
@@ -37,6 +41,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
     protected IComplexNumber finalResultComplex;
@@ -146,183 +151,52 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             return x().dup(x().ordering());
     }
 
-    @Override
-    public boolean applyFinalTransform() {
-        return applyFinalTransform;
-    }
 
     @Override
-    public void setApplyFinalTransform(boolean applyFinalTransform) {
-        this.applyFinalTransform = applyFinalTransform;
+    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
+        return returnIntermediateRpresentation(buildBasicNode(node,graph),graph);
     }
 
+
+    /**
+     * This method returns given TF node as TOp
+     *
+     * @return
+     */
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        numProcessed++;
-        return origin;
+    public TOp asIntermediateRepresentation(@NonNull NodeDef node, @NonNull TGraph graph) {
+        return returnIntermediateRpresentation(buildBasicNode(node,graph),graph);
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        numProcessed++;
-        return origin;
-    }
+    private TOp returnIntermediateRpresentation(TOp tNode,TGraph graph) {
+        /**
+         * 2 options here. We either have specific dimension, or not.
+         * If not - that'll be reduceScalar, if yes - there will be reduceAlongDimension
+         */
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        numProcessed++;
-        return origin;
-    }
+        log.debug("TOp inputs: {}", tNode.getInputs());
+        val shapeIndex = tNode.getInputs().remove(1);
 
-    @Override
-    public float op(float origin, float other) {
-        numProcessed++;
-        return origin;
-    }
+        val variable = graph.getVariableSpace().getVariable(shapeIndex);
 
-    @Override
-    public double op(double origin, double other) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 0.0f;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
-    }
-
-    @Override
-    public long numProcessed() {
-        return numProcessed;
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            this.extraArgs = new Object[] {zeroDouble()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            this.extraArgs = new Object[] {zeroFloat()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            this.extraArgs = new Object[] {zeroHalf()};
+        // reduce to scalar
+        if (variable.getArray() == null && variable.getShape().length == 2 && variable.getShape()[0] == 1 && variable.getShape()[1] == 1)
+            tNode.getOpState().setAxes(new int[]{Integer.MAX_VALUE});// we're going for scalar
+        else {
+            if (variable.getArray() != null) {
+                val axes = variable.getArray().data().asInt();
+                tNode.getOpState().setAxes(axes);
+            } else
+                tNode.getOpState().setAxes(variable.getShape());
         }
+
+        return tNode;
     }
 
     @Override
-    public double combineSubResults(double first, double second) {
-        return update(first, second);
+    public void setFinalResult(double value) {
+        this.finalResult = value;
     }
-
-    @Override
-    public float combineSubResults(float first, float second) {
-        return update(first, second);
-    }
-
-    @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        return update(first, second);
-    }
-
-    @Override
-    public double getAndSetFinalResult(double accum) {
-        this.finalResult = accum;
-        if (z() != null && z.isScalar()) {
-            z.assign(accum);
-        }
-        return accum;
-    }
-
-    @Override
-    public float getAndSetFinalResult(float accum) {
-        this.finalResult = accum;
-        if (z() != null && z.isScalar()) {
-            z.assign(accum);
-        }
-        return accum;
-    }
-
-    @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        this.finalResultComplex = accum;
-        return accum;
-    }
-
-    @Override
-    public double calculateFinalResult(double accum, long n) {
-        return accum;
-    }
-
-    @Override
-    public float calculateFinalResult(float accum, long n) {
-        return accum;
-    }
-
-    @Override
-    public Number currentResult() {
-        return finalResult;
-    }
-
-    @Override
-    public void setFinalResult(Number number) {
-        this.finalResult = number;
-        if (z() != null && z.isScalar()) {
-            z.assign(number);
-        }
-    }
-
-    @Override
-    public Type opType() {
-        if(args() != null && args().length > 1)
-            return Type.REDUCE3;
-        return Type.REDUCE;
-    }
-
-    @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>(1);
-        ret.add(Shape.getReducedShape(arg().getResultShape(),dimensions));
-        return ret;
-    }
-
-
-    @Override
-    public void setFinalResultComplex(IComplexNumber number) {
-        this.finalResultComplex = number;
-    }
-
 
     @Override
     public Number getFinalResult() {
@@ -330,15 +204,19 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public IComplexNumber getFinalResultComplex() {
-        return finalResultComplex;
+    public double zeroDouble() {
+        return 0;
     }
 
-    /**
-     * This method is only used for Distance functions
-     * @return
-     */
-    public boolean isComplexAccumulation() {
-        return isComplex;
+    @Override
+    public float zeroFloat() {
+        return 0;
     }
+
+    @Override
+    public float zeroHalf() {
+        return 0;
+    }
+
+
 }

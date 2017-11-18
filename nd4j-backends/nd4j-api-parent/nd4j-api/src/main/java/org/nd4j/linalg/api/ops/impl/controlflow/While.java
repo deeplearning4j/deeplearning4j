@@ -2,21 +2,23 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Equivalent to tensorflow's while loop
@@ -28,6 +30,7 @@ import java.util.UUID;
  * runs loop till condition is false.
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class While extends DifferentialFunction implements CustomOp {
 
 
@@ -199,6 +202,26 @@ public class While extends DifferentialFunction implements CustomOp {
         return dummyResult;
     }
 
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
+        return null;
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
+        return null;
+    }
+
 
     @Override
     public String toString() {
@@ -212,7 +235,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
     @Override
     public long opHash() {
-        return 0;
+        return opName().hashCode();
     }
 
     @Override
@@ -247,5 +270,16 @@ public class While extends DifferentialFunction implements CustomOp {
             ret.add(var.getShape());
         }
         return ret;
+    }
+
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "while_loop";
     }
 }

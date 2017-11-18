@@ -682,6 +682,11 @@ public class SameDiffTests {
 
 
     @Test
+    public void testConv2d() {
+
+    }
+
+    @Test
     public void testWhileBackwards() {
         SameDiff sameDiff = SameDiff.create();
         sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {

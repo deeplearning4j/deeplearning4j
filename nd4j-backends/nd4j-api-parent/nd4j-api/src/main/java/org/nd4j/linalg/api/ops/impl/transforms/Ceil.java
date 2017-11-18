@@ -68,9 +68,20 @@ public class Ceil extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "ceil";
     }
+
+    @Override
+    public String onnxName() {
+        return "Ceil";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "ceil";
+    }
+
 
 
     @Override

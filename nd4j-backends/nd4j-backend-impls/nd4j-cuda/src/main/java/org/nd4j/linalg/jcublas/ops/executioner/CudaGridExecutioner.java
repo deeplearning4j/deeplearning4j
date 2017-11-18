@@ -313,12 +313,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         pushToGrid(new OpDescriptor(op, dimension), false);
                     }
                 }
-                    break;
+                break;
                 case PREDICATE: {
                     MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp), false);
                 }
-                    break;
+                break;
                 case INVERTED_PREDICATE: {
                     OpDescriptor currentOp = new OpDescriptor(op, dimension);
 
@@ -329,12 +329,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     MetaOp metaOp = new InvertedPredicateMetaOp(last, currentOp);
                     pushToGrid(new OpDescriptor(metaOp), false);
                 }
-                    break;
+                break;
                 case POSTULATE: {
                     MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
                     pushToGrid(new OpDescriptor(metaOp), false);
                 }
-                    break;
+                break;
                 default:
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
@@ -424,9 +424,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 if (last.getOp() instanceof TransformOp && last.getOp().y() != null) {
                     // FIXME: get rid of those instanceof
                     if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null && !(op instanceof ScalarMax)
-                                    && !(op instanceof ScalarMin) && !(op.opNum() >= 7 && op.opNum() <= 11)
-                                    && op.opNum() != 16 && op.opNum() != 13
-                                    && !(op.opNum() >= 56 && op.opNum() <= 59)) {
+                            && !(op instanceof ScalarMin) && !(op.opNum() >= 7 && op.opNum() <= 11)
+                            && op.opNum() != 16 && op.opNum() != 13
+                            && !(op.opNum() >= 56 && op.opNum() <= 59)) {
                         return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
                     }
                 }
@@ -507,7 +507,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
             Pointer devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
             Pointer devTadOffsets = tadBuffers.getSecond() == null ? null
-                            : AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context);
+                    : AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context);
 
             // we don't really care, if tadOffsets will be nulls
             pointers.setTadShape(devTadShapeInfo);
@@ -563,7 +563,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
         int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1, 1}
-                        : ArrayUtil.removeIndex(op.x().shape(), dimension);
+                : ArrayUtil.removeIndex(op.x().shape(), dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
@@ -599,7 +599,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
         int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1, 1}
-                        : ArrayUtil.removeIndex(op.x().shape(), dimension);
+                : ArrayUtil.removeIndex(op.x().shape(), dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
@@ -617,18 +617,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
-            if (op.isComplexAccumulation()) {
-                int xT = op.x().tensorssAlongDimension(dimension);
-                int yT = op.y().tensorssAlongDimension(dimension);
-
-                ret = Nd4j.create(xT, yT);
+            if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
+                ret = Nd4j.zeros(retShape);
             } else {
-                if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
-                    ret = Nd4j.zeros(retShape);
-                } else {
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                }
+                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
             }
+
 
             op.setZ(ret);
         } else {
@@ -753,7 +747,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         // we need to use it only for first op, since for MetaOps second op shares the same X & Z by definition
         CudaContext context =
-                        AtomicAllocator.getInstance().getFlowController().prepareAction(first.getOpZ(), first.getOpY());
+                AtomicAllocator.getInstance().getFlowController().prepareAction(first.getOpZ(), first.getOpY());
 
         //        AtomicAllocator.getInstance().getFlowController().prepareAction(second.getOpX(), second.getOpY(), second.getOpZ());
 
@@ -795,72 +789,72 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedFloat(extras, first.getType().ordinal(), first.getOpNum(),
-                                    second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                                    (FloatPointer) first.getX(), first.getXStride(), (FloatPointer) yGrid.getY(), // can be null
-                                    yGrid.getYStride(), // cane be -1
-                                    (FloatPointer) second.getZ(), second.getZStride(),
-                                    (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
-                                    (float) scalarA, (float) scalarB);
+                            second.getType().ordinal(), second.getOpNum(), first.getXLength(),
+                            (FloatPointer) first.getX(), first.getXStride(), (FloatPointer) yGrid.getY(), // can be null
+                            yGrid.getYStride(), // cane be -1
+                            (FloatPointer) second.getZ(), second.getZStride(),
+                            (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
+                            (float) scalarA, (float) scalarB);
                 } else {
                     nativeOps.execMetaPredicateShapeFloat(extras, first.getType().ordinal(), first.getOpNum(),
-                                    second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                                    (FloatPointer) first.getX(), (IntPointer) first.getXShapeInfo(),
-                                    (FloatPointer) yGrid.getY(), // can be null
-                                    (IntPointer) yGrid.getYShapeInfo(), // cane be -1
-                                    (FloatPointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
-                                    (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
-                                    (float) scalarA, (float) scalarB);
+                            second.getType().ordinal(), second.getOpNum(), first.getXLength(),
+                            (FloatPointer) first.getX(), (IntPointer) first.getXShapeInfo(),
+                            (FloatPointer) yGrid.getY(), // can be null
+                            (IntPointer) yGrid.getYShapeInfo(), // cane be -1
+                            (FloatPointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
+                            (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
+                            (float) scalarA, (float) scalarB);
                 }
             } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedDouble(extras, first.getType().ordinal(), first.getOpNum(),
-                                    second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                                    (DoublePointer) first.getX(), first.getXStride(), (DoublePointer) yGrid.getY(), // can be null
-                                    yGrid.getYStride(), // cane be -1
-                                    (DoublePointer) second.getZ(), second.getZStride(),
-                                    (DoublePointer) first.getExtraArgs(), (DoublePointer) second.getExtraArgs(),
-                                    scalarA, scalarB);
+                            second.getType().ordinal(), second.getOpNum(), first.getXLength(),
+                            (DoublePointer) first.getX(), first.getXStride(), (DoublePointer) yGrid.getY(), // can be null
+                            yGrid.getYStride(), // cane be -1
+                            (DoublePointer) second.getZ(), second.getZStride(),
+                            (DoublePointer) first.getExtraArgs(), (DoublePointer) second.getExtraArgs(),
+                            scalarA, scalarB);
                 } else {
                     nativeOps.execMetaPredicateShapeDouble(extras, first.getType().ordinal(), first.getOpNum(),
-                                    second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                                    (DoublePointer) first.getX(), (IntPointer) first.getXShapeInfo(),
-                                    (DoublePointer) yGrid.getY(), // can be null
-                                    (IntPointer) yGrid.getYShapeInfo(), // cane be -1
-                                    (DoublePointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
-                                    (DoublePointer) first.getExtraArgs(), (DoublePointer) second.getExtraArgs(),
-                                    scalarA, scalarB);
+                            second.getType().ordinal(), second.getOpNum(), first.getXLength(),
+                            (DoublePointer) first.getX(), (IntPointer) first.getXShapeInfo(),
+                            (DoublePointer) yGrid.getY(), // can be null
+                            (IntPointer) yGrid.getYShapeInfo(), // cane be -1
+                            (DoublePointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
+                            (DoublePointer) first.getExtraArgs(), (DoublePointer) second.getExtraArgs(),
+                            scalarA, scalarB);
                 }
             } else {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedHalf(extras, first.getType().ordinal(), first.getOpNum(),
-                                    second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                                    (ShortPointer) first.getX(), first.getXStride(), (ShortPointer) yGrid.getY(), // can be null
-                                    yGrid.getYStride(), // cane be -1
-                                    (ShortPointer) second.getZ(), second.getZStride(),
-                                    (ShortPointer) first.getExtraArgs(), (ShortPointer) second.getExtraArgs(),
-                                    (float) scalarA, (float) scalarB);
+                            second.getType().ordinal(), second.getOpNum(), first.getXLength(),
+                            (ShortPointer) first.getX(), first.getXStride(), (ShortPointer) yGrid.getY(), // can be null
+                            yGrid.getYStride(), // cane be -1
+                            (ShortPointer) second.getZ(), second.getZStride(),
+                            (ShortPointer) first.getExtraArgs(), (ShortPointer) second.getExtraArgs(),
+                            (float) scalarA, (float) scalarB);
                 } else {
                     nativeOps.execMetaPredicateShapeHalf(extras, first.getType().ordinal(), first.getOpNum(),
-                                    second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                                    (ShortPointer) first.getX(), (IntPointer) first.getXShapeInfo(),
-                                    (ShortPointer) yGrid.getY(), // can be null
-                                    (IntPointer) yGrid.getYShapeInfo(), // cane be -1
-                                    (ShortPointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
-                                    (ShortPointer) first.getExtraArgs(), (ShortPointer) second.getExtraArgs(),
-                                    (float) scalarA, (float) scalarB);
+                            second.getType().ordinal(), second.getOpNum(), first.getXLength(),
+                            (ShortPointer) first.getX(), (IntPointer) first.getXShapeInfo(),
+                            (ShortPointer) yGrid.getY(), // can be null
+                            (IntPointer) yGrid.getYShapeInfo(), // cane be -1
+                            (ShortPointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
+                            (ShortPointer) first.getExtraArgs(), (ShortPointer) second.getExtraArgs(),
+                            (float) scalarA, (float) scalarB);
                 }
             }
         } else if (op instanceof ReduceMetaOp) {
             if (first.getDtype() == DataBuffer.Type.FLOAT) {
 
                 nativeOps.execMetaPredicateReduceFloat(extras, first.getType().ordinal(), first.getOpNum(),
-                                second.getType().ordinal(), second.getOpNum(), (FloatPointer) first.getX(),
-                                (IntPointer) first.getXShapeInfo(), (FloatPointer) second.getY(),
-                                (IntPointer) second.getYShapeInfo(), (FloatPointer) second.getZ(),
-                                (IntPointer) second.getZShapeInfo(), (IntPointer) second.getDimensions(),
-                                second.getDimensionsLength(), (IntPointer) second.getTadShape(),
-                                new LongPointerWrapper(second.getTadOffsets()), (FloatPointer) first.getExtraArgs(),
-                                (FloatPointer) second.getExtraArgs(), (float) scalarA, 0.0f, false);
+                        second.getType().ordinal(), second.getOpNum(), (FloatPointer) first.getX(),
+                        (IntPointer) first.getXShapeInfo(), (FloatPointer) second.getY(),
+                        (IntPointer) second.getYShapeInfo(), (FloatPointer) second.getZ(),
+                        (IntPointer) second.getZShapeInfo(), (IntPointer) second.getDimensions(),
+                        second.getDimensionsLength(), (IntPointer) second.getTadShape(),
+                        new LongPointerWrapper(second.getTadOffsets()), (FloatPointer) first.getExtraArgs(),
+                        (FloatPointer) second.getExtraArgs(), (float) scalarA, 0.0f, false);
             }
         }
 
@@ -906,7 +900,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         OpDescriptor op = lastOp.get();
         if (op != null) {
             if (!experimental.get()) {
-            //if (!nativeOps.isExperimentalEnabled()) {
+                //if (!nativeOps.isExperimentalEnabled()) {
                 // it might be only pairwise transform here for now
                 //          logger.info("Flushing existing lastOp");
                 lastOp.remove();

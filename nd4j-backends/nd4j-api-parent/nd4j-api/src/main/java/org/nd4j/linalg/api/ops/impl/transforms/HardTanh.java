@@ -69,10 +69,20 @@ public class HardTanh extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "hardtanh";
     }
 
+
+    @Override
+    public String onnxName() {
+        return "HardTanh";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "hard_tanh";
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

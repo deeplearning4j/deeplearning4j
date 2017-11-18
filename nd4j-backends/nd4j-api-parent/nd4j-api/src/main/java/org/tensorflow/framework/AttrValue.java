@@ -3468,8 +3468,8 @@ private static final long serialVersionUID = 0L;
   public static final int FUNC_FIELD_NUMBER = 10;
   /**
    * <pre>
-   * "func" represents a function. func.name is a function's name or
-   * a primitive op's name. func.attr.first is the name of an attr
+   * "func" represents a function. func.opName is a function's opName or
+   * a primitive op's opName. func.attr.first is the opName of an attr
    * defined for that function. func.attr.second is the value for
    * that attr in the instantiation.
    * </pre>
@@ -3481,8 +3481,8 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * "func" represents a function. func.name is a function's name or
-   * a primitive op's name. func.attr.first is the name of an attr
+   * "func" represents a function. func.opName is a function's opName or
+   * a primitive op's opName. func.attr.first is the opName of an attr
    * defined for that function. func.attr.second is the value for
    * that attr in the instantiation.
    * </pre>
@@ -3497,8 +3497,8 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * "func" represents a function. func.name is a function's name or
-   * a primitive op's name. func.attr.first is the name of an attr
+   * "func" represents a function. func.opName is a function's opName or
+   * a primitive op's opName. func.attr.first is the opName of an attr
    * defined for that function. func.attr.second is the value for
    * that attr in the instantiation.
    * </pre>
@@ -4895,8 +4895,8 @@ private static final long serialVersionUID = 0L;
         NameAttrList, NameAttrList.Builder, NameAttrListOrBuilder> funcBuilder_;
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -4908,8 +4908,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -4931,8 +4931,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -4954,8 +4954,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -4975,8 +4975,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -5004,8 +5004,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -5030,8 +5030,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -5043,8 +5043,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>
@@ -5063,8 +5063,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * "func" represents a function. func.name is a function's name or
-     * a primitive op's name. func.attr.first is the name of an attr
+     * "func" represents a function. func.opName is a function's opName or
+     * a primitive op's opName. func.attr.first is the opName of an attr
      * defined for that function. func.attr.second is the value for
      * that attr in the instantiation.
      * </pre>

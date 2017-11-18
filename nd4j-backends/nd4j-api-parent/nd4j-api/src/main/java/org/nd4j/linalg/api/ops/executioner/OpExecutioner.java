@@ -48,7 +48,7 @@ public interface OpExecutioner {
     }
 
     /**
-     * This method returns name of the last invoked op
+     * This method returns opName of the last invoked op
      *
      * @return
      */

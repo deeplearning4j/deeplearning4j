@@ -59,7 +59,7 @@ public enum Activation {
     /**
      * Returns the activation function enum value
      *
-     * @param name the case-insensitive name of the activation function
+     * @param name the case-insensitive opName of the activation function
      * @return the activation function enum value
      */
     public static Activation fromString(String name) {

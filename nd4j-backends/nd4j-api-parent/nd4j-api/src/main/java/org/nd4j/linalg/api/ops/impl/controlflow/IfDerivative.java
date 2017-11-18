@@ -1,10 +1,12 @@
 package org.nd4j.linalg.api.ops.impl.controlflow;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
+@NoArgsConstructor
 public class IfDerivative extends If {
 
     private If ifDelegate;

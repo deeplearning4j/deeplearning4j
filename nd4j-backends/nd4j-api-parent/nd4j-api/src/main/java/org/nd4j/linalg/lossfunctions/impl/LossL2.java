@@ -143,7 +143,7 @@ public class LossL2 implements ILossFunction {
 
 
     /**
-     * The name of this function
+     * The opName of this function
      *
      * @return
      */

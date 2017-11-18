@@ -19,14 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,60 +69,6 @@ public class Max extends BaseAccumulation {
         super(x, y);
     }
 
-    @Override
-    public double op(double origin, double other) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin;
-    }
-
-    @Override
-    public double update(double accum, double x) {
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        return FastMath.max(accum, x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        return (accum.absoluteValue().doubleValue() > x ? accum : Nd4j.createComplexNumber(x, 0));
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        return (accum.absoluteValue().doubleValue() > x ? accum : Nd4j.createComplexNumber(x, 0));
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
-    }
 
     @Override
     public int opNum() {
@@ -134,7 +76,7 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "max";
     }
 
@@ -153,26 +95,6 @@ public class Max extends BaseAccumulation {
         return -Float.MAX_VALUE;
     }
 
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Max(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Max(x.vectorAlongDimension(index, dimension));
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Max(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Max(x.tensorAlongDimension(index, dimension));
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
@@ -180,5 +102,15 @@ public class Max extends BaseAccumulation {
         List<DifferentialFunction> ret = new ArrayList<>(1);
         ret.add(sameDiff.f().doGradChoose(this,i_v1.get(0),dimensions));
         return ret;
+    }
+
+    @Override
+    public String onnxName() {
+        return "ReduceMax";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "reduce_max";
     }
 }

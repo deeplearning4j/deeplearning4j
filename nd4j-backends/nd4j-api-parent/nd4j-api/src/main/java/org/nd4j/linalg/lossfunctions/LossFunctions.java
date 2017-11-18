@@ -33,7 +33,7 @@ public class LossFunctions {
      * Generic scoring function.
      * Note that an IllegalArgumentException is thrown if the given
      * loss function is custom. An alternative mechanism for scoring
-     * (preferrably with a function name and the op factory) should be used instead.
+     * (preferrably with a function opName and the op factory) should be used instead.
      *
      * @param labels            the labels to score
      * @param lossFunction      the loss function to use

@@ -19,15 +19,18 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import org.apache.commons.math3.util.FastMath;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ShapeOp;
-import org.nd4j.linalg.util.ComplexUtil;
+import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,6 +39,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class Reshape extends ShapeOp {
 
     private int[] shape;
@@ -96,74 +100,45 @@ public class Reshape extends ShapeOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "reshape";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.abs(origin);
+    public String onnxName() {
+        return "Reshape";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Reshape(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Reshape(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+    public String tensorflowName() {
+        return "reshape";
     }
 
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
+        val tNode = buildBasicNode(node, graph);
 
-        if (y() != null)
-            return new Reshape(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Reshape(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        // in reshape operation we replace second input, and replace it with extra args
+        log.debug("TOp inputs: {}", tNode.getInputs());
+        val shapeIndex = tNode.getInputs().remove(1);
+        val variable = graph.getVariableSpace().getVariable(shapeIndex);
 
+        assert variable != null;
+        assert variable.getShape() != null;
+
+        // we know that TF is always C order
+        int[] args = ArrayUtils.add(variable.getShape(),  0, (int)'c');
+
+
+        log.debug("Reshape node_{}, new shape: {}", tNode.getId(), Arrays.toString(args));
+
+        // new shape goes here
+        tNode.getOpState().setExtraBits(args);
+
+        return tNode;
     }
+
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

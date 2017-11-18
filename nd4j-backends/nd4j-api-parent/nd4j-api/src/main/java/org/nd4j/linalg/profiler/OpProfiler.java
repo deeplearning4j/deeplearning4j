@@ -158,7 +158,7 @@ public class OpProfiler {
     }
 
     /**
-     * This method returns op class name
+     * This method returns op class opName
      *
      * @param op
      * @return
@@ -205,7 +205,7 @@ public class OpProfiler {
         invocationsCount.incrementAndGet();
 
         // number of invocations for this specific op
-        opCounter.incrementCount(op.name());
+        opCounter.incrementCount(op.opName());
 
         // number of invocations for specific class
         String opClass = getOpClass(op);
@@ -214,12 +214,12 @@ public class OpProfiler {
         if (op.x().data().address() == lastZ && op.z() == op.x() && op.y() == null) {
             // we have possible shift here
             matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
-            matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.name());
+            matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.opName());
         } else {
             matchingCounter.totalsIncrement();
             matchingCounterDetailed.totalsIncrement();
             if (op.y() != null && op.y().data().address() == lastZ) {
-                matchingCounterInverted.incrementCount(prevOpMatchingInverted + " -> " + opClass + " " + op.name());
+                matchingCounterInverted.incrementCount(prevOpMatchingInverted + " -> " + opClass + " " + op.opName());
             } else {
                 matchingCounterInverted.totalsIncrement();
             }
@@ -227,10 +227,10 @@ public class OpProfiler {
         }
         lastZ = op.z().data().address();
         prevOpMatching = opClass;
-        prevOpMatchingDetailed = opClass + " " + op.name();
-        prevOpMatchingInverted = opClass + " " + op.name();
+        prevOpMatchingDetailed = opClass + " " + op.opName();
+        prevOpMatchingInverted = opClass + " " + op.opName();
 
-        updatePairs(op.name(), opClass);
+        updatePairs(op.opName(), opClass);
 
         PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
         for (PenaltyCause cause : causes) {
@@ -311,7 +311,7 @@ public class OpProfiler {
         classAggergator.putTime(getOpClass(op), op, currentTime);
 
         if (currentTime > THRESHOLD) {
-            String keyExt = getOpClass(op) + " " + op.name() + " (" + op.opNum() + ")";
+            String keyExt = getOpClass(op) + " " + op.opName() + " (" + op.opNum() + ")";
             longAggergator.putTime(keyExt, currentTime);
         }
     }
@@ -324,7 +324,7 @@ public class OpProfiler {
         String key = "BLAS";
         invocationsCount.incrementAndGet();
 
-        // using blas function name as key
+        // using blas function opName as key
         opCounter.incrementCount(blasOpName);
 
         // all blas calls share the same key

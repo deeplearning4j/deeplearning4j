@@ -32,7 +32,7 @@ public class Environment implements Serializable {
 
 
     /*
-        System.getProperty("os.name");
+        System.getProperty("os.opName");
      */
     private String osName;
 

@@ -2,7 +2,6 @@ package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
@@ -35,7 +34,7 @@ public class BroadcastAddOp extends BaseBroadcastOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "broadcastadd";
     }
 
@@ -44,5 +43,15 @@ public class BroadcastAddOp extends BaseBroadcastOp {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
+    }
+
+    @Override
+    public String onnxName() {
+        return "Add";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "add";
     }
 }

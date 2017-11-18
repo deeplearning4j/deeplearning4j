@@ -13,7 +13,7 @@ public interface OpDefOrBuilder extends
    * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   String getName();
   /**
@@ -22,7 +22,7 @@ public interface OpDefOrBuilder extends
    * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   com.google.protobuf.ByteString
       getNameBytes();

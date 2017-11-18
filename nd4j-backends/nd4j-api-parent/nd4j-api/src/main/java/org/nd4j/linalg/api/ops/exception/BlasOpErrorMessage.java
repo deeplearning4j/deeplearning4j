@@ -19,7 +19,7 @@ public class BlasOpErrorMessage implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder().append("Op " + op.name() + " of length " + op.n())
+        StringBuilder sb = new StringBuilder().append("Op " + op.opName() + " of length " + op.n())
                         .append(" will fail with x of " + shapeInfo(op.x()));
         if (op.y() != null) {
             sb.append(" y of " + shapeInfo(op.y()));

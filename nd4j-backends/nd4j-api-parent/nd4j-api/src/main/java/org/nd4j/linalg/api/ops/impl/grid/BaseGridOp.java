@@ -1,6 +1,9 @@
 package org.nd4j.linalg.api.ops.impl.grid;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import onnx.OnnxProto3;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.GridOp;
@@ -11,6 +14,7 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author raver119@gmail.com
@@ -61,124 +65,18 @@ public abstract class BaseGridOp extends BaseOp implements GridOp {
         return descriptor;
     }
 
-
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
+    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
         return null;
     }
 
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " + opName());
     }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public float op(float origin, float other) {
-        return 0;
-    }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public double op(double origin, double other) {
-        return 0;
-    }
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    @Override
-    public double op(double origin) {
-        return 0;
-    }
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    @Override
-    public float op(float origin) {
-        return 0;
-    }
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return null;
-    }
-
-    /**
-     * A copy of this operation for a particular dimension of the input
-     *
-     * @param index     the index of the op to iterate over
-     * @param dimension the dimension to ge the input for
-     * @return the operation for that dimension
-     */
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        return null;
-    }
-
-    /**
-     * A copy of this operation for a particular dimension of the input
-     *
-     * @param index     the index of the op to iterate over
-     * @param dimension the dimension to ge the input for
-     * @return the operation for that dimension
-     */
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        return null;
-    }
-
-
 }

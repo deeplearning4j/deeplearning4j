@@ -15,10 +15,10 @@ import java.util.Map;
  */
 @EqualsAndHashCode
 public class TScope {
-    private Map<Integer, TNode> numericMap = new HashMap<>();
-    private Map<String, TNode> symbolicMap = new HashMap<>();
+    private Map<Integer, TOp> numericMap = new HashMap<>();
+    private Map<String, TOp> symbolicMap = new HashMap<>();
 
-    @Getter private List<TNode> nodes = new ArrayList<>();
+    @Getter private List<TOp> nodes = new ArrayList<>();
     @Getter private int id;
     @Getter private String name;
 
@@ -33,7 +33,7 @@ public class TScope {
      *
      * @param node
      */
-    public void addNode(@NonNull TNode node) {
+    public void addNode(@NonNull TOp node) {
         nodes.add(node);
         if (node.getId() != 0)
             numericMap.put(node.getId(), node);
@@ -43,12 +43,12 @@ public class TScope {
     }
 
 
-    public TNode getNode(@NonNull String name) {
+    public TOp getNode(@NonNull String name) {
         return symbolicMap.get(name);
     }
 
 
-    public TNode getNode(int id) {
+    public TOp getNode(int id) {
         return numericMap.get(id);
     }
 
@@ -57,7 +57,7 @@ public class TScope {
      * This method returns last node of this scope
      * @return
      */
-    public TNode lastNode() {
+    public TOp lastNode() {
         return nodes.get(nodes.size() - 1);
     }
 

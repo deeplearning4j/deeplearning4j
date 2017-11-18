@@ -114,7 +114,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object device_;
   /**
    * <pre>
-   * Unique name for the device containing the resource.
+   * Unique opName for the device containing the resource.
    * </pre>
    *
    * <code>string device = 1;</code>
@@ -133,7 +133,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Unique name for the device containing the resource.
+   * Unique opName for the device containing the resource.
    * </pre>
    *
    * <code>string device = 1;</code>
@@ -198,10 +198,10 @@ private static final long serialVersionUID = 0L;
   private volatile Object name_;
   /**
    * <pre>
-   * Unique name of this resource.
+   * Unique opName of this resource.
    * </pre>
    *
-   * <code>string name = 3;</code>
+   * <code>string opName = 3;</code>
    */
   public String getName() {
     Object ref = name_;
@@ -217,10 +217,10 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Unique name of this resource.
+   * Unique opName of this resource.
    * </pre>
    *
-   * <code>string name = 3;</code>
+   * <code>string opName = 3;</code>
    */
   public com.google.protobuf.ByteString
       getNameBytes() {
@@ -254,7 +254,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object maybeTypeName_;
   /**
    * <pre>
-   * For debug-only, the name of the opType pointed to by this handle, if
+   * For debug-only, the opName of the opType pointed to by this handle, if
    * available.
    * </pre>
    *
@@ -274,7 +274,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * For debug-only, the name of the opType pointed to by this handle, if
+   * For debug-only, the opName of the opType pointed to by this handle, if
    * available.
    * </pre>
    *
@@ -655,7 +655,7 @@ private static final long serialVersionUID = 0L;
     private Object device_ = "";
     /**
      * <pre>
-     * Unique name for the device containing the resource.
+     * Unique opName for the device containing the resource.
      * </pre>
      *
      * <code>string device = 1;</code>
@@ -674,7 +674,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name for the device containing the resource.
+     * Unique opName for the device containing the resource.
      * </pre>
      *
      * <code>string device = 1;</code>
@@ -694,7 +694,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name for the device containing the resource.
+     * Unique opName for the device containing the resource.
      * </pre>
      *
      * <code>string device = 1;</code>
@@ -711,7 +711,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name for the device containing the resource.
+     * Unique opName for the device containing the resource.
      * </pre>
      *
      * <code>string device = 1;</code>
@@ -724,7 +724,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name for the device containing the resource.
+     * Unique opName for the device containing the resource.
      * </pre>
      *
      * <code>string device = 1;</code>
@@ -833,10 +833,10 @@ private static final long serialVersionUID = 0L;
     private Object name_ = "";
     /**
      * <pre>
-     * Unique name of this resource.
+     * Unique opName of this resource.
      * </pre>
      *
-     * <code>string name = 3;</code>
+     * <code>string opName = 3;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -852,10 +852,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name of this resource.
+     * Unique opName of this resource.
      * </pre>
      *
-     * <code>string name = 3;</code>
+     * <code>string opName = 3;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -872,10 +872,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name of this resource.
+     * Unique opName of this resource.
      * </pre>
      *
-     * <code>string name = 3;</code>
+     * <code>string opName = 3;</code>
      */
     public Builder setName(
         String value) {
@@ -889,10 +889,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name of this resource.
+     * Unique opName of this resource.
      * </pre>
      *
-     * <code>string name = 3;</code>
+     * <code>string opName = 3;</code>
      */
     public Builder clearName() {
       
@@ -902,10 +902,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Unique name of this resource.
+     * Unique opName of this resource.
      * </pre>
      *
-     * <code>string name = 3;</code>
+     * <code>string opName = 3;</code>
      */
     public Builder setNameBytes(
         com.google.protobuf.ByteString value) {
@@ -963,7 +963,7 @@ private static final long serialVersionUID = 0L;
     private Object maybeTypeName_ = "";
     /**
      * <pre>
-     * For debug-only, the name of the opType pointed to by this handle, if
+     * For debug-only, the opName of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -983,7 +983,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the opType pointed to by this handle, if
+     * For debug-only, the opName of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -1004,7 +1004,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the opType pointed to by this handle, if
+     * For debug-only, the opName of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -1022,7 +1022,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the opType pointed to by this handle, if
+     * For debug-only, the opName of the opType pointed to by this handle, if
      * available.
      * </pre>
      *
@@ -1036,7 +1036,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * For debug-only, the name of the opType pointed to by this handle, if
+     * For debug-only, the opName of the opType pointed to by this handle, if
      * available.
      * </pre>
      *

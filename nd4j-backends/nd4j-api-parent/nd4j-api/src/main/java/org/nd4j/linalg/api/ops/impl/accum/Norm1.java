@@ -19,14 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collections;
@@ -69,65 +65,6 @@ public class Norm1 extends BaseAccumulation {
         return Transforms.abs(x());
     }
 
-    @Override
-    public double op(double origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double update(double accum, double x) {
-        return accum + x;
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        return accum + x;
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        return accum + x;
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        return accum + x;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        return accum.add(x >= 0 ? x : -x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        return accum.add(x >= 0 ? x : -x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        return accum.add(x.absoluteValue());
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        return accum.add(x.absoluteValue());
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return accum.add(x.absoluteValue());
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
-    }
 
     @Override
     public int opNum() {
@@ -135,44 +72,18 @@ public class Norm1 extends BaseAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "norm1";
     }
 
     @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Norm1(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Norm1(x.vectorAlongDimension(index, dimension));
-
+    public String onnxName() {
+        return "Norm";
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Norm1(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Norm1(x.tensorAlongDimension(index, dimension));
-    }
-
-    @Override
-    public double combineSubResults(double first, double second) {
-        return first + second;
-    }
-
-    @Override
-    public float combineSubResults(float first, float second) {
-        return first + second;
-    }
-
-    @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        return first.add(second);
+    public String tensorflowName() {
+        return "norm";
     }
 
 

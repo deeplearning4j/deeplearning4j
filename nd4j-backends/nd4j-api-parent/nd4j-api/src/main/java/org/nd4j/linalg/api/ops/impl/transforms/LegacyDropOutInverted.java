@@ -2,17 +2,16 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.List;
 
 /**
  * Inverted DropOut implementation as Op
  *
- * PLEASE NOTE: This is legacy DropOutInverted implementation, please consider using op with the same name from randomOps
+ * PLEASE NOTE: This is legacy DropOutInverted implementation, please consider using op with the same opName from randomOps
  * @author raver119@gmail.com
  */
 public class LegacyDropOutInverted extends BaseTransformOp {
@@ -62,74 +61,18 @@ public class LegacyDropOutInverted extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "legacy_dropout_inverted";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return 0;
-    }
-
-    @Override
-    public double op(double origin) {
-        return 0;
-    }
-
-    @Override
-    public float op(float origin) {
-        return 0;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return null;
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new LegacyDropOutInverted(xAlongDimension, z.vectorAlongDimension(index, dimension), p,
-                            xAlongDimension.length());
-        else
-            return new LegacyDropOutInverted(xAlongDimension, z.vectorAlongDimension(index, dimension), p,
-                            xAlongDimension.length());
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new LegacyDropOutInverted(xAlongDimension, z.tensorAlongDimension(index, dimension), p,
-                            xAlongDimension.length());
-        else
-            return new LegacyDropOutInverted(xAlongDimension, z.tensorAlongDimension(index, dimension), p,
-                            xAlongDimension.length());
-
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override

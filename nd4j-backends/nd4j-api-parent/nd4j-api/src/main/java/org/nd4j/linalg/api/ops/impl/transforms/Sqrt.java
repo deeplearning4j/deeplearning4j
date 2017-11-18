@@ -19,14 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.List;
 
@@ -72,70 +68,18 @@ public class Sqrt extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "sqrt";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.sqrt(origin);
+    public String onnxName() {
+        return "Sqrt";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.sqrt(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.sqrt(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) FastMath.sqrt(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.sqrt(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.sqrt(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) FastMath.sqrt(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.sqrt(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Sqrt(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Sqrt(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Sqrt(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Sqrt(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
-
+    public String tensorflowName() {
+        return "sqrt";
     }
 
 

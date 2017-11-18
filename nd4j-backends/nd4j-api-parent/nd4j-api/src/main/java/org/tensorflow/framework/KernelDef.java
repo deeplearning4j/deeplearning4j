@@ -126,7 +126,7 @@ private static final long serialVersionUID = 0L;
      * Name of an attr from the Op.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     String getName();
     /**
@@ -134,7 +134,7 @@ private static final long serialVersionUID = 0L;
      * Name of an attr from the Op.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     com.google.protobuf.ByteString
         getNameBytes();
@@ -261,7 +261,7 @@ private static final long serialVersionUID = 0L;
      * Name of an attr from the Op.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -280,7 +280,7 @@ private static final long serialVersionUID = 0L;
      * Name of an attr from the Op.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -651,7 +651,7 @@ private static final long serialVersionUID = 0L;
        * Name of an attr from the Op.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public String getName() {
         Object ref = name_;
@@ -670,7 +670,7 @@ private static final long serialVersionUID = 0L;
        * Name of an attr from the Op.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -690,7 +690,7 @@ private static final long serialVersionUID = 0L;
        * Name of an attr from the Op.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setName(
           String value) {
@@ -707,7 +707,7 @@ private static final long serialVersionUID = 0L;
        * Name of an attr from the Op.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder clearName() {
         
@@ -720,7 +720,7 @@ private static final long serialVersionUID = 0L;
        * Name of an attr from the Op.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {
@@ -949,7 +949,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object op_;
   /**
    * <pre>
-   * Must match the name of an Op.
+   * Must match the opName of an Op.
    * </pre>
    *
    * <code>string op = 1;</code>
@@ -968,7 +968,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Must match the name of an Op.
+   * Must match the opName of an Op.
    * </pre>
    *
    * <code>string op = 1;</code>
@@ -1572,7 +1572,7 @@ private static final long serialVersionUID = 0L;
     private Object op_ = "";
     /**
      * <pre>
-     * Must match the name of an Op.
+     * Must match the opName of an Op.
      * </pre>
      *
      * <code>string op = 1;</code>
@@ -1591,7 +1591,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Must match the name of an Op.
+     * Must match the opName of an Op.
      * </pre>
      *
      * <code>string op = 1;</code>
@@ -1611,7 +1611,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Must match the name of an Op.
+     * Must match the opName of an Op.
      * </pre>
      *
      * <code>string op = 1;</code>
@@ -1628,7 +1628,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Must match the name of an Op.
+     * Must match the opName of an Op.
      * </pre>
      *
      * <code>string op = 1;</code>
@@ -1641,7 +1641,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Must match the name of an Op.
+     * Must match the opName of an Op.
      * </pre>
      *
      * <code>string op = 1;</code>

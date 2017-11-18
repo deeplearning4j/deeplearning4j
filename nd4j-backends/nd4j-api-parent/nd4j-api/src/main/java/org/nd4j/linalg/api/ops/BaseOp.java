@@ -20,17 +20,22 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.Data;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.NodeDef;
 
 import java.nio.Buffer;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Base op. An op involves iterating over 2 buffers (x,y)  up to n elements
@@ -50,7 +55,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     // cached instance, for dataType checks
     protected DataBuffer extraArgz;
 
-    public BaseOp() {}
+    public BaseOp() {
+    }
 
 
     public BaseOp(SameDiff sameDiff, boolean inPlace, Object[] extraArgs) {
@@ -71,7 +77,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         if (op instanceof CustomOp) {
             return Type.CUSTOM;
-        } else if (op  instanceof ShapeOp) {
+        } else if (op instanceof ShapeOp) {
             return Type.SHAPE;
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {
@@ -103,6 +109,21 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
 
+
+    @Override
+    protected void addAsNewVertexId() {
+        super.addAsNewVertexId();
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+    }
+
     @Override
     public DataBuffer extraArgsDataBuff() {
         if (extraArgz != null)
@@ -122,10 +143,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             } else if (dtype == DataBuffer.Type.DOUBLE) {
                 double extraz[] = new double[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
-                    if(!(extraArgs[i] instanceof Number))
+                    if (!(extraArgs[i] instanceof Number))
                         continue;
                     Number arg = (Number) extraArgs[i];
-                    if(arg == null)
+                    if (arg == null)
                         arg = 0.0;
                     double val = arg.doubleValue();
                     extraz[i] = val;
@@ -170,18 +191,16 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public void setX(INDArray x) {
         if (x == null) {
-            if(args != null && args.length >= 1) {
+            if (args != null && args.length >= 1) {
                 DifferentialFunction firstArg = args()[0];
-                if(firstArg instanceof SDVariable) {
+                if (firstArg instanceof SDVariable) {
                     SDVariable sdVariable = (SDVariable) firstArg;
-                    if(sdVariable.getArr() != null)
+                    if (sdVariable.getArr() != null)
                         this.x = sdVariable.getArr();
                 }
-            }
-            else
+            } else
                 throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
-        }
-        else
+        } else
             this.x = x;
         numProcessed = 0;
     }
@@ -190,17 +209,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public void setZ(INDArray z) {
         if (z == null) {
             SDVariable getResult = sameDiff.getVariableForVertexId(vertexId);
-            if(getResult != null) {
-                if(getResult.getArr() != null)
+            if (getResult != null) {
+                if (getResult.getArr() != null)
                     this.z = getResult.getArr();
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
 
-            }
-            else
+            } else
                 throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
-        }
-        else
+        } else
             this.z = z;
         numProcessed = 0;
     }
@@ -208,18 +225,16 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public void setY(INDArray y) {
         if (y == null) {
-            if(args != null && args.length > 1) {
+            if (args != null && args.length > 1) {
                 DifferentialFunction firstArg = args()[1];
-                if(firstArg instanceof SDVariable) {
+                if (firstArg instanceof SDVariable) {
                     SDVariable sdVariable = (SDVariable) firstArg;
-                    if(sdVariable.getArr() != null)
+                    if (sdVariable.getArr() != null)
                         this.y = sdVariable.getArr();
                 }
-            }
-            else
+            } else
                 throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
-        }
-        else
+        } else
             this.y = y;
         numProcessed = 0;
     }
@@ -249,7 +264,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
         init(x, y, z, n);
     }
-
 
 
     /**
@@ -309,39 +323,26 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public String toString() {
-        return name();
+        return opName();
     }
-
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        throw new UnsupportedOperationException();
-    }
-
 
 
     @Override
     public CustomOp toCustomOp() {
-        DynamicCustomOp.DynamicCustomOpsBuilder customOpBuilder = DynamicCustomOp.builder(name());
+        DynamicCustomOp.DynamicCustomOpsBuilder customOpBuilder = DynamicCustomOp.builder(opName());
         customOpBuilder.callInplace(x() == z());
 
-        if(y() != null)
-            customOpBuilder.addInputs(x(),y());
+        if (y() != null)
+            customOpBuilder.addInputs(x(), y());
         else
             customOpBuilder.addInputs(x());
 
         customOpBuilder.addOutputs(z());
-        if(extraArgs != null) {
-            for(int i = 0; i < extraArgs.length; i++) {
-                if(extraArgs[i] instanceof Integer) {
+        if (extraArgs != null) {
+            for (int i = 0; i < extraArgs.length; i++) {
+                if (extraArgs[i] instanceof Integer) {
                     customOpBuilder.addIntegerArguments((Integer) extraArgs[i]);
-                }
-                else if(extraArgs[i] instanceof Double || extraArgs[i] instanceof Float) {
+                } else if (extraArgs[i] instanceof Double || extraArgs[i] instanceof Float) {
                     Double num = (Double) extraArgs[i];
                     customOpBuilder.addFloatingPointArguments(num);
                 }
@@ -350,103 +351,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         return customOpBuilder.build();
 
-    }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public float op(float origin, float other) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    /**
-     * Pairwise op (applicable with an individual element in y)
-     *
-     * @param origin the origin number
-     * @param other  the other number
-     * @return the transformed output
-     */
-    @Override
-    public double op(double origin, double other) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    @Override
-    public double op(double origin) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    @Override
-    public float op(float origin) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    /**
-     * Transform an individual element
-     *
-     * @param origin the origin element
-     * @return the new element
-     */
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -458,6 +362,26 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public void exec(int... dimensions) {
         //no-op
     }
+
+    @Override
+    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
+        val tNode = buildBasicNode(node, graph);
+
+        tNode.setOpState(getOpStateFromNodeDef(node, node.getInputCount(), tNode, graph.getVariableSpace()));
+
+        return tNode;
+    }
+
+
+    @Override
+    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
+        val tNode = buildBasicNode(node, graph);
+
+        tNode.setOpState(getOpStateFromNodeDef(node, node.getInputCount(), tNode, graph.getVariableSpace()));
+
+        return tNode;
+    }
+
 
     @Override
     public boolean equals(Object o) {

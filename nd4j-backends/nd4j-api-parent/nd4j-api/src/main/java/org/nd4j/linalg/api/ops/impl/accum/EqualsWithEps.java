@@ -21,10 +21,9 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Arrays;
 import java.util.List;
@@ -70,132 +69,22 @@ public class EqualsWithEps extends BaseAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "equals_with_eps";
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new EqualsWithEps(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            throw new UnsupportedOperationException("This Op is suited only as comparison for two arrays");
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new EqualsWithEps(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            throw new UnsupportedOperationException("This Op is suited only as comparison for two arrays");
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double op(double origin) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double update(double accum, double x) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double combineSubResults(double first, double second) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float combineSubResults(float first, float second) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return Arrays.<DifferentialFunction>asList(f().val(getResult()));
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 }

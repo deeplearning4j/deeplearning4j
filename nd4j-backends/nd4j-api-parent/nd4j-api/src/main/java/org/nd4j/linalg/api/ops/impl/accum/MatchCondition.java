@@ -21,10 +21,9 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
@@ -77,85 +76,19 @@ public class MatchCondition extends BaseAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "match_condition";
     }
 
     @Override
-    public Op opForDimension(int index, int dimension) {
-        return null;
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        return null;
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return null;
-    }
-
-    @Override
-    public double update(double accum, double x) {
-        return 0;
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        return 0;
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        return 0;
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        return 0;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return null;
-    }
-
 
 
     @Override

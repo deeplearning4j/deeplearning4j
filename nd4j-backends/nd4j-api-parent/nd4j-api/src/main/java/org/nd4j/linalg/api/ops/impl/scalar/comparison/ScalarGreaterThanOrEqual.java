@@ -24,8 +24,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.List;
@@ -76,76 +74,22 @@ public class ScalarGreaterThanOrEqual extends BaseScalarOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "greaterthanorequal_scalar";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.absoluteValue().doubleValue() >= num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
-                        : Nd4j.createComplexNumber(0, 0);
 
+
+
+    @Override
+    public String onnxName() {
+        return "GreaterEqual";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.absoluteValue().doubleValue() >= num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
-                        : Nd4j.createComplexNumber(0, 0);
+    public String tensorflowName() {
+        return "greater_equal";
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.absoluteValue().doubleValue() >= num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
-                        : Nd4j.createComplexNumber(0, 0);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin >= num.floatValue() ? 1 : 0;
-
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin >= num.floatValue() ? 1 : 0;
-
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin >= num.floatValue() ? 1 : 0;
-
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin >= num.floatValue() ? 1 : 0;
-
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin.absoluteValue().doubleValue() >= num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
-                        : Nd4j.createComplexNumber(0, 0);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        if (num != null)
-            return new ScalarGreaterThanOrEqual(x.vectorAlongDimension(index, dimension), num);
-        else
-            return new ScalarGreaterThanOrEqual(x.vectorAlongDimension(index, dimension), complexNumber);
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        if (num != null)
-            return new ScalarGreaterThanOrEqual(x.tensorAlongDimension(index, dimension), num);
-        else
-            return new ScalarGreaterThanOrEqual(x.tensorAlongDimension(index, dimension), complexNumber);
-    }
-
-
 
 
     @Override

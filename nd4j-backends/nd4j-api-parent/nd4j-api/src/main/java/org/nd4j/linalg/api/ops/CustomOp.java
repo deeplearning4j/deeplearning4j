@@ -13,7 +13,7 @@ import java.util.List;
  */
 public interface CustomOp {
     /**
-     * This method returns op name as string
+     * This method returns op opName as string
      * @return
      */
     String opName();

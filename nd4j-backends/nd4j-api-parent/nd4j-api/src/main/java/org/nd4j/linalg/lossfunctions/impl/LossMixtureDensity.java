@@ -294,7 +294,7 @@ public class LossMixtureDensity implements ILossFunction {
     }
 
     /**
-     * The name of this function
+     * The opName of this function
      *
      * @return
      */

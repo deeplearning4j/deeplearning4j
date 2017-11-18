@@ -9,7 +9,7 @@ public interface FunctionDefOrBuilder extends
 
   /**
    * <pre>
-   * The definition of the function's name, arguments, return values,
+   * The definition of the function's opName, arguments, return values,
    * attrs etc.
    * </pre>
    *
@@ -18,7 +18,7 @@ public interface FunctionDefOrBuilder extends
   boolean hasSignature();
   /**
    * <pre>
-   * The definition of the function's name, arguments, return values,
+   * The definition of the function's opName, arguments, return values,
    * attrs etc.
    * </pre>
    *
@@ -27,7 +27,7 @@ public interface FunctionDefOrBuilder extends
   OpDef getSignature();
   /**
    * <pre>
-   * The definition of the function's name, arguments, return values,
+   * The definition of the function's opName, arguments, return values,
    * attrs etc.
    * </pre>
    *

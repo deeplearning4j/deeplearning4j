@@ -34,7 +34,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
 
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -43,7 +43,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
       getGraphInputNodeNameList();
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -51,7 +51,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
   int getGraphInputNodeNameCount();
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -59,7 +59,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
   String getGraphInputNodeName(int index);
   /**
    * <pre>
-   * Remote fused graph input node name
+   * Remote fused graph input node opName
    * </pre>
    *
    * <code>repeated string graph_input_node_name = 2;</code>
@@ -69,7 +69,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
 
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -78,7 +78,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
       getGraphOutputNodeNameList();
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -86,7 +86,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
   int getGraphOutputNodeNameCount();
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -94,7 +94,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
   String getGraphOutputNodeName(int index);
   /**
    * <pre>
-   * Remote fused graph output node name
+   * Remote fused graph output node opName
    * </pre>
    *
    * <code>repeated string graph_output_node_name = 3;</code>
@@ -104,7 +104,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
 
   /**
    * <pre>
-   * Executor's name
+   * Executor's opName
    * </pre>
    *
    * <code>string executor_name = 4;</code>
@@ -112,7 +112,7 @@ public interface RemoteFusedGraphExecuteInfoOrBuilder extends
   String getExecutorName();
   /**
    * <pre>
-   * Executor's name
+   * Executor's opName
    * </pre>
    *
    * <code>string executor_name = 4;</code>

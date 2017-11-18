@@ -19,14 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
 
 import java.util.List;
 
@@ -76,78 +73,19 @@ public class Tan extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "tan";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        throw new UnsupportedOperationException();
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        throw new UnsupportedOperationException();
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) FastMath.tan(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.tan(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.tan(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) FastMath.tan(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TransformOp derivative() {
-        return new TanDerivative(x, y, z, n);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Tan(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Tan(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Tan(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Tan(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

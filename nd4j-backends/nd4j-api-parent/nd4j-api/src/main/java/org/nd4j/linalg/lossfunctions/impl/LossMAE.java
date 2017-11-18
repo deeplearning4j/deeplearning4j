@@ -52,7 +52,7 @@ public class LossMAE extends LossL1 {
     }
 
     /**
-     * The name of this function
+     * The opName of this function
      *
      * @return
      */

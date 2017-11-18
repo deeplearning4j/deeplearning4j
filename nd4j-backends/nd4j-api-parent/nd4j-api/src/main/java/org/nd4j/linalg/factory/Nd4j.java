@@ -20,15 +20,12 @@
 package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -73,13 +70,11 @@ import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
-import org.nd4j.linalg.fft.DefaultFFTInstance;
-import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.versioncheck.VersionCheck;
@@ -161,7 +156,6 @@ public class Nd4j {
     protected static Class<? extends BlasWrapper> sparseBlasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
     protected static Class<? extends NDArrayFactory> sparseNDArrayClazz;
-    protected static Class<? extends FFTInstance> fftInstanceClazz;
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
@@ -180,7 +174,6 @@ public class Nd4j {
     protected static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static NDArrayFactory SPARSE_INSTANCE;
-    protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
@@ -637,23 +630,6 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE;
     }
 
-    /**
-     * Returns the fft instance
-     *
-     * @return the fft instance
-     */
-    public static FFTInstance getFFt() {
-        return FFT_INSTANCE;
-    }
-
-    /**
-     * @param fftInstance
-     */
-    public static void setFft(FFTInstance fftInstance) {
-        if (fftInstance == null)
-            throw new IllegalArgumentException("No null instances allowed");
-        FFT_INSTANCE = fftInstance;
-    }
 
     /**
      * Given a sequence of Iterators over a transform of matrices, fill in all of
@@ -6306,9 +6282,6 @@ public class Nd4j {
             affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class
                             .forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
             affinityManager = affinityManagerClazz.newInstance();
-
-            fftInstanceClazz = (Class<? extends FFTInstance>) Class
-                            .forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                             System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
             sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(
@@ -6363,7 +6336,6 @@ public class Nd4j {
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
-            FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
             SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();

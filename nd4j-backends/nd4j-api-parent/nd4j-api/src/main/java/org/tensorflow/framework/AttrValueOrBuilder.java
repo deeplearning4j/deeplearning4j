@@ -137,8 +137,8 @@ public interface AttrValueOrBuilder extends
 
   /**
    * <pre>
-   * "func" represents a function. func.name is a function's name or
-   * a primitive op's name. func.attr.first is the name of an attr
+   * "func" represents a function. func.opName is a function's opName or
+   * a primitive op's opName. func.attr.first is the opName of an attr
    * defined for that function. func.attr.second is the value for
    * that attr in the instantiation.
    * </pre>
@@ -148,8 +148,8 @@ public interface AttrValueOrBuilder extends
   boolean hasFunc();
   /**
    * <pre>
-   * "func" represents a function. func.name is a function's name or
-   * a primitive op's name. func.attr.first is the name of an attr
+   * "func" represents a function. func.opName is a function's opName or
+   * a primitive op's opName. func.attr.first is the opName of an attr
    * defined for that function. func.attr.second is the value for
    * that attr in the instantiation.
    * </pre>
@@ -159,8 +159,8 @@ public interface AttrValueOrBuilder extends
   NameAttrList getFunc();
   /**
    * <pre>
-   * "func" represents a function. func.name is a function's name or
-   * a primitive op's name. func.attr.first is the name of an attr
+   * "func" represents a function. func.opName is a function's opName or
+   * a primitive op's opName. func.attr.first is the opName of an attr
    * defined for that function. func.attr.second is the value for
    * that attr in the instantiation.
    * </pre>

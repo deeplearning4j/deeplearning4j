@@ -19,13 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collections;
@@ -69,106 +66,6 @@ public class Norm2 extends BaseAccumulation {
         return Transforms.abs(x());
     }
 
-    @Override
-    public double op(double origin) {
-        return origin * origin;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin * origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin * origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin * origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin.mul(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.mul(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.mul(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.mul(origin);
-    }
-
-    @Override
-    public double update(double accum, double x) {
-        return accum + x;
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        return accum + x;
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        return accum + x;
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        return accum + x;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return accum.add(x);
-    }
-
-    @Override
-    public double combineSubResults(double first, double second) {
-        return first + second;
-    }
-
-    @Override
-    public float combineSubResults(float first, float second) {
-        return first + second;
-    }
-
-    @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        return first.add(second);
-    }
-
 
     @Override
     public int opNum() {
@@ -176,80 +73,26 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "norm2";
     }
 
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        Norm2 ret;
-        if (y() != null)
-            ret = new Norm2(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            ret = new Norm2(x.vectorAlongDimension(index, dimension));
-        ret.setApplyFinalTransform(applyFinalTransform());
-        return ret;
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        Norm2 ret;
-        if (y() != null)
-            ret = new Norm2(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            ret = new Norm2(x.tensorAlongDimension(index, dimension));
-        ret.setApplyFinalTransform(applyFinalTransform());
-        return ret;
-    }
-
-    @Override
-    public double getAndSetFinalResult(double accum) {
-        if (applyFinalTransform()) {
-            double d = FastMath.sqrt(accum);
-            this.finalResult = d;
-            return d;
-        } else
-            return accum;
-
-    }
-
-    @Override
-    public float getAndSetFinalResult(float accum) {
-        if (applyFinalTransform()) {
-            float f = (float) FastMath.sqrt(accum);
-            this.finalResult = f;
-            return f;
-        } else
-            return accum;
-
-    }
-
-    @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        this.finalResultComplex = accum.sqrt();
-        return finalResultComplex;
-    }
-
-    @Override
-    public double calculateFinalResult(double accum, long n) {
-        if (applyFinalTransform())
-            return FastMath.sqrt(accum);
-        return accum;
-    }
-
-    @Override
-    public float calculateFinalResult(float accum, long n) {
-        if (applyFinalTransform())
-            return (float) FastMath.sqrt(accum);
-        return accum;
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         DifferentialFunction ret = f().doNormGrad(this,i_v1.get(0),"norm2",dimensions);
 
         return Collections.singletonList(ret);
+    }
+
+
+    @Override
+    public String onnxName() {
+      return "Norm";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "norm";
     }
 }

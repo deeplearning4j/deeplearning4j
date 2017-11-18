@@ -5,17 +5,18 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Basic implementation for CustomOp
@@ -56,7 +57,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * Initialize this custom op with all of the
      * inputs, outputs, and respective
      * argumentts for execution
-     * @param opName the name of the op to execute
+     * @param opName the opName of the op to execute
      * @param inputs the inputs to the op
      * @param outputs the outputs of the op
      * @param tArguments the input float arguments
@@ -73,7 +74,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     /**
      * Initialize this operation for execution (pre created ndarrays)
-     * @param opName the operation name to use
+     * @param opName the operation opName to use
      *               for invocation
      * @param inputs the inputs
      * @param outputs the outputs of the op
@@ -87,7 +88,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * Any extra int or float arguments for operations
      * must be added to the respective {@link #getTArguments()}
      *  or {@link #getIArguments()} lists upon construction
-     * @param opName the operation name
+     * @param opName the operation opName
      * @param sameDiff the samediff instance to use
      * @param args the arguments to use
      * @param inPlace whether the operation is in place or not
@@ -109,7 +110,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
     /**
-     * This method returns op name as string
+     * This method returns op opName as string
      *
      * @return
      */
@@ -266,8 +267,39 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
     @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+
+    @Override
     public Op.Type opType() {
         return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
+        return null;
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
+        return null;
     }
 
     public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {

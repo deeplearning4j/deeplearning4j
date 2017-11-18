@@ -64,6 +64,15 @@ public class DeConv2D extends DynamicCustomOp {
         return "deconv2d";
     }
 
+    @Override
+    public String onnxName() {
+        return "ConvTranspose";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "conv2d_transpose";
+    }
 
 
     @Override

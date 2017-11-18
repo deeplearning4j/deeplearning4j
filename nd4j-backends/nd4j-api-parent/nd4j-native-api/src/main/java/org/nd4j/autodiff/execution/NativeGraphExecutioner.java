@@ -234,7 +234,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
-            log.info("Var received: id: {}; name: {}", var.id(), var.name());
+            log.info("Var received: id: {}; opName: {}", var.id(), var.name());
             float[] values = new float[var.valuesLength()];
             int[] shape = new int[var.shapeLength()];
 
@@ -257,7 +257,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             results[e] = val;
 
             if (var.name() != null && sd.variableMap().containsKey(var.name())) {
-                //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.name(), sd.variableMap().containsKey(var.name()), sd.getVertexToArray().containsKey(var.name()));
+                //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.opName(), sd.variableMap().containsKey(var.opName()), sd.getVertexToArray().containsKey(var.opName()));
                 sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
 
             } else {
@@ -370,11 +370,11 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     log.info("Input varId: {}; varName: {};", sdVar.getId(), var.getId());
 
                     INDArray arr = sdVar.getArr().isView() ? sdVar.getArr().dup(sdVar.getArr().ordering()) : sdVar.getArr();
-                    int name = bufferBuilder.createString(sdVar.getVarName());
+                    int opName = bufferBuilder.createString(sdVar.getVarName());
                     int values = FlatVariable.createValuesVector(bufferBuilder, arr.data().asFloat());
                     int shape = FlatVariable.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
 
-                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, sdVar.getId(), name, shape, values, -1);
+                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, sdVar.getId(), opName, shape, values, -1);
                     variables.add(flatVariable);
 
                     mappedIns[varsCount++] = sdVar.getId();
@@ -382,12 +382,12 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     log.info("Empty Input varId: {}; varName: {};", vertexMapS.get(var.getId()), var.getId());
 
                     // in all other cases - it's "virtual" array, will be created as op result instead
-                    int name = bufferBuilder.createString("auto");
+                    int opName = bufferBuilder.createString("auto");
                     int values = FlatVariable.createValuesVector(bufferBuilder, new float[]{});
                     int shape = FlatVariable.createShapeVector(bufferBuilder, new int[]{});
 
                     // FIXME: we need auto ID here instead of 119
-                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, 119, name, shape, values, -1);
+                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, 119, opName, shape, values, -1);
                     variables.add(flatVariable);
 
                     mappedIns[varsCount++] = vertexMapS.get(var.getId());

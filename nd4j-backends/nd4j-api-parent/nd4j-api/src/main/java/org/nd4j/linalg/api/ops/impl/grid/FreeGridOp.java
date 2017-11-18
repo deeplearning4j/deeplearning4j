@@ -35,7 +35,7 @@ public class FreeGridOp extends BaseGridOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "grid_free";
     }
 

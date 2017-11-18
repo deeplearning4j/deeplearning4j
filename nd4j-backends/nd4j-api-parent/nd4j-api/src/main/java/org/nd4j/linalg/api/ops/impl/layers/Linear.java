@@ -1,9 +1,14 @@
 package org.nd4j.linalg.api.ops.impl.layers;
 
 import lombok.Builder;
+import lombok.NoArgsConstructor;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseModule;
@@ -12,6 +17,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +28,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class Linear extends BaseModule {
     private DifferentialFunction forward;
     private int nIn,nOut;
@@ -64,6 +71,21 @@ public class Linear extends BaseModule {
     }
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
+        return null;
+    }
+
+    @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         execSameDiff();
         return forward.doDiff(f1);
@@ -80,6 +102,18 @@ public class Linear extends BaseModule {
         }
         return ret;
     }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+
 
     @Override
     public void exec(INDArray... inputs) {

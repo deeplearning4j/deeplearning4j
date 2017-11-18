@@ -141,7 +141,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * Start a subscriber in another thread
      * based on the given parameters
      * @param aeron the aeron instance to use
-     * @param host the host name to bind to
+     * @param host the host opName to bind to
      * @param port the port to bind to
      * @param callback the call back to use for the subscriber
      * @param streamId the stream id to subscribe to
@@ -173,7 +173,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * Start a subscriber in another thread
      * based on the given parameters
      * @param context the context to use
-     * @param host the host name to bind to
+     * @param host the host opName to bind to
      * @param port the port to bind to
      * @param callback the call back to use for the subscriber
      * @param streamId the stream id to subscribe to

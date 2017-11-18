@@ -21,13 +21,8 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -111,83 +106,10 @@ public class LeakyReLU extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "leakyrelu";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha * rv, 0) : origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha * rv, 0) : origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha * rv, 0) : origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin < 0 ? (float) alpha * origin : origin;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin < 0 ? alpha * origin : origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin < 0 ? alpha * origin : origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin < 0 ? (float) alpha * origin : origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha * rv, 0) : origin;
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new LeakyReLU(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
-        else
-            return new LeakyReLU(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),
-                            alpha);
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new LeakyReLU(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
-        else
-            return new LeakyReLU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),
-                            alpha);
-
-    }
-
-    @Override
-    public TransformOp derivative() {
-        return new LeakyReLUDerivative(x, y, z, n, alpha);
-    }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
@@ -195,6 +117,15 @@ public class LeakyReLU extends BaseTransformOp {
         this.extraArgs = new Object[] {alpha};
     }
 
+    @Override
+    public String onnxName() {
+        return "LeakyRelu";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "leaky_relu";
+    }
 
 
 

@@ -21,9 +21,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Collections;
 import java.util.List;
@@ -70,84 +68,9 @@ public class Mean extends Sum {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "mean";
     }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        Mean ret;
-        if (y() != null)
-            ret = new Mean(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            ret = new Mean(x.vectorAlongDimension(index, dimension));
-        ret.setApplyFinalTransform(applyFinalTransform());
-        return ret;
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        Mean ret;
-
-        if (y() != null)
-            ret = new Mean(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            ret = new Mean(x.tensorAlongDimension(index, dimension));
-        ret.setApplyFinalTransform(applyFinalTransform());
-        return ret;
-    }
-
-
-
-    @Override
-    public double getAndSetFinalResult(double accum) {
-        double result;
-        if (applyFinalTransform()) {
-            result = accum / n();
-            this.finalResult = result;
-        } else {
-            result = accum;
-            this.finalResult = result;
-        }
-        return result;
-
-    }
-
-    @Override
-    public float getAndSetFinalResult(float accum) {
-        if (applyFinalTransform()) {
-            float f = accum / n();
-            this.finalResult = f;
-            return f;
-        } else {
-            this.finalResult = accum;
-            return accum;
-        }
-
-    }
-
-    @Override
-    public double calculateFinalResult(double accum, long n) {
-        if (applyFinalTransform())
-            return accum / n;
-        return accum;
-    }
-
-    @Override
-    public float calculateFinalResult(float accum, long n) {
-        if (applyFinalTransform())
-            return accum / n;
-        return accum;
-    }
-
-    @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        finalResultComplex = accum.div(n());
-        return finalResultComplex;
-    }
-
 
 
     @Override
@@ -158,5 +81,15 @@ public class Mean extends Sum {
                         f().getInputLength(i_v1.get(0))));
 
         return Collections.singletonList(ret);
+    }
+
+    @Override
+    public String onnxName() {
+        return "ReduceMean";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "reduce_mean";
     }
 }

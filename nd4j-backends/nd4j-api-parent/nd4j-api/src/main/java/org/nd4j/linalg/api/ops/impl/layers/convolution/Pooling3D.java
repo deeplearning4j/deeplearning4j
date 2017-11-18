@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -88,6 +89,16 @@ public class Pooling3D extends DynamicCustomOp {
             case PNORM: return "pnorm";
             default: throw new IllegalStateException("No pooling type found.");
         }
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for op " + opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+      throw new NoOpNameFoundException("No op opName found for op " + opName());
     }
 
 }

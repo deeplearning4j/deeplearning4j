@@ -103,7 +103,7 @@ public class VersionCheck {
             }
 
             //Another edge case: no -properties.git files were found, but DL4J and/or DataVec were inferred
-            // by class names. If these "inferred by name" versions were the only things found, we should also
+            // by class names. If these "inferred by opName" versions were the only things found, we should also
             // not log a warning, as we can't check versions in this case
 
             boolean dl4jViaClass = false;

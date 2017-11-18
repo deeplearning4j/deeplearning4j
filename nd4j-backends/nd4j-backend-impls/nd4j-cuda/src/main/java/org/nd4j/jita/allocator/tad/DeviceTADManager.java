@@ -78,7 +78,7 @@ public class DeviceTADManager extends BasicTADManager {
              * The main implementation of this is cuda right now.
              *
              * Explanation from: http://cuda-programming.blogspot.jp/2013/01/what-is-constant-memory-in-cuda.html
-             * The CUDA language makes available another kind of memory known as constant memory. As the name may indicate, we use constant memory for data that will not change over the course of a kernel execution.
+             * The CUDA language makes available another kind of memory known as constant memory. As the opName may indicate, we use constant memory for data that will not change over the course of a kernel execution.
             
              Why Constant Memory?
             

@@ -106,7 +106,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object functionName_;
   /**
    * <pre>
-   * The function name.
+   * The function opName.
    * </pre>
    *
    * <code>string function_name = 1;</code>
@@ -125,7 +125,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * The function name.
+   * The function opName.
    * </pre>
    *
    * <code>string function_name = 1;</code>
@@ -148,7 +148,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object gradientFunc_;
   /**
    * <pre>
-   * The gradient function's name.
+   * The gradient function's opName.
    * </pre>
    *
    * <code>string gradient_func = 2;</code>
@@ -167,7 +167,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * The gradient function's name.
+   * The gradient function's opName.
    * </pre>
    *
    * <code>string gradient_func = 2;</code>
@@ -507,7 +507,7 @@ private static final long serialVersionUID = 0L;
     private Object functionName_ = "";
     /**
      * <pre>
-     * The function name.
+     * The function opName.
      * </pre>
      *
      * <code>string function_name = 1;</code>
@@ -526,7 +526,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The function name.
+     * The function opName.
      * </pre>
      *
      * <code>string function_name = 1;</code>
@@ -546,7 +546,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The function name.
+     * The function opName.
      * </pre>
      *
      * <code>string function_name = 1;</code>
@@ -563,7 +563,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The function name.
+     * The function opName.
      * </pre>
      *
      * <code>string function_name = 1;</code>
@@ -576,7 +576,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The function name.
+     * The function opName.
      * </pre>
      *
      * <code>string function_name = 1;</code>
@@ -596,7 +596,7 @@ private static final long serialVersionUID = 0L;
     private Object gradientFunc_ = "";
     /**
      * <pre>
-     * The gradient function's name.
+     * The gradient function's opName.
      * </pre>
      *
      * <code>string gradient_func = 2;</code>
@@ -615,7 +615,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The gradient function's name.
+     * The gradient function's opName.
      * </pre>
      *
      * <code>string gradient_func = 2;</code>
@@ -635,7 +635,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The gradient function's name.
+     * The gradient function's opName.
      * </pre>
      *
      * <code>string gradient_func = 2;</code>
@@ -652,7 +652,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The gradient function's name.
+     * The gradient function's opName.
      * </pre>
      *
      * <code>string gradient_func = 2;</code>
@@ -665,7 +665,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The gradient function's name.
+     * The gradient function's opName.
      * </pre>
      *
      * <code>string gradient_func = 2;</code>

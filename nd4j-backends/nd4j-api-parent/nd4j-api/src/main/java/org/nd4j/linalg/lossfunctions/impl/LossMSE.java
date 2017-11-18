@@ -48,7 +48,7 @@ public class LossMSE extends LossL2 {
     }
 
     /**
-     * The name of this function
+     * The opName of this function
      *
      * @return
      */

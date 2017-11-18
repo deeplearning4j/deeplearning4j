@@ -23,10 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.accum.Mmul;
-import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
-import org.nd4j.linalg.api.ops.impl.accum.TensorMmul;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.shape.Broadcast;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
@@ -76,12 +73,13 @@ public class DefaultOpFactory implements OpFactory {
                 continue;
 
             try {
-                String name = clazz.newInstance().name();
+                String name = clazz.newInstance().opName();
                 if (opClazzes.containsKey(name)) {
                     throw new ND4JIllegalStateException("OpName duplicate found: " + name);
                 } else
                     opClazzes.put(name, clazz);
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -99,7 +97,7 @@ public class DefaultOpFactory implements OpFactory {
                 return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(x,y,z);
             case "gradientbackwards":
             return new org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker(x,y,z);
-            default: throw new IllegalStateException("Illegal name " + name);
+            default: throw new IllegalStateException("Illegal opName " + name);
         }
     }
 
@@ -130,7 +128,7 @@ public class DefaultOpFactory implements OpFactory {
                 return new Broadcast(x,z);
         }
 
-        throw new IllegalArgumentException("Illegal name for create shape op" + name);
+        throw new IllegalArgumentException("Illegal opName for create shape op" + name);
     }
 
     @Override
@@ -199,7 +197,7 @@ public class DefaultOpFactory implements OpFactory {
         }
 
         /*
-        switch (name) {
+        switch (opName) {
 
             case "sum":
                 ret = new Sum(x, y, z,x.length());
@@ -255,7 +253,7 @@ public class DefaultOpFactory implements OpFactory {
         */
 
         if(ret == null)
-            throw new IllegalArgumentException("Illegal operation name " + name);
+            throw new IllegalArgumentException("Illegal operation opName " + name);
 
         ret.setExtraArgs(extraArgs);
         return ret;
@@ -386,7 +384,7 @@ public class DefaultOpFactory implements OpFactory {
 
         /*
 
-        switch (name) {
+        switch (opName) {
             case "set":
                 op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
                 break;
@@ -529,7 +527,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new Negative(x,z);
                 break;
             default:
-                throw new ND4JIllegalStateException("No op found " + name);
+                throw new ND4JIllegalStateException("No op found " + opName);
         }
 */
 
@@ -621,7 +619,7 @@ public class DefaultOpFactory implements OpFactory {
         }
 
         /*
-        switch(name) {
+        switch(opName) {
             case "add_scalar":
                 ret = new ScalarAdd(x,y,z,x.length(),scalar);
                 break;
@@ -697,7 +695,7 @@ public class DefaultOpFactory implements OpFactory {
         }
 
  /*
-        switch (name) {
+        switch (opName) {
             case "broadcastadd":
                 broadcastOp = new BroadcastAddOp(x, y, z, dimension);
                 break;

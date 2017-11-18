@@ -66,13 +66,13 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
 
 
     /**
-     * This method returns name of the last invoked op
+     * This method returns opName of the last invoked op
      *
      * @return
      */
     @Override
     public String getLastOp() {
-        return opAtomicReference.get().name();
+        return opAtomicReference.get().opName();
     }
 
     /**

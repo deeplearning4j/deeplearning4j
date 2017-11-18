@@ -21,10 +21,10 @@ package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.List;
 
@@ -76,73 +76,21 @@ public class ScalarSetValue extends BaseScalarOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "setvalorless_scalar";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return setValueIfLess(origin);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return setValueIfLess(origin);
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return setValueIfLess(origin);
-    }
 
-    @Override
-    public float op(float origin, float other) {
-        return origin < num.floatValue() ? num.floatValue() : origin;
-
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin < num.doubleValue() ? num.floatValue() : origin;
-
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin < num.doubleValue() ? num.floatValue() : origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin < num.floatValue() ? num.floatValue() : origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return setValueIfLess(origin);
-    }
-
-    private IComplexNumber setValueIfLess(IComplexNumber num) {
-        if (num.realComponent().doubleValue() < this.num.doubleValue())
-            return num.set(this.num.doubleValue(), 0.0);
-        return num;
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        if (num != null)
-            return new ScalarSetValue(x.vectorAlongDimension(index, dimension), num);
-        else
-            return new ScalarSetValue(x.vectorAlongDimension(index, dimension), complexNumber);
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        if (num != null)
-            return new ScalarSetValue(x.tensorAlongDimension(index, dimension), num);
-        else
-            return new ScalarSetValue(x.tensorAlongDimension(index, dimension), complexNumber);
-    }
 
 
     @Override

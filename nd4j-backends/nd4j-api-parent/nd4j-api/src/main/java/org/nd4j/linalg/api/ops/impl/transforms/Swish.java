@@ -19,15 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -78,95 +74,19 @@ public class Swish extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "swish";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return sigmoid(origin);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return sigmoid(origin);
+    public String tensorflowName() {
+       return "swish";
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return sigmoid(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin * (float) sigmoid(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin * sigmoid(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin * sigmoid(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin * (float) sigmoid(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    private double sigmoid(double input) {
-        double inputf = input;
-        double val = 1 / (1 + FastMath.exp(-inputf));
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY && (Double.isNaN(val) || Double.isInfinite(val))) {
-            val = Nd4j.EPS_THRESHOLD;
-        }
-        return val;
-    }
-
-    @Override
-    public TransformOp derivative() {
-        return new SwishDerivative(x, y, z, n);
-    }
-
-    private IComplexNumber sigmoid(IComplexNumber number) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Swish(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Swish(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Swish(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Swish(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-
-    }
-
 
 
     @Override

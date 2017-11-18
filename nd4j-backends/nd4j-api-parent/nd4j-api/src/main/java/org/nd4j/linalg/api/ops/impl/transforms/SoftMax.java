@@ -21,12 +21,8 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -100,109 +96,22 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "softmax";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        IComplexNDArray arr = (IComplexNDArray) y;
-        if (numProcessed >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int) numProcessed);
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        IComplexNDArray arr = (IComplexNDArray) y;
-        if (numProcessed >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int) numProcessed);
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        IComplexNDArray arr = (IComplexNDArray) y;
-        if (numProcessed >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int) numProcessed);
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        float ret = other;
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        double ret = other;
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public double op(double origin) {
-        if (numProcessed >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        double ret = y.getDouble((int) numProcessed);
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public float op(float origin) {
-        if (numProcessed >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        float ret = (y.getFloat((int) numProcessed));
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        IComplexNDArray arr = (IComplexNDArray) y;
-        if (numProcessed >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int) numProcessed);
-        numProcessed++;
-        return ret;
-    }
-
-    @Override
-    public TransformOp derivative() {
-        return new SoftMaxDerivative(x, y, z, n);
-    }
 
 
     @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new SoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new SoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+    public String onnxName() {
+        return "Softmax";
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new SoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new SoftMax(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
+    public String tensorflowName() {
+        return "softmax";
     }
+
 
     @Override
     public void exec() {

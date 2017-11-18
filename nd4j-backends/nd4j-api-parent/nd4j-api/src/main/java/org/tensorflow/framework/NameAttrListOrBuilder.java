@@ -8,11 +8,11 @@ public interface NameAttrListOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   String getName();
   /**
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   com.google.protobuf.ByteString
       getNameBytes();

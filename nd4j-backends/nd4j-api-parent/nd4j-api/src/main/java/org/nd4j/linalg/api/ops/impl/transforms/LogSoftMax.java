@@ -22,10 +22,8 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -82,72 +80,20 @@ public class LogSoftMax extends BaseTransformOp {
 
 
     @Override
-    public String name() {
+    public String opName() {
         return "logsoftmax";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin;
+    public String onnxName() {
+        return "LogSoftmax";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin;
+    public String tensorflowName() {
+        return "log_softmax";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
-
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new LogSoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new LogSoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new LogSoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new LogSoftMax(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
 
     @Override
     public void exec() {

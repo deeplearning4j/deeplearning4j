@@ -21,13 +21,11 @@ package org.nd4j.linalg.api.ops.impl.accum.distances;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
 
@@ -97,175 +95,33 @@ public class HammingDistance extends BaseAccumulation {
         isComplex = allDistances;
     }
 
-    @Override
-    public double update(double accum, double x) {
-        return accum + x;
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        return accum + x * y;
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        return accum + x;
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        return accum + x * y;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        return accum.add(x * y);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        return accum.add(x.mul(y));
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return accum.add(x.mul(y));
-    }
-
-    @Override
+     @Override
     public int opNum() {
         return 7;
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "hammingdistance";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        numProcessed++;
-        return origin.mul(other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        numProcessed++;
-        return origin.mul(other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        numProcessed++;
-        return origin.mul(other);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        numProcessed++;
-        return (origin * other);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        numProcessed++;
-        return origin * other;
-    }
-
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        HammingDistance ret;
-        if (y() != null)
-            ret = new HammingDistance(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            ret = new HammingDistance(x.vectorAlongDimension(index, dimension));
-        ret.setApplyFinalTransform(applyFinalTransform());
-        return ret;
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xForDimesnion = x.tensorAlongDimension(index, dimension);
-        HammingDistance ret;
-        if (y() != null)
-            ret = new HammingDistance(xForDimesnion, y.tensorAlongDimension(index, dimension), xForDimesnion.length());
-        else
-            ret = new HammingDistance(x.tensorAlongDimension(index, dimension));
-        ret.setApplyFinalTransform(applyFinalTransform());
-        return ret;
-    }
-
-    @Override
-    public void exec() {
-        this.constantNormalizedByNorm2X = x.norm2Number();
-        this.constantNormalizedByNorm2Y = y.norm2Number();
-        this.extraArgs = new Object[] {0.0, constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
-        double dot = Nd4j.getBlasWrapper().dot(x, y);
-        this.finalResult = dot / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
-    }
-
-    @Override
-    public void exec(int... dimension) {
-        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
-        int nOps = x.tensorssAlongDimension(dimension);
-        z = Nd4j.create(retShape);
-        for (int i = 0; i < nOps; i++) {
-            double d = Nd4j.getExecutioner().execAndReturn((HammingDistance) opForDimension(i, dimension))
-                            .getFinalResult().doubleValue();
-            z.putScalar(i, d);
-        }
-    }
-
-    @Override
-    public double getAndSetFinalResult(double accum) {
-        if (applyFinalTransform()) {
-            double d = accum / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
-            this.finalResult = d;
-            return d;
-        } else {
-            return accum;
-        }
-
-    }
-
-    @Override
-    public float getAndSetFinalResult(float accum) {
-        return (float) getAndSetFinalResult((double) accum);
-    }
-
-    @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        finalResultComplex = Nd4j.createComplexNumber(accum.realComponent().doubleValue()
-                        / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue()), 0);
-        return finalResultComplex;
-    }
-
-    @Override
-    public double calculateFinalResult(double accum, long n) {
-        throw new UnsupportedOperationException("Not supported for passthrough op");
-    }
-
-    @Override
-    public float calculateFinalResult(float accum, long n) {
-        throw new UnsupportedOperationException("Not supported for passthrough op");
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
     }
+
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+
 }

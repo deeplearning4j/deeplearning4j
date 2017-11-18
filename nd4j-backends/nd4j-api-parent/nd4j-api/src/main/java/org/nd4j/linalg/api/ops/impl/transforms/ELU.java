@@ -21,10 +21,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 
 import java.util.Collections;
 import java.util.List;
@@ -79,15 +78,19 @@ public class ELU extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "elu";
     }
 
     @Override
-    public TransformOp derivative() {
-        return new ELUDerivative(x, y, z, n);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
+    @Override
+    public String tensorflowName() {
+        return "elu";
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

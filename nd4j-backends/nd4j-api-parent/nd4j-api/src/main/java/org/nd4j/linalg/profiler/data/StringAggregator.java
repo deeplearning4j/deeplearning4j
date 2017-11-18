@@ -43,7 +43,7 @@ public class StringAggregator {
         times.get(key).addTime(timeSpent);
 
         if (timeSpent > THRESHOLD) {
-            String keyExt = key + " " + op.name() + " (" + op.opNum() + ")";
+            String keyExt = key + " " + op.opName() + " (" + op.opNum() + ")";
             if (!longCalls.containsKey(keyExt))
                 longCalls.put(keyExt, new ComparableAtomicLong(0));
 

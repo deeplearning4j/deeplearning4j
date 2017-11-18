@@ -21,11 +21,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -72,92 +70,20 @@ public class Sign extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "sign";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return sign(origin);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op found for " + opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return sign(origin);
+    public String tensorflowName() {
+        return "sign";
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return sign(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) sign(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return sign(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return sign(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) sign(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return sign(origin);
-    }
-
-    private double sign(double n) {
-        if (n < 0)
-            return (double) -1;
-        else if (n > 0)
-            return (double) 1;
-        return (double) 0;
-    }
-
-    private IComplexNumber sign(IComplexNumber n) {
-        if (n.realComponent().doubleValue() > 0)
-            return Nd4j.createDouble(1, 0);
-        else if (n.realComponent().doubleValue() < 0)
-            return Nd4j.createDouble(-1, 0);
-
-        return Nd4j.createDouble(0, 0);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Sign(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Sign(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Sign(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Sign(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-
-    }
 
 
     @Override

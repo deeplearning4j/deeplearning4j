@@ -1,13 +1,13 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.graph.intermediate.TGraph;
+import org.nd4j.graph.intermediate.TOp;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
@@ -16,6 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.NodeDef;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import java.util.Map;
  *
  */
 @Data
+@NoArgsConstructor
 public class SDVariable extends DifferentialFunction implements Serializable {
     @Getter
     @Setter
@@ -77,6 +79,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     @Override
+    public String opName() {
+        return "var";
+    }
+
+    @Override
     public boolean isVariable() {
         return true;
     }
@@ -85,6 +92,26 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Override
     public SDVariable getResult() {
         return this;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
+        return null;
+    }
+
+    @Override
+    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
+        return null;
     }
 
     @Override
@@ -823,4 +850,15 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         result = 31 * result + (weightInitScheme != null ? weightInitScheme.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
 }
