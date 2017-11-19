@@ -111,7 +111,12 @@
         (73,simdOps::ClipByValue) ,\
         (74,simdOps::Swish) ,\
         (75,simdOps::SwishDerivative) ,\
-        (76,simdOps::RSqrt)
+        (76,simdOps::RSqrt), \
+        (77,simdOps::Log1p), \
+        (78,simdOps::Erf), \
+        (79,simdOps::IsInf), \
+        (80,simdOps::IsNan), \
+        (81,simdOps::IsFinite)
 
 
 
@@ -183,7 +188,8 @@
         (18, simdOps::ShannonEntropy) ,\
         (19, simdOps::LogSumExp) ,\
         (20, simdOps::Any) ,\
-        (21, simdOps::All)
+        (21, simdOps::All), \
+        (22, simdOps::CountNonZero)
 
 
 
@@ -233,7 +239,8 @@
         (60,simdOps::FMod),\
         (69,simdOps::Atan2) ,\
         (19, simdOps::TruncateDiv),\
-        (20, simdOps::FloorDiv)
+        (20, simdOps::FloorDiv), \
+        (21, simdOps::FloorMod)
 
 
 #define INDEX_REDUCE_OPS \

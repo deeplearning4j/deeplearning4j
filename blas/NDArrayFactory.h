@@ -42,6 +42,8 @@ namespace nd4j {
         static NDArray<T>* scalar(T value);
 
         static NDArray<T>* valueOf(std::initializer_list<int> shape, T value, char order = 'c');
+
+        static NDArray<T>* concat(const std::vector<NDArray<T> *>& vectors, int axis = 0, NDArray<T>* target = nullptr);
     };
 }
 

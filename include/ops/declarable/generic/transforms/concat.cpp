@@ -22,6 +22,9 @@ namespace nd4j {
             buffers[0] = (Nd4jPointer) first->getBuffer();
             shapes[0] = (Nd4jPointer) first->getShapeInfo();
 
+            if (_dimension < 0)
+                _dimension += first->rankOf();
+
             if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                 printf("Shape %i: ", 0);
                 shape::printShapeInfoLinear((int *) shapes[0]);
@@ -61,6 +64,9 @@ namespace nd4j {
 
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
+
+            if (_dimension < 0)
+                _dimension += shape::rank(inp);
 
             std::memcpy(newShape, inp, shape::shapeInfoByteLength(inp));
             for (int i = 1; i < inputShape->size(); i++) {

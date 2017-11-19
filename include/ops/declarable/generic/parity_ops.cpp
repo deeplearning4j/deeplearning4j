@@ -197,6 +197,7 @@ namespace nd4j {
         }
         DECLARE_SYN(mergesum, mergeadd);
         DECLARE_SYN(add_n, mergeadd);
+        DECLARE_SYN(addn, mergeadd);
 
         OP_IMPL(mergeavg, -1, 1, false) {
             REQUIRE_OK(this->validateInputDimensionsMatch(block));

@@ -490,6 +490,53 @@ namespace nd4j {
         return result;
     }
 
+    template <typename T>
+    NDArray<T>* NDArrayFactory<T>::concat(const std::vector<NDArray<T> *>& vectors, int axis, NDArray<T>* target) {
+        NDArray<T>* result = target;
+
+        if (vectors.size() == 1) {
+            if (result == nullptr)
+                result = vectors.at(0)->dup();
+            else
+                result->assign(vectors.at(0));
+        } else {
+            Nd4jPointer* buffers = new Nd4jPointer[vectors.size()];
+            Nd4jPointer* shapes = new Nd4jPointer[vectors.size()];
+
+            NDArray<T> *first = vectors.at(0);
+
+            if (axis < 0)
+                axis += first->rankOf();
+
+            buffers[0] = (Nd4jPointer) first->buffer();
+            shapes[0] = (Nd4jPointer) first->shapeInfo();
+
+            std::vector<int> shape((unsigned int)first->rankOf());
+            for (int e = 0; e < first->rankOf(); e++)
+                shape[e] = first->sizeAt(e);
+
+            for (int e = 1; e < (int) vectors.size(); e++) {
+                NDArray<T>* array = vectors.at(e);
+
+                buffers[e] = (Nd4jPointer) array->buffer();
+                shapes[e] = (Nd4jPointer) array->shapeInfo();
+
+                shape[axis] += array->sizeAt(axis);
+            }
+
+            if (result == nullptr)
+                result = new NDArray<T>(first->ordering(), shape);
+
+
+            nd4j::SpecialMethods<T>::concatCpuGeneric(axis, vectors.size(), buffers, shapes, result->buffer(), result->shapeInfo());
+
+            delete[] buffers;
+            delete[] shapes;
+        }
+
+        return result;
+    }
+
 
     template class ND4J_EXPORT NDArrayFactory<float>;
     template class ND4J_EXPORT NDArrayFactory<float16>;

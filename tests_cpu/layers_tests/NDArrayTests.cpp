@@ -2286,3 +2286,47 @@ TEST_F(NDArrayTest, Operator_Divide_Test_7)
 }
 
 
+TEST_F(NDArrayTest, Test_Lambda_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+    NDArray<float> exp('c', {1, 5}, {4, 5, 6, 7, 8});
+
+    auto lambda = LAMBDA_F(_val) {
+        return _val + 3.0f;
+    };
+
+    x.applyLambda(lambda);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
+
+
+TEST_F(NDArrayTest, Test_Lambda_2) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 1, 2, 1});
+    NDArray<float> y('c', {1, 5}, {1, 2, 1, 2, 1});
+    NDArray<float> exp('c', {1, 5}, {3, 5, 3, 5, 3});
+
+    auto lambda = LAMBDA_FF(_x, _y) {
+        return _x + _y + 1.0f;
+    };
+
+    x.applyPairwiseLambda(&y, lambda);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
+
+
+TEST_F(NDArrayTest, Test_Lambda_3) {
+    NDArray<double> x('c', {1, 5}, {1, 2, 1, 2, 1});
+    NDArray<double> y('c', {1, 5}, {1, 2, 1, 2, 1});
+    NDArray<double> exp('c', {1, 5}, {4, 8, 4, 8, 4});
+
+    auto lambda = LAMBDA_DD(_x, _y) {
+        return (_x + _y) * 2;
+    };
+
+    x.applyPairwiseLambda(&y, lambda);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
+
+

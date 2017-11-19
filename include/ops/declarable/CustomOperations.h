@@ -35,6 +35,7 @@ namespace nd4j {
         DECLARE_OP(softmax_bp, 2, 1, true);
         DECLARE_OP(biasadd, 2, 1, true);
         DECLARE_OP(floor, 1, 1, true);
+        DECLARE_OP(floormod, 2, 1, true);
         DECLARE_OP(realdiv, 2, 1, true);
         DECLARE_OP(merge, -1, 1, true);         // should become custom
         DECLARE_OP(broadcastgradientargs, 2, 2, true);
@@ -61,6 +62,7 @@ namespace nd4j {
         DECLARE_OP(greater_equal, 2, 1, true);
         DECLARE_OP(less, 2, 1, true);
         DECLARE_OP(greater, 2, 1, true);
+        DECLARE_OP(log1p, 2, 1, true);
 
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
@@ -122,6 +124,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(select, 3, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(shape_of, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(gather, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(crelu, 1, 1, false, 0, 0);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);

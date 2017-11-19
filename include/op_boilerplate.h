@@ -1396,7 +1396,17 @@ struct __registratorDouble_##NAME {\
 #define FORCEINLINE inline 
 #endif
 
+#define LAMBDA_H(X) [] (float16 X) -> float16
+#define LAMBDA_HH(X, Y) [] (float16 X, float16 Y) -> float16
 
+#define LAMBDA_D(X) [] (double X) -> double
+#define LAMBDA_DD(X, Y) [] (double X, double Y) -> double
+
+#define LAMBDA_F(X) [] (float X) -> float
+#define LAMBDA_FF(X, Y) [] (float X, float Y) -> float
+
+#define LAMBDA_T(X) [] (T X) -> T
+#define LAMBDA_TT(X, Y) [] (T X, T Y) -> T
 
 
 #endif

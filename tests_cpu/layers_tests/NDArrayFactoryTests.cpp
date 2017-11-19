@@ -71,3 +71,16 @@ TEST_F(NDArrayFactoryTests, Test_Linspace_5) {
 
     ASSERT_TRUE(x.equalsTo(&exp));
 }
+
+TEST_F(NDArrayFactoryTests, Test_Concat_1) {
+    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> y('c', {2, 2}, {-1, -2, -3, -4});
+    NDArray<float> exp('c', {2, 4}, {1, 2, -1, -2, 3, 4, -3, -4});
+
+    auto z = NDArrayFactory<float>::concat({&x, &y}, -1);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}
