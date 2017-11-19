@@ -211,6 +211,7 @@ template <typename T>
         return vector;
     }
 
+#ifndef __JAVACPP_HACK__
     template<typename T>
     void NDArray<T>::applyPairwiseLambda(NDArray<T>* other, std::function<T(T, T)> const& func, NDArray<T>* target) {
         if (target == nullptr)
@@ -241,6 +242,7 @@ template <typename T>
         for (int e = 0; e < this->lengthOf(); e++)
             target->putIndexedScalar(e, func(this->getIndexedScalar(e)));
     }
+#endif
 
 template <typename T>
 NDArray<T>::NDArray(const NDArray<T> *other, nd4j::memory::Workspace* workspace) {
