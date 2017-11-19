@@ -96,8 +96,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__").define(false))
+               .put(new Info("__JAVACPP_HACK__").define(true))
                .put(new Info("MAX_UINT").translate(false))
-               .put(new Info("std::initializer_list", "cnpy::NpyArray",
+               .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
