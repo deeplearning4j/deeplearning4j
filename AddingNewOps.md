@@ -120,6 +120,19 @@ So, at the moment of op execution, we assume that we will either have output arr
 You can also see number of macros used, we'll cover those later as well. Beyond that - op execution logic is fairly simple & linear:
 Each new op implements protected member function `DeclarableOp<T>::validateAndExecute(Block<T>& block)`, and this method is eventually called either from GraphExecutioner, or via direct call, like `DeclarableOp<T>::execute(Block<T>& block)`.
 
+## c++11 syntactic sugar
+
+In ops you can easily use c++11 features, including lambdas. In some cases it might be easiest way to build your custom op (or some part of it) via `NDArray::applyLambda` or `NDArray::applyPairwiseLambda`:
+```c++
+auto lambda = LAMBDA_DD(_x, _y) {
+    return (_x + _y) * 2;
+};
+
+x.applyPairwiseLambda(&y, lambda);
+``` 
+
+In this simple example, each element of NDArray `x` will get values set to `x[e] = (x[e] + y[e]) * 2`.
+
 ## Backend-specific operation
 
 GPU/MPI/whatever to be added soon.
@@ -136,5 +149,6 @@ We have number of utility macros, suitable for custom ops. Here they are:
 - **ALLOCATE**(...): this macro check if Workspace is available, and either uses Workspace or direct memory allocation if Workspace isn't available.
 - **RELEASE**(...): this macro is made to release memory allocated with **ALLOCATE()** macro.
 - **REQUIRE_TRUE**(...): this macro takes condition, and evaluates it. If evaluation doesn't end up as True - exception is raised, and specified message is printed out.
+- **LAMBDA_T**(X) and **LAMBDA_TT**(X, Y): lambda declaration for `NDArray::applyLambda` and `NDArray::applyPairwiseLambda` 
 
 
