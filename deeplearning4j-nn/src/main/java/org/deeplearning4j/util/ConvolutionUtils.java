@@ -45,13 +45,49 @@ public class ConvolutionUtils {
     }
 
     /**
-     * Get the output size (height/width) for the given inpud data and CNN configuration
+     *  Get the output size of a deconvolution operation for given input data. In deconvolution, we compute the inverse
+     *  of the shape computation of a convolution.
      *
-     * @param inputData    Input data
-     * @param kernel       Kernel size (height/width)
-     * @param strides      Strides (height/width)
-     * @param padding      Padding (height/width)
-     * @return             Output size: int[2] with output height/width
+     * @param inputData         Input data
+     * @param kernel            Kernel size (height/width)
+     * @param strides           Strides (height/width)
+     * @param padding           Padding (height/width)
+     * @param convolutionMode   Convolution mode (Same, Strict, Truncate)
+     * @param dilation          Kernel dilation (height/width)
+     * @return                  Output size: int[2] with output height/width
+     */
+    public static int[] getDeconvolutionOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
+                                                   ConvolutionMode convolutionMode, int[] dilation) {
+
+        int hIn = inputData.size(2);
+        int wIn = inputData.size(3);
+        int[] eKernel = effectiveKernelSize(kernel, dilation);
+        boolean atrous = (eKernel == kernel);
+
+        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, hIn, wIn, atrous);
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            int hOut = strides[0] * hIn;
+            int wOut = strides[1] * wIn ;
+            return new int[] {hOut, wOut};
+        }
+
+        int hOut = strides[0] * (hIn - 1) + eKernel[0] - 2 * padding[0];
+        int wOut = strides[1] * (wIn - 1) + eKernel[1] - 2 * padding[1];
+
+        return new int[] {hOut, wOut};
+    }
+
+    /**
+     * Get the output size (height/width) for the given input data and CNN configuration
+     *
+     * @param inputData         Input data
+     * @param kernel            Kernel size (height/width)
+     * @param strides           Strides (height/width)
+     * @param padding           Padding (height/width)
+     * @param convolutionMode   Convolution mode (Same, Strict, Truncate)
+     * @param dilation          Kernel dilation (height/width)
+     * @return                  Output size: int[2] with output height/width
      */
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                     ConvolutionMode convolutionMode, int[] dilation) {
@@ -63,6 +99,36 @@ public class ConvolutionUtils {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
+        validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inH, inW, atrous);
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            //'Same' padding mode:
+            //outH = ceil(inHeight / strideH)           decimal division
+            //outW = ceil(inWidth / strideW)            decimal division
+
+            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
+            //padTop = padHeightSum / 2                 integer division
+            //padBottom = padHeghtSum - padTop
+
+            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
+            //padLeft = padWidthSum / 2                 integer division
+            //padRight = padWidthSum - padLeft
+
+            int outH = (int) Math.ceil(inH / ((double) strides[0]));
+            int outW = (int) Math.ceil(inW / ((double) strides[1]));
+
+            return new int[] {outH, outW};
+        }
+
+        int hOut = (inH - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int wOut = (inW - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
+
+        return new int[] {hOut, wOut};
+    }
+
+    public static void validateShapes(INDArray inputData, int[] eKernel, int[] strides, int[] padding,
+                                      ConvolutionMode convolutionMode, int[] dilation,
+                                      int inH, int inW, boolean atrous) {
         if (convolutionMode != ConvolutionMode.Same && (eKernel[0] <= 0 || eKernel[0] > inH + 2 * padding[0])) {
             StringBuilder sb = new StringBuilder();
             sb.append("Invalid input data or configuration: ");
@@ -134,31 +200,10 @@ public class ConvolutionUtils {
                         .append(inW).append("/").append(strides[1]).append(")=").append(sameSize)
                         .append(getCommonErrorMsg(inputData, eKernel, strides, padding, dilation));
                 throw new DL4JInvalidConfigException(
-                                sb.toString());
+                        sb.toString());
             }
-        } else if (convolutionMode == ConvolutionMode.Same) {
-            //'Same' padding mode:
-            //outH = ceil(inHeight / strideH)           decimal division
-            //outW = ceil(inWidth / strideW)            decimal division
-
-            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
-            //padTop = padHeightSum / 2                 integer division
-            //padBottom = padHeghtSum - padTop
-
-            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
-            //padLeft = padWidthSum / 2                 integer division
-            //padRight = padWidthSum - padLeft
-
-            int outH = (int) Math.ceil(inH / ((double) strides[0]));
-            int outW = (int) Math.ceil(inW / ((double) strides[1]));
-
-            return new int[] {outH, outW};
         }
 
-        int hOut = (inH - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
-        int wOut = (inW - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
-
-        return new int[] {hOut, wOut};
     }
 
     public static int[] effectiveKernelSize(int[] kernel, int[] dilation){

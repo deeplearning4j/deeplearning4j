@@ -33,7 +33,7 @@ public interface TrainerContext {
      *                for coordination with the {@link ParallelWrapper} 's {@link org.deeplearning4j.optimize.api.IterationListener}
      * @return the created training instance
      */
-    Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
+    Trainer create(String uuid, int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
                     WorkspaceMode workspaceMode, int averagingFrequency);
 
 

@@ -41,6 +41,8 @@ public interface Trainer extends Runnable {
 
     boolean isRunning();
 
+    String getUuid();
+
     /**
      * Shutdown this worker
      */

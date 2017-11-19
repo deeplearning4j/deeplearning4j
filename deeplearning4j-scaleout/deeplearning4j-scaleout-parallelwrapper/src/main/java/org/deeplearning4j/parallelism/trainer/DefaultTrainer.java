@@ -1,9 +1,6 @@
 package org.deeplearning4j.parallelism.trainer;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -62,7 +59,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected Exception thrownException;
     @Builder.Default
     protected volatile boolean useMDS = false;
-    protected final String uuid = UUID.randomUUID().toString();
+    @Getter protected String uuid;
     @Builder.Default
     protected boolean onRootModel = false;
     @Builder.Default
