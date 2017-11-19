@@ -124,7 +124,7 @@ Each new op implements protected member function `DeclarableOp<T>::validateAndEx
 
 In ops you can easily use c++11 features, including lambdas. In some cases it might be easiest way to build your custom op (or some part of it) via `NDArray::applyLambda` or `NDArray::applyPairwiseLambda`:
 ```c++
-auto lambda = LAMBDA_DD(_x, _y) {
+auto lambda = LAMBDA_TT(_x, _y) {
     return (_x + _y) * 2;
 };
 
