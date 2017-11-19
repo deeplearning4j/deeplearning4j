@@ -5,7 +5,11 @@ layout: default
 
 # Artificial Intelligence, Machine Learning and Deep Learning
 
-You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, and machine learning is a subset of AI, which is an umbrella term for any computer program that does something smart. Here are a few definitions of artificial intelligence:
+You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, and machine learning is a subset of AI, which is an umbrella term for any computer program that does something smart. 
+
+## Artificial Intelligence
+
+Here are a few definitions of artificial intelligence:
 
 * A branch of computer science dealing with the simulation of intelligent behavior in computers.
 * The capability of a machine to imitate intelligent human behavior.
@@ -16,6 +20,8 @@ There are a lot of ways to simulate human intelligence, and some methods are mor
 AI can be a pile of if-then statements, or a complex statistical model. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called rules engines or expert systems. The intelligence they might mimic could be an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
 
 Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. So you could say that true AI is whatever computers can't do yet. ;)
+
+## Machine Learning 
 
 Machine learning is a subset of AI. That is, all machine learning counts as AI, but not all AI counts as machine learning. For example, symbolic logic -- rules engines, expert systems and knowledge graphs -- could all be described as AI, and none of them are machine learning. 
 
@@ -33,9 +39,13 @@ How does one minimize error? Well, one way is to build a framework that multipli
 
 They are, in short, an optimization algorithm. If you tune them right, they minimize their error by guessing and guessing and guessing again.
 
-Deep learning is a subset of machine learning. Deep artificial neural networks are a set of algorithms setting new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. Deep learning is part of DeepMind's notorious AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016. A more complete explanation of neural works is [here](./neuralnet-overview).
+## Deep Learning
 
-Deep is a technical term. It refers to the number of layers in a neural network. A shallow network has one so-called *hidden layer*, and a deep network has more than one. Multiple hidden layers allow deep neural networks to learn features of the data in a hierarchy, because simple features (e.g. two pixels) recombine from one layer to the next, to form more complex features (e.g. a line).
+Deep learning is a subset of machine learning. Usually, when people use the term deep learning, they are referring to [deep artificial neural networks](https://deeplearning4j.org/neuralnet-overview), and somewhat less frequently to deep [reinforcement learning](https://deeplearning4j.org/reinforcementlearning). 
+
+Deep artificial neural networks are a set of algorithms that have set new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. For example, deep learning is part of DeepMind's well-known AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016, and the current world champion Ke Jie in early 2017. A more complete explanation of neural works is [here](./neuralnet-overview).
+
+*Deep* is a technical term. It refers to the number of layers in a neural network. A shallow network has one so-called *hidden layer*, and a deep network has more than one. Multiple hidden layers allow deep neural networks to learn features of the data in a so-called feature hierarchy, because simple features (e.g. two pixels) recombine from one layer to the next, to form more complex features (e.g. a line). Nets with many layers pass input data (features) through more mathematical operations than nets with few layers, and are therefore more computationally intensive to train. Computational intensivity is one of the hallmarks of deep learning, and it is one reason why GPUs are in demand to train deep-learning models. 
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
@@ -43,5 +53,5 @@ Deep is a technical term. It refers to the number of layers in a neural network.
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks and Regression](./linear-regression)
+* [Neural Networks and Regression](./logistic-regression)
 * [Convolutional Networks](./convolutionalnets)
