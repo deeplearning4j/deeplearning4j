@@ -14,6 +14,8 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -387,7 +389,7 @@ public class BackPropMLPTest {
 
     public static INDArray doTanhDerivative(INDArray input) {
         return Nd4j.getExecutioner()
-                        .execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input.dup()).derivative());
+                        .execAndReturn(new TanhDerivative(input.dup()));
     }
 
     public static INDArray doSoftmax(INDArray input) {
@@ -399,7 +401,7 @@ public class BackPropMLPTest {
     }
 
     public static INDArray doSigmoidDerivative(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input).derivative());
+        return Nd4j.getExecutioner().execAndReturn(new SigmoidDerivative(input.dup()));
     }
 
 }
