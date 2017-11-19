@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -357,10 +358,10 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         switch (layerConf().getHiddenUnit()) {
             case IDENTITY:
                 return Nd4j.getExecutioner()
-                                .execAndReturn(Nd4j.getOpFactory().createTransform("identity", z).derivative());
+                                .execAndReturn(new Identity(z));
             case BINARY:
                 return Nd4j.getExecutioner()
-                                .execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", z).derivative());
+                                .execAndReturn(new SigmoidDerivative(z));
             case GAUSSIAN: {
                 Distribution dist = Nd4j.getDistributions().createNormal(z, 1);
                 INDArray gaussian = dist.sample(z.shape());
@@ -368,10 +369,10 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 return derivative;
             }
             case RECTIFIED:
-                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
+                return Nd4j.getExecutioner().execAndReturn(new Step(z));
             case SOFTMAX:
                 return Nd4j.getExecutioner()
-                                .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
+                                .execAndReturn(new SoftMaxDerivative(z));
             default:
                 throw new IllegalStateException(
                                 "Hidden unit type should either be binary, gaussian, or rectified linear " + layerId());

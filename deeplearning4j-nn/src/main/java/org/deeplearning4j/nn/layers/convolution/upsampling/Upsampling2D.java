@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -83,7 +84,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        int size = layerConf().getSize();
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
@@ -127,21 +128,21 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        int size = layerConf().getSize();
         int outH = inH * size;
         int outW = inW * size;
 
         INDArray output = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
         INDArray reshapedOutput = output.reshape('c', miniBatch, inDepth, outH, outW);
 
-        CustomOp op = DynamicCustomOp.builder("upsampling")
-                .addIntegerArguments(size)
-                .addInputs(input)
-                .addOutputs(reshapedOutput)
-                .callInplace(false)
+        Upsampling upsampling = Upsampling.sameDiffBuilder()
+                .inPlace(false)
+                .inputArrays(new INDArray[]{input})
+                .outputs(new INDArray[]{reshapedOutput})
+                .scaleFactor(size)
                 .build();
 
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().exec(upsampling);
 
         return reshapedOutput;
     }

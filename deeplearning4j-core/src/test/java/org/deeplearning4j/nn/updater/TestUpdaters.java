@@ -176,6 +176,7 @@ public class TestUpdaters {
         double beta2 = 0.888;
         double epsilon = Adam.DEFAULT_ADAM_EPSILON;
 
+
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Adam(lr, beta1, beta2, Adam.DEFAULT_ADAM_EPSILON))
                 .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
                         .build();
