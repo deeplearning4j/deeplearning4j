@@ -146,6 +146,9 @@ namespace nd4j {
     template<typename T>
     void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, std::vector<int>& axes_0, std::vector<int>& axes_1) {
 
+        if(c->rankOf() != 2 || c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
+            throw "NDArrayFactory::simpleMMul static function: wrong shape of C array !";
+
         std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
         std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
@@ -313,6 +316,7 @@ namespace nd4j {
         } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
             // gemm
             // int[] shape = {rows(), other.columns()};
+            
             if (result == nullptr) {
                 nd4j_verbose("Creating new array: [%i x %i]\n", A->rows(), B->columns());
                 result = new NDArray<T>(A->rows(), B->columns(), 'f');
@@ -538,9 +542,53 @@ namespace nd4j {
     }
 
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArrayFactory<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const T alpha, const T beta) {
+    
+    if(a->rankOf() != 2 || b->rankOf() != 2)
+        throw "NDArrayFactory::simpleMMul static function: some of input arrays has rank not equal to 2 !";
+
+    if(a->shapeOf()[1] != b->shapeOf()[0])
+        throw "NDArrayFactory::simpleMMul static function: the number of A columns is not equal to number of B rows !";
+
+    NDArray<T>* dot = c;
+    if(c == nullptr) 
+        c = new NDArray<T>(a->shapeOf()[0], b->shapeOf()[1], 'f', a->getWorkspace());        
+    else {
+        if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
+            throw "NDArrayFactory::simpleMMul static function: wrong shape of C array !";
+        if(beta != (T)0. ) {
+            dot = new NDArray<T>(a->shapeOf()[0], b->shapeOf()[1], c->ordering(), a->getWorkspace());
+            if( beta != (T)1.)
+                c->template applyScalar<simdOps::Multiply<T>>(beta);            
+        }        
+    }
+
+    for(int row = 0; row < a->shapeOf()[0]; ++row)
+        for(int col = 0; col < b->shapeOf()[1]; ++col)
+            for(int j = 0; j < a->shapeOf()[1]; ++j)
+                for(int i = 0; i < b->shapeOf()[0]; ++i)
+                    (*dot)(row,col) += (*a)(row,j)*(*b)(i,col);
+
+    if(alpha != (T)1.)
+        dot->template applyScalar<simdOps::Multiply<T>>(alpha);
+
+    if(beta != (T)0.) {
+        c->template applyPairwiseTransform<simdOps::Add<T>>(dot, nullptr);
+        delete dot;
+    }
+    
+    return c;
+}
+
+
+
+
     template class ND4J_EXPORT NDArrayFactory<float>;
     template class ND4J_EXPORT NDArrayFactory<float16>;
     template class ND4J_EXPORT NDArrayFactory<double>;
 }
+
 
 #endif

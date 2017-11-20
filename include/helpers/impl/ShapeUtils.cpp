@@ -6,6 +6,7 @@
 #include <helpers/ShapeUtils.h>
 #include <climits>
 #include <numeric>
+#include <set>
 
 
 namespace nd4j {
@@ -17,16 +18,28 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
 
     int axe0_size = (int) axes_0.size();
     int axe1_size = (int) axes_1.size();                 
+    if(axe0_size != axe1_size)
+        throw "ShapeUtils::evalShapeForTensorDot method: the numbers of a axes and b axes to make dot product along must have identical values !";
+    if(axe0_size > a->rankOf() || axe1_size > b->rankOf())
+        throw "ShapeUtils::evalShapeForTensorDot method: the length of vector of a or b axes is larger than array rank !";
     // validating axes
-    int validationLength = nd4j::math::nd4j_min<int>(axe0_size, axe1_size);
-    for (int i = 0; i < validationLength; i++) {
+    for (int i = 0; i < axe1_size; i++) {
         if (a->sizeAt(axes_0[i]) != b->sizeAt(axes_1[i]))
-            throw "ShapeUtils::evalShapeForTensorDot method: size of the given axes at each dimension must be the same size.";
+            throw "ShapeUtils::evalShapeForTensorDot method: the dimensions at given axes for both input arrays must be the same !";
         if (axes_0[i] < 0)
             axes_0[i] += a->rankOf();
         if (axes_1[i] < 0)
             axes_1[i] += b->rankOf();
     }
+    // check whether axes_0 and axes_1 contain on;y unique numbers
+    std::set<T> uniqueElems(axes_0.begin(), axes_0.end());
+    if((int)uniqueElems.size() != axe0_size)
+        throw "ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !";
+    uniqueElems.clear();
+    uniqueElems = std::set<T>(axes_1.begin(), axes_1.end());
+    if((int)uniqueElems.size() != axe1_size)
+        throw "ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !";
+
     std::vector<int> list_A, list_B;
     for (int i = 0; i < a->rankOf(); i++)
         if (std::find(axes_0.begin(), axes_0.end(), i) == axes_0.end())
@@ -39,34 +52,38 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
     permutAt.insert(permutAt.end(), axes_0.begin(), axes_0.end());
     permutBt = axes_1;
     permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
-    int n2 = 1;
-    int aLength = nd4j::math::nd4j_min<int>(a->rankOf(), axes_0.size());
-    for (int i = 0; i < aLength; i++)
+    
+    int n2 = 1;   
+    for (int i = 0; i < axe0_size; i++)
         n2 *= a->sizeAt(axes_0[i]);
     shapeAt = {-1, n2};
+
     std::vector<int> oldShapeA;
-    if (list_A.size() == 0) {
+    if (list_A.empty()) {
         oldShapeA.emplace_back(1);
     } else {
-        oldShapeA.insert(oldShapeA.end(), list_A.begin(), list_A.end());            
+        oldShapeA.resize(list_A.size());
         for (int i = 0; i < (int) oldShapeA.size(); i++)
-            oldShapeA[i] = a->sizeAt(oldShapeA[i]);
+            oldShapeA[i] = a->sizeAt(list_A[i]);
     }
+    
     int n3 = 1;
-    int bNax = nd4j::math::nd4j_min<int>(b->rankOf(), axes_1.size());
-    for (int i = 0; i < bNax; i++)
+    for (int i = 0; i < axe1_size; i++)
         n3 *= b->sizeAt(axes_1[i]);
     shapeBt = {n3, -1};
+    
     std::vector<int> oldShapeB;
-    if (list_B.size() == 0) {
+    if (list_B.empty()) {
         oldShapeB.emplace_back(1);
     } else {
-        oldShapeB.insert(oldShapeB.end(), list_B.begin(), list_B.end());            
+        oldShapeB.resize(list_B.size()); 
         for (int i = 0; i < (int) oldShapeB.size(); i++)
-            oldShapeB[i] = b->sizeAt(oldShapeB[i]);
+            oldShapeB[i] = b->sizeAt(list_B[i]);
     }
+    
     std::vector<int> aPlusB(oldShapeA);
     aPlusB.insert(aPlusB.end(), oldShapeB.begin(), oldShapeB.end());            
+    
     return aPlusB;
 }
 
