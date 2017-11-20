@@ -227,7 +227,7 @@ template <typename T>
             throw "Shapes mismach";
         }
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for simd schedule(guided)
         for (int e = 0; e < this->lengthOf(); e++) {
             target->putIndexedScalar(e, func(this->getIndexedScalar(e), other->getIndexedScalar(e)));
         }
@@ -238,7 +238,7 @@ template <typename T>
         if (target == nullptr)
             target = this;
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for simd schedule(guided)
         for (int e = 0; e < this->lengthOf(); e++)
             target->putIndexedScalar(e, func(this->getIndexedScalar(e)));
     }

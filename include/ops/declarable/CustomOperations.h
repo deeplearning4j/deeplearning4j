@@ -45,6 +45,7 @@ namespace nd4j {
         DECLARE_OP(mergeadd, -1, 1, false);
         DECLARE_OP(mergeavg, -1, 1, false);
         DECLARE_OP(identity, 1, 1, true);
+        DECLARE_OP(identity_bp, 2, 1, true);
         DECLARE_OP(add, 2, 1, true);
         DECLARE_OP(subtract, 2, 1, true);
         DECLARE_OP(reversesubtract, 2, 1, true);
@@ -127,6 +128,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(shape_of, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(gather, 2, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(crelu, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);
@@ -146,6 +148,22 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
         DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
         DECLARE_CONFIGURABLE_OP(reverse, 1, 1, true, 0, -2);
+        DECLARE_CONFIGURABLE_OP(apply_sgd, 2, 1, true, -2, 0);
+
+        // grad ops
+        DECLARE_CONFIGURABLE_OP(sigmoid_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(softsign_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(tanh_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(softplus_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(relu_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(selu_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(lrelu_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(elu_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(cube_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(rectifiedtanh_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(rationaltanh_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(hardtanh_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(hardsigmoid_bp, 2, 1, true, 0, 0);
 
         DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);
 
