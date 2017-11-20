@@ -898,4 +898,74 @@ TEST_F(ConvolutionTests, TestDeconv_ff_2) {
     delete result;
 }
 
+TEST_F(ConvolutionTests, Test_Conv1D_ff_1) {
+    NDArray<double> input('c', {2, 2, 6});
+    NDArray<double> weights('c', {3, 2, 2});
+    NDArray<double> bias('c', {1, 3});
+    NDArray<double> expFF('c', {2, 3, 5}, {59.0, 69.0, 79.0, 89.0, 99.0, 132.0, 158.0, 184.0, 210.0, 236.0, 205.0, 247.0, 289.0, 331.0, 373.0, 179.0, 189.0, 199.0, 209.0, 219.0, 444.0, 470.0, 496.0, 522.0, 548.0, 709.0, 751.0, 793.0, 835.0, 877.0});
+    NDArray<double> expEps('c', {2, 2, 6}, {130.0, 293.0, 326.0, 359.0, 392.0, 220.0, 166.0, 371.0, 416.0, 461.0, 506.0, 280.0, 355.0, 788.0, 821.0, 854.0, 887.0, 490.0, 481.0, 1046.0, 1091.0, 1136.0, 1181.0, 640.0});
+    NDArray<double> expGW('c', {3, 2, 2}, {1415.0, 1520.0, 2045.0, 2150.0, 1865.0, 2020.0, 2795.0, 2950.0, 2315.0, 2520.0, 3545.0, 3750.0});
+    NDArray<double> expGB('c', {1, 3}, {105.0, 155.0, 205.0});
+
+
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
+    NDArrayFactory<double>::linspace(1, bias);
+
+    nd4j::ops::conv1d<double> op;
+    auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result_FF->status());
+
+    auto z = result_FF->at(0);
+
+
+    ASSERT_TRUE(expFF.isSameShape(z));
+    ASSERT_TRUE(expFF.equalsTo(z));
+
+
+    nd4j::ops::conv1d_bp<double> op_bp;
+
+    auto epsilonNxt = z->dup();
+    NDArrayFactory<double>::linspace(1, *epsilonNxt);
+
+    auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result_BP->status());
+
+    auto eps = result_BP->at(0);
+    auto gradW = result_BP->at(1);
+    auto gradB = result_BP->at(2);
+
+    ASSERT_TRUE(expEps.isSameShape(eps));
+    ASSERT_TRUE(expGW.isSameShape(gradW));
+    ASSERT_TRUE(expGB.isSameShape(gradB));
+
+    ASSERT_TRUE(expEps.equalsTo(eps));
+    ASSERT_TRUE(expGW.equalsTo(gradW));
+    ASSERT_TRUE(expGB.equalsTo(gradB));
+
+    delete result_FF;
+    delete result_BP;
+    delete epsilonNxt;
+}
+
+
+TEST_F(ConvolutionTests, Test_Conv1D_ff_2) {
+    NDArray<double> input('c', {2, 2, 6});
+    NDArray<double> weights('c', {3, 2, 2});
+
+    NDArrayFactory<double>::linspace(1, input);
+    NDArrayFactory<double>::linspace(1, weights);
+
+    nd4j::ops::conv1d<double> op;
+    auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    delete result;
+}
+
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H

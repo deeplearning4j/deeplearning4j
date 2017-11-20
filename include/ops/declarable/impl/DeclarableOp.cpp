@@ -419,6 +419,9 @@ namespace nd4j {
             int cnt = -1;
             std::vector<int> in;
             for (auto v: inputs) {
+                if (v == nullptr)
+                    continue;
+
                 auto var = new Variable<T>(v);
                 var->markRemovable(false);
                 in.push_back(cnt);
@@ -461,6 +464,9 @@ namespace nd4j {
             int cnt = -1;
             std::vector<int> in;
             for (auto v: inputs) {
+                if (v == nullptr)
+                    continue;
+
                 auto var = new Variable<T>(v);
                 var->markRemovable(false);
                 in.push_back(cnt);
