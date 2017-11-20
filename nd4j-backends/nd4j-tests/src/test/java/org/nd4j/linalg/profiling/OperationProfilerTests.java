@@ -2,6 +2,7 @@ package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -283,6 +284,23 @@ public class OperationProfilerTests {
         INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NEGATIVE_INFINITY});
 
         a.muli(3f);
+    }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScopePanic3() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+
+        INDArray array;
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+            array = Nd4j.create(10);
+
+            assertTrue(array.isAttached());
+        }
+
+
+        array.add(1.0);
     }
 
 }

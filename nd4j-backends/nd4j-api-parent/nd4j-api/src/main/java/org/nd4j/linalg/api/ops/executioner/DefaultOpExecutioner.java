@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
@@ -419,6 +420,32 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    protected void checkForWorkspaces(Op op) {
+        val x = op.x();
+        if (x.isAttached()) {
+            val ws = x.data().getParentWorkspace();
+
+            if (!ws.isScopeActive())
+                throw new ND4JIllegalStateException("Op [" + op.opName() +"] X argument uses leaked workspace pointer");
+        }
+
+        val y = op.y();
+        if (y != null && x.isAttached()) {
+            val ws = y.data().getParentWorkspace();
+
+            if (!ws.isScopeActive())
+                throw new ND4JIllegalStateException("Op [" + op.opName() +"] Y argument uses leaked workspace pointer");
+        }
+
+        val z = op.z();
+        if (z != null && z.isAttached()) {
+            val ws = z.data().getParentWorkspace();
+
+            if (!ws.isScopeActive())
+                throw new ND4JIllegalStateException("Op [" + op.opName() +"] Z argument uses leaked workspace pointer");
+        }
+    }
+
     public long profilingHookIn(Op op) {
         switch (profilingMode) {
             case ALL:
@@ -429,6 +456,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             case OPERATIONS:
                 OpProfiler.getInstance().processOpCall(op);
                 break;
+            case SCOPE_PANIC:
+                checkForWorkspaces(op);
+                return 0L;
             case DISABLED:
             default:
                 return 0L;
