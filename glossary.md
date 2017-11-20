@@ -302,6 +302,9 @@ LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochr
 ### <a name="loglikelihood">Log-Likelihood</a>
 Log likelihood is related to the statistical idea of the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood). Likelihood is a function of the parameters of a statistical model. "The probability of some observed outcomes given a set of parameter values is referred to as the [likelihood](https://www.princeton.edu/~achaney/tmve/wiki100k/docs/Likelihood_function.html) of the set of parameter values given the observed outcomes."
 
+### <a name="logistic">Logistic Regression</a>
+[Logistic regression](https://deeplearning4j.org/logistic-regression) behaves like an on-off switch, and is usually used for classification problems; e.g. does this data instance belong to category X or not? It produces a value between 1 and 0 that corresponds to the probability that the data belongs to a given class. 
+
 ### <a name="mle">Maximum Likelihood Estimation</a>
 
 "Say you have a coin and you're not sure it's "fair." So you want to estimate the "true" probability it will come up heads. Call this probability P, and code the outcome of a coin flip as 1 if it's heads and 0 if it's tails.
