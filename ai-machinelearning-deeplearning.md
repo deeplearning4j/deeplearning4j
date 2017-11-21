@@ -5,7 +5,7 @@ layout: default
 
 # Artificial Intelligence, Machine Learning and Deep Learning
 
-You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, and machine learning is a subset of AI, which is an umbrella term for any computer program that does something smart. 
+You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, and machine learning is a subset of AI, which is an umbrella term for any computer program that does something smart. In other words, all machine learning is AI, but not all AI is machine learning, and so forth. 
 
 ## Artificial Intelligence
 
@@ -26,6 +26,10 @@ Usually, when a computer program designed by AI researchers actually succeeds at
 Machine learning is a subset of AI. That is, all machine learning counts as AI, but not all AI counts as machine learning. For example, symbolic logic -- rules engines, expert systems and knowledge graphs -- could all be described as AI, and none of them are machine learning. 
 
 One aspect that separates machine *learning* from the knowledge graphs and expert systems is its ability to modify itself when exposed to more data; i.e. machine learning is dynamic and does not require human intervention to make certain changes. That makes it less brittle, and less reliant on human experts.
+
+```
+"A computer program is said to learn from experience E with respect to some class of tasks T and performance measure P if its performance at tasks in T, as measured by P, improves with experience E." --Tom Mitchell
+```
 
 ![Alt text](./img/arthur_samuel.jpg)
 
@@ -58,6 +62,7 @@ So you could apply the same definition to deep learning that Arthur Samuel did t
 * [Word2Vec: Neural Embeddings for Java](./word2vec)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks and Regression](./logistic-regression)
-* [Convolutional Networks](./convolutionalnets)
+* [LSTMs & Recurrent Networks](./lstm)
+* [Neural Networks & Regression](./logistic-regression)
+* [Convolutional Networks (CNNs)](./convolutionalnets)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
