@@ -269,16 +269,6 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 
 * [HyperGAN] [[Code]](https://github.com/255bits/HyperGAN)(Open source GAN focused on scale and usability)
 
-### Blogs
-| Author | Address |
-|:----:|:---:|
-| **inFERENCe** |  [Adversarial network](http://www.inference.vc/)  |
-| **inFERENCe** |  [InfoGan](http://www.inference.vc/infogan-variational-bound-on-mutual-information-twice/)  |
-| **distill** |  [Deconvolution and Image Generation](http://distill.pub/2016/deconv-checkerboard/)  |
-| **yingzhenli** |  [Gan theory](http://www.yingzhenli.net/home/blog/?p=421http://www.yingzhenli.net/home/blog/?p=421)  |
-| **OpenAI** |  [Generative model](https://openai.com/blog/generative-models/)  |
-
-
 ### Tutorials
 
 * [1] [Ian Goodfellow's GAN Slides](http://www.iangoodfellow.com/slides/2016-12-04-NIPS.pdf) (NIPS Goodfellow Slides)[[Chinese Trans]](http://c.m.163.com/news/a/C7UE2MLT0511AQHO.html?spss=newsapp&spsw=1)[details](https://arxiv.org/pdf/1701.00160v1.pdf)
