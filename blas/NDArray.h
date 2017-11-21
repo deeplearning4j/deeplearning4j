@@ -247,6 +247,8 @@ namespace nd4j {
         // This method returns mean number of this NDArray
         T meanNumber() const;
 
+        int ews();
+
         // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
         NDArray<T> *sum(const std::initializer_list<int> &dimensions) const;
 
@@ -527,6 +529,10 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 
 
+    template<typename T>
+    FORCEINLINE int NDArray<T>::ews(){
+        return shape::elementWiseStride(_shapeInfo);
+    }
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for matrix, i - absolute index
 template<typename T>

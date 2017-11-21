@@ -227,9 +227,16 @@ template <typename T>
             throw "Shapes mismach";
         }
 
+        if (this->ordering() == other->ordering() && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == other->ews()) {
 #pragma omp parallel for simd schedule(guided)
-        for (int e = 0; e < this->lengthOf(); e++) {
-            target->putIndexedScalar(e, func(this->getIndexedScalar(e), other->getIndexedScalar(e)));
+            for (int e = 0; e < this->lengthOf(); e++)
+                target->_buffer[e] = func(this->_buffer[e], other->_buffer[e]);
+        } else {
+
+#pragma omp parallel for schedule(guided)
+            for (int e = 0; e < this->lengthOf(); e++) {
+                target->putIndexedScalar(e, func(this->getIndexedScalar(e), other->getIndexedScalar(e)));
+            }
         }
     }
 
@@ -238,9 +245,15 @@ template <typename T>
         if (target == nullptr)
             target = this;
 
+        if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
 #pragma omp parallel for simd schedule(guided)
-        for (int e = 0; e < this->lengthOf(); e++)
-            target->putIndexedScalar(e, func(this->getIndexedScalar(e)));
+            for (int e = 0; e < this->lengthOf(); e++)
+                target->_buffer[e] = func(this->_buffer[e]);
+        } else {
+#pragma omp parallel for schedule(guided)
+            for (int e = 0; e < this->lengthOf(); e++)
+                target->putIndexedScalar(e, func(this->getIndexedScalar(e)));
+        }
     }
 #endif
 
@@ -800,7 +813,7 @@ template <typename T>
         else
             printf("[");
         for (Nd4jIndex e = 0; e < limit; e++) {
-            printf("%f", this->getScalar(e));
+            printf("%f", (float) this->getScalar(e));
             if (e < limit - 1)
                 printf(", ");
         }
@@ -818,7 +831,7 @@ template <typename T>
         else
             printf("[");
         for (Nd4jIndex e = 0; e < limit; e++) {
-            printf("%f", this->getIndexedScalar(e));
+            printf("%f", (float) this->getIndexedScalar(e));
             if (e < limit - 1)
                 printf(", ");
         }
