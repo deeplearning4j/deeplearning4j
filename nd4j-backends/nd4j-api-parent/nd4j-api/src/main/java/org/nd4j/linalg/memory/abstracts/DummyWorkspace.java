@@ -75,6 +75,11 @@ public class DummyWorkspace implements MemoryWorkspace {
         throw new UnsupportedOperationException("DummyWorkspace shouldn't be used for allocation");
     }
 
+    @Override
+    public long getGenerationId() {
+        return 0L;
+    }
+
     /**
      * This method notifies given Workspace that new use cycle is starting now
      *

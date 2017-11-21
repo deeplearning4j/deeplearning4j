@@ -46,6 +46,8 @@ public interface DataBuffer extends Serializable {
         FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE, THRESHOLD, FTHRESHOLD
     }
 
+    long getGenerationId();
+
 
     /**
      * Direct (off heap) and heap allocation

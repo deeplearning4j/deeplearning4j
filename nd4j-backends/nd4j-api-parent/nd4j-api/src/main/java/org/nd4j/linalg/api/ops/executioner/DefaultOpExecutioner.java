@@ -426,9 +426,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
             val ws = x.data().getParentWorkspace();
 
             if (!ws.isScopeActive()) {
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer" +
-                        " from workspace \"" + ws.getId() + "\"");
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
             }
+
+            if (ws.getGenerationId() != x.data().getGenerationId())
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+
         }
 
         val y = op.y();
@@ -436,9 +439,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             val ws = y.data().getParentWorkspace();
 
             if (!ws.isScopeActive()) {
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer" +
-                        " from workspace \"" + ws.getId() + "\"");
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
             }
+
+            if (ws.getGenerationId() != y.data().getGenerationId())
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
         }
 
         val z = op.z();
@@ -446,9 +451,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             val ws = z.data().getParentWorkspace();
 
             if (!ws.isScopeActive()) {
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer" +
-                        " from workspace \"" + ws.getId() + "\"");
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
             }
+
+            if (ws.getGenerationId() != z.data().getGenerationId())
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
         }
     }
 

@@ -105,6 +105,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected File tempFile;
 
+    protected AtomicLong generationId = new AtomicLong(0);
+
     // this memory manager implementation will be used to allocate real memory for this workspace
 
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration) {
@@ -185,6 +187,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 written += buffer.length;
             }
         }
+    }
+
+    @Override
+    public long getGenerationId() {
+        return generationId.get();
     }
 
     /**
@@ -695,6 +702,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         cycleAllocations.set(0);
         disabledCounter.set(0);
+
+        generationId.incrementAndGet();
 
         return this;
     }
