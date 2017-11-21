@@ -24,11 +24,15 @@ That being the case, who do we want to invent strong AI: a a nation-state, a for
 
 What certain research groups are doing is creating a situation where they may be able to create strong AI under controlled conditions before anyone else. They are operating under the assumption that they can create and manage AI more responsibly than a nation-state pursuing military dominance or a company pursuing profit, since the first will produce autonomous killer drones and the second will learn to manipulate its customers to maximize cash flow. 
 
+## A Quiet Period
+
 There will be discoveries that these AI research groups do not publish until they're sure that they can make those discoveries safe for wider use. 
 
 So we can anticipate a quiet period, a window of reprieve, where the researchers don't talk about some of their most important work. They’ll keep a lid on it. And during that time, they will try to figure out how to make strong AI safe for humans. They may have a two-year window of respite from the moment they create strong AI under controlled conditions until its emergence in someone else's garage. 
 
 We can find a good example of this in the history of cryptography. Think about how the UK's NSA equivalent, GCHQ, [invented RSA and public-private keys](https://en.wikipedia.org/wiki/James_H._Ellis#Invention_of_non-secret_encryption) in the early 70s, but kept them a secret. Then the Stanford and MIT groups discovered those same things independently, a few years later, and by the late 70s had published their ideas for the world to read. We're talking that kind of situation. Now imagine that instead of a system of cryptography, we're talking about a superintelligence. 
+
+## Huge Compute 
 
 The strongest AI we have now, coming out of DeepMind, OpenAI, Google Brain and various universities, is being produced with the use of massive computation. Huge balls of compute that only a few researchers and organizations have access to. Compute is to AI what plutonium is to nuclear weapons.  
 
