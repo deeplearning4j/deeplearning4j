@@ -8,6 +8,7 @@ layout: default
 Many of the top AI researchers are worried about two things:
 
 1) the effect of large-scale automation on jobs, society and politics
+
 2) the creation of strong AI and its potential to destroy humanity
 
 This article will focus on the second worry. Some researchers fear strong AI, but they are not always able to voice their concerns because of their employers.
