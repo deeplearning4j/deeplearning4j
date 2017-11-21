@@ -39,3 +39,13 @@ The strength of AI is directly proportional to the capacity of our hardware. Tha
 So every cycle of Moore's Law brings us a step closer to strong AI, the thing that these research groups want to keep inside the jar. And even if Moore's Law slows down, distributed computing allows us to assemble massive arrays of chips to work together as ad hoc supercomputers. DeepMind, OpenAI and others rely on that enormous computational power to conduct their research and produce algorithms like AlphaGo. 
 
 These research groups hope that under controlled conditions they can find a way to make strong AI safe, so that it doesn't proliferate and pursue its own ends to the detriment of humanity. They’re not wrong. 
+
+### <a name="beginner">More About Deep Learning</a>
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Word2Vec: Neural Word Embeddings](./word2vec)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs & Recurrent Networks](./lstm)
+* [Neural Networks & Regressions](./logistic-regression)
+* [Convolutional Networks (CNNs)](./convolutionalnets)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
