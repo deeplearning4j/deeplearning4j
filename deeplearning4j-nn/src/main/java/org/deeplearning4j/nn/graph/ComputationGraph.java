@@ -1294,6 +1294,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void computeGradientAndScore() {
         synchronizeIterEpochCounts();
+
+        //Initialize the workspace (should be a no-op most of the time - but is necessary here if user calls
+        // computeGradientAndScore() before any fit() methods)
+        if(configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        }
+
+
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);

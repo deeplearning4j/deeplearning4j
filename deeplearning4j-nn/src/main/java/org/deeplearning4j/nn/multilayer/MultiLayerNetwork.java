@@ -2205,6 +2205,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public void computeGradientAndScore() {
+
+        //Initialize the workspace (should be a no-op most of the time - but is necessary here if user calls
+        // computeGradientAndScore() before any fit() methods)
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        }
+
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
             List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
