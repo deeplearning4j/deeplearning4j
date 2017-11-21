@@ -425,24 +425,30 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (x != null && x.isAttached()) {
             val ws = x.data().getParentWorkspace();
 
-            if (!ws.isScopeActive())
-                throw new ND4JIllegalStateException("Op [" + op.opName() +"] X argument uses leaked workspace pointer");
+            if (!ws.isScopeActive()) {
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer" +
+                        " from workspace \"" + ws.getId() + "\"");
+            }
         }
 
         val y = op.y();
-        if (y != null && x.isAttached()) {
+        if (y != null && y.isAttached()) {
             val ws = y.data().getParentWorkspace();
 
-            if (!ws.isScopeActive())
-                throw new ND4JIllegalStateException("Op [" + op.opName() +"] Y argument uses leaked workspace pointer");
+            if (!ws.isScopeActive()) {
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer" +
+                        " from workspace \"" + ws.getId() + "\"");
+            }
         }
 
         val z = op.z();
         if (z != null && z.isAttached()) {
             val ws = z.data().getParentWorkspace();
 
-            if (!ws.isScopeActive())
-                throw new ND4JIllegalStateException("Op [" + op.opName() +"] Z argument uses leaked workspace pointer");
+            if (!ws.isScopeActive()) {
+                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer" +
+                        " from workspace \"" + ws.getId() + "\"");
+            }
         }
     }
 
