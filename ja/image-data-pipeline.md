@@ -5,11 +5,11 @@ layout: default
 
 # 画像用等にデータパイプラインをカスタマイズ
 
-Deeplearning4jのサンプルに使用するベンチマークデータセットは抽象化されているため、データパイプラインに全く障害は発生しません。しかし、実際のユーザーが最初に手を付けるのは秩序のない生データであるため、事前処理やベクトル化を行い、ニューラルネットワークがクラスタリングや分類できるよう訓練をする必要があります。 
+Deeplearning4jのサンプルに使用するベンチマークデータセットは抽象化されているため、データパイプラインに全く障害が発生しません。しかし、実際のユーザーが最初に手を付けるのは秩序のない生データであるため、事前処理やベクトル化を行い、ニューラルネットワークがクラスタリングや分類できるよう訓練をする必要があります。 
 
-*DataVec*は、弊社の機械学習ベクトル化ライブラリで、ニューラルネットワークが学習できるデータを準備するための方法をカスタマイズするのに役に立ちます。（Datavec Javadocへは[こちら](http://deeplearning4j.org/datavecdoc/)からアクセスできます。）
+*DataVec*は、弊社の機械学習ベクトル化ライブラリで、ニューラルネットワークが学習できるデータを準備する方法をカスタマイズするのに役立ちます。（Datavec Javadocへは[こちら](http://deeplearning4j.org/datavecdoc/)からアクセスできます。）
 
-このチュートリアルは画像処理に関連したトピックを扱っています。ラベル生成、ベクトル化、画像を取り込むためのニューラルネットワークの設定について説明します。 
+このチュートリアルは画像処理に関連したいくつかの重要なトピックを扱っています。ラベル生成、ベクトル化、画像を取り込むためのニューラルネットワークの設定について説明します。 
 
 
 ## 説明ビデオ
@@ -26,17 +26,17 @@ Deeplearning4jのサンプルに使用するベンチマークデータセット
 
 ## ラベルの読み込み
 
-弊社のサンプルリポジトリにはをParentPathLabelGenerator使ったものがあります。クラスはImagePipelineExample.javaです。 
+弊社のサンプルリポジトリにはParentPathLabelGeneratorを使ったものがあります。クラスはImagePipelineExample.javaです。 
 
         File parentDir = new File(System.getProperty("user.dir"), "dl4j-examples/src/main/resources/DataExamples/ImagePipeline/");
-        //親ディレクトリの下位ディレクトリにある「対応する拡張子（allowed extensions）」を持つファイルはファイルをトレーニングとテスト用に分割するとき、再現を可能にするために乱数ジェネレーターが必要になります。
+        //親ディレクトリの下位ディレクトリにあり、「使用可能な拡張子（allowed extensions）」を持つファイル。Splitはファイルをトレーニングとテスト用に分割するとき、再現可能にするために乱数ジェネレーターが必要になります。
         FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
 
         //ラベルを手動で指定する必要はありません。このクラス（以下にインスタンス生成されたように）は
         //親ディレクトリを解析し、サブディレクトリ名をラベル/クラス名に使用します。
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 
-## <a name="record">データを反復し、レコードを読み込む</a>
+## <a name="record">データを反復処理し、レコードを読み込む</a>
 
 以下のコードを使って、生画像をDL4JとND4Jに対応したフォーマットに変換します。
 
@@ -48,11 +48,11 @@ Deeplearning4jのサンプルに使用するベンチマークデータセット
         // データパスを指し示します。 
         recordReader.initialize(new FileSplit(new File(parentDir)));
 
-RecordReaderはDatavecの中のクラスでバイト指向の入力をレコード指向（数字で固定された固有のIDでインデックスが付与された要素のコレクション）に変換するのを助けます。データのレコードへの変換はベクトル化のプロセスです。レコード自体はベクトルで、その各要素は特徴1つになります。
+RecordReaderはDatavecの中のクラスで、バイト指向の入力をレコード指向（数字で固定された固有のIDでインデックスが付与された要素のコレクション）に変換するのを助けます。データをレコードに変換するのはベクトル化のプロセスです。レコード自体はベクトルで、その各要素が一つの特徴になります。
 
 詳細は[JavaDoc](http://deeplearning4j.org/datavecdoc/org/datavec/image/recordreader/ImageRecordReader.html)をお読みください。 
 
-[ImageRecordReader](https://github.com/deeplearning4j/DataVec/blob/master/datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java)はRecordReaderのサブクラスで自動で28 x 28画素の画像を取り込むために構築されます。生成される画像の縦横の長さと等しくなるハイパーパラメターの`nIn`さえ必ず調節すれば、ImageRecordReaderに使ったパラメータを変更して自分用にカスタマイズされた画像の寸法に変更することができます。28*28の画像を取り入れるMultiLayerNetwork設定は`.nIn(28 * 28)`となります。
+[ImageRecordReader](https://github.com/deeplearning4j/DataVec/blob/master/datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java)はRecordReaderのサブクラスで28 x 28画素の画像を自動で取り込むために構築されます。生成される画像の縦と横の長さと等しくなるハイパーパラメターの`nIn`さえ必ず調節すれば、ImageRecordReaderに使ったパラメータを変更して自分用にカスタマイズされた画像の寸法に変更することができます。28*28の画像を取り入れるMultiLayerNetwork設定は`.nIn(28 * 28)`となります。
 
 LabelGeneratorが使用されれば、ImageRecordReaderへの呼び出しにはパラメータのlabelGeneratorが含まれます。
 `ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator)`
@@ -74,13 +74,13 @@ DataSetIteratorは各イテレーションにつき、新しいサンプルを1�
 
 ## モデルの設定
 
-以下はニューラルネットワークの設定の一例です。ハイパーパラメータの多くは、[NeuralNetConfiguration Class glossary](./neuralnet-configuration.html)に説明がありますので、ここでは一部の重要な特徴についてのみまとめます。
+以下はニューラルネットワークの設定の一例です。ハイパーパラメターの多くは、[NeuralNetConfiguration Class glossary](./neuralnet-configuration.html)に説明がありますので、ここでは一部の重要な特徴についてのみまとめます。
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 
-* *optimizationAlgo*はLBFGSよりLINE_GRADIENT_DESCENTを頼りにします。 
-* 画像の各画素を入力ノードにするために*nIn*は784に設定します。画像の寸法が変更すれば（果画素の総計がある程度変更）、nlnも変更しなければなりません。
-* *list*オペレータは4に設定。これは3つのRBM隠れ層と1つの出力層です。1つ以上のRBMがDBNになります。
+* *optimizationAlgo*はLBFGSよりLINE_GRADIENT_DESCENTに依存しています。 
+* 画像の各画素を入力ノードにするために*nIn*は784に設定します。画像の寸法が変更すれば（画素の総計がある程度変更）、nlnも変更しなければなりません。
+* *list*オペレータは4に設定。これは3つのRBM（制限付きボルツマンマシン）隠れ層と1つの出力層です。1つ以上のRBMがDBNになります。
 * **損失関数** は平均二乗誤差（RMSE）に設定。この損失関数は入力を適切に復元するためにネットワークのトレーニングに使用されます。 
 
 ## モデルの構築とトレーニング
@@ -100,7 +100,7 @@ DataSetIteratorは各イテレーションにつき、新しいサンプルを1�
 
 ## モデルのトレーニング
 
-データが読み込まれると、モデルの枠組みが構築されるので、モデルがデータに適合するようにトレーニングします。次にバッチサイズに基づくデータによって進めるためにデータのイテレータを呼び出します。毎回、バッチサイズに基づいて特定数のデータを返します。以下のコードはデータセットのイテレーターをループし、そのデータでトレーニングするためにモデルにfitを実行する方法を示したものです。
+データが読み込まれると、モデルの枠組みが構築されるので、モデルがデータに適合するようにトレーニングします。次にバッチサイズに基づくデータで進めるためにデータのイテレータを呼び出します。毎回、バッチサイズに基づいて特定数のデータを返します。以下のコードはデータセットのイテレーターをループし、そのデータでトレーニングするためにモデルにfitを実行する方法を示したものです。
 
         // トレーニング
         while(iter.hasNext()){
@@ -110,7 +110,7 @@ DataSetIteratorは各イテレーションにつき、新しいサンプルを1�
 
 ## モデルの評価
 
-モデルのトレーニングをした後、その性能のテストや評価をするためにデータを実行します。一般にデータセットを分割して交差検証によりモデルがこれまでに見たことのないデータを使用するのがいいでしょう。ここでは、どのように現在のイテレータを再設定し、評価対象を初期化し、性能の情報を得るためにどのようにしてそこにデータを実行するかをお見せします。
+モデルのトレーニングをした後、その性能をテストまたは評価するためにデータを実行します。一般に、モデルがこれまでに見たことのないデータを使用してデータセットを分割して交差検証を行うのがいいでしょう。ここでは、どのようにして現在のイテレータを再設定し、評価オブジェクトを初期化し、性能の情報を得るためにこの評価オブジェクトにデータを実行するのかを説明します。
 
         // テスト用に同じトレーニングデータを使用します。 
         
@@ -124,11 +124,10 @@ DataSetIteratorは各イテレーションにつき、新しいサンプルを1�
         
         System.out.println(eval.stats());
 
-交差検証を適用するその他の代替方法は、すべてのデータを読み込み、トレーニングセットとテストセットに分割することです。アイリスのデータセットの規模は大きすぎないため、すべてのデータを読み込み、分割することができます。しかし、多くのデータセットは規模が大きすぎます。このサンプルでの代替アプローチには以下のコードを使用します。
+交差検証を適用するための代替法は、すべてのデータを読み込み、トレーニングセットとテストセットに分割することです。アイリスのデータセットの規模は大きすぎないため、すべてのデータを読み込み、分割することができます。しかし、ニューラルネットワークの生成に使用されるデータセットの多くは大規模なものです。このサンプルでの代替アプローチには、以下のコードを使用してください。
 
         SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));
         DataSet train = testAndTrain.getTrain();
         DataSet test = testAndTrain.getTest();
 
-テストを分割して大きめのデータセットでトレーニングするには、テストとトレーニングの両方のデータセットをイテレートする必要があります。今のところはユーザーがそれをすることになっています。 
-
+大きめのデータセットをテストとトレーニングに分割するには、テストとトレーニングの両方のデータセットを反復処理する必要があります。今のところはユーザーがそれをすることになっています。 
