@@ -84,7 +84,7 @@ public class Sigmoid extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sigmoid";
+        return "Sigmoid";
     }
 
 

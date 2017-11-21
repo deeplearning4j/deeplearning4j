@@ -1,14 +1,8 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TIndex;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.tensorflow.framework.NodeDef;
 
 @Slf4j
 public class Concat extends DynamicCustomOp {
@@ -19,7 +13,7 @@ public class Concat extends DynamicCustomOp {
         return "concat";
     }
 
-    @Override
+ /*   @Override
     public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
         val tNode = buildBasicNode(node, graph);
 
@@ -64,7 +58,7 @@ public class Concat extends DynamicCustomOp {
         return tNode;
     }
 
-
+*/
     @Override
     public String onnxName() {
         return "Concat";
@@ -72,7 +66,7 @@ public class Concat extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "concat";
+        return "ConcatV2";
     }
 
 

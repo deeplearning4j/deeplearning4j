@@ -1,23 +1,21 @@
 package org.nd4j.imports.graphmapper;
 
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.opstate.OpStateEdge;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.*;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base implementation for importing a graph
@@ -27,6 +25,45 @@ import java.util.*;
  */
 @Slf4j
 public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> implements GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
+
+    /**
+     *
+     * @param inputIds the input ids for the node
+     *                  (based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}
+     * @param outputIds the output ids for the node
+     *                  {based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}}
+     * @param node the node to create the edge from
+     * @return
+     */
+    @Override
+    public OpStateEdge getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node) {
+        val opStateVertexIds = new String[inputIds.length + outputIds.length];
+        int idx = 0;
+        for(int i = 0; i < inputIds.length; i++) {
+            opStateVertexIds[idx++] = String.valueOf(inputIds[i]);
+        }
+
+        OpState opState = OpState.builder()
+                .opType(opTypeForNode(node))
+                .opName(getMappedOp(getOpType(node)).opName())
+                .build();
+
+
+        OpStateEdge opStateEdge = new OpStateEdge(inputIds,outputIds,opState,true);
+        return opStateEdge;
+    }
+
+
+    @Override
+    public Op.Type opTypeForNode(NODE_TYPE nodeDef) {
+        DifferentialFunction opWithTensorflowName = getMappedOp(getOpType(nodeDef));
+        if(opWithTensorflowName == null)
+            throw new NoOpNameFoundException("No op found with name " + getOpType(nodeDef));
+        Op.Type type = opWithTensorflowName.opType();
+        return type;
+
+    }
+
     /**
      *
      * @param graphFile
@@ -76,12 +113,27 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         importState.setNodeCount(0);
         importState.setSameDiff(diff);
         importState.setGraph(tfGraph);
-        Map<String, TENSOR_TYPE> variablesForGraph = variablesForGraph(tfGraph);
+        val variablesForGraph = variablesForGraph(tfGraph);
         importState.setVariables(variablesForGraph);
+        //map the names of the ndoes while accumulating the vertex ids
+        //for each variable
+        val indexMap = new HashMap<String,Integer>();
         for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
-            importState.getSameDiff().var(entry.getKey(),getNDArrayFromTensor(entry.getValue()));
+            val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
+            if(arr != null) {
+                val var = importState.getSameDiff().var(entry.getKey(),arr);
+                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+            }
+            else {
+                val var = importState.getSameDiff().var(entry.getKey(),getShapeFromTensor(entry.getValue()));
+                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+            }
 
         }
+
+        //handle mapping vertex ids properly
+        importState.setVertexIdMap(inputsAndOutputsForGraph(tfGraph,indexMap));
+
 
         val tfNodesList = getNodeList(tfGraph);
         for (NODE_TYPE tfNode : tfNodesList) {
@@ -92,21 +144,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
     }
 
 
-    /**
-     * This method returns intermediate representation from TF GraphDef instance
-     *
-     * @return
-     */
-    public  TGraph importIntermediate(GRAPH_TYPE tfGraph) {
-        TGraph intermediateGraph = new TGraph();
-        val tfNodesList = getNodeList(tfGraph);
 
-        // we're just starting our recursive fn here
-        traverseList(intermediateGraph, tfNodesList, 0);
-
-        return intermediateGraph;
-    }
-
+/*
     protected  TIndex indexByName(@NonNull TGraph graph, @NonNull String value) {
         if (value.contains(":")) {
             val split = value.split(":");
@@ -140,14 +179,14 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         log.info("Adding 2 new scopes for WHILE {}", whileNode.getId());
 
 
-        /**
-         * Plan is simple:
-         * 1) we read all declarations of variables used within loop
-         * 2) we set up conditional scope
-         * 3) we set up body scope
-         * 4) ???
-         * 5) PROFIT!
-         */
+        *//**
+     * Plan is simple:
+     * 1) we read all declarations of variables used within loop
+     * 2) we set up conditional scope
+     * 3) we set up body scope
+     * 4) ???
+     * 5) PROFIT!
+     *//*
 
 
 
@@ -390,61 +429,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         log.info("-------------------------------------------");
 
         return whileNode;
-    }
-
-
-    /**
-     * This method converts given TF
-     * @param tfGraph
-     * @return
-     */
-    @Override
-    public  SameDiff mapGraph(GRAPH_TYPE tfGraph) {
-        SameDiff diff = SameDiff.create();
-
-        Set<String> skipList = new HashSet<>();
-        val tfNodesList = getNodeList(tfGraph);
-        for (NODE_TYPE tfNode : tfNodesList) {
-            log.debug("Node opName: {}; Op: {};", getName(tfNode), getOpType(tfNode));
-
-            if (getOpType(tfNode).equalsIgnoreCase("enter") || (skipList.contains(getName(tfNode)))) {
-                continue;
-            }
-
-
-            boolean isConst = getOpType(tfNode).equalsIgnoreCase("const");
-            boolean isVar = getOpType(tfNode).startsWith("VariableV");
-            boolean isPlaceholder = getOpType(tfNode).startsWith("Placeholder");
-
-            Map<String, ATTR_TYPE> attributes = getAttrMap(tfNode);
-            if (isConst || isVar || isPlaceholder) {
-                if (attributes.containsKey(valueKey())) {
-                    // value of?
-                    ATTR_TYPE value = attributes.get(valueKey());
-
-                    //DataType opType = value.
-                    TENSOR_TYPE tensor = getTensorFrom(value);
-                    log.debug("Dtype: {}", dataTypeForTensor(tensor));
-
-                    INDArray array = getNDArrayFromTensor(tensor);
-                    SDVariable var = diff.var(getName(tfNode), array);
-
-
-                }
-
-                else  if (attributes.containsKey(shapeKey())) {
-                    ATTR_TYPE shape = attributes.get(shapeKey());
-                    int[] shapeArr = getShapeFromAttr(shape);
-                    SDVariable sdVariable = diff.var(getName(tfNode), shapeArr);
-
-                }
-            }
-        }
-        return diff;
-    }
+    }*/
 
 
 
+
+/*
     protected  TOp importNode(@NonNull TGraph intermediateGraph, @NonNull NODE_TYPE tfNode, int nodeId) {
         val tNode = asIntermediate(tfNode, intermediateGraph, getAttrMap(tfNode));
         return tNode;
@@ -523,14 +513,14 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
 
         return variable;
-    }
+    }*/
 
     @Override
     public boolean validTensorDataType(TENSOR_TYPE tensorType) {
         return dataTypeForTensor(tensorType) != DataBuffer.Type.UNKNOWN;
     }
 
-    protected void traverseList(@NonNull TGraph intermediateGraph, @NonNull List<NODE_TYPE> tfNodesList, int offset) {
+    /*protected void traverseList(@NonNull TGraph intermediateGraph, @NonNull List<NODE_TYPE> tfNodesList, int offset) {
         for (int e = offset; e < tfNodesList.size(); e++) {
             val tfNode = tfNodesList.get(e);
 
@@ -569,9 +559,9 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
                 if (isNewLoop) {
                     log.info("NEW LOOP --------------------");
-                    /*
+                    *//*
                         on while/enter we'll open 2 scopes: 1st scope for condition, 2nd scope for loop body
-                    */
+                    *//*
                     val tNode = importWhileLoop(intermediateGraph, e, tfNodesList);
                     intermediateGraph.addNode(tNode);
 
@@ -586,5 +576,5 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 intermediateGraph.addNode(tNode);
             }
         }
-    }
+    }*/
 }

@@ -98,7 +98,7 @@ public class LessThan extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+      return "Less";
     }
 
 

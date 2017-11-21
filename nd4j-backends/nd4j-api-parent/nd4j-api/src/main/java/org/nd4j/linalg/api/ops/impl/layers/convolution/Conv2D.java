@@ -7,11 +7,11 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ import java.util.Map;
 @Getter
 public class Conv2D extends DynamicCustomOp {
 
-   protected  Conv2DConfig conv2DConfig;
+    protected  Conv2DConfig conv2DConfig;
 
     @Builder(builderMethodName = "builder")
     public Conv2D(SameDiff sameDiff,
@@ -58,49 +58,73 @@ public class Conv2D extends DynamicCustomOp {
 
 
     @Override
-    public String opName() {
-        return "conv2d";
-    }
-
-    @Override
-    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
-        return super.asIntermediateRepresentation(node, graph, attributesForNode);
-    }
-
-    @Override
-    public TOp asIntermediateRepresentation(NodeDef tfNode, TGraph graph) {
-        val tNode = buildBasicNode(tfNode, graph);
-
-        val aStrides = tfNode.getAttrOrThrow("strides");
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        val aStrides = nodeDef.getAttrOrThrow("strides");
         val tfStrides = aStrides.getList().getIList();
         val sY = tfStrides.get(1);
         val sX = tfStrides.get(2);
 
-        val aPadding = tfNode.getAttrOrDefault("padding", null);
+        val aPadding = nodeDef.getAttrOrDefault("padding", null);
 
         val paddingMode = aPadding.getS().toStringUtf8();
 
-        // we know that second input to conv2d is weights array
-        val weightsIndex = tNode.getInputs().get(1);
-        val variable = graph.getVariableSpace().getVariable(weightsIndex);
-
-        val kY = variable.getArray().size(0);
-        val kX = variable.getArray().size(1);
-
-        variable.setArray(variable.getArray().permute(3, 2, 0, 1).dup('c'));
+        //val tensorProto = mapper.getTensorFrom(attributesForNode.get("input"),graph);
+        // val kY =tensorProto.getTensorShape().getDim(0).getSize();
+        //val kX = tensorProto.getTensorShape().getDim(1).getSize();
+        val kY = nodeDef.getAttrOrThrow("shape").getShape().getDim(0).getSize();
+        val kX = nodeDef.getAttrOrThrow("shape").getShape().getDim(1).getSize();
+        //   variable.setArray(variable.getArray().permute(3, 2, 0, 1).dup('c'));
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
+        Conv2DConfig conv2DConfig = Conv2DConfig.builder()
+                .kh((int) kY)
+                .kw((int) kX)
+                .sx(sX.intValue())
+                .sy(sY.intValue())
+                .isSameMode(isSameMode)
+                .build();
+        this.conv2DConfig = conv2DConfig;
+        addArgs();
 
-        if (!isSameMode)
-            log.debug("Mode: {}", paddingMode);
-
-        log.debug("Conv2D: k: [{}, {}]; s: [{}, {}]; padding: {}", kY, kX, sY, sX,  paddingMode);
-
-        tNode.getOpState().setExtraBits(new int[] {kY, kX, sY.intValue(), sX.intValue(), 0, 0, 1, 1, isSameMode ? 1 : 0});
-
-        return tNode;
     }
 
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        val autoPad = attributesForNode.get("auto_pad");
+        val dilations = attributesForNode.get("dilations");
+        val dilationY = dilations.getIntsList().get(0);
+        val dilationX = dilations.getIntsList().get(1);
+        val group = attributesForNode.get("group");
+
+        val kernelShape = attributesForNode.get("kernel_shape");
+        val kY = kernelShape.getIntsList().get(0);
+        val kX = kernelShape.getIntsList().get(1);
+
+
+        val strides = attributesForNode.get("strides");
+        val sY = strides.getIntsList().get(0);
+        val sX = strides.getIntsList().get(1);
+        boolean isSameMode = autoPad.getS().toStringUtf8()
+                .equalsIgnoreCase("SAME");
+        Conv2DConfig conv2DConfig = Conv2DConfig.builder()
+                .dh(dilationY.intValue())
+                .dw(dilationX.intValue())
+                .kh(kY.intValue())
+                .kw(kX.intValue())
+                .sx(sX.intValue())
+                .sy(sY.intValue())
+                .isSameMode(isSameMode)
+                .build();
+        this.conv2DConfig = conv2DConfig;
+        addArgs();
+
+
+    }
+
+    @Override
+    public String opName() {
+        return "conv2d";
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

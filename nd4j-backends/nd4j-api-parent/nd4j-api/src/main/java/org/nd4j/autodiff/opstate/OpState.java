@@ -3,8 +3,6 @@ package org.nd4j.autodiff.opstate;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ops.Op;
 
 import java.io.Serializable;
@@ -24,7 +22,6 @@ public class OpState implements Serializable {
     private String opName;
     private int opNum;
     private Number scalarValue;
-    private String[] vertexIds;
     private String id;
     private int[] axes;
     private Object[] extraArgs;
@@ -91,7 +88,6 @@ public class OpState implements Serializable {
         result1 = 31 * result1 + (opType != null ? opType.hashCode() : 0);
         result1 = 31 * result1 + (opName != null ? opName.hashCode() : 0);
         result1 = 31 * result1 + (scalarValue != null ? scalarValue.hashCode() : 0);
-        result1 = 31 * result1 + Arrays.hashCode(vertexIds);
         result1 = 31 * result1 + (id != null ? id.hashCode() : 0);
         result1 = 31 * result1 + Arrays.hashCode(axes);
         result1 = 31 * result1 + Arrays.hashCode(extraArgs);

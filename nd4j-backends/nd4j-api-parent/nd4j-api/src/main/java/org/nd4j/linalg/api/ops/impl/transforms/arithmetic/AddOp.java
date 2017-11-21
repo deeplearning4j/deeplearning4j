@@ -81,7 +81,7 @@ public class AddOp extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "add";
+        return "Add";
     }
 
 

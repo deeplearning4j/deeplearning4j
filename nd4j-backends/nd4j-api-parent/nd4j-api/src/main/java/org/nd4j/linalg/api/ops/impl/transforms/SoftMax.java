@@ -109,7 +109,7 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "softmax";
+        return "Softmax";
     }
 
 

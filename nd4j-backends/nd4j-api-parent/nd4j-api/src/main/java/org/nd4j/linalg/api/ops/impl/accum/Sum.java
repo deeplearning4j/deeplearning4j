@@ -96,6 +96,6 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "reduce_sum";
+        return "Sum";
     }
 }

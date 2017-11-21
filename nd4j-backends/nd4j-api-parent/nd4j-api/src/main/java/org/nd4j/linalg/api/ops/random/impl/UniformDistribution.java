@@ -65,7 +65,7 @@ public class UniformDistribution extends BaseRandomOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        return "RandomUniform";
     }
 
 

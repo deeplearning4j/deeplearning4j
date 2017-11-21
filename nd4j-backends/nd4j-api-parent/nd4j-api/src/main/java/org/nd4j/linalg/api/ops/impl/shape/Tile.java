@@ -105,7 +105,7 @@ public class Tile extends ShapeOp {
 
     @Override
     public String tensorflowName() {
-        return "tile";
+        return "Tile";
     }
 
 

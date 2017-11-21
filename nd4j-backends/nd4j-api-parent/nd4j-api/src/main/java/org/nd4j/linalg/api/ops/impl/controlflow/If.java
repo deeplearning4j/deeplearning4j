@@ -9,13 +9,13 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
@@ -93,7 +93,6 @@ public class If extends DifferentialFunction implements CustomOp {
                 .opType(Op.Type.CONDITIONAL)
                 .inPlace(false)
                 .id(UUID.randomUUID().toString())
-                .vertexIds(opEdgeIds)
                 .build();
 
         this.sameDiff.graph().addEdge(inputEdges,vertexId,opState,true);
@@ -164,7 +163,6 @@ public class If extends DifferentialFunction implements CustomOp {
                 .opType(Op.Type.CONDITIONAL)
                 .inPlace(false)
                 .id(UUID.randomUUID().toString())
-                .vertexIds(opEdgeIds)
                 .build();
 
         parent.graph().addEdge(inputEdges,vertexId,opState,true);
@@ -228,24 +226,16 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
 
     }
 
-    @Override
-    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
-        return null;
-    }
 
-    @Override
-    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
-        return null;
-    }
 
     @Override
     public List<Integer> getIArguments() {

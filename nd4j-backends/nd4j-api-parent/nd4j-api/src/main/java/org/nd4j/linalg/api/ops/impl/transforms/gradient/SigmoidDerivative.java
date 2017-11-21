@@ -69,7 +69,7 @@ public class SigmoidDerivative extends BaseGradientOp  {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        return "SigmoidGrad";
     }
 
     @Override

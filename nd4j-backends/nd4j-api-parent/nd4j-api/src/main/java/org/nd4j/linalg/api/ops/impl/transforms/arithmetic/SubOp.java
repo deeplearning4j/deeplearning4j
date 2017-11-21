@@ -80,7 +80,7 @@ public class SubOp extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sub";
+        return "Sub";
     }
 
 

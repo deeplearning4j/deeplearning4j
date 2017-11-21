@@ -81,7 +81,7 @@ public class Identity extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "identity";
+        return "Identity";
     }
 
 

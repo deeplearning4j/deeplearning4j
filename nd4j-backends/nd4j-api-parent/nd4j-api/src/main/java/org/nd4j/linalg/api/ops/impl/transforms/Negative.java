@@ -81,7 +81,7 @@ public class Negative extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "neg";
+        return "Neg";
     }
 
     @Override

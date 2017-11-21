@@ -1,15 +1,17 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.*;
+import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -17,6 +19,7 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
@@ -36,6 +39,7 @@ import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -150,7 +154,6 @@ public class SameDiff {
                         new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
                         new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                         cloner.deepCloneDontCloneInstances(edge.getValue()),true);
-                newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
 
                 sameDiff.graph().addEdge(newEdge);
             }
@@ -163,7 +166,6 @@ public class SameDiff {
                         new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
                         new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                         cloner.deepCloneDontCloneInstances(edge.getValue()),true);
-                newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
                 sameDiff.graph().addEdge(newEdge);
 
             }
@@ -2845,8 +2847,6 @@ public class SameDiff {
                 sb.append("-");
 
 
-                if (variable.getOpState() != null)
-                    sb.append(Arrays.toString(variable.getOpState().getVertexIds()));
                 sb.append(",");
             }
         }
@@ -2879,8 +2879,6 @@ public class SameDiff {
                     sb.append("-");
                 }
 
-                if (getFunctionInput(variable).getOpState() != null)
-                    sb.append(Arrays.toString(getFunctionInput(variable).getOpState().getVertexIds()));
                 sb.append(",");
             }
         }
@@ -3538,6 +3536,17 @@ public class SameDiff {
 
 
     /**
+     * Update the {@link INDArray}
+     * ndarray for the given variable name
+     * @param variableName the variable to update
+     * @param arr the array to update with
+     */
+    public void updateVariable(String variableName,INDArray arr) {
+        val vertexId = getVariable(variableName).getVertexId();
+        updateArrayForVertexId(vertexId,arr);
+    }
+
+    /**
      * Update the opName for the variable
      * with the given vertex id
      * @param vertexId the vertex id to update
@@ -3550,5 +3559,172 @@ public class SameDiff {
 
     }
 
+
+
+
+
+    protected int asFlatNode(String name,@NonNull SameDiff scope, @NonNull FlatBufferBuilder bufferBuilder) {
+        int scopeName = bufferBuilder.createString(name);
+
+        int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                scopeName,
+                scopeName,
+                OpType.LOGIC,
+                10, // hardcoded value
+                0,
+                0,
+                (byte) 0,
+                0,
+                0,
+                0,
+                0,
+                -1,
+                0.0f, 0, 0);
+
+        return flatNode;
+    }
+
+    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder) {
+        log.info("Exporting node: [{}:<{}>]", node.opName(), node.opName());
+
+        float[] extras = node.getOpState().getExtraArgs() != null ? new float[node.getOpState().getExtraArgs().length] : new float[0];
+        for (int e = 0; e < extras.length; e++) {
+            extras[e] = ((Number) node.getOpState().getExtraArgs()[e]).floatValue();
+        }
+
+        val inPaired = new ArrayList<Integer>();
+        int e = 0;
+        for (val index: node.args())
+            inPaired.add(IntPair.createIntPair(bufferBuilder, index.args()[0].getVertexId()[0], index.getVertexId()[0]));
+
+        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
+        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
+        int nodesOut = FlatNode.createOutputVector(bufferBuilder, node.getVertexId());
+        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+        int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, node.getOpState().getOpType() == Op.Type.CUSTOM && node.getOpState().getExtraBits() != null ? node.getOpState().getExtraBits() : new int[]{});
+        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpState().getAxes() != null ? node.getOpState().getAxes() : new int[]{});
+        int fname = bufferBuilder.createString(node.opName());
+        int scopeName = bufferBuilder.createString("");
+
+        if (node.getOpState().getOpType() == null)
+            log.warn("Null-op node: {}", node);
+
+        int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                node.getVertexId()[0],
+                fname,
+                getFlatOpType(node.getOpState().getOpType()),
+                getOpNum(node.getOpState().getOpName(), node.getOpState().getOpType()),
+                nodesIn,
+                nodesInPaired,
+                (byte) 0,
+                nodesOut,
+                extraz,
+                integerArgs,
+                dimensions,
+                -1,
+                node.getOpState().getOpType() == Op.Type.SCALAR ? node.getOpState().getScalarValue().floatValue() : 0.0f, 0, scopeName);
+
+        return flatNode;
+    }
+
+    public ByteBuffer asFlatBuffers() {
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
+
+        val flatVariables = new ArrayList<Integer>();
+        val flatOffsets = new ArrayList<Integer>();
+        val flatNodes = new ArrayList<Integer>();
+
+        // first of all we build VariableSpace dump
+        for (val variable: variables()) {
+            log.info("Exporting variable: [{}]", variable.getVarName());
+
+
+            if (variable.getArr() == null) {
+                if (variable.getShape() == null)
+                    throw new ND4JIllegalStateException("Both array and shape are NULL");
+                updateVariable(variable.getVarName(),Nd4j.create(variable.getShape()));
+            }
+
+
+            val arr = variable.getArr();
+
+
+            int name = bufferBuilder.createString(variable.getVarName());
+            int values = FlatVariable.createValuesVector(bufferBuilder, arr.data().asFloat());
+            int shape = FlatVariable.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, variable.getVertexId()[0], name, shape, values, -1);
+            flatVariables.add(flatVariable);
+
+        }
+
+
+
+        // we're dumping scopes now
+        for (val scope: sameDiffFunctionInstances.entrySet()) {
+            flatNodes.add(asFlatNode(scope.getKey(),scope.getValue(), bufferBuilder));
+
+            // converting all ops from node
+            for (val node: scope.getValue().variables()) {
+                flatNodes.add(asFlatNode(node, bufferBuilder));
+            }
+        }
+
+
+
+        int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
+        int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
+        int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
+
+        val configuration = ExecutorConfiguration.builder()
+                .outputMode(org.nd4j.autodiff.execution.conf.OutputMode.IMPLICIT)
+                .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
+                .profilingMode(OpExecutioner.ProfilingMode.DISABLED)
+                .gatherTimings(true)
+                .build();
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
+        bufferBuilder.finish(fg);
+
+        return bufferBuilder.dataBuffer();
+    }
+
+    public static long getOpNum(String name, Op.Type type) {
+        if (type == Op.Type.LOOP ) {
+            return 0;
+        } else if (type == Op.Type.RETURN) {
+            return 40;
+        } else if (type == Op.Type.IF || type == Op.Type.CONDITIONAL) {
+            return 10;
+        } else if (type == Op.Type.CUSTOM)
+            return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+        else
+            return (long) Nd4j.getOpFactory().getOpNumByName(name);
+    }
+
+
+    public static byte getFlatOpType(Op.Type type) {
+        switch (type) {
+            case SCALAR:
+                return OpType.SCALAR;
+            case BROADCAST:
+                return OpType.BROADCAST;
+            case TRANSFORM:
+            case SPECIAL:
+                return OpType.TRANSFORM;
+            case REDUCE:
+                return OpType.ACCUMULATION;
+            case INDEXREDUCE:
+                return OpType.INDEX_ACCUMULATION;
+            case LOOP:
+                return OpType.LOGIC;
+            case RETURN:
+                return OpType.LOGIC;
+            case CUSTOM:
+                return OpType.CUSTOM;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
+    }
 
 }

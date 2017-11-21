@@ -1,11 +1,11 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class TensorArrayWriteV3 extends DifferentialFunction {
 
-    @Override
+ /*   @Override
     public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
         val tNode = buildBasicNode(node, graph);
 
@@ -49,14 +49,14 @@ public class TensorArrayWriteV3 extends DifferentialFunction {
         return tNode;
     }
 
-    @Override
+    */@Override
     public String onnxName() {
-        return null;
+       throw new NoOpNameFoundException("No onnx op name found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "tensorarraywritev3";
+        return "TensorArrayWriteV3";
     }
 
     @Override
@@ -67,7 +67,7 @@ public class TensorArrayWriteV3 extends DifferentialFunction {
 
     @Override
     public String toString() {
-        return null;
+        return opName();
     }
 
     @Override
@@ -76,12 +76,12 @@ public class TensorArrayWriteV3 extends DifferentialFunction {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
 
     }
 }

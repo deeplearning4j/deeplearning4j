@@ -81,7 +81,7 @@ public class MulOp extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "mul";
+        return "Mul";
     }
 
 

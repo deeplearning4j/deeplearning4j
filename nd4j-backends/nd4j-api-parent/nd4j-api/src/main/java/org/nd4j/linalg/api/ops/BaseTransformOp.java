@@ -19,17 +19,15 @@
 
 package org.nd4j.linalg.api.ops;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.LinAlgExceptions;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
@@ -183,49 +181,17 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
-        super.initFromTensorFlow(nodeDef, initWith);
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+
 
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
-        super.initFromOnnx(node, initWith);
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        super.initFromOnnx(node, initWith, attributesForNode, graph);
 
     }
 
-    @Override
-    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
-        val tNode = buildBasicNode(node, graph);
-        return returnIntermediateRepresentation(tNode,graph);
-
-    }
-
-
-
-    /**
-     * This method returns given TF node as TOp
-     *
-     * @return
-     */
-    @Override
-    public TOp asIntermediateRepresentation(@NonNull NodeDef node, @NonNull TGraph graph) {
-        val tNode = buildBasicNode(node, graph);
-        return returnIntermediateRepresentation(tNode,graph);
-    }
-
-    private TOp returnIntermediateRepresentation(TOp tNode,TGraph graph) {
-        /**
-         * 2 options here. We either have specific dimension, or not.
-         * If not - that'll be reduceScalar, if yes - there will be reduceAlongDimension
-         */
-
-        log.debug("TOp inputs: {}", tNode.getInputs());
-        if( tNode.getInputs().size() > 1) {
-            val shapeIndex = tNode.getInputs().remove(1);
-            val variable = graph.getVariableSpace().getVariable(shapeIndex);
-        }
-
-        return tNode;
-    }
 }

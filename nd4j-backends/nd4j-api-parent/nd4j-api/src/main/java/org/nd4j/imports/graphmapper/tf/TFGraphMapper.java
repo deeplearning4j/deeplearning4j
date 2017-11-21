@@ -1,22 +1,20 @@
 package org.nd4j.imports.graphmapper.tf;
 
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DefaultOpConverter;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.*;
 
@@ -32,27 +30,12 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,TensorProto> {
+@Slf4j
+public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,NodeDef> {
     private Set<String> seenNodes = new HashSet<>();
     public final static String VALUE_ATTR_KEY = "value";
     public final static String DATA_TYPE_KEY = "dtype";
     public final static String SHAPE_KEY = "shape";
-
-
-    @Override
-    public String valueKey() {
-        return VALUE_ATTR_KEY;
-    }
-
-    @Override
-    public String shapeKey() {
-        return SHAPE_KEY;
-    }
-
-    @Override
-    public String dTypeKey() {
-        return DATA_TYPE_KEY;
-    }
 
     @Override
     public int[] getShapeFromAttr(AttrValue attr) {
@@ -90,17 +73,17 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
 
     @Override
     public boolean hasShape(NodeDef nodeDef) {
-        return nodeDef.containsAttr(shapeKey());
+        return nodeDef.containsAttr(SHAPE_KEY);
     }
 
     @Override
     public int[] getShape(NodeDef nodeDef) {
-        return getShapeFromAttr(nodeDef.getAttrOrThrow(shapeKey()));
+        return getShapeFromAttr(nodeDef.getAttrOrThrow(SHAPE_KEY));
     }
 
     @Override
-    public INDArray getArrayFrom(NodeDef nodeDef) {
-        return getNDArrayFromTensor(getAttrMap(nodeDef).get(VALUE_ATTR_KEY).getTensor());
+    public INDArray getArrayFrom(NodeDef nodeDef, GraphDef graph) {
+        return getNDArrayFromTensor(nodeDef.getName(),nodeDef, graph);
     }
 
     @Override
@@ -108,6 +91,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
         return nodeDef.getOp();
     }
 
+    /**
+     *
+     * @param graphDef
+     * @return
+     */
     @Override
     public List<NodeDef> getNodeList(GraphDef graphDef) {
         return graphDef.getNodeList();
@@ -115,25 +103,106 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
 
 
     @Override
-    public Map<String, TensorProto> variablesForGraph(GraphDef graphDef) {
-        Map<String,TensorProto> ret = new HashMap<>();
-        for(NodeDef nodeDef : graphDef.getNodeList()) {
-            if(isVariableNode(nodeDef)) {
-               ret.put(nodeDef.getName(),getAttrMap(nodeDef).get(VALUE_ATTR_KEY).getTensor());
+    public Map<String, Integer> verticesForGraph(GraphDef graph, SameDiff sameDiff) {
+        //map the names of the ndoes while accumulating the vertex ids
+        //for each variable
+        val variablesForGraph = variablesForGraph(graph);
+        val indexMap = new HashMap<String,Integer>();
+        for(Map.Entry<String,NodeDef> entry : variablesForGraph.entrySet()) {
+            val var = sameDiff.var(entry.getKey(),getNDArrayFromTensor(entry.getKey(), entry.getValue(), graph));
+            indexMap.put(entry.getKey(),var.getVertexId()[0]);
+        }
+
+        return indexMap;
+    }
+
+    /**
+     *
+     * @param name the tensorflow or onnx name
+     * @return
+     */
+    @Override
+    public DifferentialFunction getMappedOp(String name) {
+        return DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(name);
+    }
+
+
+    @Override
+    public Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(GraphDef graph, Map<String, Integer> nodeNameToVertexId) {
+        val ret = new HashMap<String, Pair<int[], int[]>>(graph.getNodeCount());
+        val nodes = getNodeList(graph);
+        Map<String,List<Integer>> outputs = new HashMap<>();
+        Map<String,List<Integer>> inputs = new HashMap<>();
+        //map each node's outputs and inputs
+        for(val node : graph.getNodeList()) {
+            //simultaneously collect the ids for inputs and outputs
+            //incrementally building the list
+            for(int i = 0; i < node.getInputCount(); i++) {
+                val nodeInput = node.getInput(i);
+                if(!outputs.containsKey(nodeInput)) {
+                    List<Integer> newInputs = new ArrayList<>();
+                    val get = nodeNameToVertexId.get(nodeInput);
+                    if(get != null)
+                        newInputs.add(get);
+                    outputs.put(nodeInput,newInputs);
+                }
+                else {
+                    List<Integer> outputIds = outputs.get(nodeInput);
+                    val output = nodeNameToVertexId.get(nodeInput);
+                    if(output != null)
+                        outputIds.add(nodeNameToVertexId.get(nodeInput));
+
+                }
+
+                if(!inputs.containsKey(node.getName())) {
+                    List<Integer> put = new ArrayList<>();
+                    val result = nodeNameToVertexId.get(node.getName());
+                    if(result != null)
+                        put.add(result);
+                    inputs.put(node.getName(),put);
+                }
+                else {
+                    val put = inputs.get(node.getName());
+                    val result = nodeNameToVertexId.get(node.getName());
+                    if(result != null)
+                        put.add(result);
+                }
             }
         }
+
+
+        val keys = Sets.intersection(inputs.keySet(),outputs.keySet());
+        //collect the final result
+        for(val name : keys)  {
+            val inputList = inputs.get(name);
+            val outputList = outputs.get(name);
+            if(!inputList.isEmpty() && !outputList.isEmpty() && outputList.get(0) != null && inputList.get(0) != null) {
+                int[] inputIds = Ints.toArray(inputs.get(name));
+                int[] outputIds = Ints.toArray(outputs.get(name));
+                ret.put(name,Pair.of(inputIds,outputIds));
+            }
+
+
+        }
+
         return ret;
     }
 
     @Override
-    public Op.Type opTypeForNode(NodeDef nodeDef) {
-        DifferentialFunction opWithTensorflowName = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(nodeDef.getOp());
-        if(opWithTensorflowName == null)
-            throw new NoOpNameFoundException("No op found with name " + nodeDef.getOp());
-        Op.Type type = opWithTensorflowName.opType();
-        return type;
+    public Map<String, NodeDef> variablesForGraph(GraphDef graphDef) {
+        Map<String,NodeDef> ret = new HashMap<>();
+        for(NodeDef nodeDef : graphDef.getNodeList()) {
+            if(isVariableNode(nodeDef) || isPlaceHolder(nodeDef)
+                    || nodeDef.getOp().equalsIgnoreCase("const")
+                    && dataTypeForTensor(nodeDef) != DataBuffer.Type.UNKNOWN) {
+                ret.put(nodeDef.getName(),nodeDef);
+            }
+        }
 
+        return ret;
     }
+
+
 
     @Override
     public Message.Builder getNewGraphBuilder() {
@@ -148,24 +217,21 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
 
 
     @Override
-    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,TensorProto> importState) {
-        //log.debug("Node opName: {}; Op: {};", getName(tfNode), getOpType(tfNode));
-
+    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState) {
         if (shouldSkip(tfNode) || alreadySeen(tfNode)) {
             return;
         }
 
 
-        SameDiff diff = importState.getSameDiff();
-
+        val diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
             List<Integer> dimensions = new ArrayList<>();
             Map<String, AttrValue> attributes = getAttrMap(tfNode);
-            if (attributes.containsKey(valueKey())) {
-                diff.var(getName(tfNode),getArrayFrom(tfNode));
+            if (attributes.containsKey(VALUE_ATTR_KEY)) {
+                diff.var(getName(tfNode),getArrayFrom(tfNode,importState.getGraph()));
             }
-            else if (attributes.containsKey(shapeKey())) {
-                AttrValue shape = attributes.get(shapeKey());
+            else if (attributes.containsKey(SHAPE_KEY)) {
+                AttrValue shape = attributes.get(SHAPE_KEY);
                 int[] shapeArr = getShapeFromAttr(shape);
                 int dims = shapeArr.length;
                 if (dims > 0) {
@@ -182,30 +248,41 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
         }
 
         else {
+            val opName = tfNode.getOp();
+            val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
+            try {
+                val newInstance = differentialFunction.getClass().newInstance();
+                newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+                val indices = importState.getVertexIdMap().get(tfNode.getName());
+                if(indices != null) {
+                    val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
+                    diff.graph().addEdge(opStateEdge);
+                    diff.putFunction(indices.getRight(),newInstance);
+                }
+
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
 
         }
     }
 
     @Override
-    public DataBuffer.Type dataTypeForTensor(TensorProto tensorProto) {
-        switch(tensorProto.getDtype()) {
+    public DataBuffer.Type dataTypeForTensor(NodeDef tensorProto) {
+        val type = tensorProto.getAttrOrThrow("dtype").getType();
+        switch(type) {
             case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
             case DT_INT32:
             case DT_INT64: return DataBuffer.Type.INT;
             case DT_FLOAT: return DataBuffer.Type.FLOAT;
             case DT_BFLOAT16: return DataBuffer.Type.HALF;
-            default: throw new ND4JIllegalStateException("Unknown type " + tensorProto.getDtype());
+            default: return DataBuffer.Type.UNKNOWN;
         }
     }
 
-    @Override
-    public TOp asIntermediate(NodeDef nodeDef, TGraph intermediateGraph, Map<String, AttrValue> attributes) {
-        // first we try to use special converters
-        DifferentialFunction converter = DifferentialFunctionClassHolder.getInstance().getInstance(nodeDef.getOp().toLowerCase());
-        if(converter == null)
-            converter = DifferentialFunctionClassHolder.getInstance().getInstance(DefaultOpConverter.getInstance().opName());
-        return converter.asIntermediateRepresentation(nodeDef, intermediateGraph);
-    }
+
 
     @Override
     public String getAttrValueFromNode(NodeDef nodeDef, String key) {
@@ -228,17 +305,21 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
     }
 
     @Override
-    public  INDArray getNDArrayFromTensor(TensorProto tfTensor) {
+    public  INDArray getNDArrayFromTensor(String tensorName, NodeDef node, GraphDef graph) {
         int[] arrayShape = null;
         List<Integer> dimensions = new ArrayList<>();
-
+        //placeholder of some kind
+        if(!node.getAttrMap().containsKey("value")) {
+            return null;
+        }
+        val tfTensor = node.getAttrOrThrow("value").getTensor();
         // building shape first
         int dims = tfTensor.getTensorShape().getDimCount();
-        if (dims > 0) {
-            // even vector is 2d in nd4j
-            if (dims == 1)
-                dimensions.add(1);
-
+        if(dims == 1) {
+            dimensions.add(1);
+            dimensions.add( (int) Math.max(1,tfTensor.getTensorShape().getDim(0).getSize()));
+        }
+        else {
             for (int e = 0; e < dims; e++) {
                 // TODO: eventually we want long shapes :(
                 int dim = (int) tfTensor.getTensorShape().getDim(e).getSize();
@@ -247,11 +328,17 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
             }
         }
 
+
         arrayShape = Ints.toArray(dimensions);
 
         if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
             // valueOf
-            if (tfTensor.getIntValCount() == 1) {
+            if (tfTensor.getIntValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if(tfTensor.getIntValCount() < 1)
+                    return Nd4j.scalar(0.0);
+
+                //should be scalar otherwise
                 int val = tfTensor.getIntVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
@@ -285,7 +372,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_FLOAT) {
-            if (tfTensor.getFloatValCount() == 1) {
+            if (tfTensor.getFloatValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if(tfTensor.getFloatValCount() < 1)
+                    return Nd4j.scalar(0.0);
+
+
                 float val = tfTensor.getFloatVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
@@ -314,7 +406,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
-            if (tfTensor.getDoubleValCount() == 1) {
+            if (tfTensor.getDoubleValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if(tfTensor.getDoubleValCount() < 1)
+                    return Nd4j.scalar(0.0);
+
                 double val = tfTensor.getDoubleVal(0);
                 INDArray array = Nd4j.scalar(val);
                 return array;
@@ -343,7 +439,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
-            if (tfTensor.getInt64ValCount() == 1) {
+            if (tfTensor.getInt64ValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if(tfTensor.getDoubleValCount() < 1)
+                    return Nd4j.scalar(0.0);
+
                 double val = (double) tfTensor.getInt64Val(0);
                 INDArray array = Nd4j.scalar(val);
                 return array;
@@ -368,15 +468,16 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,Te
     }
 
     @Override
-    public int[] getShapeFromTensor(TensorProto tensorProto) {
-        return shapeFromShapeProto(tensorProto.getTensorShape());
+    public int[] getShapeFromTensor(NodeDef tensorProto) {
+        if(tensorProto.containsAttr("shape")) {
+            return shapeFromShapeProto(tensorProto.getAttrOrThrow("shape").getShape());
+
+        }
+        else
+            return shapeFromShapeProto(tensorProto.getAttrOrThrow("value").getTensor().getTensorShape());
     }
 
-    @Override
-    public TensorProto getTensorFrom(AttrValue attrValue) {
-        TensorProto tensor = attrValue.getTensor();
-        return tensor;
-    }
+
 
     @Override
     public String getInputFromNode(NodeDef node, int index) {

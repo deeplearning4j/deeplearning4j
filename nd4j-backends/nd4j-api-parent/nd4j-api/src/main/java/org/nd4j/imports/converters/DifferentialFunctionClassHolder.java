@@ -29,7 +29,7 @@ public class DifferentialFunctionClassHolder {
      * @return
      */
     public DifferentialFunction getOpWithTensorflowName(String tensorflowName) {
-        return onnxNames.get(tensorflowName);
+        return tensorFlowNames.get(tensorflowName);
     }
 
     public DifferentialFunction getOpWithOnnxName(String onnxName) {

@@ -1,12 +1,13 @@
 package org.nd4j.imports.graphmapper;
 
 import com.google.protobuf.Message;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.OpStateEdge;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +27,47 @@ import java.util.Map;
  */
 public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
+    /**
+     * Get the vertices for a given graph
+     * based on the name
+     * @param graph the graph
+     * @param sameDiff
+     * @return
+     */
+    Map<String,Integer> verticesForGraph(GRAPH_TYPE graph, SameDiff sameDiff);
+
+    /**
+     * Get the mapped op name
+     * for a given op
+     * relative to the type of node being mapped.
+     * The input name should be based on a tensorflow
+     * type or onnx type, not the nd4j name
+     * @param name the tensorflow or onnx name
+     * @return  the function based on the values in
+     * {@link org.nd4j.imports.converters.DifferentialFunctionClassHolder}
+     */
+    DifferentialFunction getMappedOp(String name);
+
+    /**
+     * Create an {@link OpStateEdge}
+     * from the given input ids,
+     * output ids, and the node
+     * @param inputIds the input ids for the node
+     *                  (based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}
+     * @param outputIds the output ids for the node
+     *                  {based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}}
+     * @param node the node to create the edge from
+     * @return
+     */
+    OpStateEdge getOpStateEdge(int[] inputIds,int[] outputIds,NODE_TYPE node);
+
+    /**
+     *
+     * @param graph
+     * @param nodeNameToVertexId
+     * @return
+     */
+    Map<String,Pair<int[],int[]>> inputsAndOutputsForGraph(GRAPH_TYPE graph, Map<String, Integer> nodeNameToVertexId);
 
     /**
      * Get the variables for the given graph
@@ -63,22 +105,6 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     void mapNodeType(NODE_TYPE tfNode, ImportState<GRAPH_TYPE,TENSOR_TYPE> importState);
 
-    /**
-     * Map the graph type to an intermediate graph representation
-     * {@link TGraph}
-     * @param tfGraph the graph to map
-     * @return the mapped intermediate graph
-     */
-    TGraph importIntermediate(GRAPH_TYPE tfGraph);
-
-
-    /**
-     * Map a graph to a {@link SameDiff}
-     * instance
-     * @param graphType the graph to map
-     * @return the mapped samediff instance
-     */
-    SameDiff mapGraph(GRAPH_TYPE graphType);
 
     /**
      *
@@ -87,8 +113,6 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     DataBuffer.Type dataTypeForTensor(TENSOR_TYPE tensorType);
 
-
-    TOp asIntermediate(NODE_TYPE nodeType, TGraph intermediateGraph, Map<String, ATTR_TYPE> attributes);
 
     /**
      *
@@ -116,10 +140,13 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
     /**
      *
+     *
+     * @param tensorName
      * @param tensorType
+     * @param graph
      * @return
      */
-    INDArray getNDArrayFromTensor(TENSOR_TYPE tensorType);
+    INDArray getNDArrayFromTensor(String tensorName, TENSOR_TYPE tensorType, GRAPH_TYPE graph);
 
 
     /**
@@ -129,12 +156,6 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     int[] getShapeFromTensor(TENSOR_TYPE tensorType);
 
-    /**
-     * Get a tensor from the given attribute
-     * @param attrType
-     * @return
-     */
-    TENSOR_TYPE getTensorFrom(ATTR_TYPE attrType);
 
 
     /**
@@ -160,23 +181,6 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     boolean validTensorDataType(TENSOR_TYPE tensorType);
 
-    /**
-     * The attribute key for data type
-     * @return
-     */
-    String valueKey();
-
-    /**
-     * The attribute key for data type
-     * @return
-     */
-    String shapeKey();
-
-    /**
-     * The attribute key for data type
-     * @return
-     */
-    String dTypeKey();
 
     /**
      * Get the shape of the attribute value
@@ -240,9 +244,10 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     /**
      *
      * @param nodeType
+     * @param graph
      * @return
      */
-    INDArray getArrayFrom(NODE_TYPE nodeType);
+    INDArray getArrayFrom(NODE_TYPE nodeType, GRAPH_TYPE graph);
 
 
     String getOpType(NODE_TYPE nodeType);
@@ -254,6 +259,13 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     List<NODE_TYPE> getNodeList(GRAPH_TYPE graphType);
 
+
+    /**
+     * Import a graph as same diff
+     * from the given file
+     * @param graphFile
+     * @return
+     */
     SameDiff importGraph(File graphFile);
 
     /**

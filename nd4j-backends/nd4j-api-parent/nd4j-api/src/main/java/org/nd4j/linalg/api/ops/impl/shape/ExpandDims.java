@@ -108,7 +108,7 @@ public class ExpandDims extends ShapeOp {
 
     @Override
     public String tensorflowName() {
-        return "expand_dims";
+        return "ExpandDims";
     }
 
 

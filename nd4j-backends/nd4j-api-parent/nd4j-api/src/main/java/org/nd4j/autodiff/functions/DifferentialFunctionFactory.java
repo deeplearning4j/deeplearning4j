@@ -1047,7 +1047,6 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
                 .opType(opType).inPlace(op.isInPlace())
                 .opName(opName)
                 .id(opName + "(" + vertexIds + ")")
-                .vertexIds(sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds)))
                 .extraArgs(op.getExtraArgs())
                 .build();
 

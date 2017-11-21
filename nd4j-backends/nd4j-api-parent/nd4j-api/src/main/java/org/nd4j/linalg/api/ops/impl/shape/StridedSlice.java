@@ -19,21 +19,18 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reshape function
@@ -41,64 +38,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Slf4j
-public class StridedSlice extends ShapeOp {
+public class StridedSlice extends DynamicCustomOp {
 
-    private int[] shape;
-
-    public StridedSlice(SameDiff sameDiff, DifferentialFunction i_v, int[] shape) {
-        super(sameDiff, i_v, false);
-        this.shape = shape;
-    }
-
-    public StridedSlice(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs, int[] shape1) {
-        super(sameDiff, i_v, shape, false, extraArgs);
-        this.shape = shape1;
-    }
 
     public StridedSlice() {}
 
-    public StridedSlice(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public StridedSlice(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public StridedSlice(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public StridedSlice(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.reshape(shape));
-        }
-        else {
-            this.z = x.reshape(shape);
-        }
-
-    }
-
-
-    @Override
-    public int opNum() {
-        return 0;
-    }
 
     @Override
     public String opName() {
@@ -113,15 +57,13 @@ public class StridedSlice extends ShapeOp {
 
     @Override
     public String tensorflowName() {
-       return "strided_slice";
+       return "StridedSlice";
     }
 
 
-
     @Override
-    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
-        val tNode = buildBasicNode(node, graph);
-        /*
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+         /*
             strided slice typically takes 4 tensor arguments:
             0) input, it's shape determines number of elements in other arguments
             1) begin indices
@@ -129,7 +71,7 @@ public class StridedSlice extends ShapeOp {
             3) strides
          */
 
-        val inputBegin = tNode.getInputs().get(1);
+    /*    val inputBegin = tNode.getInputs().get(1);
         val inputEnd = tNode.getInputs().get(2);
         val inputStrides = tNode.getInputs().get(3);
 
@@ -137,11 +79,11 @@ public class StridedSlice extends ShapeOp {
         val iArgs = new ArrayList<Integer>();
 
         // bit masks for this slice
-        val bm = node.getAttrOrThrow("begin_mask");
-        val xm = node.getAttrOrThrow("ellipsis_mask");
-        val em = node.getAttrOrThrow("end_mask");
-        val nm = node.getAttrOrThrow("new_axis_mask");
-        val sm = node.getAttrOrThrow("shrink_axis_mask");
+        val bm = nodeDef.getAttrOrThrow("begin_mask");
+        val xm = nodeDef.getAttrOrThrow("ellipsis_mask");
+        val em = nodeDef.getAttrOrThrow("end_mask");
+        val nm = nodeDef.getAttrOrThrow("new_axis_mask");
+        val sm = nodeDef.getAttrOrThrow("shrink_axis_mask");
 
         iArgs.add((int) bm.getI());
         iArgs.add((int) xm.getI());
@@ -169,11 +111,9 @@ public class StridedSlice extends ShapeOp {
             // do nothing
         }
 
-        val bits = Ints.toArray(iArgs);
-        tNode.getOpState().setExtraBits(bits);
-
-        return tNode;
+        val bits = Ints.toArray(iArgs);*/
     }
+
 
 
 

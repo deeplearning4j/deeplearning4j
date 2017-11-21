@@ -95,7 +95,7 @@ public class Transpose extends ShapeOp {
 
     @Override
     public String tensorflowName() {
-        return "transpose";
+        return "Transpose";
     }
 
 

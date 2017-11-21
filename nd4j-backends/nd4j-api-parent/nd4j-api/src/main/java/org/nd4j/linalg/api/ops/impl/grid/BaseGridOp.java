@@ -1,8 +1,5 @@
 package org.nd4j.linalg.api.ops.impl.grid;
 
-import onnx.OnnxProto3;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
@@ -14,7 +11,6 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author raver119@gmail.com
@@ -65,10 +61,6 @@ public abstract class BaseGridOp extends BaseOp implements GridOp {
         return descriptor;
     }
 
-    @Override
-    public TOp asIntermediateRepresentation(OnnxProto3.NodeProto node, TGraph graph, Map<String, OnnxProto3.AttributeProto> attributesForNode) {
-        return null;
-    }
 
     @Override
     public String onnxName() {

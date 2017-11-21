@@ -1,11 +1,8 @@
 package org.nd4j.linalg.api.ops.impl.controlflow;
 
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.tensorflow.framework.NodeDef;
 
 /**
  * From the onnx docs:
@@ -58,8 +55,5 @@ public class Gather extends DynamicCustomOp {
         return Op.Type.CUSTOM;
     }
 
-    @Override
-    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
-        return super.asIntermediateRepresentation(node, graph);
-    }
+
 }

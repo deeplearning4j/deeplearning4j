@@ -95,7 +95,7 @@ public class Mmul extends TensorMmul {
 
     @Override
     public String tensorflowName() {
-        return "matmul";
+        return "MatMul";
     }
 
 

@@ -2,19 +2,26 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.primitives.Pair;
+import onnx.OnnxProto3;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * L2 loss function: i.e., sum of squared errors, L = sum_i (actual_i - predicted)^2
@@ -26,7 +33,7 @@ import java.util.Arrays;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-public class LossL2 implements ILossFunction {
+public class LossL2 extends DifferentialFunction  implements ILossFunction {
 
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
@@ -54,8 +61,8 @@ public class LossL2 implements ILossFunction {
     protected INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
             throw new IllegalArgumentException(
-                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
-                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+                    "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
 
         }
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
@@ -66,7 +73,7 @@ public class LossL2 implements ILossFunction {
         if (weights != null) {
             if (weights.length() != output.size(1)) {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
-                                + ") does not match output.size(1)=" + output.size(1));
+                        + ") does not match output.size(1)=" + output.size(1));
             }
             scoreArr.muliRowVector(weights);
         }
@@ -80,7 +87,7 @@ public class LossL2 implements ILossFunction {
 
     @Override
     public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
-                    boolean average) {
+                               boolean average) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
         double score = scoreArr.sumNumber().doubleValue();
@@ -101,8 +108,8 @@ public class LossL2 implements ILossFunction {
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
             throw new IllegalArgumentException(
-                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
-                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+                    "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
 
         }
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
@@ -134,11 +141,11 @@ public class LossL2 implements ILossFunction {
 
     @Override
     public Pair<Double, INDArray> computeGradientAndScore(INDArray labels,
-                    INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+                                                          INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
         return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
-                        computeGradient(labels, preOutput, activationFn, mask));
+                computeGradient(labels, preOutput, activationFn, mask));
     }
 
 
@@ -157,5 +164,43 @@ public class LossL2 implements ILossFunction {
         if (weights == null)
             return "LossL2()";
         return "LossL2(weights=" + weights + ")";
+    }
+
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
+    }
+
+
+
+    @Override
+    public String opName() {
+        return name();
+    }
+
+    @Override
+    public Op.Type opType() {
+        return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+
+    }
+
+    @Override
+    public String onnxName() {
+        return "L2Loss";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "L2Loss";
     }
 }

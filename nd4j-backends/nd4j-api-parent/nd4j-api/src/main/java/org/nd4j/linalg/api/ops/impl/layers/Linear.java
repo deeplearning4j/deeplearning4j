@@ -6,21 +6,21 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.intermediate.TGraph;
-import org.nd4j.graph.intermediate.TOp;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseModule;
-import org.nd4j.linalg.api.ops.Module;
 import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Linear:
@@ -42,7 +42,7 @@ public class Linear extends BaseModule {
         super(null,
                 getParams(nIn,nOut,weightInitScheme,biasWeightInitScheme),
                 new INDArray[]{},
-                new ArrayList<Double>(), new ArrayList<Integer>(),new ArrayList<Module>());
+                new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
         this.nIn = nIn;
@@ -55,7 +55,7 @@ public class Linear extends BaseModule {
                   int nOut,
                   WeightInitScheme weightInitScheme,
                   WeightInitScheme biasWeightInitScheme) {
-        super(null, sameDiff, null, false, new ArrayList<Module>());
+        super(null, sameDiff, null, false, new ArrayList<>());
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
 
@@ -71,18 +71,13 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith) {
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith) {
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
 
-    }
-
-    @Override
-    public TOp asIntermediateRepresentation(NodeDef node, TGraph graph) {
-        return null;
     }
 
     @Override
