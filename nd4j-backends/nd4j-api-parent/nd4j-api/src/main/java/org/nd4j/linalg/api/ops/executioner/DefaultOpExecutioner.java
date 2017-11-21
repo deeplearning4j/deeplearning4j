@@ -422,7 +422,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     protected void checkForWorkspaces(Op op) {
         val x = op.x();
-        if (x.isAttached()) {
+        if (x != null && x.isAttached()) {
             val ws = x.data().getParentWorkspace();
 
             if (!ws.isScopeActive())
