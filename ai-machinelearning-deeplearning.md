@@ -9,6 +9,10 @@ You can think of deep learning, machine learning and artificial intelligence as 
 
 ## Artificial Intelligence
 
+![Alt text](./img/John McCarthy.jpg)
+
+John McCarthy, widely recognized as one of the godfathers of AI, defined it as "[the science and engineering of making intelligent machines](http://www-formal.stanford.edu/jmc/whatisai/node1.html)."
+
 Here are a few definitions of artificial intelligence:
 
 * A branch of computer science dealing with the simulation of intelligent behavior in computers.
@@ -52,6 +56,10 @@ They are, in short, an optimization algorithm. If you tune them right, they mini
 Deep learning is a subset of machine learning. Usually, when people use the term deep learning, they are referring to [deep artificial neural networks](https://deeplearning4j.org/neuralnet-overview), and somewhat less frequently to deep [reinforcement learning](https://deeplearning4j.org/reinforcementlearning). 
 
 Deep artificial neural networks are a set of algorithms that have set new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. For example, deep learning is part of DeepMind's well-known AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016, and the current world champion Ke Jie in early 2017. A more complete explanation of neural works is [here](./neuralnet-overview).
+
+<p align="center">
+<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
 
 *Deep* is a technical term. It refers to the number of layers in a neural network. A shallow network has one so-called *hidden layer*, and a deep network has more than one. Multiple hidden layers allow deep neural networks to learn features of the data in a so-called feature hierarchy, because simple features (e.g. two pixels) recombine from one layer to the next, to form more complex features (e.g. a line). Nets with many layers pass input data (features) through more mathematical operations than nets with few layers, and are therefore more computationally intensive to train. Computational intensivity is one of the hallmarks of deep learning, and it is one reason why GPUs are in demand to train deep-learning models. 
 
