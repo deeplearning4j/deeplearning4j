@@ -765,7 +765,7 @@ namespace nd4j {
                 }
                     break;
                 default: {
-                    printf("%s:{%i}; ", EnumUtils::_OpTypeToString(node->opType()), node->opNum());
+                    printf("%s:{%i}; ", EnumUtils::_OpTypeToString(node->opType()), (int) node->opNum());
                 }
             }
 

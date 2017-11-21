@@ -77,5 +77,57 @@ namespace nd4j {
 
             return new ShapeList(newShape);
         }
+
+
+        CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 1) {
+            auto epsilonNext = INPUT_VARIABLE(block.width() - 1);
+
+            auto first = INPUT_VARIABLE(0);
+
+            int axis = INT_ARG(0);
+
+            if (axis < 0)
+                axis += first->rankOf();
+
+            int startPos = 0;
+            for (int e = 0; e < block.width() - 1; e++) {
+                auto originalChunk = INPUT_VARIABLE(e);
+                auto epsilonChunk = OUTPUT_VARIABLE(e);
+                IndicesList indices;
+
+                int width = originalChunk->sizeAt(axis);            
+
+                for (int e = 0; e < epsilonNext->rankOf(); e++) {
+                    if (e == axis)
+                        indices.push_back(NDIndex::interval(startPos, startPos + width));
+                    else
+                        indices.push_back(NDIndex::all());
+                }
+
+                auto subarray = epsilonNext->subarray(indices);
+                epsilonChunk->assign(subarray);
+
+                startPos += width;
+
+                delete subarray;
+            }
+
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_SHAPE_FN(concat_bp) {
+            auto shapeList = new ShapeList();
+
+            for (int e = 0; e < inputShape->size() - 1; e++) {
+                auto inShape = inputShape->at(e);
+                int* newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
+                memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+
+                shapeList->push_back(newShape);
+            }
+
+            return shapeList;
+        }
     }
 }

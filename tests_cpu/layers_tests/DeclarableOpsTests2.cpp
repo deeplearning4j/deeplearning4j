@@ -161,6 +161,48 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests2, Test_CRelu_BP_2) {
+    NDArray<float> x('c', {2, 2}, {1.0, 2.0, -3.0, 4.0});
+    NDArray<float> eps('c', {2, 4}, {1.0, 2.0, 4, 3, 3.0, 4.0, 2, 1});
+    NDArray<float> exp('c', {2, 2}, {1, 2, -2, 4});
+
+    nd4j::ops::crelu_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(1, result->size());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests2, Test_Concat_BP_2) {
+    NDArray<float> x('c', {2, 2});
+    NDArray<float> y('c', {2, 2});
+    NDArray<float> eps('c', {2, 4}, {1.0, 2.0, 0, 1, 3.0, 4.0, 0, 1});
+    NDArray<float> expEX('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> expEY('c', {2, 2}, {0, 1, 0, 1});
+
+    nd4j::ops::concat_bp<float> op;
+    auto result = op.execute({&x, &y, &eps}, {}, {-1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto epsX = result->at(0);
+    auto epsY = result->at(1);
+
+    ASSERT_TRUE(expEX.isSameShape(epsX));
+    ASSERT_TRUE(expEX.equalsTo(epsX));
+
+    ASSERT_TRUE(expEY.isSameShape(epsY));
+    ASSERT_TRUE(expEY.equalsTo(epsY));
+
+    delete result;
+}
+
  
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, TestTensorDot5) {

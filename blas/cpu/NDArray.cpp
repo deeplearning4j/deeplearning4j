@@ -232,10 +232,20 @@ template <typename T>
             for (int e = 0; e < this->lengthOf(); e++)
                 target->_buffer[e] = func(this->_buffer[e], other->_buffer[e]);
         } else {
-
-#pragma omp parallel for schedule(guided)
+            int xCoord[MAX_RANK];
+            int yCoord[MAX_RANK];
+            int zCoord[MAX_RANK];
+#pragma omp parallel for schedule(guided) private(xCoord, yCoord, zCoord)
             for (int e = 0; e < this->lengthOf(); e++) {
-                target->putIndexedScalar(e, func(this->getIndexedScalar(e), other->getIndexedScalar(e)));
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, xCoord);
+                shape::ind2subC(other->rankOf(), other->shapeOf(), e, yCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+
+                Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
+                Nd4jIndex yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
+                Nd4jIndex zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
+
+                target->_buffer[zOffset] = func(this->_buffer[xOffset], other->_buffer[yOffset]);
             }
         }
     }
@@ -250,9 +260,18 @@ template <typename T>
             for (int e = 0; e < this->lengthOf(); e++)
                 target->_buffer[e] = func(this->_buffer[e]);
         } else {
-#pragma omp parallel for schedule(guided)
-            for (int e = 0; e < this->lengthOf(); e++)
-                target->putIndexedScalar(e, func(this->getIndexedScalar(e)));
+            int xCoord[MAX_RANK];
+            int zCoord[MAX_RANK];
+#pragma omp parallel for schedule(guided) private(xCoord, zCoord)
+            for (int e = 0; e < this->lengthOf(); e++) {
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, xCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+
+                Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
+                Nd4jIndex zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
+
+                target->_buffer[zOffset] = func(this->_buffer[xOffset]);
+            }
         }
     }
 #endif
