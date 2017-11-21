@@ -7,17 +7,17 @@ layout: default
 
 Many of the top AI researchers are worried about two things:
 
-1) the effect of large-scale automation on jobs, society and politics
+* the effect of large-scale automation on jobs, society and politics
 
-2) the creation of strong AI and its potential to destroy humanity
+* the creation of strong AI and its potential to destroy humanity
 
-This article will focus on the second worry. Some researchers fear strong AI, but they are not always able to voice their concerns because of their employers.
+This article will focus on the second worry. Some researchers fear strong AI, but they are not always able to voice their concerns because of their employers, so in a sense this post will have to speak for them.
 
 Why are we humans creating AI at all? 
 
 Because it's a technology that produces enormous benefits, and will save countless lives with safer autonomous vehicles and better medical diagnoses. Also, the race for AI is probably one that no single player - nation state or company - can convince its rivals to stop running.
 
-And why is Elon Musk, so outspoken about the risks of AI, sponsoring a research group like OpenAI that is bringing us closer to superintelligence? 
+And why is Elon Musk, so [outspoken about the risks of AI](https://techcrunch.com/2014/10/26/elon-musk-compares-building-artificial-intelligence-to-summoning-the-demon/), sponsoring a research group like OpenAI that is bringing us closer to superintelligence? 
 
 He actually has a reason, and it makes a weird sort of sense, if you assume that strong AI is inevitable. Someone's going to invent strong AI eventually, because we are in a race to do so, and a lot of the best minds are focused on it. Countries and companies are racing to create stronger AI to gain a technological and commercial advantage. 
 
