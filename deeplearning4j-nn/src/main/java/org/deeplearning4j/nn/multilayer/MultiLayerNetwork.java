@@ -2208,59 +2208,72 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         //Initialize the workspace (should be a no-op most of the time - but is necessary here if user calls
         // computeGradientAndScore() before any fit() methods)
+        MemoryWorkspace wsExternal = null;
+        boolean shouldCloseWorkspace = false;
         if(layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+            wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+            if(!wsExternal.isScopeActive()){
+                wsExternal.notifyScopeEntered();
+                shouldCloseWorkspace = true;
+            }
         }
 
-        //Calculate activations (which are stored in each layer, and used in backprop)
-        if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
+        try {
+
+            //Calculate activations (which are stored in each layer, and used in backprop)
+            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
+                if (trainingListeners.size() > 0) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
+                    }
+                }
+                truncatedBPTTGradient();
+            } else {
+                synchronizeIterEpochCounts();
+
+                //First: do a feed-forward through the network
+                //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
+                // need the input to the output layer to be set (such that backprop can be done)
+                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true);
+                if (trainingListeners.size() > 0) {
+                    //TODO: We possibly do want output layer activations in some cases here...
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
+                    }
+                }
+                INDArray actSecondLastLayer = activations.get(activations.size() - 1);
+                if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null)
+                    actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                            .preProcess(actSecondLastLayer, getInputMiniBatchSize());
+                getOutputLayer().setInput(actSecondLastLayer);
+                //Then: compute gradients
+                backprop();
+            }
+
+            //Calculate score
+            if (!(getOutputLayer() instanceof IOutputLayer)) {
+                throw new DL4JException(
+                        "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
+            }
+            score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true);
+
+            //Listeners
             if (trainingListeners.size() > 0) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onBackwardPass(this);
+                    }
                 }
             }
-            truncatedBPTTGradient();
-        } else {
-            synchronizeIterEpochCounts();
 
-            //First: do a feed-forward through the network
-            //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
-            // need the input to the output layer to be set (such that backprop can be done)
-            List<INDArray> activations = feedForwardToLayer(layers.length - 2, true);
-            if (trainingListeners.size() > 0) {
-                //TODO: We possibly do want output layer activations in some cases here...
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
-                }
-            }
-            INDArray actSecondLastLayer = activations.get(activations.size() - 1);
-            if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null)
-                actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                                .preProcess(actSecondLastLayer, getInputMiniBatchSize());
-            getOutputLayer().setInput(actSecondLastLayer);
-            //Then: compute gradients
-            backprop();
-        }
-
-        //Calculate score
-        if (!(getOutputLayer() instanceof IOutputLayer)) {
-            throw new DL4JException(
-                            "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
-        }
-        score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true);
-
-        //Listeners
-        if (trainingListeners.size() > 0) {
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onBackwardPass(this);
-                }
+            //Clear the post noise/dropconnect parameters on the output layer
+            getOutputLayer().clearNoiseWeightParams();
+        } finally {
+            if(shouldCloseWorkspace){
+                wsExternal.notifyScopeLeft();
             }
         }
-
-        //Clear the post noise/dropconnect parameters on the output layer
-        getOutputLayer().clearNoiseWeightParams();
     }
 
     @Override
