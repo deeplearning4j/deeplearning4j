@@ -14,6 +14,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -32,36 +33,44 @@ public abstract class DifferentialFunction implements Differential {
 
     @Getter
     @Setter
+    @JsonIgnore
     protected SameDiff sameDiff;
     @Getter
+    @JsonIgnore
     protected OpState opState;
     @Getter
     @Setter
+    @JsonIgnore
     protected int[] vertexId;
 
     @Getter
     @Setter
+    @JsonIgnore
     protected boolean inPlace;
 
     @Getter
     @Setter
+    @JsonIgnore
     protected int[] shape;
 
     @Getter
     @Setter
+    @JsonIgnore
     protected DifferentialFunction[] args;
 
 
     @Getter
     @Setter
+    @JsonIgnore
     protected Number scalarValue;
 
 
     @Getter
     @Setter
+    @JsonIgnore
     protected int[] dimensions;
 
-
+    @JsonIgnore
     protected Object[] extraArgs;
 
 
@@ -164,6 +173,7 @@ public abstract class DifferentialFunction implements Differential {
      * Get the output vertex ids for this function
      * @return the set of output vertex ids for this function.
      */
+    @JsonIgnore
     public int[] getOutputVertexIds() {
         NDArrayVertex[] outputs = getVertices();
         int[] ret = new int[outputs.length];
@@ -186,6 +196,7 @@ public abstract class DifferentialFunction implements Differential {
      * Get the vertices of the outputs.
      * @return
      */
+    @JsonIgnore
     public NDArrayVertex[] getVertices() {
         NDArrayVertex[] ret = new NDArrayVertex[vertexId.length];
         for(int i = 0; i < ret.length; i++) {
@@ -200,6 +211,7 @@ public abstract class DifferentialFunction implements Differential {
      * Get the result shape for this function
      * @return
      */
+    @JsonIgnore
     public int[] getResultShape() {
         return getResult().getResultShape();
     }
@@ -214,6 +226,7 @@ public abstract class DifferentialFunction implements Differential {
         return Arrays.asList(this);
     }
 
+    @JsonIgnore
     public  boolean isVariable() {
         return false;
     }
@@ -297,11 +310,13 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    @JsonIgnore
     private INDArray getX() {
         INDArray ret =  args()[0].getResult().getArr();
         return ret;
     }
 
+    @JsonIgnore
     private INDArray getY() {
         if(args().length > 1) {
             SDVariable opId = args()[1].getResult();
@@ -311,6 +326,7 @@ public abstract class DifferentialFunction implements Differential {
         return null;
     }
 
+    @JsonIgnore
     private INDArray getZ() {
         if(this.opState.isInPlace())
             return getX();
@@ -337,6 +353,7 @@ public abstract class DifferentialFunction implements Differential {
      * Get the result
      * @return
      */
+    @JsonIgnore
     public SDVariable getResult() {
         return sameDiff.getVariableForVertexId(vertexId);
     }
