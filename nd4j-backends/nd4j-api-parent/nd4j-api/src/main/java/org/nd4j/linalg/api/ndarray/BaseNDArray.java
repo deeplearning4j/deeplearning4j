@@ -5127,11 +5127,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    protected INDArray create(BaseNDArray baseNDArray) {
-        return baseNDArray;
-    }
-
-
     @Override
     public INDArray remainder(INDArray denominator) {
         return remainder(denominator, Nd4j.createUninitialized(this.shape()));
