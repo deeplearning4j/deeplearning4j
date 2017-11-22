@@ -13,7 +13,7 @@ You can think of deep learning, machine learning and artificial intelligence as 
 
 [John McCarthy](https://en.wikipedia.org/wiki/John_McCarthy_(computer_scientist)), widely recognized as one of the godfathers of AI, defined it as "[the science and engineering of making intelligent machines](http://www-formal.stanford.edu/jmc/whatisai/node1.html)."
 
-Here are a few definitions of artificial intelligence:
+Here are a few other definitions of artificial intelligence:
 
 * A branch of computer science dealing with the simulation of intelligent behavior in computers.
 * The capability of a machine to imitate intelligent human behavior.
