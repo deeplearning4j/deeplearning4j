@@ -14,36 +14,36 @@ public final class FlatGraph extends Table {
   public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
   public FlatGraph __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int id() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public nd4j.graph.FlatVariable variables(int j) { return variables(new nd4j.graph.FlatVariable(), j); }
-  public nd4j.graph.FlatVariable variables(nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
+  public FlatVariable variables(int j) { return variables(new FlatVariable(), j); }
+  public FlatVariable variables(FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public nd4j.graph.FlatNode nodes(int j) { return nodes(new nd4j.graph.FlatNode(), j); }
-  public nd4j.graph.FlatNode nodes(nd4j.graph.FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public FlatNode nodes(int j) { return nodes(new FlatNode(), j); }
+  public FlatNode nodes(FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int nodesLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public int outputs(int j) { int o = __offset(10); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
+  public IntPair outputs(int j) { return outputs(new IntPair(), j); }
+  public IntPair outputs(IntPair obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int outputsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer outputsAsByteBuffer() { return __vector_as_bytebuffer(10, 4); }
-  public nd4j.graph.FlatConfiguration configuration() { return configuration(new nd4j.graph.FlatConfiguration()); }
-  public nd4j.graph.FlatConfiguration configuration(nd4j.graph.FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public FlatConfiguration configuration() { return configuration(new FlatConfiguration()); }
+  public FlatConfiguration configuration(FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
-      int id,
+      long id,
       int variablesOffset,
       int nodesOffset,
       int outputsOffset,
       int configurationOffset) {
     builder.startObject(5);
+    FlatGraph.addId(builder, id);
     FlatGraph.addConfiguration(builder, configurationOffset);
     FlatGraph.addOutputs(builder, outputsOffset);
     FlatGraph.addNodes(builder, nodesOffset);
     FlatGraph.addVariables(builder, variablesOffset);
-    FlatGraph.addId(builder, id);
     return FlatGraph.endFlatGraph(builder);
   }
 
   public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(5); }
-  public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
+  public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startVariablesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
@@ -51,7 +51,7 @@ public final class FlatGraph extends Table {
   public static int createNodesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startNodesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addOutputs(FlatBufferBuilder builder, int outputsOffset) { builder.addOffset(3, outputsOffset, 0); }
-  public static int createOutputsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
+  public static int createOutputsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startOutputsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addConfiguration(FlatBufferBuilder builder, int configurationOffset) { builder.addOffset(4, configurationOffset, 0); }
   public static int endFlatGraph(FlatBufferBuilder builder) {

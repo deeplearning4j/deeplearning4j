@@ -1,0 +1,17 @@
+include "array.fbs";
+include "utils.fbs";
+
+namespace nd4j.graph;
+
+
+table FlatVariable {
+    id:IntPair;
+    name:string;
+
+    shape:[int]; // shape is absolutely optional. either shape or ndarray might be set
+    ndarray:FlatArray;
+
+    device:int; // default is -1, which means _auto_
+}
+
+root_type FlatVariable;

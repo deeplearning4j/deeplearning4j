@@ -1,66 +1,9 @@
 include "array.fbs";
+include "utils.fbs";
 
 namespace nd4j.graph;
 
-table LongPair {
-    first:long; // first
-    second:long; // second
-}
 
-table IntPair {
-    first:int;
-    second:int;
-}
-
-table IntTriple {
-    first:int;
-    second:int;
-    third:int;
-}
-
-enum OpType:byte {
-    TRANSFORM = 0,
-    ACCUMULATION = 1, // for both reduce & reduce3
-    INDEX_ACCUMULATION = 2,
-    SCALAR = 3,
-    BROADCAST = 4,
-//    PAIRWISE = 5, <--- using TRANSFORM instead, for compatibility reasons
-//    ACCUMULATION3 = 6, <--- using ACCUMULATION instead, for compatibility reasons
-    SUMMARYSTATS = 7,
-    SHAPE = 8,
-    AGGREGATION = 9, // ???
-    CUSTOM = 10, // custom ops
-    GRAPH = 11, // another graph used as op
-    VARIABLE = 30,
-    BOOLEAN = 40, // booleanOps, for conditionals
-    LOGIC = 119, //
-}
-
-enum InputType:byte {
-    UNDEFINED,
-    NUMERIC,
-    STRINGULAR,
-    NUMERIC_SET,
-    STRINGULAR_SET,
-}
-
-enum OpClass:byte {
-    TRANSFORM = 0, // ops of this class return the same shape as primary input
-    REDUCTION = 1, // ops of this class return accumulation shape
-    MULTIPLICATOR = 2, // ops of this class may return whatever they want
-    GRAPH = 3, // embedded graph
-    CONDITIONAL = 4, // IF
-    LOOP = 5, // Various LOOPS
-}
-
-// TODO: to be changed. Should include FlatArray instead
-table FlatVariable {
-    id:int;
-    name:string;
-    shape:[int];
-    values:[float];
-    device:int; // default is -1, which means _auto_
-}
 
 table FlatNode {
     id:int; // unique id for this node
@@ -69,7 +12,7 @@ table FlatNode {
     opNum:long;
     input:[int]; // ID's of input nodes for this node !!! only used if inputPaired in unset !!!
     inputPaired:[IntPair]; //
-    dataType:DataType;
+    dataType:DataType; // to be removed
     output:[int]; // ID's of connected nodes for this node
     extraParams:[float]; // extra params for this op (if any)
     extraInteger:[int]; // optional integer extra params

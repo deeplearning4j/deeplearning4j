@@ -17,17 +17,10 @@ namespace nd4j {
         if (holder == 0)
             return -1;
 
-#ifdef __LITTLE_ENDIAN__
-        for (int e = 0; e < 32; e++) {
-#elif __BIG_ENDIAN__
+#ifdef REVERSE_BITS
         for (int e = 32; e >= 0; e--) {
 #else
-        bool be = isBE();
-        int start = be ? 32 : 0;
-        int stop = be ? -1 : 32;
-        int step = be ? -1 : 1;
-
-        for (int e = start; e != stop; e+= step) {
+        for (int e = 0; e < 32; e++) {
 #endif
             bool isOne = (holder & 1 << e) != 0;
 
@@ -49,17 +42,10 @@ namespace nd4j {
         }
 
 
-#ifdef __LITTLE_ENDIAN__
-        for (int e = 0; e < 32; e++) {
-#elif __BIG_ENDIAN__
+#ifdef REVERSE_BITS
         for (int e = 32; e >= 0; e--) {
 #else
-        bool be = isBE();
-        int start = be ? 32 : 0;
-        int stop = be ? -1 : 32;
-        int step = be ? -1 : 1;
-
-        for (int e = start; e != stop; e+= step) {
+        for (int e = 0; e < 32; e++) {
 #endif
             bool isOne = (holder & 1 << e) != 0;
 
@@ -70,5 +56,9 @@ namespace nd4j {
         }
 
         return bits;
+    }
+
+    nd4j::ByteOrder BitwiseUtils::asByteOrder() {
+        return isBE() ? ByteOrder::BE : ByteOrder::LE;
     }
 }

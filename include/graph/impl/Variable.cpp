@@ -4,6 +4,10 @@
 
 #include <helpers/EnumUtils.h>
 #include <graph/Variable.h>
+#include <array/DataTypeUtils.h>
+#include <array/ByteOrderUtils.h>
+#include <array/DataTypeConversions.h>
+#include <graph/FlatUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -58,6 +62,11 @@ namespace nd4j {
         template <typename T>
         int32_t nd4j::graph::Variable<T>::id() {
             return _id;
+        }
+
+        template <typename T>
+        int nd4j::graph::Variable<T>::index() {
+            return _index;
         }
 
         template <typename T>
@@ -143,9 +152,9 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable) {
-            int shapeLen = flatVariable->shape()->Length();
-            int *shape = new int[shapeLen];
-            this->_id = flatVariable->id();
+            auto vid = flatVariable->id();
+            this->_id = vid->first();
+            this->_index = vid->second();
 
             if (flatVariable->name() != nullptr && flatVariable->name()->size() != 0)
                 this->_name = flatVariable->name()->str();
@@ -153,21 +162,61 @@ namespace nd4j {
             _external = true;
             _readOnly = false;
 
-#pragma omp parallel for simd
-            for (int e = 0; e < shapeLen; e++) {
-                shape[e] = flatVariable->shape()->Get(e);
+            T *buffer = nullptr;
+
+            if (flatVariable->ndarray() != nullptr) {
+                 auto ar = flatVariable->ndarray();
+                _ndarray = nd4j::graph::FlatUtils::fromFlatArray<T>(ar);
+                _ndarray->triggerAllocationFlag(true, true);
+            } else if (flatVariable->shape() != nullptr) {
+                int shapeLen = flatVariable->shape()->Length();
+                //int *shape = new int[shapeLen];
+
+                std::vector<int> shapeInfo;
+                for (int i = 0; i < flatVariable->shape()->size(); i++) {
+                    shapeInfo.emplace_back(flatVariable->shape()->Get(i));
+                }
+
+                // we just create empty array here
+                std::vector<int> shape;
+                for (int i = 0; i < shapeInfo.at(0); i++) {
+                    shape.emplace_back(shapeInfo.at(i + 1));
+                }
+
+                _ndarray = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+            } else {
+                nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
+                throw "Empty variable";
             }
 
-            int bufLen = flatVariable->values()->Length();
-            T *buffer = new T[bufLen];
+            /*
+            if (flatVariable->values() != nullptr && flatVariable->values()->Length() > 0) {
+                int bufLen = (int) flatVariable->values()->Length();
+                 buffer = new T[bufLen];
 
 #pragma omp parallel for simd
-            for (int e = 0; e < bufLen; e++) {
-                buffer[e] = (T) flatVariable->values()->Get(e);
+                for (int e = 0; e < bufLen; e++) {
+                    buffer[e] = (T) flatVariable->values()->Get(e);
+                }
             }
 
-            _ndarray = new NDArray<T>(buffer, shape);
-            _ndarray->triggerAllocationFlag(true, true);
+            if (flatVariable->buffer() != nullptr && flatVariable->buffer()->size() > 0) {
+                auto dtype = DataTypeUtils::fromFlatDataType(flatVariable->dataType());
+                auto bo = ByteOrderUtils::fromFlatByteOrder(flatVariable->order());
+
+                auto bufLen = shape::length(shape);
+                buffer = new T[bufLen];
+
+                // TODO: byteorder should be honored here
+
+                // TODO: we want to have variable datatype, so in future we should replace explicit conversion with simple migration
+                auto flatBuf = (void *) flatVariable->buffer()->data();
+
+                DataTypeConversions<T>::convertType(buffer, flatBuf, dtype, bufLen);
+            }
+            */
+
+            //_ndarray = new NDArray<T>(buffer, shape);
             _variableType = VariableType::NDARRAY;
         }
 

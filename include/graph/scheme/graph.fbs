@@ -1,13 +1,15 @@
 include "node.fbs";
 include "config.fbs";
+include "variable.fbs";
+include "utils.fbs";
 
 namespace nd4j.graph;
 
 table FlatGraph {
-    id:int;
+    id:long;
     variables:[FlatVariable]; // list of variables
     nodes:[FlatNode]; // list of nodes
-    outputs:[int]; // list of output variables or nodes
+    outputs:[IntPair]; // list of output variables or nodes
     configuration:FlatConfiguration; // optional execution configuration
 }
 

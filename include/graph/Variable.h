@@ -76,6 +76,7 @@ namespace nd4j {
             void markRemovable(bool reallyRemovable);
 
             int32_t id();
+            int index();
             void setId(int32_t id);
             void setId(int id, int idx);
 

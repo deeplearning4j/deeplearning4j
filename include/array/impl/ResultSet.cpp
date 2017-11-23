@@ -3,6 +3,7 @@
 //
 
 #include <array/ResultSet.h>
+#include <graph/FlatUtils.h>
 
 namespace nd4j {
     template <typename T>
@@ -11,21 +12,28 @@ namespace nd4j {
             for (int e = 0; e < result->variables()->size(); e++) {
                 auto var = result->variables()->Get(e);
 
-                std::vector<int> shapeInfo;
-                for (int i = 0; i < var->shape()->size(); i++) {
-                    shapeInfo.emplace_back(var->shape()->Get(i));
+                NDArray<T>* array;
+
+                if (var->ndarray() != nullptr) {
+                    array = nd4j::graph::FlatUtils::fromFlatArray<T>(var->ndarray());
+                } else if (var->shape() != nullptr) {
+                    std::vector<int> shapeInfo;
+                    for (int i = 0; i < var->shape()->size(); i++) {
+                        shapeInfo.emplace_back(var->shape()->Get(i));
+                    }
+
+                    // we just create empty array here
+                    std::vector<int> shape;
+                    for (int i = 0; i < shapeInfo.at(0); i++) {
+                        shape.emplace_back(shapeInfo.at(i + 1));
+                    }
+
+                    array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
+                } else {
+                    nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
+                    throw "Empty variable";
                 }
 
-                std::vector<int> shape;
-                for (int i = 0; i < shapeInfo.at(0); i++) {
-                    shape.emplace_back(shapeInfo.at(i + 1));
-                }
-
-                auto array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
-
-                for (int i = 0; i < var->values()->size(); i++) {
-                    array->putScalar(i, var->values()->Get(i));
-                }
 
                 _content.push_back(array);
             }

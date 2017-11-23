@@ -27,6 +27,9 @@
 #include <chrono>
 #include <ctime>
 #include <graph/execution/LogicExecutor.h>
+#include <array/DataTypeUtils.h>
+#include <helpers/BitwiseUtils.h>
+#include <generated/array_generated.h>
 
 namespace nd4j{
 namespace graph {
@@ -336,11 +339,19 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     for (int e = 0; e < (int) outputs->size(); e++) {
         auto var = outputs->at(e);
 
-        auto fShape = builder.CreateVector(var->getNDArray()->getShapeInfoAsVector());
-        auto fBuffer = builder.CreateVector(var->getNDArray()->getBufferAsVector());
+        NDArray<T>* array = var->getNDArray();
+        auto byteVector = array->asByteVector();
+
+        auto fBuffer = builder.CreateVector(byteVector);
+        auto fShape = builder.CreateVector(array->getShapeInfoAsVector());
+
+        nd4j::graph::ByteOrder bo = (nd4j::graph::ByteOrder) BitwiseUtils::asByteOrder();
+
+        auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DataType) DataTypeUtils::fromT<T>(), bo);
+
         auto fName = builder.CreateString(*(var->getName()));
 
-        auto fv = CreateFlatVariable(builder, var->id(), fName, fShape, fBuffer, -1);
+        auto fv = CreateFlatVariable(builder, var->id(), fName, 0, fArray);
 
         variables_vector.push_back(fv);
     }

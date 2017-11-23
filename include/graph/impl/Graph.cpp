@@ -4,6 +4,7 @@
 
 #include <graph/Graph.h>
 #include <helpers/EnumUtils.h>
+#include <graph/FlatUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -671,8 +672,8 @@ namespace nd4j {
                     auto flatVar = flatGraph->variables()->Get(e);
 
                     auto var = new Variable<T>(flatVar);
-                    //nd4j_printf("Registering variable: %i\n", var->id());
-                    _variableSpace->putVariable(flatVar->id(), var);
+                    std::pair<int, int> pair(flatVar->id()->first(), flatVar->id()->second());
+                    _variableSpace->putVariable(pair, var);
 
                     // if that's VariableSpace mode - we're pushing it to _output
                     if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE)
@@ -687,12 +688,14 @@ namespace nd4j {
                 if (flatGraph != nullptr && flatGraph->outputs() != nullptr) {
                     for (unsigned int e = 0; e < flatGraph->outputs()->size(); e++) {
                         auto out = flatGraph->outputs()->Get(e);
-                        if (!_variableSpace->hasVariable(out)) {
+                        std::pair<int, int> vp(out->first(), out->second());
+                        if (!_variableSpace->hasVariable(vp)) {
                             nd4j_verbose("Non-existent variable requested: %i\n", out);
                             throw "Non-existent variable requested";
                         }
 
-                        pushToOutputOnce(out);
+                        // TODO: fix this .first
+                        pushToOutputOnce(vp.first);
                     }
                 }
             }

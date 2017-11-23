@@ -14,27 +14,27 @@ public final class FlatResult extends Table {
   public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
   public FlatResult __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int id() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public nd4j.graph.FlatVariable variables(int j) { return variables(new nd4j.graph.FlatVariable(), j); }
-  public nd4j.graph.FlatVariable variables(nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
+  public FlatVariable variables(int j) { return variables(new FlatVariable(), j); }
+  public FlatVariable variables(FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
   public FlatTiming timing(int j) { return timing(new FlatTiming(), j); }
   public FlatTiming timing(FlatTiming obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int timingLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createFlatResult(FlatBufferBuilder builder,
-      int id,
+      long id,
       int variablesOffset,
       int timingOffset) {
     builder.startObject(3);
+    FlatResult.addId(builder, id);
     FlatResult.addTiming(builder, timingOffset);
     FlatResult.addVariables(builder, variablesOffset);
-    FlatResult.addId(builder, id);
     return FlatResult.endFlatResult(builder);
   }
 
   public static void startFlatResult(FlatBufferBuilder builder) { builder.startObject(3); }
-  public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
+  public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startVariablesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }

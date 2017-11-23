@@ -121,8 +121,8 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OUTPUTMODE = 10,
     VT_TIMESTATS = 12
   };
-  int32_t id() const {
-    return GetField<int32_t>(VT_ID, 0);
+  int64_t id() const {
+    return GetField<int64_t>(VT_ID, 0);
   }
   ExecutionMode executionMode() const {
     return static_cast<ExecutionMode>(GetField<int8_t>(VT_EXECUTIONMODE, 0));
@@ -138,7 +138,7 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_ID) &&
+           VerifyField<int64_t>(verifier, VT_ID) &&
            VerifyField<int8_t>(verifier, VT_EXECUTIONMODE) &&
            VerifyField<int8_t>(verifier, VT_PROFILINGMODE) &&
            VerifyField<int8_t>(verifier, VT_OUTPUTMODE) &&
@@ -150,8 +150,8 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct FlatConfigurationBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(FlatConfiguration::VT_ID, id, 0);
+  void add_id(int64_t id) {
+    fbb_.AddElement<int64_t>(FlatConfiguration::VT_ID, id, 0);
   }
   void add_executionMode(ExecutionMode executionMode) {
     fbb_.AddElement<int8_t>(FlatConfiguration::VT_EXECUTIONMODE, static_cast<int8_t>(executionMode), 0);
@@ -165,13 +165,13 @@ struct FlatConfigurationBuilder {
   void add_timestats(bool timestats) {
     fbb_.AddElement<uint8_t>(FlatConfiguration::VT_TIMESTATS, static_cast<uint8_t>(timestats), 0);
   }
-  FlatConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit FlatConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FlatConfigurationBuilder &operator=(const FlatConfigurationBuilder &);
   flatbuffers::Offset<FlatConfiguration> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<FlatConfiguration>(end);
     return o;
   }
@@ -179,7 +179,7 @@ struct FlatConfigurationBuilder {
 
 inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
+    int64_t id = 0,
     ExecutionMode executionMode = ExecutionMode_SEQUENTIAL,
     ProfilingMode profilingMode = ProfilingMode_NONE,
     OutputMode outputMode = OutputMode_IMPLICIT,

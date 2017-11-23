@@ -1,4 +1,6 @@
 include "node.fbs";
+include "utils.fbs";
+include "variable.fbs";
 
 namespace nd4j.graph;
 
@@ -9,7 +11,7 @@ table FlatTiming {
 }
 
 table FlatResult {
-    id:int; // ID of the graph generated this result
+    id:long; // ID of the graph generated this result
     variables:[FlatVariable]; // variables with results
     timing:[FlatTiming]; // timing results
 }
