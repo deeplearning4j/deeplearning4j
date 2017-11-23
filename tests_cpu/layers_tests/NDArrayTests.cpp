@@ -1178,8 +1178,8 @@ TEST_F(NDArrayTest, Permute1) {
 	const int shape2[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
-    NDArray<float> arr1(shape1);
-    NDArray<float> arr2(shape2);    
+    NDArray<float> arr1(shape1,true);
+    NDArray<float> arr2(shape2,true);    
 
 	NDArray<float>* result = arr1.permute(perm);        	
 	ASSERT_TRUE(result->isSameShapeStrict(&arr2));
@@ -1195,8 +1195,8 @@ TEST_F(NDArrayTest, Permute2) {
 	const int shape2[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
-    NDArray<float> arr1(shape1);
-    NDArray<float> arr2(shape2);    
+    NDArray<float> arr1(shape1,true);
+    NDArray<float> arr2(shape2,true);    
 
 	ASSERT_TRUE(arr1.permutei(perm));
 	ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));

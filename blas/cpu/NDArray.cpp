@@ -156,7 +156,7 @@ template <typename T>
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shape" array, set all elements in new array to be zeros
 template <typename T>
-    NDArray<T>::NDArray(const int* shapeInfo, nd4j::memory::Workspace* workspace) {
+    NDArray<T>::NDArray(const int* shapeInfo, const bool copyStrides, nd4j::memory::Workspace* workspace) {
    
     int arrLength = shape::length(const_cast<int*>(shapeInfo));
     int shapeLength = shape::shapeInfoLength(const_cast<int*>(shapeInfo));
@@ -173,6 +173,9 @@ template <typename T>
     memset(_buffer, 0, arrLength*sizeOfT());          // set all elements in new array to be zeros
 
     memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(const_cast<int*>(shapeInfo)));     // copy shape information into new array
+
+    if(!copyStrides)
+        shape::updateStrides(_shapeInfo, ordering());
 
     _isBuffAlloc = true;
     _isShapeAlloc = true;
@@ -282,7 +285,7 @@ template <typename T>
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray<T>::NDArray(const NDArray<T> *other, nd4j::memory::Workspace* workspace) {
+NDArray<T>::NDArray(const NDArray<T> *other, const bool copyStrides, nd4j::memory::Workspace* workspace) {
     int arrLength = shape::length(other->_shapeInfo);
     int shapeLength = shape::rank(other->_shapeInfo)*2 + 4;
 
@@ -300,10 +303,14 @@ NDArray<T>::NDArray(const NDArray<T> *other, nd4j::memory::Workspace* workspace)
 
     memcpy(_shapeInfo, other->_shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
 
+    if(!copyStrides) 
+        shape::updateStrides(_shapeInfo, ordering());
+
     _isBuffAlloc = true;
     _isShapeAlloc = true;
 }
 
+////////////////////////////////////////////////////////////////////////
     template <typename T>
     std::vector<int8_t> NDArray<T>::asByteVector() {
         std::vector<int8_t> result((unsigned long) this->lengthOf() * sizeOfT());
@@ -807,6 +814,18 @@ template <typename T>
     void NDArray<T>::applyTransform(T *extraParams) {
         applyTransform<OpName>(this, extraParams);
     }
+
+// perform array transformation
+    template<typename T>
+    template<typename OpName>
+    NDArray<T> NDArray<T>::transform(T *extraParams) {
+    
+        NDArray<T> result(this->_shapeInfo, true, this->_workspace);
+        functions::transform::Transform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, result._buffer,
+                                                                  result._shapeInfo, extraParams, nullptr, nullptr);
+        return result;
+    }
+
 
 // perform pairwise transformation
     template<typename T>
@@ -2497,7 +2516,7 @@ template<typename T>
 NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
     if (other.lengthOf() == lengthOf()) {
-        NDArray<T> result(this->_shapeInfo, this->_workspace);
+        NDArray<T> result(this->_shapeInfo, this->_workspace);        
         functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
         return result;
     }
@@ -2610,6 +2629,17 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
         }
 
         return this->template applyTrueBroadcast<simdOps::Multiply<T>>(other);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // multiplication operator array*scalar
+    template<typename T>
+    NDArray<T> NDArray<T>::operator*(const T scalar) const {
+        
+        NDArray<T> result(this->_shapeInfo, this->_workspace);
+        functions::scalar::ScalarTransform<T>::template transform<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, scalar, nullptr);
+
+        return result;
     }
 
     ////////////////////////////////////////////////////////////////////////

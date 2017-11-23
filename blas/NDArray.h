@@ -83,13 +83,13 @@ namespace nd4j {
         NDArray(const Nd4jIndex length, const char order, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
-        NDArray(const NDArray<T> *other, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const NDArray<T> *other, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
 		
 		// copy constructor
         NDArray(const NDArray<T>& other);
 
 		// constructor new NDArray using shape information from "shape" array, set all elements in new array to be zeros
-		NDArray(const int* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
+		NDArray(const int* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
         //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
@@ -284,6 +284,10 @@ namespace nd4j {
         // perform array transformation
         template<typename OpName>
         void applyTransform(NDArray<T> *target, T *extraParams = nullptr);
+
+        // perform array transformation
+        template<typename OpName>
+        NDArray<T> transform(T *extraParams = nullptr);
 
         // perform pairwise transformation
         template<typename OpName>
@@ -501,6 +505,9 @@ namespace nd4j {
 
         // multiplication operator array1*array2
         NDArray<T> operator*(const NDArray<T>& other) const;        
+    
+        // multiplication operator array*scalar
+        NDArray<T> operator*(const T scalar) const;
 
         // multiplication operator array1 *= array2
         void operator*=(const NDArray<T>& other);

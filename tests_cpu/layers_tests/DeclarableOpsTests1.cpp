@@ -1714,8 +1714,8 @@ TEST_F(DeclarableOpsTests1, Permute1) {
     const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
     const std::vector<int> perm = {2, 0, 1};    
-    NDArray<float>* x = new NDArray<float>(shapeX);
-    NDArray<float>* exp = new NDArray<float>(shapeExp);
+    NDArray<float>* x = new NDArray<float>(shapeX,true);
+    NDArray<float>* exp = new NDArray<float>(shapeExp,true);
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, x);
@@ -1743,8 +1743,8 @@ TEST_F(DeclarableOpsTests1, Permute2) {
     const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
     const std::vector<int> perm = {2, 0, 1};    
-    NDArray<float>* x = new NDArray<float>(shapeX);
-    NDArray<float>* exp = new NDArray<float>(shapeExp);
+    NDArray<float>* x = new NDArray<float>(shapeX, true);
+    NDArray<float>* exp = new NDArray<float>(shapeExp, true);
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, x);
@@ -1767,7 +1767,7 @@ TEST_F(DeclarableOpsTests1, Permute2) {
     delete exp;
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
     const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
@@ -1792,6 +1792,7 @@ TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
     delete variableSpace;    
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Conv3D_ff_Test1) {
     NDArray<float>* input = new NDArray<float>('c', {4, 3, 3, 56, 56});
     NDArray<float>* weights = new NDArray<float>('f', {2, 3, 3, 5, 5});
@@ -1834,6 +1835,7 @@ TEST_F(DeclarableOpsTests1, Conv3D_ff_Test1) {
     delete variableSpace;
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestReductionShape1) {
     auto input = new NDArray<float>('c', {4, 5, 5, 10, 10});
 
@@ -1869,6 +1871,7 @@ TEST_F(DeclarableOpsTests1, TestReductionShape1) {
 
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     auto input = new NDArray<float>('c', {4, 5, 5, 10, 10});
 
@@ -1902,6 +1905,7 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     delete inshapes;
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestCustomShape1) {
     auto input = new NDArray<float>('c', {2, 3, 4});
 
@@ -1931,7 +1935,7 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
     delete inshapes;
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DilatedMaxPool3D_ff_Test1) {
     auto input = new NDArray<float>('c', {4, 2, 1, 11, 11});
 

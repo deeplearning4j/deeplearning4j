@@ -133,6 +133,9 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
         DECLARE_CUSTOM_OP(absoluteDifference, 3, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(cosineDistance, 3, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(hingeLoss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(huberLoss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(logLoss, 3, 1, false, 1, 1);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);

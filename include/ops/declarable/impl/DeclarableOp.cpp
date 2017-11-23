@@ -130,7 +130,7 @@ namespace nd4j {
                     std::pair<int, int> pair(ctx.nodeId(), cnt++);
 
                     if (!ctx.isValueAvailable(pair.second)) {
-                        auto outArr = new NDArray<T>(out, workspace);
+                        auto outArr = new NDArray<T>(out, true, workspace);
 
                         ctx.pushNDArrayToVariableSpace(pair, outArr);
                     } else {
