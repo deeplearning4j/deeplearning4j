@@ -39,6 +39,7 @@ import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
+import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -3702,6 +3703,22 @@ public class SameDiff {
             return org.nd4j.graph.ByteOrder.BE;
         else
             return org.nd4j.graph.ByteOrder.LE;
+    }
+
+    /**
+     * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
+     *
+     * @param file
+     */
+    public void asFlatFile(@NonNull File file) throws IOException {
+        val fb = asFlatBuffers();
+        val offset = fb.position();
+
+        val array = fb.array();
+
+        try (val fos = new FileOutputStream(file); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+            dos.write(array, offset, array.length - offset);
+        }
     }
 
 
