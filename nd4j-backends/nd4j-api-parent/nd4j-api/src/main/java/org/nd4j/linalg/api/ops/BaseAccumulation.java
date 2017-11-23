@@ -19,12 +19,21 @@
 
 package org.nd4j.linalg.api.ops;
 
+import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
+
+import java.util.Map;
 
 /**
  * Base class for accumulation, initiates the initial entry
@@ -36,9 +45,6 @@ import org.nd4j.linalg.api.shape.Shape;
 @Slf4j
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
-    protected IComplexNumber finalResultComplex;
-    protected boolean applyFinalTransform = true;
-    protected boolean isComplex = false;
 
     public BaseAccumulation(SameDiff sameDiff,
                             DifferentialFunction i_v,
@@ -51,7 +57,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimensions);
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -72,7 +77,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             f().validateDifferentialFunctionsameDiff(i_v2);
             addAsNewVertexId();
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimensions);
 
 
         } else {
@@ -145,6 +149,28 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
 
 
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        if (!attributesForNode.containsKey("axis")) {
+            this.dimensions = new int[] { Integer.MAX_VALUE };
+        }
+        else {
+            val dims = TFGraphMapper.getInstance().getNDArrayFromTensor("axis",nodeDef,graph).data().asInt();
+            this.dimensions = dims;
+        }
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        if (!attributesForNode.containsKey("axes")) {
+            this.dimensions = new int[] { Integer.MAX_VALUE };
+        }
+        else {
+            val map = OnnxGraphMapper.getInstance().getAttrMap(node);
+            val dims = Ints.toArray(map.get("axes").getIntsList());
+            this.dimensions = dims;
+        }
+    }
 
     @Override
     public void setFinalResult(double value) {
@@ -171,5 +197,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         return 0;
     }
 
-
+    @Override
+    public Type opType() {
+        return Type.REDUCE;
+    }
 }

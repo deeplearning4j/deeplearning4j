@@ -8,7 +8,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,9 +34,6 @@ public abstract class DifferentialFunction implements Differential {
     @Setter
     @JsonIgnore
     protected SameDiff sameDiff;
-    @Getter
-    @JsonIgnore
-    protected OpState opState;
     @Getter
     @Setter
     @JsonIgnore
@@ -132,9 +128,8 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-    public DifferentialFunction(SameDiff sameDiff, OpState opState, int[] vertexId, boolean inPlace,int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
+    public DifferentialFunction(SameDiff sameDiff, int[] vertexId, boolean inPlace,int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
         this.sameDiff = sameDiff;
-        this.opState = opState;
         this.vertexId = vertexId;
         this.inPlace = inPlace;
         this.shape = shape;
@@ -155,9 +150,6 @@ public abstract class DifferentialFunction implements Differential {
             var.setVertexId(new int[]{ndArrayVertex.vertexID()});
         }
 
-
-
-        var.setOpState(opState);
         sameDiff.addVariable(var);
         sameDiff.putFunction(var.getVertexId(),this);
 
@@ -328,7 +320,7 @@ public abstract class DifferentialFunction implements Differential {
 
     @JsonIgnore
     private INDArray getZ() {
-        if(this.opState.isInPlace())
+        if(isInPlace())
             return getX();
         SDVariable opId = getResult();
         INDArray ret = opId.getArr();
@@ -456,7 +448,6 @@ public abstract class DifferentialFunction implements Differential {
         DifferentialFunction that = (DifferentialFunction) o;
 
         if (vertexId != that.vertexId) return false;
-        if (opState != null ? !opState.equals(that.opState) : that.opState != null) return false;
         //if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
         return true;
     }
@@ -464,7 +455,6 @@ public abstract class DifferentialFunction implements Differential {
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(vertexId);
         return result;
     }

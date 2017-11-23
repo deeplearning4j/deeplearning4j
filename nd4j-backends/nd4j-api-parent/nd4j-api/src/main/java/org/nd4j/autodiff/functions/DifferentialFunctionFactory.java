@@ -4,11 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import lombok.Data;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -1040,15 +1038,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
         int[] inputIds = Ints.toArray(inputIdsList);
 
-        Op.Type opType = op.opType();
-
         String[] vertexIds = sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds));
-        OpState opState = OpState.builder()
-                .opType(opType).inPlace(op.isInPlace())
-                .opName(opName)
-                .id(opName + "(" + vertexIds + ")")
-                .extraArgs(op.getExtraArgs())
-                .build();
 
 
         /**
@@ -1058,10 +1048,9 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         sameDiff.graph().addEdge(
                 inputIds,
                 outputVertexIds,
-                opState, true);
+                opName + "(" + vertexIds + ")", true);
 
 
-        op.opState = opState;
 
     }
 

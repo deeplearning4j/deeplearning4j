@@ -87,12 +87,10 @@ public class JaccardDistance extends BaseAccumulation {
 
     public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
-        isComplex = allDistances;
     }
 
     public JaccardDistance(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
-        isComplex = allDistances;
     }
 
 

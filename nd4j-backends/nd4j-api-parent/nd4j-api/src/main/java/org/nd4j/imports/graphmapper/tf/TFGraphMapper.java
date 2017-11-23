@@ -1,6 +1,5 @@
 package org.nd4j.imports.graphmapper.tf;
 
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +35,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public final static String VALUE_ATTR_KEY = "value";
     public final static String DATA_TYPE_KEY = "dtype";
     public final static String SHAPE_KEY = "shape";
+    private static TFGraphMapper MAPPER_INSTANCE = new TFGraphMapper();
+
+    public static TFGraphMapper getInstance() {
+        return MAPPER_INSTANCE;
+    }
 
     @Override
     public int[] getShapeFromAttr(AttrValue attr) {
@@ -127,60 +131,55 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
 
+    private String getNodeName(String name) {
+        //tensorflow adds colons to the end of variables representing input index, this strips those off
+        return name.indexOf(':') >= 0 ? name.substring(0,name.indexOf(':')) : name;
+    }
+
     @Override
     public Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(GraphDef graph, Map<String, Integer> nodeNameToVertexId) {
         val ret = new HashMap<String, Pair<int[], int[]>>(graph.getNodeCount());
-        val nodes = getNodeList(graph);
         Map<String,List<Integer>> outputs = new HashMap<>();
-        Map<String,List<Integer>> inputs = new HashMap<>();
         //map each node's outputs and inputs
         for(val node : graph.getNodeList()) {
+            val nodeName = getNodeName(node.getName());
             //simultaneously collect the ids for inputs and outputs
             //incrementally building the list
             for(int i = 0; i < node.getInputCount(); i++) {
-                val nodeInput = node.getInput(i);
-                if(!outputs.containsKey(nodeInput)) {
+                val nodeInput = getNodeName(node.getInput(i));
+                if(!outputs.containsKey(nodeName)) {
                     List<Integer> newInputs = new ArrayList<>();
                     val get = nodeNameToVertexId.get(nodeInput);
                     if(get != null)
                         newInputs.add(get);
-                    outputs.put(nodeInput,newInputs);
+                    else {
+                        throw new ND4JIllegalStateException("Unable to map node " + nodeName + " no vertex id found!");
+                    }
+                    outputs.put(nodeName,newInputs);
                 }
                 else {
-                    List<Integer> outputIds = outputs.get(nodeInput);
-                    val output = nodeNameToVertexId.get(nodeInput);
+                    List<Integer> outputIds = outputs.get(nodeName);
+                    val output = nodeNameToVertexId.get(nodeName);
                     if(output != null)
                         outputIds.add(nodeNameToVertexId.get(nodeInput));
+                    else {
+                        throw new ND4JIllegalStateException("Unable to map node " + nodeName + " no vertex id found!");
+                    }
 
                 }
 
-                if(!inputs.containsKey(node.getName())) {
-                    List<Integer> put = new ArrayList<>();
-                    val result = nodeNameToVertexId.get(node.getName());
-                    if(result != null)
-                        put.add(result);
-                    inputs.put(node.getName(),put);
-                }
-                else {
-                    val put = inputs.get(node.getName());
-                    val result = nodeNameToVertexId.get(node.getName());
-                    if(result != null)
-                        put.add(result);
-                }
             }
         }
 
 
-        val keys = Sets.intersection(inputs.keySet(),outputs.keySet());
         //collect the final result
-        for(val name : keys)  {
-            val inputList = inputs.get(name);
-            val outputList = outputs.get(name);
-            if(!inputList.isEmpty() && !outputList.isEmpty() && outputList.get(0) != null && inputList.get(0) != null) {
-                int[] inputIds = Ints.toArray(inputs.get(name));
-                int[] outputIds = Ints.toArray(outputs.get(name));
-                ret.put(name,Pair.of(inputIds,outputIds));
-            }
+        for(val entry : outputs.entrySet())  {
+            val name = entry.getKey();
+            val output = new int[] {nodeNameToVertexId.get(name)};
+            int[] inputIds = Ints.toArray(entry.getValue());
+            int[] outputIds = output;
+            ret.put(name,Pair.of(inputIds,outputIds));
+
 
 
         }
@@ -192,11 +191,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public Map<String, NodeDef> variablesForGraph(GraphDef graphDef) {
         Map<String,NodeDef> ret = new HashMap<>();
         for(NodeDef nodeDef : graphDef.getNodeList()) {
-            if(isVariableNode(nodeDef) || isPlaceHolder(nodeDef)
-                    || nodeDef.getOp().equalsIgnoreCase("const")
-                    && dataTypeForTensor(nodeDef) != DataBuffer.Type.UNKNOWN) {
-                ret.put(nodeDef.getName(),nodeDef);
-            }
+            //     if(dataTypeForTensor(nodeDef) != DataBuffer.Type.UNKNOWN) {
+            ret.put(getNodeName(nodeDef.getName()),nodeDef);
+            //   }
         }
 
         return ret;
@@ -274,7 +271,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     @Override
     public DataBuffer.Type dataTypeForTensor(NodeDef tensorProto) {
-        val type = tensorProto.getAttrOrThrow("dtype").getType();
+        if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
+            return DataBuffer.Type.UNKNOWN;
+
+        val type = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
+                : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
+                .getAttrOrThrow("Tidx").getType();
         switch(type) {
             case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
             case DT_INT32:
@@ -474,6 +476,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public int[] getShapeFromTensor(NodeDef tensorProto) {
         if(tensorProto.containsAttr("shape")) {
             return shapeFromShapeProto(tensorProto.getAttrOrThrow("shape").getShape());
+
+        }
+        //yet to be determined shape, or tied to an op where output shape is dynamic
+        else if(!tensorProto.containsAttr("value")) {
+            return null;
 
         }
         else

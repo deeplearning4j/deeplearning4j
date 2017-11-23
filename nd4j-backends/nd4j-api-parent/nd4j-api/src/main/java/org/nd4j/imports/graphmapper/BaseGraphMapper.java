@@ -5,8 +5,7 @@ import com.google.protobuf.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.opstate.OpStateEdge;
+import org.nd4j.autodiff.opstate.EdgeId;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -16,6 +15,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Base implementation for importing a graph
@@ -36,21 +36,10 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
      * @return
      */
     @Override
-    public OpStateEdge getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node) {
-        val opStateVertexIds = new String[inputIds.length + outputIds.length];
-        int idx = 0;
-        for(int i = 0; i < inputIds.length; i++) {
-            opStateVertexIds[idx++] = String.valueOf(inputIds[i]);
-        }
+    public EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node) {
 
-        OpState opState = OpState.builder()
-                .opType(opTypeForNode(node))
-                .opName(getMappedOp(getOpType(node)).opName())
-                .build();
-
-
-        OpStateEdge opStateEdge = new OpStateEdge(inputIds,outputIds,opState,true);
-        return opStateEdge;
+        EdgeId edgeId = new EdgeId(inputIds,outputIds, UUID.randomUUID().toString(),true);
+        return edgeId;
     }
 
 
@@ -115,13 +104,18 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         importState.setGraph(tfGraph);
         val variablesForGraph = variablesForGraph(tfGraph);
         importState.setVariables(variablesForGraph);
-        //map the names of the ndoes while accumulating the vertex ids
+        //map the names of the nodes while accumulating the vertex ids
         //for each variable
         val indexMap = new HashMap<String,Integer>();
         for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
+
             val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             if(arr != null) {
                 val var = importState.getSameDiff().var(entry.getKey(),arr);
+                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+            }
+            else if(getShapeFromTensor(entry.getValue()) == null) {
+                val var = importState.getSameDiff().var(entry.getKey(),null,0);
                 indexMap.put(entry.getKey(),var.getVertexId()[0]);
             }
             else {
@@ -132,7 +126,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         }
 
         //handle mapping vertex ids properly
-        importState.setVertexIdMap(inputsAndOutputsForGraph(tfGraph,indexMap));
+        val inputsAndOutputs = inputsAndOutputsForGraph(tfGraph,indexMap);
+        importState.setVertexIdMap(inputsAndOutputs);
 
 
         val tfNodesList = getNodeList(tfGraph);

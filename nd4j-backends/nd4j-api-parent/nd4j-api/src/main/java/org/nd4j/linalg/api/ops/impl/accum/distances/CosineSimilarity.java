@@ -87,12 +87,10 @@ public class CosineSimilarity extends BaseAccumulation {
 
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
-        isComplex = allDistances;
     }
 
     public CosineSimilarity(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
-        isComplex = allDistances;
     }
 
 

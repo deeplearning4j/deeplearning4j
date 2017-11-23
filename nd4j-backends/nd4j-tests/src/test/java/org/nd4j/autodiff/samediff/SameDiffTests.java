@@ -1,13 +1,12 @@
 package org.nd4j.autodiff.samediff;
 
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
-import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpExecOrder;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -87,8 +86,8 @@ public class SameDiffTests {
         int[][] topoSortResult= sameDiff.graph().topologicalSort();
         assertArrayEquals(sorted, topoSortResult);
         assertEquals(1, sameDiff.graph().getOpOrder().getActions().size());
-        OpState opState = sameDiff.graph().getOpOrder().getActions().get(0).getOpState();
-        assertEquals("sigmoid", opState.getOpName());
+        val func = sameDiff.getFunctionForVertexId(sameDiff.graph().getOpOrder().getActions().get(0).getOutputId());
+        assertEquals("sigmoid", func.opName());
         Op op = (Op) sameDiff.createOp(sameDiff.graph().getOpOrder().getActions().get(0));
         assertTrue(op instanceof Sigmoid);
         Nd4j.getExecutioner().exec(op);
@@ -1365,7 +1364,8 @@ public class SameDiffTests {
         //aren't changed with new instances
         OpExecOrder logisticPredictionOrder = logisticPrediction.graph().getOpOrder();
         for(int i = 0; i < 2; i++) {
-            assertEquals(logisticOpNameAssertions.get(i),logisticPredictionOrder.getActions().get(i).getOpState().getOpName());
+            val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+            assertEquals(logisticOpNameAssertions.get(i),func.opName());
         }
 
 
@@ -1381,7 +1381,8 @@ public class SameDiffTests {
 
         logisticPredictionOrder = logisticPrediction.graph().getOpOrder();
         for(int i = 0; i < 2; i++) {
-            assertEquals(logisticOpNameAssertions.get(i),logisticPredictionOrder.getActions().get(i).getOpState().getOpName());
+            val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+            assertEquals(logisticOpNameAssertions.get(i),func.opName());
         }
 
         SameDiff logisticGraph = sameDiffOuter.getFunction("loss");
@@ -1390,7 +1391,8 @@ public class SameDiffTests {
         System.out.println(opExecOrder);
         assertEquals(3,opExecOrder.getActions().size());
         for(int i = 0; i < 3; i++) {
-            assertEquals(opNameAssertions.get(i),opExecOrder.getActions().get(i).getOpState().getOpName());
+            val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+            assertEquals(opNameAssertions.get(i),func.opName());
         }
 
     }
@@ -1431,7 +1433,8 @@ public class SameDiffTests {
             List<String> logisticOpNameAssertions = Arrays.asList("mmul", "sigmoid");
             OpExecOrder logisticPredictionOrder = logisticPrediction.graph().getOpOrder();
             for (int i = 0; i < 2; i++) {
-                assertEquals(logisticOpNameAssertions.get(i), logisticPredictionOrder.getActions().get(i).getOpState().getOpName());
+                val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+                assertEquals(logisticOpNameAssertions.get(i), func.opName());
             }
 
             SameDiff logisticGraph = sameDiffOuter.getFunction("loss");
@@ -1439,7 +1442,8 @@ public class SameDiffTests {
             OpExecOrder opExecOrder = logisticGraph.graph().getOpOrder();
             assertEquals(3, opExecOrder.getActions().size());
             for (int i = 0; i < 3; i++) {
-                assertEquals(opNameAssertions.get(i), opExecOrder.getActions().get(i).getOpState().getOpName());
+                val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+                assertEquals(opNameAssertions.get(i), func.opName());
             }
 
         }

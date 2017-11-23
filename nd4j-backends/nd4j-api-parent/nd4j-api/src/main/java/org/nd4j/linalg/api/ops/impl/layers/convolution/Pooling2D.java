@@ -174,6 +174,6 @@ public class Pooling2D extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "pooling";
+        return "Pooling2D";
     }
 }

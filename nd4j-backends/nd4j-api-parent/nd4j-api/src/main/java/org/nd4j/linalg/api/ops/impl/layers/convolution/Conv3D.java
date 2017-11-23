@@ -90,6 +90,6 @@ public class Conv3D extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "conv3d";
+        return "Conv3D";
     }
 }

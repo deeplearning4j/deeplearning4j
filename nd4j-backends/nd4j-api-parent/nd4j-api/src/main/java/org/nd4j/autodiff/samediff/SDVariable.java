@@ -4,10 +4,8 @@ import com.google.common.base.Preconditions;
 import lombok.*;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,24 +43,15 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
     @Builder
     private SDVariable(String varName,
-                       OpState opState,
                        SameDiff sameDiff,
                        int[] shape,
                        WeightInitScheme weightInitScheme,
                        int[] vertexId) {
-        this.shape =  shape;
+        if(shape != null)
+            this.shape =  Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape);
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
         this.vertexId = vertexId;
-
-        if(opState == null) {
-            this.opState = OpState.builder()
-                    .opType(Op.Type.RETURN)
-                    .inPlace(true)
-                    .opName(varName)
-                    .build();
-        }
-
 
         if(weightInitScheme == null) {
             this.weightInitScheme = new ZeroInitScheme('f');
@@ -137,6 +126,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                     getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
         }
+        else if(getShape() == null)
+            return null;
+
         else {
             INDArray newAlloc = getWeightInitScheme().create(getShape());
             sameDiff.associateArrayWithVariable(newAlloc,this);
@@ -186,11 +178,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public int[] getShape() {
-        if(shape != null)
-            return shape;
-
-        return sameDiff.getVariableForVertexId(this.vertexId).getShape();
-
+        return shape;
     }
 
 
@@ -206,18 +194,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 .sameDiff(sameDiff)
                 .build();
     }
-
-    private int[] getTransformOutputShape(SDVariable other) {
-        if(shape == null)
-            return other.getShape();
-        if(ArrayUtil.prod(shape) == 1) {
-            return other.getShape();
-        }
-
-        return getShape();
-    }
-
-
 
 
 

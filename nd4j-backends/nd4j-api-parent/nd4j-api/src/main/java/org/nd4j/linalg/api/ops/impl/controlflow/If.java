@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -88,14 +87,7 @@ public class If extends DifferentialFunction implements CustomOp {
         }
 
 
-        OpState opState = OpState.builder()
-                .opName(opName())
-                .opType(Op.Type.CONDITIONAL)
-                .inPlace(false)
-                .id(UUID.randomUUID().toString())
-                .build();
-
-        this.sameDiff.graph().addEdge(inputEdges,vertexId,opState,true);
+        this.sameDiff.graph().addEdge(inputEdges,vertexId,UUID.randomUUID().toString(),true);
 
 
     }
@@ -158,14 +150,8 @@ public class If extends DifferentialFunction implements CustomOp {
         this.loopBodyExecution = parent.getFunction(trueBodyName);
         parent.putFunction(vertexId,this);
 
-        OpState opState = OpState.builder()
-                .opName(opName())
-                .opType(Op.Type.CONDITIONAL)
-                .inPlace(false)
-                .id(UUID.randomUUID().toString())
-                .build();
 
-        parent.graph().addEdge(inputEdges,vertexId,opState,true);
+        parent.graph().addEdge(inputEdges,vertexId,UUID.randomUUID().toString(),true);
     }
 
 

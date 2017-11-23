@@ -113,6 +113,8 @@ public class AvgPooling2D extends DynamicCustomOp {
         if (!isSameMode)
             log.debug("Mode: {}", paddingMode);
 
+        val ph = padding.size() == 2 ? padding.get(0).intValue() : 0;
+        val pw = padding.size() == 2 ? padding.get(1).intValue() : 0;
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .sy(sY.intValue())
                 .sx(sX.intValue())
@@ -120,8 +122,8 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .isSameMode(isSameMode)
                 .kh(kY.intValue())
                 .kw(kX.intValue())
-                .ph(padding.get(0).intValue())
-                .pw(padding.get(1).intValue())
+                .ph(ph)
+                .pw(pw)
                 .virtualWidth(1)
                 .virtualHeight(1)
                 .build();
@@ -165,7 +167,7 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "avg_pool";
+        return "AvgPool";
     }
 
 

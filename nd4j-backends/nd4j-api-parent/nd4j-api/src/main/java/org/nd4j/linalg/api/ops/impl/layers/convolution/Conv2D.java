@@ -68,13 +68,14 @@ public class Conv2D extends DynamicCustomOp {
 
         val paddingMode = aPadding.getS().toStringUtf8();
 
-        //val tensorProto = mapper.getTensorFrom(attributesForNode.get("input"),graph);
-        // val kY =tensorProto.getTensorShape().getDim(0).getSize();
-        //val kX = tensorProto.getTensorShape().getDim(1).getSize();
-        val kY = nodeDef.getAttrOrThrow("shape").getShape().getDim(0).getSize();
-        val kX = nodeDef.getAttrOrThrow("shape").getShape().getDim(1).getSize();
-        //   variable.setArray(variable.getArray().permute(3, 2, 0, 1).dup('c'));
+        val kY = 0;
+        val kX = 0;
+      /*  val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("input",nodeDef,graph);
+        val kY = arr.size(0);
+        val kX = arr.size(1);
 
+        arr.assign(arr.permute(3, 2, 0, 1).dup('c'));
+*/
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
         Conv2DConfig conv2DConfig = Conv2DConfig.builder()
                 .kh((int) kY)
@@ -149,6 +150,6 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "conv2d";
+        return "Conv2D";
     }
 }

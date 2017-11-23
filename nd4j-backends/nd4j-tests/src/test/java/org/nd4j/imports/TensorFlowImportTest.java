@@ -6,15 +6,15 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.opstate.OpExecAction;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.List;
 
@@ -60,11 +60,6 @@ public class TensorFlowImportTest {
 
         List<OpExecAction> actions = graph.getGraph().getOpOrder().getActions();
         assertEquals(1, actions.size());
-
-        OpState state = actions.get(0).getOpState();
-
-        assertEquals(Op.Type.TRANSFORM, state.getOpType());
-        assertEquals(0, state.getOpNum());
 
         SDVariable var0 = graph.variableMap().get("zeros");
         SDVariable var1 = graph.variableMap().get("ones");
@@ -136,17 +131,17 @@ public class TensorFlowImportTest {
         val tg = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/max_lstm.pb").getFile());
     }
 
- /*   @Test
+    @Test
     public void testIntermediate1() throws Exception {
         Nd4j.create(1);
         val tg = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/tensorflow_inception_graph.pb").getFile());
 
-        assertTrue(tg.getVariableSpace().hasVariable("input"));
-        assertTrue(tg.getVariableSpace().getVariable("input").isPlaceholder());
+        assertTrue(tg.getVariable("input") != null);
+       // assertTrue(tg.getVariableSpace().getVariable("input").isPlaceholder());
 
         val ipod = Nd4j.read(new DataInputStream(new FileInputStream(new ClassPathResource("tf_graphs/ipod.nd4").getFile())));
 
-        tg.provideArrayForVariable("input", ipod);
+        tg.updateVariable("input",ipod);
 
         val buffer = tg.asFlatBuffers();
         assertNotNull(buffer);
@@ -156,11 +151,11 @@ public class TensorFlowImportTest {
         log.info("Length: {}; Offset: {};", buffer.capacity(), offset);
         val array = buffer.array();
 
-        try (val fos = new FileOutputStream("../../libnd4j/tests/resources/inception.fb"); val dos = new DataOutputStream(fos)) {
+     /*   try (val fos = new FileOutputStream("../../libnd4j/tests/resources/inception.fb"); val dos = new DataOutputStream(fos)) {
             dos.write(array, offset, array.length - offset);
-        }
+        }*/
 
-    }*/
+    }
 
 
 
@@ -170,18 +165,6 @@ public class TensorFlowImportTest {
         val tg = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/simple_while.pb.txt").getFile());
 
         assertNotNull(tg);
-
-        val fb = tg.asFlatBuffers();
-        assertNotNull(fb);
-
-        val offset = fb.position();
-
-        log.info("Length: {}; Offset: {};", fb.capacity(), offset);
-        val array = fb.array();
-
-        try (val fos = new FileOutputStream("../../../libnd4j/tests_cpu/resources/simple_while.fb"); val dos = new DataOutputStream(fos)) {
-            dos.write(array, offset, array.length - offset);
-        }
     }
 
     /*@Test
@@ -303,7 +286,6 @@ public class TensorFlowImportTest {
 
     }
 */
-/*
     @Test
     public void testIntermediateLoop3() throws Exception {
         Nd4j.create(1);
@@ -325,8 +307,6 @@ public class TensorFlowImportTest {
         }
 
     }
-*/
-/*
 
     @Test
     public void testIntermediateStridedSlice1() throws Exception {
@@ -335,10 +315,11 @@ public class TensorFlowImportTest {
 
         assertNotNull(tg);
 
-        val constIn = tg.getVariableSpace().getVariable("StridedSlice/input");
+        val constIn = tg.getVariable("StridedSlice/input");
         assertNotNull(constIn);
 
-        assertEquals(139.5, constIn.getArray().sumNumber().doubleValue(), 1e-5);
+        val arr = tg.getArrForVertexId(constIn.getVertexId());
+        assertEquals(139.5, arr.sumNumber().doubleValue(), 1e-5);
 
 
         // now converting to FlatBuffer
@@ -354,7 +335,6 @@ public class TensorFlowImportTest {
             dos.write(array, offset, array.length - offset);
         }
     }
-*/
 
     @Test
     public void testIntermediateTensorArraySimple1() throws Exception {
@@ -406,13 +386,16 @@ public class TensorFlowImportTest {
     public void testIntermediateReduction() throws Exception {
         Nd4j.create(1);
         val tg = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getFile());
+        val sumResultVar = tg.getVariable("Sum");
+        val func = tg.getFunctionForVertexId(sumResultVar.getVertexId());
+        assertEquals(3,tg.variables().size());
+        assertNotNull(sumResultVar);
+        assertNotNull(tg.getFunctionForVertexId(sumResultVar.getVertexId()));
         System.out.println(tg.variables());
-    /*    val sumNode = tg.getNode("Sum");
-        assertNotNull(sumNode);
 
-        assertNotNull(sumNode.getOpState().getAxes());
-        assertEquals(1, sumNode.getOpState().getAxes()[0]);
-*/
+        assertNotNull(func.getDimensions());
+        assertEquals(Integer.MAX_VALUE,func.getDimensions()[0]);
+
         val fb = tg.asFlatBuffers();
         assertNotNull(fb);
 

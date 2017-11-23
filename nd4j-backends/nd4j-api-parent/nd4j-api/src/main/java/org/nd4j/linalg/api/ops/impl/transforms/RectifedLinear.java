@@ -116,7 +116,7 @@ public class RectifedLinear extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "relu";
+        return "Relu";
     }
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {

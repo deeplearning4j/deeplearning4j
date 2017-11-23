@@ -867,10 +867,10 @@ public class NativeOpExecutionerTest {
             long time2 = System.nanoTime();
 
             if (x % 100 == 0)
-                log.info("Concat time: {} us", (time2 - time1) / 1000);
+                log.info("ConcatV2 time: {} us", (time2 - time1) / 1000);
         }
 
-        log.info("Concat tests:");
+        log.info("ConcatV2 tests:");
 
         for (int x = 0; x < embeds.size(); x++) {
             long time1 = System.nanoTime();
@@ -878,7 +878,7 @@ public class NativeOpExecutionerTest {
             long time2 = System.nanoTime();
 
             if (x % 100 == 0)
-             log.info("Concat time: {} us", (time2 - time1) / 1000);
+             log.info("ConcatV2 time: {} us", (time2 - time1) / 1000);
         }
 
     }

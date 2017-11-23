@@ -134,7 +134,7 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "lrn";
+        return "LRN";
     }
 
 }

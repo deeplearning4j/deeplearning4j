@@ -105,6 +105,9 @@ public class MaxPooling2D extends DynamicCustomOp {
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
 
+        int ph = padding.size() == 2 ? padding.get(0).intValue() : 0;
+        int pw = padding.size() == 2 ? padding.get(1).intValue() : 0;
+
         if (!isSameMode)
             log.debug("Mode: {}", paddingMode);
 
@@ -115,8 +118,8 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .isSameMode(isSameMode)
                 .kh(kY.intValue())
                 .kw(kX.intValue())
-                .ph(padding.get(0).intValue())
-                .pw(padding.get(1).intValue())
+                .ph(ph)
+                .pw(pw)
                 .virtualWidth(1)
                 .virtualHeight(1)
                 .build();
@@ -159,7 +162,7 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "max_pool";
+        return "MaxPool";
     }
 
 

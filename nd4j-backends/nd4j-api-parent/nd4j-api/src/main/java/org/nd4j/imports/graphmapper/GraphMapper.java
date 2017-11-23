@@ -2,7 +2,7 @@ package org.nd4j.imports.graphmapper;
 
 import com.google.protobuf.Message;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.OpStateEdge;
+import org.nd4j.autodiff.opstate.EdgeId;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -49,7 +49,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     DifferentialFunction getMappedOp(String name);
 
     /**
-     * Create an {@link OpStateEdge}
+     * Create an {@link EdgeId}
      * from the given input ids,
      * output ids, and the node
      * @param inputIds the input ids for the node
@@ -59,7 +59,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param node the node to create the edge from
      * @return
      */
-    OpStateEdge getOpStateEdge(int[] inputIds,int[] outputIds,NODE_TYPE node);
+    EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node);
 
     /**
      *

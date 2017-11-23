@@ -96,6 +96,11 @@ public class Reshape extends ShapeOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        if(!nodeDef.containsAttr("TShape")) {
+            this.shape = new int[] {1,1};
+            return;
+        }
+
         val shape = nodeDef.getAttrOrThrow("Tshape");
         if(!shape.hasShape()) {
             val shapeRet = new int[2];

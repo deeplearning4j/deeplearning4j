@@ -43,7 +43,6 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.shape = Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape());
             addAsNewVertexId();
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimension);
 
         } else {
             throw new IllegalArgumentException("Input not null variables.");
@@ -73,7 +72,6 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.shape = Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape());
             addAsNewVertexId();
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimension);
 
 
         } else {
@@ -106,7 +104,6 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimension);
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");

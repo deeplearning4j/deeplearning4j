@@ -1,9 +1,6 @@
 package org.nd4j.autodiff.graph;
 
 import com.google.common.primitives.Ints;
-import guru.nidi.graphviz.engine.Format;
-import guru.nidi.graphviz.engine.Graphviz;
-import guru.nidi.graphviz.model.Label;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -13,9 +10,6 @@ import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -23,10 +17,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-
-import static guru.nidi.graphviz.model.Factory.graph;
-import static guru.nidi.graphviz.model.Factory.node;
-import static guru.nidi.graphviz.model.Link.to;
 
 /** Graph, where all edges and vertices are stored in-memory.<br>
  * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
@@ -422,17 +412,19 @@ public class Graph<V, E> extends BaseGraph<V, E> {
      * @throws IOException
      */
     public void print(File path) throws IOException {
+
+        throw new UnsupportedOperationException();
+        /*
         guru.nidi.graphviz.model.Graph g = graph("example5").directed();
         for(List<Edge<E>> edgeList : getEdges().values())
             for(Edge<E> edge : edgeList) {
                 NDArrayVertex vertex = (NDArrayVertex) getVertex(edge.getFrom()[0]);
                 NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo()[0]);
-                OpState opState = (OpState) edge.getValue();
                 g = g.with(node(String.valueOf(vertex.vertexID()))
                         .with(Label.of(String.valueOf(vertex.getValue().getVarName())))
                         .link(to(node(String.valueOf(v2.vertexID()))
                                 .with(Label.of(v2.getValue().getVarName())))
-                                .with(Label.of(opState.getOpName()))));
+                                .with(Label.of(""))));
 
 
             }
@@ -447,7 +439,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         Graphviz viz = Graphviz.fromGraph(g);
         viz.width(15000).height(800).scale(0.5)
                 .render(Format.PNG).toFile(path);
-
+*/
     }
 
     public int nextVertexId() {

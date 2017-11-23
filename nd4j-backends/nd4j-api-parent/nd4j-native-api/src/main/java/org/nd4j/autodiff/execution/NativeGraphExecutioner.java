@@ -11,14 +11,14 @@ import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.opstate.OpExecAction;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,11 +45,6 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         return Type.LOCAL;
     }
 
-
-    protected Triple<FlatNode, FlatVariable[], FlatVariable[]> getFlatNodeFromOpState(OpState state) {
-
-        return null;
-    }
 
     /**
      * This method executes given graph and returns results
@@ -111,7 +106,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
             Node node = new Node();
             node.setId(nodesCount);
-            node.setName(action.getOpState().getId());
+            node.setName(Arrays.toString(action.getOutputId()));
             node.setOpExecAction(action);
             //node.setOriginalOutput(action.getOutputId());
 
@@ -160,26 +155,36 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         List<Integer> nodes = new ArrayList<>();
         for (Integer n: keySet) {
             Node node = intermediate.get(n);
-
+            val func = sd.getFunctionForVertexId(node.getOriginalOutput());
+            int[] extraBits = null;
+            if(func.opType() == Op.Type.CUSTOM) {
+               DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) func;
+               extraBits = Ints.toArray(dynamicCustomOp.getIArguments());
+            }
+            else
+                extraBits = new int[]{};
+            val extraArgs = sd.getFunctionForVertexId(node.getOriginalOutput()).getExtraArgs();
             // make this variable
-            float[] extras = node.getOpExecAction().getOpState().getExtraArgs() != null ? new float[node.getOpExecAction().getOpState().getExtraArgs().length] : new float[0];
+            float[] extras = extraArgs != null ? new float[extraArgs.length] : new float[0];
+            val opType = sd.getFunctionForVertexId(node.getOriginalOutput()).opType();
+            val opName = sd.getFunctionForVertexId(node.getOriginalOutput()).opName();
             for (int e = 0; e < extras.length; e++) {
-                extras[e] = ((Number) node.getOpExecAction().getOpState().getExtraArgs()[e]).floatValue();
+                extras[e] = ((Number) extraArgs[e]).floatValue();
             }
 
             int nodesIn = FlatNode.createInputVector(bufferBuilder, Ints.toArray(node.getInput()));
             int nodesInP = FlatNode.createInputPairedVector(bufferBuilder, new int[]{});
             int nodesOut = FlatNode.createOutputVector(bufferBuilder, Ints.toArray(node.getOutput()));
             int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
-            int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, node.getOpExecAction().getOpState().getOpType() == Op.Type.CUSTOM ? node.getOpExecAction().getOpState().getExtraBits() : new int[]{});
-            int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpExecAction().getOpState().getAxes() != null ? node.getOpExecAction().getOpState().getAxes() : new int[]{});
+            int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
+            int dimensions = FlatNode.createDimensionsVector(bufferBuilder,func.getDimensions() != null ? func.getDimensions() : new int[]{});
             int fname = bufferBuilder.createString(node.getName());
 
             int flatNode = FlatNode.createFlatNode(bufferBuilder,
                     node.getId(),
                     fname,
-                    getFlatOpType(node.getOpExecAction().getOpState().getOpType()),
-                    getOpNum(node.getOpExecAction().getOpState().getOpName(), node.getOpExecAction().getOpState().getOpType()),
+                    getFlatOpType(opType),
+                    getOpNum(opName, opType),
                     nodesIn,
                     nodesInP,
                     (byte) 0,
@@ -188,7 +193,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     integerArgs,
                     dimensions,
                     -1,
-                    node.getOpExecAction().getOpState().getOpType() == Op.Type.SCALAR ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f, 0, 0);
+                    opType == Op.Type.SCALAR ? func.getScalarValue().floatValue() : 0.0f, 0, 0);
 
             nodes.add(flatNode);
         }
