@@ -170,6 +170,18 @@ public class TensorFlowImportTest {
         val tg = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/simple_while.pb.txt").getFile());
 
         assertNotNull(tg);
+
+        val fb = tg.asFlatBuffers();
+        assertNotNull(fb);
+
+        val offset = fb.position();
+
+        log.info("Length: {}; Offset: {};", fb.capacity(), offset);
+        val array = fb.array();
+
+        try (val fos = new FileOutputStream("../../../libnd4j/tests_cpu/resources/simple_while.fb"); val dos = new DataOutputStream(fos)) {
+            dos.write(array, offset, array.length - offset);
+        }
     }
 
     /*@Test
@@ -400,7 +412,7 @@ public class TensorFlowImportTest {
 
         assertNotNull(sumNode.getOpState().getAxes());
         assertEquals(1, sumNode.getOpState().getAxes()[0]);
-
+*/
         val fb = tg.asFlatBuffers();
         assertNotNull(fb);
 
@@ -411,7 +423,7 @@ public class TensorFlowImportTest {
 
         try (val fos = new FileOutputStream("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"); val dos = new DataOutputStream(fos)) {
             dos.write(array, offset, array.length - offset);
-        }*/
+        }
 
     }
 

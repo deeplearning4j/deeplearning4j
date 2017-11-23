@@ -264,6 +264,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 e.printStackTrace();
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
+            } catch (NullPointerException e) {
+                log.error("Failed with [{}]", opName);
+                throw new RuntimeException(e);
             }
 
         }

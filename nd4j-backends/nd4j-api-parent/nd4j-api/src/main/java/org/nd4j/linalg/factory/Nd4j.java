@@ -4211,6 +4211,28 @@ public class Nd4j {
         return ret;
     }
 
+
+    public static INDArray create(double[] data, int[] shape, char ordering, long offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
+        }
+
+        if (shape.length == 1) {
+            if (shape[0] == data.length) {
+                shape = new int[] {1, data.length};
+            } else
+                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
+                        + " doesn't match data length: " + data.length);
+        }
+
+        checkShapeValues(data.length, shape);
+
+        INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      *
      * @param data

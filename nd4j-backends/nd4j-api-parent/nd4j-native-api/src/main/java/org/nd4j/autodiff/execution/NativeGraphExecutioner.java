@@ -3,8 +3,10 @@ package org.nd4j.autodiff.execution;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -14,12 +16,14 @@ import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
@@ -84,10 +88,15 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
             INDArray arr = sdVar.getArr().isView() ? sdVar.getArr().dup(sdVar.getArr().ordering()) : sdVar.getArr();
             int name = bufferBuilder.createString(sdVar.getVarName());
-            int values = FlatVariable.createValuesVector(bufferBuilder, arr.data().asFloat());
-            int shape = FlatVariable.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
+            int shape = FlatArray.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
+            int buffer = FlatArray.createBufferVector(bufferBuilder, arr.data().asBytes());
+            int id = IntPair.createIntPair(bufferBuilder, sdVar.getVertexId()[0], 0);
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, varId, name, shape, values, -1);
+            int array = FlatArray.createFlatArray(bufferBuilder, shape, buffer, SameDiff.getDataTypeAsByte(arr.data().dataType()), SameDiff.getOrderAsByte());
+
+
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
             variables.add(flatVariable);
 
             mappedVariables.put(input.getVarName(), new int[]{varId});
@@ -235,20 +244,38 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
             log.info("Var received: id: {}; opName: {}", var.id(), var.name());
-            float[] values = new float[var.valuesLength()];
+            FlatArray ndarray = var.ndarray();
+            val dtype = ndarray.dtype();
             int[] shape = new int[var.shapeLength()];
 
-            for (int i = 0; i < var.valuesLength(); i++) {
-                values[i] = var.values(i);
-            }
-
-            for (int i = 0; i < var.shapeLength(); i++) {
-                shape[i] = var.shape(i);
+            for (int i = 0; i < ndarray.shapeLength(); i++) {
+                shape[i] = ndarray.shape(i);
             }
 
             int[] _shape = new int[shape[0]];
             for (int i = 0; i < _shape.length; i++) {
                 _shape[i] = shape[i+1];
+            }
+
+            val bufLen = ArrayUtil.prod(_shape);
+            double[] values = new double[bufLen];
+
+            val bb = ndarray.bufferAsByteBuffer();
+
+            if (dtype == DataType.FLOAT) {
+                val fb = bb.asFloatBuffer();
+                for (int i = 0; i < bufLen; i++)
+                    values[i] = fb.get(i);
+
+            } else if (dtype == DataType.HALF) {
+                val hb = bb.asShortBuffer();
+                for (int i = 0; i < bufLen; i++)
+                    values[i] = (double) HalfIndexer.toFloat((int) hb.get(i));
+
+            } else if (dtype == DataType.DOUBLE) {
+                val db = bb.asDoubleBuffer();
+                for (int i = 0; i < bufLen; i++)
+                    values[i] = db.get(i);
             }
 
             char _order = shape[shape[0] * 2 + 4 - 1] == 99 ? 'c' : 'f';

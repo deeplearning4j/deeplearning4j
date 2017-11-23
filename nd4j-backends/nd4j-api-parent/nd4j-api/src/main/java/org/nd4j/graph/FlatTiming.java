@@ -4,6 +4,7 @@ package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -17,8 +18,8 @@ public final class FlatTiming extends Table {
   public int id() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
-  public org.nd4j.graph.LongPair timing() { return timing(new org.nd4j.graph.LongPair()); }
-  public org.nd4j.graph.LongPair timing(org.nd4j.graph.LongPair obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public LongPair timing() { return timing(new LongPair()); }
+  public LongPair timing(LongPair obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatTiming(FlatBufferBuilder builder,
       int id,
