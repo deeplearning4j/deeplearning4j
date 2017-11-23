@@ -437,3 +437,882 @@ TEST_F(DeclarableOpsTests2, TestTensorDot15) {
     delete results;
 
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_1) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+    NDArray<float> expected('c', {2,3,4,5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+    expected.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_2) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1,4,5});
+    NDArray<float> expected('c', {2,3,4,5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+    expected.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_3) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1,1,5});
+    NDArray<float> expected('c', {2,3,4,5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+    expected.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_4) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,1,1,5});
+    NDArray<float> expected('c', {2,3,4,5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+    expected.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_5) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+    NDArray<float> expected('c', {2,3,4,5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+    expected.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_6) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+    NDArray<float> expected('c', {2,3,4,5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.);
+    expected.assign(0.);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_7) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 60.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_8) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 0.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_9) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,1,4,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 60.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_10) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 60.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_11) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 1.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_12) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 0.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_13) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 1.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_14) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);
+    weights(1) = 0.;
+    weights(2) = 0.;
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 1.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_15) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == 2.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_16) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+    predictions(0) = 0.;
+    predictions(1) = 0.;
+    predictions(2) = 0.;
+    predictions(3) = 0.;
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 2.01667, 1e-5);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_17) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+    predictions(0) = 0.;
+    predictions(1) = 0.;
+    predictions(2) = 0.;
+    predictions(3) = 0.;
+    labels(0) = 0.;
+    labels(1) = 0.;
+    labels(2) = 0.;
+    labels(3) = 0.;
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 1.93333, 1e-5);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_18) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,1,1,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+    predictions(0) = 0.;
+    predictions(1) = 0.;
+    predictions(2) = 0.;
+    predictions(3) = 0.;
+    labels(0) = 0.;
+    labels(1) = 0.;
+    labels(2) = 0.;
+    labels(3) = 0.;
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 1.93333, 1e-5);
+
+    delete results;
+
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_19) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_TRUE((*result)(0) == 1.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_20) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_TRUE((*result)(0) == 1.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_21) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,1,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_TRUE((*result)(0) == 1.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_22) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {1,1});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.);
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_TRUE((*result)(0) == 0.);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, absoluteDifference_test_23) {
+    
+    NDArray<float> labels('c', {2,3,4,5});
+    NDArray<float> predictions('c', {2,3,4,5});
+    NDArray<float> weights('c', {2,3,4,5});
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(3, predictions);
+    weights.assign(0.5);
+    predictions(0) = 0.;
+    predictions(1) = 0.;
+    predictions(2) = 0.;
+    predictions(3) = 0.;
+    labels(0) = 0.;
+    labels(1) = 0.;
+    labels(2) = 0.;
+    labels(3) = 0.;
+    weights(40+0) = 0.;
+    weights(40+1) = 0.;
+    weights(40+2) = 0.;
+    weights(40+3) = 0.;
+
+    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());        
+    ASSERT_NEAR((*result)(0), 0.965517, 1e-5);
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test1) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {1,3,4});
+    NDArray<float> expected('c', {1,3,4}, {-91.5,-107.5,-125.5,-145.5, -167.5,-191.5,-217.5,-245.5, -275.5,-307.5,-341.5,-377.5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    NDArrayFactory<float>::linspace(2, predictions);
+    weights.assign(0.5);    
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+ 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test2) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {2,1,4});
+    NDArray<float> expected('c', {2,1,4}, {-3.25, -4., -4.75, -5.5,-12.25,-13.,-13.75,-14.5});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);    
+    predictions.assign(0.5);    
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+ 
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test3) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {2,3,1});
+    NDArray<float> expected('c', {2,3,1}, {-2., -6.,-10.,-14.,-18.,-22.});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);    
+    predictions.assign(0.5);    
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test4) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {1,1});
+    NDArray<float> expected('c', {2,3,1}, {-2., -6.,-10.,-14.,-18.,-22.});
+                                        
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);    
+    predictions.assign(0.5);    
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test5) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {2,1,4});    
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);
+    predictions.assign(0.5);
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == -71.);
+
+    delete results;
+
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test6) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {1,1});    
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);
+    predictions.assign(0.5);
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == -71.);
+
+    delete results;
+
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test7) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {1,1,4});    
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);
+    predictions.assign(0.5);
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == -69.);
+
+    delete results;
+
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test8) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {2,3,1});    
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);
+    predictions.assign(0.5);
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == -24.);
+
+    delete results;
+
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test9) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {1,1});    
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);
+    predictions.assign(0.5);
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == -24.);
+
+    delete results;
+
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, cosineDistance_test10) {
+    
+    NDArray<float> labels('c', {2,3,4});
+    NDArray<float> predictions('c', {2,3,4});
+    NDArray<float> weights('c', {2,3,1});    
+                                            
+    NDArrayFactory<float>::linspace(1, labels);
+    weights.assign(0.5);
+    predictions.assign(0.5);
+    weights(0) = 0.;
+    weights(1) = 0.;
+
+    nd4j::ops::cosineDistance<float> op;
+    nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *result = results->at(0);    
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_TRUE((*result)(0) == -32.);
+
+    delete results;
+
+}

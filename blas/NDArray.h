@@ -249,20 +249,24 @@ namespace nd4j {
 
         int ews();
 
-        // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
-        NDArray<T> *sum(const std::initializer_list<int> &dimensions) const;
+        // method calculates sum along dimension(s) in this array and save it reduced array
+        NDArray<T> *sum(const std::initializer_list<int> &dimensions, const bool keepDims = false) const;
 
-		// this method deduces subarray using information from input dimensions
+		// method reduces array by excluding its shapes along axes present in dimensions vector
         template<typename OpName>
-        NDArray<T>* reduceAlongDimension(const std::vector<int>& dimensions) const;
+        NDArray<T>* reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims = false) const;
 		
-        // this method deduces subarray using information from input dimensions
+        // method reduces array by excluding its shapes along axes present in dimensions vector
         template<typename OpName>
-        NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions) const;
+        NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
 
-        // this method saves deduced subarray to target row
+        // method reduces array by excluding its shapes along axes present in dimensions vector
         template<typename OpName>
-        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions) const;
+        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false) const;
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+        template<typename OpName>
+        NDArray<T> reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims = false) const;
 
         template<typename OpName>
         T varianceNumber(bool biasCorrected = true);
@@ -305,9 +309,9 @@ namespace nd4j {
         void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
 
 #ifndef __JAVACPP_HACK__
-        void applyLambda(std::function<T(T)> const& func, NDArray<T>* target = nullptr);
+        void applyLambda(const std::function<T(T)>& func, NDArray<T>* target = nullptr);
 
-        void applyPairwiseLambda(NDArray<T>* other, std::function<T(T, T)> const& func, NDArray<T>* target = nullptr);
+        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
 #endif
 
         // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 

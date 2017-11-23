@@ -15,6 +15,7 @@ public:
 
 };
 
+//////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, BasicInject1) {
     std::vector<int> shape({1, 4});
 
@@ -23,7 +24,7 @@ TEST_F(ShapeUtilsTests, BasicInject1) {
     ASSERT_EQ(3, shape.at(1));
 }
 
-
+//////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, BasicInject2) {
     std::vector<int> shape({1, 4});
 
@@ -32,6 +33,7 @@ TEST_F(ShapeUtilsTests, BasicInject2) {
     ASSERT_EQ(4, shape.at(1));
 }
 
+//////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, AxisConversionTest_1) {
     std::vector<int> res = ShapeUtils<float>::convertAxisToTadTarget(3, {0});
 
@@ -40,6 +42,7 @@ TEST_F(ShapeUtilsTests, AxisConversionTest_1) {
     ASSERT_EQ(2, res.at(1));
 }
 
+//////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, AxisConversionTest_2) {
     std::vector<int> res = ShapeUtils<float>::convertAxisToTadTarget(4, {2, 3});
 
@@ -102,6 +105,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
     RELEASE(newShapeInfo, x.getWorkspace());
 }
 
+//////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
 {
 
@@ -121,3 +125,64 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
 
     RELEASE(newShapeInfo, x.getWorkspace());
 }
+
+//////////////////////////////////////////////////////////////////
+TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1)
+{
+    
+    NDArray<float> x('c',{2,3,4,5});
+    NDArray<float> expected('c', {2,4,5});    
+    std::vector<int> dimensions = {1};
+
+    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());    
+    
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+
+    delete []newShapeInfo;
+}
+
+//////////////////////////////////////////////////////////////////
+TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test2)
+{
+    
+    NDArray<float> x('c',{2,3,4,5});
+    NDArray<float> expected('c', {2,1,4,5});
+    std::vector<int> dimensions = {1};
+
+    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
+    
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+
+    delete []newShapeInfo;
+}
+
+//////////////////////////////////////////////////////////////////
+TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test3)
+{
+    
+    NDArray<float> x('c',{2,3,4,5});
+    NDArray<float> expected('c', {1,1,1,5});
+    std::vector<int> dimensions = {0,1,2};
+
+    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
+    
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+
+    delete []newShapeInfo;
+}
+
+//////////////////////////////////////////////////////////////////
+TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test4)
+{
+    
+    NDArray<float> x('c',{2,3,4,5});
+    NDArray<float> expected('c', {1,1,1,1});
+    std::vector<int> dimensions = {0,1,2,3};
+
+    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
+    
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+
+    delete []newShapeInfo;
+}
+

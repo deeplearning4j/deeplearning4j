@@ -6,6 +6,7 @@
 #include <helpers/ShapeUtils.h>
 #include <climits>
 #include <numeric>
+#include <algorithm>
 #include <set>
 
 
@@ -89,53 +90,66 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
 
 
     template<typename T>
-    int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr) {
-        return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), arr.getWorkspace());
+    int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims) {
+        return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), keepDims, arr.getWorkspace());
     }
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate resulting shape after reduce operation
 template<typename T>
-int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int *shape , nd4j::memory::Workspace* workspace) {
+int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int *shapeInfo, const bool keepDims, nd4j::memory::Workspace* workspace) {
         
-    int rank = shape::rank(const_cast<int*>(shape));
+    int rank = shape::rank(const_cast<int*>(shapeInfo));
     shape::checkDimensions(rank, dimensions);
        
-	int* newShape = nullptr;
+	int* newShapeInfo = nullptr;
     int dimSize = dimensions.size();
-	int newRank = rank - dimSize;
-	if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
-		ALLOCATE(newShape, workspace, 8, int);						// set newRank = 2
-		newShape[0] = 2;
-		newShape[1] = 1;
-		newShape[2] = 1;			
-	}
-       else {
-		ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);
-		int* tempShape = shape::removeIndex(shape::shapeOf(const_cast<int*>(shape)), const_cast<int*>(dimensions.data()), rank, dimSize);
-           newShape[0] = newRank;                      // set rank
-		for(int i=0; i<newRank; ++i)
-			newShape[i+1] = tempShape[i]; 			// ignore zero index (rank)
-		delete []tempShape;
-	}		
-	//ensure vector is proper shape 
-	if (newRank == 1) {
-		int oldValue = newShape[1];
-		RELEASE(newShape, workspace);
-		ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);		// set newRank = 2
-		newShape[0] = 2;
-        if (dimensions[0] == 0) {
-               newShape[1] = 1; 
-			newShape[2] = oldValue;
-		}
-           else {
-               newShape[1] = oldValue;
-			newShape[2] = 1; 				
-		}
-    } 
-	shape::updateStrides(newShape, order);
+
+    if(keepDims) {
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), int);
+        newShapeInfo[0] = rank;
+        for(int i = 0; i < rank; ++i)
+            if (std::binary_search(dimensions.begin(), dimensions.end(), i))                       // dimensions is already sorted after shape::checkDimensions() has been applied
+                newShapeInfo[i+1] = 1;
+            else
+                newShapeInfo[i+1] = shapeInfo[i+1];
+    }
+    else {
+	   int newRank = rank - dimSize;
+	   if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
+            ALLOCATE(newShapeInfo, workspace, 8, int);						// set newRank = 2
+            newShapeInfo[0] = 2;
+            newShapeInfo[1] = 1;
+            newShapeInfo[2] = 1;			
+	   }
+        else {
+            ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(newRank), int);
+            newShapeInfo[0] = newRank;                      // set rank
+            int j=1;
+            for(int i = 0; i < rank; ++i)
+                if (!std::binary_search(dimensions.begin(), dimensions.end(), i))                       // dimensions is already sorted after shape::checkDimensions() has been applied
+                    newShapeInfo[j++] = shapeInfo[i+1];            
+	   }		
+	   //ensure vector is proper shape 
+	   if (newRank == 1) {
+            int oldValue = newShapeInfo[1];
+            RELEASE(newShapeInfo, workspace);
+            ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), int);		// set newRank = 2
+            newShapeInfo[0] = 2;
+            if (dimensions[0] == 0) {
+                newShapeInfo[1] = 1; 
+                newShapeInfo[2] = oldValue;
+            }
+            else {
+                newShapeInfo[1] = oldValue;
+                newShapeInfo[2] = 1; 				
+            }
+        } 
+    }
+
+	shape::updateStrides(newShapeInfo, order);
        
-    return newShape;
+    return newShapeInfo;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -345,7 +359,7 @@ int ShapeUtils<T>::getSubArrayIndex(const int* maxShapeInfo, const int* minShape
 }
 
 //////////////////////////////////////////////////////////////////////////
-// evaluate shapeInfo for resulting array of tile operation
+// evaluate shapeInfo for resulting array from tile operation
 template <typename T>
 int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<int>& reps) {
 

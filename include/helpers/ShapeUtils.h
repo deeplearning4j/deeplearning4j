@@ -19,8 +19,8 @@ namespace nd4j {
         static std::vector<int> evalShapeForTensorDot(const NDArray<T>* a, const NDArray<T>* b, std::vector<int>& axesA, std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt);
 
         // evaluate resulting shape after reduce operation
-        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr);
-        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int* shape, nd4j::memory::Workspace* workspace = nullptr);
+        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims = false);
+        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int* shape, const bool keepDims = false, nd4j::memory::Workspace* workspace = nullptr);
 
 		// evaluate shape for array which is result of repeat operation applied to arr
     	static std::vector<int> evalRepeatShape(int dimension, const std::vector<int>& repeats, const NDArray<T>& arr);
@@ -47,7 +47,7 @@ namespace nd4j {
         // the array with larger dimensions number has to be passed as first argument
         static int* evalBroadcastShapeInfo(const NDArray<T>& max, const NDArray<T>& min);
 
-        // return sorted vector of dimensions of array with larger dimensions number along which two input arrays have same shape
+        // return sorted vector of dimensions of array with larger dimensions along which two input arrays have same shape
         static std::vector<int> getDimsWithSameShape(const NDArray<T>& max, const NDArray<T>& min);
 
         // return absolute index of array min, min is sub-array of max, index to be returned is min index and it corresponds maxIdx of max array 
