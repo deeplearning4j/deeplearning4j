@@ -4,6 +4,8 @@
 
 #include <helpers/logger.h>
 #include <helpers/BitwiseUtils.h>
+#include <pointercast.h>
+#include <types/float16.h>
 
 namespace nd4j {
 

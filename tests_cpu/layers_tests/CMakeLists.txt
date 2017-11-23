@@ -101,6 +101,6 @@ endif()
 
 
 # DenseLayerTests.cpp
-add_executable(runtests StashTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests1.cpp DeclarableOpsTests2.cpp  GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp NDArrayTests2.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp NDArrayFactoryTests.cpp BitwiseUtilsTests.cpp SanityTests.cpp PlaygroundTests.cpp)
+add_executable(runtests StashTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests1.cpp DeclarableOpsTests2.cpp  GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp NDArrayTests2.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp NDArrayFactoryTests.cpp BitwiseUtilsTests.cpp SanityTests.cpp PlaygroundTests.cpp BroadcastableOpsTests.cpp)
 #add_executable(runtests CyclicTests.cpp)
 target_link_libraries(runtests nd4jcpu gtest gtest_main)

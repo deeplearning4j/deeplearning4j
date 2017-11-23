@@ -7,13 +7,27 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(realdiv, 2, 1, true) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            NDArray<T> *y = INPUT_VARIABLE(1);
+            NDArray<T> *z = this->getZ(block);
 
-            x->template applyPairwiseTransform<simdOps::Divide<T>>(y, z, nullptr);
+            if (!x->isScalar() && !y->isScalar() && x->lengthOf() == y->lengthOf()) {
+                REQUIRE_OK(this->validateInputLengthMatch(block));
+                // REQUIRE_OK(this->validateInputDimensionsMatch(block));
+                x->template applyPairwiseTransform<simdOps::Divide<T>>(y, z, nullptr);
 
-            STORE_RESULT(z);
+            } else if (!x->isScalar() && y->isScalar()) {
+                x->template applyScalar<simdOps::Divide<T>>(*y, z);
+
+            } else if (x->isScalar() && !y->isScalar()) {
+                y->template applyScalar<simdOps::Divide<T>>(*x, z);
+            }
+            else if (x->isScalar() && y->isScalar()) { // (x->isScalar() && y->isScalar())
+                z->putScalar(0, x->getScalar(0) / y->getScalar(0));
+            } else {
+                auto tZ = x->template applyTrueBroadcast<simdOps::Divide<T>>(y);
+                OVERWRITE_RESULT(tZ);
+            }
 
             return ND4J_STATUS_OK;
         }

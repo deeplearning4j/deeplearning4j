@@ -34,7 +34,9 @@
        (13, simdOps::Min) ,\
        (14, simdOps::Max) ,\
        (15, simdOps::AMin) ,\
-       (16, simdOps::AMax)
+       (16, simdOps::AMax) ,\
+       (17, simdOps::SquaredSubtract),\
+       (18, simdOps::FloorMod)
 
 
 
@@ -116,7 +118,12 @@
         (78,simdOps::Erf), \
         (79,simdOps::IsInf), \
         (80,simdOps::IsNan), \
-        (81,simdOps::IsFinite)
+        (81,simdOps::IsFinite), \
+        (82,simdOps::ACosh), \
+        (83,simdOps::ACoshDerivative) ,\
+        (84,simdOps::ASinh), \
+        (85,simdOps::ASinhDerivative) ,\
+        (86,simdOps::SinhDerivative)
 
 
 
@@ -149,7 +156,9 @@
         (17,simdOps::Remainder),\
         (18,simdOps::FMod) ,\
         (19, simdOps::TruncateDiv) ,\
-        (20, simdOps::FloorDiv)
+        (20, simdOps::FloorDiv) ,\
+        (21, simdOps::FloorMod), \
+        (22, simdOps::SquaredSubtract)
 
 
 
@@ -240,7 +249,8 @@
         (69,simdOps::Atan2) ,\
         (19, simdOps::TruncateDiv),\
         (20, simdOps::FloorDiv), \
-        (21, simdOps::FloorMod)
+        (21, simdOps::FloorMod) ,\
+        (22, simdOps::SquaredSubtract)
 
 
 #define INDEX_REDUCE_OPS \

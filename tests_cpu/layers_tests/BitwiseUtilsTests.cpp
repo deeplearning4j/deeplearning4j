@@ -46,3 +46,16 @@ TEST_F(BitwiseUtilsTests, Test_ValueBits_1) {
     ASSERT_EQ(32, result.size());
     ASSERT_EQ(expected, result);
 }
+
+TEST_F(BitwiseUtilsTests, Test_ValueBits_2) {
+    int value = 48;
+    int flipped = BitwiseUtils::flip_bits(value);
+
+    ASSERT_NE(value, flipped);
+
+    auto o = BitwiseUtils::valueBits(value);
+    auto f = BitwiseUtils::valueBits(flipped);
+
+    for (int e = 0; e < o.size(); e++)
+        ASSERT_NE(o.at(e), f.at(e));
+}

@@ -16,8 +16,9 @@ namespace nd4j {
     template <typename T>
     class DataTypeConversions {
     public:
-        static FORCEINLINE void convertType(T* buffer, void* src, DataType dataType, Nd4jIndex length) {
+        static FORCEINLINE void convertType(T* buffer, void* src, DataType dataType, ByteOrder order, Nd4jIndex length) {
             bool isBe = BitwiseUtils::isBE();
+            bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
 
             switch (dataType) {
                 case DataType_FLOAT: {
@@ -25,7 +26,7 @@ namespace nd4j {
 
                         #pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex e = 0; e < length; e++) {
-                            buffer[e] = isBe ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
+                            buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
                         }
                     }
                     break;
@@ -34,7 +35,7 @@ namespace nd4j {
 
                         #pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex e = 0; e < length; e++)
-                            buffer[e] = isBe ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
+                            buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
                     }
                     break;
                 case DataType_HALF: {
@@ -42,7 +43,7 @@ namespace nd4j {
 
                         #pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex e = 0; e < length; e++)
-                            buffer[e] = isBe ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
+                            buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
                     }
                     break;
                 default: {

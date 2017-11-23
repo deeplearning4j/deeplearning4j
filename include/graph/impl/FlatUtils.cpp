@@ -5,6 +5,7 @@
 #include <graph/FlatUtils.h>
 #include <array/DataTypeConversions.h>
 #include <array/DataTypeUtils.h>
+#include <array/ByteOrderUtils.h>
 
 
 namespace nd4j {
@@ -23,7 +24,7 @@ namespace nd4j {
             memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength((int *)flatArray->shape()->data()));
 
             T * newBuffer = new T[shape::length(newShape)];
-            DataTypeConversions<T>::convertType(newBuffer, (void *) flatArray->buffer()->data(), DataTypeUtils::fromFlatDataType(flatArray->dtype()),  shape::length(newShape));
+            DataTypeConversions<T>::convertType(newBuffer, (void *) flatArray->buffer()->data(), DataTypeUtils::fromFlatDataType(flatArray->dtype()), ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  shape::length(newShape));
             auto array = new NDArray<T>(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);
 

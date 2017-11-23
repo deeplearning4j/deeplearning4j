@@ -135,6 +135,27 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class SquaredSubtract {
+	public:
+		op_def static T op(T d1, T d2) {
+			return nd4j::math::nd4j_pow<T>(d1 - d2, (T) 2);
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_pow<T>(d1 - d2, (T) 2);
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_pow<T>(d1 - params[0], (T) 2);
+		}
+	};
+
+	template<typename T>
 	class ReverseSubtract {
 	public:
 		op_def static T op(T d1, T d2) {
@@ -1174,6 +1195,52 @@ namespace simdOps {
 		}
 	};
 
+	template<typename T>
+	class ASinh {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_asinh<T>(d1);
+		}
+	};
+
+	template<typename T>
+	class ASinhDerivative {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return (T) 1.f / (nd4j::math::nd4j_sqrt(nd4j::math::nd4j_pow(d1, (T) 2) + (T) 1));
+		}
+	};
+
+	template<typename T>
+	class ACosh {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_acosh<T>(d1);
+		}
+	};
+
+
+	template<typename T>
+	class ACoshDerivative {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return (T) 1.f / (nd4j::math::nd4j_sqrt(d1 - (T) 1.f) * nd4j::math::nd4j_sqrt(d1 + (T) 1.f));
+		}
+	};
+
+
 
 	template<typename T>
 	class Ones {
@@ -1387,6 +1454,17 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class SinhDerivative {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_cosh<T>(d1);
+		}
+	};
+
+	template<typename T>
 	class Cosh {
 	public:
 		no_op_exec_special
@@ -1419,18 +1497,6 @@ namespace simdOps {
             return  (T) 1.0f / (T) nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_cos<T>(d1), (T) 2.0f);
         }
     };
-
-    template<typename T>
-    class ASinh {
-    public:
-        no_op_exec_special
-        no_op_exec_special_cuda
-
-        op_def static T op(T d1, T *params) {
-            return nd4j::math::nd4j_asinh<T>(d1);
-        }
-    };
-
 
 	template<typename T>
 	class ATan {

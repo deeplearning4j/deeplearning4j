@@ -248,12 +248,18 @@ template<typename T>
         math_def inline T nd4j_acos(T val);
 
 		template<typename T>
+		math_def inline T nd4j_acosh(T val);
+
+		template<typename T>
         math_def inline T nd4j_asin(T val);
+
+		template<typename T>
+		math_def inline T nd4j_asinh(T val);
 
         template<typename T>
         math_def inline T nd4j_asinh(T val) {
             //Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
-            return nd4j_log(nd4j_sqrt(nd4j_pow(val,2) + 1) + val);
+            return nd4j_log(nd4j_sqrt(nd4j_pow(val, (T) 2) + (T) 1) + val);
         }
 
 		template<typename T>
@@ -746,6 +752,28 @@ template<typename T>
 		template<>
         math_def inline int nd4j_acos<int>(int val) {
 			return acosf((float) val);
+		}
+
+
+		template<>
+		math_def inline float16 nd4j_acosh<float16>(float16 val) {
+			return (float16) acoshf((float) val);
+		}
+
+
+		template<>
+		math_def inline float nd4j_acosh<float>(float val) {
+			return acoshf(val);
+		}
+
+		template<>
+		math_def inline double nd4j_acosh<double>(double val) {
+			return acos(val);
+		}
+
+		template<>
+		math_def inline int nd4j_acosh<int>(int val) {
+			return acoshf((float) val);
 		}
 
 

@@ -8,6 +8,7 @@
 #include <vector>
 #include <array/ByteOrder.h>
 #include <op_boilerplate.h>
+#include <pointercast.h>
 #include <climits>
 
 namespace nd4j {
@@ -40,6 +41,12 @@ namespace nd4j {
          */
         static nd4j::ByteOrder asByteOrder();
 
+        /**
+         * This method swaps bytes: LE vs BE
+         * @tparam T
+         * @param v
+         * @return
+         */
         template <typename T>
         static FORCEINLINE T swap_bytes(T v) {
             static_assert (CHAR_BIT == 8, "CHAR_BIT != 8");
@@ -55,6 +62,21 @@ namespace nd4j {
                 dest.u8[k] = source.u8[sizeof(T) - k - 1];
 
             return dest.v;
+        }
+
+        /**
+         * This method flips bits in given value
+         *
+         * @tparam T
+         * @param v
+         * @return
+         */
+        static int FORCEINLINE flip_bits(int v) {
+            return ~v;
+        }
+
+        static Nd4jIndex FORCEINLINE flip_bits(Nd4jIndex v) {
+            return ~v;
         }
     };
 }

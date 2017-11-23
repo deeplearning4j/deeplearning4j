@@ -306,6 +306,9 @@ namespace nd4j {
         template <typename OpName>
         NDArray<T> applyTrueBroadcast(const NDArray<T>& tad, T *extraArgs = nullptr) const;
 
+        template <typename OpName>
+        NDArray<T>* applyTrueBroadcast(const NDArray<T>* tad, T *extraArgs = nullptr) const;
+
         template<typename OpName>
         void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
 

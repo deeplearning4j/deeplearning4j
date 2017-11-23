@@ -124,6 +124,44 @@ TEST_F(DeclarableOpsTests2, Gather_test_5) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
+    NDArray<float> x('c', {2, 1, 3, 1, 1, 1, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    auto exp = x.reshape('c', {2, 3, 4});
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete result;
+    delete exp;
+}
+
+
+TEST_F(DeclarableOpsTests2, Test_Squeeze_2) {
+    NDArray<float> x('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    auto exp = x.dup();
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete result;
+    delete exp;
+}
 
 TEST_F(DeclarableOpsTests2, Test_FloorMod_1) {
     NDArray<float> x('c', {1, 3}, {2.0, 6.0, -3.0});

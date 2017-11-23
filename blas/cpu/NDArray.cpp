@@ -1792,6 +1792,58 @@ NDArray<T> NDArray<T>::applyTrueBroadcast(const NDArray<T>& other, T *extraArgs)
     return result;
 }
 
+
+    //////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    template <typename OpName>
+    NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs) const {
+
+        const NDArray<T>* min(nullptr), *max(nullptr);
+        if(this->rankOf() >= other->rankOf()) {
+            max = this;
+            min = other;
+        }
+        else {
+            max = other;
+            min = this;
+        }
+
+        int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min);          // the rank of new array = max->rankOf)()
+        auto result = new NDArray<T>(newShapeInfo, _workspace);
+        delete[] newShapeInfo;
+
+        // check whether min array have to be tiled
+        if(!max->isSameShape(result)) {
+            // evaluate repeating dimensions for tile operation
+            std::vector<int> repeatMax(max->rankOf());
+            for(int i = 1; i <= max->rankOf(); ++i)
+                repeatMax[i-1] = (result->_shapeInfo[i] / max->_shapeInfo[i]);
+            max->tile(repeatMax, *result);
+        }
+        else
+            result->assign(max);
+
+        // check whether min array have to be tiled
+        std::vector<int> repeatMin(min->rankOf());
+        int product = 1;
+        for(int i = min->rankOf(); i >=1 ; --i) {
+            repeatMin[i-1] = (result->_shapeInfo[result->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
+            product *= repeatMin[i-1];
+        }
+
+        if(product != 1 ) {
+            NDArray<T> tiledMin = min->tile(repeatMin);
+            std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(result, &tiledMin);
+            result->template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
+        }
+        else {
+            std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(result, min);
+            result->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
+        }
+
+        return result;
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // return array which is broadcasted from this and argument array  
 template<typename T>

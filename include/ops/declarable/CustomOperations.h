@@ -36,6 +36,7 @@ namespace nd4j {
         DECLARE_OP(biasadd, 2, 1, true);
         DECLARE_OP(floor, 1, 1, true);
         DECLARE_OP(floormod, 2, 1, true);
+        DECLARE_OP(floordiv, 2, 1, true)
         DECLARE_OP(realdiv, 2, 1, true);
         DECLARE_OP(merge, -1, 1, true);         // should become custom
         DECLARE_OP(broadcastgradientargs, 2, 2, true);
@@ -49,6 +50,8 @@ namespace nd4j {
         DECLARE_OP(add, 2, 1, true);
         DECLARE_OP(subtract, 2, 1, true);
         DECLARE_OP(reversesubtract, 2, 1, true);
+        DECLARE_OP(reversemod, 2, 1, true);
+        DECLARE_OP(squaredsubtract, 2, 1, true)
         DECLARE_OP(multiply, 2, 1, true);
         DECLARE_OP(divide, 2, 1, true);
         DECLARE_OP(reversedivide, 2, 1, true);
@@ -64,6 +67,7 @@ namespace nd4j {
         DECLARE_OP(less, 2, 1, true);
         DECLARE_OP(greater, 2, 1, true);
         DECLARE_OP(log1p, 2, 1, true);
+        DECLARE_OP(toggle_bits, -1, -1, true);
 
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
@@ -133,6 +137,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
         DECLARE_CUSTOM_OP(absoluteDifference, 3, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(cosineDistance, 3, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(squeeze, -1, -1, true, 0, 0);
         DECLARE_CUSTOM_OP(hingeLoss, 3, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(huberLoss, 3, 1, false, 1, 1);
         DECLARE_CUSTOM_OP(logLoss, 3, 1, false, 1, 1);

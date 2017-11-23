@@ -6,8 +6,8 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////		
-		OP_IMPL(divide, 2, 1, true) {
+        //////////////////////////////////////////////////////////////////////////				
+		OP_IMPL(reversemod, 2, 1, true) {
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
@@ -15,22 +15,24 @@ namespace nd4j {
 			if (!x->isScalar() && !y->isScalar() && x->lengthOf() == y->lengthOf()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
 				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
-				x->template applyPairwiseTransform<simdOps::Divide<T>>(y, z, nullptr);
+				x->template applyPairwiseTransform<simdOps::ReverseMod<T>>(y, z, nullptr);
 	
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Divide<T>>(*y, z);
+               x->template applyScalar<simdOps::ReverseMod<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Divide<T>>(*x, z);
+                y->template applyScalar<simdOps::ReverseMod<T>>(*x, z);
+
             }						
 			else if (x->isScalar() && y->isScalar()) { // (x->isScalar() && y->isScalar())
-				z->putScalar(0, x->getScalar(0) / y->getScalar(0));
-            }else {
-                auto tZ = x->template applyTrueBroadcast<simdOps::Divide<T>>(y);
+				z->putScalar(0, y->getScalar(0) / x->getScalar(0));
+            } else {
+                auto tZ = x->template applyTrueBroadcast<simdOps::ReverseMod<T>>(y);
                 OVERWRITE_RESULT(tZ);
             }
+
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(Div, divide);
+        DECLARE_SYN(RDiv, reversedivide);
     }
 }

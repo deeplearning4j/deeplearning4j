@@ -6,27 +6,27 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(floormod, 2, 1, true) {
+        OP_IMPL(floordiv, 2, 1, true) {
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = this->getZ(block);
+            NDArray<T> *z = OUTPUT_VARIABLE(0);
 
             if (!x->isScalar() && !y->isScalar() && x->lengthOf() == y->lengthOf()) {
                 REQUIRE_OK(this->validateInputLengthMatch(block));
                 // REQUIRE_OK(this->validateInputDimensionsMatch(block));
-                x->template applyPairwiseTransform<simdOps::FloorMod<T>>(y, z, nullptr);
+                x->template applyPairwiseTransform<simdOps::FloorDiv<T>>(y, z, nullptr);
 
             } else if (!x->isScalar() && y->isScalar()) {
-                x->template applyScalar<simdOps::FloorMod<T>>(*y, z);
+                x->template applyScalar<simdOps::FloorDiv<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::FloorMod<T>>(*z, y);
+                y->template applyScalar<simdOps::FloorDiv<T>>(*z, y);
 
             }
             else if (x->isScalar() && y->isScalar()) { // (x->isScalar() && y->isScalar())
-                z->putScalar(0, simdOps::FloorMod<T>::op(x->getScalar(0),y->getScalar(0), nullptr));
+                z->putScalar(0, simdOps::FloorDiv<T>::op(x->getScalar(0),y->getScalar(0), nullptr));
             } else {
-                auto tZ = x->template applyTrueBroadcast<simdOps::FloorMod<T>>(y);
+                auto tZ = x->template applyTrueBroadcast<simdOps::FloorDiv<T>>(y);
                 OVERWRITE_RESULT(tZ);
             }
 
