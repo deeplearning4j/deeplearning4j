@@ -38,7 +38,8 @@ public class Concat extends DynamicCustomOp {
             // concat dimension is only possible
             if (variable != null && variable.getArr() == null) {
                 idx = cnt;
-                concatDimension = variable.getShape()[0];
+                if(variable.getShape() != null)
+                    concatDimension = variable.getShape()[0];
                 break;
             } else if (variable != null) {
                 val arr = variable.getArr();

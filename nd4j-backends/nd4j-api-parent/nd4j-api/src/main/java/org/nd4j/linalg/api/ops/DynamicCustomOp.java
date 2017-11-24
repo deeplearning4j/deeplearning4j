@@ -149,6 +149,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return hash;
     }
 
+    @Override
+    public int opNum() {
+        return (int) opHash();
+    }
+
     /**
      * This method takes custom opname, and return Op DynamicCustomOpsBuilder instance
      * @param opName

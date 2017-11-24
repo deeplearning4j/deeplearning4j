@@ -302,6 +302,10 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    public int opNum() {
+        throw new UnsupportedOperationException();
+    }
+
     @JsonIgnore
     private INDArray getX() {
         INDArray ret =  args()[0].getResult().getArr();

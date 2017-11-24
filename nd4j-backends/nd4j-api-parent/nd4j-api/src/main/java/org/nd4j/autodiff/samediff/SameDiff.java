@@ -3771,6 +3771,8 @@ public class SameDiff {
                 return OpType.LOGIC;
             case CUSTOM:
                 return OpType.CUSTOM;
+            case SHAPE:
+                return OpType.SHAPE;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
