@@ -210,7 +210,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc)<br>
      * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
      * For multiple epochs per layer, appropriately wrap the iterator (for example, a MultipleEpochsIterator) or train
      * each layer manually using {@link #pretrainLayer(int, DataSetIterator)}
@@ -234,7 +234,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, Autoencoders, etc)<br>
      * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
      *
      * @param layerIdx Index of the layer to train (0 to numLayers-1)
@@ -287,7 +287,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, Autoencoders, etc)<br>
      * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
      *
      * @param layerIdx Index of the layer to train (0 to numLayers-1)

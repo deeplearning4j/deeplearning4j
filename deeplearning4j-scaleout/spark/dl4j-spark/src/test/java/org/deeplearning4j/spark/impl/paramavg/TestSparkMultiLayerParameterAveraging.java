@@ -42,7 +42,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -145,12 +144,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
                                         .miniBatch(true).maxNumLineSearchIterations(10)
                                         .list().layer(0,
-                                                        new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(100)
-                                                                                        .weightInit(WeightInit.XAVIER)
-                                                                                        .activation(Activation.RELU)
-                                                                                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                                                                                        .build())
+                                                        new DenseLayer.Builder().nIn(4).nOut(100)
+                                                                .weightInit(WeightInit.XAVIER)
+                                                                .activation(Activation.RELU)
+                                                                .build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
                                                                         .activation(Activation.SOFTMAX)

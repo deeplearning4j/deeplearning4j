@@ -23,13 +23,12 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
@@ -37,7 +36,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -86,12 +84,9 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .list().layer(0,
-                                                        new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
-                                                                                        .activation(Activation.TANH)
-                                                                                        .build())
-                                        .layer(1, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
-                                                        .nIn(3).nOut(2).build())
+                                                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                                                .activation(Activation.TANH).build())
+                                        .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).build())
                                         .build();
 
         MultiLayerNetwork network3 = new MultiLayerNetwork(conf);
@@ -174,54 +169,6 @@ public class MultiLayerTest {
         log.info("Score " + eval.stats());
     }
 
-    @Test
-    public void testDbn() throws Exception {
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().iterations(100)
-                                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).l2(2e-4)
-                                        .list().layer(0,
-                                                        new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                                        .dist(new UniformDistribution(0,
-                                                                                                        1))
-                                                                                        .activation(Activation.TANH)
-                                                                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                                                                        .build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                        .dist(new UniformDistribution(0, 1))
-                                                                        .activation(Activation.SOFTMAX).build())
-                                        .build();
-
-
-        MultiLayerNetwork d = new MultiLayerNetwork(conf);
-
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-        DataSet next = iter.next();
-
-        Nd4j.writeTxt(next.getFeatureMatrix(), "iris.txt", "\t");
-
-        next.normalizeZeroMeanZeroUnitVariance();
-
-        SplitTestAndTrain testAndTrain = next.splitTestAndTrain(110);
-        DataSet train = testAndTrain.getTrain();
-
-        d.fit(train);
-
-        DataSet test = testAndTrain.getTest();
-
-        Evaluation eval = new Evaluation();
-        INDArray output = d.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(), output);
-        log.info("Score " + eval.stats());
-
-    }
-
 
 
     @Test
@@ -275,24 +222,15 @@ public class MultiLayerTest {
         log.info("Build model....");
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                        .layer(0, new RBM.Builder().nIn(numRows * numColumns).nOut(1000)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .layer(1, new RBM.Builder().nIn(1000).nOut(500)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .layer(2, new RBM.Builder().nIn(500).nOut(250)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .layer(3, new RBM.Builder().nIn(250).nOut(100)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .layer(4, new RBM.Builder().nIn(100).nOut(30)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build()) //encoding stops
-                        .layer(5, new RBM.Builder().nIn(30).nOut(100)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build()) //decoding starts
-                        .layer(6, new RBM.Builder().nIn(100).nOut(250)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .layer(7, new RBM.Builder().nIn(250).nOut(500)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .layer(8, new RBM.Builder().nIn(500).nOut(1000)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
+                        .layer(0, new DenseLayer.Builder().nIn(numRows * numColumns).nOut(1000).build())
+                        .layer(1, new DenseLayer.Builder().nIn(1000).nOut(500).build())
+                        .layer(2, new DenseLayer.Builder().nIn(500).nOut(250).build())
+                        .layer(3, new DenseLayer.Builder().nIn(250).nOut(100).build())
+                        .layer(4, new DenseLayer.Builder().nIn(100).nOut(30).build()) //encoding stops
+                        .layer(5, new DenseLayer.Builder().nIn(30).nOut(100).build()) //decoding starts
+                        .layer(6, new DenseLayer.Builder().nIn(100).nOut(250).build())
+                        .layer(7, new DenseLayer.Builder().nIn(250).nOut(500).build())
+                        .layer(8, new DenseLayer.Builder().nIn(500).nOut(1000).build())
                         .layer(9, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(1000)
                                         .nOut(numRows * numColumns).build())
                         .pretrain(true).backprop(true).build();
@@ -332,20 +270,18 @@ public class MultiLayerTest {
 
     private static MultiLayerConfiguration getConf() {
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345L)
-                                        .list().layer(0,
-                                                        new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                                        .dist(new NormalDistribution(0,
-                                                                                                        1))
-                                                                                        .build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.MCXENT)
-                                                                        .activation(Activation.SOFTMAX).nIn(3).nOut(3)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                        .dist(new NormalDistribution(0, 1)).build())
-                                        .build();
+                new NeuralNetConfiguration.Builder().seed(12345L)
+                        .list().layer(0,
+                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                .weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0,1))
+                                .build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                LossFunctions.LossFunction.MCXENT)
+                                .activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                .weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1)).build())
+                        .build();
         return conf;
     }
 
@@ -364,32 +300,26 @@ public class MultiLayerTest {
         int nOut = 25;
 
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                .updater(new Sgd(1e-3)).iterations(5)
-                                        .list().layer(
-                                                        0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(nIn)
-                                                                                        .nOut(600)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                                        .dist(new NormalDistribution(0,
-                                                                                                        1e-5))
-                                                                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                                                        .build())
-                                        .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                                                        .nIn(600).nOut(250).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new NormalDistribution(0, 1e-5))
-                                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                        .build())
-                                        .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                                                        .nIn(250).nOut(100).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new NormalDistribution(0, 1e-5))
-                                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                        .build())
-                                        .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.MCXENT).nIn(100).nOut(25)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                        .dist(new NormalDistribution(0, 1e-5)).build())
-                                        .build();
+                new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                        .updater(new Sgd(1e-3)).iterations(5)
+                        .list().layer(
+                        0, new DenseLayer.Builder().nIn(nIn).nOut(600)
+                                .weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0,1e-5))
+                                .build())
+                        .layer(1, new DenseLayer.Builder()
+                                .nIn(600).nOut(250).weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1e-5))
+                                .build())
+                        .layer(2, new DenseLayer.Builder()
+                                .nIn(250).nOut(100).weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1e-5))
+                                .build())
+                        .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                LossFunctions.LossFunction.MCXENT).nIn(100).nOut(25)
+                                .weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1e-5)).build())
+                        .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -502,55 +432,6 @@ public class MultiLayerTest {
         assertEquals(layerNameList, net.getLayerNames());
         BaseLayer b = (BaseLayer) net.getLayer(layerNameList.get(2)).conf().getLayer();
         assertEquals("softmax", b.getActivationFn().toString());
-    }
-
-    @Test
-    public void testTranspose() {
-        MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().iterations(100).l2(2e-4)
-                                        .list().layer(0,
-                                                        new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                                        .dist(new UniformDistribution(0,
-                                                                                                        1))
-                                                                                        .activation(Activation.TANH)
-                                                                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                                                        .build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
-                                                                        .dist(new UniformDistribution(0, 1))
-                                                                        .activation(Activation.SOFTMAX).build())
-                                        .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        Layer layer = net.getLayer(0);
-        int nParamsBackprop = layer.numParams(true);
-        int nParamsBoth = layer.numParams(false);
-        Layer transposed = layer.transpose();
-
-        assertArrayEquals(new int[] {4, 3}, layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
-        assertArrayEquals(new int[] {1, 3}, layer.getParam(DefaultParamInitializer.BIAS_KEY).shape());
-        assertArrayEquals(new int[] {1, 4}, layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
-
-        assertArrayEquals(new int[] {3, 4}, transposed.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
-        assertArrayEquals(new int[] {1, 4}, transposed.getParam(DefaultParamInitializer.BIAS_KEY).shape());
-        assertArrayEquals(new int[] {1, 3}, transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
-
-
-        INDArray origWeights = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray transposedWeights = transposed.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        assertEquals(origWeights.transpose(), transposedWeights);
-        assertEquals(layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
-                        transposed.getParam(DefaultParamInitializer.BIAS_KEY));
-        assertEquals(layer.getParam(DefaultParamInitializer.BIAS_KEY),
-                        transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY));
-
-        assertEquals(3, ((FeedForwardLayer) transposed.conf().getLayer()).getNIn());
-        assertEquals(4, ((FeedForwardLayer) transposed.conf().getLayer()).getNOut());
     }
 
 
@@ -801,31 +682,31 @@ public class MultiLayerTest {
         int nOut = 10;
 
         // Test pretrain true
-        MultiLayerNetwork rbmPre = getRBMModel(true, nIn, nOut);
-        assertTrue(rbmPre.conf().isPretrain()); // check on the network
-        assertTrue(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-        int actualNP = rbmPre.numParams();
+        MultiLayerNetwork vaePre = getVaeModel(true, nIn, nOut);
+        assertTrue(vaePre.conf().isPretrain()); // check on the network
+        assertTrue(vaePre.getLayer(0).conf().isPretrain()); // check pretrain layer
+        assertFalse(vaePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
+        int actualNP = vaePre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        INDArray params = rbmPre.params();
+        INDArray params = vaePre.params();
         assertEquals(params.length(), actualNP); // check num params
-        Map<String, INDArray> paramTable = rbmPre.paramTable();
+        Map<String, INDArray> paramTable = vaePre.paramTable();
         assertTrue(paramTable.containsKey("0_vb")); // check vb exists for pretrain layer
-        rbmPre.setParam("0_vb", Nd4j.ones(10));
-        params = rbmPre.getParam("0_vb");
+        vaePre.setParam("0_vb", Nd4j.ones(10));
+        params = vaePre.getParam("0_vb");
         assertEquals(Nd4j.ones(10), params); // check set params for vb
 
 
         // Test pretrain false, expect same for true because its not changed when applying update
-        MultiLayerNetwork rbmNoPre = getRBMModel(false, nIn, nOut);
-        assertFalse(rbmNoPre.conf().isPretrain());
-        assertFalse(rbmNoPre.getLayer(0).conf().isPretrain());
-        assertFalse(rbmPre.getLayer(1).conf().isPretrain());
-        actualNP = rbmNoPre.numParams();
+        MultiLayerNetwork vaeNoPre = getVaeModel(false, nIn, nOut);
+        assertFalse(vaeNoPre.conf().isPretrain());
+        assertFalse(vaeNoPre.getLayer(0).conf().isPretrain());
+        assertFalse(vaePre.getLayer(1).conf().isPretrain());
+        actualNP = vaeNoPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        params = rbmNoPre.params();
+        params = vaeNoPre.params();
         assertEquals(params.length(), actualNP);
-        paramTable = rbmPre.paramTable();
+        paramTable = vaePre.paramTable();
         assertTrue(paramTable.containsKey("0_vb"));
     }
 
@@ -835,27 +716,26 @@ public class MultiLayerTest {
         int nIn = 10;
         int nOut = 10;
 
-        MultiLayerNetwork rbmPre = getRBMModel(true, nIn, nOut);
-        rbmPre.fit(input);
-        assertTrue(rbmPre.conf().isPretrain()); // check on the network
-        assertFalse(rbmPre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(rbmPre.getLayer(1).conf().isPretrain()); // check none pretrain layer
+        MultiLayerNetwork vaePre = getVaeModel(true, nIn, nOut);
+        vaePre.fit(input);
+        assertTrue(vaePre.conf().isPretrain()); // check on the network
+        assertFalse(vaePre.getLayer(0).conf().isPretrain()); // check pretrain layer
+        assertFalse(vaePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
 
     }
 
-    public MultiLayerNetwork getRBMModel(boolean preTrain, int nIn, int nOut) {
-        MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
-                        .seed(42).iterations(1).updater(new NoOp())
-                        .weightInit(WeightInit.UNIFORM)
-                        .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                                        .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                        .activation(Activation.IDENTITY).nOut(nIn).build(),
-                                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                                                        .activation(Activation.IDENTITY).nOut(nOut)
-                                                                        .build())
-                        .pretrain(preTrain).setInputType(InputType.feedForward(nOut)).build();
-        MultiLayerNetwork network = new MultiLayerNetwork(rbm);
+    public MultiLayerNetwork getVaeModel(boolean preTrain, int nIn, int nOut) {
+        MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder()
+                .seed(42).iterations(1).updater(new NoOp())
+                .weightInit(WeightInit.UNIFORM)
+                .list(new VariationalAutoencoder.Builder()
+                                .activation(Activation.IDENTITY).nOut(nIn).build(),
+                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                LossFunctions.LossFunction.COSINE_PROXIMITY)
+                                .activation(Activation.IDENTITY).nOut(nOut)
+                                .build())
+                .pretrain(preTrain).setInputType(InputType.feedForward(nOut)).build();
+        MultiLayerNetwork network = new MultiLayerNetwork(vae);
         network.init();
         return network;
     }

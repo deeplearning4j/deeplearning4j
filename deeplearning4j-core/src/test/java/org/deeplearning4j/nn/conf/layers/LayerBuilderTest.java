@@ -5,8 +5,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
-import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -36,8 +34,6 @@ public class LayerBuilderTest {
     int[] kernelSize = new int[] {2, 2};
     int[] stride = new int[] {2, 2};
     int[] padding = new int[] {1, 1};
-    HiddenUnit hidden = HiddenUnit.RECTIFIED;
-    VisibleUnit visible = VisibleUnit.GAUSSIAN;
     int k = 1;
     Convolution.Type convType = Convolution.Type.VALID;
     LossFunction loss = LossFunction.MCXENT;
@@ -88,18 +84,6 @@ public class LayerBuilderTest {
         assertArrayEquals(kernelSize, conv.getKernelSize());
         assertArrayEquals(stride, conv.getStride());
         assertArrayEquals(padding, conv.getPadding());
-    }
-
-    @Test
-    public void testRBM() throws Exception {
-        RBM rbm = new RBM.Builder(hidden, visible).sparsity(sparsity).k(k).build();
-
-        checkSerialization(rbm);
-
-        assertEquals(hidden, rbm.getHiddenUnit());
-        assertEquals(visible, rbm.getVisibleUnit());
-        assertEquals(k, rbm.getK());
-        assertEquals(sparsity, rbm.getSparsity(), DELTA);
     }
 
     @Test

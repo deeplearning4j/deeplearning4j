@@ -255,7 +255,7 @@ public interface Layer extends Serializable, Cloneable, Model {
     INDArray getMaskArray();
 
     /**
-     * Returns true if the layer can be trained in an unsupervised/pretrain manner (VAE, RBMs etc)
+     * Returns true if the layer can be trained in an unsupervised/pretrain manner (AE, VAE, etc)
      *
      * @return true if the layer can be pretrained (using fit(INDArray), false otherwise
      */

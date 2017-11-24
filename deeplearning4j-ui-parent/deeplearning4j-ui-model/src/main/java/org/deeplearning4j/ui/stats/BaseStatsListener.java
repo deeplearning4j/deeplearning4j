@@ -718,7 +718,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     private boolean backpropParamsOnly(Model model) {
-        //For pretrain layers (VAE, RBM) we *do* want pretrain params also; for MLN and CG we only want backprop params
+        //For pretrain layers (VAE, AE) we *do* want pretrain params also; for MLN and CG we only want backprop params
         // as we only have backprop gradients
         return model instanceof MultiLayerNetwork || model instanceof ComputationGraph;
     }

@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -490,11 +489,6 @@ public class ModelSerializer {
                 try {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
                             if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
@@ -515,11 +509,6 @@ public class ModelSerializer {
                 try {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
                             if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;

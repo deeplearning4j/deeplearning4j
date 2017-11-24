@@ -109,7 +109,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected CacheMode cacheMode;
 
     //Counter for the number of parameter updates so far for this layer.
-    //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
+    //Note that this is only used for pretrain layers (AE, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
     //contain counters for standard backprop training.
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization

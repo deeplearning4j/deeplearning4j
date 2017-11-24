@@ -226,7 +226,7 @@ public class TrainModuleUtils {
 
 
         } else {
-            //RBM or similar...
+            //VAE or similar...
             Layer layer = config.getLayer();
             String layerName = layer.getLayerName();
             if (layerName == null)

@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -188,7 +187,7 @@ public class TestOptimizers {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().maxNumLineSearchIterations(numLineSearchIter)
                         .iterations(100).updater(new Sgd(1e-2))
-                        .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();
+                        .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
         conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
         Random rng = new DefaultRandom(12345L);
@@ -596,7 +595,7 @@ public class TestOptimizers {
                             .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i)
                             .updater(new Sgd(1e-1))
                             .stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
-                            .layer(new RBM.Builder().nIn(1).nOut(1).build())
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build())
                             .build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
