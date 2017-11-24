@@ -166,15 +166,20 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @return point (index, threshold, precision, recall) at (or closest exceeding) the given recall
      */
     public Point getPointAtRecall(double recall) {
+        Point foundPoint = null;
         //Find the HIGHEST threshold that gives the specified recall
         for (int i = this.recall.length - 1; i >= 0; i--) {
-            if (this.recall[i] >= recall) {
-                return new Point(i, threshold[i], precision[i], this.recall[i]);
-            }
+                if (this.recall[i] >= recall) {
+                        if (foundPoint == null ||(this.recall[i] == foundPoint.getRecall() && this.precision[i] >= foundPoint.getPrecision())) {
+                                foundPoint = new Point(i, threshold[i], precision[i], this.recall[i]);
+                        }
+                }
         }
-
-        //Not found - return first point. Should never happen...
-        return new Point(0, threshold[0], precision[0], this.recall[0]);
+        if (foundPoint == null){
+        	//Not found - return first point. Should never happen...
+        	foundPoint = new Point(0, threshold[0], precision[0], this.recall[0]);
+        }
+        return foundPoint;
     }
 
     /**
