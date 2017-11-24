@@ -193,7 +193,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     @Override
     public Map<String, NodeDef> variablesForGraph(GraphDef graphDef) {
-        Map<String,NodeDef> ret = new HashMap<>();
+        Map<String,NodeDef> ret = new LinkedHashMap<>();
         for(NodeDef nodeDef : graphDef.getNodeList()) {
             //     if(dataTypeForTensor(nodeDef) != DataBuffer.Type.UNKNOWN) {
             ret.put(getNodeName(nodeDef.getName()),nodeDef);

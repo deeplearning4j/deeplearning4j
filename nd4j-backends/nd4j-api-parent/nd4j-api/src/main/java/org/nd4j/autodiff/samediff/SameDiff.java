@@ -3617,7 +3617,7 @@ public class SameDiff {
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getDimensions() != null ? node.getDimensions() : new int[]{});
-        int fname = bufferBuilder.createString(node.opName());
+        int fname = bufferBuilder.createString(getVariableForVertexId(node.getVertexId()).getVarName());
         int scopeName = bufferBuilder.createString("");
 
         if (node.opType() == null)
@@ -3670,8 +3670,10 @@ public class SameDiff {
         }
 
         //add functions
-        for(DifferentialFunction differentialFunction : functionInstances.values()) {
-            flatNodes.add(asFlatNode(differentialFunction,bufferBuilder));
+        val inOrderFunctions = graph().getOpOrder().getActions();
+        for(val action : inOrderFunctions) {
+            val func = getFunctionForVertexId(action.getOutputId());
+            flatNodes.add(asFlatNode(func,bufferBuilder));
         }
 
         // we're dumping scopes now
@@ -3739,7 +3741,7 @@ public class SameDiff {
     }
 
     public static long getOpNum(String name, Op.Type type) {
-        if (type == Op.Type.LOOP ) {
+        if (type == Op.Type.LOOP) {
             return 0;
         } else if (type == Op.Type.RETURN) {
             return 40;

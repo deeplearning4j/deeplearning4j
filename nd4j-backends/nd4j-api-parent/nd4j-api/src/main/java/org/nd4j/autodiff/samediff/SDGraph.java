@@ -237,13 +237,13 @@ public class SDGraph extends Graph<SDVariable,String> {
 
                 // Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
                 //add edges
-                Edge<String> StringEdge = inputStrings.get(0);
-                if(!seenStates.contains(StringEdge.getValue())) {
+                Edge<String> edge = inputStrings.get(0);
+                if(!seenStates.contains(edge.getTo())) {
                     ret.add(OpExecAction.builder()
                             .inputsIds(Ints.toArray(inputIdsList))
                             .outputId(order[i])
                             .build());
-                    seenStates.add(StringEdge.getTo());
+                    seenStates.add(edge.getTo());
                 }
             }
 

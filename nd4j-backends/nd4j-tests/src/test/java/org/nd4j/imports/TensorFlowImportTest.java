@@ -321,8 +321,8 @@ public class TensorFlowImportTest {
         val graph = FlatGraph.getRootAsFlatGraph(fb);
         assertEquals(5, graph.variablesLength());
 
-        assertEquals("stridedslice", graph.nodes(0).name());
-        assertEquals("sum", graph.nodes(1).name());
+        assertEquals("StridedSlice", graph.nodes(0).name());
+        assertEquals("Sum", graph.nodes(1).name());
     }
 
     @Test
@@ -385,7 +385,7 @@ public class TensorFlowImportTest {
         assertEquals(1, graph.nodesLength());
         assertEquals(2, graph.variablesLength());
 
-        assertEquals("sum", graph.nodes(0).name());
+        assertEquals("Sum", graph.nodes(0).name());
     }
 
     @Test
