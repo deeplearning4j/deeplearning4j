@@ -1,6 +1,5 @@
 package org.nd4j.imports;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Before;
@@ -15,9 +14,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -324,8 +321,8 @@ public class TensorFlowImportTest {
         val graph = FlatGraph.getRootAsFlatGraph(fb);
         assertEquals(5, graph.variablesLength());
 
-        assertEquals("StridedSlice", graph.nodes(0).name());
-        assertEquals("Sum", graph.nodes(1).name());
+        assertEquals("stridedslice", graph.nodes(0).name());
+        assertEquals("sum", graph.nodes(1).name());
     }
 
     @Test
@@ -388,7 +385,7 @@ public class TensorFlowImportTest {
         assertEquals(1, graph.nodesLength());
         assertEquals(2, graph.variablesLength());
 
-        assertEquals("Sum", graph.nodes(0).name());
+        assertEquals("sum", graph.nodes(0).name());
     }
 
     @Test
