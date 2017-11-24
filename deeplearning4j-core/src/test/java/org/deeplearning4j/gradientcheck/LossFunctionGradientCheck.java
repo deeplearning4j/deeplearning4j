@@ -283,7 +283,7 @@ public class LossFunctionGradientCheck {
                 // to ensure that we carry the parameters through
                 // the serializer.
                 try {
-                    ObjectMapper m = new ObjectMapper();
+                    ObjectMapper m = NeuralNetConfiguration.mapper();
                     String s = m.writeValueAsString(lossFunctions[i]);
                     ILossFunction lf2 = m.readValue(s, lossFunctions[i].getClass());
                     lossFunctions[i] = lf2;

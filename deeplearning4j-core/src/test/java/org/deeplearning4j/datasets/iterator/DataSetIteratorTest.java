@@ -3,6 +3,7 @@ package org.deeplearning4j.datasets.iterator;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.CifarLoader;
+import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.impl.*;
@@ -124,15 +125,15 @@ public class DataSetIteratorTest {
         final int numRows = 28;
         final int numColumns = 28;
         int numChannels = 3;
-        int outputNum = 4;
-        int numSamples = 4;
+        int outputNum = LFWLoader.NUM_LABELS;
+        int numSamples = LFWLoader.NUM_IMAGES;
         int batchSize = 2;
         int iterations = 1;
         int seed = 123;
         int listenerFreq = iterations;
 
         LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples,
-                        new int[] {numRows, numColumns, numChannels}, outputNum, true, true, 1.0, new Random(seed));
+                        new int[] {numRows, numColumns, numChannels}, outputNum, false, true, 1.0, new Random(seed));
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
