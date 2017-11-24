@@ -7,7 +7,9 @@
 #include <pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include <types/float16.h>
 
 namespace nd4j {
@@ -130,8 +132,11 @@ namespace nd4j {
 
         template <typename T>
         void SparseUtils<T>::sortCooIndicesGeneric(int *indices, T *values, Nd4jIndex length, int rank) {
+#ifdef _OPENMP
             coo_quickSort_parallel(indices, values, length, omp_get_max_threads(), rank);
-            //coo_quickSort_parallel<T>(indices, values, length, 1, rank);
+#else
+            coo_quickSort_parallel(indices, values, length, 1, rank);
+#endif
         }
 
 

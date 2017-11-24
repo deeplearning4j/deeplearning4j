@@ -28,8 +28,13 @@
 #define no_op_exec_special_accumulation_cuda 	static inline __device__ void execSpecialCuda(T *dx, int *xShapeInfo, T *extraParams, T *result, int *resultShapeInfo, int *dimension, int dimensionLength, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {}
 #else
 // hacky fix for isnan/being being out of scope
+#ifdef IOS
+#define isinf(x) 0 // this isn't right. But std::isinf fails
+#define isnan(x) 0
+#else
 #define isnan std::isnan
 #define isinf std::isinf
+#endif
 
 #define meta_def inline
 #define no_op_exec_special_cuda
