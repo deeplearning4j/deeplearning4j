@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.random.impl;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -57,5 +58,10 @@ public class Range extends BaseRandomOp {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         throw new UnsupportedOperationException("Unable to differentiate array creation routine");
+    }
+
+    @Override
+    public Op.Type opType() {
+        return Op.Type.RETURN;
     }
 }

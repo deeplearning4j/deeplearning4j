@@ -14,6 +14,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -87,8 +88,15 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         return importGraph(def);
     }
 
-
-
+    @Override
+    public Map<String, NODE_TYPE> nameIndexForGraph(GRAPH_TYPE graph) {
+        List<NODE_TYPE> nodes = getNodeList(graph);
+        Map<String,NODE_TYPE> ret = new HashMap<>();
+        for(NODE_TYPE node : nodes) {
+            ret.put(getName(node),node);
+        }
+        return ret;
+    }
 
     /**
      * This method converts given TF
@@ -108,6 +116,11 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         //for each variable
         val indexMap = new HashMap<String,Integer>();
         for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
+            if(dataTypeForTensor(entry.getValue()) == DataBuffer.Type.UNKNOWN) {
+                val var = importState.getSameDiff().var(entry.getKey(),null,0);
+                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+                continue;
+            }
 
             val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             if(arr != null) {

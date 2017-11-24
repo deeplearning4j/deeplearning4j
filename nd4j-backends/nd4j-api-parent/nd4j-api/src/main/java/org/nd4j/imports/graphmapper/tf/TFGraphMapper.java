@@ -133,7 +133,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     private String getNodeName(String name) {
         //tensorflow adds colons to the end of variables representing input index, this strips those off
-        return name.indexOf(':') >= 0 ? name.substring(0,name.indexOf(':')) : name;
+        String ret = name;
+        if(ret.startsWith("^"))
+            ret = ret.substring(1);
+        ret = ret.indexOf(':') >= 0 ? ret.substring(0,ret.indexOf(':')) : ret;
+        return ret;
     }
 
     @Override
@@ -174,7 +178,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         //collect the final result
         for(val entry : outputs.entrySet())  {
-            val name = entry.getKey();
+            val name = getNodeName(entry.getKey());
             val output = new int[] {nodeNameToVertexId.get(name)};
             int[] inputIds = Ints.toArray(entry.getValue());
             int[] outputIds = output;
@@ -255,6 +259,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
                     diff.graph().addEdge(opStateEdge);
                     diff.putFunction(indices.getRight(),newInstance);
+                    newInstance.setVertexId(indices.getRight());
+                    newInstance.setSameDiff(importState.getSameDiff());
                 }
 
             } catch (InstantiationException e) {

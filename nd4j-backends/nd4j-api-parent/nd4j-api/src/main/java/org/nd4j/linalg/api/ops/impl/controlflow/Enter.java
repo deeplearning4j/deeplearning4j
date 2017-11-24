@@ -52,7 +52,7 @@ public class Enter extends DynamicCustomOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.CUSTOM;
+        return Op.Type.LOOP;
     }
 
 

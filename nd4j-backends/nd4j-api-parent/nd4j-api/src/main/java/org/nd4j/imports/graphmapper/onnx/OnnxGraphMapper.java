@@ -126,6 +126,8 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
             val indices = importState.getVertexIdMap().get(tfNode.getName());
             val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
+            newInstance.setVertexId(indices.getRight());
+            newInstance.setSameDiff(importState.getSameDiff());
             /**
              * Need to f
              */

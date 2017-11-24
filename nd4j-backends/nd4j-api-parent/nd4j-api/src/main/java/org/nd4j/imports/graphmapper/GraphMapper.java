@@ -77,6 +77,13 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     Map<String,TENSOR_TYPE> variablesForGraph(GRAPH_TYPE graphType);
 
     /**
+     *
+     * @param graph
+     * @return
+     */
+    Map<String,NODE_TYPE> nameIndexForGraph(GRAPH_TYPE graph);
+
+    /**
      * Returns an op type for the given input node
      * @param nodeType the node to use
      * @return the optype for the given node

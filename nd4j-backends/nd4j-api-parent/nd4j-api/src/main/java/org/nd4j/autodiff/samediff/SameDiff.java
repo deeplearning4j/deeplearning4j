@@ -3605,9 +3605,11 @@ public class SameDiff {
             extraBits = new int[]{};
 
         val inPaired = new ArrayList<Integer>();
-        int e = 0;
-        for (val index: node.args())
-            inPaired.add(IntPair.createIntPair(bufferBuilder, index.args()[0].getVertexId()[0], index.getVertexId()[0]));
+
+
+        if(node.args() != null)
+            for (val index: node.args())
+                inPaired.add(IntPair.createIntPair(bufferBuilder, index.args()[0].getVertexId()[0], index.getVertexId()[0]));
 
         int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
@@ -3667,7 +3669,10 @@ public class SameDiff {
             flatVariables.add(flatVariable);
         }
 
-
+        //add functions
+        for(DifferentialFunction differentialFunction : functionInstances.values()) {
+            flatNodes.add(asFlatNode(differentialFunction,bufferBuilder));
+        }
 
         // we're dumping scopes now
         for (val scope: sameDiffFunctionInstances.entrySet()) {
