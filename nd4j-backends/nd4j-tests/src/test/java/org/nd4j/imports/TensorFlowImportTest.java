@@ -14,6 +14,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
 
@@ -298,6 +299,9 @@ public class TensorFlowImportTest {
 
         assertEquals("phi/Assign", graph.nodes(0).name());
         assertEquals("phi/read", graph.nodes(1).name());
+
+        assertEquals(2, graph.nodes(0).inputPairedLength());
+        assertEquals(1, graph.nodes(1).inputPairedLength());
     }
 
     @Test
@@ -323,6 +327,9 @@ public class TensorFlowImportTest {
 
         assertEquals("StridedSlice", graph.nodes(0).name());
         assertEquals("Sum", graph.nodes(1).name());
+
+        assertEquals(4, graph.nodes(0).inputPairedLength());
+        assertEquals(2, graph.nodes(1).inputPairedLength());
     }
 
     @Test
@@ -344,6 +351,9 @@ public class TensorFlowImportTest {
 
         assertEquals("strided_slice", graph.nodes(0).name());
         assertEquals("TensorArray", graph.nodes(1).name());
+
+        assertEquals(4, graph.nodes(0).inputPairedLength());
+        assertEquals(1, graph.nodes(0).inputPairedLength());
     }
 
     @Test
@@ -361,6 +371,9 @@ public class TensorFlowImportTest {
 
         assertEquals("strided_slice", graph.nodes(0).name());
         assertEquals("TensorArray", graph.nodes(1).name());
+
+        assertEquals(4, graph.nodes(0).inputPairedLength());
+        assertEquals(1, graph.nodes(0).inputPairedLength());
     }
 
 
@@ -386,6 +399,13 @@ public class TensorFlowImportTest {
         assertEquals(2, graph.variablesLength());
 
         assertEquals("Sum", graph.nodes(0).name());
+
+        val nodeSum = graph.nodes(0);
+        assertEquals(2, nodeSum.inputPairedLength());
+
+        //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
     }
 
     @Test
