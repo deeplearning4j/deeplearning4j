@@ -36,7 +36,9 @@
        (15, simdOps::AMin) ,\
        (16, simdOps::AMax) ,\
        (17, simdOps::SquaredSubtract),\
-       (18, simdOps::FloorMod)
+       (18, simdOps::FloorMod),\
+       (19, simdOps::FloorDiv),\
+       (20, simdOps::ReverseMod)
 
 
 
@@ -250,7 +252,8 @@
         (19, simdOps::TruncateDiv),\
         (20, simdOps::FloorDiv), \
         (21, simdOps::FloorMod) ,\
-        (22, simdOps::SquaredSubtract)
+        (22, simdOps::SquaredSubtract) ,\
+        (23, simdOps::ReverseMod)
 
 
 #define INDEX_REDUCE_OPS \

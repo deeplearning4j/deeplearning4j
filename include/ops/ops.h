@@ -516,6 +516,10 @@ namespace simdOps {
 	template<typename T>
 	class ReverseMod {
 	public:
+        op_def static T op(T d1, T d2) {
+            return (int)d2 % (int)d1;
+        }
+
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d2 % (int)d1;
 		}

@@ -22,6 +22,7 @@ namespace nd4j {
              //   };
 
              //   x->applyLambda(lambda, z);
+                return ND4J_STATUS_OK;
             }
         }
     }
