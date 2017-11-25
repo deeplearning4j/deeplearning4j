@@ -20,6 +20,8 @@ package org.deeplearning4j.arbiter.layers;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 
@@ -33,9 +35,12 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 @NoArgsConstructor //For Jackson JSON/YAML deserialization
 public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
 
+    protected ParameterSpace<Boolean> hasBias;
+
     private DenseLayerSpace(Builder builder) {
         super(builder);
 
+        this.hasBias = builder.hasBias;
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
@@ -49,9 +54,22 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
 
     protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
+        if(hasBias != null)
+            builder.hasBias(hasBias.getValue(values));
     }
 
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
+
+        protected ParameterSpace<Boolean> hasBias;
+
+        public Builder hasBias(boolean hasBias){
+            return hasBias(new FixedValue<>(hasBias));
+        }
+
+        public Builder hasBias(ParameterSpace<Boolean> hasBias){
+            this.hasBias = hasBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

@@ -40,6 +40,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
     protected ParameterSpace<ConvolutionMode> convolutionMode;
+    protected ParameterSpace<Boolean> hasBias;
 
     private ConvolutionLayerSpace(Builder builder) {
         super(builder);
@@ -47,6 +48,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
+        this.hasBias = builder.hasBias;
 
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
@@ -68,6 +70,8 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
             builder.padding(padding.getValue(values));
         if (convolutionMode != null)
             builder.convolutionMode(convolutionMode.getValue(values));
+        if (hasBias != null)
+            builder.hasBias(hasBias.getValue(values));
     }
 
     @Override
@@ -86,6 +90,8 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
             sb.append("padding: ").append(padding).append(delim);
         if (convolutionMode != null)
             sb.append("convolutionMode: ").append(convolutionMode).append(delim);
+        if (hasBias != null)
+            sb.append("hasBias: ").append(hasBias).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }
@@ -96,6 +102,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
         protected ParameterSpace<ConvolutionMode> convolutionMode;
+        protected ParameterSpace<Boolean> hasBias;
 
         public Builder kernelSize(int... kernelSize) {
             return kernelSize(new FixedValue<>(kernelSize));
@@ -130,6 +137,15 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
         public Builder convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
             this.convolutionMode = convolutionMode;
+            return this;
+        }
+
+        public Builder hasBias(boolean hasBias){
+            return hasBias(new FixedValue<>(hasBias));
+        }
+
+        public Builder hasBias(ParameterSpace<Boolean> hasBias){
+            this.hasBias = hasBias;
             return this;
         }
 
