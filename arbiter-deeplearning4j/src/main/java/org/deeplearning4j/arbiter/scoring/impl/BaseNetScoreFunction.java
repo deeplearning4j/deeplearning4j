@@ -1,5 +1,6 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -15,6 +16,7 @@ import java.util.Map;
 /**
  * Created by Alex on 23/07/2017.
  */
+@EqualsAndHashCode
 public abstract class BaseNetScoreFunction implements ScoreFunction {
 
 

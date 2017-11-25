@@ -1,5 +1,7 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -12,6 +14,8 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
  *
  * @author Alex Black
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class TestSetAccuracyScoreFunction extends BaseNetScoreFunction {
 
 

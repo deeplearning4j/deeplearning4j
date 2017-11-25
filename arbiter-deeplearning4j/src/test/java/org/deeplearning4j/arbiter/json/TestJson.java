@@ -12,6 +12,7 @@ import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
@@ -19,6 +20,9 @@ import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.scoring.RegressionValue;
+import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
@@ -134,5 +138,21 @@ public class TestJson {
         ComputationGraphSpace fromJson = ComputationGraphSpace.fromJson(asJson);
 
         assertEquals(cgs, fromJson);
+    }
+
+    @Test
+    public void testScoreFunctionJson() throws Exception {
+
+        ScoreFunction[] scoreFunctions = new ScoreFunction[]{
+                ScoreFunctions.testSetAccuracy(), ScoreFunctions.testSetF1(),
+                ScoreFunctions.testSetLoss(true), ScoreFunctions.testSetRegression(RegressionValue.MAE),
+                ScoreFunctions.testSetRegression(RegressionValue.RMSE)};
+
+        for(ScoreFunction sc : scoreFunctions){
+            String json = JsonMapper.getMapper().writeValueAsString(sc);
+            ScoreFunction fromJson = JsonMapper.getMapper().readValue(json, ScoreFunction.class);
+
+            assertEquals(sc, fromJson);
+        }
     }
 }

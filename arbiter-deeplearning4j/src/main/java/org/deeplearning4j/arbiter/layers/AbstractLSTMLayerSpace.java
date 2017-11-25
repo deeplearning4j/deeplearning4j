@@ -75,7 +75,7 @@ public abstract class AbstractLSTMLayerSpace<T extends AbstractLSTM> extends Fee
         return sb.toString();
     }
 
-    public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<Builder> {
+    public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<T> {
 
         private ParameterSpace<Double> forgetGateBiasInit;
         private ParameterSpace<IActivation> gateActivationFn;
