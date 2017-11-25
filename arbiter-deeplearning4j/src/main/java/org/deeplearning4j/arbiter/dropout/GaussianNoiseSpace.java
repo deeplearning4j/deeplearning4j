@@ -3,7 +3,7 @@ package org.deeplearning4j.arbiter.dropout;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 
 import java.util.Collections;
@@ -11,32 +11,32 @@ import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
-public class DropoutSpace implements ParameterSpace<IDropout> {
+public class GaussianNoiseSpace implements ParameterSpace<IDropout> {
 
-    private ParameterSpace<Double> dropout;
+    private ParameterSpace<Double> stddev;
 
-    public DropoutSpace(double activationRetainProbability){
-        this(new FixedValue<>(activationRetainProbability));
+    public GaussianNoiseSpace(double stddev){
+        this(new FixedValue<>(stddev));
     }
 
     @Override
     public IDropout getValue(double[] parameterValues) {
-        return new Dropout(dropout.getValue(parameterValues));
+        return new GaussianNoise(stddev.getValue(parameterValues));
     }
 
     @Override
     public int numParameters() {
-        return dropout.numParameters();
+        return stddev.numParameters();
     }
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        return Collections.<ParameterSpace>singletonList(dropout);
+        return Collections.<ParameterSpace>singletonList(stddev);
     }
 
     @Override
     public Map<String, ParameterSpace> getNestedSpaces() {
-        return Collections.<String,ParameterSpace>singletonMap("dropout", dropout);
+        return Collections.<String,ParameterSpace>singletonMap("stddev", stddev);
     }
 
     @Override
@@ -46,6 +46,6 @@ public class DropoutSpace implements ParameterSpace<IDropout> {
 
     @Override
     public void setIndices(int... indices) {
-        dropout.setIndices(indices);
+        stddev.setIndices(indices);
     }
 }

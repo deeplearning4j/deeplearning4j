@@ -3,7 +3,7 @@ package org.deeplearning4j.arbiter.dropout;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.AlphaDropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 
 import java.util.Collections;
@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
-public class DropoutSpace implements ParameterSpace<IDropout> {
+public class AlphaDropoutSpace implements ParameterSpace<IDropout> {
 
     private ParameterSpace<Double> dropout;
 
-    public DropoutSpace(double activationRetainProbability){
+    public AlphaDropoutSpace(double activationRetainProbability){
         this(new FixedValue<>(activationRetainProbability));
     }
 
     @Override
     public IDropout getValue(double[] parameterValues) {
-        return new Dropout(dropout.getValue(parameterValues));
+        return new AlphaDropout(dropout.getValue(parameterValues));
     }
 
     @Override
