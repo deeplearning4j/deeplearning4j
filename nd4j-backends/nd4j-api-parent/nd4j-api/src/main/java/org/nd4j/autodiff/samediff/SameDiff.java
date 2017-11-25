@@ -3606,12 +3606,15 @@ public class SameDiff {
 
         val inPaired = new ArrayList<Integer>();
 
+        val inputs = graph().getFromFor(node.getVertexId());
+        for(int input : inputs) {
+            for(int output : node.getVertexId()) {
+                inPaired.add(IntPair.createIntPair(bufferBuilder,input,output));
+            }
+        }
 
-        if(node.args() != null)
-            for (val index: node.args())
-                inPaired.add(IntPair.createIntPair(bufferBuilder, index.args()[0].getVertexId()[0], index.getVertexId()[0]));
 
-        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
+        int nodesIn = FlatNode.createInputVector(bufferBuilder, inputs);
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
         int nodesOut = FlatNode.createOutputVector(bufferBuilder, node.getVertexId());
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);

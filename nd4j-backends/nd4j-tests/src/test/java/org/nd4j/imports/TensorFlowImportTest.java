@@ -14,7 +14,6 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
 
@@ -353,7 +352,6 @@ public class TensorFlowImportTest {
         assertEquals("TensorArray", graph.nodes(1).name());
 
         assertEquals(4, graph.nodes(0).inputPairedLength());
-        assertEquals(1, graph.nodes(0).inputPairedLength());
     }
 
     @Test

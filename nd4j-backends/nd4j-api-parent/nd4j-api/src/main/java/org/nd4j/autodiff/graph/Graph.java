@@ -47,6 +47,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     private Edge<E> lastEdgeBeforeLastAdded;
     private Vertex<V> lastVertexAdded;
 
+
     public Graph() {
         this(true);
     }
@@ -202,6 +203,11 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         for(int i : edge.getFrom())
             if (i <= 0)
                 throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
+
+
+        fromTo.put(edge.getFrom(),edge.getTo());
+        toFrom.put(edge.getTo(),edge.getFrom());
+
 
         List<Edge<E>> fromList =  edges.get(edge.getFrom());
 

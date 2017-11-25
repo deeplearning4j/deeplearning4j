@@ -37,7 +37,7 @@ import java.util.*;
 public class DifferentialFunctionFactory implements FunctionFactory  {
 
     protected SameDiff sameDiff;
-    private Map<String,Method> methodNames;
+    private static Map<String,Method> methodNames;
 
     /**
      *
@@ -46,10 +46,12 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     public DifferentialFunctionFactory(SameDiff sameDiff) {
         if (sameDiff != null) {
             this.sameDiff = sameDiff;
-            methodNames = new HashMap<>();
-            Method[] methods = getClass().getDeclaredMethods();
-            for(Method method : methods)
-                methodNames.put(method.getName().toLowerCase(),method);
+            if(methodNames == null) {
+                methodNames = new HashMap<>();
+                Method[] methods = getClass().getDeclaredMethods();
+                for (Method method : methods)
+                    methodNames.put(method.getName().toLowerCase(), method);
+            }
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }

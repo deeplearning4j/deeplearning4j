@@ -38,7 +38,6 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
      */
     @Override
     public EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node) {
-
         EdgeId edgeId = new EdgeId(inputIds,outputIds, UUID.randomUUID().toString(),true);
         return edgeId;
     }
