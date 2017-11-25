@@ -25,6 +25,7 @@ import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -106,7 +107,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         //Build/add our layers and vertices:
         for (LayerConf c : layerSpaces) {
             org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.getValue(values);
-            graphBuilder.addLayer(c.getLayerName(), l, c.getInputs());
+            graphBuilder.addLayer(c.getLayerName(), l, c.getPreProcessor(), c.getInputs());
         }
         for (VertexConf gv : vertices) {
             graphBuilder.addVertex(gv.getVertexName(), gv.getGraphVertex(), gv.getInputs());
@@ -215,7 +216,13 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
 
         public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs) {
-            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false));
+            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false, null));
+            return this;
+        }
+
+        public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, InputPreProcessor preProcessor,
+                                String... layerInputs){
+            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false, preProcessor));
             return this;
         }
 

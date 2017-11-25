@@ -204,7 +204,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         public Builder addLayer(LayerSpace<? extends Layer> layerSpace, ParameterSpace<Integer> numLayersDistribution,
                         boolean duplicateConfig) {
             String layerName = "layer_" + layerSpaces.size();
-            layerSpaces.add(new LayerConf(layerSpace, layerName, null, numLayersDistribution, duplicateConfig));
+            layerSpaces.add(new LayerConf(layerSpace, layerName, null, numLayersDistribution, duplicateConfig, null));
             return this;
         }
 

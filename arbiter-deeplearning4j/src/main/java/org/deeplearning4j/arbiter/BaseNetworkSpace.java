@@ -240,7 +240,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         protected String[] inputs;
         protected ParameterSpace<Integer> numLayers;
         protected boolean duplicateConfig;
-
+        protected InputPreProcessor preProcessor;
     }
 
     @SuppressWarnings("unchecked")
