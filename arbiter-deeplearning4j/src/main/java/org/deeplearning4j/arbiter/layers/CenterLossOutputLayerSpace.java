@@ -1,10 +1,17 @@
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
 
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public class CenterLossOutputLayerSpace extends BaseOutputLayerSpace<CenterLossOutputLayer> {
 
     ParameterSpace<Double> alpha;

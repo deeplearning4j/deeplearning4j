@@ -1,5 +1,9 @@
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.adapter.ActivationParameterSpaceAdapter;
 import org.deeplearning4j.arbiter.adapter.LossFunctionParameterSpaceAdapter;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -11,6 +15,9 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public class LossLayerSpace extends LayerSpace<LossLayer> {
 
     private ParameterSpace<IActivation> activationFunction;
