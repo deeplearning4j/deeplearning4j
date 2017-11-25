@@ -1,9 +1,5 @@
 package org.datavec.local.transforms;
 
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.datavec.api.transform.*;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.column.*;
@@ -15,14 +11,14 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import tech.tablesaw.aggregate.AggregateFunction;
+import tech.tablesaw.aggregate.AggregateFunctions;
 import tech.tablesaw.api.*;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.columns.ColumnReference;
 import tech.tablesaw.filtering.*;
 import tech.tablesaw.filtering.times.IsAfter;
 import tech.tablesaw.filtering.times.IsBefore;
-import tech.tablesaw.reducing.NumericReduceFunction;
-import tech.tablesaw.reducing.NumericReduceUtils;
 import tech.tablesaw.store.ColumnMetadata;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -93,31 +89,30 @@ public class TableRecords {
     }
 
 
-
-    private static NumericReduceFunction getFunction(ReduceOp reduceOp) {
+    private static AggregateFunction getFunction(ReduceOp reduceOp) {
         switch (reduceOp) {
             case Stdev:
-                return NumericReduceUtils.stdDev;
+                return AggregateFunctions.stdDev;
             case Sum:
-                return NumericReduceUtils.sum;
+                return AggregateFunctions.sum;
             case Max:
-                return NumericReduceUtils.max;
+                return AggregateFunctions.max;
             case Mean:
-                return NumericReduceUtils.mean;
+                return AggregateFunctions.mean;
             case Min:
-                return NumericReduceUtils.min;
+                return AggregateFunctions.min;
             case Count:
-                return NumericReduceUtils.count;
+                return AggregateFunctions.count;
             case CountUnique:
                 throw new IllegalArgumentException("Illegal operation " + reduceOp);
             case Range:
-                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+                return AggregateFunctions.range;
             case TakeFirst:
-                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+                return AggregateFunctions.first;
             case TakeLast:
-                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+                return AggregateFunctions.last;
             case Prod:
-                return NumericReduceUtils.product;
+                return AggregateFunctions.product;
             default:
                 throw new IllegalStateException("Illegal operation for reduce");
         }
@@ -157,35 +152,29 @@ public class TableRecords {
                 return reduce.countBy(reduce.categoryColumn(columnNameToReduce));
             case CountUnique:
                 throw new IllegalArgumentException("Illegal operation ");
-            case Range:
-                throw new IllegalArgumentException("Illegal operation ");
-            case TakeFirst:
-                return reduce.first(1);
-            case TakeLast:
-                return reduce.last(1);
             default:
-                NumericReduceFunction reduceFunction = getFunction(reduceOp);
+                AggregateFunction reduceFunction = getFunction(reduceOp);
                 String outputName = columnNameToReduce = "reduced_" + columnNameToReduce;
                 switch (reduce.column(columnNameToReduce).type()) {
                     case FLOAT:
-                        double val = reduce.reduce(columnNameToReduce, reduceFunction);
-                        FloatColumn floatColumn = new FloatColumn(columnNameToReduce,
-                                        new FloatArrayList(new float[] {(float) val}));
+                        double val = reduce.agg(columnNameToReduce, reduceFunction);
+                        FloatColumn floatColumn
+                                = new FloatColumn(columnNameToReduce, new float[] {(float) val});
                         return Table.create(outputName, floatColumn);
                     case LONG_INT:
-                        long longVal = (long) reduce.reduce(columnNameToReduce, reduceFunction);
-                        LongColumn longColumn =
-                                        new LongColumn(columnNameToReduce, new LongArrayList(new long[] {longVal}));
+                        long longVal = (long) reduce.agg(columnNameToReduce, reduceFunction);
+                        LongColumn longColumn
+                                = new LongColumn(columnNameToReduce, new long[] {longVal});
                         return Table.create(outputName, longColumn);
                     case INTEGER:
-                        int intVal = (int) reduce.reduce(columnNameToReduce, reduceFunction);
-                        IntColumn intColumn =
-                                        new IntColumn(columnNameToReduce, new IntArrayList(new int[] {intVal}));
+                        int intVal = (int) reduce.agg(columnNameToReduce, reduceFunction);
+                        IntColumn intColumn
+                                = new IntColumn(columnNameToReduce, new int[] {intVal});
                         return Table.create(outputName, intColumn);
                     case DOUBLE:
-                        double doubleVal = reduce.reduce(columnNameToReduce, reduceFunction);
-                        DoubleColumn doubleColumn = new DoubleColumn(columnNameToReduce,
-                                        new DoubleArrayList(new double[] {doubleVal}));
+                        double doubleVal = reduce.agg(columnNameToReduce, reduceFunction);
+                        DoubleColumn doubleColumn
+                                = new DoubleColumn(columnNameToReduce, new double[] {doubleVal});
                         return Table.create(outputName, doubleColumn);
                     default:
                         throw new IllegalStateException("Illegal column type  " + reduceOp);
@@ -403,7 +392,7 @@ public class TableRecords {
      */
     public static Table filterTable(Table toFilter, Filter filter) {
         Table ret = toFilter;
-        IntArrayList indicesToRemove = new IntArrayList();
+        List<Integer> indicesToRemove = new ArrayList<>();
         for (String columnName : filter.columnNames()) {
             Column column = toFilter.column(columnName);
             for (int i = 0; i < ret.rowCount(); i++) {
