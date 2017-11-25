@@ -162,18 +162,20 @@ public class TensorFlowImportTest {
         assertEquals(6, graph.variablesLength());
         assertEquals("alpha/Assign", graph.nodes(0).name());
     }
-
-    /*@Test
+/*
+    @Test
     public void testIntermediateLoop2() throws Exception {
         Nd4j.create(1);
         val tg = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/three_arg_while.pb.txt").getFile());
 
-        val phi = tg.getVariableSpace().getVariable("phi");
+        val phi = tg.getVariable("phi");
         assertNotNull(phi);
         assertArrayEquals(new int[] {2, 2}, phi.getShape());
 
-        val scopeCondition = tg.getScope(9);
-        val scopeBody = tg.getScope(10);
+        //was 9
+        val scopeCondition = tg.getFunction("");
+        //was 10
+        val scopeBody = tg.getFunction("");
 
         val whileNode = tg.getNode(11);
         assertEquals("while", whileNode.getOpName());
@@ -280,8 +282,8 @@ public class TensorFlowImportTest {
             dos.write(array, offset, array.length - offset);
         }
 
-    }
-*/
+    }*/
+
     @Test
     public void testIntermediateLoop3() throws Exception {
         Nd4j.create(1);

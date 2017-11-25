@@ -197,7 +197,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
 
 
-        // parsing declarations first. they all come as Enter ops
+        // parsing declarations first. they all come as Expose ops
         val whileInputs = new ArrayList<TIndex>();
         int enterCnt = 0;
         for (; startPosition < nodes.size(); startPosition++) {
@@ -215,7 +215,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 val input = getInputFromNode(tfNode,e);
                 //val idx = intermediateGraph.getReverseMap().get(input);
                 val idx = indexByName(intermediateGraph, input);
-                log.info("Enter mapping [{}] to [{}]", input, idx);
+                log.info("Expose mapping [{}] to [{}]", input, idx);
 
                 // mapping this
                 whileInputs.add(idx);
@@ -228,7 +228,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         whileInputs.add(TIndex.makeOf(scopeLoop.getId()));
         whileNode.setInputs(whileInputs);
 
-        // now we're skipping Merge step, since we've already captured variables at Enter step
+        // now we're skipping Merge step, since we've already captured variables at Expose step
         int mergedCnt = 0;
         for (; startPosition < nodes.size(); startPosition++) {
             val tfNode = nodes.get(startPosition);

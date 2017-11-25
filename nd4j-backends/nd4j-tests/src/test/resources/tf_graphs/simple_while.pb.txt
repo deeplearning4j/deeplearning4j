@@ -117,8 +117,8 @@ node {
   input: "^alpha/Assign"
 }
 node {
-  name: "while/Enter"
-  op: "Enter"
+  name: "while/Expose"
+  op: "Expose"
   input: "alpha/read"
   attr {
     key: "T"
@@ -148,7 +148,7 @@ node {
 node {
   name: "while/Merge"
   op: "Merge"
-  input: "while/Enter"
+  input: "while/Expose"
   input: "while/NextIteration"
   attr {
     key: "N"

@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.lossfunctions;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
 
@@ -28,26 +27,6 @@ import org.nd4j.linalg.lossfunctions.impl.*;
  * @author Adam Gibson
  */
 public class LossFunctions {
-
-    /**
-     * Generic scoring function.
-     * Note that an IllegalArgumentException is thrown if the given
-     * loss function is custom. An alternative mechanism for scoring
-     * (preferrably with a function opName and the op factory) should be used instead.
-     *
-     * @param labels            the labels to score
-     * @param lossFunction      the loss function to use
-     * @param z                 the output function
-     * @param l2                the l2 regularization term (0.5 * l2Coeff * sum w^2)
-     * @param l1                the l1 regularization term (l1Coeff * sum |w|)
-     * @param useRegularization whether to use regularization
-     * @return the score for the given parameters
-     */
-    public static double score(INDArray labels, LossFunction lossFunction, INDArray z, double l2, double l1,
-                    boolean useRegularization) {
-        return LossCalculation.builder().l1(l1).lossFunction(lossFunction).l2(l2).labels(labels).z(z)
-                        .useRegularization(useRegularization).build().score();
-    }
 
     /**
      * MSE: Mean Squared Error: Linear Regression<br>

@@ -34,10 +34,10 @@ import org.nd4j.linalg.api.ops.Op;
 
 
  */
-public class Enter extends DynamicCustomOp {
+public class Expose extends DynamicCustomOp {
     @Override
     public String opName() {
-        return "enter";
+        return "expose";
     }
 
     @Override
