@@ -42,6 +42,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -1224,5 +1226,26 @@ public class RecordReaderDataSetiteratorTest {
         DataSet ds = iter.next();
         assertEquals(expF, ds.getFeatures());
         assertEquals(expL, ds.getLabels());
+    }
+
+    @Test
+    public void testNormalizerPrefetchReset() throws Exception {
+        //DataNormalization normalizer = new NormalizerMinMaxScaler(0, 1);
+        RecordReader csv = new CSVRecordReader();
+        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+
+        int batchSize = 3;
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(csv, batchSize, 4, 4, true);
+
+        DataNormalization normalizer = new NormalizerMinMaxScaler(0, 1);
+        normalizer.fit(iter);
+        iter.setPreProcessor(normalizer);
+
+        iter.inputColumns();    //Prefetch
+        iter.totalOutcomes();
+        iter.hasNext();
+        iter.reset();
+        DataSet ds = iter.next();
     }
 }
