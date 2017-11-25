@@ -20,9 +20,11 @@ package org.deeplearning4j.arbiter.layers;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.arbiter.dropout.DropoutSpace;
 import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
@@ -115,13 +117,17 @@ public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T> {
-        protected ParameterSpace<Double> dropOut;
+        protected ParameterSpace<IDropout> dropOut;
 
         public T dropOut(double dropOut) {
             return dropOut(new FixedValue<>(dropOut));
         }
 
         public T dropOut(ParameterSpace<Double> dropOut) {
+            return iDropOut(new DropoutSpace(dropOut));
+        }
+
+        public T iDropOut(ParameterSpace<IDropout> dropOut){
             this.dropOut = dropOut;
             return (T) this;
         }

@@ -37,7 +37,7 @@ import org.nd4j.linalg.activations.IActivation;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class AbstractLSTMLayerSpace<T extends AbstractLSTM> extends FeedForwardLayerSpace<T> {
 
     protected ParameterSpace<Double> forgetGateBiasInit;
