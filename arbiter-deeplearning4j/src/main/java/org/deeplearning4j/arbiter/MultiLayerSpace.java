@@ -12,6 +12,7 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -35,6 +36,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     protected EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
     @JsonProperty
     protected int numParameters;
+    @JsonProperty
+    protected WorkspaceMode trainingWorkspaceMode;
+    @JsonProperty
+    protected WorkspaceMode inferenceWorkspaceMode;
 
 
     protected MultiLayerSpace(Builder builder) {
@@ -56,7 +61,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         for (ParameterSpace ps : list)
             numParameters += ps.numParameters();
 
-
+        this.trainingWorkspaceMode = builder.trainingWorkspaceMode;
+        this.inferenceWorkspaceMode = builder.inferenceWorkspaceMode;
     }
 
     protected MultiLayerSpace() {
@@ -104,6 +110,12 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
 
         MultiLayerConfiguration configuration = listBuilder.build();
+
+        if (trainingWorkspaceMode != null)
+            configuration.setTrainingWorkspaceMode(trainingWorkspaceMode);
+        if (inferenceWorkspaceMode != null)
+            configuration.setInferenceWorkspaceMode(inferenceWorkspaceMode);
+
         return new DL4JConfiguration(configuration, earlyStoppingConfiguration, numEpochs);
     }
 
@@ -161,6 +173,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         protected List<LayerConf> layerSpaces = new ArrayList<>();
         protected ParameterSpace<InputType> inputType;
         protected ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors;
+        protected WorkspaceMode trainingWorkspaceMode;
+        protected WorkspaceMode inferenceWorkspaceMode;
 
         //Early stopping configuration
         protected EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
@@ -216,6 +230,16 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          */
         public Builder setInputPreProcessors(ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors) {
             this.inputPreProcessors = inputPreProcessors;
+            return this;
+        }
+
+        public Builder trainingWorkspaceMode(WorkspaceMode workspaceMode){
+            this.trainingWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        public Builder inferenceWorkspaceMode(WorkspaceMode workspaceMode){
+            this.inferenceWorkspaceMode = workspaceMode;
             return this;
         }
 
