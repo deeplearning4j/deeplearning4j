@@ -25,6 +25,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 
 /**
  * Layer space for LSTM layers
@@ -34,9 +35,9 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class GravesLSTMLayerSpace extends AbstractLSTMLayerSpace<GravesLSTM> {
+public class LSTMLayerSpace extends AbstractLSTMLayerSpace<LSTM> {
 
-    private GravesLSTMLayerSpace(Builder builder) {
+    private LSTMLayerSpace(Builder builder) {
         super(builder);
 
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
@@ -44,13 +45,13 @@ public class GravesLSTMLayerSpace extends AbstractLSTMLayerSpace<GravesLSTM> {
 
 
     @Override
-    public GravesLSTM getValue(double[] values) {
-        GravesLSTM.Builder b = new GravesLSTM.Builder();
+    public LSTM getValue(double[] values) {
+        LSTM.Builder b = new LSTM.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(LSTM.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
     }
 
@@ -61,7 +62,7 @@ public class GravesLSTMLayerSpace extends AbstractLSTMLayerSpace<GravesLSTM> {
 
     @Override
     public String toString(String delim) {
-        StringBuilder sb = new StringBuilder("GravesLSTMLayerSpace(");
+        StringBuilder sb = new StringBuilder("LSTMLayerSpace(");
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }
@@ -70,8 +71,8 @@ public class GravesLSTMLayerSpace extends AbstractLSTMLayerSpace<GravesLSTM> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public GravesLSTMLayerSpace build() {
-            return new GravesLSTMLayerSpace(this);
+        public LSTMLayerSpace build() {
+            return new LSTMLayerSpace(this);
         }
     }
 }
