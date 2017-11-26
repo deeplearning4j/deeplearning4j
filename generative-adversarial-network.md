@@ -28,7 +28,9 @@ While difficult to tune and therefore to use, GANs have stimulated a lot of [int
 * [Generative Adversarial Nets] [[Paper]](https://arxiv.org/abs/1406.2661)
 [[Code]](https://github.com/goodfeli/adversarial)(Ian Goodfellow's breakthrough paper)
 
-### Unclassified Papers
+### Unclassified Papers & Resources
+
+* [GAN Hacks: How to Train a GAN? Tips and tricks to make GANs work](https://github.com/soumith/ganhacks)
 
 * Deep Generative Image Models using a Laplacian Pyramid of Adversarial Networks] [[Paper]](https://arxiv.org/abs/1506.05751)[[Code]](https://github.com/facebook/eyescream)
 
