@@ -23,7 +23,7 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 
 * [ND4J: N-dimensional arrays for the JVM](http://nd4j.org)
 * [libND4J: Native CPU/GPU operations for ND4J](https://github.com/deeplearning4j/libnd4j)
-* [DataVec: Data preperation for DL4J](https://github.com/deeplearning4j/DataVec)
+* [DataVec: Data preparation for DL4J](https://github.com/deeplearning4j/DataVec)
 * [Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 ### Nets
@@ -42,7 +42,7 @@ Since Deeplearning4j is a composable framework, users can arrange shallow nets t
 
 DL4J contains the following built-in vectorization algorithms:
 
-* [DataVec: The Rosetta Stone of Vectorization](https://github.com/deeplearning4j/DataVec)
+* [DataVec: Machine Learning Data Pipelines for Vectorization/Tensorization](https://github.com/deeplearning4j/DataVec)
 * Moving-window for images
 * Moving-window for text 
 * Viterbi for sequential classification
