@@ -4,9 +4,9 @@ layout: default
 redirect_from: gan
 ---
 
-# Generative Adversarial Networks (GANs)
+# A Beginner's Guide to Generative Adversarial Networks (GANs)
 
-Generative adversarial networks (GANs) are two-part neural networks capable of unsupervised learning that pit one net against the other, thus the "adversarial." 
+Generative adversarial networks (GANs) are two-part neural networks capable of unsupervised learning that pit one net against the other, thus the "adversarial." Yann LeCun [called adversarial training](https://www.quora.com/What-are-some-recent-and-potentially-upcoming-breakthroughs-in-deep-learning) "the most interesting idea in the last 10 years in ML."
 
 One neural network called the generator generates data instances and the other, called the discriminator, evaluates them for authenticity; i.e. the discriminator decides whether they belong to the unlabeled training dataset or not. 
 
