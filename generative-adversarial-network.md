@@ -10,6 +10,8 @@ Generative adversarial networks (GANs) are architectures comprised of two neural
 
 [GANs were introduced in a paper](https://arxiv.org/abs/1406.2661) by Ian Goodfellow and other researchers at the University of Montreal, including Yoshua Bengio, in 2014. Goodfellow, Bengio and Aaron Courville co-authored [a well-known deep learning textbook](http://www.deeplearningbook.org/). 
 
+The potential is obviously huge, because GANs can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. 
+
 ## How GANs Work
 
 One neural network, called the generator, generates data instances while the other, the discriminator, evaluates them for authenticity; i.e. the discriminator decides whether they belong to the actual training dataset, or not. 
