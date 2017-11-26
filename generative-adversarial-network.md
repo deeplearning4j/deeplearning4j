@@ -6,15 +6,41 @@ redirect_from: gan
 
 # A Beginner's Guide to Generative Adversarial Networks (GANs)
 
-Generative adversarial networks (GANs) are two-part neural networks capable of unsupervised learning that pit one net against the other, thus the "adversarial." Yann LeCun [called adversarial training](https://www.quora.com/What-are-some-recent-and-potentially-upcoming-breakthroughs-in-deep-learning) "the most interesting idea in the last 10 years in ML."
-
-One neural network called the generator generates data instances and the other, called the discriminator, evaluates them for authenticity; i.e. the discriminator decides whether they belong to the unlabeled training dataset or not. 
-
-For example, the generative network might create images and the evaluating network would accept or reject them, in what is essentially an [actor-critic model](https://arxiv.org/abs/1610.01945). Both nets are trying to optimize a different and opposing objective, or loss, function. 
+Generative adversarial networks (GANs) are architectures comprised of two neural networks, which pit one net against the other. Thus the "adversarial." Yann LeCun [called adversarial training](https://www.quora.com/What-are-some-recent-and-potentially-upcoming-breakthroughs-in-deep-learning) "the most interesting idea in the last 10 years in ML."
 
 [GANs were introduced in a paper](https://arxiv.org/abs/1406.2661) by Ian Goodfellow and other researchers at the University of Montreal, including Yoshua Bengio, in 2014. Goodfellow, Bengio and Aaron Courville co-authored [a well-known deep learning textbook](http://www.deeplearningbook.org/). 
 
-While difficult to tune and therefore to use, GANs have stimulated a lot of [interesting research and writing](https://blog.openai.com/generative-models/). 
+## How GANs Work
+
+One neural network, called the generator, generates data instances while the other, the discriminator, evaluates them for authenticity; i.e. the discriminator decides whether they belong to the actual training dataset, or not. 
+
+Let's say we're trying to generate hand-written numerals like those found in MNIST. We can start with the MNIST dataset, taken from the real world. The goal of the discriminator, when shown an instance from this dataset, is to recognize it as authentic.
+
+Meanwhile, the generator creates images that it passes to the discriminator in the hopes that they, too, will be deemed authentic. The goal of the generator is to generate passable hand-written digits. The goal of the discriminator, in this case, is to identify all those images as fake. 
+
+So you have a double feedback loop:
+
+* The generator takes in random numbers and returns an image. 
+* This image is fed into the discriminator alongside images taken from the true dataset. 
+* The discriminator takes in images and returns probabilities, a number between 0 and 1, with 1 representing authenticity and 0 representing fake. 
+* The discriminator is in a feedback loop with the ground truth of the images, which we know. 
+* The generator is in a feedback loop with the discriminator.
+
+You can think of a GAN as the combination of a counterfeiter and a cop, a game of cat and mouse, where the first is learning to pass false notes, and the second is learning to detect them. Both are dynamic; i.e. the cop is in training, too, and each side comes to learn the others methods in a constant escalation. 
+
+The discriminator network is a standard convolutional network that can categorize the images fed to it, a binomial classifier. The generator is an inverse convolutional network, in a sense. The discriminator takes an image and downsamples it to a probability. The generator takes a vector of noise and upsamples it to an image. 
+
+Both nets are trying to optimize a different and opposing objective, or loss, function in a zero-zum game. This is essentially an [actor-critic model](https://arxiv.org/abs/1610.01945). As the discriminator changes its behavior, so does the generator, and vice versa. Their losses push against each other. 
+
+## Tips in Training a GAN
+
+When you train the discriminator, hold the generator values constant; and when you train the generator, hold the discriminator constant. Each should train against a static adversary. For example, this gives the generator a better read on the gradient it must learn by.
+
+By the same token, pretraining the discriminator against MNIST before you start training the generator will establish a clearer gradient.
+
+Each side of the GAN can overpower the other. If the discriminator is too good, it will return values so close to 0 or 1 that the generator will struggle to read the gradient. If the generator is too good, it will persistently exploit weaknesses in the discriminator that lead to false negatives. This may be mitigated by the nets' respective learning rates. 
+
+GANs take a long time to train. On a single GPU a GAN might take hours, and on a single CPU more than a day. While difficult to tune and therefore to use, GANs have stimulated a lot of [interesting research and writing](https://blog.openai.com/generative-models/). 
 
 ## GAN Use Cases
 
