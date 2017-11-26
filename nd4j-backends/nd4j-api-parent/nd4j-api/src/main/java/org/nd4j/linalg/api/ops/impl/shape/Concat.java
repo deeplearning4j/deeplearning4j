@@ -76,7 +76,7 @@ public class Concat extends DynamicCustomOp {
 
     @Override
     public String onnxName() {
-        return "ConcatV2";
+        return "Concat";
     }
 
     @Override

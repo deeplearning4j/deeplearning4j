@@ -262,11 +262,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     newInstance.setSameDiff(importState.getSameDiff());
                 }
 
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (NullPointerException e) {
+            } catch (Exception e) {
                 log.error("Failed with [{}]", opName);
                 throw new RuntimeException(e);
             }

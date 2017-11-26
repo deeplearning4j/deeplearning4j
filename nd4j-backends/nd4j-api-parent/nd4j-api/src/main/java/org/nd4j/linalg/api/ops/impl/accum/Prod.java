@@ -93,7 +93,7 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public String tensorflowName() {
-       return "reduce_prod";
+       return "Prod";
     }
 
 

@@ -47,7 +47,7 @@ public class Expose extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-       return "Enter";
+       return "Expose";
     }
 
     @Override

@@ -25,7 +25,6 @@ import java.util.Map;
 @Getter
 public class AtrousConv2D extends Conv2D {
 
-    protected  Conv2DConfig conv2DConfig;
 
     @Builder(builderMethodName = "atrousBuilder")
     public AtrousConv2D(SameDiff sameDiff,

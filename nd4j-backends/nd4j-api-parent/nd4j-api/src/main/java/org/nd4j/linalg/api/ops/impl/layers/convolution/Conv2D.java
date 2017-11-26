@@ -7,6 +7,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -56,6 +57,19 @@ public class Conv2D extends DynamicCustomOp {
 
     }
 
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        val var = sameDiff.getVariableForVertexId(vertexId);
+        //place holder variable
+        if (var.getArr() == null) {
+            //assuming the array hasn't been initialized, setup the config
+            //resolving the place holder variable.
+            val array = arrayMap.get(var.getVarName());
+            sameDiff.updateVariable(var.getVarName(), arrayMap.get(var.getVarName()));
+            conv2DConfig.setKh(array.size(0));
+            conv2DConfig.setKw(array.size(1));
+        }
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -67,19 +81,22 @@ public class Conv2D extends DynamicCustomOp {
         val aPadding = nodeDef.getAttrOrDefault("padding", null);
 
         val paddingMode = aPadding.getS().toStringUtf8();
+        int kY = 1;
+        int kX = 1;
 
-        val kY = 0;
-        val kX = 0;
-      /*  val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("input",nodeDef,graph);
-        val kY = arr.size(0);
-        val kX = arr.size(1);
-
-        arr.assign(arr.permute(3, 2, 0, 1).dup('c'));
-*/
+        if(nodeDef.getInputCount() > 0) {
+            val arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
+            if(arr != null) {
+                kY = arr.size(0);
+                kX = arr.size(1);
+                arr.assign(arr.permute(3, 2, 0, 1).dup('c'));
+                initWith.associateArrayWithVariable(arr, initWith.getVariableForVertexId(vertexId));
+            }
+        }
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
         Conv2DConfig conv2DConfig = Conv2DConfig.builder()
-                .kh((int) kY)
-                .kw((int) kX)
+                .kh(kY)
+                .kw(kX)
                 .sx(sX.intValue())
                 .sy(sY.intValue())
                 .isSameMode(isSameMode)
@@ -91,7 +108,7 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        val autoPad = attributesForNode.get("auto_pad");
+        val autoPad = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
         val dilations = attributesForNode.get("dilations");
         val dilationY = dilations.getIntsList().get(0);
         val dilationX = dilations.getIntsList().get(1);
@@ -99,13 +116,13 @@ public class Conv2D extends DynamicCustomOp {
 
         val kernelShape = attributesForNode.get("kernel_shape");
         val kY = kernelShape.getIntsList().get(0);
-        val kX = kernelShape.getIntsList().get(1);
+        val kX = kernelShape.getIntsList().size() < 2 ? kY : kernelShape.getIntsList().get(1);
 
 
         val strides = attributesForNode.get("strides");
         val sY = strides.getIntsList().get(0);
-        val sX = strides.getIntsList().get(1);
-        boolean isSameMode = autoPad.getS().toStringUtf8()
+        val sX = strides.getIntsList().size() < 2 ? sY : strides.getIntsList().get(1);
+        boolean isSameMode = autoPad
                 .equalsIgnoreCase("SAME");
         Conv2DConfig conv2DConfig = Conv2DConfig.builder()
                 .dh(dilationY.intValue())

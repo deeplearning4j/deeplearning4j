@@ -248,6 +248,11 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    //by default no op, used for certain situations like
+    //place holder arrays
+    public void initWithArrays(Map<String,INDArray> arrayMap) {}
+
+
 
     @Override
     public abstract String toString();

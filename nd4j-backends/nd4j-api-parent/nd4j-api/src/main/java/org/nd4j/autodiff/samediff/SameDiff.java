@@ -3347,6 +3347,23 @@ public class SameDiff {
 
 
 
+    /**
+     * Creates and executes a list of operations
+     * @return
+     */
+    public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> execWithPlaceHolder(Map<String,INDArray> inputs) {
+        //resolve the place holders
+        for(DifferentialFunction function : functionInstances.values()) {
+            function.initWithArrays(inputs);
+        }
+
+
+        for(val entry : inputs.entrySet()) {
+            associateArrayWithVariable(entry.getValue(),getVariable(entry.getKey()));
+        }
+
+        return exec();
+    }
 
     /**
      * Creates and executes a list of operations
