@@ -1294,56 +1294,75 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void computeGradientAndScore() {
         synchronizeIterEpochCounts();
-        //Calculate activations (which are stored in each layer, and used in backprop)
-        if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
+
+        //Initialize the workspace (should be a no-op most of the time - but is necessary here if user calls
+        // computeGradientAndScore() before any fit() methods)
+        MemoryWorkspace wsExternal = null;
+        boolean shouldCloseWorkspace = false;
+        if(configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
+            wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+            if(!wsExternal.isScopeActive()){
+                wsExternal.notifyScopeEntered();
+                shouldCloseWorkspace = true;
+            }
+        }
+
+        try {
+            //Calculate activations (which are stored in each layer, and used in backprop)
+            if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
+                if (trainingListeners.size() > 0) {
+                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        for (TrainingListener tl : trainingListeners) {
+                            tl.onForwardPass(this, activations);
+                        }
+                    }
+                }
+                calcBackpropGradients(true);
+            } else {
+                Map<String, INDArray> activations = feedForward(true, true, false, false);
+                if (trainingListeners.size() > 0) {
+                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        for (TrainingListener tl : trainingListeners) {
+                            tl.onForwardPass(this, activations);
+                        }
+                    }
+                }
+                calcBackpropGradients(false);
+            }
+
+            //Score: sum of the scores for the various output layers...
+            double l1 = calcL1();
+            double l2 = calcL2();
+
+            score = 0.0;
+            for (String s : configuration.getNetworkOutputs()) {
+                GraphVertex gv = verticesMap.get(s);
+
+                score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true);
+
+                //Only want to add l1/l2 once...
+                l1 = 0.0;
+                l2 = 0.0;
+            }
+
+            //Listeners
             if (trainingListeners.size() > 0) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
-                        tl.onForwardPass(this, activations);
+                        tl.onBackwardPass(this);
                     }
                 }
             }
-            calcBackpropGradients(true);
-        } else {
-            Map<String, INDArray> activations = feedForward(true, true, false, false);
-            if (trainingListeners.size() > 0) {
-                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    for (TrainingListener tl : trainingListeners) {
-                        tl.onForwardPass(this, activations);
-                    }
-                }
+
+            //Clear the fields (inc. post noise/dropconnect parameters) on the output layers
+            for (int i = 0; i < numOutputArrays; i++) {
+                getOutputLayer(i).clearNoiseWeightParams();
             }
-            calcBackpropGradients(false);
-        }
-
-        //Score: sum of the scores for the various output layers...
-        double l1 = calcL1();
-        double l2 = calcL2();
-
-        score = 0.0;
-        for (String s : configuration.getNetworkOutputs()) {
-            GraphVertex gv = verticesMap.get(s);
-
-            score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true);
-
-            //Only want to add l1/l2 once...
-            l1 = 0.0;
-            l2 = 0.0;
-        }
-
-        //Listeners
-        if (trainingListeners.size() > 0) {
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onBackwardPass(this);
-                }
+        } finally {
+            if(shouldCloseWorkspace){
+                wsExternal.notifyScopeLeft();
             }
-        }
-
-        //Clear the fields (inc. post noise/dropconnect parameters) on the output layers
-        for( int i=0; i<numOutputArrays; i++ ){
-            getOutputLayer(i).clearNoiseWeightParams();
         }
     }
 
