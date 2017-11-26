@@ -226,6 +226,10 @@ A neural network that takes the initial input and triggers the [activation](#act
 ### <a name="gaussian">Gaussian Distribution</a>
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
 
+### <a name="gaussianproc">Gaussian Process</a>
+
+* [Nando de Freitas's lecture on Gaussian Processes](https://www.youtube.com/watch?v=4vGiHC35j9s).
+
 ### <a name="gan">Generative Adversarial Networks (GANs)</a>
 
 [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network) are a tool to conduct unsupervised learning, essentially pitting a generative net against a discriminative net. The first net tries to fool the second by mimicking the probability distribution of a training dataset in order to fool the discriminative net into judging that the generated data instance actually belongs to the training set. 
