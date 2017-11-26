@@ -10,13 +10,13 @@ Generative adversarial networks (GANs) are architectures comprised of two neural
 
 [GANs were introduced in a paper](https://arxiv.org/abs/1406.2661) by Ian Goodfellow and other researchers at the University of Montreal, including Yoshua Bengio, in 2014. Goodfellow, Bengio and Aaron Courville co-authored [a well-known deep learning textbook](http://www.deeplearningbook.org/). 
 
-The potential is obviously huge, because GANs can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. 
+The potential is obviously huge, because GANs can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. They are true [robot artists](counterfeitor), and their output is impressive -- poignant even. 
 
 ## How GANs Work
 
 One neural network, called the generator, generates data instances while the other, the discriminator, evaluates them for authenticity; i.e. the discriminator decides whether they belong to the actual training dataset, or not. 
 
-Let's say we're trying to generate hand-written numerals like those found in MNIST. We can start with the MNIST dataset, taken from the real world. The goal of the discriminator, when shown an instance from this dataset, is to recognize it as authentic.
+Let's say we're trying to do something more banal than mimic the Mona Lisa. We are going to generate hand-written numerals like those found in MNIST. We can start with the MNIST dataset, taken from the real world. The goal of the discriminator, when shown an instance from this dataset, is to recognize it as authentic.
 
 Meanwhile, the generator creates images that it passes to the discriminator in the hopes that they, too, will be deemed authentic. The goal of the generator is to generate passable hand-written digits. The goal of the discriminator, in this case, is to identify all those images as fake. 
 
