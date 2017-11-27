@@ -73,7 +73,7 @@ public class BatchNormalizationTest {
             b.lockGammaBeta(true).gamma(gamma).beta(beta);
         }
         BatchNormalization bN = b.build();
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).layer(bN).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(bN).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = null;
@@ -335,7 +335,7 @@ public class BatchNormalizationTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(10).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
@@ -367,7 +367,7 @@ public class BatchNormalizationTest {
         DataSet next = iter.next();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -392,7 +392,7 @@ public class BatchNormalizationTest {
         // i.e., make sure state is properly stored
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .iterations(2).seed(12345)
+                        .seed(12345)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -431,7 +431,7 @@ public class BatchNormalizationTest {
         //Global mean/variance are part of the parameter vector. Expect 0 gradient, and no-op updater for these
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(Updater.RMSPROP).seed(12345).list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -494,7 +494,7 @@ public class BatchNormalizationTest {
 
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(Updater.RMSPROP).seed(12345)
                         .list().layer(0,
                                         new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
@@ -550,7 +550,7 @@ public class BatchNormalizationTest {
 
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(Updater.RMSPROP).seed(12345).list()
                         .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)

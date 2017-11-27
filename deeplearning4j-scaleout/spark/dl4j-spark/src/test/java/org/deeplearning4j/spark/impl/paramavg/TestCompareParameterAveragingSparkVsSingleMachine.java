@@ -54,7 +54,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).list()
+                        .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
                         .pretrain(false).backprop(true).build();
@@ -65,7 +65,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).list()
+                        .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .activation(Activation.TANH).build())
                         .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
@@ -80,7 +80,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).graphBuilder()
+                        .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
                                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
@@ -94,7 +94,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).graphBuilder()
+                        .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
                                         .padding(0, 0).activation(Activation.TANH).build(), "in")

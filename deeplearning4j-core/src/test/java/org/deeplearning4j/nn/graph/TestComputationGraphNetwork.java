@@ -481,9 +481,9 @@ public class TestComputationGraphNetwork {
     @Test
     public void testPreTraining() {
         ComputationGraphConfiguration conf =
-                new NeuralNetConfiguration.Builder().iterations(100)
+                new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .iterations(1).updater(new Sgd(1e-6))
+                        .updater(new Sgd(1e-6))
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
@@ -791,7 +791,7 @@ public class TestComputationGraphNetwork {
         for (OptimizationAlgorithm oa : oas) {
             System.out.println(oa);
             ComputationGraphConfiguration conf =
-                    new NeuralNetConfiguration.Builder().optimizationAlgo(oa).iterations(1).graphBuilder()
+                    new NeuralNetConfiguration.Builder().optimizationAlgo(oa).graphBuilder()
                             .addInputs("input")
                             .addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
                             .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(),
@@ -809,7 +809,7 @@ public class TestComputationGraphNetwork {
     public void testIterationCountAndPresistence() throws IOException {
         Nd4j.getRandom().setSeed(123);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                 .graphBuilder().addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH).build(), "in")

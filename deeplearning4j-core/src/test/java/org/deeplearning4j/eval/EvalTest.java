@@ -178,7 +178,7 @@ public class EvalTest {
         // Network config
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(42)
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(42)
                         .updater(new Sgd(1e-6)).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(2).activation(Activation.TANH)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -622,7 +622,7 @@ public class EvalTest {
         rrdsi.reset();
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1))
                         .list()
                         .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

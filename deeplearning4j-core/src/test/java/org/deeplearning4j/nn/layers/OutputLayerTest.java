@@ -64,7 +64,7 @@ public class OutputLayerTest {
     @Test
     public void testIris2() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-1))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
@@ -83,7 +83,9 @@ public class OutputLayerTest {
         next.shuffle();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        l.fit(trainTest.getTrain());
+        for( int i=0; i<10; i++ ) {
+            l.fit(trainTest.getTrain());
+        }
 
 
         DataSet test = trainTest.getTest();
@@ -100,7 +102,7 @@ public class OutputLayerTest {
     public void test3() {
 
         org.nd4j.linalg.dataset.api.iterator.DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(3).miniBatch(false)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().miniBatch(false)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)
@@ -117,7 +119,9 @@ public class OutputLayerTest {
         next.normalizeZeroMeanZeroUnitVariance();
         layer.setListeners(new ScoreIterationListener(1));
 
-        layer.fit(next);
+        for( int i=0; i<3; i++ ) {
+            layer.fit(next);
+        }
 
 
     }
@@ -129,7 +133,7 @@ public class OutputLayerTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .miniBatch(false).seed(123)
-                        .iterations(1000).updater(new AdaGrad(1e-1))
+                        .updater(new AdaGrad(1e-1))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.XAVIER)
                                         .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
@@ -151,7 +155,9 @@ public class OutputLayerTest {
         iris.normalizeZeroMeanZeroUnitVariance();
         o.setListeners(new ScoreIterationListener(1));
         SplitTestAndTrain t = iris.splitTestAndTrain(0.8);
-        o.fit(t.getTrain());
+        for( int i=0; i<1000; i++ ){
+            o.fit(t.getTrain());
+        }
         log.info("Evaluate model....");
         Evaluation eval = new Evaluation(3);
         eval.eval(t.getTest().getLabels(), o.output(t.getTest().getFeatureMatrix(), true));
@@ -174,7 +180,7 @@ public class OutputLayerTest {
 
         DataSet dataset = new DataSet(data, data2);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(123).iterations(200)
+                        .seed(123)
                         .updater(new Sgd(1e-2))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(6).nOut(2)
                                         .weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX)
@@ -187,7 +193,9 @@ public class OutputLayerTest {
         o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
         o.setListeners(new ScoreIterationListener(1));
-        o.fit(dataset);
+        for( int i=0; i<200; i++ ) {
+            o.fit(dataset);
+        }
 
         DataTypeUtil.setDTypeForContext(initialType);
     }
@@ -196,7 +204,7 @@ public class OutputLayerTest {
     @Test
     public void testIris() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(5).updater(new Sgd(1e-1))
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).updater(new Sgd(1e-1))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -214,7 +222,9 @@ public class OutputLayerTest {
         next.shuffle();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        l.fit(trainTest.getTrain());
+        for( int i=0; i<5; i++ ) {
+            l.fit(trainTest.getTrain());
+        }
 
 
         DataSet test = trainTest.getTest();
@@ -230,7 +240,7 @@ public class OutputLayerTest {
     @Test
     public void testSetParams() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                         .updater(new Sgd(1e-1))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX)

@@ -82,7 +82,7 @@ public class AutoEncoderNetworkTest {
     }
 
     private MultiLayerConfiguration getNNConfiguration() {
-        return new NeuralNetConfiguration.Builder().seed(12345).iterations(5).updater(new Sgd(0.1))
+        return new NeuralNetConfiguration.Builder().seed(12345).updater(new Sgd(0.1))
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(8).build())
                         .layer(1, new DenseLayer.Builder().nIn(8).nOut(5).build())

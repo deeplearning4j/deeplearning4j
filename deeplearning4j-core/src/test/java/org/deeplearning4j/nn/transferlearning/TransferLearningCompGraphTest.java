@@ -224,7 +224,7 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         ComputationGraph modelToFineTune =
                         new ComputationGraph(
-                                new NeuralNetConfiguration.Builder().seed(123).iterations(1)
+                                new NeuralNetConfiguration.Builder().seed(123)
                                         .weightInit(WeightInit.XAVIER)
                                         .updater(new Nesterovs(0.01, 0.9)).graphBuilder()
                                         .addInputs("layer0In")

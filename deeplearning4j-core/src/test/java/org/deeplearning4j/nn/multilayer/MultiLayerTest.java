@@ -106,7 +106,7 @@ public class MultiLayerTest {
     public void testBatchNorm() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(5).seed(123).list()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build())
                         .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
@@ -129,7 +129,9 @@ public class MultiLayerTest {
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         network.setLabels(trainTest.getTrain().getLabels());
         network.init();
-        network.fit(trainTest.getTrain());
+        for( int i=0; i<5; i++ ) {
+            network.fit(trainTest.getTrain());
+        }
 
     }
 
@@ -137,7 +139,7 @@ public class MultiLayerTest {
     public void testBackProp() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(5).seed(123).list()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build())
                         .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
@@ -160,7 +162,9 @@ public class MultiLayerTest {
         network.setInput(trainTest.getTrain().getFeatureMatrix());
         network.setLabels(trainTest.getTrain().getLabels());
         network.init();
-        network.fit(trainTest.getTrain());
+        for( int i=0; i<5; i++ ) {
+            network.fit(trainTest.getTrain());
+        }
 
         DataSet test = trainTest.getTest();
         Evaluation eval = new Evaluation();
@@ -220,7 +224,7 @@ public class MultiLayerTest {
 
 
         log.info("Build model....");
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new DenseLayer.Builder().nIn(numRows * numColumns).nOut(1000).build())
                         .layer(1, new DenseLayer.Builder().nIn(1000).nOut(500).build())
@@ -301,7 +305,7 @@ public class MultiLayerTest {
 
         MultiLayerConfiguration conf =
                 new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                        .updater(new Sgd(1e-3)).iterations(5)
+                        .updater(new Sgd(1e-3))
                         .list().layer(
                         0, new DenseLayer.Builder().nIn(nIn).nOut(600)
                                 .weightInit(WeightInit.DISTRIBUTION)
@@ -727,7 +731,7 @@ public class MultiLayerTest {
 
     public MultiLayerNetwork getAeModel(boolean preTrain, int nIn, int nOut) {
         MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder()
-                .seed(42).iterations(1).updater(new NoOp())
+                .seed(42).updater(new NoOp())
                 .weightInit(WeightInit.UNIFORM)
                 .list(new AutoEncoder.Builder()
                                 .activation(Activation.IDENTITY).nOut(nIn).build(),
@@ -746,7 +750,7 @@ public class MultiLayerTest {
     public void testIterationCountAndPersistence() throws IOException {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build())
@@ -787,7 +791,7 @@ public class MultiLayerTest {
 
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.TANH).seed(123).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -797,7 +801,7 @@ public class MultiLayerTest {
 
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .l1Bias(0.1).l2Bias(0.2).iterations(1).weightInit(WeightInit.XAVIER).activation(Activation.TANH)
+                        .l1Bias(0.1).l2Bias(0.2).weightInit(WeightInit.XAVIER).activation(Activation.TANH)
                         .seed(123).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10)
@@ -884,7 +888,7 @@ public class MultiLayerTest {
         MultiLayerConfiguration confForArchitecture =
                         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).list()
+                                        .list()
                                         .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU)

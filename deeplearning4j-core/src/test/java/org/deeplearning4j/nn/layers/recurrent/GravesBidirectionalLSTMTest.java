@@ -463,7 +463,7 @@ public class GravesBidirectionalLSTMTest {
         final DataSet ds = new DataSet(sig, labels);
 
         final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new AdaGrad(0.1))
                         .l2(0.001)
                         .seed(12345).list().pretrain(false)
@@ -498,7 +498,9 @@ public class GravesBidirectionalLSTMTest {
         double oldScore = Double.POSITIVE_INFINITY;
         net.init();
         for (int iEpoch = 0; iEpoch < 3; iEpoch++) {
-            net.fit(ds);
+            for( int i=0; i<5; i++ ) {
+                net.fit(ds);
+            }
 
             System.out.print(String.format("score is %f%n", score));
 
@@ -518,7 +520,7 @@ public class GravesBidirectionalLSTMTest {
     public void testSerialization() {
 
         final MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new AdaGrad(0.1))
                         .l2(0.001)
                         .seed(12345).list().pretrain(false)
@@ -549,7 +551,7 @@ public class GravesBidirectionalLSTMTest {
         for (String gateAfn : new String[] {"sigmoid", "hardsigmoid"}) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .seed(12345).list()
                             .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                             .gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2)

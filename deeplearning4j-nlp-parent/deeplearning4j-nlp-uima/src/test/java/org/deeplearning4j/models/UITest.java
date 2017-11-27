@@ -34,7 +34,7 @@ public class UITest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(1).epochs(1).layerSize(20)
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).epochs(1).layerSize(20)
                         .stopWords(new ArrayList<String>()).useAdaGrad(false).negativeSample(5).seed(42).windowSize(5)
                         .iterate(iter).tokenizerFactory(t).build();
 

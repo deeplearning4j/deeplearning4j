@@ -128,14 +128,13 @@ public class DataSetIteratorTest {
         int outputNum = LFWLoader.NUM_LABELS;
         int numSamples = LFWLoader.NUM_IMAGES;
         int batchSize = 2;
-        int iterations = 1;
         int seed = 123;
-        int listenerFreq = iterations;
+        int listenerFreq = 1;
 
         LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples,
                         new int[] {numRows, numColumns, numChannels}, outputNum, false, true, 1.0, new Random(seed));
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(numChannels).nOut(6)
@@ -192,14 +191,13 @@ public class DataSetIteratorTest {
         int outputNum = CifarLoader.NUM_LABELS;
         int numSamples = 10;
         int batchSize = 5;
-        int iterations = 1;
         int seed = 123;
-        int listenerFreq = iterations;
+        int listenerFreq = 1;
 
         CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples,
                         new int[] {height, width, channels}, preProcessCifar, true);
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(channels).nOut(6).weightInit(WeightInit.XAVIER)
