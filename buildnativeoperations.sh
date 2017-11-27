@@ -26,6 +26,7 @@ COMPUTE=
 ARCH=
 LIBTYPE=
 PACKAGING=
+CHIP_EXTENSION=
 CHIP_VERSION=
 EXPERIMENTAL=
 while [[ $# > 1 ]]
@@ -61,6 +62,10 @@ case $key in
     LIBTYPE="$2"
     shift # past argument
     ;;
+    -e|--chip-extension)
+    CHIP_EXTENSION="$2"
+    shift # past argument
+    ;;
     -v|--chip-version)
     CHIP_VERSION="$2"
     shift # past argument
@@ -78,8 +83,8 @@ case $key in
 esac
 shift # past argument or value
 done
-HOST="generic"
-KERNEL="linux-x86_64"
+HOST=$(uname -s | tr [A-Z] [a-z])
+KERNEL=$HOST-$(uname -m | tr [A-Z] [a-z])
 if [ "$(uname)" == "Darwin" ]; then
     HOST="macosx"
     KERNEL="darwin-x86_64"
@@ -192,7 +197,7 @@ case "$OS" in
     export CMAKE_COMMAND="cmake -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile"
     ;;
 
-    generic)
+    linux*)
     ;;
 
     macosx*)
@@ -261,6 +266,14 @@ if [ -z "$COMPUTE" ]; then
  COMPUTE="all"
 fi
 
+if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
+    CHIP_EXTENSION="avx512"
+    ARCH="skylake-avx512"
+elif [ "$CHIP_EXTENSION" == "x86_64" ] || [ "$ARCH" == "x86_64" ]; then
+    CHIP_EXTENSION="x86_64"
+    ARCH="x86-64"
+fi
+
 if [ -z "$ARCH" ]; then
  ARCH="x86-64"
 fi
@@ -316,13 +329,13 @@ CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
 
 if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     case $OS in
-        generic)
+        linux*)
         export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
         ;;
-        macosx)
+        macosx*)
         export CUDA_PATH="/Developer/NVIDIA/CUDA-$CHIP_VERSION/"
         ;;
-        windows)
+        windows*)
         export CUDA_PATH="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$CHIP_VERSION/"
         ;;
     esac
@@ -331,13 +344,21 @@ fi
 mkbuilddir() {
     mkdir -p blasbuild
     cd blasbuild
-    # create appropriate directories and links here for ND4J
+    CHIP_DIR="$CHIP"
+    if [ -n "$CHIP_EXTENSION" ]; then
+        CHIP_DIR="$CHIP_DIR-$CHIP_EXTENSION"
+    fi
     if [ -n "$CHIP_VERSION" ]; then
-        rm -rf "$CHIP-$CHIP_VERSION" "$CHIP"
-        mkdir -p "$CHIP-$CHIP_VERSION"
-        ln -s "$CHIP-$CHIP_VERSION" "$CHIP"
+        CHIP_DIR="$CHIP_DIR-$CHIP_VERSION"
+    fi
+
+    # create appropriate directories and links here for ND4J
+    if [ "$CHIP" != "$CHIP_DIR" ]; then
+        rm -rf "$CHIP_DIR" "$CHIP"
+        mkdir -p "$CHIP_DIR"
+        ln -s "$CHIP_DIR" "$CHIP"
         mkdir -p "$CHIP/blas"
-        cd "$CHIP-$CHIP_VERSION"
+        cd "$CHIP_DIR"
     else
         rm -rf "$CHIP"
         mkdir -p "$CHIP"
@@ -350,6 +371,7 @@ echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
 echo CHIP     = "${CHIP}"
 echo ARCH    = "${ARCH}"
+echo CHIP_EXTENSION  = "${CHIP_EXTENSION}"
 echo CHIP_VERSION    = "${CHIP_VERSION}"
 echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo EXPERIMENTAL = ${EXPERIMENTAL}
