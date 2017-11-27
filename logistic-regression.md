@@ -59,3 +59,4 @@ Here's a more complete example of [using a neural network for regression](https:
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Reinforcement Learning](./reinforcementlearning)
