@@ -3631,7 +3631,7 @@ public class SameDiff {
         }
 
 
-        int nodesIn = FlatNode.createInputVector(bufferBuilder, inputs);
+        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
         int nodesOut = FlatNode.createOutputVector(bufferBuilder, node.getVertexId());
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
@@ -3680,9 +3680,7 @@ public class SameDiff {
             val arr = variable.getArr();
 
             int name = bufferBuilder.createString(variable.getVarName());
-            int shape = FlatArray.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
-            int buffer = FlatArray.createBufferVector(bufferBuilder, arr.data().asBytes());
-            int array = FlatArray.createFlatArray(bufferBuilder, shape, buffer, getDataTypeAsByte(arr.data().dataType()), getOrderAsByte());
+            int array = arr.toFlatArray(bufferBuilder);
             int id = IntPair.createIntPair(bufferBuilder, variable.getVertexId()[0], 0);
 
             int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
@@ -3725,6 +3723,13 @@ public class SameDiff {
         return bufferBuilder.dataBuffer();
     }
 
+    public static ByteOrder getOrderFromByte(byte val) {
+        if (val == org.nd4j.graph.ByteOrder.LE)
+            return ByteOrder.LITTLE_ENDIAN;
+        else
+            return ByteOrder.BIG_ENDIAN;
+    }
+
     public static byte getOrderAsByte() {
         if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN))
             return org.nd4j.graph.ByteOrder.BE;
@@ -3748,6 +3753,16 @@ public class SameDiff {
         }
     }
 
+    public static DataBuffer.Type getDataTypeFromByte(byte val) {
+        if (val == DataType.FLOAT)
+            return DataBuffer.Type.FLOAT;
+        else if (val == DataType.DOUBLE)
+            return DataBuffer.Type.DOUBLE;
+        else if (val == DataType.HALF)
+            return DataBuffer.Type.HALF;
+
+        throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
+    }
 
     public static byte getDataTypeAsByte(DataBuffer.Type type) {
         switch (type) {

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -66,5 +67,10 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
         return null;
+    }
+
+    @Override
+    public int toFlatArray(FlatBufferBuilder builder) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -2723,5 +2724,5 @@ public interface INDArray extends Serializable {
     int underlyingRank();
 
 
-
+    int toFlatArray(FlatBufferBuilder builder);
 }

@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.shape;
 
 
 import com.google.common.primitives.Ints;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1911,6 +1912,16 @@ public class Shape {
         Buffer buffer2 = (Buffer) buffer;
         IntBuffer ret = (IntBuffer) buffer2.position(1);
         return ret.slice();
+    }
+
+    public static int[] shapeOf(int[] buffer) {
+        val rank = buffer[0];
+        return Arrays.copyOfRange(buffer, 1, 1 + rank);
+    }
+
+    public static int[] stridesOf(int[] buffer) {
+        val rank = buffer[0];
+        return Arrays.copyOfRange(buffer, 1+rank, 1 + (rank * 2));
     }
 
     public static int[] flags(DataBuffer buffer) {

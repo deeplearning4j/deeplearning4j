@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 import lombok.NonNull;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -30,8 +31,11 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.context.Nd4jContext;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -84,6 +88,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -6643,5 +6648,51 @@ public class Nd4j {
      */
     public static INDArray createFromNpyFile(File file) {
         return INSTANCE.createFromNpyFile(file);
+    }
+
+
+    public static INDArray createFromFlatArray(FlatArray array) {
+        val dtype = array.dtype();
+        val order = array.byteOrder();
+        val rank = array.shape(0);
+        val shape = new int[rank * 2 + 4];
+        for (int e = 0; e < shape.length; e++)
+            shape[e] = array.shape(e);
+
+        char ordering = shape[shape.length - 1] == 99 ? 'c' : 'f';
+
+        val shapeOf = Shape.shapeOf(shape);
+        val stridesOf = Shape.stridesOf(shape);
+
+        val _dtype = SameDiff.getDataTypeFromByte(dtype);
+        val _order = SameDiff.getOrderFromByte(order);
+        val prod = ArrayUtil.prod(shapeOf);
+        val doubles = new double[prod];
+
+        val bb = array.bufferAsByteBuffer();
+        switch (_dtype) {
+            case DOUBLE: {
+                val db = bb.order(_order).asDoubleBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = db.get(e);
+            }
+            break;
+            case FLOAT: {
+                val fb = bb.order(_order).asFloatBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = (double) fb.get(e);
+            }
+            break;
+            case HALF: {
+                val sb = bb.order(_order).asShortBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = (double) HalfIndexer.toFloat((int) sb.get(e));
+            }
+            break;
+            default:
+                throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
+        }
+
+        return Nd4j.create(doubles, shapeOf, stridesOf, 0, ordering);
     }
 }
