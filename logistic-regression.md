@@ -47,11 +47,15 @@ To perform regression with a neural network in Deeplearning4j, you would set up 
 
 Here's a more complete example of [using a neural network for regression](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/regression) in order to approximate simple mathematical functions. 
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
+### <a name="beginner">Other Deep Learning Tutorials</a>
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks](./neuralnet-overview)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
 * [Convolutional Networks](./convolutionalnets)
 * [Deeplearning4j Quickstart Examples](./quickstart)
-* [ND4J: Numpy for the JVM](http://nd4j.org)
+* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
