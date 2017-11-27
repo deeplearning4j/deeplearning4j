@@ -160,6 +160,17 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         *
+         * @param distribution Distribution to use for weight initialization
+         */
+        public T weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
+        }
+
+        /**
          * Bias initialization value, for layers with biases. Defaults to 0
          *
          * @param biasInit Value to use for initializing biases

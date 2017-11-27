@@ -821,6 +821,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         *
+         * @param distribution Distribution to use for weight initialization
+         */
+        public Builder weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
+        }
+
+        /**
          * Constant for bias initialization. Default: 0.0
          *
          * @param biasInit Constant for bias initialization
