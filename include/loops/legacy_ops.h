@@ -162,7 +162,7 @@
         (20, simdOps::FloorDiv) ,\
         (21, simdOps::FloorMod), \
         (22, simdOps::SquaredSubtract),\
-        (22, simdOps::SafeDivide)
+        (23, simdOps::SafeDivide)
 
 
 
