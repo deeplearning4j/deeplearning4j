@@ -271,3 +271,4 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Eigenvectors, PCA and Entropy](./eigenvector.html)
 * [A Glossary of Deep-Learning Terms](./glossary.html)
 * [Word2vec, Doc2vec & GloVe](./word2vec)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
