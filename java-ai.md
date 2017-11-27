@@ -70,3 +70,18 @@ Machine learning encompasses a wide range of algorithms that are able to adapt t
 ### Encog Machine Learning Framework
 
 [Encog](http://www.heatonresearch.com/encog/) is a Java machine learning framework that supports many machine learning algorithms. It was developed by Jeff Heaton, of Heaton Research. The official website provides documentation and examples.
+
+## <a name="intro">Other Introductory Resources</a>
+
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
+
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Convolutional Networks for Image Recognition](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
