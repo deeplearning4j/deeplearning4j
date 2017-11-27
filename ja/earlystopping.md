@@ -20,7 +20,7 @@ layout: default
 
 これをグラフにすると次のようになります。
 
-![Early Stopping](./img/earlystopping.png)
+![Early Stopping](../img/earlystopping.png)
 
 縦の点線で示されたエポックで保存されたものが最善のモデルです。つまり、テストセットで最も精度が高かったモデルです。
 
@@ -55,7 +55,7 @@ EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,myNetworkConfigur
 //早期終了トレーニングを実施:
 EarlyStoppingResult result = trainer.fit();
 
-//結果を印刷:
+//結果を表示:
 System.out.println("Termination reason:" + result.getTerminationReason());
 System.out.println("Termination details:" + result.getTerminationDetails());
 System.out.println("Total epochs:" + result.getTotalEpochs());
@@ -88,7 +88,7 @@ MultiLayerNetwork bestModel = result.getBestModel();
 
 上に挙げた早期終了の実装は単一デバイスでしか使用できません。しかし、`EarlyStoppingParallelTrainer`は早期終了に似た機能性を持ち、複数のCPUやGPUで最適化することが可能です。`EarlyStoppingParallelTrainer`は、モデルを`ParallelWrapper`クラスにラップし、ローカルで分散トレーニングします。
 
-ただし、`EarlyStoppingParallelTrainer`は単一デバイスでの機能性すべてに対応しているわけではないことに注意してください。というのも、ユーザーインターフェイスと互換性がないため、複雑なイテレーションリスナーに対応しない可能性があるからです。これは、モデルの分散やバックグラウンドでのコピーに使用されている方法が原因です。
+ただし、`EarlyStoppingParallelTrainer`は単一デバイスでの機能性すべてに対応しているわけではないことに注意してください。というのも、ユーザーインターフェイスとの互換性がないし、複雑なイテレーションリスナーに対応しない可能性があるからです。これは、モデルの分散やバックグラウンドでのコピーに使用されている方法が原因です。
 
 異なるシナリオでの並列早期終了設定に役立つサンプルは、[TestParallelEarlyStopping.java](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/test/java/org/deeplearning4j/parallelism/TestParallelEarlyStopping.java)をご覧ください。
 

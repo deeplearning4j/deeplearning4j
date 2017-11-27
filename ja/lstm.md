@@ -1,5 +1,5 @@
 ---
-title: A Beginner's Guide to Recurrent Networks and LSTMs
+title:A Beginner's Guide to Recurrent Networks and LSTMs
 layout: default
 ---
 
@@ -64,9 +64,11 @@ layout: default
 
 再帰型ネットワークには時間の経過が関わってくるため、アニメーションを使って説明してみましょう。（最初の縦線で示されたノードは、順伝播型ネットワークで、時が経過すると再帰型になります。） 
 
-<iframe src="https://i.imgur.com/6Uak4vF.gif" width="100%" height="630px;" style="border:none;"></iframe>
+{::nomarkdown}
+<blockquote class="imgur-embed-pub" lang="en" data-id="kpZBDfV"><a href="//imgur.com/kpZBDfV">how recurrent neural networks work #deeplearning4j #dl4j</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+{:/nomarkdown}
 
-[上図](https://i.imgur.com/6Uak4vF.gifv)の`x`はサンプル入力、`w`は入力をフィルターする重み、`a`は隠れ層の活性化（重みを付けた入力とその前の隠れ状態の組み合わせ）、`b`はReLUやシグモイド関数を使って変換または押し込まれた後の隠れ層の出力を表しています。 
+[上図](http://imgur.com/kpZBDfV)の`x`はサンプル入力、`w`は入力をフィルターする重み、`a`は隠れ層の活性化（重みを付けた入力とその前の隠れ状態の組み合わせ）、`b`はReLUやシグモイド関数を使って変換または押し込まれた後の隠れ層の出力を表しています。 
 
 ## <a name="backpropagation">通時的誤差逆伝播法（BPTT）</a>
 

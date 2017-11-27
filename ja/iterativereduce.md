@@ -1,4 +1,4 @@
-- - -
+---
 title:"Iterative Reduce With DL4J on Hadoop and Spark"
 layout: default
 ---
@@ -29,7 +29,7 @@ MapReduceはこれより大きな規模で演算を行います。*Map* は、�
 
 [Josh Patterson作成](http://www.slideshare.net/cloudera/strata-hadoop-world-2012-knitting-boar)の下記の画像は、この二つのプロセスを比較したものです。左の図はMapReduceのプロセスをクローズアップしたもので、右の図は反復のプロセスを表したものです。「Processor」とは、大規模なデータセットのバッチで学習するディープビリーフネットワークです。「Superstep」は、中央モデルが残りのクラスタに再分散される前のパラメータ平均化のインスタンスです。 
 
-![Alt text](./img/mapreduce_v_iterative.png)
+![Alt text](../img/mapreduce_v_iterative.png)
 
 ## HadoopとSpark
 
@@ -39,7 +39,7 @@ Hadoopの場合、反復減少のワーカーは、変換されたパラメー�
 
 最新技術について少しお話しすると、GoogleもYahooもパラメターサーバーを操作し、ここで何十億ものパラメータを保管した後、処理を行うためにクラスタに分散しています。GoogleではGoogle Brainと呼ばれています。Andrew Ngが作成したもので、現在は彼の学生であるQuoc Leが引率しています。下図により、2015年度ごろのGoogleの生成スタックでMapReduceがどのような位置にあるかが分かります。
 
-![Alt text](./img/google_production_stack.png)
+![Alt text](../img/google_production_stack.png)
 
 Deeplearning4jは、分散型ランタイムは互いに交換可能（同じという意味ではありません）だとみなしています。それらはどれもモジュラー型アーキテクチャ内にある1ディレクトリに過ぎず、入れ替え可能だからです。このため、企画全体が別々のスピードで進化することができ、一方でニューラルネットワークのアルゴリズムに専念し、他方でハードウェアに専念する他のモジュールとランタイムを分けることができます。また、Deeplearning4jのユーザーはAkka経由でAWS（Amazon Web Services）にノードをスピンし、スタンドアロンの分散型アーキテクチャを構築することもできます。
 

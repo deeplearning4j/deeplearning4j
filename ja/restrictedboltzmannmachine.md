@@ -11,7 +11,7 @@ redirect_from: ja/ja-restrictedboltzmannmachine
 * <a href="#define">定義と構造</a>
 * <a href="#reconstruct">復元</a>
 * <a href="#probability">確率分布</a>
-* <a href="#code">コードのサンプル: RBMSのスタック</a>
+* <a href="#code">コードのサンプル: 積層したRBMS</a>
 * <a href="#params">パラメータ及びkについて</a>
 * <a href="#CRBM">連続的なRBM</a>
 * <a href="#next">結論及び次のステップ</a>
@@ -134,11 +134,11 @@ RBMには多くの利用方法がありますが、重み初期化が適切で�
 
 下の図は、RBMを1つのダイアグラムでまとめた双方向性の対称二部グラフです。
 
-![Alt text](./img/sym_bipartite_graph_RBM.png)
+![Alt text](../img/sym_bipartite_graph_RBM.png)
 
 より深い層のRBMの構造に関する学習に興味のある方への参考までに言うと、これらは無方向ラフィカルモデルのうちの一つで、[マルコフ確率場](https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E7%A2%BA%E7%8E%87%E5%A0%B4)とも呼ばれています。
 
-### <a name="code">コードのサンプル: RBMのスタック</a>
+### <a name="code">コードのサンプル: 積層したRBMS</a>
 https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java
 
 
@@ -194,7 +194,7 @@ RBMにより、すべての浅い層の順伝播型ネットワークが最も�
 
 ### その他の初心者用ガイド
 
-* [ディープニュ―ラルネットワークについて](ja-neuralnet-overview)
-* [固有ベクトル、主成分分析、共分散、エントロピー入門](https://deeplearning4j.org/ja/eigenvector)
-* [ニューラルネットワークを回帰に使用](https://deeplearning4j.org/ja/linear-regression)
-* [畳み込みネットワーク](https://deeplearning4j.org/ja/convolutionalnets)
+* [ディープニュ―ラルネットワークについて](neuralnet-overview)
+* [固有ベクトル、主成分分析、共分散、エントロピー入門](eigenvector)
+* [ニューラルネットワークを回帰に使用](linear-regression)
+* [畳み込みネットワーク](convolutionalnets)

@@ -1,11 +1,11 @@
 ---
-title: Using Recurrent Neural Networks in DL4J
+title:Using Recurrent Neural Networks in DL4J
 layout: default
 ---
 
 # 再帰型ニューラルネットワークをDL4Jで使用
 
-このページでは再帰型ニューラルネットワークをどのようにDeepLearning4Jで使用するかに関連し、トレーニングの特徴や実用性についてご説明しましょう。ただし、ここでは再帰型ニューラルネットワークの使用方法や用語に関する初歩的な説明は省いております。初歩的説明が必要な方は、以下を読み進める前に[再帰型ネットワークと長・短期記憶についての初心者ガイド](/lstm.html)をお読みください。
+このページでは再帰型ニューラルネットワークをどのようにDeepLearning4Jで使用するかに関連し、トレーニングの特徴や実用性についてご説明しましょう。ただし、ここでは再帰型ニューラルネットワークの使用方法や用語に関する初歩的な説明は省いております。初歩的説明が必要な方は、以下を読み進める前に[再帰型ネットワークと長・短期記憶についての初心者ガイド](lstm)をお読みください。
 
 **目次**
 
@@ -211,7 +211,7 @@ rnnTimeStepのメソッドとMultiLayerNetwork.output()やMultiLayerNetwork.feed
 
 次に、このDataSetIteratorは、ネットワークをトレーニングするために、MultiLayerNetwork.fit()を通過することができます。
 
-miniBatchSizeの引数は、各ミニバッチのサンプル（時系列）の数を指定します。例えば、ファイルが全部で10ある場合、miniBatchSize5でminibatch（DataSetオブジェクト）2つと時系列5つのデータセットが2つが提供されます。
+miniBatchSizeの引数は、各ミニバッチのサンプル（時系列）の数を指定します。例えば、ファイルが全部で10ある場合、miniBatchSize 5でminibatch（DataSetオブジェクト）2つと時系列5つのデータセットが2つが提供されます。
 
 この例では以下のことに注意してください。
 
@@ -283,18 +283,18 @@ AlignmentMode機能を例3に使用して多数の入力から1つを出力す�
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
 #### その他の方法：カスタマイズされたDataSetIteratorを実装する
-一般的なデータインポートのシナリオには適合しないようにしなければならないこともあります。このようなシナリオには、カスタマイズされた[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java).を実装することができます。DataSetIteratorは、入力をカプセル化し、INDArrays、（随意に）入力とラベルのマスク配列を対象とするDataSetオブジェクトをイテレートするインターフェイスです。
+一般的なデータインポートのシナリオには適合しないようにしなければならないこともあります。このようなシナリオには、カスタマイズされた[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java).を実装することができます。DataSetIteratorは、入力をカプセル化し、INDArrays、（随意に）入力とラベルのマスク配列を対象とするDataSetオブジェクトをイテレートするインターフェイスです。
 
 このアプローチはかなり低いレベルであることに注意してください。DataSetIteratorを実装する場合、入力とラベルに必要なINDArraysや（必要な場合は）入力とラベルのマスク配列を手作業で作成する必要があります。しかし、このアプローチだと、データの読み込み方法にかなりの柔軟性があります。
 
-このアプローチの実際のサンプルについては、[tex/character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java)や[Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java)のイテレーターをご覧ください。
+このアプローチの実際のサンプルについては、[tex/character example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/CharacterIterator.java)や[Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/SentimentExampleIterator.java)のイテレーターをご覧ください。
 
 ## <a name="examples">サンプル</a>
 
-現在、以下のようなDL4Jの[再帰型ネットワークのサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent)があります。
+現在、以下のようなDL4Jの[再帰型ネットワークのサンプル](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent)があります。
 
-* [登場人物のモデリングのサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)は、シェークスピアの散文を各登場人物の台詞ごとに生成します。
-* [基本的なビデオフレーム分類のサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)は、ビデオ（.mp4フォーマット）をインポートし、各フレームにあるシェイプを分類します。
-* [word2vec系列分類のサンプル](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) は、あらかじめトレーニングした単語ベクトルと再帰型ニューラルネットワークを使用し、映画のレビューをポジティブかネガティブに分類します。
+* [登場人物のモデリングのサンプル](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)は、シェークスピアの散文を各登場人物の台詞ごとに生成します。
+* [基本的なビデオフレーム分類のサンプル](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)は、ビデオ（.mp4フォーマット）をインポートし、各フレームにあるシェイプを分類します。
+* [word2vec系列分類のサンプル](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment) は、あらかじめトレーニングした単語ベクトルと再帰型ニューラルネットワークを使用し、映画のレビューをポジティブかネガティブに分類します。
 
 

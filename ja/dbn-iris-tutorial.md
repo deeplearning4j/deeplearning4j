@@ -27,7 +27,7 @@ layout: default
 
 以下がそのレコードの一例です。
 
-![data record table](./img/data_record.png)
+![data record table](../img/data_record.png)
 
 上記の表は人間に読みやすいようにしてありますが、Deeplearning4jのアルゴリズムは次のようでなければなりません。
 
@@ -44,7 +44,7 @@ layout: default
 
 DL4Jはニューラルネットワークにデータを読み込むときにDataSetというオブジェクトを使用します。DataSetは、予測を行う対象のデータ（とそれに関連付けられたラベル）を格納するための簡単な方法です。下記の第一、第二はどちらもNDArrayです。1つはデータの属性を保持しており、もう一つはラベルを保持しています。（サンプルを実行するには、[こちら](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java)のファイルを使ってください。）
 
-![input output table](./img/ribbit_table.png)
+![input output table](../img/ribbit_table.png)
 
 （DataSetのオブジェクト内にあるのはDL4Jが数値計算を行う基礎的なオブジェクトである2つのNDArrayです。N次元配列はスケーラブルで多次元配列です。複雑な数学的演算に適しており、科学計算に頻繁に使用されています。） 
 
@@ -102,7 +102,7 @@ NDArrayの変数 **data** は生の数値データを保持し、リストの **
 
 終了するころには、ラベルの数字表現である一行が出来上がります。**i. setosa** と分類されたデータレコードは、以下のようになります。
 
-![final table](./img/final_table.png)
+![final table](../img/final_table.png)
 
 上のボックスにある単語はチュートリアル用に、どの単語がどの数字と組み合わされるかを分かりやすしただけのものです。下のボックスはデータ処理のベクトルとして表れるものです。実際、最後の行は **ベクトル化データ** と呼ばれます。
 
@@ -171,9 +171,9 @@ DL4Jを使ったニューラルネットワークの作成にはいくつかの�
     System.out.printf("Score:%s\n", eval.stats());
     log.info("Score " + eval.stats());
 
-DL4Jは、モデルの性能に関する統計情報を収集する **評価** オブジェクトを使用しています。INDArray出力は **DataSet.getFeatureMatrix()**と **output** の連鎖呼び出しによって作成されます。getFeatureMatrixの呼び出しはすべてのデータ入力のNDArrayを返し、これが **output()** に入力されます。このメソッドにより入力の可能性がラベル付けされます。この場合は、特徴行列です。*eval*そのものは予測との失敗と成功とモデルの真の結果を収集します。 
+DL4Jは、モデルの性能に関する統計情報を収集する **Evaluation** オブジェクトを使用しています。INDArray出力は **DataSet.getFeatureMatrix()**と **output** の連鎖呼び出しによって作成されます。getFeatureMatrixの呼び出しはすべてのデータ入力のNDArrayを返し、これが **output()** に入力されます。このメソッドにより入力の可能性がラベル付けされます。この場合は、特徴行列です。*eval*そのものは予測との失敗と成功とモデルの真の結果を収集します。 
 
- **評価** オブジェクトには、*f1()* など多くの役立つ呼び出しが含まれています。このメソッドは、確率（以下のF1スコアは、モデルは約77%正確に分類する能力があると考えていることを意味します）という形でモデルの精度を推測します。その他のメソッドには、モデルがどのようにして信頼性を保って同じ入力には同じ結果を予測できるかが分かる *precision()* 、いくつ正しい結果を取得したかが分かる*recall()* があります。
+ **Evaluation** オブジェクトには、*f1()* など多くの役立つ呼び出しが含まれています。このメソッドは、確率（以下のF1スコアは、モデルは約77%正確に分類する能力があると考えていることを意味します）という形でモデルの精度を推測します。その他のメソッドには、モデルがどのようにして信頼性を保って同じ入力には同じ結果を予測できるかが分かる *precision()* 、いくつ正しい結果を取得したかが分かる*recall()* があります。
 
 このサンプルでは、以下のようになりました。
 
@@ -195,7 +195,7 @@ DL4Jは、モデルの性能に関する統計情報を収集する **評価** �
 
 最後に、ネットワークがアイリスデータを視覚的に表現したものをご覧ください。
 
-![Alt text](./img/iris_dataset.png)
+![Alt text](../img/iris_dataset.png)
 
 
 
