@@ -112,14 +112,13 @@ The activation function of the output layer determines the output. The question 
 
 Some examples: 
 
-* To generate Binary(0,1) output use a sigmoid activation function on the output layer. Output will be between 0, and 1. Treat it as probability of 0 or 1. 
+* To generate Binary(0,1) output, use a sigmoid activation function on the output layer. The output will be between 0 and 1, and should be treated as a probability that the input belongs to either 0 or 1. 
 
-* To generate output of categorical Targets (1 of C coding) use Softmax Activation Function forthe  output layer. St the number of output nodes set to number of classes. Treat output as probability per label. 
+* To generate output of categorical Targets (1 of C coding), use the Softmax Activation Function for the  output layer. The number of output nodes to equal number of classes beig categorized. Treat output as the probability of an instance of data belonging to each category. 
 
-* To generate Continuous-Valued (bounded range) values use Sigmoid or Tanh Activation (with scaled range of outputs to range of targets).
+* To generate Continuous-Valued (bounded range) values, use Sigmoid or Tanh Activation (with scaled range of outputs to range of targets).
 
-* To generate positive (no known upper bound) output use  ReLU-family Activation Function, Softplus Activation Function
-(or use logarithmic normalization to transform to unbounded continuous).
+* To generate positive (no known upper bound) output, use Activation Functions in the ReLU family, Softplus Activation Function (or use logarithmic normalization to transform to unbounded continuous).
 
 * To generate continuous-valued (unbounded) output, use a Linear Activation Function (equates to no activation function).
 
@@ -152,7 +151,7 @@ At startup the weights of the Neural Network are randomly initialized. Randomiza
 
 ### Learning Rate
 
-Learning Rate determines how big of a step towards less error when weights are updated. Too big of a Learning rate and the error may fluctuate widely or fail to converge. Too small of a Learning rate and the network will take an unnecessarily long time to train. A high learning rate that is working well initially often had to be adjusted to a lower rate as the model trained. Adaptive updaters such as ADAM or AdaGrad are used to deal with the need to adjust the speed of learning. 
+Learning Rate determines how big of a step is taken towards less error as the net's weights are updated. Too big of a learning rate may make the error fluctuate widely and cause the net to fail to converge. Too small of a Learning rate, and the network will take an overly long time to train. A high learning rate that is working well initially often has to be adjusted to a lower rate as the model trains and approaches the error minimum. Adaptive updaters such as ADAM or AdaGrad are used to deal with the need to adjust the learning speed. 
 
 ### Backpropagation
 
@@ -160,18 +159,17 @@ Most effective methods for training Neural networks use backpropagation or some 
 
 ### Pretrain
 
-For unsupervised training for specialty networks like rbms and autoencoders it may be useful to set pretrain to true. For other networks it should be set to false. 
+For unsupervised training for specialty networks like Restricted Boltzmann Machines and Autoencoders, it may be useful to set pretrain to `true`. For other networks, it should be set to `false`. 
 
 ### Regularization 
 
-Regularization is way to fight the tendency of Neural Networks to overfit the training data. Overfitting is when the network learns to be very accurate on the training data but fails to generalize well and performs poorly on the test data. 
+Regularization is way to fight the tendency of neural networks to overfit the training data. Overfitting is when the network learns to be very accurate on the training data but fails to generalize well and performs poorly on the test data. 
 
 Deeplearning4J supports both L1 and L2 Regularization.  
 
 ### Adding Layers
 
-To add a layer to your configuration use addLayer for ComputationGraph and .layer for MultiLayerNetworks. Activation functions are set per layer. Loss Function is set for the output Layer. 
-
+To add a layer to your configuration, use `addLayer` for `ComputationGraph` and `.layer` for `MultiLayerNetwork`. Activation functions are set per layer. Loss Function is only set for the output Layer. 
 
 ### Updaters
 
@@ -191,11 +189,9 @@ DL4J support the following Updaters
 
 The JavaDoc for updaters is part of the DeepLearning4J JavaDoc and is available [here.](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/Updater.html)
 
-
-
 ### Animation of Updaters 
 
-Thanks to Alec Radford for allowing us to use these animations
+Thanks to Alec Radford for allowing us to use these animations.
 
 #### Updater progress on complex error surface
 
@@ -215,9 +211,7 @@ Listeners that gather statistics or report progress can be attached. Here is a c
 model.setListeners(new ScoreIterationListener(100));
 ```
 
-One Example use of a listener is to print out accuracy to the console as the network trains. 
-
-Another example is to deliver statistics to the User interface. 
+One example use of a listener is to print out accuracy to the console as the network trains. Another example is to deliver statistics to the user interface. 
 
 ```
 
@@ -225,27 +219,29 @@ UIServer uiServer = UIServer.getInstance();
         StatsStorage statsStorage = new InMemoryStatsStorage();
         model.setListeners(new StatsListener(statsStorage),new ScoreIterationListener(1));
         uiServer.attach(statsStorage);
-```		
-
+		
+```
 
 #### CollectScoresIterationListener	
-CollectScoresIterationListener simply stores the model scores internally (along with the iteration) every 1 or N iterations (this is configurable).
+
+`CollectScoresIterationListener` simply stores the model scores internally (along with the iteration) every 1 or N iterations (this is configurable).
 
 #### ComposableIterationListener	
-A group of listeners
+
+A group of listeners.
 
 ### ParamAndGradientIterationListener	
+
 An iteration listener that provides details on parameters and gradients at each iteration during traning.
 
 ### PerformanceListener	
+
 Simple IterationListener that tracks time spend on training per iteration.
 
 
 ## <a name="ui"> Attaching a UI to a Neural Network</a>
 
-A web based User Interface is available. The server will be available on the machine running the java code on port 9000. In order to use you create an instance of UIServer. Create a StatsStorage Listener  for the neural network and attach the Stats Listener to the UI Server. 
-
-Here is the code to demonstrate. 
+A browser-based user interface is available. The server will be available on the machine running the Java code on port 9000. In order to use it, you create an instance of `UIServer`. Create a StatsStorage Listener for the neural network and attach the Stats Listener to the UI Server. Here is the code to do that: 
 
 ```
 UIServer uiServer = UIServer.getInstance();
@@ -254,4 +250,3 @@ model.setListeners(new StatsListener(statsStorage),new ScoreIterationListener(1)
 uiServer.attach(statsStorage);
 
 ```
-
