@@ -110,3 +110,11 @@ mapping:
    [using the INtellij plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 
 6. Send a pull request, and bug us on Gitter until it gets merged and published.
+
+## Eclipse Setup
+
+1. Downloading the latest jar from https://projectlombok.org/download
+2. Double click the jar to install the plugin for Eclipse
+3. Clone datavec to your system
+4. Import the project as a maven project
+5. You will also need clone and build ND4J
