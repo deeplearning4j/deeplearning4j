@@ -226,7 +226,15 @@ A neural network that takes the initial input and triggers the [activation](#act
 ### <a name="gaussian">Gaussian Distribution</a>
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
 
-### <a name="glove">Gloval Vectores (GloVe)</a>
+### <a name="gaussianproc">Gaussian Process</a>
+
+* [Nando de Freitas's lecture on Gaussian Processes](https://www.youtube.com/watch?v=4vGiHC35j9s).
+
+### <a name="gan">Generative Adversarial Networks (GANs)</a>
+
+[Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network) are a tool to conduct unsupervised learning, essentially pitting a generative net against a discriminative net. The first net tries to fool the second by mimicking the probability distribution of a training dataset in order to fool the discriminative net into judging that the generated data instance actually belongs to the training set. 
+
+### <a name="glove">Global Vectors (GloVe)</a>
 GloVe is a generalization of Tomas Mikolov's word2vec algorithms, a technique for creating neural word embeddings. It was first presented at NIPS by Jeffrey Pennington, Richard Socher and Christopher Manning of Stanford's NLP department. [Deeplearning4j's implementation of GloVe is here](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/glove/GloVeExample.java). 
 
 * [GloVe: Global Vectors for Word Representation](http://nlp.stanford.edu/pubs/glove.pdf)
@@ -297,6 +305,9 @@ LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochr
 
 ### <a name="loglikelihood">Log-Likelihood</a>
 Log likelihood is related to the statistical idea of the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood). Likelihood is a function of the parameters of a statistical model. "The probability of some observed outcomes given a set of parameter values is referred to as the [likelihood](https://www.princeton.edu/~achaney/tmve/wiki100k/docs/Likelihood_function.html) of the set of parameter values given the observed outcomes."
+
+### <a name="logistic">Logistic Regression</a>
+[Logistic regression](https://deeplearning4j.org/logistic-regression) behaves like an on-off switch, and is usually used for classification problems; e.g. does this data instance belong to category X or not? It produces a value between 1 and 0 that corresponds to the probability that the data belongs to a given class. 
 
 ### <a name="mle">Maximum Likelihood Estimation</a>
 
@@ -409,7 +420,9 @@ Rectified linear units, or reLU, are a non-linear activation function widely app
 * [Incorporating Second-Order Functional Knowledge for Better Option Pricing](http://papers.nips.cc/paper/1920-incorporating-second-order-functional-knowledge-for-better-option-pricing.pdf)
 
 ### <a name="recurrent">Recurrent Neural Networks</a> 
-While "a multilayer perceptron (MLP) can only map from input to output vectors, whereas an RNN can in principle map from the entire history of previous inputs to each output. Indeed, the equivalent result to the universal approximation theory for MLPs is that an RNN with a sufficient number of hidden units can approximate any measurable sequence-to-sequence mapping to arbitrary accuracy (Hammer, 2000). The key point is that the recurrent connections allow a ‘memory’ of previous inputs to persist in the network’s internal state, which can then be used to influence the network output. The forward pass of an RNN is the same as that of an MLP with a single hidden layer, except that activations arrive at the hidden layer from both the current external input and the hidden layer activations one step back in time. " -Graves
+Recurrent neural networks are just a special form of shared weights. While "a multilayer perceptron (MLP) can only map from input to output vectors, whereas an RNN can in principle map from the entire history of previous inputs to each output. Indeed, the equivalent result to the universal approximation theory for MLPs is that an RNN with a sufficient number of hidden units can approximate any measurable sequence-to-sequence mapping to arbitrary accuracy (Hammer, 2000). The key point is that the recurrent connections allow a ‘memory’ of previous inputs to persist in the network’s internal state, which can then be used to influence the network output. The forward pass of an RNN is the same as that of an MLP with a single hidden layer, except that activations arrive at the hidden layer from both the current external input and the hidden layer activations one step back in time. " -Graves
+
+"If you imagine a neural net as a 2D graph, a RNN is a 3D graph where the topology of every 2D slice is a duplicate of the original non recurrent network. Every slice has connections going to the next slice, these inter-slice connections also have the same topology. The inter-slice connections represent connections in time, going into the future. So when you are performing a back propagation step, you might step into the prior layer, and/or you might also step into the the prior time step." --[link](https://www.reddit.com/r/MachineLearning/comments/7f5pyt/d_those_who_are_working_professionally_in_ml/dqabe4k/)
 
 ### <a name="recursive">Recursive Neural Networks</a> 
 

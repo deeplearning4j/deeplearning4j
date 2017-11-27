@@ -115,7 +115,7 @@ DL4J 사용시 패딩 배열은 데이터를 import하는 단계에서 생성됩
 
 DL4J에서는 RNNs층과 다른 유형의 층을 결합하는 것이 가능합니다. 예를 들어 `GravesLSTM`과 `DenseLayer`를 연결할 수 있습니다. 비디오 데이터가 들어오는 경우엔 컨볼루션 층(Convolutional layer)과 `GravesLSTM`를 결합할 수 있습니다.
 
-이렇게 여러 층을 결합한 신경망이 잘 작동하게 하려면 데이터를 전처리해야합니다. 예를 들어 `CnnToRnnPreProcessor`,  `FeedForwardToRnnPreprocessor`를 이용할 수 있습니다. 전처리기 목록은 [여기](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)에 정리되어있습니다. 대부분의 경우 DL4J는 자동으로 이 전처리기를 추가합니다. 아래의 코드를 참고하면 직접 전처리기를 추가할 수 있습니다. 이 예제는 층 1과 2 사이에 전처리기를 추가하는 코드입니다.
+이렇게 여러 층을 결합한 신경망이 잘 작동하게 하려면 데이터를 전처리해야합니다. 예를 들어 `CnnToRnnPreProcessor`,  `FeedForwardToRnnPreprocessor`를 이용할 수 있습니다. 전처리기 목록은 [여기](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)에 정리되어있습니다. 대부분의 경우 DL4J는 자동으로 이 전처리기를 추가합니다. 아래의 코드를 참고하면 직접 전처리기를 추가할 수 있습니다. 이 예제는 층 1과 2 사이에 전처리기를 추가하는 코드입니다.
 
 		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor()).
 

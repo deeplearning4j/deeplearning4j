@@ -127,10 +127,10 @@ First, network configuration and network implementation (i.e., the math) are sep
 
 Now, to implement a new layer type, you need to implement all of the following:
 
-* A Layer (configuration) class, with a Builder class. Follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers)
-* A Layer (implementation) class. Again, follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers)
-* A [ParameterInitializer](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/params) for your layer (which is responsible for initializing the initial parameters, given the configuration)
-* A [LayerFactory](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/factory) which extends DefaultLayerFactory, plus add your layer to DefaultLayerFactory.getInstance()
+* A Layer (configuration) class, with a Builder class. Follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers)
+* A Layer (implementation) class. Again, follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers)
+* A [ParameterInitializer](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/params) for your layer (which is responsible for initializing the initial parameters, given the configuration)
+* A [LayerFactory](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/factory) which extends DefaultLayerFactory, plus add your layer to DefaultLayerFactory.getInstance()
 
 In DL4J, we do not currently have symbolic automatic differentiation. This means that both the forward pass (predictions) and backward pass (backpropagation) code must be implemented manually.
 
@@ -139,7 +139,7 @@ Some other things you should be aware of:
 * DL4J has a numerical gradient checking utility [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java) with unit tests using this [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/test/java/org/deeplearning4j/gradientcheck).
   * The idea behind numerical gradient checks is to check that all gradients, calculated analytically (i.e., in your Layer) are approximately the same as those calculated numerically. For more info, see [this javadoc](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java)
   * Gradient checks are necessary for any new layer type
-* Parameters and gradients (as discussed in the next section) are flattened to a row vector. It is important that both the parameters and the gradients are flattened in the same order. In practice, this usually comes down to the order in which you add your gradients to your [Gradient object](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/gradient) vs. the order in which layer parameters are flattened into a row vector (i.e., [Model.params()](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Model.java)). This is one common reason for gradient checks failing.
+* Parameters and gradients (as discussed in the next section) are flattened to a row vector. It is important that both the parameters and the gradients are flattened in the same order. In practice, this usually comes down to the order in which you add your gradients to your [Gradient object](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/gradient) vs. the order in which layer parameters are flattened into a row vector (i.e., [Model.params()](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Model.java)). This is one common reason for gradient checks failing.
 
 ### How Backpropagation is Implemented in DL4J
 
@@ -185,7 +185,7 @@ Picking up at MultiLayerNetwork.computeGradientAndScore():
 **Updating Gradients**
 Updating gradients involves going from gradients for each parameter, to updates for each parameter. An 'update' is the gradients after we apply things like learning rates, momentum, L1/L2 regularization, gradient clipping and division by the minibatch size.
 
-This functionality is implemented in [BaseUpdater](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/BaseUpdater.java), and the [various updater classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater).
+This functionality is implemented in [BaseUpdater](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/BaseUpdater.java), and the [various updater classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/updater).
 
 
 

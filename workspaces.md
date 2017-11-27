@@ -5,7 +5,7 @@ layout: default
 
 # Workspaces Guide
 
-As of release 0.9.0 (or the 0.8.1-SNAPSHOT), [ND4J](http://nd4j.org/) offers an additional memory-management model: workspaces. That allows you to reuse memory for cyclic workloads without the JVM Garbage Collector for off-heap memory tracking. In other words, at the end of the workspace loop, all `INDArray`s' memory content is invalidated.
+As of release 0.9.0, [ND4J](http://nd4j.org/) offers an additional memory-management model: workspaces. That allows you to reuse memory for cyclic workloads without the JVM Garbage Collector for off-heap memory tracking. In other words, at the end of the workspace loop, all `INDArray`s' memory content is invalidated.
 
 Here are some [examples](https://github.com/deeplearning4j/dl4j-examples/blob/58cc1b56515458003fdd7b606f6451aee851b8c3/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java) of how to use it with ND4J.
 
@@ -27,7 +27,21 @@ That said, it’s fine to use different modes for training & inference (i.e. use
 With workspaces enabled, all memory used during training will be reusable and tracked without the JVM GC interference.
 The only exclusion is the `output()` method that uses workspaces (if enabled) internally for the feed-forward loop. Subsequently, it detaches the resulting `INDArray` from the workspaces, thus providing you with independent `INDArray` which will be handled by the JVM GC.
 
-***Please note***: By default, the training workspace mode is set to **NONE** for now.
+***Please note***: By default (as of 0.9.1), the training workspace mode is set to **NONE** for now.
+
+## Garbage Collector
+
+If your training process uses workspaces, we recommend that you disable (or reduce the frequency of) periodic GC calls. That can be done like so:
+
+```
+// this will limit frequency of gc calls to 5000 milliseconds
+Nd4j.getMemoryManager().setAutoGcWindow(5000)
+
+// OR you could totally disable it
+Nd4j.getMemoryManager().togglePeriodicGc(false);
+```
+
+Put that somewhere before your `model.fit(...)` call.
 
 ## ParallelWrapper & ParallelInference
 
@@ -77,20 +91,6 @@ model.doEvaluation(iteratorTest, eval, roceval);
 ```
 
 This piece of code will run a single cycle over `iteratorTest`, and it will update both (or less/more if required by your needs) `IEvaluation` implementations without any additional `INDArray` allocation. 
-
-## Garbage Collector
-
-If your training process uses workspaces, we recommend that you disable (or reduce the frequency of) periodic GC calls. That can be done like so:
-
-```
-// this will limit frequency of gc calls to 5000 milliseconds
-Nd4j.getMemoryManager().setAutoGcWindow(5000)
-
-// OR you could totally disable it
-Nd4j.getMemoryManager().togglePeriodicGc(false);
-```
-
-Put that somewhere before your `model.fit(...)` call.
 
 ## Workspace Destruction
 

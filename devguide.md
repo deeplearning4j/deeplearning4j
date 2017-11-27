@@ -96,7 +96,7 @@ So you want to contribute to one of the websites, such as [deeplearning4j.org](h
 How does the website actually work? This is actually pretty straightforward. Consider for example deeplearning4j.org:
 
 * The website itself is hosted on GitHub, specifically in the [gh-pages](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) branch
-* Website code is in [Markdown](https://help.github.com/articles/markdown-basics/) format/language, and is automatically converted to a HTML page. For example, this whole page you are reading is written in markdown.
+* Website code is in [Markdown](https://help.github.com/articles/getting-started-with-writing-and-formatting-on-github/) format/language, and is automatically converted to a HTML page. For example, this whole page you are reading is written in markdown.
   * There are a few exceptions to this, such as the documentation.html page, which are in HTML format.
 
 Markdown itself is relatively simple to pick up. If you are unfamiliar with it, have a look at the existing pages (.md files) in the [gh-pages](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) branch. You can use these as a guide to get started.
@@ -109,9 +109,9 @@ DL4J is a very large and complicated piece of software. Giving a complete overvi
 
 Let's start with the main packages:
 
-* deeplearning4j-core: Contains all of the layers, configuration and optimization code.
+* deeplearning4j-nn: Contains all of the layers, configuration and optimization code.
 * deeplearning4j-scaleout: distributed training (Spark), plus some other models such as Word2Vec
-* deeplearning4j-ui: user-interface functionality, such as the [HistogramIterationListener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-ui/src/main/java/org/deeplearning4j/ui/weights/HistogramIterationListener.java) ([see also](http://deeplearning4j.org/visualization.html)) and others. DL4J's user interface functionality is based on [Dropwizard](http://www.dropwizard.io/), [FreeMarker](http://freemarker.incubator.apache.org/) and [D3](http://d3js.org/). In short, these components allow the UI Javascript code to use the outputs of DL4J while your network is training.
+* deeplearning4j-ui: user-interface functionality ([see also](http://deeplearning4j.org/visualization.html)). DL4J's user interface functionality is based on [Dropwizard](http://www.dropwizard.io/), [FreeMarker](http://freemarker.incubator.apache.org/) and [D3](http://d3js.org/). In short, these components allow the UI Javascript code to use the outputs of DL4J while your network is training.
 
 
 
@@ -122,24 +122,24 @@ Suppose you want to add a new type of layer to DL4J. Here's what you need to kno
 
 First, network configuration and network implementation (i.e., the math) are separated. Confusingly, they are both called layer:
 
-* [org.deeplearning4j.nn.api.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Layer.java) for the implementation, and
-* [org.deeplearning4j.nn.conf.layers.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers/Layer.java) for the configuration
+* [org.deeplearning4j.nn.api.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/api/Layer.java) for the implementation, and
+* [org.deeplearning4j.nn.conf.layers.Layer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Layer.java) for the configuration
 
 Now, to implement a new layer type, you need to implement all of the following:
 
-* A Layer (configuration) class, with a Builder class. Follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/layers)
-* A Layer (implementation) class. Again, follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers)
-* A [ParameterInitializer](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/params) for your layer (which is responsible for initializing the initial parameters, given the configuration)
-* A [LayerFactory](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/factory) which extends DefaultLayerFactory, plus add your layer to DefaultLayerFactory.getInstance()
+* A Layer (configuration) class, with a Builder class. Follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers)
+* A Layer (implementation) class. Again, follow the design of [these classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers)
+* A [ParameterInitializer](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/params) for your layer (which is responsible for initializing the initial parameters, given the configuration)
+* A [LayerFactory](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/factory) which extends DefaultLayerFactory, plus add your layer to DefaultLayerFactory.getInstance()
 
 In DL4J, we do not currently have symbolic automatic differentiation. This means that both the forward pass (predictions) and backward pass (backpropagation) code must be implemented manually.
 
 Some other things you should be aware of:
 
-* DL4J has a numerical gradient checking utility [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java) with unit tests using this [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/test/java/org/deeplearning4j/gradientcheck).
-  * The idea behind numerical gradient checks is to check that all gradients, calculated analytically (i.e., in your Layer) are approximately the same as those calculated numerically. For more info, see [this javadoc](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java)
+* DL4J has a numerical gradient checking utility [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java) with unit tests using this [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/test/java/org/deeplearning4j/gradientcheck).
+  * The idea behind numerical gradient checks is to check that all gradients, calculated analytically (i.e., in your Layer) are approximately the same as those calculated numerically. For more info, see [this javadoc](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/gradientcheck/GradientCheckUtil.java)
   * Gradient checks are necessary for any new layer type
-* Parameters and gradients (as discussed in the next section) are flattened to a row vector. It is important that both the parameters and the gradients are flattened in the same order. In practice, this usually comes down to the order in which you add your gradients to your [Gradient object](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/gradient) vs. the order in which layer parameters are flattened into a row vector (i.e., [Model.params()](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Model.java)). This is one common reason for gradient checks failing.
+* Parameters and gradients (as discussed in the next section) are flattened to a row vector. It is important that both the parameters and the gradients are flattened in the same order. In practice, this usually comes down to the order in which you add your gradients to your [Gradient object](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/gradient) vs. the order in which layer parameters are flattened into a row vector (i.e., [Model.params()](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/api/Model.java)). This is one common reason for gradient checks failing.
 
 ### How Backpropagation is Implemented in DL4J
 
@@ -153,10 +153,10 @@ So, backprop. Let's start with the basics - an overview of the classes you need 
 Now, let's step through what happens when you call MultiLayerNetwork.fit(DataSet) or MultiLayerNet.fit(DataSetIterator). We'll assume that we are doing backprop (not unsupervised pretraining).
 
 1. First: the MultiLayerNetwork inputs and outputs (both INDArrays) are set
-2. A [Solver](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/Solver.java) object is created if one does not exist
-3. Solver.optimize() is called. This calls [ConvexOptimizer.optimize()](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/api/ConvexOptimizer.java)
-	What exactly is a ConvexOptimizer? Well, this is the abstraction we use to implement multiple optimization algorithms, including [StochasticGradientDescent](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/solvers/StochasticGradie), [LineGradientDescent](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/solvers/LineGradientDesc), [ConjugateGradient](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/solvers/ConjugateGradient.java) and [LBFGS](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/solvers/LBFGS.java)
-    Note that each of these ConvexOptimizer classes extend [BaseOptimizer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/solvers/BaseOptimizer.java)
+2. A [Solver](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/Solver.java) object is created if one does not exist
+3. Solver.optimize() is called. This calls [ConvexOptimizer.optimize()](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/api/ConvexOptimizer.java)
+	What exactly is a ConvexOptimizer? Well, this is the abstraction we use to implement multiple optimization algorithms, including [StochasticGradientDescent](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/StochasticGradie), [LineGradientDescent](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/LineGradientDesc), [ConjugateGradient](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/ConjugateGradient.java) and [LBFGS](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/LBFGS.java)
+    Note that each of these ConvexOptimizer classes extend [BaseOptimizer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/BaseOptimizer.java)
     For the next step, let's assume we are using StochasticGradientDescent.
 4. StochasticGradientDescent.optimize(): this does two things. First: it initates the calculation of the gradients, by calling BaseOptimizer.GradientAndScore(). Second: it applies the updates to the parameters.
 5. BaseOptimizer.gradientAndScore():
@@ -173,11 +173,11 @@ Now, we glossed over two important components: the calculation of the gradients,
 Picking up at MultiLayerNetwork.computeGradientAndScore():
 
 * The MultiLayerNetwork first does a full forward pass through the network, using the input set earlier
-  * Ultimately, this ends up calling the [Layer.activate(INDArray,boolean)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/api/Layer.java#L200-200) method for each layer from the input to the output of the network.
+  * Ultimately, this ends up calling the [Layer.activate(INDArray,boolean)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/api/Layer.java#L200-200) method for each layer from the input to the output of the network.
   * Within each layer, the input activations are stored. These are needed during backprop.
 * Then, the MultiLayerNetwork does the backward pass through the network, from the OutputLayer to the input.
   * MultiLayerNetwork.calcBackpropGradients(INDArray,boolean) gets called
-  * Gradient calculations start with the OutputLayer, which calculates gradients based on the network predictions/output, the labels, and the loss function set in the configuration, [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/BaseOutputLayer.java)
+  * Gradient calculations start with the OutputLayer, which calculates gradients based on the network predictions/output, the labels, and the loss function set in the configuration, [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/BaseOutputLayer.java)
   * Then, gradients are calculated progressively for each layer, using the error from the layer above.
   * Ultimately, the MultiLayerNetwork.gradient field is set, which is essentially a ```Map<String,INDArray>``` containing the gradients for each layer. This is later retrieved by the optimizer.
 
@@ -185,10 +185,4 @@ Picking up at MultiLayerNetwork.computeGradientAndScore():
 **Updating Gradients**
 Updating gradients involves going from gradients for each parameter, to updates for each parameter. An 'update' is the gradients after we apply things like learning rates, momentum, L1/L2 regularization, gradient clipping and division by the minibatch size.
 
-This functionality is implemented in [BaseUpdater](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/BaseUpdater.java), and the [various updater classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater).
-
-
-
-
-
-
+This functionality is implemented in [BaseUpdater](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/updater/BaseUpdater.java), and the [various updater classes](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/updater).

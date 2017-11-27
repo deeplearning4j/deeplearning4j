@@ -21,7 +21,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [CIFAR10 / CIFAR100]( http://www.cs.utoronto.ca/~kriz/cifar.html): 32x32 color images with 10 / 100 categories. Not commonly used anymore, though once again, can be an interesting sanity check.
 * [Caltech 101](http://www.vision.caltech.edu/Image_Datasets/Caltech101/): Pictures of objects belonging to 101 categories.
 * [Caltech 256](http://www.vision.caltech.edu/Image_Datasets/Caltech256/): Pictures of objects belonging to 256 categories.
-* [STL-10 dataset](http://www.stanford.edu/~acoates//stl10/): is an image recognition dataset for developing unsupervised feature learning, deep learning, self-taught learning algorithms. Like CIFAR-10 with some modifications.
+* [STL-10 dataset](http://cs.stanford.edu/~acoates/stl10/): is an image recognition dataset for developing unsupervised feature learning, deep learning, self-taught learning algorithms. Like CIFAR-10 with some modifications.
 * [The Street View House Numbers (SVHN)](http://ufldl.stanford.edu/housenumbers/): House numbers from Google Street View. Think of this as recurrent MNIST in the wild.
 * [NORB](http://www.cs.nyu.edu/~ylclab/data/norb-v1.0/): Binocular images of toy figurines under various illumination and pose.
 * [Pascal VOC](http://pascallin.ecs.soton.ac.uk/challenges/VOC/): Generic image Segmentation / classification — not terribly useful for building real-world image annotation, but great for baselines
