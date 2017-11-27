@@ -11,6 +11,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
+import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.DoubleWritable;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
+import java.net.URI;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -574,8 +576,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         ImageRecordReader rr1 = new ImageRecordReader(10, 10, 1, labelMaker);
         ImageRecordReader rr1s = new ImageRecordReader(5, 5, 1, labelMaker);
 
-        rr1.initialize(new FileSplit(parentDir));
-        rr1s.initialize(new FileSplit(parentDir));
+        URI[] uris = new FileSplit(parentDir).locations();
+
+        rr1.initialize(new CollectionInputSplit(uris));
+        rr1s.initialize(new CollectionInputSplit(uris));
 
         MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(2).addReader("rr1", rr1)
                         .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
