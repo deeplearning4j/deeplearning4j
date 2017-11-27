@@ -10,7 +10,6 @@ import java.util.Map;
 public class ImportState<GRAPH_TYPE,TENSOR_TYPE> {
     private int nodeCount;
     private SameDiff sameDiff;
-    private Map<String, Integer> reverseVertexMap;
     private GRAPH_TYPE graph;
     private Map<String,TENSOR_TYPE> variables;
     private Map<String,Pair<int[],int[]>> vertexIdMap;

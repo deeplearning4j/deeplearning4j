@@ -104,7 +104,7 @@ public class Broadcast extends ShapeOp {
 
     @Override
     public int[] getResultShape() {
-        return shape;
+        return sameDiff.getShapeForVertexId(vertexId);
     }
 
 

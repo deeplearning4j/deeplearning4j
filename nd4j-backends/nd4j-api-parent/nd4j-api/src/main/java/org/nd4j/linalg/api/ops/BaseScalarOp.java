@@ -96,14 +96,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                            boolean inPlace,
                            Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.shape = i_v.getResultShape();
         this.scalarValue = scalar;
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
             f().addFunctionEdges(this);
+            sameDiff.putShapeForVertexId(this.vertexId,sameDiff.setupFunction(i_v).getResultShape());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }

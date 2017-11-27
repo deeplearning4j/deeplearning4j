@@ -33,7 +33,8 @@ public class AtrousConv2D extends Conv2D {
                         Conv2DConfig conv2DConfig) {
         super(sameDiff,inputFunctions,inputArrays,outputs,conv2DConfig);
         this.sameDiff = sameDiff;
-        this.args = inputFunctions;
+        sameDiff.associateFunctionsAsArgs(inputFunctions,this);
+
         this.conv2DConfig = conv2DConfig;
         addArgs();
     }

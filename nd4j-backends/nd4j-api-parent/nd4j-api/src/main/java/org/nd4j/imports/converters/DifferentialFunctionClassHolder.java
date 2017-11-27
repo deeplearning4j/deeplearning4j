@@ -53,6 +53,9 @@ public class DifferentialFunctionClassHolder {
             try {
                 DifferentialFunction node = clazz.newInstance();
                 val name = node.opName();
+                if(name.endsWith("_bp")) {
+                    log.warn("Skipping derivative " + name);
+                }
                 if (nodeConverters.containsKey(name)) {
                     throw new ND4JIllegalStateException("OpName duplicate found: " + name);
                 } else {

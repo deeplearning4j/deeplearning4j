@@ -6,7 +6,6 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
@@ -16,8 +15,6 @@ import java.util.UUID;
 @Data
 public class Constant extends BaseTransformOp {
 
-    protected SDVariable m_x;
-    protected int[] shape;
 
     public Constant() {
     }
@@ -28,16 +25,10 @@ public class Constant extends BaseTransformOp {
                        int[] shape,
                        boolean inPlace,int[] vertexId) {
         super();
-        this.shape = shape;
+        sameDiff.putShapeForVertexId(vertexId,shape);
         this.inPlace = inPlace;
         this.sameDiff = sameDiff;
-        this.args = new DifferentialFunction[] {this};
-        if (i_v != null) {
-            m_x = i_v;
 
-        } else {
-            throw new IllegalArgumentException("Input not null value.");
-        }
 
         this.vertexId = vertexId;
         f().validateFunctionReference(this);
@@ -53,30 +44,6 @@ public class Constant extends BaseTransformOp {
         this(sameDiff,i_v,shape,false,vertexId);
     }
 
-    public Constant(INDArray x, INDArray z, int[] shape) {
-        super(x, z);
-        this.shape = shape;
-    }
-
-    public Constant(int[] shape) {
-        this.shape = shape;
-    }
-
-    public Constant(INDArray x, INDArray z, long n, int[] shape) {
-        super(x, z, n);
-        this.shape = shape;
-    }
-
-    public Constant(INDArray x, INDArray y, INDArray z, long n, int[] shape) {
-        super(x, y, z, n);
-        this.shape = shape;
-    }
-
-    public Constant(INDArray x, int[] shape) {
-        super(x);
-        this.shape = shape;
-    }
-
     /**
      * Get the result shape for this function
      *
@@ -84,7 +51,7 @@ public class Constant extends BaseTransformOp {
      */
     @Override
     public int[] getResultShape() {
-        return shape;
+        return sameDiff.getShapeForVertexId(vertexId);
     }
 
     @Override
@@ -95,7 +62,7 @@ public class Constant extends BaseTransformOp {
 
     @Override
     public SDVariable getResult() {
-        return this.m_x;
+        return sameDiff.getVariableForVertexId(vertexId);
     }
 
     @Override
@@ -111,20 +78,20 @@ public class Constant extends BaseTransformOp {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         f().validateDifferentialFunctionsameDiff(i_v);
-        return Collections.<DifferentialFunction> singletonList(sameDiff.zero("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+        return Collections.<DifferentialFunction> singletonList(sameDiff.zero("grad-" + UUID.randomUUID().toString(),i_v.get(0).getResultShape()));
 
     }
 
     @Override
     public String toString() {
-        return m_x.toString();
+        return getResult().toString();
     }
 
 
 
     @Override
     public DifferentialFunction dup() {
-        Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x, shape,vertexId));
+        Constant ret = sameDiff.setupFunction(new Constant(sameDiff, sameDiff.getVariableForVertexId(vertexId),sameDiff.getShapeForVertexId(vertexId),vertexId));
         Constant differentialFunction = ret;
         return differentialFunction;
     }

@@ -28,7 +28,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[]{i_v},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
@@ -45,7 +45,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v,i_v2};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v,i_v2},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);

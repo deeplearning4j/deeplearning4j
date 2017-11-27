@@ -35,7 +35,7 @@ import java.util.List;
  */
 public class Transpose extends ShapeOp {
     public Transpose(SameDiff sameDiff, DifferentialFunction i_v) {
-        super(sameDiff, i_v, ArrayUtil.reverseCopy(i_v.getShape()),false,null);
+        super(sameDiff, i_v, ArrayUtil.reverseCopy(i_v.getResultShape()),false,null);
     }
 
     public Transpose() {}

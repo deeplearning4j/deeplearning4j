@@ -51,9 +51,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v},this);
             this.dimensions = dimensions;
-            this.shape = Shape.getReducedShape(i_v.getResultShape(),dimensions);
+            sameDiff.putShapeForVertexId(vertexId,Shape.getReducedShape(i_v.getResultShape(),dimensions));
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
             f().addFunctionEdges(this);
@@ -70,9 +70,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v,i_v2};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v,i_v2},this);
             this.dimensions = dimensions;
-            this.shape = Shape.getReducedShape(i_v.getResultShape(),dimensions);
+            sameDiff.putShapeForVertexId(vertexId,Shape.getReducedShape(i_v.getResultShape(),dimensions));
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             addAsNewVertexId();

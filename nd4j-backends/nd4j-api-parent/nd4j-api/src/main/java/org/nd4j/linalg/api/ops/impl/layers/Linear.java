@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers;
 
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -59,7 +60,7 @@ public class Linear extends BaseModule {
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
 
-        this.args = getFunctionParams(nIn,nOut);
+        sameDiff.associateFunctionsAsArgs(getFunctionParams(nIn,nOut),this);
         this.nIn = nIn;
         this.nOut = nOut;
 
@@ -133,6 +134,7 @@ public class Linear extends BaseModule {
 
     @Override
     public void execSameDiff(DifferentialFunction... input) {
+        val args = args();
         if(args == null || args.length == 0) {
             throw new IllegalStateException("No arguments found");
         }
@@ -170,22 +172,22 @@ public class Linear extends BaseModule {
                                                      int nOut) {
         if(biasWeightInitScheme != null) {
             return new DifferentialFunction[] {
-                   SDVariable.builder().sameDiff(sameDiff).varName("w")
-                    .shape(new int[]{nOut,nIn}).weightInitScheme(
+                    SDVariable.builder().sameDiff(sameDiff).varName("w")
+                            .shape(new int[]{nOut,nIn}).weightInitScheme(
                             weightInitScheme).build(),
                     SDVariable.builder().sameDiff(sameDiff)
                             .varName("b")
-                    .shape(new int[]{nOut,1})
+                            .shape(new int[]{nOut,1})
                             .weightInitScheme(biasWeightInitScheme).build()
             };
         }
         else {
             return new DifferentialFunction[] {
-                   SDVariable.builder().sameDiff(sameDiff)
-                    .varName("w")
-                    .shape(new int[]{nOut,nIn})
-                           .weightInitScheme(new ZeroInitScheme('f'))
-                    .build()
+                    SDVariable.builder().sameDiff(sameDiff)
+                            .varName("w")
+                            .shape(new int[]{nOut,nIn})
+                            .weightInitScheme(new ZeroInitScheme('f'))
+                            .build()
             };
         }
     }

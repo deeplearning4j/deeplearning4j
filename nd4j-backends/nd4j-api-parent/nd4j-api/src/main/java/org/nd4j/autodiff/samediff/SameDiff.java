@@ -70,6 +70,7 @@ public class SameDiff {
     private DifferentialFunctionFactory functionFactory;
     private Map<String,SDVariable> variableMap;
     private Map<int[],SDVariable> vertexIdToVariable;
+    private Map<int[],int[]> vertexIdToShape;
     //gradient information
     private Map<int[],SDVariable> gradients;
     private Map<int[],SDVariable> forwardVarForGrad;
@@ -224,6 +225,63 @@ public class SameDiff {
 
 
     /**
+     * This is basically a proxy call to {@link SDGraph#addEdge(Edge)}
+     * This just ensures that the inputs and output differential function
+     * are already associated with each other.
+     * @param args the arguments to add
+     * @param output the output to associate with this vertex id
+     */
+    public void associateFunctionsAsArgs(DifferentialFunction[] args,DifferentialFunction output) {
+        if(args == null) {
+            log.warn("Input functions were null. Returning");
+            return;
+        }
+
+
+        List<Integer> argVertexIds = new ArrayList<>();
+        for(DifferentialFunction arg : args) {
+            argVertexIds.addAll(Ints.asList(arg.getVertexId()));
+            if(!functionInstances.containsKey(arg.getVertexId()))
+                putFunction(arg.getVertexId(),arg);
+        }
+
+        val inputVertexId = Ints.toArray(argVertexIds);
+        val outputVertexId = output.resultVertexId();
+        if(graph().getFromFor(outputVertexId) == null)
+            graph().addEdge(inputVertexId,outputVertexId,UUID.randomUUID().toString(),true);
+
+    }
+
+    /**
+     * Returns the arguments for a given output {@link DifferentialFunction}
+     * @param output the output to get the arguments for
+     * @return the arguments for the target function
+     */
+    public DifferentialFunction[] getArgsFor(DifferentialFunction output) {
+        Set<DifferentialFunction> ret = new LinkedHashSet<>();
+        val from = graph().getFromFor(output.getVertexId());
+        val singlularFunction = getFunctionForVertexId(from);
+        if(singlularFunction != null)
+            ret.add(singlularFunction);
+
+        for(int i = 0; i < from.length; i++) {
+            val currFunc = getFunctionForVertexId(new int[]{from[i]});
+            if(currFunc != null) {
+                ret.add(currFunc);
+            }
+            else if(getVariableForVertexId(new int[]{from[i]}) != null) {
+                ret.add(getVariableForVertexId(new int[]{from[i]}));
+            }
+
+            else
+                throw new ND4JIllegalStateException("No function or variable found for " + Arrays.toString(new int[]{from[i]}));
+        }
+
+        return ret.toArray(new DifferentialFunction[ret.size()]);
+    }
+
+
+    /**
      * Get the variable for the given vertex id.
      * WARNING: This function also has side effects.
      * {@link SDVariable} instances will be created
@@ -239,7 +297,7 @@ public class SameDiff {
                 DifferentialFunction func = getFunctionForVertexId(vertexId);
                 if(func == null)
                     throw new IllegalArgumentException("No vertex id of " + Arrays.toString(vertexId) + " function or variable found!");
-                SDVariable newVar = var(generateVariableName(func.opName(),false,func.args()),func.getShape(),func.depth() + 1);
+                SDVariable newVar = var(generateVariableName(func.opName(),false,func.args()),getShapeForVertexId(vertexId),func.depth() + 1);
                 Preconditions.checkState(newVar.getSameDiff() == this,"Same diff instance for variable must be the same!");
                 vertexIdToVariable.put(vertexId,newVar);
                 addVariable(newVar);
@@ -280,6 +338,46 @@ public class SameDiff {
             throw new ND4JIllegalStateException("Array for " + Arrays.toString(vertexId) + " already exists!");
         }
         vertexIdToArr.put(vertexId,arr);
+    }
+
+    /**
+     * Get the shape for the given vertex id.
+     * Note that if an array is defined, it will use that shape instead.
+     *
+     * A shape *and* an array should not be defined at the same time.
+     * This wastes memory. The internal map used for tracking shapes for particular
+     * vertex ids should also delete redundant shapes stored to avoid redundant sources of information.
+     * @param vertexId the vertex id to get the shape for
+     * @return the shape for the given vertex if if any.
+     */
+    public int[] getShapeForVertexId(int[] vertexId) {
+        //first check that the shape doesn't already exists.
+        //if it does, remove it
+        if(vertexIdToArr.containsKey(vertexId) && vertexIdToShape.containsKey(vertexId)) {
+            vertexIdToShape.remove(vertexId);
+        }
+
+        if(vertexIdToArr.containsKey(vertexId)) {
+            return vertexIdToArr.get(vertexId).shape();
+        }
+
+
+
+        return vertexIdToShape.get(vertexId);
+    }
+
+
+    /**
+     * Associate a vertex id with the given shape.
+     * @param vertexId the vertex id to associate
+     * @param shape the shape to assciate with
+     */
+    public void putShapeForVertexId(int[] vertexId,int[] shape) {
+        if(vertexIdToShape.containsKey(vertexId)) {
+            throw new ND4JIllegalStateException("Shape for " + Arrays.toString(vertexId) + " already exists!");
+        }
+
+        vertexIdToShape.put(vertexId,shape);
     }
 
 
@@ -454,7 +552,10 @@ public class SameDiff {
         opsForResult = new IntArrayKeyMap<>();
         reverseArrayLookup = new IdentityHashMap<>();
         vertexIdToArr = new IntArrayKeyMap<>();
+        vertexIdToShape = new IntArrayKeyMap<>();
     }
+
+
 
 
     /**
@@ -3810,6 +3911,8 @@ public class SameDiff {
                 return OpType.CUSTOM;
             case SHAPE:
                 return OpType.SHAPE;
+            case PAIRWISE:
+                return OpType.TRANSFORM;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }

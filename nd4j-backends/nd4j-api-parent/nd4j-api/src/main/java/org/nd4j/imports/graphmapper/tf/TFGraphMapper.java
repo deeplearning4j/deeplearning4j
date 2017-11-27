@@ -71,7 +71,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         boolean isConst = opType.getOp().equalsIgnoreCase("const");
         boolean isVar = opType.getOp().startsWith("VariableV");
         boolean isPlaceholder = opType.getOp().startsWith("Placeholder");
-        return isConst || isVar || isPlaceholder;
+        boolean endsWithRead = opType.getName().endsWith("/read");
+        boolean isNoOp = opType.getOp().equalsIgnoreCase("NoOp");
+        return isConst || isVar || isPlaceholder || endsWithRead || isNoOp;
     }
 
     @Override
@@ -136,6 +138,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         if(ret.startsWith("^"))
             ret = ret.substring(1);
         ret = ret.indexOf(':') >= 0 ? ret.substring(0,ret.indexOf(':')) : ret;
+        if(ret.endsWith("/read")) {
+            ret = ret.replace("/read","");
+        }
         return ret;
     }
 
@@ -194,9 +199,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public Map<String, NodeDef> variablesForGraph(GraphDef graphDef) {
         Map<String,NodeDef> ret = new LinkedHashMap<>();
         for(NodeDef nodeDef : graphDef.getNodeList()) {
-            //     if(dataTypeForTensor(nodeDef) != DataBuffer.Type.UNKNOWN) {
-            ret.put(getNodeName(nodeDef.getName()),nodeDef);
-            //   }
+            if(nodeDef.getName().endsWith("/read")) {
+                continue;
+            }
+            val name = getNodeName(nodeDef.getName());
+            ret.put(name,nodeDef);
         }
 
         return ret;
@@ -207,6 +214,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     @Override
     public Message.Builder getNewGraphBuilder() {
         return GraphDef.newBuilder();
+    }
+
+    @Override
+    public GraphDef parseGraphFrom(byte[] inputStream) throws IOException {
+        return GraphDef.parseFrom(inputStream);
     }
 
     @Override
@@ -252,15 +264,37 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
             try {
                 val newInstance = differentialFunction.getClass().newInstance();
-                newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                val indices = importState.getVertexIdMap().get(tfNode.getName());
-                if(indices != null) {
-                    val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
-                    diff.graph().addEdge(opStateEdge);
-                    diff.putFunction(indices.getRight(),newInstance);
-                    newInstance.setVertexId(indices.getRight());
-                    newInstance.setSameDiff(importState.getSameDiff());
+                val args = new DifferentialFunction[tfNode.getInputCount()];
+                for(int i = 0; i < tfNode.getInputCount(); i++) {
+                    val name = getNodeName(tfNode.getInput(i));
+                    val  initialVertexId = importState.getVertexIdMap().get(name);
+                    int[] vertexIdKey = initialVertexId == null ? diff.getVariable(name).getVertexId() : initialVertexId.getRight();
+                    if(vertexIdKey == null) {
+                        throw new ND4JIllegalStateException("Unable set to set arg for op " + tfNode.getName());
+                    }
+
+                    DifferentialFunction func = diff.getFunctionForVertexId(vertexIdKey);
+                    if(func == null) {
+                        func =  diff.getVariable(name);
+                    }
+
+                    args[i] = func;
                 }
+
+
+
+                val indices = importState.getVertexIdMap().get(getNodeName(tfNode.getName()));
+
+                val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
+                diff.graph().addEdge(opStateEdge);
+                diff.putFunction(indices.getRight(),newInstance);
+                newInstance.setVertexId(indices.getRight());
+                diff.associateFunctionsAsArgs(args,newInstance);
+                newInstance.setSameDiff(importState.getSameDiff());
+
+
+                newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+
 
             } catch (Exception e) {
                 log.error("Failed with [{}]", opName);

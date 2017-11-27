@@ -190,7 +190,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public void setX(INDArray x) {
         if (x == null) {
-            if (args != null && args.length >= 1) {
+            if (args() != null && args().length >= 1) {
                 DifferentialFunction firstArg = args()[0];
                 if (firstArg instanceof SDVariable) {
                     SDVariable sdVariable = (SDVariable) firstArg;
@@ -224,7 +224,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public void setY(INDArray y) {
         if (y == null) {
-            if (args != null && args.length > 1) {
+            if (args() != null && args().length > 1) {
                 DifferentialFunction firstArg = args()[1];
                 if (firstArg instanceof SDVariable) {
                     SDVariable sdVariable = (SDVariable) firstArg;

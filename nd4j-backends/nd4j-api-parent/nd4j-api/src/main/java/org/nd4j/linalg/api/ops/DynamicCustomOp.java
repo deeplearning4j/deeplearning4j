@@ -253,14 +253,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         @Override
         public DynamicCustomOp build() {
             DynamicCustomOp ret =  super.build();
-            ret.setArgs(args.toArray(new DifferentialFunction[args.size()]));
+            sameDiff.associateFunctionsAsArgs(args.toArray(new DifferentialFunction[args.size()]),ret);
             ret.setSameDiff(sameDiff);
             ret.outputShapes = outputShapes;
             if(outputs.isEmpty() && !outputShapes.isEmpty()) {
                 for (int i = 0; i < outputShapes.size(); i++) {
                    outputs.add(sameDiff.var(sameDiff.generateVariableName(
                            "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
-                           false,ret.args),outputShapes.get(i)));
+                           false,ret.args()),outputShapes.get(i)));
                 }
 
             }

@@ -32,16 +32,16 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            int[] dimension) {
         super(sameDiff,inPlace,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)},this);
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
             f().validateFunctionReference(i_v1);
             f().validateFunctionReference(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
-            this.dimension = dimension;
-            this.shape = Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape());
+            this.dimension = dimension;;
             addAsNewVertexId();
+            sameDiff.putShapeForVertexId(vertexId,Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape()));
             f().addFunctionEdges(this);
 
         } else {
@@ -63,14 +63,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         super(sameDiff,extraArgs);
         this.dimension = dimension;
         if (i_v1 != null && i_v2 != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)},this);
 
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
-            this.shape = Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape());
             addAsNewVertexId();
+            sameDiff.putShapeForVertexId(vertexId,Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape()));
             f().addFunctionEdges(this);
 
 
@@ -96,13 +96,13 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            int[] dimension,
                            Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.shape = shape;
         this.dimension = dimension;
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v)},this);
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
+            sameDiff.putShapeForVertexId(vertexId,shape);
             f().addFunctionEdges(this);
 
         } else {

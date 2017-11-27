@@ -48,7 +48,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                        WeightInitScheme weightInitScheme,
                        int[] vertexId) {
         if(shape != null)
-            this.shape =  Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape);
+             sameDiff.putShapeForVertexId(vertexId,Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape));
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
         this.vertexId = vertexId;
@@ -178,7 +178,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public int[] getShape() {
-        return shape;
+        return sameDiff.getShapeForVertexId(vertexId);
     }
 
 
@@ -188,11 +188,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable dup() {
-        return SDVariable.builder()
-                .varName(varName)
-                .shape(shape)
-                .sameDiff(sameDiff)
-                .build();
+        return sameDiff.var(this);
     }
 
 
@@ -768,7 +764,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
     private void assertShapeEquals(SDVariable variable) {
-        if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1 && Shape.broadcastOutputShape(shape,variable.shape) == null) {
+        val shape = sameDiff.getShapeForVertexId(vertexId);
+        if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1 && Shape.broadcastOutputShape(shape,variable.getShape()) == null) {
             throw new IllegalArgumentException("Input shape must be the same as this shape " + Arrays.toString(shape) + " and shape was " + Arrays.toString(variable.getShape()));
         }
     }

@@ -29,7 +29,8 @@ public class Conv3D extends DynamicCustomOp {
     public Conv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
         super(null,sameDiff, inputFunctions, false);
         setSameDiff(sameDiff);
-        setArgs(inputFunctions);
+        if(inputFunctions != null)
+            sameDiff.associateFunctionsAsArgs(inputFunctions,this);
         if(inputs != null)
             getInputArguments().addAll(Arrays.asList(inputs));
         if(outputs != null)

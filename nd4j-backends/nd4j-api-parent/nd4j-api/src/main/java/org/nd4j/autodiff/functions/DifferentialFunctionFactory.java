@@ -958,7 +958,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      */
     public int getInputLength(DifferentialFunction func) {
         validateDifferentialFunctionsameDiff(func);
-        int[] inputShape = func.arg().shape;
+        int[] inputShape = func.arg().getResultShape();
         return ArrayUtil.prod(inputShape);
     }
 
@@ -988,7 +988,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
          * The output variable creation can create skipped vertices.
          */
         if(sameDiff.graph().getVertex(op.vertexId[0]) == null) {
-            SDVariable var = sameDiff.var(op.opName() + "-" + UUID.randomUUID().toString(),op.shape,new ZeroInitScheme('f'),op.vertexId,0);
+            SDVariable var = sameDiff.var(op.opName() + "-" + UUID.randomUUID().toString(),op.getResultShape(),new ZeroInitScheme('f'),op.vertexId,0);
             NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff,op.vertexId[0],0,var);
             sameDiff.graph().addVertex(ndArrayVertex);
         }

@@ -4,6 +4,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.EdgeId;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -53,18 +54,22 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
     }
 
+
+
     /**
      *
-     * @param graphFile
+     * @param inputStream
      * @return
      */
     @Override
-    public  SameDiff importGraph(File graphFile) {
+    public  SameDiff importGraph(InputStream inputStream) {
+        byte[] bytes = null;
         GRAPH_TYPE def = null;
-        try (FileInputStream fis = new FileInputStream(graphFile); BufferedInputStream bis = new BufferedInputStream(fis)) {
-            def = parseGraphFrom(bis);
-        } catch (Exception e) {
-            try (FileInputStream fis2 = new FileInputStream(graphFile); BufferedInputStream bis2 = new BufferedInputStream(fis2); BufferedReader reader = new BufferedReader(new InputStreamReader(bis2))) {
+        try {
+            bytes = IOUtils.toByteArray(inputStream);
+            def = parseGraphFrom(bytes);
+        } catch (IOException e) {
+            try (BufferedInputStream bis2 = new BufferedInputStream(new ByteArrayInputStream(bytes)); BufferedReader reader = new BufferedReader(new InputStreamReader(bis2))) {
                 Message.Builder builder = getNewGraphBuilder();
 
                 StringBuilder str = new StringBuilder();
@@ -78,6 +83,25 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
             } catch (Exception e2) {
                 e2.printStackTrace();
             }
+        }
+
+
+        return importGraph(def);
+    }
+
+    /**
+     *
+     * @param graphFile
+     * @return
+     */
+    @Override
+    public  SameDiff importGraph(File graphFile) {
+        GRAPH_TYPE def = null;
+        try (FileInputStream fis = new FileInputStream(graphFile)) {
+            return importGraph(fis);
+        } catch (Exception e) {
+            e.printStackTrace();
+
         }
 
         if (def == null)
@@ -125,6 +149,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
             if(arr != null) {
                 val var = importState.getSameDiff().var(entry.getKey(),arr);
                 indexMap.put(entry.getKey(),var.getVertexId()[0]);
+                //ensure the array is made available for later processing
+                diff.associateArrayWithVariable(arr,var);
             }
             else if(getShapeFromTensor(entry.getValue()) == null) {
                 val var = importState.getSameDiff().var(entry.getKey(),null,0);

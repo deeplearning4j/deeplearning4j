@@ -4,8 +4,8 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseModule;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
 import java.util.List;
@@ -29,6 +29,17 @@ public class SConv2DDerivative extends SConv2D {
         return "sconv2d_bp";
     }
 
+
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No op name found for backwards.");
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No op name found for backwards");
+    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

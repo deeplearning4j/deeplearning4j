@@ -66,7 +66,7 @@ public class Set extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ym1 = f().rsub(rarg(),f().one(getShape()));
+        DifferentialFunction ym1 = f().rsub(rarg(),f().one(getResultShape()));
         DifferentialFunction ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
 
 

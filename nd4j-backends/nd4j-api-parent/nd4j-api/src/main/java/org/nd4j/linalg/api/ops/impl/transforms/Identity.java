@@ -87,7 +87,7 @@ public class Identity extends BaseTransformOp {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        return Collections.<DifferentialFunction> singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+        return Collections.<DifferentialFunction> singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getResultShape()));
     }
 
 }

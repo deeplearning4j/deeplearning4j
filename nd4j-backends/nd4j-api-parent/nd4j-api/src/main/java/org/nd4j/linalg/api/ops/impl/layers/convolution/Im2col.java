@@ -21,7 +21,7 @@ public class Im2col extends DynamicCustomOp {
     public Im2col(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
         super(null,inputArrays,outputs);
         this.sameDiff = sameDiff;
-        this.args = inputFunctions;
+        sameDiff.associateFunctionsAsArgs(inputFunctions,this);
         this.conv2DConfig = conv2DConfig;
 
         addArgs();

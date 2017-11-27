@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A mapper for onnx graphs to
@@ -74,11 +72,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             val inputs = new int[node.getInputCount()];
             val outputs = new int[node.getOutputCount()];
             for(int i = 0; i < inputs.length; i++) {
-                inputs[i] = Integer.parseInt(node.getInput(i));
+                inputs[i] = nodeNameToVertexId.get(node.getInput(i));
             }
 
             for(int i = 0; i < outputs.length; i++) {
-                outputs[i] = Integer.parseInt(node.getOutput(i));
+                outputs[i] = nodeNameToVertexId.get(node.getInput(i));
             }
 
             ret.put(name,Pair.of(inputs,outputs));
@@ -89,6 +87,10 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public Map<String,onnx.OnnxProto3.TypeProto.TensorTypeProto> variablesForGraph(OnnxProto3.GraphProto graphProto) {
+        /**
+         * Need to figure out why
+         * gpu_0/conv1_1 isn't present in VGG
+         */
         Map<String,onnx.OnnxProto3.TypeProto.TensorTypeProto> ret = new HashMap<>();
         for(int i = 0; i < graphProto.getInputCount(); i++) {
             ret.put(graphProto.getInput(i).getName(),graphProto.getInput(i).getType().getTensorType());
@@ -101,31 +103,51 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         for(int i = 0; i < graphProto.getNodeCount(); i++) {
             val node = graphProto.getNode(i);
             val name = node.getName().isEmpty() ? String.valueOf(i) : node.getName();
+            //add -1 as place holder value representing the shape needs to be filled in
             if(!ret.containsKey(name)) {
-                val dim =  OnnxProto3.TypeProto.TensorShapeProto.Dimension.
-                        newBuilder()
-                        .setDimValue(1)
-                        .build();
-                val typeProto = OnnxProto3.TypeProto.TensorTypeProto.newBuilder()
-                        .setShape(
-                                OnnxProto3.TypeProto.TensorShapeProto.newBuilder()
-                                        .addDim(dim)
-                                        .addDim(dim).build())
-                        .build();
-                ret.put(name,typeProto);
+                addDummyTensor(name,ret);
             }
 
+            for(int j = 0; j < node.getInputCount(); j++) {
+                if(!ret.containsKey(node.getInput(j))) {
+                    addDummyTensor(node.getInput(j),ret);
+                }
+            }
+
+
+            for(int j = 0; j < node.getOutputCount(); j++) {
+                if(!ret.containsKey(node.getOutput(j))) {
+                    addDummyTensor(node.getOutput(j),ret);
+                }
+            }
         }
-
-
 
         return ret;
     }
 
 
+    protected void addDummyTensor(String name, Map<String, OnnxProto3.TypeProto.TensorTypeProto> to) {
+        val dim =  OnnxProto3.TypeProto.TensorShapeProto.Dimension.
+                newBuilder()
+                .setDimValue(-1)
+                .build();
+        val typeProto = OnnxProto3.TypeProto.TensorTypeProto.newBuilder()
+                .setShape(
+                        OnnxProto3.TypeProto.TensorShapeProto.newBuilder()
+                                .addDim(dim)
+                                .addDim(dim).build())
+                .build();
+        to.put(name,typeProto);
+    }
+
     @Override
     public Message.Builder getNewGraphBuilder() {
         return OnnxProto3.GraphProto.newBuilder();
+    }
+
+    @Override
+    public OnnxProto3.GraphProto parseGraphFrom(byte[] inputStream) throws IOException {
+        return OnnxProto3.ModelProto.parseFrom(inputStream).getGraph();
     }
 
     @Override
@@ -139,24 +161,48 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         if(differentialFunction == null) {
             throw new NoOpNameFoundException("No op name found " + tfNode.getOpType());
         }
+
         val diff = importState.getSameDiff();
         val idx = importState.getGraph().getNodeList().indexOf(tfNode);
         val name = !tfNode.getName().isEmpty() ? tfNode.getName() : String.valueOf(idx);
         try {
             val newInstance = differentialFunction.getClass().newInstance();
-            newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+            val args = new DifferentialFunction[tfNode.getInputCount()];
+            for(int i = 0; i < tfNode.getInputCount(); i++) {
+                val  initialVertexId = importState.getVertexIdMap().get(name);
+                int[] vertexIdKey = initialVertexId == null ? diff.getVariable(name).getVertexId() : initialVertexId.getRight();
+                if(vertexIdKey == null) {
+                    throw new ND4JIllegalStateException("Unable set to set arg for op " + tfNode.getName());
+                }
+
+                DifferentialFunction func = diff.getFunctionForVertexId(vertexIdKey);
+                if(func == null) {
+                    func =  diff.getVariable(name);
+                }
+
+                args[i] = func;
+            }
+
+
+
             val indices = importState.getVertexIdMap().get(name);
             val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
             newInstance.setVertexId(indices.getRight());
             newInstance.setSameDiff(importState.getSameDiff());
             importState.getSameDiff().putFunction(indices.getRight(),newInstance);
+
             /**
              * Need to f
              */
-            diff.graph().addEdge(opStateEdge);
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+            if(!Arrays.equals(indices.getLeft(),indices.getRight())) {
+                diff.graph().addEdge(opStateEdge);
+            }
+
+            diff.associateFunctionsAsArgs(args,newInstance);
+            newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
 

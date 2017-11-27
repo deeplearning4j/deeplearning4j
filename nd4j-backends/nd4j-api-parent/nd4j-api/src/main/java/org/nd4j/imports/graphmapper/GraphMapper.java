@@ -101,6 +101,13 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param inputStream the input stream to load from
      * @return
      */
+    GRAPH_TYPE parseGraphFrom(byte[] inputStream) throws IOException;
+
+    /**
+     * Parse a graph from an input stream
+     * @param inputStream the input stream to load from
+     * @return
+     */
      GRAPH_TYPE parseGraphFrom(InputStream inputStream) throws IOException;
 
 
@@ -266,6 +273,15 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     List<NODE_TYPE> getNodeList(GRAPH_TYPE graphType);
 
+
+
+    /**
+     * Import a graph as same diff
+     * from the given file
+     * @param graphFile
+     * @return
+     */
+    SameDiff importGraph(InputStream graphFile);
 
     /**
      * Import a graph as same diff

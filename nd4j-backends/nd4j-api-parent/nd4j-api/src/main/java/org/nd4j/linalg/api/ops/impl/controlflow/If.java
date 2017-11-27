@@ -63,11 +63,11 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBodyExecution = ifStatement.falseBodyExecution;
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.falseBody = ifStatement.falseBody;
-        this.args = ifStatement.args;
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.dummyResult = ifStatement.dummyResult;
-        this.shape = new int[] {1,1};
         addAsNewVertexId();
+        sameDiff.associateFunctionsAsArgs(ifStatement.inputVars,this);
+        sameDiff.putShapeForVertexId(vertexId,new int[]{1,1});
         f().addFunctionEdges(this);
         this.inputVars = ifStatement.inputVars;
         this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
@@ -108,7 +108,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
-        this.args = inputVars;
+        sameDiff.associateFunctionsAsArgs(inputVars,this);
         int[] vertexId = {parent.graph().nextVertexId()};
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
         this.vertexId = vertexId;

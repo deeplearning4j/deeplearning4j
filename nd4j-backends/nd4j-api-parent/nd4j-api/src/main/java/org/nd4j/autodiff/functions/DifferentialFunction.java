@@ -1,10 +1,7 @@
 package org.nd4j.autodiff.functions;
 
 import com.rits.cloning.Cloner;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -44,15 +41,6 @@ public abstract class DifferentialFunction implements Differential {
     @JsonIgnore
     protected boolean inPlace;
 
-    @Getter
-    @Setter
-    @JsonIgnore
-    protected int[] shape;
-
-    @Getter
-    @Setter
-    @JsonIgnore
-    protected DifferentialFunction[] args;
 
 
     @Getter
@@ -123,7 +111,7 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunction(SameDiff sameDiff, boolean inPlace, DifferentialFunction[] args) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
-        this.args = args;
+        sameDiff.associateFunctionsAsArgs(args,this);
 
     }
 
@@ -132,8 +120,8 @@ public abstract class DifferentialFunction implements Differential {
         this.sameDiff = sameDiff;
         this.vertexId = vertexId;
         this.inPlace = inPlace;
-        this.shape = shape;
-        this.args = args;
+        sameDiff.putShapeForVertexId(vertexId,shape);
+        sameDiff.associateFunctionsAsArgs(args,this);
         this.scalarValue = scalarValue;
         this.dimensions = dimensions;
         this.extraArgs = extraArgs;
@@ -144,7 +132,7 @@ public abstract class DifferentialFunction implements Differential {
     protected void addAsNewVertexId(int[] vertexId) {
         this.vertexId = vertexId;
 
-        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),shape,new ZeroInitScheme('f'),vertexId,maxDepthForArgs());
+        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),getResultShape(),new ZeroInitScheme('f'),vertexId,maxDepthForArgs());
         if(sameDiff.graph().getVertex(vertexId[0]) == null) {
             NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff, var.vertexId[0], depth(), var);
             var.setVertexId(new int[]{ndArrayVertex.vertexID()});
@@ -264,11 +252,11 @@ public abstract class DifferentialFunction implements Differential {
     }
 
     public  DifferentialFunction[] args() {
-        return args;
+        return sameDiff.getArgsFor(this);
     }
 
     public  DifferentialFunction arg() {
-        return args[0];
+        return args()[0];
     }
 
 
@@ -387,9 +375,10 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public DifferentialFunction larg() {
+        val args = args();
         if(args == null || args.length == 0)
             throw new ND4JIllegalStateException("No arguments found.");
-        return args[0];
+        return args()[0];
     }
 
     /**
@@ -400,6 +389,7 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public DifferentialFunction rarg() {
+        val args = args();
         if(args == null || args.length != 2)
             throw new ND4JIllegalStateException("In order to use this function, the numebr of arguments for this function must be 2.");
         return args[1];
