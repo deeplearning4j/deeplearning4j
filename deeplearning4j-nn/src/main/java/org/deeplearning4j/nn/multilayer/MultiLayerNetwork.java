@@ -2166,7 +2166,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-        feedForward(data.getFeatureMatrix(), false);
+        setInput(data.getFeatures());
+        feedForwardToLayer(layers.length-1, false, false);
         setLabels(data.getLabels());
 
         INDArray out;

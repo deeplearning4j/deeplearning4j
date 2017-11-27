@@ -285,9 +285,6 @@ public class OutputLayerTest {
         INDArray out = mln.output(input);
         assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
-        INDArray act = mln.activate();
-        assertArrayEquals(act.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
-
         INDArray preout = mln.preOutput(input);
         assertArrayEquals(preout.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
@@ -311,9 +308,6 @@ public class OutputLayerTest {
 
         INDArray outRnn = mlnRnn.output(input);
         assertArrayEquals(outRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
-
-        INDArray actRnn = mlnRnn.activate();
-        assertArrayEquals(actRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
 
         INDArray preoutRnn = mlnRnn.preOutput(input);
         assertArrayEquals(preoutRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
@@ -423,9 +417,6 @@ public class OutputLayerTest {
             INDArray out = mln.output(input);
             assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
-            INDArray act = mln.activate();
-            assertArrayEquals(act.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
-
             INDArray preout = mln.preOutput(input);
             assertArrayEquals(preout.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
@@ -435,9 +426,6 @@ public class OutputLayerTest {
 
             INDArray outRnn2 = mlnRnn.output(input);
             assertArrayEquals(outRnn2.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
-
-            INDArray actRnn = mlnRnn.activate();
-            assertArrayEquals(actRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
 
             INDArray preoutRnn = mlnRnn.preOutput(input);
             assertArrayEquals(preoutRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});

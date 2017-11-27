@@ -2071,7 +2071,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
-        feedForward(data.getFeatures(), false);
+        setInputs(data.getFeatures());
+        feedForward(false, true, false, false);
         setLabels(data.getLabels());
 
         INDArray out = null;
@@ -2102,6 +2103,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (hasMaskArray)
             clearLayerMaskArrays();
+        clearLayersStates();
         return out;
     }
 

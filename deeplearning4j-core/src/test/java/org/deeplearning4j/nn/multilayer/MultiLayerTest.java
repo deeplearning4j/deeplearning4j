@@ -682,31 +682,31 @@ public class MultiLayerTest {
         int nOut = 10;
 
         // Test pretrain true
-        MultiLayerNetwork vaePre = getVaeModel(true, nIn, nOut);
-        assertTrue(vaePre.conf().isPretrain()); // check on the network
-        assertTrue(vaePre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(vaePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-        int actualNP = vaePre.numParams();
+        MultiLayerNetwork aePre = getAeModel(true, nIn, nOut);
+        assertTrue(aePre.conf().isPretrain()); // check on the network
+        assertTrue(aePre.getLayer(0).conf().isPretrain()); // check pretrain layer
+        assertFalse(aePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
+        int actualNP = aePre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        INDArray params = vaePre.params();
+        INDArray params = aePre.params();
         assertEquals(params.length(), actualNP); // check num params
-        Map<String, INDArray> paramTable = vaePre.paramTable();
+        Map<String, INDArray> paramTable = aePre.paramTable();
         assertTrue(paramTable.containsKey("0_vb")); // check vb exists for pretrain layer
-        vaePre.setParam("0_vb", Nd4j.ones(10));
-        params = vaePre.getParam("0_vb");
+        aePre.setParam("0_vb", Nd4j.ones(10));
+        params = aePre.getParam("0_vb");
         assertEquals(Nd4j.ones(10), params); // check set params for vb
 
 
         // Test pretrain false, expect same for true because its not changed when applying update
-        MultiLayerNetwork vaeNoPre = getVaeModel(false, nIn, nOut);
-        assertFalse(vaeNoPre.conf().isPretrain());
-        assertFalse(vaeNoPre.getLayer(0).conf().isPretrain());
-        assertFalse(vaePre.getLayer(1).conf().isPretrain());
-        actualNP = vaeNoPre.numParams();
+        MultiLayerNetwork aeNoPre = getAeModel(false, nIn, nOut);
+        assertFalse(aeNoPre.conf().isPretrain());
+        assertFalse(aeNoPre.getLayer(0).conf().isPretrain());
+        assertFalse(aePre.getLayer(1).conf().isPretrain());
+        actualNP = aeNoPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        params = vaeNoPre.params();
+        params = aeNoPre.params();
         assertEquals(params.length(), actualNP);
-        paramTable = vaePre.paramTable();
+        paramTable = aePre.paramTable();
         assertTrue(paramTable.containsKey("0_vb"));
     }
 
@@ -716,7 +716,7 @@ public class MultiLayerTest {
         int nIn = 10;
         int nOut = 10;
 
-        MultiLayerNetwork vaePre = getVaeModel(true, nIn, nOut);
+        MultiLayerNetwork vaePre = getAeModel(true, nIn, nOut);
         vaePre.fit(input);
         assertTrue(vaePre.conf().isPretrain()); // check on the network
         assertFalse(vaePre.getLayer(0).conf().isPretrain()); // check pretrain layer
@@ -724,11 +724,11 @@ public class MultiLayerTest {
 
     }
 
-    public MultiLayerNetwork getVaeModel(boolean preTrain, int nIn, int nOut) {
+    public MultiLayerNetwork getAeModel(boolean preTrain, int nIn, int nOut) {
         MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder()
                 .seed(42).iterations(1).updater(new NoOp())
                 .weightInit(WeightInit.UNIFORM)
-                .list(new VariationalAutoencoder.Builder()
+                .list(new AutoEncoder.Builder()
                                 .activation(Activation.IDENTITY).nOut(nIn).build(),
                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                 LossFunctions.LossFunction.COSINE_PROXIMITY)
