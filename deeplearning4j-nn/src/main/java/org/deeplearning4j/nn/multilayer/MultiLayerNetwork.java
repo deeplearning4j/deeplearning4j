@@ -905,6 +905,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, boolean train) {
+        return feedForwardToLayer(layerNum, train, true);
+    }
+
+    protected List<INDArray> feedForwardToLayer(int layerNum, boolean train, boolean clearInputs) {
         // TODO: maybe remove that?
         INDArray currInput =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE || !input.isAttached()
@@ -933,6 +937,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (!train)
             if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+
+        if(clearInputs) {
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
+        }
 
         return activations;
     }
@@ -1895,6 +1903,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             INDArray ret = silentOutput(input, train).detach();
 
             layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
             return ret;
         }
     }
@@ -2235,7 +2244,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //First: do a feed-forward through the network
                 //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
                 // need the input to the output layer to be set (such that backprop can be done)
-                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true);
+                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true, false);
                 if (trainingListeners.size() > 0) {
                     //TODO: We possibly do want output layer activations in some cases here...
                     for (TrainingListener tl : trainingListeners) {

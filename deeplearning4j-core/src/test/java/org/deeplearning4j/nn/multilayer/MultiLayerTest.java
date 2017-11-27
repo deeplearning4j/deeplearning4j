@@ -1066,4 +1066,36 @@ public class MultiLayerTest {
         MultiLayerNetwork restored = TestUtils.testModelSerialization(net);
         assertEquals(4, restored.getLayerWiseConfigurations().getEpochCount());
     }
+
+    @Test
+    public void testInputClearance() throws Exception {
+        //Activations should be cleared - if not, it's possible for out of (workspace) scope arrays to be around
+        // which can cause a crash
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Same)
+                .list()
+                .layer(new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build())
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build())
+                .layer(new DenseLayer.Builder().nOut(10).build())
+                .layer(new OutputLayer.Builder().nOut(10).build())
+                .setInputType(InputType.convolutional(28,28,1))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray content = Nd4j.create(1,1,28,28);
+
+        //Check output:
+        net.output(content);
+        for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
+            assertNull(l.input());
+        }
+
+        //Check feedForward:
+        net.feedForward(content, false);
+        for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
+            assertNull(l.input());
+        }
+    }
 }

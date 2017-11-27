@@ -1535,6 +1535,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
+        if(publicApi){
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
+        }
+
         return layerActivations;
     }
 
@@ -1583,6 +1587,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 tmp[x] = tmp[x].detach();
 
             configuration.setTrainingWorkspaceMode(cMode);
+            clearLayersStates();    //Otherwise: invalidated input INDArrays could leak out and cause crash
             return tmp;
         }
     }
@@ -2000,7 +2005,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         workspaceConfigurationExternal, workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-            feedForward(dataSet.getFeatures(), training);
+            setInputs(dataSet.getFeatures());
+            feedForward(training, false, false, false);
             INDArray[] labels = dataSet.getLabels();
             setLabels(labels);
 

@@ -1126,4 +1126,38 @@ public class TestComputationGraphNetwork {
         System.out.println(modelMow.summary());
         System.out.println(modelExpectedArch.summary(InputType.recurrent(V_HEIGHT* V_WIDTH* 3)));
     }
+
+    @Test
+    public void testInputClearance() throws Exception {
+        //Activations should be cleared - if not, it's possible for out of (workspace) scope arrays to be around
+        // which can cause a crash
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Same)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build(), "in")
+                .addLayer("1", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
+                .addLayer("2", new DenseLayer.Builder().nOut(10).build(), "1")
+                .addLayer("3", new OutputLayer.Builder().nOut(10).build(), "2")
+                .setOutputs("3")
+                .setInputTypes(InputType.convolutional(28,28,1))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        INDArray content = Nd4j.create(1,1,28,28);
+
+        //Check output:
+        net.output(content);
+        for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
+            assertNull(l.input());
+        }
+
+        //Check feedForward:
+        net.feedForward(content, false);
+        for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
+            assertNull(l.input());
+        }
+    }
 }
