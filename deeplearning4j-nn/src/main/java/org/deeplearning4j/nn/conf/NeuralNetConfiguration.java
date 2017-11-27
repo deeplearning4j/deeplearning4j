@@ -90,7 +90,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
-    protected int numIterations;
     //number of line search iterations
     protected int maxNumLineSearchIterations;
     protected long seed;

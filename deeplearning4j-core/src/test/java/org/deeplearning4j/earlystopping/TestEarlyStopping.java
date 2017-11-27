@@ -361,7 +361,6 @@ public class TestEarlyStopping {
         MultiLayerNetwork mln = result.getBestModel();
 
         assertEquals(net.getnLayers(), mln.getnLayers());
-        assertEquals(net.conf().getNumIterations(), mln.conf().getNumIterations());
         assertEquals(net.conf().getOptimizationAlgo(), mln.conf().getOptimizationAlgo());
         BaseLayer bl = (BaseLayer) net.conf().getLayer();
         assertEquals(bl.getActivationFn().toString(), ((BaseLayer) mln.conf().getLayer()).getActivationFn().toString());
