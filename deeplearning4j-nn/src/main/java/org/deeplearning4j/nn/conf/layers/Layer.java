@@ -275,6 +275,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see #dropOut(IDropout)
          */
         public T dropOut(double inputRetainProbability) {
+            if(inputRetainProbability == 0.0){
+                return dropOut(null);
+            }
             return dropOut(new Dropout(inputRetainProbability));
         }
 

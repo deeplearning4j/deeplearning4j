@@ -87,6 +87,9 @@ public class FineTuneConfiguration {
         }
 
         public Builder dropOut(double dropout){
+            if(dropout == 0.0){
+                return dropout(null);
+            }
             return dropout(new Dropout(dropout));
         }
 

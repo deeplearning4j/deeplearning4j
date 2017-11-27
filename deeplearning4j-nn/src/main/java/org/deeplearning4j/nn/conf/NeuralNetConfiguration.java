@@ -904,6 +904,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see #dropOut(IDropout)
          */
         public Builder dropOut(double inputRetainProbability) {
+            if(inputRetainProbability == 0.0){
+                return dropOut(null);
+            }
             return dropOut(new Dropout(inputRetainProbability));
         }
 
