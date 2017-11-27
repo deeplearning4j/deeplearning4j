@@ -35,7 +35,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
 
 
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
-                        .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
                         .l2(conf.getL2())
@@ -69,7 +69,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         }
 
         NeuralNetConfiguration.ListBuilder confB2 = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
-                        .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
                         //.regularization(true)

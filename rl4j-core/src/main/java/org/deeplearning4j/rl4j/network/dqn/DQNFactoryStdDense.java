@@ -33,7 +33,7 @@ public class DQNFactoryStdDense implements DQNFactory {
         System.out.println(conf);
 
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
-                        .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         //.updater(Updater.NESTEROVS).momentum(0.9)
                         //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
