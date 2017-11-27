@@ -196,8 +196,9 @@ Next, we'll show you how to implement a [deep-belief network](./deepbeliefnetwor
 
 ### Other Beginner's Guides
 
-* [Recurrent Networks/LSTMs](./lstm.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
 * [Neural Networks](./neuralnet-overview.html)
 * [Eigenvectors, PCA and Entropy](./eigenvector.html)
 * [Neural Networks & Regression](./linear-regression.html)
 * [Convolutional Networks](./convolutionalnets.html)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
