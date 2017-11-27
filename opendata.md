@@ -18,6 +18,10 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [Open Data Monitor](https://opendatamonitor.eu/)
 * [Quandl Data Portal](https://www.quandl.com/)
 
+<p align="center">
+<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
 ## Natural-Image Datasets
 
 * [MNIST: handwritten digits](http://yann.lecun.com/exdb/mnist/): The most commonly used sanity check. Dataset of 25x25, centered, B&W handwritten digits. It is an easy task — just because something works on MNIST, doesn’t mean it works.
