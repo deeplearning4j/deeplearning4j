@@ -93,7 +93,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <environmentVariables>
-                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu${javacpp.extension}/blas/</LD_LIBRARY_PATH>
                     </environmentVariables>
                     <includes>
                         <include>*.java</include>
@@ -162,7 +162,7 @@
                         <includePath>${libnd4jhome}/include/cnpy</includePath>
                         <includePath>${libnd4jhome}/include/indexing</includePath>
                     </includePaths>
-                    <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
+                    <linkPath>${libnd4jhome}/blasbuild/cpu${javacpp.extension}/blas</linkPath>
                 </configuration>
                 <executions>
                     <execution>
@@ -215,7 +215,7 @@
                                 <requireFilesExist>
                                     <files>
                                         <file>${libnd4jhome}/blas/NativeOps.h</file>
-                                        <file>${libnd4jhome}/blasbuild/cpu/blas</file>
+                                        <file>${libnd4jhome}/blasbuild/cpu${javacpp.extension}/blas</file>
                                     </files>
                                     <message>!!! You have to compile libnd4j with cpu support first!</message>
                                 </requireFilesExist>
@@ -229,6 +229,18 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>avx512</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform.extension</name>
+                    <value>avx512</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.extension>-avx512</javacpp.extension>
+            </properties>
+        </profile>
         <profile>
             <id>macosx-gcc6</id>
             <activation>
