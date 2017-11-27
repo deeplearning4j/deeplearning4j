@@ -1,5 +1,5 @@
 //
-// Created by Yurii Shyrma on 23.11.2017.
+// Created by Yurii Shyrma on 25.11.2017.
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -9,15 +9,14 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
+CUSTOM_OP_IMPL(meanSqErr, 3, 1, false, 0, 1) {
 
   	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights     = INPUT_VARIABLE(1);
-    NDArray<T>* labels      = INPUT_VARIABLE(2);
-    NDArray<T>* output      = OUTPUT_VARIABLE(0);
+    NDArray<T>* weights 	= INPUT_VARIABLE(1);
+    NDArray<T>* labels  	= INPUT_VARIABLE(2);
+    NDArray<T>* output  	= OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    T epsilon = T_ARG(0);
     
 	// perform weights broadcasting/tile to labels if needed	
 	NDArray<T>* weightsBroad = weights;	
@@ -27,9 +26,10 @@ CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
 		weightsBroad = new NDArray<T>(weights->tile(reps));
-	}	
-	
-	NDArray<T> weightedLosses = -(*labels)*((*predictions + epsilon).template transform<simdOps::Log<T>>()) - ((T)1. - *labels)*(((T)1. - *predictions + epsilon).template transform<simdOps::Log<T>>());		
+	}
+
+	NDArray<T> weightedLosses(labels->getShapeInfo(), false, block.getWorkspace());
+	predictions->template applyPairwiseTransform<simdOps::SquaredSubtract<T>>(labels, &weightedLosses, nullptr);
 
     // multiply weightedLosses on weights
  	if(weights->isScalar())
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
 			break;
 		}
 		default:
-			throw "CUSTOM_OP loss function logLoss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !";			
+			throw "CUSTOM_OP loss function meanSqErr: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !";			
 	}
 
 
@@ -91,23 +91,23 @@ CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
 }
 
 
-DECLARE_SHAPE_FN(logLoss) {
+DECLARE_SHAPE_FN(meanSqErr) {
 
 	// labels and predictions must have the same shapes 
-	NDArray<T>* predictions  = INPUT_VARIABLE(0);
-    NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2);
+	NDArray<T>* predictions = INPUT_VARIABLE(0);
+    NDArray<T>* weights 	= INPUT_VARIABLE(1);
+    NDArray<T>* labels  	= INPUT_VARIABLE(2);
 
     if(!labels->isSameShape(predictions))
-    	throw "CUSTOM_OP loss function logLoss: labels and predictions arrays have different shapes!";
+    	throw "CUSTOM_OP loss function meanSqErr: labels and predictions arrays have different shapes!";
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
     if(!weights->isScalar() && weights->rankOf() != labels->rankOf())
-    	throw "CUSTOM_OP loss function logLoss: weights array must have the same rank as labels array!";
+    	throw "CUSTOM_OP loss function meanSqErr: weights array must have the same rank as labels array!";
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
     	for (int i = 0; i < weights->rankOf(); ++i)
         	if (weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1)
-            	throw "CUSTOM_OP loss function logLoss: shapes of weights array is not broadcastable to labels shape!";
+            	throw "CUSTOM_OP loss function meanSqErr: shapes of weights array is not broadcastable to labels shape!";
 
     int* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar

@@ -1,5 +1,5 @@
 //
-// Created by Yurii Shyrma on 23.11.2017.
+// Created by Yurii Shyrma on 25.11.2017.
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -9,19 +9,19 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
+CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
 
-  	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights     = INPUT_VARIABLE(1);
-    NDArray<T>* labels      = INPUT_VARIABLE(2);
-    NDArray<T>* output      = OUTPUT_VARIABLE(0);
+  	NDArray<T>* logits  = INPUT_VARIABLE(0);
+    NDArray<T>* weights = INPUT_VARIABLE(1);
+    NDArray<T>* labels  = INPUT_VARIABLE(2);
+    NDArray<T>* output  = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    T epsilon = T_ARG(0);
+    T labelsSmoothing = T_ARG(0);
     
 	// perform weights broadcasting/tile to labels if needed	
 	NDArray<T>* weightsBroad = weights;	
-	if(!weights->isScalar() && !weights->isSameShape(predictions)) {
+	if(!weights->isScalar() && !weights->isSameShape(logits)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<int> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
@@ -29,7 +29,17 @@ CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
 		weightsBroad = new NDArray<T>(weights->tile(reps));
 	}	
 	
-	NDArray<T> weightedLosses = -(*labels)*((*predictions + epsilon).template transform<simdOps::Log<T>>()) - ((T)1. - *labels)*(((T)1. - *predictions + epsilon).template transform<simdOps::Log<T>>());		
+	// If labelsSmoothing is nonzero, smooth the labels towards 1/2:
+	NDArray<T>* newLabels = labels;
+	if(labelsSmoothing != (T)0.) {
+		auto smooth = LAMBDA_T(value, labelsSmoothing) { return value * ((T)1. - labelsSmoothing) + (T)(0.5) * labelsSmoothing; };
+    	newLabels = new NDArray<T>(labels);
+    	newLabels->applyLambda(smooth);  
+	}
+	
+	NDArray<T> weightedLosses(newLabels->getShapeInfo(), block.getWorkspace());
+	auto sigmCrossEntropyWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };	
+	logits->applyPairwiseLambda(newLabels, sigmCrossEntropyWithLogits, &weightedLosses);
 
     // multiply weightedLosses on weights
  	if(weights->isScalar())
@@ -78,7 +88,7 @@ CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
 			break;
 		}
 		default:
-			throw "CUSTOM_OP loss function logLoss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !";			
+			throw "CUSTOM_OP loss function sigmCrossEntropy: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !";			
 	}
 
 
@@ -86,28 +96,30 @@ CUSTOM_OP_IMPL(logLoss, 3, 1, false, 1, 1) {
 
     if(weightsBroad != weights)
     	delete weightsBroad;
+    if(newLabels != labels)
+    	delete newLabels;
 	
     return ND4J_STATUS_OK;
 }
 
 
-DECLARE_SHAPE_FN(logLoss) {
+DECLARE_SHAPE_FN(sigmCrossEntropy) {
 
-	// labels and predictions must have the same shapes 
-	NDArray<T>* predictions  = INPUT_VARIABLE(0);
+	// labels and logits must have the same shapes 
+	NDArray<T>* logits  = INPUT_VARIABLE(0);
     NDArray<T>* weights = INPUT_VARIABLE(1);
     NDArray<T>* labels  = INPUT_VARIABLE(2);
 
-    if(!labels->isSameShape(predictions))
-    	throw "CUSTOM_OP loss function logLoss: labels and predictions arrays have different shapes!";
+    if(!labels->isSameShape(logits))
+    	throw "CUSTOM_OP loss function sigmCrossEntropy: labels and logits arrays have different shapes!";
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
     if(!weights->isScalar() && weights->rankOf() != labels->rankOf())
-    	throw "CUSTOM_OP loss function logLoss: weights array must have the same rank as labels array!";
+    	throw "CUSTOM_OP loss function sigmCrossEntropy: weights array must have the same rank as labels array!";
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
     	for (int i = 0; i < weights->rankOf(); ++i)
         	if (weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1)
-            	throw "CUSTOM_OP loss function logLoss: shapes of weights array is not broadcastable to labels shape!";
+            	throw "CUSTOM_OP loss function sigmCrossEntropy: shapes of weights array is not broadcastable to labels shape!";
 
     int* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar

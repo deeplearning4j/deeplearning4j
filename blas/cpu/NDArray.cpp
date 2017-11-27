@@ -1741,108 +1741,96 @@ void NDArray<T>::applyBroadcast(std::vector<int>& dimensions, const NDArray<T>* 
     functions::broadcast::Broadcast<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+template <typename OpName>
+void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape, T *extraArgs) const {
+
+    if(target == nullptr || other == nullptr)
+        throw "NDArray::applyTrueBroadcast method: target or other = nullptr !";
+
+    const NDArray<T>* min(nullptr), *max(nullptr);
+    if(this->rankOf() >= other->rankOf()) {
+        max = this;
+        min = other;
+    }
+    else {
+        max = other;
+        min = this;
+    }
+
+    if(checkTargetShape) {
+        int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min, false);          // the rank of target array must be equal to max->rankOf)()
+        if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
+            throw "NDArray::applyTrueBroadcast method: the shape of target array is wrong !";    
+        delete[] newShapeInfo;
+    }
+
+    // check whether min array have to be tiled
+    if(!max->isSameShape(target)) {
+        // evaluate repeating dimensions for tile operation
+        std::vector<int> repeatMax(max->rankOf());
+        for(int i = 1; i <= max->rankOf(); ++i)
+            repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
+        max->tile(repeatMax, *target);
+    }
+    else
+        target->assign(max);
+
+    // check whether min array have to be tiled
+    std::vector<int> repeatMin(min->rankOf());
+    int product = 1;
+    for(int i = min->rankOf(); i >=1 ; --i) {
+        repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
+        product *= repeatMin[i-1];
+    }
+
+    if(product != 1 ) {
+        NDArray<T> tiledMin = min->tile(repeatMin);
+        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, &tiledMin);
+        target->template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
+    }
+    else {
+        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, min);
+        target->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+template <typename OpName>
+NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs) const {
+
+
+    int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(this, other, true);          // the rank of new array = max->rankOf)()
+    NDArray<T>* result = new NDArray<T>(newShapeInfo, _workspace);
+    delete[] newShapeInfo;
+
+    this->template applyTrueBroadcast<OpName>(other, result, false, extraArgs);
+  
+    return result;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 template <typename OpName>
 NDArray<T> NDArray<T>::applyTrueBroadcast(const NDArray<T>& other, T *extraArgs) const {
 
-    const NDArray<T>* min(nullptr), *max(nullptr);
-    if(this->rankOf() >= other.rankOf()) {
-        max = this;
-        min = &other;
-    }
-    else {
-        max = &other;
-        min = this;
-    }
+    NDArray<T>* pResult = this->template applyTrueBroadcast<OpName>(&other, extraArgs);
+    pResult->_isShapeAlloc = false;
+    pResult->_isBuffAlloc  = false;
 
-    int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min);          // the rank of new array = max->rankOf)()
-    NDArray<T> result(newShapeInfo, _workspace);
-    delete[] newShapeInfo;
+    NDArray<T> result(pResult->_buffer, pResult->_shapeInfo, _workspace);
+    result._isShapeAlloc = true;
+    result._isBuffAlloc  = true;
     
-    // check whether min array have to be tiled        
-    if(!max->isSameShape(&result)) {            
-        // evaluate repeating dimensions for tile operation
-        std::vector<int> repeatMax(max->rankOf());
-        for(int i = 1; i <= max->rankOf(); ++i)
-            repeatMax[i-1] = (result._shapeInfo[i] / max->_shapeInfo[i]);
-        max->tile(repeatMax, result);
-    }
-    else 
-        result.assign(max);
-
-    // check whether min array have to be tiled
-    std::vector<int> repeatMin(min->rankOf());
-    int product = 1;
-    for(int i = min->rankOf(); i >=1 ; --i) {        
-        repeatMin[i-1] = (result._shapeInfo[result.rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
-        product *= repeatMin[i-1];        
-    }
-    
-    if(product != 1 ) {                    
-        NDArray<T> tiledMin = min->tile(repeatMin);        
-        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(&result, &tiledMin);
-        result.template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
-    }
-    else {                    
-        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(&result, min);
-        result.template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
-    }
+    delete pResult;
 
     return result;
 }
 
-
-    //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    template <typename OpName>
-    NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs) const {
-
-        const NDArray<T>* min(nullptr), *max(nullptr);
-        if(this->rankOf() >= other->rankOf()) {
-            max = this;
-            min = other;
-        }
-        else {
-            max = other;
-            min = this;
-        }
-
-        int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min);          // the rank of new array = max->rankOf)()
-        auto result = new NDArray<T>(newShapeInfo, _workspace);
-        delete[] newShapeInfo;
-
-        // check whether min array have to be tiled
-        if(!max->isSameShape(result)) {
-            // evaluate repeating dimensions for tile operation
-            std::vector<int> repeatMax(max->rankOf());
-            for(int i = 1; i <= max->rankOf(); ++i)
-                repeatMax[i-1] = (result->_shapeInfo[i] / max->_shapeInfo[i]);
-            max->tile(repeatMax, *result);
-        }
-        else
-            result->assign(max);
-
-        // check whether min array have to be tiled
-        std::vector<int> repeatMin(min->rankOf());
-        int product = 1;
-        for(int i = min->rankOf(); i >=1 ; --i) {
-            repeatMin[i-1] = (result->_shapeInfo[result->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
-            product *= repeatMin[i-1];
-        }
-
-        if(product != 1 ) {
-            NDArray<T> tiledMin = min->tile(repeatMin);
-            std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(result, &tiledMin);
-            result->template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
-        }
-        else {
-            std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(result, min);
-            result->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
-        }
-
-        return result;
-    }
 
 //////////////////////////////////////////////////////////////////////////
 // return array which is broadcasted from this and argument array  

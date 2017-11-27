@@ -292,21 +292,41 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
 }
 
 //////////////////////////////////////////////////////////////////////////
+// check whether shape of min array is broadcastable to shape of max array
+// shape comparison starts from the end
+template <typename T>
+bool ShapeUtils<T>::isShapeBroadcastable(const int* maxShapeInfo, const int* minShapeInfo)
+{
+
+    for (int i = 0; i < minShapeInfo[0]; ++i)
+        if (maxShapeInfo[maxShapeInfo[0] - i] != minShapeInfo[minShapeInfo[0] - i] && maxShapeInfo[maxShapeInfo[0] - i] != 1 && minShapeInfo[minShapeInfo[0] - i] != 1)
+            return false;
+    
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
 // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
 // the array with larger dimensions number has to be passed as first argument
 template <typename T>
-int* ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<T> &min)
+int* ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<T> &min, const bool evalMinMax)
 {
-
+    
     int* maxShapeInfo = max.getShapeInfo(); 
     int* minShapeInfo = min.getShapeInfo();
-    int  maxRank      = maxShapeInfo[0];
-    int  minRank      = minShapeInfo[0];
+
+    if(evalMinMax && (max.rankOf() < min.rankOf())) {
+        maxShapeInfo = min.getShapeInfo(); 
+        minShapeInfo = max.getShapeInfo();
+    }
+       
+    const int  maxRank      = maxShapeInfo[0];
+    const int  minRank      = minShapeInfo[0];
 
     // check whether broadcast operation is possible for input arrays
-    for (int i = 0; i < minRank; ++i)
-        if (maxShapeInfo[maxRank - i] != minShapeInfo[minRank - i] && maxShapeInfo[maxRank - i] != 1 && minShapeInfo[minRank - i] != 1)
-            throw "ShapeUtils::evalBroadcastShapeInfo method: the shapes of input arrays are not compatible for broadcast operation !" ;
+    if(!isShapeBroadcastable(maxShapeInfo, minShapeInfo))
+        throw "ShapeUtils::evalBroadcastShapeInfo method: the shapes of input arrays are not compatible for broadcast operation !" ;
     
     // evaluate shapeInfo for resulting array
     int *shapeInfoNew = nullptr;
@@ -319,7 +339,6 @@ int* ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 
     return shapeInfoNew;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // return sorted vector of dimensions of array with larger dimensions number along which two input arrays have same shape

@@ -33,10 +33,17 @@ BUILD_CALL_1(template void nd4j::NDArray<float16>::applyBroadcast, float16, (std
 BUILD_CALL_1(template void nd4j::NDArray<float>::applyBroadcast, float, (std::initializer_list<int> list, const nd4j::NDArray<float>* a, nd4j::NDArray<float>* b, float* c), BROADCAST_OPS)
 BUILD_CALL_1(template void nd4j::NDArray<double>::applyBroadcast, double, (std::initializer_list<int> list, const nd4j::NDArray<double>* a, nd4j::NDArray<double>* b, double* c), BROADCAST_OPS)
 
+BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTrueBroadcast, float16,(const nd4j::NDArray<float16>* a, nd4j::NDArray<float16>* target, const bool checkTargetShape, float16* c) const, BROADCAST_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float>::applyTrueBroadcast,   float,  (const nd4j::NDArray<float>*   a, nd4j::NDArray<float>*   target, const bool checkTargetShape, float* c)   const, BROADCAST_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::applyTrueBroadcast,  double, (const nd4j::NDArray<double>*  a, nd4j::NDArray<double>*  target, const bool checkTargetShape, double* c)  const, BROADCAST_OPS)
+
 BUILD_CALL_1(template nd4j::NDArray<float16>* nd4j::NDArray<float16>::applyTrueBroadcast, float16, (const nd4j::NDArray<float16>* a, float16* c) const, BROADCAST_OPS)
 BUILD_CALL_1(template nd4j::NDArray<float>* nd4j::NDArray<float>::applyTrueBroadcast, float, (const nd4j::NDArray<float>* a, float* c) const, BROADCAST_OPS)
 BUILD_CALL_1(template nd4j::NDArray<double>* nd4j::NDArray<double>::applyTrueBroadcast, double, (const nd4j::NDArray<double>* a, double* c) const, BROADCAST_OPS)
 
+BUILD_CALL_1(template nd4j::NDArray<float16> nd4j::NDArray<float16>::applyTrueBroadcast, float16, (const nd4j::NDArray<float16>& a, float16* c) const, BROADCAST_OPS)
+BUILD_CALL_1(template nd4j::NDArray<float> nd4j::NDArray<float>::applyTrueBroadcast, float, (const nd4j::NDArray<float>& a, float* c) const, BROADCAST_OPS)
+BUILD_CALL_1(template nd4j::NDArray<double> nd4j::NDArray<double>::applyTrueBroadcast, double, (const nd4j::NDArray<double>& a, double* c) const, BROADCAST_OPS)
 
 BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* target, float16* extraParams), TRANSFORM_OPS)
 BUILD_CALL_1(template void nd4j::NDArray<float>::applyTransform, float, (NDArray<float>* target, float* extraParams), TRANSFORM_OPS)

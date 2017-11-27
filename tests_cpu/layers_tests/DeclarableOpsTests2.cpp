@@ -2271,3 +2271,1388 @@ TEST_F(DeclarableOpsTests2, logLoss_test13) {
 
     delete results;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test1) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 71.5, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test2) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 17.875, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test3) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,1,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 23.833324, 1e-5);    
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test4) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 5.958331, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test5) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 5.958331, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test6) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 17.874992, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test7) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,1,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 23.833324, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test8) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 71.5, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test9) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+    weights(3) = 0.;
+ 
+    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 8.125, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test1) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+    NDArray<double> expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test2) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,1,4}); 
+    NDArray<double> expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test3) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,1,1}); 
+    NDArray<double> expected('c', {2,3,4}, {0.125, 0.5, 1.125, 2., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test4) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+    NDArray<double> expected('c', {2,3,4}, {0., 0., 0., 0., 3.125, 4.5, 6.125, 8.,10.125,12.5,15.125,18.,21.125,24.5,28.125,32.,36.125,40.5,45.125,50.,55.125,60.5,66.125,72.});
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+    weights(3) = 0.;
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test5) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 612.5, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test6) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,1,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 612.5, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test7) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 612.5, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test8) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);    
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+    weights(3) = 0.;
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 608.75, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test9) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 51.041668, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test10) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 51.041668, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test11) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 51.041668, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test12) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;    
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 88.541664, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test13) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 25.520834, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test14) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,1,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 25.520834, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test15) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 25.520834, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, meanSqErr_test16) {
+    
+    NDArray<double> labels('c', {2,3,4});
+    NDArray<double> predictions('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.5, predictions, 0.5);
+    NDArrayFactory<double>::linspace(1, labels);
+    weights.assign(0.5);        
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+
+    nd4j::ops::meanSqErr<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 44.270832, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test1) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+    NDArray<double> expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test2) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,1,1}); 
+    NDArray<double> expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test3) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+    NDArray<double> expected('c', {2,3,4}, {0.37219834,0.29906943,0.27717763,0.45650762,0.23703849,0.51874399,0.20159303,0.58555031,0.17057693,0.65663081,0.14366767,0.73164123,0.12050423,0.81020868,0.10070664,0.89195037,0.08389302,0.97648883,1.01969337,0.06346401,0.05775976,1.15254164,0.04777273,1.2434181 });
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test4) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+    NDArray<double> expected('c', {2,3,4}, {0.24719833, 0.54906946, 0.65217763,-0.04349237,0.86203849,-0.23125602, 1.07659304,-0.41444966,1.29557693,-0.59336919, 1.5186677 ,-0.76835877,1.74550426,-0.93979132, 1.9757067 ,-1.10804963,2.20889306,-1.27351117,-1.35530663, 2.56346393,2.68275976,-1.59745836, 2.92277265,-1.7565819 });
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test5) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 11.2187976837, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test6) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 11.2187976837, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test7) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 11.2187976837, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test8) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 10.2187976837, 1e-5);    
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test9) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 6.06840181351, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test10) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.934899806976, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test11) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.934899806976, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test12) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.851566493511, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test13) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 1.01140034199, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test14) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,4}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.467449903488, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test15) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.467449903488, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test16) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.425783246756, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test17) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+    weights(0) = 0.;
+    weights(1) = 0.;
+    weights(2) = 0.;
+
+    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR((*result)(0), 0.505700170994, 1e-5);    
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test1) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3}); 
+    NDArray<double> expected('c', {2,3}, {1.39253557,1.44253552,1.44253552,1.44253552,1.39253557,1.44253552});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);                
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test2) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3}); 
+    NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test3) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,1}); 
+    NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test4) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,3}); 
+    NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test5) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+    NDArray<double> expected('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test6) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), 8.55521392822, 1e-5);   
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test7) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {2,3}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), -6.37014198303, 1e-5);   
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test8) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), -6.37014198303, 1e-5);   
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test9) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,3}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), -6.37014198303, 1e-5);   
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test10) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,3}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), -2.12338066101, 1e-5);   
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test11) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> weights('c', {1,3}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), -1.06169033051, 1e-5);   
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test12) {
+    
+    NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
+    NDArray<double> logits('c', {2,4});
+    NDArray<double> weights('c', {2,1}); 
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);        
+
+    ASSERT_TRUE(result->isScalar());
+    ASSERT_NEAR((*result)(0), -2.18880319595, 1e-5);   
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test13) {
+    
+    NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
+    NDArray<double> logits('c', {2,4});
+    NDArray<double> weights('c', {2,1}); 
+    NDArray<double> expected('c', {2,1}, {1.39253557,1.44253552});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+    
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test14) {
+    
+    NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
+    NDArray<double> logits('c', {2,4});
+    NDArray<double> weights('c', {2,1}); 
+    NDArray<double> expected('c', {2,1}, {-2.08880329, -2.28880334});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test15) {
+    
+    NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
+    NDArray<double> logits('c', {2,4});
+    NDArray<double> weights('c', {1,1}); 
+    NDArray<double> expected('c', {2,1}, {-2.08880329, -2.28880334});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+    weights.assign(0.5);    
+
+    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *result = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+    

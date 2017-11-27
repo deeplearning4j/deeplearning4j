@@ -141,6 +141,10 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(hingeLoss, 3, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(huberLoss, 3, 1, false, 1, 1);
         DECLARE_CUSTOM_OP(logLoss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(meanPairWsSqErr, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(meanSqErr, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(sigmCrossEntropy, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(softmaxCrossEntropy, 3, 1, false, 1, 1);        
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);
