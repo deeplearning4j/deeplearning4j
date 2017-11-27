@@ -262,7 +262,7 @@ public class ModelSerializer {
                     throws IOException {
         File tmpFile = null;
         try{
-            File.createTempFile("restore", "multiLayer");
+            tmpFile = File.createTempFile("restore", "multiLayer");
             tmpFile.deleteOnExit();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
             IOUtils.copy(is, bos);
