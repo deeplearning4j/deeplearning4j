@@ -1390,12 +1390,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train) {
-        if (numInputArrays != input.length)
-            throw new UnsupportedOperationException("Cannot feedForward with " + input.length
-                    + " inputs for graph network with " + numInputArrays + " expected inputs");
-        for (int i = 0; i < input.length; i++)
-            setInput(i, input[i]);
-        return feedForward(train);
+        return feedForward(input, train, true);
+    }
+
+    /**
+     * Conduct forward pass using an array of inputs. This overload allows the forward pass to be conducted, optionally
+     * (not) clearing the layer input arrays.<br>
+     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
+     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
+     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
+     * for more details
+     *
+     * @param input An array of ComputationGraph inputs
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @param clearInputs If true (default for other methods): clear the inputs of all layers after doing forward
+     *                    pass. False don't clear layer inputs.
+     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     */
+    public Map<String, INDArray> feedForward(INDArray[] input, boolean train, boolean clearInputs){
+        setInputs(input);
+        return feedForward(train, false, false, clearInputs);
     }
 
     /**

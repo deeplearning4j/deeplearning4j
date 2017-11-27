@@ -630,7 +630,7 @@ public class TestComputationGraphNetwork {
 
         INDArray olEpsilon = olPairStd.getSecond();
 
-        e.feedForward(inData, true);
+        e.feedForward(new INDArray[]{inData}, true, false);
         Gradient extErrorGrad = e.backpropGradient(olEpsilon);
 
         int nParamsDense = 10 * 10 + 10;

@@ -867,6 +867,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return feedForwardToLayer(layers.length - 1, train);
     }
 
+    /**
+     * Perform feed-forward, optionally (not) clearing the layer input arrays.<br>
+     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
+     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
+     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
+     * for more details
+     *
+     * @param train       training mode
+     * @param clearInputs If false: don't clear the layer inputs
+     * @return Activations from feed-forward
+     */
+    public List<INDArray> feedForward(boolean train, boolean clearInputs){
+        return feedForwardToLayer(layers.length-1, train, clearInputs);
+    }
+
     /** Compute the activations from the input to the specified layer.<br>
      * To compute activations for all layers, use feedForward(...) methods<br>
      * Note: output list includes the original input. So list.get(0) is always the original input, and

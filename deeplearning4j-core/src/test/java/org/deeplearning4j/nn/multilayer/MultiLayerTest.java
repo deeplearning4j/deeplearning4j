@@ -370,7 +370,8 @@ public class MultiLayerTest {
         INDArray eps = Nd4j.rand(miniBatch, nOut);
         INDArray input = Nd4j.rand(miniBatch, nIn);
 
-        net.feedForward(input); //Need to feed forward before backprop
+        net.setInput(input);
+        net.feedForward(true, false); //Need to feed forward before backprop
 
         Pair<Gradient, INDArray> pair = net.backpropGradient(eps);
         INDArray epsOut = pair.getSecond();
