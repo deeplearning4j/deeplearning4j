@@ -8,10 +8,11 @@
 #include <map>
 #include <pointercast.h>
 #include <graph/NodeState.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {
-        class FlowPath {
+        class ND4J_EXPORT FlowPath {
         private:
             std::map<int, NodeState> _states;
 
