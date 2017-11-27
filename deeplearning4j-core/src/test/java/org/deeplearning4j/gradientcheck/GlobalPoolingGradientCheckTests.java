@@ -217,7 +217,7 @@ public class GlobalPoolingGradientCheckTests {
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, featuresMask, null);
 
             assertTrue(gradOK);
         }
@@ -289,8 +289,6 @@ public class GlobalPoolingGradientCheckTests {
                         labels.putScalar(i, idx, 1.0);
                     }
 
-                    mln.setLayerMaskArrays(inputMask, null);
-
                     if (PRINT_RESULTS) {
                         System.out.println("testCnnGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = "
                                         + miniBatchSize);
@@ -299,7 +297,7 @@ public class GlobalPoolingGradientCheckTests {
                     }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, inputMask, null);
 
                     assertTrue(gradOK);
                 }
