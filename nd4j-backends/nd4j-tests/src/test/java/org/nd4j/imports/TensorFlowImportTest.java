@@ -14,6 +14,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
 
@@ -343,11 +344,30 @@ public class TensorFlowImportTest {
         val graph = FlatGraph.getRootAsFlatGraph(fb);
         assertEquals(5, graph.variablesLength());
 
-        assertEquals("StridedSlice", graph.nodes(0).name());
-        assertEquals("Sum", graph.nodes(1).name());
+        val nodeSlice = graph.nodes(0);
+        val nodeSum = graph.nodes(1);
 
-        assertEquals(4, graph.nodes(0).inputPairedLength());
-        assertEquals(2, graph.nodes(1).inputPairedLength());
+        assertEquals("StridedSlice", nodeSlice.name());
+        assertEquals("Sum", nodeSum.name());
+
+        assertEquals(4, nodeSlice.inputPairedLength());
+        assertEquals(2, nodeSum.inputPairedLength());
+
+        // we expect these inputs to be 5:0 and 6:0 respectively
+        // where 5 (or 6) is a graph node id
+        // and :0 is graph node output index, which is 0 because that's predefined variables
+        // P.s. nodeSlice.id() should be equal to 5 :)
+        val in0 = nodeSum.inputPaired(0);
+        val in1 = nodeSum.inputPaired(1);
+
+        assertEquals(5, nodeSlice.id());
+        assertEquals(7, nodeSum.id());
+
+        assertEquals(nodeSlice.id(), in0.first());
+        assertEquals(0, in0.first());
+
+        assertEquals(6, in1.first());
+        assertEquals(0, in1.first());
     }
 
     @Test
@@ -386,10 +406,33 @@ public class TensorFlowImportTest {
         val graph = FlatGraph.getRootAsFlatGraph(fb);
         assertEquals(12, graph.variablesLength());
 
-        assertEquals("strided_slice", graph.nodes(0).name());
+        val strided_slice = graph.nodes(0);
+
+        assertEquals("strided_slice", strided_slice.name());
         assertEquals("TensorArray", graph.nodes(1).name());
 
-        assertEquals(4, graph.nodes(0).inputPairedLength());
+        assertEquals(4, strided_slice.inputPairedLength());
+
+
+        // we expect these inputs to be 1:0, 2:0, 3:0 and 4:0 respectively
+        // where 1 (or 2/3/4) is a graph node id
+        // and :0 is graph node output index, which is 0 because that's predefined variables
+        val in0 = strided_slice.inputPaired(0);
+        val in1 = strided_slice.inputPaired(1);
+        val in2 = strided_slice.inputPaired(2);
+        val in3 = strided_slice.inputPaired(3);
+
+        assertEquals(2, in0.first());
+        assertEquals(0, in0.second());
+
+        assertEquals(3, in1.first());
+        assertEquals(0, in1.second());
+
+        assertEquals(4, in2.first());
+        assertEquals(0, in2.second());
+
+        assertEquals(5, in3.first());
+        assertEquals(0, in3.second());
     }
 
 
@@ -418,6 +461,20 @@ public class TensorFlowImportTest {
 
         val nodeSum = graph.nodes(0);
         assertEquals(2, nodeSum.inputPairedLength());
+
+
+        // we expect these inputs to be 1:0 and 2:0 respectively
+        // where 1 (or 2) is a graph node id
+        // and :0 is graph node output index, which is 0 because that's predefined variables
+        val in0 = nodeSum.inputPaired(0);
+        val in1 = nodeSum.inputPaired(1);
+
+        assertEquals(1, in0.first());
+        assertEquals(0, in0.second());
+
+        assertEquals(2, in1.first());
+        assertEquals(0, in1.second());
+
 
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
 
