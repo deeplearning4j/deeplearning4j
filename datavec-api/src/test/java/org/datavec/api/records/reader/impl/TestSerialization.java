@@ -17,10 +17,6 @@
 package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
-import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
-import org.datavec.api.records.reader.impl.collection.ListStringRecordReader;
 import org.datavec.api.records.reader.impl.csv.*;
 import org.datavec.api.records.reader.impl.jackson.FieldSelection;
 import org.datavec.api.records.reader.impl.jackson.JacksonRecordReader;
@@ -30,27 +26,20 @@ import org.datavec.api.records.reader.impl.regex.RegexLineRecordReader;
 import org.datavec.api.records.reader.impl.regex.RegexSequenceRecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessRecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessSequenceRecordReader;
-import org.datavec.api.split.FileSplit;
-import org.datavec.api.split.ListStringSplit;
 import org.datavec.api.transform.MathFunction;
-import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.util.ClassPathResource;
-import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.junit.Test;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Record readers need to be serializable for spark.
