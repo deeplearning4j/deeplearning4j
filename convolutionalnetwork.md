@@ -1,6 +1,7 @@
 ---
-title: Convolutional Networks in Java
+title: Convolutional Networks in Java & Scala
 layout: default
+redirect_from: convolutionalnets
 ---
 
 # Convolutional Networks
