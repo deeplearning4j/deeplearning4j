@@ -59,7 +59,7 @@ public class TestListenerSetting {
         ComputationGraphConfiguration gConf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                         .addLayer("0", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "0")
-                        .setOutputs("2").build();
+                        .setOutputs("1").build();
         ComputationGraph cg = new ComputationGraph(gConf);
         cg.init();
 

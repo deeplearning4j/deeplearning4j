@@ -340,7 +340,7 @@ public class ModelSerializer {
                     throws IOException {
         File tmpFile = null;
         try{
-            File.createTempFile("restore", "compGraph");
+            tmpFile = File.createTempFile("restore", "compGraph");
             tmpFile.deleteOnExit();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
             IOUtils.copy(is, bos);

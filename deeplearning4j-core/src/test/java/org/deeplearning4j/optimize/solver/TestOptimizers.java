@@ -290,7 +290,9 @@ public class TestOptimizers {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
-                opt.optimize();
+                for( int j=0; j<100; j++ ) {
+                    opt.optimize();
+                }
                 m.computeGradientAndScore();
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
