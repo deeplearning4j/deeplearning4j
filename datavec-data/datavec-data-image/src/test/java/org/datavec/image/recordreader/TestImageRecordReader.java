@@ -180,12 +180,17 @@ public class TestImageRecordReader {
         ImageRecordReader rr = new ImageRecordReader(28, 28, 3, regressionLabelGen);
 
         File rootDir = new ClassPathResource("/testimages/").getFile();
-        rr.initialize(new FileSplit(rootDir));
+        FileSplit fs = new FileSplit(rootDir);
+        rr.initialize(fs);
+        URI[] arr = fs.locations();
 
         assertTrue(rr.getLabels() == null || rr.getLabels().isEmpty());
 
-        List<Writable> expLabels = Arrays.<Writable>asList(new DoubleWritable(0.0), new DoubleWritable(1.0),
-                new DoubleWritable(2.0), new DoubleWritable(10), new DoubleWritable(11), new DoubleWritable(12));
+        List<Writable> expLabels = new ArrayList<>();
+        for(URI u : arr){
+            String path = u.getPath();
+            expLabels.add(testLabel(path.substring(path.length()-5, path.length())));
+        }
 
         int count = 0;
         while(rr.hasNext()){
@@ -206,8 +211,10 @@ public class TestImageRecordReader {
         assertEquals(2, b1.size());
         assertEquals(2, b2.size());
 
-        NDArrayWritable l1 = new NDArrayWritable(Nd4j.create(new double[]{0,1,2}, new int[]{3,1}));
-        NDArrayWritable l2 = new NDArrayWritable(Nd4j.create(new double[]{10,11,12}, new int[]{3,1}));
+        NDArrayWritable l1 = new NDArrayWritable(Nd4j.create(new double[]{expLabels.get(0).toDouble(),
+                expLabels.get(1).toDouble(), expLabels.get(2).toDouble()}, new int[]{3,1}));
+        NDArrayWritable l2 = new NDArrayWritable(Nd4j.create(new double[]{expLabels.get(3).toDouble(),
+                expLabels.get(4).toDouble(), expLabels.get(5).toDouble()}, new int[]{3,1}));
 
         assertEquals(l1, b1.get(1));
         assertEquals(l2, b2.get(1));
@@ -218,22 +225,7 @@ public class TestImageRecordReader {
         @Override
         public Writable getLabelForPath(String path) {
             String filename = path.substring(path.length()-5, path.length());
-            switch(filename){
-                case "0.jpg":
-                    return new DoubleWritable(0.0);
-                case "1.png":
-                    return new DoubleWritable(1.0);
-                case "2.jpg":
-                    return new DoubleWritable(2.0);
-                case "A.jpg":
-                    return new DoubleWritable(10);
-                case "B.png":
-                    return new DoubleWritable(11);
-                case "C.jpg":
-                    return new DoubleWritable(12);
-                default:
-                    throw new RuntimeException(path);
-            }
+            return testLabel(filename);
         }
 
         @Override
@@ -244,6 +236,25 @@ public class TestImageRecordReader {
         @Override
         public boolean inferLabelClasses() {
             return false;
+        }
+    }
+
+    private static Writable testLabel(String filename){
+        switch(filename){
+            case "0.jpg":
+                return new DoubleWritable(0.0);
+            case "1.png":
+                return new DoubleWritable(1.0);
+            case "2.jpg":
+                return new DoubleWritable(2.0);
+            case "A.jpg":
+                return new DoubleWritable(10);
+            case "B.png":
+                return new DoubleWritable(11);
+            case "C.jpg":
+                return new DoubleWritable(12);
+            default:
+                throw new RuntimeException(filename);
         }
     }
 }
