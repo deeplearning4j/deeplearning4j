@@ -317,7 +317,7 @@ For people just getting started with deep learning, the following tutorials and 
 * [Convolutional Networks](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
-* [Word2vec and Natural-Language Processing](./lstm.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 
