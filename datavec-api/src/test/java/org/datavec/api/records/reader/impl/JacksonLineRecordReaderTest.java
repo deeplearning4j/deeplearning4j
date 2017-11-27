@@ -42,7 +42,8 @@ public class JacksonLineRecordReaderTest {
     private static void testJacksonRecordReader(RecordReader rr) {
     	while (rr.hasNext()) {
         	List<Writable> json0 = rr.next();
-        	System.out.println(json0);
+        	//System.out.println(json0);
+        	assert(json0.size() > 0);
     	}
     }
 }
