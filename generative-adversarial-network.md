@@ -6,36 +6,38 @@ redirect_from: gan
 
 # A Beginner's Guide to Generative Adversarial Networks (GANs)
 
-Generative adversarial networks (GANs) are architectures comprised of two neural networks, which pit one net against the other. Thus the "adversarial." Yann LeCun [called adversarial training](https://www.quora.com/What-are-some-recent-and-potentially-upcoming-breakthroughs-in-deep-learning) "the most interesting idea in the last 10 years in ML."
+Generative adversarial networks (GANs) are deep neural net architectures comprised of two nets, pitting one against the other (thus the "adversarial"). 
+
+Referring to GANs, Facebook's AI research director Yann LeCun [called adversarial training](https://www.quora.com/What-are-some-recent-and-potentially-upcoming-breakthroughs-in-deep-learning) "the most interesting idea in the last 10 years in ML."
 
 [GANs were introduced in a paper](https://arxiv.org/abs/1406.2661) by Ian Goodfellow and other researchers at the University of Montreal, including Yoshua Bengio, in 2014. 
 
-The potential is obviously huge, because GANs can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. They are true [robot artists](counterfeitor), and their [output is impressive](https://www.nytimes.com/2017/08/14/arts/design/google-how-ai-creates-new-music-and-new-artists-project-magenta.html) -- poignant even. 
+GANs' potential is huge, because they can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. They are robot artists in a sense, and their [output is impressive](https://www.nytimes.com/2017/08/14/arts/design/google-how-ai-creates-new-music-and-new-artists-project-magenta.html) -- poignant even. 
 
 ## How GANs Work
 
-One neural network, called the generator, generates data instances while the other, the discriminator, evaluates them for authenticity; i.e. the discriminator decides whether they belong to the actual training dataset, or not. 
+One neural network, called the *generator*, generates new data instances, while the other, the *discriminator*, evaluates them for authenticity; i.e. the discriminator decides whether each instance of data it reviews belongs to the actual training dataset or not. 
 
-Let's say we're trying to do something more banal than mimic the Mona Lisa. We are going to generate hand-written numerals like those found in MNIST. We can start with the MNIST dataset, taken from the real world. The goal of the discriminator, when shown an instance from this dataset, is to recognize it as authentic.
+Let's say we're trying to do something more banal than mimic the Mona Lisa. We're going to generate hand-written numerals like those found in MNIST. We can start with the MNIST dataset, taken from the real world. The goal of the discriminator, when shown an instance from this dataset, is to recognize it as authentic.
 
-Meanwhile, the generator creates images that it passes to the discriminator in the hopes that they, too, will be deemed authentic. The goal of the generator is to generate passable hand-written digits. The goal of the discriminator, in this case, is to identify all those images as fake. 
+Meanwhile, the generator is creating new images that it passes to the discriminator in the hopes that they, too, will be deemed authentic. The goal of the generator is to generate passable hand-written digits, to lie without being caught. The goal of the discriminator is to identify images coming from the generator as fake. 
 
 Here are the steps a GAN takes:
 
 * The generator takes in random numbers and returns an image. 
-* This image is fed into the discriminator alongside images taken from the true dataset. 
-* The discriminator takes in images and returns probabilities, a number between 0 and 1, with 1 representing authenticity and 0 representing fake. 
+* This generated image is fed into the discriminator alongside a stream of images taken from the actual dataset. 
+* The discriminator takes in both real and fake images and returns probabilities, a number between 0 and 1, with 1 representing a prediction of authenticity and 0 representing fake. 
 
 So you have a double feedback loop:
 
 * The discriminator is in a feedback loop with the ground truth of the images, which we know. 
 * The generator is in a feedback loop with the discriminator.
 
-You can think of a GAN as the combination of a counterfeiter and a cop, a game of cat and mouse, where the first is learning to pass false notes, and the second is learning to detect them. Both are dynamic; i.e. the cop is in training (maybe the central bank is flagging bills that slipped through), too, and each side comes to learn the other's methods in a constant escalation. 
+You can think of a GAN as the combination of a counterfeiter and a cop in a game of cat and mouse, where the counterfeiter is learning to pass false notes, and the cop is learning to detect them. Both are dynamic; i.e. the cop is in training, too (maybe the central bank is flagging bills that slipped through), and each side comes to learn the other's methods in a constant escalation. 
 
-The discriminator network is a standard convolutional network that can categorize the images fed to it, a binomial classifier. The generator is an inverse convolutional network, in a sense. The discriminator takes an image and downsamples it to a probability. The generator takes a vector of noise and upsamples it to an image. 
+The discriminator network is a standard convolutional network that can categorize the images fed to it, a binomial classifier labeling images as real or fake. The generator is an inverse convolutional network, in a sense: While a standard convolutional classifier takes an image and downsamples it to produce a probability, the generator takes a vector of random noise and upsamples it to an image. The first throws away data through downsampling techniques like maxpooling, and the second generates new data. 
 
-Both nets are trying to optimize a different and opposing objective, or loss, function in a zero-zum game. This is essentially an [actor-critic model](https://arxiv.org/abs/1610.01945). As the discriminator changes its behavior, so does the generator, and vice versa. Their losses push against each other. 
+Both nets are trying to optimize a different and opposing objective function, or loss function, in a zero-zum game. This is essentially an [actor-critic model](https://arxiv.org/abs/1610.01945). As the discriminator changes its behavior, so does the generator, and vice versa. Their losses push against each other. 
 
 ## Tips in Training a GAN
 
