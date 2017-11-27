@@ -1,5 +1,5 @@
 ---
-title: A Beginner's Guide to Reinforcement Learning (for Java)
+title: A Beginner's Guide to Reinforcement Learning (for Java and Scala)
 layout: default
 ---
 
