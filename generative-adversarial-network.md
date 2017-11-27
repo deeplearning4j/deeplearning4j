@@ -8,7 +8,7 @@ redirect_from: gan
 
 Generative adversarial networks (GANs) are architectures comprised of two neural networks, which pit one net against the other. Thus the "adversarial." Yann LeCun [called adversarial training](https://www.quora.com/What-are-some-recent-and-potentially-upcoming-breakthroughs-in-deep-learning) "the most interesting idea in the last 10 years in ML."
 
-[GANs were introduced in a paper](https://arxiv.org/abs/1406.2661) by Ian Goodfellow and other researchers at the University of Montreal, including Yoshua Bengio, in 2014. Goodfellow, Bengio and Aaron Courville co-authored [a well-known deep learning textbook](http://www.deeplearningbook.org/). 
+[GANs were introduced in a paper](https://arxiv.org/abs/1406.2661) by Ian Goodfellow and other researchers at the University of Montreal, including Yoshua Bengio, in 2014. 
 
 The potential is obviously huge, because GANs can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. They are true [robot artists](counterfeitor), and their [output is impressive](https://www.nytimes.com/2017/08/14/arts/design/google-how-ai-creates-new-music-and-new-artists-project-magenta.html) -- poignant even. 
 
@@ -20,15 +20,18 @@ Let's say we're trying to do something more banal than mimic the Mona Lisa. We a
 
 Meanwhile, the generator creates images that it passes to the discriminator in the hopes that they, too, will be deemed authentic. The goal of the generator is to generate passable hand-written digits. The goal of the discriminator, in this case, is to identify all those images as fake. 
 
-So you have a double feedback loop:
+Here are the steps a GAN takes:
 
 * The generator takes in random numbers and returns an image. 
 * This image is fed into the discriminator alongside images taken from the true dataset. 
 * The discriminator takes in images and returns probabilities, a number between 0 and 1, with 1 representing authenticity and 0 representing fake. 
+
+So you have a double feedback loop:
+
 * The discriminator is in a feedback loop with the ground truth of the images, which we know. 
 * The generator is in a feedback loop with the discriminator.
 
-You can think of a GAN as the combination of a counterfeiter and a cop, a game of cat and mouse, where the first is learning to pass false notes, and the second is learning to detect them. Both are dynamic; i.e. the cop is in training, too, and each side comes to learn the others methods in a constant escalation. 
+You can think of a GAN as the combination of a counterfeiter and a cop, a game of cat and mouse, where the first is learning to pass false notes, and the second is learning to detect them. Both are dynamic; i.e. the cop is in training (maybe the central bank is flagging bills that slipped through), too, and each side comes to learn the other's methods in a constant escalation. 
 
 The discriminator network is a standard convolutional network that can categorize the images fed to it, a binomial classifier. The generator is an inverse convolutional network, in a sense. The discriminator takes an image and downsamples it to a probability. The generator takes a vector of noise and upsamples it to an image. 
 
