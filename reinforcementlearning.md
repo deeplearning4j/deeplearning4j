@@ -105,3 +105,16 @@ Like human beings, the Q function is recursive. Just as calling the wetware meth
 * [Reinforcement Learning and DQN, learning to play from pixels](https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html)
 * Video: [Richard Sutton on Temporal Difference Learning](https://www.youtube.com/watch?v=EeMCEQa85tw)
 * [A Brief Survey of Deep Reinforcement Learning](https://arxiv.org/pdf/1708.05866.pdf)
+
+### <a name="beginner">Other Deep Learning Tutorials</a>
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Convolutional Networks](./convolutionalnets)
+* [Deeplearning4j Quickstart Examples](./quickstart)
+* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
