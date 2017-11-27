@@ -1997,6 +1997,7 @@ TEST_F(DeclarableOpsTests1, DilatedMaxPool3D_ff_Test1) {
 }
 
 //////////////////////////////////////////////////////////////////////
+/*
 TEST_F(DeclarableOpsTests1, Sum1) {
 
     float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
@@ -2030,6 +2031,7 @@ TEST_F(DeclarableOpsTests1, Sum1) {
     delete block;
     delete variableSpace;
 }
+*/
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Maxpool2d1) {

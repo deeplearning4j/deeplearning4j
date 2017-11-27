@@ -27,7 +27,6 @@ namespace nd4j {
         DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1);
         DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
         DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
-        DECLARE_REDUCTION_OP(sum, 1, 1, false, 0, -1);
 
         DECLARE_OP(noop, -1, -1, true);
         DECLARE_OP(testop2i2o, 2, 2, true);
@@ -68,6 +67,13 @@ namespace nd4j {
         DECLARE_OP(greater, 2, 1, true);
         DECLARE_OP(log1p, 2, 1, true);
         DECLARE_OP(toggle_bits, -1, -1, true);
+
+        DECLARE_OP(scatter_add, 3, 1, true);
+        DECLARE_OP(scatter_sub, 3, 1, true);
+        DECLARE_OP(scatter_mul, 3, 1, true);
+        DECLARE_OP(scatter_div, 3, 1, true);
+        DECLARE_OP(scatter_upd, 3, 1, true);
+    
 
 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
@@ -164,6 +170,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
         DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
         DECLARE_CONFIGURABLE_OP(reverse, 1, 1, true, 0, -2);
+        DECLARE_CONFIGURABLE_OP(axpy, 2, 1, false, -2, 0);
         DECLARE_CONFIGURABLE_OP(apply_sgd, 2, 1, true, -2, 0);
 
         // grad ops
