@@ -117,4 +117,4 @@ mapping:
 2. Double click the jar to install the plugin for Eclipse
 3. Clone datavec to your system
 4. Import the project as a maven project
-5. You will also need clone and build ND4J
+5. You will also need clone and build ND4J and libnd4j
