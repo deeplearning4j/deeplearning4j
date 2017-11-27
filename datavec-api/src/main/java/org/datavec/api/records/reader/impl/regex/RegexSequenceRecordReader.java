@@ -30,10 +30,7 @@ import org.datavec.api.writable.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -76,7 +73,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     private String regex;
     private int skipNumLines;
     private Pattern pattern;
-    private Charset charset;
+    private transient Charset charset;
     private LineErrorHandling errorHandling;
 
     public RegexSequenceRecordReader(String regex, int skipNumLines) {
@@ -190,4 +187,14 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
         return out;
     }
 
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        ois.defaultReadObject();
+        String s = ois.readUTF();
+        charset = Charset.forName(s);
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        oos.defaultWriteObject();
+        oos.writeUTF(charset.name());
+    }
 }
