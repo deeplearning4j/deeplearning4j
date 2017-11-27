@@ -1,5 +1,5 @@
 ---
-title: Generative Adversarial Networks
+title: A Beginner's Guide to Generative Adversarial Networks (GANs)
 layout: default
 redirect_from: gan
 ---
