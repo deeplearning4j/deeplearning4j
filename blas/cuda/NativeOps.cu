@@ -4567,6 +4567,18 @@ void NativeOps::initializeDevicesAndFunctions() {
     //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
 }
 
+void NativeOps::initializeFunctions(Nd4jPointer *functions) {
+    this->cublasSgemv = (CublasSgemv)functions[0];
+    this->cublasDgemv = (CublasDgemv)functions[1];
+    this->cublasHgemm = (CublasHgemm)functions[2];
+    this->cublasSgemm = (CublasSgemm)functions[3];
+    this->cublasDgemm = (CublasDgemm)functions[4];
+    this->cublasSgemmEx = (CublasSgemmEx)functions[5];
+    this->cublasHgemmBatched = (CublasHgemmBatched)functions[6];
+    this->cublasSgemmBatched = (CublasSgemmBatched)functions[7];
+    this->cublasDgemmBatched = (CublasDgemmBatched)functions[8];
+}
+
 
 /**
  * This method acquires memory chunk of requested size on host side

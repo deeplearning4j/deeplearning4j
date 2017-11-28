@@ -1840,26 +1840,7 @@ public:
      */
     void initializeDevicesAndFunctions();
 
-    void initializeDevicesAndFunctions(Nd4jPointer *functions) {
-        initializeDevicesAndFunctions();
-
-        this->cblasSgemv = (CblasSgemv)functions[0];
-        this->cblasDgemv = (CblasDgemv)functions[1];
-        this->cblasSgemm = (CblasSgemm)functions[2];
-        this->cblasDgemm = (CblasDgemm)functions[3];
-        this->cblasSgemmBatch = (CblasSgemmBatch)functions[4];
-        this->cblasDgemmBatch = (CblasDgemmBatch)functions[5];
-
-        this->cublasSgemv = (CublasSgemv)functions[6];
-        this->cublasDgemv = (CublasDgemv)functions[7];
-        this->cublasHgemm = (CublasHgemm)functions[8];
-        this->cublasSgemm = (CublasSgemm)functions[9];
-        this->cublasDgemm = (CublasDgemm)functions[10];
-        this->cublasSgemmEx = (CublasSgemmEx)functions[11];
-        this->cublasHgemmBatched = (CublasHgemmBatched)functions[12];
-        this->cublasSgemmBatched = (CublasSgemmBatched)functions[13];
-        this->cublasDgemmBatched = (CublasDgemmBatched)functions[14];
-    }
+    void initializeFunctions(Nd4jPointer *functions);
 
     /**
      * This method acquires memory chunk of requested size on host side
