@@ -169,7 +169,13 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         //        input2d.mmul(W).addiRowVector(b)));
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
         if (maskArray != null) {
-            act2d.muliColumnVector(maskArray);
+            if(!maskArray.isColumnVector() || Arrays.equals(maskArray.shape(), act2d.shape())){
+                //Per output masking
+                act2d.muli(maskArray);
+            } else {
+                //Per time step masking
+                act2d.muliColumnVector(maskArray);
+            }
         }
         return TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
     }

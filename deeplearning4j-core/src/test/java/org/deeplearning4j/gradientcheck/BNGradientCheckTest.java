@@ -185,7 +185,7 @@ public class BNGradientCheckTest {
                             mln.setLabels(ds.getLabels());
                             mln.computeGradientAndScore();
                             double scoreBefore = mln.score();
-                            for (int k = 0; k < 5; k++)
+                            for (int k = 0; k < 20; k++)
                                 mln.fit(ds);
                             mln.computeGradientAndScore();
                             double scoreAfter = mln.score();

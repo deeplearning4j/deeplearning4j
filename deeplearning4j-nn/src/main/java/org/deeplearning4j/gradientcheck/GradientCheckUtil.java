@@ -288,6 +288,12 @@ public class GradientCheckUtil {
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
                     double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                     INDArray[] labels) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs, labels, null, null);
+    }
+
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -360,6 +366,8 @@ public class GradientCheckUtil {
         for (int i = 0; i < labels.length; i++)
             graph.setLabel(i, labels[i]);
 
+        graph.setLayerMaskArrays(fMask, lMask);
+
         graph.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
@@ -382,7 +390,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
-        MultiDataSet mds = new MultiDataSet(inputs, labels);
+        MultiDataSet mds = new MultiDataSet(inputs, labels, fMask, lMask);
         INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
         for (int i = 0; i < nParams; i++) {
             //Get param name
