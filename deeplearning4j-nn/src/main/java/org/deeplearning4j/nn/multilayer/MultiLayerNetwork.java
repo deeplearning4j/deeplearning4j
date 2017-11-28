@@ -2135,7 +2135,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             // activation for output layer is calculated in computeScore
-            List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(), training);
+            setInput(data.getFeatures());
+            List<INDArray> activations = feedForwardToLayer(layers.length - 2, training, false);    //Don't clear layers, as this clears mask arrays also
             int n = activations.size();
             setLabels(data.getLabels());
             if (getOutputLayer() instanceof IOutputLayer) {
@@ -2156,6 +2157,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (hasMaskArray)
             clearLayerMaskArrays();
+        clearLayersStates();
 
         return score();
     }

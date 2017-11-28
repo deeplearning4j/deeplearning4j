@@ -117,20 +117,17 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                mln.setLayerMaskArrays(null, maskArr);
-
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, maskArr);
 
                 String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
                                 + ", miniBatchSize=" + 1;
                 assertTrue(msg, gradOK);
-
             }
         }
     }
 
-    //@Test
+    @Test
     public void testBidirectionalLSTMMasking() {
         //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);
@@ -197,7 +194,7 @@ public class GradientCheckTestsMasking {
     }
 
 
-    //@Test
+    @Test
     public void testPerOutputMaskingMLP() {
         int nIn = 6;
         int layerSize = 4;
@@ -258,7 +255,6 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
@@ -269,14 +265,14 @@ public class GradientCheckTestsMasking {
                 System.out.println(msg);
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels, null, labelMask);
 
                 assertTrue(msg, gradOK);
             }
         }
     }
 
-    //@Test
+    @Test
     public void testPerOutputMaskingRnn() {
         //For RNNs: per-output masking uses 3d masks (same shape as output/labels), as compared to the standard
         // 2d masks (used for per *example* masking)

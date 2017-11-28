@@ -181,10 +181,14 @@ public class TestVariableLengthTS {
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
+
+            net.setInput(in2);
+            net.setLabels(labels2);
+            net.setLayerMaskArrays(inputMask, null);
             List<INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
-            assertNotEquals(score1, score2, 0.01);
+            assertNotEquals(score1, score2, 0.005);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();
@@ -206,6 +210,7 @@ public class TestVariableLengthTS {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
                 net.setInput(in2);
+                net.setLayerMaskArrays(inputMask, null);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();
