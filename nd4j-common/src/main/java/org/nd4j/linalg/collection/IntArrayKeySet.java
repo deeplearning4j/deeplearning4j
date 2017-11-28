@@ -29,7 +29,12 @@ public class IntArrayKeySet implements Set<int[]> {
 
     @Override
     public Iterator<int[]> iterator() {
-        throw new UnsupportedOperationException();
+        List<int[]> ret = new ArrayList<>();
+        for(IntArrayKeyMap.IntArray arr : set) {
+            ret.add(arr.getBackingArray());
+        }
+
+        return ret.iterator();
     }
 
     @Override

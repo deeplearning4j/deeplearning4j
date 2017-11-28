@@ -724,6 +724,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op, int... dimension) {
         long st = profilingHookIn(op);
+        if(dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
         Arrays.sort(dimension);
 
         validateDataType(Nd4j.dataType(), op);

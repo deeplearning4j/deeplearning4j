@@ -4,7 +4,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.EdgeId;
@@ -15,7 +14,10 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Base implementation for importing a graph
@@ -25,27 +27,6 @@ import java.util.*;
  */
 @Slf4j
 public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> implements GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
-
-    @Override
-    public void dumpBinaryProtoAsText(InputStream inputFile, File outputFile) {
-        GRAPH_TYPE readGraph = readGraph(inputFile);
-        try {
-            val text = readGraph.toString();
-            IOUtils.copyLarge(inputFile,new FileOutputStream(outputFile));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
-        try {
-            GRAPH_TYPE readGraph = readGraph(new FileInputStream(inputFile));
-            FileUtils.writeStringToFile(outputFile,readGraph.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      *
@@ -164,6 +145,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
             if(dataTypeForTensor(entry.getValue()) == DataBuffer.Type.UNKNOWN) {
                 val var = importState.getSameDiff().var(entry.getKey(),null,0);
+                //mark as place holder for validating resolution later.
+                if(isPlaceHolder(entry.getValue())) {
+                    importState.getSameDiff().addAsPlaceHolder(var.getVertexId());
+                    if(var.getShape() != null)
+                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),var.getShape());
+                }
                 indexMap.put(entry.getKey(),var.getVertexId()[0]);
                 continue;
             }
@@ -172,15 +159,39 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
             if(arr != null) {
                 val var = importState.getSameDiff().var(entry.getKey(),arr);
                 indexMap.put(entry.getKey(),var.getVertexId()[0]);
+
                 //ensure the array is made available for later processing
                 diff.associateArrayWithVariable(arr,var);
             }
             else if(getShapeFromTensor(entry.getValue()) == null) {
                 val var = importState.getSameDiff().var(entry.getKey(),null,0);
+                //mark as place holder for validating resolution later.
+
+                //note that this vertex id can still be a place holder
+                //with a -1 shape. Just because a shape is "known" doesn't mean
+                //that it isn't  a pplace holder.
+                if(isPlaceHolder(entry.getValue())) {
+                    val originalShape = getShapeFromTensor(entry.getValue());
+                    importState.getSameDiff().addAsPlaceHolder(var.getVertexId());
+                    if(var.getShape() != null)
+                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),originalShape);
+
+                }
                 indexMap.put(entry.getKey(),var.getVertexId()[0]);
             }
             else {
-                val var = importState.getSameDiff().var(entry.getKey(),getShapeFromTensor(entry.getValue()));
+                val originalShape = getShapeFromTensor(entry.getValue());
+                val var = importState.getSameDiff().var(entry.getKey(),originalShape);
+                //mark as place holder for validating resolution later.
+
+                //note that this vertex id can still be a place holder
+                //with a -1 shape. Just because a shape is "known" doesn't mean
+                //that it isn't  a pplace holder.
+                if(isPlaceHolder(entry.getValue())) {
+                    importState.getSameDiff().addAsPlaceHolder(var.getVertexId());
+                    importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),originalShape);
+                }
+
                 indexMap.put(entry.getKey(),var.getVertexId()[0]);
             }
 

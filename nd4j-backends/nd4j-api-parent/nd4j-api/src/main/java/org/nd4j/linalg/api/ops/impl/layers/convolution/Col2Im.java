@@ -21,8 +21,12 @@ public class Col2Im extends DynamicCustomOp {
     @Builder(builderMethodName = "builder")
     public Col2Im(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
         super(null,inputArrays,outputs);
-        this.sameDiff = sameDiff;
-        sameDiff.associateFunctionsAsArgs(inputFunctions,this);
+        if(sameDiff != null) {
+            this.sameDiff = sameDiff;
+            sameDiff.associateFunctionsAsArgs(inputFunctions, this);
+        }
+
+
         this.conv2DConfig = conv2DConfig;
 
         addArgs();

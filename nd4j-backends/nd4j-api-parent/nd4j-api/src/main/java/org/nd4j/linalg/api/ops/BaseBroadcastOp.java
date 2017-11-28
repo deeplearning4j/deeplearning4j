@@ -3,13 +3,18 @@ package org.nd4j.linalg.api.ops;
 import com.google.common.base.Preconditions;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 @Slf4j
@@ -159,6 +164,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public int[] getDimension() {
+        if(dimension == null) {
+            dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
+        }
         return dimension;
     }
 
@@ -168,5 +176,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
 
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
+    }
 
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
+
+    }
 }

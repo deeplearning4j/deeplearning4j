@@ -20,8 +20,11 @@ public class Im2col extends DynamicCustomOp {
     @Builder(builderMethodName = "builder")
     public Im2col(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
         super(null,inputArrays,outputs);
-        this.sameDiff = sameDiff;
-        sameDiff.associateFunctionsAsArgs(inputFunctions,this);
+        if(sameDiff != null) {
+            this.sameDiff = sameDiff;
+            sameDiff.associateFunctionsAsArgs(inputFunctions, this);
+        }
+
         this.conv2DConfig = conv2DConfig;
 
         addArgs();

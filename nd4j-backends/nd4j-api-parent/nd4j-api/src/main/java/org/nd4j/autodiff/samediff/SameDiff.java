@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
+import org.nd4j.linalg.collection.IntArrayKeySet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -75,6 +76,9 @@ public class SameDiff {
     private Map<int[],SDVariable> gradients;
     private Map<int[],SDVariable> forwardVarForGrad;
     private Map<int[],INDArray> vertexIdToArr;
+    private Map<int[],List<int[]>> placeHolderMap;
+    private Map<int[],int[]> placeHolderOriginalShapes;
+    private Set<int[]> placeHolderVertexIds;
     private IdentityHashMap<INDArray,SDVariable> reverseArrayLookup;
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
@@ -317,10 +321,11 @@ public class SameDiff {
      * @param arr
      */
     public void updateArrayForVertexId(int[] vertexId,INDArray arr) {
-        if(vertexIdToArr.containsKey(vertexId)) {
+        if(!vertexIdToArr.containsKey(vertexId)) {
             throw new ND4JIllegalStateException("Array for " + Arrays.toString(vertexId) + " does not exist. Please use putArrayForVertexId instead.");
         }
         vertexIdToArr.put(vertexId,arr);
+        reverseArrayLookup.put(arr,getVariableForVertexId(vertexId));
     }
 
     /**
@@ -364,6 +369,29 @@ public class SameDiff {
 
 
         return vertexIdToShape.get(vertexId);
+    }
+
+
+
+    /**
+     * Update a vertex id with the given shape.
+     * Note that you should use {@link #putShapeForVertexId(int[], int[])}
+     * if you want to add a new shape.
+     * Update is meant to be an in place replacement
+     * of the shape for the vertex id *only*.
+     * @param vertexId the vertex id to associate
+     * @param shape the shape to associate with
+     */
+    public void updateShapeForVertexId(int[] vertexId,int[] shape) {
+        if(!vertexIdToShape.containsKey(vertexId)) {
+            throw new ND4JIllegalStateException("Shape for " + Arrays.toString(vertexId) + " does not already exist! Please use putShapeForVertexId instead.");
+        }
+
+        if(vertexIdToArr.containsKey(vertexId) && !Arrays.equals(vertexIdToArr.get(vertexId).shape(),shape)) {
+            throw new ND4JIllegalStateException("Already found an existing array!");
+        }
+
+        vertexIdToShape.put(vertexId,shape);
     }
 
 
@@ -553,6 +581,10 @@ public class SameDiff {
         reverseArrayLookup = new IdentityHashMap<>();
         vertexIdToArr = new IntArrayKeyMap<>();
         vertexIdToShape = new IntArrayKeyMap<>();
+        placeHolderMap = new IntArrayKeyMap<>();
+        placeHolderVertexIds = new IntArrayKeySet();
+        placeHolderOriginalShapes = new IntArrayKeyMap<>();
+
     }
 
 
@@ -3343,6 +3375,7 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
+
         final SameDiff outer = this;
         if(getFunction("grad") == null)
             defineFunction("grad", new SameDiffFunctionDefinition() {
@@ -3448,11 +3481,224 @@ public class SameDiff {
 
 
 
+
     /**
      * Creates and executes a list of operations
      * @return
      */
+    public INDArray execWithPlaceHolderAndEndResult(Map<String,INDArray> inputs) {
+        resolveVariablesWith(inputs);
+        //resolve the place holders
+
+
+        return execAndEndResult();
+    }
+
+
+    /**
+     * Set the original shape for a given place holder.
+     * This is used to track original shapes of place holder variables.
+     * The reason we track original shapes is to validate
+     * possible candidate arrays coming in (especially with -1
+     * as the expected shapes).
+     *
+     * Note that if {@link #isPlaceHolder(int[])}
+     * returns false for the passed in vertex id,
+     * a {@link ND4JIllegalStateException} is thrown.
+     *
+     * A vertex id must be added first. You can
+     * do this with {@link #addAsPlaceHolder(int[])}
+     *
+     * @param vertexId the vertex id for the original shape
+     * @param shape the shape of the place holder
+     */
+    public void setOriginalPlaceHolderShape(int[] vertexId,int[] shape) {
+        if(vertexId == null || vertexId.length == 0) {
+            throw new ND4JIllegalStateException("Null and 0 length shape arrays not allowed");
+        }
+
+
+        if(!isPlaceHolder(vertexId)) {
+            throw  new ND4JIllegalStateException("Vertex id " + Arrays.toString(vertexId) + " does not appear to be a place holder. Did you forget to call addPlaceHolder?");
+        }
+
+        if(shape == null || shape.length == 0) {
+            throw new ND4JIllegalStateException("Null and 0 length shape arrays not allowed");
+        }
+
+
+        if(placeHolderOriginalShapes.containsKey(vertexId)) {
+            throw new ND4JIllegalStateException("Unable to add a new shape for vertex id " + Arrays.toString(vertexId));
+        }
+
+        //after validation now only set once
+        placeHolderOriginalShapes.put(vertexId,shape);
+
+    }
+
+
+    /**
+     * Get the original shape for the vertex id if one was set
+     * (other wise returns null).
+     * This is mainly for use in validating passed in arrays
+     * as arguments to {@link #resolveVariablesWith(Map)}
+     * usually when executing using {@link #execWithPlaceHolder(Map)}
+     * @param vertexId the vertex id to get the original shape for.
+     *
+     * @return the set vertex
+     */
+    public int[] getOriginalShapeForPlaceHolder(int[] vertexId) {
+        return placeHolderOriginalShapes.get(vertexId);
+    }
+
+    /**
+     * Returns true if this vertex id
+     * is a place holder variable or not
+     * @param vertexId the vertex id to test
+     * @return
+     */
+    public boolean isPlaceHolder(int[] vertexId) {
+        return placeHolderVertexIds.contains(vertexId);
+    }
+
+
+    /**
+     * Add  this vertex id as a place holder
+     * @param vertexId the vertex id to add
+     */
+    public void addAsPlaceHolder(int[] vertexId) {
+        placeHolderVertexIds.add(vertexId);
+    }
+
+
+    /**
+     * Resolve all ndarrays by updating the variables
+     * for each array specified in the given map.
+     * An {@link IllegalStateException} will be thrown
+     * if not all arrays are specified for resolution.
+     * @param arrays the arrays to resolve.
+     */
+    public void resolveVariablesWith(Map<String,INDArray> arrays) {
+        Preconditions.checkState(arrays.size() == placeHolderVertexIds.size(),"Not all variables specified. " + arrays.size() + " variables were specified, but needed " + placeHolderVertexIds.size());
+
+        for(val arrayEntry : arrays.entrySet()) {
+            val varForName = getVariable(arrayEntry.getKey());
+            if(placeHolderOriginalShapes.containsKey(varForName.getVertexId())) {
+                val originalShape = placeHolderOriginalShapes.get(varForName.getVertexId());
+                for(int i = 0; i < originalShape.length; i++) {
+                    if(originalShape[i] != arrayEntry.getValue().shape()[i] && originalShape[i] >= 1) {
+                        throw new ND4JIllegalStateException("Incompatible shape passed for variable. " + Arrays.toString(arrayEntry.getValue().shape()));
+                    }
+                }
+            }
+        }
+
+
+
+        for(val entry : arrays.entrySet()) {
+            val arrVertexId = getVariable(entry.getKey()).getVertexId();
+            if(!placeHolderVertexIds.contains(arrVertexId)) {
+                throw new ND4JIllegalStateException("Illegal variable " + entry.getKey() + " passed in. Variable found not to be a place holder variable");
+            }
+
+
+
+            associateArrayWithVariable(entry.getValue(),getVariable(entry.getKey()));
+            updateArrayForVertexId(arrVertexId,entry.getValue());
+
+        }
+
+        //update functions after variables are set
+        for(DifferentialFunction function : functionInstances.values()) {
+            function.initWithArrays(arrays);
+        }
+    }
+
+    /**
+     * Returns true if all place holder variables
+     * are resolved.
+     * A place holder variable is resolved when
+     * {@link #getVariableForVertexId(int[])}
+     * getArr() does not return null and
+     * the shape is properly resolved.
+     * @return true if all place holder variables are resolved.
+     */
+    public boolean allPlaceHolderVariablesResolved() {
+        for(val vertexId : placeHolderVertexIds) {
+            val var = getVariableForVertexId(vertexId);
+            if(var.getArr() == null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Add one or or more place holder variables
+     * for the given vertex id.
+     *
+     * Note that if a vertex id in placeHolderVariables
+     * isn't present in this samediff instance anyways,
+     * an {@link ND4JIllegalStateException} is thrown
+     *
+     * @param vertexId the vertex id to add place holders for
+     * @param placeHolderVariables the place holder variables
+     *                             to add
+     */
+    public void putPlaceHolderForVertex(int[] vertexId,int[]...placeHolderVariables) {
+        for(int[] placeHolderVariable : placeHolderVariables) {
+            if(!vertexIdToVariable.containsKey(placeHolderVariable)) {
+                throw new ND4JIllegalStateException("No variable found for " + Arrays.toString(placeHolderVariable));
+            }
+        }
+
+
+        List<int[]> placeHolders = placeHolderMap.get(vertexId);
+        if(placeHolders == null) {
+            placeHolders = new ArrayList<>();
+            placeHolderMap.put(vertexId,placeHolders);
+        }
+
+        placeHolders.addAll(Arrays.asList(placeHolderVariables));
+    }
+
+
+    /**
+     * Returns true if the given vertex id
+     * has any placeholder variables
+     * @param vertexId the vertex id to check for
+     * @return true if this vertex has any place holder
+     * variables or not
+     */
+    public boolean hasPlaceHolderVariables(int[] vertexId) {
+        return placeHolderMap.containsKey(vertexId);
+    }
+
+    /**
+     * Get the place holders for a given
+     * vertex id. May return null.
+     *
+     * Consider using {@link #hasPlaceHolderVariables(int[])}
+     * @param vertexId the vertex id to get the place holders for
+     * @return the place holder variables for the given vertex
+     * id or null
+     */
+    public List<int[]> getPlaceHoldersFor(int[] vertexId) {
+        return placeHolderMap.get(vertexId);
+    }
+
+
+
+    /**
+     * Creates and executes a list of operations
+     * based on the given variables passed in.
+     * {@link #resolveVariablesWith(Map)}
+     * is called
+     * @return
+     */
     public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> execWithPlaceHolder(Map<String,INDArray> inputs) {
+        resolveVariablesWith(inputs);
         //resolve the place holders
         for(DifferentialFunction function : functionInstances.values()) {
             function.initWithArrays(inputs);
@@ -3471,6 +3717,11 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> exec() {
+        if(!allPlaceHolderVariablesResolved()) {
+            throw new ND4JIllegalStateException("Undefined variables found.");
+        }
+
+
         List<DifferentialFunction> ops = new ArrayList<>();
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
 
@@ -3665,7 +3916,10 @@ public class SameDiff {
      */
     public void updateVariable(String variableName,INDArray arr) {
         val vertexId = getVariable(variableName).getVertexId();
-        updateArrayForVertexId(vertexId,arr);
+        if(!vertexIdToArr.containsKey(vertexId))
+            putArrayForVertexId(vertexId,arr);
+        else
+            updateArrayForVertexId(vertexId,arr);
     }
 
     /**
@@ -3775,6 +4029,8 @@ public class SameDiff {
             log.info("Exporting variable: [{}]", variable.getVarName());
             if(variable.getArr() == null || variable.getShape() == null)
                 continue;
+
+
             if(!vertexIdToVariable.containsKey(variable.getVertexId()))
                 putArrayForVertexId(variable.getVertexId(),Nd4j.create(variable.getShape()));
 

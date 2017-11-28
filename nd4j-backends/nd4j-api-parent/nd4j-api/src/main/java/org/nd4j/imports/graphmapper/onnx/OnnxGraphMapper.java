@@ -58,6 +58,13 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         }
     }
 
+
+
+    @Override
+    public boolean isPlaceHolderNode(OnnxProto3.TypeProto.TensorTypeProto node) {
+        return false;
+    }
+
     @Override
     public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
         try {
@@ -282,9 +289,10 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public boolean isPlaceHolder(OnnxProto3.NodeProto nodeProto) {
+    public boolean isPlaceHolder(OnnxProto3.TypeProto.TensorTypeProto nodeType) {
         return false;
     }
+
 
     @Override
     public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.TensorTypeProto tensorProto, OnnxProto3.GraphProto graph) {

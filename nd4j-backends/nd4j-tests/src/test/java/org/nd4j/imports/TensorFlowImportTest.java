@@ -19,6 +19,7 @@ import org.tensorflow.framework.GraphDef;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -166,7 +167,7 @@ public class TensorFlowImportTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensorflow_inception_graph.pb").getInputStream());
 
         assertTrue(tg.getVariable("input") != null);
-       // assertTrue(tg.getVariableSpace().getVariable("input").isPlaceholder());
+        // assertTrue(tg.getVariableSpace().getVariable("input").isPlaceholder());
 
         val ipod = Nd4j.read(new DataInputStream(new ClassPathResource("tf_graphs/ipod.nd4").getInputStream()));
 
@@ -515,8 +516,9 @@ public class TensorFlowImportTest {
 
         INDArray input = Nd4j.linspace(1,40,40).reshape(10,4);
         INDArray expectedOutput = Nd4j.linspace(1,40,40).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4));
-        graph.associateArrayWithVariable(input,graph.variableMap().get("input"));
-        INDArray actual = graph.execAndEndResult();
+        INDArray actual =  graph.execWithPlaceHolderAndEndResult(Collections.singletonMap("input",input));
+        assertEquals(input,graph.getVariable("input").getArr());
+        assertArrayEquals(input.shape(),graph.getShapeForVertexId(graph.getVariable("input").getVertexId()));
         assertEquals(expectedOutput,actual);
     }
 }

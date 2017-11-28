@@ -35,6 +35,13 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public final static String SHAPE_KEY = "shape";
     private static TFGraphMapper MAPPER_INSTANCE = new TFGraphMapper();
 
+    //singleton
+    private TFGraphMapper() {}
+
+    /**
+     * Singleton. Get the needed instance.
+     * @return
+     */
     public static TFGraphMapper getInstance() {
         return MAPPER_INSTANCE;
     }
@@ -45,7 +52,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             GraphDef graphDef = GraphDef.parseFrom(inputFile);
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
             for(NodeDef node : graphDef.getNodeList()) {
-              bufferedWriter.write(node.toString());
+                bufferedWriter.write(node.toString());
             }
 
             bufferedWriter.flush();
@@ -56,6 +63,18 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isPlaceHolderNode(NodeDef node) {
+        return node.getOp().startsWith("Placeholder");
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
         try {
@@ -235,6 +254,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             if(nodeDef.getName().endsWith("/read")) {
                 continue;
             }
+
+
             val name = getNodeName(nodeDef.getName());
             ret.put(name,nodeDef);
         }
@@ -292,12 +313,18 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             }
         }
 
+        else if(isPlaceHolder(tfNode)) {
+            val vertexId = diff.getVariable(getName(tfNode)).getVertexId();
+            diff.addAsPlaceHolder(vertexId);
+        }
         else {
             val opName = tfNode.getOp();
             val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
             try {
                 val newInstance = differentialFunction.getClass().newInstance();
                 val args = new DifferentialFunction[tfNode.getInputCount()];
+                val indices = importState.getVertexIdMap().get(getNodeName(tfNode.getName()));
+
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
                     val name = getNodeName(tfNode.getInput(i));
                     val  initialVertexId = importState.getVertexIdMap().get(name);
@@ -312,11 +339,23 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     }
 
                     args[i] = func;
+
+                    /**
+                     * Note here that we are associating
+                     * the output/result variable
+                     * with its inputs and notifying
+                     * the variable that it has a place holder argument
+                     * it should resoolve before trying to execute
+                     * anything.
+                     */
+                    if(diff.isPlaceHolder(func.getVertexId())) {
+                        diff.putPlaceHolderForVertex(indices.getRight(),func.getVertexId());
+
+                    }
                 }
 
 
 
-                val indices = importState.getVertexIdMap().get(getNodeName(tfNode.getName()));
 
                 val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
                 diff.graph().addEdge(opStateEdge);
@@ -325,8 +364,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 diff.associateFunctionsAsArgs(args,newInstance);
                 newInstance.setSameDiff(importState.getSameDiff());
 
-
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+                diff.putShapeForVertexId(indices.getRight(),newInstance.calculateOutputShape().get(0));
 
 
             } catch (Exception e) {

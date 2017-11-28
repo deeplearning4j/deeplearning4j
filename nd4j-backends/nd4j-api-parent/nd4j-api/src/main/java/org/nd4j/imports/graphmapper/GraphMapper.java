@@ -28,6 +28,13 @@ import java.util.Map;
 public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
     /**
+     * Returns true if the given node is a place holder
+     * @param node the node to check
+     * @return true if the node is a place holder or not
+     */
+    boolean isPlaceHolderNode(TENSOR_TYPE node);
+
+    /**
      * Dump a binary proto file representation as a
      * plain string in to the target text file
      * @param inputFile
@@ -167,7 +174,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param nodeType
      * @return
      */
-    boolean isPlaceHolder(NODE_TYPE nodeType);
+    boolean isPlaceHolder(TENSOR_TYPE nodeType);
 
     /**
      *
