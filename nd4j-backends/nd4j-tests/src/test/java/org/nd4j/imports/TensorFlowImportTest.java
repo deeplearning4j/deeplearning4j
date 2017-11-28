@@ -506,7 +506,7 @@ public class TensorFlowImportTest {
 
     @Test
     public void testInferShape() throws IOException {
-        SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getFile());
+        SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getInputStream());
         assertNotNull(graph);
 
         INDArray input = Nd4j.linspace(1,40,40).reshape(10,4);
