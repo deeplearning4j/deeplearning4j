@@ -20,6 +20,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -29,6 +30,10 @@ import java.util.LinkedList;
  * @author Alex Black
  */
 public class CollectionInputSplit extends BaseInputSplit {
+
+    public CollectionInputSplit(URI[] array){
+        this(Arrays.asList(array));
+    }
 
     public CollectionInputSplit(Collection<URI> list) {
         uriStrings = new LinkedList<>();

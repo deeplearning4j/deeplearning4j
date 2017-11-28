@@ -19,6 +19,7 @@ package org.datavec.api.records.reader.impl.jackson;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +34,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class FieldSelection {
+public class FieldSelection implements Serializable {
 
     public static final Writable DEFAULT_MISSING_VALUE = new Text("");
 
