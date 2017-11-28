@@ -408,7 +408,7 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunction rarg() {
         val args = args();
         if(args == null || args.length != 2)
-            throw new ND4JIllegalStateException("In order to use this function, the numebr of arguments for this function must be 2.");
+            throw new ND4JIllegalStateException("In order to use this function, the number of arguments for this function must be 2.");
         return args[1];
     }
 

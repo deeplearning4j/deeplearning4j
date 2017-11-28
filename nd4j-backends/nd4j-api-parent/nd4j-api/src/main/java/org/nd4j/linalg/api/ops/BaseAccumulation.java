@@ -29,6 +29,7 @@ import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -151,14 +152,43 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if (!attributesForNode.containsKey("axis")) {
+        if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
             this.dimensions = new int[] { Integer.MAX_VALUE };
+        }
+        else if(hasReductionIndices(nodeDef)) {
+            NodeDef reductionNode = null;
+            for(int i = 0; i < graph.getNodeCount(); i++) {
+                if (graph.getNode(i).getName().equals(nodeDef.getName() + "/reduction_indices")) {
+                    reductionNode = graph.getNode(i);
+                    val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", graph.getNode(i), graph);
+                    int[] dimensions = arr.data().asInt();
+                    this.dimensions = dimensions;
+                    break;
+                }
+            }
+
+            if(reductionNode == null)
+                throw new ND4JIllegalStateException("No node found!");
+
+
+
         }
         else {
             val dims = TFGraphMapper.getInstance().getNDArrayFromTensor("axis",nodeDef,graph).data().asInt();
             this.dimensions = dims;
         }
     }
+
+    protected boolean hasReductionIndices(NodeDef nodeDef) {
+        for(int i = 0; i < nodeDef.getInputCount(); i++) {
+            if(nodeDef.getInput(i).contains("reduction_indices")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {

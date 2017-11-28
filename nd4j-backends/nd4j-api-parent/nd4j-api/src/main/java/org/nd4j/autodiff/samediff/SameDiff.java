@@ -3522,7 +3522,7 @@ public class SameDiff {
             throw  new ND4JIllegalStateException("Vertex id " + Arrays.toString(vertexId) + " does not appear to be a place holder. Did you forget to call addPlaceHolder?");
         }
 
-        if(shape == null || shape.length == 0) {
+        if(shape == null) {
             throw new ND4JIllegalStateException("Null and 0 length shape arrays not allowed");
         }
 

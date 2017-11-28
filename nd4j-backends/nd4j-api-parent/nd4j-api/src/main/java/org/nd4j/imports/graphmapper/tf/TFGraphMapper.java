@@ -365,7 +365,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                diff.putShapeForVertexId(indices.getRight(),newInstance.calculateOutputShape().get(0));
+                diff.putShapeForVertexId(indices.getRight(),newInstance.getResultShape());
 
 
             } catch (Exception e) {

@@ -456,13 +456,14 @@ public class TensorFlowImportTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
         val sumResultVar = tg.getVariable("Sum");
         val func = tg.getFunctionForVertexId(sumResultVar.getVertexId());
+        assertEquals(1,func.getDimensions()[0]);
         assertEquals(3,tg.variables().size());
         assertNotNull(sumResultVar);
         assertNotNull(tg.getFunctionForVertexId(sumResultVar.getVertexId()));
         System.out.println(tg.variables());
 
         assertNotNull(func.getDimensions());
-        assertEquals(Integer.MAX_VALUE,func.getDimensions()[0]);
+        assertEquals(1,func.getDimensions()[0]);
 
         val fb = tg.asFlatBuffers();
         assertNotNull(fb);

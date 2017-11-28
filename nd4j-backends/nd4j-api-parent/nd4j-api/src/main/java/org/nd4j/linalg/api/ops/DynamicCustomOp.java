@@ -149,6 +149,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return hash;
     }
 
+
+
     @Override
     public int opNum() {
         return (int) opHash();

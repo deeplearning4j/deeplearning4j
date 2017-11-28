@@ -186,7 +186,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
                 //note that this vertex id can still be a place holder
                 //with a -1 shape. Just because a shape is "known" doesn't mean
-                //that it isn't  a pplace holder.
+                //that it isn't  a place holder.
                 if(isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVertexId());
                     importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),originalShape);
