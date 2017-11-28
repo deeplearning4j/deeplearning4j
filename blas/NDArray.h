@@ -494,6 +494,9 @@ namespace nd4j {
         // addition operator scalar + array
         friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);
 #endif
+        // addition operator array1 += array2    
+        void operator+=(const NDArray<T>& other);
+
         // subtraction operator array - array
         NDArray<T> operator-(const NDArray<T>& other) const;
 
@@ -527,7 +530,7 @@ namespace nd4j {
         // division operator array1 /= array2
         void operator/=(const NDArray<T>& other);
 
-        // division operator array*scalar
+        // division operator array /= scalar
         void operator/=(const T scalar);
 
         // mathematical multiplication of two arrays

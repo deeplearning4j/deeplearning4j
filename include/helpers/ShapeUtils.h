@@ -43,14 +43,17 @@ namespace nd4j {
 
         static std::vector<int> convertAxisToTadTarget(int rank, std::initializer_list<int> axis);
 
-        // check whether shape of min array is broadcastable to shape of max array
+        // check whether 2 arrays have mutually broadcastable shapes
         // shape comparison starts from the end
-        static bool isShapeBroadcastable(const int* maxShapeInfo, const int* minShapeInfo);
+        static bool areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2);
 
-        // check the possibility of broadcast operation, if true return shapeInfo of resulting array
-        // the array with larger dimensions number has to be passed as first argument
-        static int* evalBroadcastShapeInfo(const NDArray<T>& max, const NDArray<T>& min, const bool evalMinMax);
+        // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
+        // if evalMinMax == false then array with larger rank has to be passed as first argument
+        static bool evalBroadcastShapeInfo(const NDArray<T>& max, const NDArray<T>& min, const bool evalMinMax, int*& resultShapeInfo);
 
+        // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
+        static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray<T>*>& arrays, int*& resultShapeInfo, memory::Workspace* workspace = nullptr);
+        
         // return sorted vector of dimensions of array with larger dimensions along which two input arrays have same shape
         static std::vector<int> getDimsWithSameShape(const NDArray<T>& max, const NDArray<T>& min);
 

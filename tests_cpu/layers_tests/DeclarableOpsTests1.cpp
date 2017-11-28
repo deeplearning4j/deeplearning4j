@@ -2313,359 +2313,133 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests2) {
     ASSERT_TRUE(exp.equalsTo(&z));
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, BatchNorm2D) {
-
-    const int training = 1;
-    const int isLockGammaBeta = 0;
-    const int isMinibatch  = 0;
-    const int bS = 2;
-    const int K = 4;
-    const float eps = 1e-5;
-    const float g = 2.;
-    const float b = 1.;
-    const float decay = 1.;
-    auto input = new NDArray<float>('c', {bS, K});
-    auto gamma = new NDArray<float>('c', {1, K});
-    auto beta = new NDArray<float>('c', {1, K});
-    NDArray<float> xHat ('c', {bS, K});    
-    auto globalMeanView = new NDArray<float>('c', {1, K});
-    auto globalVarView = new NDArray<float>('c', {1, K});
-    auto output = new NDArray<float>('c', {bS, K});
-    NDArray<float> outExpected('c', {bS, K});
-    (*input)(0,0)=1;
-    (*input)(0,1)=2;
-    (*input)(0,2)=3;
-    (*input)(0,3)=4;
-    (*input)(1,0)=5;
-    (*input)(1,1)=6;
-    (*input)(1,2)=7;
-    (*input)(1,3)=8;
-
-    gamma->assign(1);
-
-    VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, globalMeanView);
-    variableSpace->putVariable(-3, globalVarView);
-    variableSpace->putVariable(-4, gamma);
-    variableSpace->putVariable(-5, beta);
-    variableSpace->putVariable(1, output);
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, batchnorm_test1) {
     
-
-    Context<float>* block = new Context<float>(1, variableSpace, false);
-    block->fillInputs({-1,-2,-3,-4,-5});    
-    std::vector<int>* argI = block->getIArguments();
-    std::vector<float>* argT = block->getTArguments();
-    *argI = {training, isLockGammaBeta, isMinibatch};  
-    *argT = {eps, g, b, decay};  
+    NDArray<double> input   ('c', {2,3,2,3,2});
+    NDArray<double> mean    ('c', {2,3,2,3,2});
+    NDArray<double> variance('c', {2,3,2,3,2});
+    NDArray<double> gamma   ('c', {2,3,2,3,2});
+    NDArray<double> beta    ('c', {2,3,2,3,2});
     
-    NDArray<float>* mean = input->template reduceAlongDimension<simdOps::Mean<float>>({0});
-    NDArray<float>* var  = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0});
-    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
-    NDArray<float>* std = new NDArray<float>(var->getShapeInfo());
-    var->template applyTransform<simdOps::Sqrt<float>>(std, nullptr);            
-    input->subRowVector(mean, &xHat);
-    xHat.divRowVector(std, &xHat);    
-    xHat.mulRowVector(gamma, &outExpected);
-    outExpected.addRowVector(beta, &outExpected);
+    NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, 0.49088821, 0.66059214, 0.83029607, 1., 1.16970393, 1.33940786, 1.50911179, 1.67881572, 1.84851965, 2.01822358, 2.18792751, 2.35763144, 2.52733537, 2.6970393 , 2.86674323, 3.03644717, 3.2061511 , 3.37585503, 3.54555896, 3.71526289, 3.88496682, 4.05467075, 4.22437468, 4.39407861, 4.56378254, 4.73348647, 4.9031904 , 5.07289433, 5.24259826, 5.41230219, 5.58200612, 5.75171005, 5.92141398, 6.09111791, 6.26082184, 6.43052577, 6.6002297 , 6.76993364, 6.93963757, 7.1093415 , 7.27904543, 7.44874936, 7.61845329, 7.78815722, 7.95786115, 8.12756508, 8.29726901, 8.46697294, 8.63667687, 8.8063808 , 8.97608473, 9.14578866, 9.31549259, 9.48519652, 9.65490045, 9.82460438, 9.99430831,10.16401224,10.33371617,10.50342011,10.67312404,10.84282797,11.0125319 ,11.18223583,11.35193976,11.52164369});
 
-    nd4j::ops::batchnorm<float> batchnorm;
-    Nd4jStatus status = batchnorm.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    
-    NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(outExpected.equalsTo(result));
+    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(1.);
 
-    delete mean;
-    delete var;
-    delete std;
+    nd4j::ops::batchnorm<double> op;
 
-    delete variableSpace;
-    delete block;
+    ResultSet<double>* results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double>* output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, BatchNorm4D) {
 
-    const int training = 1;
-    const int isLockGammaBeta = 0;
-    const int isMinibatch  = 0;
-    const int bS = 2;
-    const int iD = 4;
-    const int iH = 3;
-    const int iW = 3;
-    const float eps = 1e-5;
-    const float g = 2.;
-    const float b = 3.;
-    const float decay = 1.;
-    auto input = new NDArray<float>('c', {bS, iD, iH, iW});
-    auto gamma = new NDArray<float>('c', {1, iD});
-    auto beta = new NDArray<float>('c', {1, iD});
-    gamma->assign(1.);
-    nd4j::NDArrayFactory<float>::linspace(1., *input);
-
-    NDArray<float> xHat ('c', {bS, iD, iH, iW});
-    NDArray<float> outExpected('c', {bS, iD, iH, iW});
-
-
-    auto globalMeanView = new NDArray<float>('c', {1, iD});
-    auto globalVarView = new NDArray<float>('c', {1, iD});
-    auto output = new NDArray<float>('c', {bS, iD, iH, iW});
-
-
-    VariableSpace<float>* variableSpace = new VariableSpace<float>();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, globalMeanView);
-    variableSpace->putVariable(-3, globalVarView);
-    variableSpace->putVariable(-4, gamma);
-    variableSpace->putVariable(-5, beta);
-    variableSpace->putVariable(1, output);
-
-    Context<float>* block = new Context<float>(1, variableSpace, false);
-    block->fillInputs({-1,-2,-3,-4,-5});    
-    std::vector<int>* argI = block->getIArguments();
-    std::vector<float>* argT = block->getTArguments();
-    *argI = {training, isLockGammaBeta, isMinibatch};  
-    *argT = {eps, g, b, decay};  
+TEST_F(DeclarableOpsTests1, batchnorm_test2) {
     
-    NDArray<float>* mean = input->template reduceAlongDimension<simdOps::Mean<float>>({0,2,3});
-    NDArray<float>* var  = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<float>>(false, {0,2,3});
-    var->template applyScalar<simdOps::Add<float>>(eps, nullptr);
-    var->template applyTransform<simdOps::Sqrt<float>>(var, nullptr);            
-    input->template applyBroadcast<simdOps::Subtract<float>>({1}, mean, &xHat, nullptr);
-    xHat.template applyBroadcast<simdOps::Divide<float>>({1}, var, &xHat, nullptr);
-    xHat.template applyBroadcast<simdOps::Multiply<float>>({1}, gamma, &outExpected, nullptr);
-    outExpected.template applyBroadcast<simdOps::Add<float>>({1}, beta, &outExpected, nullptr);
-
-    nd4j::ops::batchnorm<float> batchnorm;
-    Nd4jStatus status = batchnorm.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
+    NDArray<double> input   ('c', {2,3,1,3,1});
+    NDArray<double> mean    ('c', {1,3,2,1,2});
+    NDArray<double> variance('c', {2,1,2,3,2});
+    NDArray<double> gamma   ('c', {2,3,2,3,1});
+    NDArray<double> beta    ('c', {1,3,2,1,2});
     
-    NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(outExpected.equalsTo(result));
+    NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.52733537,-0.35763144,-0.35763144,-0.18792751,-0.18792751, -0.52733537,-0.52733537,-0.35763144,-0.35763144,-0.18792751,-0.18792751, -0.01822358,-0.01822358, 0.15148035, 0.15148035, 0.32118428, 0.32118428, -0.01822358,-0.01822358, 0.15148035, 0.15148035, 0.32118428, 0.32118428, 0.49088821, 0.49088821, 0.66059214, 0.66059214, 0.83029607, 0.83029607, 0.49088821, 0.49088821, 0.66059214, 0.66059214, 0.83029607, 0.83029607, 1.        , 1.        , 1.16970393, 1.16970393, 1.33940786, 1.33940786, 1.        , 1.        , 1.16970393, 1.16970393, 1.33940786, 1.33940786, 1.50911179, 1.50911179, 1.67881572, 1.67881572, 1.84851965, 1.84851965, 1.50911179, 1.50911179, 1.67881572, 1.67881572, 1.84851965, 1.84851965, 2.01822358, 2.01822358, 2.18792751, 2.18792751, 2.35763144, 2.35763144, 2.01822358, 2.01822358, 2.18792751, 2.18792751, 2.35763144, 2.35763144});
 
-    delete mean;
-    delete var;
+    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(1.);
 
-    delete variableSpace;
-    delete block;
+    nd4j::ops::batchnorm<double> op;
+
+    ResultSet<double>* results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double>* output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, batchnorm_test3) {
     
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, BatchNorm2D_BP) {
+    NDArray<double> input   ('c', {2,3,2,3,2});
+    NDArray<double> mean    ('c', {2,3,2});
+    NDArray<double> variance('c', {2,3,1,3,1});
+    NDArray<double> gamma   ('c', {1,1});
+    NDArray<double> beta    ('c', {1,2});
     
-    const int isLockGammaBeta = 0;
-    const int bS = 2; 
-    const int K = 4;
-    const double eps = 1e-5;
-    const int effectiveBatchSize = bS;
-    const std::initializer_list<int> dimensions = {0};
-    NDArray<double>* input = new NDArray<double>('c', {bS, K});
-    NDArray<double>* epsilon = new NDArray<double>('c', {bS, K});
-    NDArray<double>* gamma = new NDArray<double>('c', {1, K});    
-    NDArray<double>* dGlobalMeanView = new NDArray<double>('c', {1, K});
-    NDArray<double>* dGlobalVarView = new NDArray<double>('c', {1, K});
-    NDArray<double>* outEpsilon = new NDArray<double>('c', {bS, K});
+    NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, 0.49088821, 0.66059214, 0.83029607, 1., 1.16970393, 1.33940786, 1.50911179, 1.67881572, 1.84851965, 2.01822358, 2.18792751, 2.35763144, 2.52733537, 2.6970393 , 2.86674323, 3.03644717, 3.2061511 , 3.37585503, 3.54555896, 3.71526289, 3.88496682, 4.05467075, 4.22437468, 4.39407861, 4.56378254, 4.73348647, 4.9031904 , 5.07289433, 5.24259826, 5.41230219, 5.58200612, 5.75171005, 5.92141398, 6.09111791, 6.26082184, 6.43052577, 6.6002297 , 6.76993364, 6.93963757, 7.1093415 , 7.27904543, 7.44874936, 7.61845329, 7.78815722, 7.95786115, 8.12756508, 8.29726901, 8.46697294, 8.63667687, 8.8063808 , 8.97608473, 9.14578866, 9.31549259, 9.48519652, 9.65490045, 9.82460438, 9.99430831,10.16401224,10.33371617,10.50342011, 10.67312404,10.84282797,11.0125319 ,11.18223583,11.35193976,11.52164369});
 
-    VariableSpace<double>* variableSpace = new VariableSpace<double>();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, epsilon);
-    variableSpace->putVariable(-3, gamma);
-    variableSpace->putVariable(-4, dGlobalMeanView);
-    variableSpace->putVariable(-5, dGlobalVarView);
-    variableSpace->putVariable(1, outEpsilon);
-    Context<double>* block = new Context<double>(1, variableSpace, false);
-    block->fillInputs({-1,-2,-3,-4,-5});    
-    std::vector<int>* argI = block->getIArguments();    
-    *argI = {isLockGammaBeta};       
+    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(1.);
 
-    nd4j::NDArrayFactory<double>::linspace(10., *input);
-    nd4j::NDArrayFactory<double>::linspace(1., *epsilon);    
-    gamma->assign(1);
-    NDArray<double>* mean = input->template reduceAlongDimension<simdOps::Mean<double>>(dimensions);        
-    NDArray<double>* var  = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(false, dimensions);
-    var->template applyScalar<simdOps::Add<double>>(eps, nullptr);
-    NDArray<double>* std = new NDArray<double>(var->getShapeInfo());
-    var->template applyTransform<simdOps::Sqrt<double>>(std, nullptr);            
-    NDArray<double>* xHat = new NDArray<double>(input->getShapeInfo());    
-    input->subRowVector(mean, xHat);
-    xHat->divRowVector(std, xHat);    
+    nd4j::ops::batchnorm<double> op;
 
-    NDArray<double>* temp1 = new NDArray<double>(input->getShapeInfo());
-    NDArray<double>* temp2 = new NDArray<double>(var->getShapeInfo());
+    ResultSet<double>* results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
 
-    epsilon->template applyPairwiseTransform<simdOps::Multiply<double>>(xHat, temp1, nullptr);
-    NDArray<double>* dldgammaExp = temp1->sum(dimensions);
-    NDArray<double>* dldbetaExp = epsilon->sum(dimensions);        
-    NDArray<double>* dldxhat = new NDArray<double>(epsilon->getShapeInfo());                
-    epsilon->mulRowVector(gamma, dldxhat);
-        
-    input->subRowVector(mean, temp1);
-    dldxhat->template applyPairwiseTransform<simdOps::Multiply<double>>(temp1, temp1, nullptr);
-    temp1->template applyScalar<simdOps::Multiply<double>>(-0.5);                        
-    double powParams1[] = {-1.5};
-    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams1);
-    temp1->mulRowVector(temp2, temp1);
-    NDArray<double>* dldvar = temp1->sum(dimensions);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    double powParams2[] = {-0.5};
-    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams2);
-    dldxhat->mulRowVector(temp2, temp1);
-    temp1->template applyTransform<simdOps::Neg<double>>();                
-    NDArray<double>* dldmu = temp1->sum(dimensions);
-    input->subRowVector(mean, temp1);
-    temp1->template applyScalar<simdOps::Multiply<double>>(-2.);
-    NDArray<double>* temp3 = temp1->sum(dimensions);
-    temp3->template applyScalar<simdOps::Divide<double>>((double)effectiveBatchSize);
-    dldvar->template applyPairwiseTransform<simdOps::Multiply<double>>(temp3, temp3, nullptr);
-    dldmu->template applyPairwiseTransform<simdOps::Add<double>>(temp3, dldmu, nullptr);
+    NDArray<double>* output = results->at(0);
 
-    NDArray<double>* dldinExp = new NDArray<double>(epsilon->getShapeInfo());
-    dldxhat->mulRowVector(temp2, dldinExp);     
-    input->subRowVector(mean, temp1);
-    temp1->template applyScalar<simdOps::Multiply<double>>(2./effectiveBatchSize);
-    temp1->mulRowVector(dldvar, temp1);
-    dldinExp->template applyPairwiseTransform<simdOps::Add<double>>(temp1, nullptr);
-    dldmu->template applyScalar<simdOps::Multiply<double>>(1./effectiveBatchSize, temp2, nullptr);
-    dldinExp->addRowVector(temp2, dldinExp);
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    nd4j::ops::batchnorm_bp<double> batchnorm_bp;
-    Nd4jStatus status = batchnorm_bp.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    
-    NDArray<double>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(dldinExp->equalsTo(result));
-    
-    delete temp1;
-    delete temp2;
-    delete temp3;    
-    delete dldbetaExp;
-    delete dldgammaExp;
-    delete dldxhat;
-    delete var;
-    delete mean;
-    delete dldvar;
-    delete dldmu;
-    delete dldinExp;
-    delete xHat;
-    delete std;
-
-    delete variableSpace;
-    delete block;
+    delete results;
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, BatchNorm4D_BP) {
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, batchnorm_test4) {
     
-    const int isLockGammaBeta = 0;
-    const int bS = 2; 
-    const int iD = 4;
-    const int iH = 3;
-    const int iW = 3;
-    const double eps = 1e-5;
-    const std::initializer_list<int> dimensions = {0,2,3};
-    const int effectiveBatchSize = bS*iH*iW;
-
-    NDArray<double>* input = new NDArray<double>('c', {bS, iD, iH, iW});
-    NDArray<double>* epsilon = new NDArray<double>('c', {bS, iD, iH, iW});
-    NDArray<double>* gamma = new NDArray<double>('c', {1, iD});    
-    NDArray<double>* dGlobalMeanView = new NDArray<double>('c', {1, iD});
-    NDArray<double>* dGlobalVarView = new NDArray<double>('c', {1, iD});
-    NDArray<double>* outEpsilon = new NDArray<double>('c', {bS, iD, iH, iW});
+    NDArray<double> input   ('c', {3,2});
+    NDArray<double> mean    ('c', {2,3,2});
+    NDArray<double> variance('c', {2,3,1,3,2});
+    NDArray<double> gamma   ('c', {1,1});
+    NDArray<double> beta    ('c', {1,2});
     
-    VariableSpace<double>* variableSpace = new VariableSpace<double>();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, epsilon);
-    variableSpace->putVariable(-3, gamma);
-    variableSpace->putVariable(-4, dGlobalMeanView);
-    variableSpace->putVariable(-5, dGlobalVarView);
-    variableSpace->putVariable(1, outEpsilon);
-    Context<double>* block = new Context<double>(1, variableSpace, false);
-    block->fillInputs({-1,-2,-3,-4,-5});    
-    std::vector<int>* argI = block->getIArguments();    
-    *argI = {isLockGammaBeta};       
+    NDArray<double> expected('c', {2,3,2,3,2}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, -0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428});
 
-    nd4j::NDArrayFactory<double>::linspace(80., *input);
-    nd4j::NDArrayFactory<double>::linspace(1., *epsilon);    
-    gamma->assign(1);
-    NDArray<double>* mean = input->template reduceAlongDimension<simdOps::Mean<double>>(dimensions);        
-    NDArray<double>* var  = input->template varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(false, dimensions);
-    var->template applyScalar<simdOps::Add<double>>(eps, nullptr);
-    NDArray<double>* std = new NDArray<double>(var->getShapeInfo());
-    var->template applyTransform<simdOps::Sqrt<double>>(std, nullptr);            
-    NDArray<double>* xHat = new NDArray<double>(input->getShapeInfo());    
-    input->template applyBroadcast<simdOps::Subtract<double>>({1}, mean, xHat, nullptr);
-    xHat->template applyBroadcast<simdOps::Divide<double>>({1}, std, xHat, nullptr);      
+    NDArrayFactory<double>::linspace(0.1, input, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(1.);
 
-    NDArray<double>* temp1 = new NDArray<double>(input->getShapeInfo());
-    NDArray<double>* temp2 = new NDArray<double>(var->getShapeInfo());
+    nd4j::ops::batchnorm<double> op;
 
-    epsilon->template applyPairwiseTransform<simdOps::Multiply<double>>(xHat, temp1, nullptr);
-    NDArray<double>* dldgammaExp = temp1->sum(dimensions);
-    NDArray<double>* dldbetaExp = epsilon->sum(dimensions);        
-    NDArray<double>* dldxhat = new NDArray<double>(epsilon->getShapeInfo());                    
-    epsilon->template applyBroadcast<simdOps::Multiply<double>>({1}, gamma, dldxhat, nullptr);                
+    ResultSet<double>* results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
 
-    input->template applyBroadcast<simdOps::Subtract<double>>({1}, mean, temp1, nullptr);                
-    dldxhat->template applyPairwiseTransform<simdOps::Multiply<double>>(temp1, temp1, nullptr);
-    temp1->template applyScalar<simdOps::Multiply<double>>(-0.5);                        
-    double powParams1[] = {-1.5};
-    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams1);
-    temp1->template applyBroadcast<simdOps::Multiply<double>>({1}, temp2, temp1, nullptr);
-    NDArray<double>* dldvar = temp1->sum(dimensions);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    double powParams2[] = {-0.5};
-    var->template applyTransform<simdOps::Pow<double>>(temp2, powParams2);
-    dldxhat->applyBroadcast<simdOps::Multiply<double>>({1}, temp2, temp1, nullptr);
-    temp1->template applyTransform<simdOps::Neg<double>>();                
-    NDArray<double>* dldmu = temp1->sum(dimensions);
-    input->applyBroadcast<simdOps::Subtract<double>>({1}, mean, temp1, nullptr);
-    temp1->template applyScalar<simdOps::Multiply<double>>(-2.);
-    NDArray<double>* temp3 = temp1->sum(dimensions);
-    temp3->template applyScalar<simdOps::Divide<double>>((double)effectiveBatchSize);
-    dldvar->template applyPairwiseTransform<simdOps::Multiply<double>>(temp3, temp3, nullptr);
-    dldmu->template applyPairwiseTransform<simdOps::Add<double>>(temp3, dldmu, nullptr);            
-    
-    NDArray<double>* dldinExp = new NDArray<double>(epsilon->getShapeInfo());
-    dldxhat->applyBroadcast<simdOps::Multiply<double>>({1}, temp2, dldinExp, nullptr);
-    input->applyBroadcast<simdOps::Subtract<double>>({1}, mean, temp1, nullptr);
-    temp1->template applyScalar<simdOps::Multiply<double>>(2./effectiveBatchSize);
-    temp1->applyBroadcast<simdOps::Multiply<double>>({1}, dldvar, temp1, nullptr);
+    NDArray<double>* output = results->at(0);    
 
-    dldinExp->template applyPairwiseTransform<simdOps::Add<double>>(temp1, nullptr);
-    dldmu->template applyScalar<simdOps::Multiply<double>>(1./effectiveBatchSize, temp2, nullptr);
-    dldinExp->applyBroadcast<simdOps::Add<double>>({1}, temp2, dldinExp, nullptr);    
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    nd4j::ops::batchnorm_bp<double> batchnorm_bp;
-    Nd4jStatus status = batchnorm_bp.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    
-    NDArray<double>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // dldinExp->printBuffer();    
-    // result->printBuffer();
-    ASSERT_TRUE(dldinExp->equalsTo(result));
-    
-    delete temp1;
-    delete temp2;
-    delete temp3;    
-    delete dldbetaExp;
-    delete dldgammaExp;
-    delete dldxhat;
-    delete var;
-    delete mean;
-    delete dldvar;
-    delete dldmu;
-    delete dldinExp;
-    delete xHat;
-    delete std;
-    delete block;
-
-    delete variableSpace;
+    delete results;
 }
 
-//////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru1) {
 
     const int bS = 2;

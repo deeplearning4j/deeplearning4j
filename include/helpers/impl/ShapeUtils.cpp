@@ -292,14 +292,16 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
 }
 
 //////////////////////////////////////////////////////////////////////////
-// check whether shape of min array is broadcastable to shape of max array
+// check whether 2 arrays have mutually broadcastable shapes
 // shape comparison starts from the end
 template <typename T>
-bool ShapeUtils<T>::isShapeBroadcastable(const int* maxShapeInfo, const int* minShapeInfo)
+bool ShapeUtils<T>::areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2)
 {
 
-    for (int i = 0; i < minShapeInfo[0]; ++i)
-        if (maxShapeInfo[maxShapeInfo[0] - i] != minShapeInfo[minShapeInfo[0] - i] && maxShapeInfo[maxShapeInfo[0] - i] != 1 && minShapeInfo[minShapeInfo[0] - i] != 1)
+    int minRank = arr1.rankOf() < arr2.rankOf() ? arr1.rankOf() : arr2.rankOf();    
+       
+    for (int i = -1; i >= -minRank; --i)        
+        if (arr1.sizeAt(i) != arr2.sizeAt(i) && arr1.sizeAt(i) != 1 && arr2.sizeAt(i) != 1)
             return false;
     
     return true;
@@ -308,11 +310,15 @@ bool ShapeUtils<T>::isShapeBroadcastable(const int* maxShapeInfo, const int* min
 
 //////////////////////////////////////////////////////////////////////////
 // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
-// the array with larger dimensions number has to be passed as first argument
+// if evalMinMax == false the array with larger rank has to be passed as first argument
 template <typename T>
-int* ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<T> &min, const bool evalMinMax)
+bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<T> &min, const bool evalMinMax, int*& resultShapeInfo)
 {
     
+    // check whether broadcast operation is possible for input arrays
+    if(!areShapesBroadcastable(max, min))
+        return false;
+
     int* maxShapeInfo = max.getShapeInfo(); 
     int* minShapeInfo = min.getShapeInfo();
 
@@ -322,23 +328,57 @@ int* ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
     }
        
     const int  maxRank      = maxShapeInfo[0];
-    const int  minRank      = minShapeInfo[0];
-
-    // check whether broadcast operation is possible for input arrays
-    if(!isShapeBroadcastable(maxShapeInfo, minShapeInfo))
-        throw "ShapeUtils::evalBroadcastShapeInfo method: the shapes of input arrays are not compatible for broadcast operation !" ;
+    const int  minRank      = minShapeInfo[0];  
     
     // evaluate shapeInfo for resulting array
-    int *shapeInfoNew = nullptr;
-    ALLOCATE(shapeInfoNew, max.getWorkspace(), shape::shapeInfoLength(maxRank), int);
-    memcpy(shapeInfoNew, maxShapeInfo, shape::shapeInfoLength(maxRank) * sizeof(int));
+    if(resultShapeInfo != nullptr)
+        throw "ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !" ;
+    
+    ALLOCATE(resultShapeInfo, max.getWorkspace(), shape::shapeInfoLength(maxRank), int);
+    memcpy(resultShapeInfo, maxShapeInfo, shape::shapeInfoLength(maxRank) * sizeof(int));
     for (int i = 0; i < minRank; ++i)
-        shapeInfoNew[maxRank - i] = maxShapeInfo[maxRank-i] > minShapeInfo[minRank-i] ? maxShapeInfo[maxRank-i] : minShapeInfo[minRank-i];
+        if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
+            resultShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
 
-    shape::updateStrides(shapeInfoNew, max.ordering());
+    shape::updateStrides(resultShapeInfo, max.ordering());
 
-    return shapeInfoNew;
+    return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
+template <typename T>
+bool ShapeUtils<T>::evalCommonBroadcastShapeInfo(const std::vector<const NDArray<T>*>& arrays, int*& resultShapeInfo, memory::Workspace* workspace) {
+
+    if(resultShapeInfo != nullptr)
+        throw "ShapeUtils::evalCommonBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !" ;
+
+    int size = arrays.size();
+    int maxRank = arrays[size - 1]->rankOf();
+
+    for(int i = 0; i < size - 1; ++i) {
+        if(arrays[i]->rankOf() > maxRank)
+            maxRank = arrays[i]->rankOf();
+        for(int j = i + 1; j < size; ++j)
+            if(!areShapesBroadcastable(*arrays[i], *arrays[j]))
+                return false;
+    }
+
+    ALLOCATE(resultShapeInfo, workspace, shape::shapeInfoLength(maxRank), int);
+    memset(resultShapeInfo, 0, shape::shapeInfoLength(maxRank) * sizeof(int));
+    resultShapeInfo[0] = maxRank;
+
+    for(const auto& item : arrays ) {
+        for(int i = -1; i >= -item->rankOf(); --i) 
+            if(resultShapeInfo[i + 1 + maxRank] < item->sizeAt(i))
+                resultShapeInfo[i + 1 + maxRank] = item->sizeAt(i);
+    }
+
+    shape::updateStrides(resultShapeInfo, arrays[0]->ordering());
+
+    return true;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // return sorted vector of dimensions of array with larger dimensions number along which two input arrays have same shape

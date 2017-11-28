@@ -150,7 +150,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(meanPairWsSqErr, 3, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(meanSqErr, 3, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(sigmCrossEntropy, 3, 1, false, 1, 1);
-        DECLARE_CUSTOM_OP(softmaxCrossEntropy, 3, 1, false, 1, 1);        
+        DECLARE_CUSTOM_OP(softmaxCrossEntropy, 3, 1, false, 1, 1);      
+        DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);  
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);
@@ -163,9 +164,8 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0);
         DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1);
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0);        
-        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);
-        DECLARE_CONFIGURABLE_OP(batchnorm, 1, 1, true, 4, 3);
-        DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                
+        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);        
+        // DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                
         DECLARE_CONFIGURABLE_OP(conv3d_bp, 3, 1, false, 0, 7); // TODO: to be implemented        
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, false, 0, -1);
         DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);

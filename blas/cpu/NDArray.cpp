@@ -1761,7 +1761,9 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     }
 
     if(checkTargetShape) {
-        int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(max, min, false);          // the rank of target array must be equal to max->rankOf)()
+        int* newShapeInfo = nullptr;
+        if(!ShapeUtils<T>::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo))          // the rank of target array must be equal to max->rankOf)()
+            throw "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !" ;
         if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
             throw "NDArray::applyTrueBroadcast method: the shape of target array is wrong !";    
         delete[] newShapeInfo;
@@ -1802,8 +1804,9 @@ template<typename T>
 template <typename OpName>
 NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs) const {
 
-
-    int* newShapeInfo = ShapeUtils<T>::evalBroadcastShapeInfo(this, other, true);          // the rank of new array = max->rankOf)()
+    int* newShapeInfo = nullptr;
+    if(!ShapeUtils<T>::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo))          // the rank of new array = max->rankOf)()
+        throw "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !" ;
     NDArray<T>* result = new NDArray<T>(newShapeInfo, _workspace);
     delete[] newShapeInfo;
 
@@ -2583,6 +2586,18 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
         return arr + scalar;
     }
 #endif
+    
+    ////////////////////////////////////////////////////////////////////////
+    // addition operator array1 += array2
+    template<typename T>
+    void NDArray<T>::operator+=(const NDArray<T>& other) {    
+
+        if (other.lengthOf() == lengthOf())
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+        else
+            *this = this->template applyTrueBroadcast<simdOps::Add<T>>(other);
+    }
+    
     ////////////////////////////////////////////////////////////////////////
     // subtraction operator array - array
     template<typename T>
@@ -2728,7 +2743,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // division operator array/scalar
+    // division operator array /= scalar
     template<typename T>
     void NDArray<T>::operator/=(const T scalar) {
         
