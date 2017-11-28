@@ -489,6 +489,9 @@ public class TensorFlowImportTest {
         assertEquals(0, in1.second());
 
 
+        assertEquals(1, nodeSum.dimensions(0));
+
+
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
 
         //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
