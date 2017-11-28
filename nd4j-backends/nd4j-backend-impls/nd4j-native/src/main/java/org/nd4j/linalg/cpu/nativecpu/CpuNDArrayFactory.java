@@ -87,6 +87,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void createBlas() {
         blas = new CpuBlas();
+        PointerPointer functions = new PointerPointer(6);
+        functions.put(0, Loader.addressof("cblas_sgemv"));
+        functions.put(1, Loader.addressof("cblas_dgemv"));
+        functions.put(2, Loader.addressof("cblas_sgemm"));
+        functions.put(3, Loader.addressof("cblas_dgemm"));
+        functions.put(4, Loader.addressof("cblas_sgemm_batch"));
+        functions.put(5, Loader.addressof("cblas_dgemm_batch"));
+        nativeOps.initializeFunctions(functions);
     }
 
     @Override

@@ -2954,7 +2954,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void initializeDevicesAndFunctions();
 
-    public native void initializeDevicesAndFunctions(@Cast("Nd4jPointer*") PointerPointer functions);
+    public native void initializeFunctions(@Cast("Nd4jPointer*") PointerPointer functions);
 
     /**
      * This method acquires memory chunk of requested size on host side

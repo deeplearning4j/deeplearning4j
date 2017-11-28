@@ -2022,7 +2022,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             props.put(Nd4jEnvironment.BACKEND_KEY, "CUDA");
             props.put(Nd4jEnvironment.CUDA_NUM_GPUS_KEY, nativeOps.getAvailableDevices());
             props.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
-            props.put(Nd4jEnvironment.BLAS_VENDOR_KEY, Nd4jBlas.Vendor.CUBLAS.toString());
+            props.put(Nd4jEnvironment.BLAS_VENDOR_KEY, (Nd4j.factory().blas()).getBlasVendor().toString());
             props.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
 
