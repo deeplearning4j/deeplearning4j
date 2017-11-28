@@ -4,6 +4,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.EdgeId;
@@ -14,10 +15,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Base implementation for importing a graph
@@ -27,6 +25,27 @@ import java.util.UUID;
  */
 @Slf4j
 public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> implements GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
+
+    @Override
+    public void dumpBinaryProtoAsText(InputStream inputFile, File outputFile) {
+        GRAPH_TYPE readGraph = readGraph(inputFile);
+        try {
+            val text = readGraph.toString();
+            IOUtils.copyLarge(inputFile,new FileOutputStream(outputFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
+        try {
+            GRAPH_TYPE readGraph = readGraph(new FileInputStream(inputFile));
+            FileUtils.writeStringToFile(outputFile,readGraph.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      *
@@ -63,6 +82,11 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
      */
     @Override
     public  SameDiff importGraph(InputStream inputStream) {
+        GRAPH_TYPE def = readGraph(inputStream);
+        return importGraph(def);
+    }
+
+    protected GRAPH_TYPE readGraph(InputStream inputStream) {
         byte[] bytes = null;
         GRAPH_TYPE def = null;
         try {
@@ -85,8 +109,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
             }
         }
 
-
-        return importGraph(def);
+        return def;
     }
 
     /**

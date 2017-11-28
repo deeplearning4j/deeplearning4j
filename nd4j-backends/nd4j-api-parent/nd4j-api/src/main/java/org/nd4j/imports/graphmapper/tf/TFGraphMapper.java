@@ -17,8 +17,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.*;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteOrder;
 import java.util.*;
 
@@ -38,6 +37,40 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     public static TFGraphMapper getInstance() {
         return MAPPER_INSTANCE;
+    }
+
+    @Override
+    public void dumpBinaryProtoAsText(InputStream inputFile, File outputFile) {
+        try {
+            GraphDef graphDef = GraphDef.parseFrom(inputFile);
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
+            for(NodeDef node : graphDef.getNodeList()) {
+              bufferedWriter.write(node.toString());
+            }
+
+            bufferedWriter.flush();
+            bufferedWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
+        try {
+            GraphDef graphDef = GraphDef.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
+            for(NodeDef node : graphDef.getNodeList()) {
+                bufferedWriter.write(node.toString());
+            }
+
+            bufferedWriter.flush();
+            bufferedWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

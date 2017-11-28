@@ -329,10 +329,10 @@ public class TensorFlowImportTest {
         assertEquals(15, graph.variablesLength());
 
         assertEquals("phi/Assign", graph.nodes(0).name());
-        assertEquals("phi/read", graph.nodes(1).name());
+        assertEquals("alpha/Assign", graph.nodes(1).name());
 
         assertEquals(2, graph.nodes(0).inputPairedLength());
-        assertEquals(1, graph.nodes(1).inputPairedLength());
+        assertEquals(2, graph.nodes(1).inputPairedLength());
     }
 
     @Test
@@ -376,10 +376,11 @@ public class TensorFlowImportTest {
         assertEquals(7, nodeSum.id());
 
         assertEquals(nodeSlice.id(), in0.first());
-        assertEquals(0, in0.first());
+        assertEquals(5, in0.first());
 
         assertEquals(6, in1.first());
-        assertEquals(0, in1.first());
+        assertEquals(0, in1.second());
+
     }
 
     @Test
@@ -506,7 +507,7 @@ public class TensorFlowImportTest {
 
     @Test
     public void testInferShape() throws IOException {
-        SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getFile());
+        SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getInputStream());
         assertNotNull(graph);
 
         INDArray input = Nd4j.linspace(1,40,40).reshape(10,4);
