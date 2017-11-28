@@ -136,20 +136,20 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        val isSameNode = attributesForNode.get("auto_pad").getS().equals("SAME");
+        val paddingVal = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
         val kernelShape = attributesForNode.get("kernel_shape").getIntsList();
-        val padding = attributesForNode.get("pads").getIntsList();
+        val padding = !attributesForNode.containsKey("pads") ? Arrays.asList(1L) : attributesForNode.get("pads").getIntsList();
         val strides = attributesForNode.get("strides").getIntsList();
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .sy(strides.get(0).intValue())
                 .sx(strides.get(1).intValue())
                 .type(Pooling2D.Pooling2DType.AVG)
-                .isSameMode(isSameNode)
+                .isSameMode(paddingVal.equalsIgnoreCase("SAME"))
                 .kh(kernelShape.get(0).intValue())
                 .kw(kernelShape.get(1).intValue())
                 .ph(padding.get(0).intValue())
-                .pw(padding.get(1).intValue())
+                .pw(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
                 .virtualWidth(1)
                 .virtualHeight(1)
                 .build();

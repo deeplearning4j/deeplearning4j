@@ -91,7 +91,7 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public String onnxName() {
-       return "ReduceSum";
+       return "Sum";
     }
 
     @Override
