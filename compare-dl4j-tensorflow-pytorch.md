@@ -28,7 +28,8 @@ Python Frameworks
 * <a href="#chainer">Chainer</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
-* <a href="#dsstne">DyNet</a>
+* <a href="#dynet">DyNet</a>
+* <a href="#gensim">Gensim</a>
 * <a href="#gluon">Gluon</a>
 * <a href="#keras">Keras</a>
 * <a href="#mxnet">Mxnet</a>
@@ -177,6 +178,10 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 * (+) Dynamic computation graph
 * (-) Small user community
+
+### <a name="gensim">Gensim</a>
+
+[Gensim](https://rare-technologies.com/word2vec-tutorial/) is a fast implementation of word2vec implemented in Python. While Gensim is not a general purpose ML platform, for word2vec, it is at least an order of magnitude faster than TensorFlow. It is supported by the NLP consulting firm Rare Technologies. 
 
 ### <a name="gluon">Gluon</a>
 
