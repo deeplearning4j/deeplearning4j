@@ -3829,10 +3829,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray reshape(char order, int... newShape) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        long prod = ArrayUtil.prodLong(newShape);
-        if (prod != this.lengthLong())
-            throw new ND4JIllegalStateException("New shape length doesn't match original length");
-
         if (newShape == null || newShape.length < 2)
             throw new ND4JIllegalStateException(
                             "Can't reshape(int...) without shape arguments. Got empty shape instead.");
@@ -3842,7 +3838,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for (int i = 0; i < shape.length; i++) {
             if (shape[i] < 0) {
                 if (numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones");
+                    throw new IllegalArgumentException("Only one dimension can be negative ones. Got shape "
+                            + Arrays.toString(newShape));
 
                 numberNegativesOnes++;
 
@@ -3864,6 +3861,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             }
         }
+
+        long prod = ArrayUtil.prodLong(newShape);
+        if(numberNegativesOnes > 0)
+            prod = Math.abs(prod);
+        if (prod != this.lengthLong())
+            throw new ND4JIllegalStateException("New shape length doesn't match original length");
 
 
 
