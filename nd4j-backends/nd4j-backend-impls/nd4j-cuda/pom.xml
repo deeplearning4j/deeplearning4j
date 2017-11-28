@@ -12,6 +12,10 @@
     <properties>
         <cuda.version>9.0</cuda.version>
         <cudnn.version>7.0</cudnn.version>
+        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+        <maven.compiler.testSource>1.8</maven.compiler.testSource>
     </properties>
 
     <build>
