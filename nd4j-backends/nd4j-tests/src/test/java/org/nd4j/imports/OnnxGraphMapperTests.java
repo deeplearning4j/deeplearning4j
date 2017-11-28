@@ -42,11 +42,7 @@ public class OnnxGraphMapperTests {
     }
 
 
-    @Test
-    public void testLoadResnet() throws Exception {
-        val loadedFile = new ClassPathResource("onnx_graphs/resnet50/model.pb").getInputStream();
-        val mapped = OnnxGraphMapper.getInstance().importGraph(loadedFile);
-    }
+
 
 
     @Test

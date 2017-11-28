@@ -33,7 +33,7 @@ public class TensorFlowImportTest {
 
     @Test
     public void testHashEquality1() {
-        long hash = HashUtil.getLongHash("Conv2DDerivative");
+        long hash = HashUtil.getLongHash("Conv2D");
         assertEquals(-1637140380760460323L, hash);
     }
 
