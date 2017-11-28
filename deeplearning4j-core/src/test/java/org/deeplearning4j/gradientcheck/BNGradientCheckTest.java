@@ -490,7 +490,7 @@ public class BNGradientCheckTest {
                             net.setLabels(ds.getLabels());
                             net.computeGradientAndScore();
                             double scoreBefore = net.score();
-                            for (int k = 0; k < 5; k++)
+                            for (int k = 0; k < 20; k++)
                                 net.fit(ds);
                             net.computeGradientAndScore();
                             double scoreAfter = net.score();
