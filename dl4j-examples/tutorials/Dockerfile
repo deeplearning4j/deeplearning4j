@@ -80,6 +80,8 @@ RUN cd /usr/src/zeppelin && git init && git fetch && git checkout 'ipynb-export/
 
 RUN cd /usr/src/zeppelin \
  && MAVEN_OPTS="-Xmx2g -XX:MaxPermSize=1024m" /tmp/apache-maven-3.5.0/bin/mvn package -Pbuild-distr -DskipTests \
+ -Pspark-1.6 \
+# -Pspark-2.1 \
  && tar xvf /usr/src/zeppelin/zeppelin-distribution/target/zeppelin*.tar.gz -C /usr/ \
  && mv /usr/zeppelin* $ZEPPELIN_HOME \
  && mkdir -p $ZEPPELIN_HOME/logs \
@@ -90,7 +92,7 @@ RUN cd /usr/src/zeppelin \
  && rm -rf /root/.npm \
  && find /tmp -maxdepth 1 -not -name 'apache-maven-3.5.0' -not -name "." -exec rm -rf {} \; \
  # Removing extra interpreter folders
-  && find $ZEPPELIN_HOME/interpreter -maxdepth 1 -type d -not -name 'spark' -not -name 'md' -not -name "." -exec rm -rf {} \;
+ && find $ZEPPELIN_HOME/interpreter -maxdepth 1 -type d -not -name 'spark' -not -name 'md' -not -name "." -exec rm -rf {} \;
 
 RUN ln -s -f /usr/bin/pip3 /usr/bin/pip \
  && ln -s -f /usr/bin/python3 /usr/bin/python
@@ -103,8 +105,10 @@ RUN mkdir -p $ZEPPELIN_HOME/otherpoms \
 COPY . $ZEPPELIN_HOME/dockerfiles/.
 
 # switch lines if building for cuda or cpu
-RUN RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-native.xml $ZEPPELIN_HOME/otherpoms/pom.xml
-#RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-cuda-8.0.xml $ZEPPELIN_HOME/otherpoms/pom.xml
+RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-native_spark_2.xml $ZEPPELIN_HOME/otherpoms/pom.xml
+#RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-native_spark_1.xml $ZEPPELIN_HOME/otherpoms/pom.xml
+#RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-cuda-8.0_spark_2.xml $ZEPPELIN_HOME/otherpoms/pom.xml
+#RUN mv $ZEPPELIN_HOME/dockerfiles/docker/pom-cuda-8.0_spark_1.xml $ZEPPELIN_HOME/otherpoms/pom.xml
 
 RUN ls $ZEPPELIN_HOME/bin/ \
     && cp -a $ZEPPELIN_HOME/dockerfiles/docker/conf/. $ZEPPELIN_HOME/conf/ \
