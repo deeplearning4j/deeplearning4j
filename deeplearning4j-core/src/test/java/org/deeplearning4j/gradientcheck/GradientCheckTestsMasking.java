@@ -129,7 +129,6 @@ public class GradientCheckTestsMasking {
 
     @Test
     public void testBidirectionalLSTMMasking() {
-        //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 5;
@@ -162,14 +161,7 @@ public class GradientCheckTestsMasking {
             mln.init();
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < nIn; j++) {
-                    for (int k = 0; k < timeSeriesLength; k++) {
-                        input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
-                    }
-                }
-            }
+            INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
 
             INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
             for (int i = 0; i < miniBatchSize; i++) {
