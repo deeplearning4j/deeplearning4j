@@ -541,13 +541,13 @@ public class SameDiff {
         graph = new SDGraph();
         graph.setSameDiff(this);
         functionFactory = new DifferentialFunctionFactory(this);
-        variableMap = new HashMap<>();
-        sameDiffFunctionDefinitionMap = new HashMap<>();
-        sameDiffFunctionInstances = new HashMap<>();
+        variableMap = new LinkedHashMap<>();
+        sameDiffFunctionDefinitionMap = new LinkedHashMap<>();
+        sameDiffFunctionInstances = new LinkedHashMap<>();
         functionInstances = new IntArrayKeyMap<>();
         vertexIdToVariable = new IntArrayKeyMap<>();
         gradients = new IntArrayKeyMap<>();
-        forwardVarForGrad = new IntArrayKeyMap<>();
+        forwardVarForGrad = new LinkedHashMap<>();
         forwardBackwardStates = new HashMap<>();
         opsForResult = new IntArrayKeyMap<>();
         reverseArrayLookup = new IdentityHashMap<>();
@@ -3726,8 +3726,8 @@ public class SameDiff {
 
         val inputs = graph().getFromFor(node.getVertexId());
         for(int input : inputs) {
-            for(int output : node.getVertexId()) {
-                inPaired.add(IntPair.createIntPair(bufferBuilder,input,output));
+            for(int i = 0; i < node.resultVertexId().length; i++) {
+                inPaired.add(IntPair.createIntPair(bufferBuilder,input,i));
             }
         }
 

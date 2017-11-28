@@ -18,11 +18,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A mapper for onnx graphs to
@@ -37,6 +39,43 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     public static OnnxGraphMapper getInstance() {
         return INSTANCE;
     }
+
+
+    @Override
+    public void dumpBinaryProtoAsText(InputStream inputFile, File outputFile) {
+        try {
+            OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(inputFile);
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
+            for(OnnxProto3.NodeProto node : graphDef.getGraph().getNodeList()) {
+                bufferedWriter.write(node.toString() + "\n");
+            }
+
+            bufferedWriter.flush();
+            bufferedWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
+        try {
+            OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
+            for(OnnxProto3.NodeProto node : graphDef.getGraph().getNodeList()) {
+                bufferedWriter.write(node.toString());
+            }
+
+            bufferedWriter.flush();
+            bufferedWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
     @Override
     public Map<String, Integer> verticesForGraph(OnnxProto3.GraphProto graph, SameDiff sameDiff) {

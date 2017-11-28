@@ -28,6 +28,23 @@ import java.util.Map;
 public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
     /**
+     * Dump a binary proto file representation as a
+     * plain string in to the target text file
+     * @param inputFile
+     * @param outputFile
+     */
+    void dumpBinaryProtoAsText(File inputFile,File outputFile);
+
+
+    /**
+     * Dump a binary proto file representation as a
+     * plain string in to the target text file
+     * @param inputFile
+     * @param outputFile
+     */
+    void dumpBinaryProtoAsText(InputStream inputFile,File outputFile);
+
+    /**
      * Get the vertices for a given graph
      * based on the name
      * @param graph the graph
