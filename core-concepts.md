@@ -30,8 +30,7 @@ Deeplearning4j works with a lot of different data types, such as images, CSV, AR
 
 To use DataVec, you will need one of the implementations of the [RecordReader](http://deeplearning4j.org/datavecdoc/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html) (see [Simple Image Load Transform](http://deeplearning4j.org/simple-image-load-transform) for a detailed explanation).
 
-Once you have a [DataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html)
-you can use it to retrieve the data in a format suited for training a neural net model.
+Once you have a [DataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which is just a pattern that describes sequential access to data, you can use it to retrieve the data in a format suited for training a neural net model.
 
 ### Normalizing Data
 
