@@ -1230,7 +1230,7 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testNormalizerPrefetchReset() throws Exception {
-        //DataNormalization normalizer = new NormalizerMinMaxScaler(0, 1);
+        //Check NPE fix for: https://github.com/deeplearning4j/deeplearning4j/issues/4214
         RecordReader csv = new CSVRecordReader();
         csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
@@ -1246,6 +1246,6 @@ public class RecordReaderDataSetiteratorTest {
         iter.totalOutcomes();
         iter.hasNext();
         iter.reset();
-        DataSet ds = iter.next();
+        iter.next();
     }
 }
