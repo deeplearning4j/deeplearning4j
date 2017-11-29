@@ -111,7 +111,8 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunction(SameDiff sameDiff, boolean inPlace, DifferentialFunction[] args) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
-        sameDiff.associateFunctionsAsArgs(args,this);
+        if(sameDiff != null)
+            sameDiff.associateFunctionsAsArgs(args,this);
 
     }
 
@@ -120,8 +121,10 @@ public abstract class DifferentialFunction implements Differential {
         this.sameDiff = sameDiff;
         this.vertexId = vertexId;
         this.inPlace = inPlace;
-        sameDiff.putShapeForVertexId(vertexId,shape);
-        sameDiff.associateFunctionsAsArgs(args,this);
+        if(sameDiff != null) {
+            sameDiff.putShapeForVertexId(vertexId, shape);
+            sameDiff.associateFunctionsAsArgs(args, this);
+        }
         this.scalarValue = scalarValue;
         this.dimensions = dimensions;
         this.extraArgs = extraArgs;

@@ -358,6 +358,21 @@ public class TensorFlowImportTest {
         assertEquals(5, graph.variablesLength());
 
         val nodeSlice = graph.nodes(0);
+
+        assertEquals(14, nodeSlice.extraIntegerLength());
+
+        val begin_mask = nodeSlice.extraInteger(0);
+        val ellipsis_mask = nodeSlice.extraInteger(1);
+        val end_mask = nodeSlice.extraInteger(2);
+        val new_axis_mask = nodeSlice.extraInteger(3);
+        val shrink_axis_mask = nodeSlice.extraInteger(4);
+
+        assertEquals(0, begin_mask);
+        assertEquals(0, ellipsis_mask);
+        assertEquals(0, end_mask);
+        assertEquals(0, new_axis_mask);
+        assertEquals(0, shrink_axis_mask);
+
         val nodeSum = graph.nodes(1);
 
         assertEquals("StridedSlice", nodeSlice.name());
@@ -448,6 +463,8 @@ public class TensorFlowImportTest {
         assertEquals(5, in3.first());
         assertEquals(0, in3.second());
     }
+
+
 
 
     @Test

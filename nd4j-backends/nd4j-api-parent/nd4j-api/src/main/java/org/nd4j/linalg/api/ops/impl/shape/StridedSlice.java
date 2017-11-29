@@ -19,10 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -57,7 +60,7 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-       return "StridedSlice";
+        return "StridedSlice";
     }
 
 
@@ -71,13 +74,28 @@ public class StridedSlice extends DynamicCustomOp {
             3) strides
          */
 
-    /*    val inputBegin = tNode.getInputs().get(1);
-        val inputEnd = tNode.getInputs().get(2);
-        val inputStrides = tNode.getInputs().get(3);
+        val inputBegin = nodeDef.getInput(1);
+        val inputEnd = nodeDef.getInput(2);
+        val inputStrides = nodeDef.getInput(3);
+
+        NodeDef beginNode = null;
+        NodeDef endNode = null;
+        NodeDef strides = null;
+
+        for(int i = 0; i < graph.getNodeCount(); i++) {
+            if(graph.getNode(i).getName().equals(inputBegin)) {
+                beginNode = graph.getNode(i);
+            }
+            if(graph.getNode(i).getName().equals(inputEnd)) {
+                endNode = graph.getNode(i);
+            }
+            if(graph.getNode(i).getName().equals(inputStrides)) {
+                strides = graph.getNode(i);
+            }
+        }
 
 
-        val iArgs = new ArrayList<Integer>();
-
+        val iArgs = getIArguments();
         // bit masks for this slice
         val bm = nodeDef.getAttrOrThrow("begin_mask");
         val xm = nodeDef.getAttrOrThrow("ellipsis_mask");
@@ -92,26 +110,27 @@ public class StridedSlice extends DynamicCustomOp {
         iArgs.add((int) nm.getI());
         iArgs.add((int) sm.getI());
 
-        if (inputBegin.getNode() < 0 && inputEnd.getNode() < 0 && inputStrides.getNode() < 0) {
+        val beginArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",beginNode,graph);
+        val endArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",endNode,graph);
+        val stridesArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",strides,graph);
 
-            // order matters, hehe
-            val strides = graph.getVariableSpace().getVariable(tNode.getInputs().remove(3));
-            val end = graph.getVariableSpace().getVariable(tNode.getInputs().remove(2));
-            val begin = graph.getVariableSpace().getVariable(tNode.getInputs().remove(1));
 
-            for (int e = 0; e < begin.getArray().length(); e++)
-                iArgs.add((int) begin.getArray().getInt(e));
+        if (beginArr != null && endArr != null && stridesArr != null) {
 
-            for (int e = 0; e < end.getArray().length(); e++)
-                iArgs.add((int) end.getArray().getInt(e));
+            for (int e = 0; e < beginArr.length(); e++)
+                iArgs.add((int) beginArr.getInt(e));
 
-            for (int e = 0; e < strides.getArray().length(); e++)
-                iArgs.add((int) strides.getArray().getInt(e));
+            for (int e = 0; e <  endArr.length(); e++)
+                iArgs.add((int) endArr.getInt(e));
+
+            for (int e = 0; e < stridesArr.length(); e++)
+                iArgs.add((int)  stridesArr.getInt(e));
         } else {
             // do nothing
         }
 
-        val bits = Ints.toArray(iArgs);*/
+        val bits = Ints.toArray(iArgs);
+
     }
 
 

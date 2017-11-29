@@ -178,7 +178,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null)
+        if(args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null)
             this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
     }
 

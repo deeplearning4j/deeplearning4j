@@ -47,9 +47,11 @@ import java.util.Map;
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
 
+    protected boolean keepDims;
+
     public BaseAccumulation(SameDiff sameDiff,
                             DifferentialFunction i_v,
-                            int[] dimensions) {
+                            int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
             sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v},this);
@@ -57,6 +59,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             sameDiff.putShapeForVertexId(vertexId,Shape.getReducedShape(i_v.getResultShape(),dimensions));
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
+            this.keepDims = keepDims;
             f().addFunctionEdges(this);
 
         } else {
@@ -68,7 +71,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(SameDiff sameDiff,
                             DifferentialFunction i_v,
                             DifferentialFunction i_v2,
-                            int[] dimensions) {
+                            int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
             sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v,i_v2},this);
@@ -77,6 +80,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             addAsNewVertexId();
+            this.keepDims = keepDims;
             f().addFunctionEdges(this);
 
 
@@ -84,6 +88,22 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
+    }
+
+
+
+    public BaseAccumulation(SameDiff sameDiff,
+                            DifferentialFunction i_v,
+                            int[] dimensions) {
+        this(sameDiff,i_v,dimensions,false);
+
+    }
+
+    public BaseAccumulation(SameDiff sameDiff,
+                            DifferentialFunction i_v,
+                            DifferentialFunction i_v2,
+                            int[] dimensions) {
+        this(sameDiff,i_v,i_v2,dimensions,false);
     }
 
 
@@ -177,6 +197,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             val dims = TFGraphMapper.getInstance().getNDArrayFromTensor("axis",nodeDef,graph).data().asInt();
             this.dimensions = dims;
         }
+
+        if(attributesForNode.containsKey("keep_dims")) {
+            val keepDims = attributesForNode.get("keep_dims").getB();
+            this.keepDims = keepDims;
+        }
     }
 
     protected boolean hasReductionIndices(NodeDef nodeDef) {
@@ -201,6 +226,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             this.dimensions = dims;
         }
     }
+
+
 
     @Override
     public void setFinalResult(double value) {

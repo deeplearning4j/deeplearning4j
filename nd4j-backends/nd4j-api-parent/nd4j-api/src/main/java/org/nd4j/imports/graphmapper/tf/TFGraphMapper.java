@@ -125,7 +125,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         boolean isPlaceholder = opType.getOp().startsWith("Placeholder");
         boolean endsWithRead = opType.getName().endsWith("/read");
         boolean isNoOp = opType.getOp().equalsIgnoreCase("NoOp");
-        return isConst || isVar || isPlaceholder || endsWithRead || isNoOp;
+        boolean isReductionIndices = opType.getOp().endsWith("/reduction_indices");
+
+        return isConst || isVar || isPlaceholder || endsWithRead || isNoOp || isReductionIndices;
     }
 
     @Override
