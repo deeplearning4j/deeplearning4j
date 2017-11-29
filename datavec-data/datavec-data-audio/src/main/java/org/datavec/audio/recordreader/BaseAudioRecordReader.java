@@ -184,7 +184,14 @@ public abstract class BaseAudioRecordReader extends BaseRecordReader {
         } catch (Exception e) {
             throw new RuntimeException("Error during LineRecordReader reset", e);
         }
+    }
 
+    @Override
+    public boolean resetSupported(){
+        if(inputSplit == null){
+            return false;
+        }
+        return inputSplit.resetSupported();
     }
 
     @Override

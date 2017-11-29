@@ -97,6 +97,19 @@ public class InputStreamInputSplit implements InputSplit {
     @Override
     public void reset() {
         //No op
+        try{
+            is.reset();
+        } catch (IOException e){
+            throw new RuntimeException("Error reseting input stream",e);
+        }
+    }
+
+    @Override
+    public boolean resetSupported() {
+        if( is != null){
+            return is.markSupported();
+        }
+        return location != null;
     }
 
     @Override

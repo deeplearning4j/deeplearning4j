@@ -113,6 +113,16 @@ public class ComposableRecordReader extends BaseRecordReader {
     }
 
     @Override
+    public boolean resetSupported() {
+        for(RecordReader rr : readers){
+            if(!rr.resetSupported()){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException(
                         "Generating records from DataInputStream not supported for ComposableRecordReader");

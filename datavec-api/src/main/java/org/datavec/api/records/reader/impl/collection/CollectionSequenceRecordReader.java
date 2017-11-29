@@ -101,6 +101,11 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     }
 
     @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException(
                         "Generating records from DataInputStream not supported for SequenceCollectionRecordReader");

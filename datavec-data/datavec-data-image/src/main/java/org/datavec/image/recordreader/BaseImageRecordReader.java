@@ -386,6 +386,14 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         }
     }
 
+    @Override
+    public boolean resetSupported(){
+        if(inputSplit == null){
+            return false;
+        }
+        return inputSplit.resetSupported();
+    }
+
     /**
      * Returns {@code getLabels().size()}.
      */
