@@ -104,32 +104,22 @@ additionally for as long as you like. It will evaluate the performance of your
 network after each epoch (or what ever you have configured) and save the best
 performing version for later use. 
 
-Also note that DL4J does not only support training just MultiLayerNetworks, but
-it also supports a more flexible [ComputationGraph](http://deeplearning4j.org/compgraph).
+Also note that DL4J does not only support training just `MultiLayerNetworks`, but it also supports a more flexible [ComputationGraph](http://deeplearning4j.org/compgraph).
 
 ### Evaluating Model Performance
 
-As you train your model, you will want how well it currently performs. For this
-you should have set aside dedicated data set that will not be used for training
-but instead will only be used for evaluating your model. This data should have
-the same distribution as the real life data will have when you wan to actually
-use your model. The reason why you can't simply use your training data for
-evaluation is because machine learning methods are prone to overfitting if they
-are large enough.
+As you train your model, you will want to test how well it performs. For that test, you will need a dedicated data set that will not be used for training but instead will only be used for evaluating your model. This data should have the same distribution as the real-world data you want to make predictions about with your model. The reason you can't simply use your training data for evaluation is because machine learning methods are prone to overfitting (getting good at making predictions about the training set, but not performing well on larger datasets).
 
-Evaluating your model is done using the [Evaluation](http://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
-class. Depending on if you want to evaluate a normal feed forward network or
-a recurrent network you will have to use slightly different methods. For more
-details on using it, take a look at the corresponding [examples](https://github.com/deeplearning4j/dl4j-examples).
-
+The [Evaluation](http://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
+class is used for evaluation. Slightly different methods apply to evaluating a normal feed forward networks or recurrent networks. For more details on using it, take a look at the corresponding [examples](https://github.com/deeplearning4j/dl4j-examples).
 
 ## Troubleshooting a Neural Net Model
 
-Using neural networks to solve problems is a very empirical process. So you will have to try different settings and architectures in order to find something that performs best for you.
+Building neural networks to solve problems is an empirical process. That is, it requires trial and error. So you will have to try different settings and architectures in order to find a neural net configuration that performs well.
 
-DL4J assists you in this endevor by providing a listener facility on your network. You can set up listeners for your model, that will be called after each mini-batch. The two most often used listeners that DL4J ships out of the box, are [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
-and [HistogramIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/ui/weights/HistogramIterationListener.html). While ScoreIterationListener will simply print the current error score for your network, HistogramIterationListener will start
-up a web ui that will provide you with a host of different information that you can use to fine tune your network configuration. See [Visualize, Monitor and Debug Network Learning](http://deeplearning4j.org/visualization) on how to interpret that data.
+DL4J provides a listener facility help you monitor your network's performance visually. You can set up listeners for your model that will be called after each mini-batch is processed. The two most often used listeners that DL4J ships out of the box are [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
+and [HistogramIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/ui/weights/HistogramIterationListener.html). 
 
-See also [Troubleshooting neural nets](http://deeplearning4j.org/troubleshootingneuralnets) 
-for more information on how to improve results.
+While `ScoreIterationListener` will simply print the current error score for your network, `HistogramIterationListener` will start up a web UI that to provide you with a host of different information that you can use to fine tune your network configuration. See [Visualize, Monitor and Debug Network Learning](http://deeplearning4j.org/visualization) on how to interpret that data.
+
+See [Troubleshooting neural nets](http://deeplearning4j.org/troubleshootingneuralnets) for more information on how to improve results.
