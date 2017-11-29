@@ -188,8 +188,8 @@ public class TestImageTransform {
         float[] transformed = transform.query(coordinates);
         assertEquals(frame.imageWidth  / 2, transformed[0], 0);
         assertEquals(frame.imageHeight / 2, transformed[1], 0);
-        assertEquals((frame.imageHeight + frame.imageWidth) / 2 - 1, transformed[2], 0);
-        assertEquals((frame.imageHeight - frame.imageWidth) / 2,     transformed[3], 0);
+        assertEquals((frame.imageHeight + frame.imageWidth) / 2, transformed[2], 1);
+        assertEquals((frame.imageHeight - frame.imageWidth) / 2, transformed[3], 1);
     }
 
     @Test
