@@ -86,6 +86,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
 
     private MultiDataSetPreProcessor preProcessor;
 
+    private boolean resetSupported = true;
+
     private RecordReaderMultiDataSetIterator(Builder builder) {
         this.batchSize = builder.batchSize;
         this.alignmentMode = builder.alignmentMode;
@@ -96,6 +98,18 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
         this.timeSeriesRandomOffset = builder.timeSeriesRandomOffset;
         if (this.timeSeriesRandomOffset) {
             timeSeriesRandomOffsetRng = new Random(builder.timeSeriesRandomOffsetSeed);
+        }
+
+
+        if(recordReaders != null){
+            for(RecordReader rr : recordReaders.values()){
+                resetSupported &= rr.resetSupported();
+            }
+        }
+        if(sequenceRecordReaders != null){
+            for(SequenceRecordReader srr : sequenceRecordReaders.values()){
+                resetSupported &= srr.resetSupported();
+            }
         }
     }
 
@@ -622,7 +636,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
 
     @Override
     public boolean resetSupported() {
-        return true;
+        return resetSupported;
     }
 
     @Override
@@ -632,6 +646,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
 
     @Override
     public void reset() {
+        if(!resetSupported){
+            throw new IllegalStateException("Cannot reset iterator - reset not supported (resetSupported() == false):" +
+                    " one or more underlying (sequence) record readers do not support resetting");
+        }
+
         for (RecordReader rr : recordReaders.values())
             rr.reset();
         for (SequenceRecordReader rr : sequenceRecordReaders.values())
