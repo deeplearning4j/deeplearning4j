@@ -499,4 +499,15 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     public List<int[]> calculateOutputShape(CustomOp op) {
         return backendExecutioner.calculateOutputShape(op);
     }
+
+
+    @Override
+    public void enableDebugMode(boolean reallyEnable) {
+        backendExecutioner.enableDebugMode(reallyEnable);
+    }
+
+    @Override
+    public void enableVerboseMode(boolean reallyEnable) {
+        backendExecutioner.enableVerboseMode(reallyEnable);
+    }
 }

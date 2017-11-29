@@ -43,6 +43,7 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
         return null;
     }
 
+
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         throw new UnsupportedOperationException();

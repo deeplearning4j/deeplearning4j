@@ -51,6 +51,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #define ND4J_EXPORT
 // #endif
 // #include <dll.h>
+// #include <helpers/BlasHelper.h>
 
 /*
 int tad_threshold = 1;
@@ -61,13 +62,6 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
-// #include <cblas.h>
-
-// #ifdef _WIN32
-// #define CUBLASWINAPI __stdcall
-// #else
-// #define CUBLASWINAPI 
-// #endif
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }

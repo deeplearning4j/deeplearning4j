@@ -5,18 +5,24 @@ import lombok.val;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.autodiff.execution.NativeGraphExecutioner;
+import org.nd4j.autodiff.execution.conf.ExecutionMode;
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
+import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
 import org.tensorflow.framework.GraphDef;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +34,13 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class TensorFlowImportTest {
+    private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
+            .executionMode(ExecutionMode.SEQUENTIAL)
+            .profilingMode(OpExecutioner.ProfilingMode.DISABLED)
+            .gatherTimings(true)
+            .outputMode(OutputMode.IMPLICIT)
+            .build();
+
     @Before
     public void setUp() throws Exception {
     }
@@ -334,6 +347,8 @@ public class TensorFlowImportTest {
 
         assertEquals(2, graph.nodes(0).inputPairedLength());
         assertEquals(2, graph.nodes(1).inputPairedLength());
+
+     //   tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/nested_while.fb"));
     }
 
     @Test
@@ -397,6 +412,18 @@ public class TensorFlowImportTest {
         assertEquals(6, in1.first());
         assertEquals(0, in1.second());
 
+
+        // tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/tensor_slice.fb"));
+
+        val executioner = new NativeGraphExecutioner();
+
+        val exp = Nd4j.create(3, 1).assign(3);
+
+        val results = executioner.executeGraph(tg, configuration);
+
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        assertEquals(73.5f, results[0].getFloat(0), 1e-5f);
     }
 
     @Test
@@ -420,6 +447,8 @@ public class TensorFlowImportTest {
         assertEquals("TensorArray", graph.nodes(1).name());
 
         assertEquals(4, graph.nodes(0).inputPairedLength());
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/tensor_array.fb"));
     }
 
     @Test
@@ -473,14 +502,14 @@ public class TensorFlowImportTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
         val sumResultVar = tg.getVariable("Sum");
         val func = tg.getFunctionForVertexId(sumResultVar.getVertexId());
-        assertEquals(1,func.getDimensions()[0]);
+        assertEquals(0,func.getDimensions()[0]);
         assertEquals(3,tg.variables().size());
         assertNotNull(sumResultVar);
         assertNotNull(tg.getFunctionForVertexId(sumResultVar.getVertexId()));
         System.out.println(tg.variables());
 
         assertNotNull(func.getDimensions());
-        assertEquals(1,func.getDimensions()[0]);
+        assertEquals(0,func.getDimensions()[0]);
 
         val fb = tg.asFlatBuffers();
         assertNotNull(fb);
@@ -508,12 +537,21 @@ public class TensorFlowImportTest {
         assertEquals(0, in1.second());
 
 
-        assertEquals(1, nodeSum.dimensions(0));
+        assertEquals(1, nodeSum.dimensions(1));
 
 
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
 
         //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
+        val executioner = new NativeGraphExecutioner();
+
+        val exp = Nd4j.create(3, 1).assign(3);
+
+        val results = executioner.executeGraph(tg, configuration);
+
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        assertEquals(exp, results[0]);
     }
 
     @Test

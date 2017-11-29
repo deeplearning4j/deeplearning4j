@@ -351,4 +351,10 @@ public interface OpExecutioner {
     void exec(CustomOp op);
 
     List<int[]> calculateOutputShape(CustomOp op);
+
+
+    void enableDebugMode(boolean reallyEnable);
+
+    void enableVerboseMode(boolean reallyEnable);
+
 }

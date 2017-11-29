@@ -2556,6 +2556,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         }
     }
+
+    @Override
+    public void enableDebugMode(boolean reallyEnable) {
+        nativeOps.enableDebugMode(reallyEnable);
+    }
+
+    @Override
+    public void enableVerboseMode(boolean reallyEnable) {
+        nativeOps.enableVerboseMode(reallyEnable);
+    }
 }
 
 

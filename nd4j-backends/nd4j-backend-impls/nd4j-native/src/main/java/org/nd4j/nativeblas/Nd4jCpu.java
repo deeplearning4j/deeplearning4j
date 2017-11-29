@@ -130,6 +130,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_meanSqErr.class,
         float_sigmCrossEntropy.class,
         float_softmaxCrossEntropy.class,
+        float_batchnorm.class,
         float_sru.class,
         float_sru_logic.class,
         float_sru_bi.class,
@@ -140,8 +141,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_scatter_update.class,
         float_relu.class,
         float_randomuniform.class,
-        float_batchnorm.class,
-        float_batchnorm_bp.class,
         float_conv3d_bp.class,
         float_ismax.class,
         float_fill_as.class,
@@ -299,6 +298,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_meanSqErr.class,
         half_sigmCrossEntropy.class,
         half_softmaxCrossEntropy.class,
+        half_batchnorm.class,
         half_sru.class,
         half_sru_logic.class,
         half_sru_bi.class,
@@ -309,8 +309,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_scatter_update.class,
         half_relu.class,
         half_randomuniform.class,
-        half_batchnorm.class,
-        half_batchnorm_bp.class,
         half_conv3d_bp.class,
         half_ismax.class,
         half_fill_as.class,
@@ -468,6 +466,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_meanSqErr.class,
         double_sigmCrossEntropy.class,
         double_softmaxCrossEntropy.class,
+        double_batchnorm.class,
         double_sru.class,
         double_sru_logic.class,
         double_sru_bi.class,
@@ -478,8 +477,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_scatter_update.class,
         double_relu.class,
         double_randomuniform.class,
-        double_batchnorm.class,
-        double_batchnorm_bp.class,
         double_conv3d_bp.class,
         double_ismax.class,
         double_fill_as.class,
@@ -657,6 +654,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 // #define ND4J_EXPORT
 // #endif
 // #include <dll.h>
+// #include <helpers/BlasHelper.h>
 
 /*
 int tad_threshold = 1;
@@ -667,13 +665,6 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
-// #include <cblas.h>
-
-// #ifdef _WIN32
-// #define CUBLASWINAPI __stdcall
-// #else
-// #define CUBLASWINAPI 
-// #endif
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -6371,6 +6362,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // addition operator scalar + array
         
 // #endif
+        // addition operator array1 += array2    
+        public native @Name("operator +=") void addPut(@Const @ByRef FloatNDArray other);
+
         // subtraction operator array - array
         public native @ByVal @Name("operator -") FloatNDArray subtract(@Const @ByRef FloatNDArray other);
 
@@ -6404,7 +6398,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // division operator array1 /= array2
         public native @Name("operator /=") void dividePut(@Const @ByRef FloatNDArray other);
 
-        // division operator array*scalar
+        // division operator array /= scalar
         public native @Name("operator /=") void dividePut(float scalar);
 
         // mathematical multiplication of two arrays
@@ -6864,6 +6858,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // addition operator scalar + array
         
 // #endif
+        // addition operator array1 += array2    
+        public native @Name("operator +=") void addPut(@Const @ByRef HalfNDArray other);
+
         // subtraction operator array - array
         public native @ByVal @Name("operator -") HalfNDArray subtract(@Const @ByRef HalfNDArray other);
 
@@ -6897,7 +6894,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // division operator array1 /= array2
         public native @Name("operator /=") void dividePut(@Const @ByRef HalfNDArray other);
 
-        // division operator array*scalar
+        // division operator array /= scalar
         public native @Name("operator /=") void dividePut(@Cast("const float16") short scalar);
 
         // mathematical multiplication of two arrays
@@ -7357,6 +7354,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // addition operator scalar + array
         
 // #endif
+        // addition operator array1 += array2    
+        public native @Name("operator +=") void addPut(@Const @ByRef DoubleNDArray other);
+
         // subtraction operator array - array
         public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
 
@@ -7390,7 +7390,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         // division operator array1 /= array2
         public native @Name("operator /=") void dividePut(@Const @ByRef DoubleNDArray other);
 
-        // division operator array*scalar
+        // division operator array /= scalar
         public native @Name("operator /=") void dividePut(double scalar);
 
         // mathematical multiplication of two arrays
@@ -8391,6 +8391,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getPlaceholders();
 
+            public native @Cast("bool") boolean hasExternalVariable(int it);
+            public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasExternalVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
             public native @Cast("bool") boolean hasVariable(int id);
             public native @Cast("bool") boolean hasVariable(int id, int idx);
             public native @Cast("bool") boolean hasVariable(@ByRef IntIntPair pair);
@@ -8448,6 +8452,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getPlaceholders();
 
+            public native @Cast("bool") boolean hasExternalVariable(int it);
+            public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasExternalVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
             public native @Cast("bool") boolean hasVariable(int id);
             public native @Cast("bool") boolean hasVariable(int id, int idx);
             public native @Cast("bool") boolean hasVariable(@ByRef IntIntPair pair);
@@ -8504,6 +8512,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getPlaceholders();
+
+            public native @Cast("bool") boolean hasExternalVariable(int it);
+            public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasExternalVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
 
             public native @Cast("bool") boolean hasVariable(int id);
             public native @Cast("bool") boolean hasVariable(int id, int idx);
@@ -19193,7 +19205,49 @@ private native void allocate();
         public double_softmaxCrossEntropy() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                                                }        
+                                                                                }      
+        @Name("nd4j::ops::batchnorm<float>") public static class float_batchnorm extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_batchnorm(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_batchnorm(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_batchnorm position(long position) {
+                return (float_batchnorm)super.position(position);
+            }
+        public float_batchnorm() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }      
+        @Name("nd4j::ops::batchnorm<float16>") public static class half_batchnorm extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_batchnorm(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_batchnorm(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_batchnorm position(long position) {
+                return (half_batchnorm)super.position(position);
+            }
+        public half_batchnorm() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }      
+        @Name("nd4j::ops::batchnorm<double>") public static class double_batchnorm extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_batchnorm(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_batchnorm(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_batchnorm position(long position) {
+                return (double_batchnorm)super.position(position);
+            }
+        public double_batchnorm() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }  
 
         // recurrent ops
         @Name("nd4j::ops::sru<float>") public static class float_sru extends FloatDeclarableCustomOp {
@@ -19618,91 +19672,8 @@ private native void allocate();
         public double_randomuniform() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                                                }
-        @Name("nd4j::ops::batchnorm<float>") public static class float_batchnorm extends FloatDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_batchnorm(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_batchnorm(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public float_batchnorm position(long position) {
-                return (float_batchnorm)super.position(position);
-            }
-        public float_batchnorm() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                                                }
-        @Name("nd4j::ops::batchnorm<float16>") public static class half_batchnorm extends HalfDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_batchnorm(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_batchnorm(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public half_batchnorm position(long position) {
-                return (half_batchnorm)super.position(position);
-            }
-        public half_batchnorm() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
-                                                                                }
-        @Name("nd4j::ops::batchnorm<double>") public static class double_batchnorm extends DoubleDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_batchnorm(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_batchnorm(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public double_batchnorm position(long position) {
-                return (double_batchnorm)super.position(position);
-            }
-        public double_batchnorm() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                                                }
-        @Name("nd4j::ops::batchnorm_bp<float>") public static class float_batchnorm_bp extends FloatDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_batchnorm_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_batchnorm_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public float_batchnorm_bp position(long position) {
-                return (float_batchnorm_bp)super.position(position);
-            }
-        public float_batchnorm_bp() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                                                }
-        @Name("nd4j::ops::batchnorm_bp<float16>") public static class half_batchnorm_bp extends HalfDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_batchnorm_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_batchnorm_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public half_batchnorm_bp position(long position) {
-                return (half_batchnorm_bp)super.position(position);
-            }
-        public half_batchnorm_bp() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
-                                                                                }
-        @Name("nd4j::ops::batchnorm_bp<double>") public static class double_batchnorm_bp extends DoubleDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_batchnorm_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_batchnorm_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public double_batchnorm_bp position(long position) {
-                return (double_batchnorm_bp)super.position(position);
-            }
-        public double_batchnorm_bp() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                                                }                
+                                                                                }        
+        // DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                
         @Name("nd4j::ops::conv3d_bp<float>") public static class float_conv3d_bp extends FloatDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -19716,7 +19687,7 @@ private native void allocate();
         public float_conv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                                                }                
+                                                                                }
         @Name("nd4j::ops::conv3d_bp<float16>") public static class half_conv3d_bp extends HalfDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -19730,7 +19701,7 @@ private native void allocate();
         public half_conv3d_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
-                                                                                }                
+                                                                                }
         @Name("nd4j::ops::conv3d_bp<double>") public static class double_conv3d_bp extends DoubleDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */

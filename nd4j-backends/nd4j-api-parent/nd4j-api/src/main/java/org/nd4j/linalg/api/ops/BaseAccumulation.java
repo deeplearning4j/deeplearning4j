@@ -23,6 +23,7 @@ import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
@@ -181,7 +182,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                 if (graph.getNode(i).getName().equals(nodeDef.getName() + "/reduction_indices")) {
                     reductionNode = graph.getNode(i);
                     val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", graph.getNode(i), graph);
-                    int[] dimensions = arr.data().asInt();
+
+                    boolean keepAxis = nodeDef.getAttrOrThrow("keep_dims").getB();
+
+                    // keepAxis = false by default
+                    int[] dimensions = ArrayUtils.add(arr.data().asInt(), 0, keepAxis ? 1 : 0);
+
+
                     this.dimensions = dimensions;
                     break;
                 }

@@ -1602,4 +1602,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         return result;
     }
+
+
+    @Override
+    public void enableDebugMode(boolean reallyEnable) {
+        loop.enableDebugMode(reallyEnable);
+    }
+
+    @Override
+    public void enableVerboseMode(boolean reallyEnable) {
+        loop.enableVerboseMode(reallyEnable);
+    }
 }
