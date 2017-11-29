@@ -5,64 +5,37 @@ layout: default
 
 # Introduction to the Core DL4J Concepts
 
-> Before diving deeper into DL4J please make sure you have finished the 
+> Before diving deeper into DL4J, please make sure you go through the 
 > [Quickstart Guide](http://deeplearning4j.org/quickstart). This will ensure 
-> that you have everything set up correctly and DL4J working smoothly.
+> that you have everything set up correctly.
 
 > This guide assumes that you are using the newest release of DL4J. If you are
-> not sure which version is the newest, clone the [examples](https://github.com/deeplearning4j/dl4j-examples)
+> not sure which version that is, clone the [examples](https://github.com/deeplearning4j/dl4j-examples)
 > as shown in the quickstart guide and take a look at the `pom.xml` file.
 
 
 ## Overview
 
-Every machine learning application consists of two parts. The first 
-part is loading your data and preparing it to be used for learning. We
-refer to this part as the ETL (extract, transform, load) process. 
-[DataVec](http://deeplearning4j.org/simple-image-load-transform) is the library 
-we built to make this process easier. The second part is the actual learning system itself
-- this is the core of DL4J.
+Every machine-learning workflow consists of at least two parts. The first is loading your data and preparing it to be used for learning. We refer to this part as the ETL (extract, transform, load) process. [DataVec](http://deeplearning4j.org/simple-image-load-transform) is the library we built to make building data pipelines easier. The second part is the actual learning system itself. That is the algorithmic core of DL4J. 
 
-All machine learning is based on vector maths, and DL4J requires
-a library called [ND4J](http://nd4j.org/). It provides us with the ability to
-work with arbitraty n-dimensional arrays (also called tensors), and thanks to its
-different backends, it even allows use of both CPU and GPU resources.
+All deep learning is based on vectors and tensors, and DL4J relies on a tensor library called [ND4J](http://nd4j.org/). It provides us with the ability to work with *n-dimensional arrays* (also called tensors). Thanks to its different backends, it even enables us to use both CPUs and GPUs.  
 
-When using DL4J you will often need all of these parts to get your work done
-quickly and reliably. 
+## Preparing data for learning and prediction
 
+Unlike other machine learning or deep learning frameworks, DL4J treats the tasks of loading data and training algorithms as separate processes. You don't just point the model at data saved somewhere on disk, you load the data using DataVec. This gives you a lot more flexiblity, and retains the convenience of simple data loading. 
 
-## Preparing your data for learning and prediction
+Before the algorithm can start learning, you have to prepare the data, even if you already have a trained model. Preparing data means loading it and putting it in the right shape and value range (e.g. normalization, zero-mean and unit variance). Building these processes from scratch is error prone, so use DataVec wherever possible.
 
-Unlike other machine learning or deep learning frameworks, DL4J keeps loading data and training as separate processes. You don't simply point the model at data somewhere on the disk - instead you load 
-it using DataVec. This offers a lot more flexiblity, and retains the convenience of simple data loading.
+Deeplearning4j works with a lot of different data types, such as images, CSV, ARFF, plain text and, with [Apache Camel](https://camel.apache.org/) [integration](https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel), pretty much any other data type you can think of.
 
-Before you can start learning, you have to prepare your data, even if you already have a trained model. Preparing data means loading it and bringing it into the right shape and value
-range. Implementing this on your own is very error prone, so use DataVec whereever possible.
-
-Deep learning works with a lot of different data types, such as images, csv, arff, 
-plain text and due to the upcoming [Apache Camel](https://camel.apache.org/) 
-integration, pretty much any other data type you can think of.
-
-In order to use DataVec you will need one of the implementations of the
-[RecordReader](http://deeplearning4j.org/datavecdoc/org/datavec/api/records/reader/RecordReader.html)
-interface along with the [RecordReaderDataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html)
-(see [Simple Image Load Transform](http://deeplearning4j.org/simple-image-load-transform) 
-for a detailed explanation).
+To use DataVec, you will need one of the implementations of the [RecordReader](http://deeplearning4j.org/datavecdoc/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html) (see [Simple Image Load Transform](http://deeplearning4j.org/simple-image-load-transform) for a detailed explanation).
 
 Once you have a [DataSetIterator](http://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html)
-you can use it to retrieve your data in a format that is more suited for
-training your model.
+you can use it to retrieve the data in a format suited for training a neural net model.
 
+### Normalizing Data
 
-### Normalizing your Data
-
-Neural networks work best when the data they are using is constrained to a
-range between -1 and 1. The reason for this is that they are trained using
-[gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), and their 
-activation functions usually having an active range somewhere between -1 and 1.
-But even when using an activation function that doesn't saturate quickly, it is 
-still good practice to constrain your values to this range; even then it typically improves performance.
+Neural networks work best when the data they are using is constrained to a range between -1 and 1. The reason for this is that they are trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), and their activation functions usually having an active range somewhere between -1 and 1. But even when using an activation function that doesn't saturate quickly, it is still good practice to constrain your values to this range; even then it typically improves performance.
 
 Normalizing your data is pretty straight forward in DL4J. All you have to do is
 to decide how you want to normalize your data, and set the coresponding 
