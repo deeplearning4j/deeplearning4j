@@ -2,6 +2,12 @@
 
 A java http client for [gym-http-api](https://github.com/openai/gym-http-api).
 
+Note: If you are encountering errors as reported in [issue #13](https://github.com/deeplearning4j/gym-java-client/issues/13), please execute the following command before launching `python gym_http_server.py`:
+
+```bash
+$ sudo sysctl -w net.ipv4.tcp_tw_recycle=1
+```
+
 # Quickstart
 
 To create a new Client, use the ClientFactory. If the url is not localhost:5000, provide it as a second argument
