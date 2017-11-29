@@ -155,7 +155,20 @@ template <typename T>
 
     } else if (node->hasCustomOp()) {
         // if we have something to execute - lets just execute it.
-        return node->getCustomOp()->execute(&context);
+        auto status = node->getCustomOp()->execute(&context);
+        if (status != ND4J_STATUS_OK)
+            return status;
+
+        // propagate variables
+        if (node->hasExternalOutputs()) {
+            for (auto v: *node->output()) {
+                if (variableSpace->hasExternalVariable(v.first)) {
+                    variableSpace->getVariable(v.first)->getNDArray()->assign(variableSpace->getVariable(node->id())->getNDArray());
+                }
+            }
+        }
+
+        return status;
     }
     return ND4J_STATUS_OK;
 }
@@ -210,7 +223,7 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
                 auto inputId = node->input()->at(e);
 
                 // we're skipping external variables here
-                if (inputId.first < 0)
+                if (inputId.first < 0 || __variableSpace->hasExternalVariable(inputId.first))
                     continue;
 
                 /**
@@ -350,8 +363,9 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DataType) DataTypeUtils::fromT<T>(), bo);
 
         auto fName = builder.CreateString(*(var->getName()));
+        auto id = CreateIntPair(builder, var->id(), var->index());
 
-        auto fv = CreateFlatVariable(builder, var->id(), fName, 0, fArray);
+        auto fv = CreateFlatVariable(builder, id, fName, 0, fArray);
 
         variables_vector.push_back(fv);
     }

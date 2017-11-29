@@ -4568,7 +4568,9 @@ void NativeOps::initializeDevicesAndFunctions() {
 }
 
 void NativeOps::initializeFunctions(Nd4jPointer *functions) {
-    this->cublasSgemv = (CublasSgemv)functions[0];
+    nd4j::BlasHelper::getInstance()->initializeDeviceFunctions(functions);
+	/*
+	this->cublasSgemv = (CublasSgemv)functions[0];
     this->cublasDgemv = (CublasDgemv)functions[1];
     this->cublasHgemm = (CublasHgemm)functions[2];
     this->cublasSgemm = (CublasSgemm)functions[3];
@@ -4577,6 +4579,7 @@ void NativeOps::initializeFunctions(Nd4jPointer *functions) {
     this->cublasHgemmBatched = (CublasHgemmBatched)functions[6];
     this->cublasSgemmBatched = (CublasSgemmBatched)functions[7];
     this->cublasDgemmBatched = (CublasDgemmBatched)functions[8];
+	*/
 }
 
 

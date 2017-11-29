@@ -55,7 +55,7 @@ namespace nd4j {
                 T v;
                 unsigned char u8[sizeof(T)];
                 S(T val) {
-                    val = v;
+                    v = val;
                 }
             };
 

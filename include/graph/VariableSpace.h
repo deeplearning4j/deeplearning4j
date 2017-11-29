@@ -60,6 +60,10 @@ namespace nd4j {
             int numberOfPlaceholders();
             std::vector<Variable<T>*>* getPlaceholders();
 
+            bool hasExternalVariable(int it);
+            bool hasExternalVariable(std::pair<int,int>& pair);
+            bool hasExternalVariable(std::string *symbol);
+
             bool hasVariable(int id);
             bool hasVariable(int id, int idx);
             bool hasVariable(std::pair<int,int>& pair);

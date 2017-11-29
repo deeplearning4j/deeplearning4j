@@ -11,6 +11,7 @@
 #include <ops/gemm.h>
 #include <types/float16.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/BlasHelper.h>
 
 namespace nd4j {
 
@@ -303,7 +304,20 @@ namespace nd4j {
                 result = new NDArray<T>(A->rows(), 1, 'f');
 
             // TODO: strides!!!
-            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+            if (BlasHelper::getInstance()->hasGEMV<T>()) {
+                nd4j_debug("Using provided GEMV pointer\n","");
+
+                if (sizeof(T) == 4)
+                    BlasHelper::getInstance()->sgemv()(CblasRowMajor, A->ordering() == 'f' ? CblasTrans : CblasNoTrans, A->rows(), A->columns(), (float) alpha, (float *) A->getBuffer(), B->rows(), (float *) B->getBuffer(), 1, (float) beta, (float *) result->getBuffer(), 1);
+                else if (sizeof(T) == 8)
+                    BlasHelper::getInstance()->dgemv()(CblasRowMajor, A->ordering() == 'f' ? CblasTrans : CblasNoTrans, A->rows(), A->columns(), (double) alpha, (double *) A->getBuffer(), B->rows(), (double *) B->getBuffer(), 1, (double) beta, (double *) result->getBuffer(), 1);
+                else
+                    nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+            } else {
+                nd4j_debug("Using fallback GEMV impl\n","");
+
+                nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+            }
         } else if ((A->isRowVector() && B->isRowVector()) || (A->isColumnVector() && B->isColumnVector())) {
             // dot
             if (A->lengthOf() != B->lengthOf())
@@ -407,7 +421,19 @@ namespace nd4j {
 
             // we'll use platform-specific gemm here eventually. maybe tomorrow.
             // TODO: put proper _gemm here
-            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
+            if (BlasHelper::getInstance()->template hasGEMM<T>()) {
+                nd4j_debug("Using provided GEMM pointer\n","");
+                if (sizeof(T) == 4)
+                    BlasHelper::getInstance()->sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float) alpha, (float *) pA->getBuffer(), lda, (float *) pB->getBuffer(), ldb, (float) beta, (float *) pC->getBuffer(), ldc);
+                else if (sizeof(T) == 8)
+                    BlasHelper::getInstance()->dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (double) alpha, (double *) pA->getBuffer(), lda, (double *) pB->getBuffer(), ldb, (double) beta, (double *) pC->getBuffer(), ldc);
+                else
+                    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
+            } else {
+                nd4j_debug("Using fallback GEMM impl\n","");
+
+                nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
+            }
 
             if (cOrder != 'f') {
                 tC->assign(pC);

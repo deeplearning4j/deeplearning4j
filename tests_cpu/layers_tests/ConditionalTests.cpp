@@ -41,10 +41,10 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto scopeTrue = new Node<float>(OpType_LOGIC, 10, 3);
     scopeTrue->setName("scopeTrue");
 
-    auto nodeF = new Node<float>(OpType_TRANSFORM, 0, 5, {-1, -2});
+    auto nodeF = new Node<float>(OpType_PAIRWISE, 0, 5, {-1, -2});
     nodeF->setScopeInfo(2, "scopeFalse");
 
-    auto nodeT = new Node<float>(OpType_TRANSFORM, 1, 6, {-1, -2});
+    auto nodeT = new Node<float>(OpType_PAIRWISE, 1, 6, {-1, -2});
     nodeT->setScopeInfo(3, "scopeTrue");
 
     auto nodeC0 = new Node<float>(OpType_ACCUMULATION, 1, 7, {-1});

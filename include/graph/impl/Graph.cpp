@@ -212,7 +212,9 @@ namespace nd4j {
         std::vector<Variable<T> *> * Graph<T>::fetchOutputs() {
             auto res = new std::vector<Variable<T> *>();
 
+            nd4j_debug("Graph output size: %i\n", _output.size());
             for (int e = 0; e < (int) _output.size(); e++) {
+                nd4j_printf("Output node: %i\n", _output.at(e));
                 res->push_back(_variableSpace->getVariable(_output.at(e)));
             }
 
@@ -302,6 +304,9 @@ namespace nd4j {
                     nodeState->markRemovable(false);
 
             _handles.push_back(node);
+
+
+            _nodes->emplace_back(node->id());
 
             // storing node state now
             _variableSpace->putVariable(node->id(), nodeState);
@@ -403,11 +408,12 @@ namespace nd4j {
                 node->pickExternalOutput(var->id());
 
                 // we're pushing this variable to output
+                /*
                 if (_configuration->_outputMode == OutputMode_IMPLICIT ||
                     _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT ||
                     _configuration->_outputMode == OutputMode_VARIABLE_SPACE)
                     pushToOutputOnce(var->id());
-
+*/
                 this->_autos.push_back(var->id());
                 assert(node->hasExternalOutputs());
 //        }
@@ -507,7 +513,7 @@ namespace nd4j {
                         }
 
                         int iNode = node->input()->at(0).first;
-                        if (iNode < 0) {
+                        if (iNode < 0 || _variableSpace->hasExternalVariable(iNode)) {
                             // this is external variable, should we check, who's the last user of this variable?
                             int lastLayer = _onion->size();
                             expandOnion(lastLayer);
@@ -530,7 +536,7 @@ namespace nd4j {
 
                                     for (int e = 0; e < node->input()->size(); e++) {
                                         auto p = node->input()->at(e);
-;
+
                                         block->pickInput(p);
                                     }
                                 }
@@ -587,7 +593,7 @@ namespace nd4j {
                                 if (maxLayer < iNode->getLayer())
                                     maxLayer = iNode->getLayer();
                             } else {
-                                if (nodeId > 0) {
+                                if (nodeId > 0 && !_variableSpace->hasExternalVariable(nodeId)) {
                                     breaker = true;
                                     break;
                                 }
@@ -630,7 +636,12 @@ namespace nd4j {
                 // second pass is mover, we'll be moving onion layers around here
                 buildCnt++;
                 if (buildCnt > buildLimit) {
-                    nd4j_printf("Unable to build graph, probably unmapped nodes, or something: %i nodes left", _unmapped.size());
+                    nd4j_printf("Unable to build graph, probably unmapped nodes, or something: %i nodes left\n", _unmapped.size());
+                    for (auto v: _unmapped) {
+                        Node<T>* node = v.second;
+                        nd4j_printf("Unmapped node: [%i]\n", node->id());
+                    }
+
                     throw "Unable to build graph";
                 }
             }
@@ -645,8 +656,79 @@ namespace nd4j {
                 for (unsigned int e = 0; e < ext->size(); e++) {
                     pushToOutputOnce(ext->at(e)->id());
                 }
-            }
 
+                for (auto v: *_nodes) {
+                    if (_mapped->count(v) == 0)
+                        continue;
+
+                    Node<T>* node = _mapped->at(v);
+
+                    if (std::find(_output.begin(), _output.end(), node->id()) == _output.end())
+                        _output.emplace_back(node->id());
+                }
+
+            } else if (_configuration->_outputMode == OutputMode_IMPLICIT) {
+                // we're adding final nodes of the graph. those, not used as input anywhere
+                nd4j_debug("Paring nodes... \n", "");
+
+                if (Environment::getInstance()->isDebugAndVerbose()) {
+                    nd4j_printv("current _output", _output);
+                }
+                //_output.clear();
+
+                for (auto v: *_nodes) {
+                    // we should check for scopes, and other possible non-mapped stuff
+                    if (_mapped->count(v) == 0)
+                        continue;
+
+                    Node<T>* node = _mapped->at(v);
+                    if (node->name() != nullptr) {
+                        nd4j_debug("Node %i; Name: [%s]\n", v, node->name()->c_str());
+                    } else {
+                        nd4j_debug("Node %i\n", v);
+                    }
+
+                    // updating outputs now
+                    for (int e = 0; e < node->input()->size(); e++) {
+                        auto inP = node->input()->at(e);
+
+                        // input can be variable, or node. we only care about nodes
+                        if (_mapped->count(inP.first) > 0) {
+                            _mapped->at(inP.first)->pickOutputOnce(v);
+                        }
+                    }
+                }
+                // at this point all nodes have filled inputs/outputs, so we know nodes that do not have any connected outputs
+
+                for (auto v: *_nodes) {
+                    // we should check for scopes, and other possible non-mapped stuff
+                    if (_mapped->count(v) == 0)
+                        continue;
+
+                    Node<T>* node = _mapped->at(v);
+
+                    if (!node->hasInternalOutputs()) {
+                        if (node->name() != nullptr) {
+                            nd4j_debug("Output node found: [%i:<%s>]\n", v, node->name()->c_str());
+                        } else {
+                            nd4j_debug("Output node found: [%i]\n", v);
+                        }
+
+                        // FIXME: we don't really need search here.
+
+                        if (std::find(_output.begin(), _output.end(), node->id()) == _output.end())
+                            _output.emplace_back(node->id());
+                    } else if (Environment::getInstance()->isDebugAndVerbose()) {
+                        nd4j_debug("Node [%i:<%s>] has %i outputs announced:\n", v, node->name()->c_str(), node->output()->size());
+                        printf("{");
+                        for (auto s : *node->output()) {
+                            printf("[%i:%i], ", s.first, s.second);
+                        }
+                        printf("}\n");
+                        fflush(stdout);
+                    }
+                }
+            }
             return ND4J_STATUS_OK;
         }
 

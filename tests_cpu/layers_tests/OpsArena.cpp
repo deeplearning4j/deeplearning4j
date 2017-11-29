@@ -81,6 +81,8 @@ public:
 
 
 TEST_F(OpsArena, TestFeedForward) {
+    nd4j::ops::mergeavg<float> op0;
+    nd4j::ops::mergemax<float> op1;
 
     for (auto tuple: tuples) {
         auto op = OpRegistrator::getInstance()->getOperationFloat(tuple->_opName);

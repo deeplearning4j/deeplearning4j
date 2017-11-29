@@ -70,6 +70,33 @@ namespace nd4j {
         }
 
         template <typename T>
+        bool VariableSpace<T>::hasExternalVariable(int id) {
+            if (!hasVariable(id))
+                return false;
+
+            auto var = getVariable(id);
+            return var->isExternal();
+        }
+
+        template <typename T>
+        bool VariableSpace<T>::hasExternalVariable(std::pair<int,int>& pair) {
+            if (!hasVariable(pair))
+                return false;
+
+            auto var = getVariable(pair);
+            return var->isExternal();
+        }
+
+        template <typename T>
+        bool VariableSpace<T>::hasExternalVariable(std::string *symbol) {
+            if (!hasVariable(symbol))
+                return false;
+
+            auto var = getVariable(symbol);
+            return var->isExternal();
+        }
+
+        template <typename T>
         nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(int id, int index) {
             std::pair<int, int> pair(id, index);
             return getVariable(pair);

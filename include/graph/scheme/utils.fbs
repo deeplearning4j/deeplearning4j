@@ -22,8 +22,8 @@ enum OpType:byte {
     INDEX_ACCUMULATION = 2,
     SCALAR = 3,
     BROADCAST = 4,
-//    PAIRWISE = 5, <--- using TRANSFORM instead, for compatibility reasons
-//    ACCUMULATION3 = 6, <--- using ACCUMULATION instead, for compatibility reasons
+    PAIRWISE = 5,
+    ACCUMULATION3 = 6,
     SUMMARYSTATS = 7,
     SHAPE = 8,
     AGGREGATION = 9, // ???

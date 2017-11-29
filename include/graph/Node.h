@@ -107,6 +107,7 @@ namespace nd4j {
             int * getDimensionsPtr();
 
 
+            void pickOutputOnce(int outputId);
             void pickOutput(int outputId);
             void pickExternalOutput(int outputId);
             void pickInput(int inputId);
@@ -116,6 +117,7 @@ namespace nd4j {
             void setName(std::string *name);
             void setName(const std::string& name);
             std::string * getName();
+            std::string * name();
 
 
             void setContextPrototype(ContextPrototype<T> *block);
@@ -146,7 +148,7 @@ namespace nd4j {
             int scopeId();
             std::string* scopeName();
 
-            static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int opNum, T scalar);
+            static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
         };
     }
 }

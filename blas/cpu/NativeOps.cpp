@@ -1862,12 +1862,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 }
 
 void NativeOps::initializeFunctions(Nd4jPointer *functions) {
-    this->cblasSgemv = (CblasSgemv)functions[0];
-    this->cblasDgemv = (CblasDgemv)functions[1];
-    this->cblasSgemm = (CblasSgemm)functions[2];
-    this->cblasDgemm = (CblasDgemm)functions[3];
-    this->cblasSgemmBatch = (CblasSgemmBatch)functions[4];
-    this->cblasDgemmBatch = (CblasDgemmBatch)functions[5];
+    BlasHelper::getInstance()->initializeFunctions(functions);
 }
 
 /**

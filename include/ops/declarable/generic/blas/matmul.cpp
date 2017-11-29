@@ -58,6 +58,7 @@ namespace nd4j {
         DECLARE_SYN(gemm, matmul);
         DECLARE_SYN(gemv, matmul);
         DECLARE_SYN(dot, matmul);
+
         DECLARE_SHAPE_FN(matmul) {
             int *inA = inputShape->at(0);
             int *inB = inputShape->at(1);

@@ -56,9 +56,14 @@ namespace nd4j {
                 if (indices->lengthOf() == x->rankOf())
                     allAxes = true;
 
+                indices->printIndexedBuffer("indices");
+
                 std::vector<int> axis(indices->lengthOf());
-                for (int e = 0; e < indices->lengthOf(); e++)
-                    axis[e] = indices->getScalar(e);
+                for (int e = 0; e < indices->lengthOf(); e++) {
+                    // lol otherwise we segfault on macOS
+                    int f = (int) indices->getScalar(e);
+                    axis[e] = f;
+                }
 
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     auto z = OUTPUT_VARIABLE(0);
