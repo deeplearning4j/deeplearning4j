@@ -38,6 +38,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     @Getter
     final protected DataManager dataManager;
 
+    final private Random random;
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
                     A3CDiscrete.A3CConfiguration a3cc, int threadNumber, DataManager dataManager) {
@@ -47,12 +48,13 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         this.threadNumber = threadNumber;
         this.mdp = mdp;
         this.dataManager = dataManager;
-        mdp.getActionSpace().setSeed(conf.getSeed());
+        mdp.getActionSpace().setSeed(conf.getSeed() + threadNumber);
+        random = new Random(conf.getSeed() + threadNumber);
     }
 
     @Override
     protected Policy<O, Integer> getPolicy(IActorCritic net) {
-        return new ACPolicy(net, new Random(conf.getSeed()));
+        return new ACPolicy(net, random);
     }
 
     /**

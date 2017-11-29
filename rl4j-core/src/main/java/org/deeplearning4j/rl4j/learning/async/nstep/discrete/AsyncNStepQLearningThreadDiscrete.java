@@ -36,6 +36,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     @Getter
     final protected DataManager dataManager;
 
+    final private Random random;
 
     public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal,
                     AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber,
@@ -46,12 +47,13 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
         this.threadNumber = threadNumber;
         this.mdp = mdp;
         this.dataManager = dataManager;
-        mdp.getActionSpace().setSeed(conf.getSeed());
+        mdp.getActionSpace().setSeed(conf.getSeed() + threadNumber);
+        random = new Random(conf.getSeed() + threadNumber);
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {
         return new EpsGreedy(new DQNPolicy(nn), mdp, conf.getUpdateStart(), conf.getEpsilonNbStep(),
-                        new Random(conf.getSeed()), conf.getMinEpsilon(), this);
+                        random, conf.getMinEpsilon(), this);
     }
 
 
