@@ -1031,7 +1031,11 @@ TEST_F(DeclarableOpsTests1, TestMatMul1) {
 
     ASSERT_TRUE(result->equalsTo(&exp));
 
+    // keeping this check only for non-windows systems
+    // since windows do not provide microsecond timer
+#ifndef _WIN32
     ASSERT_TRUE(block->getInnerTime() > 0);
+#endif
 
     delete block;
     delete variableSpace;
