@@ -31,7 +31,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Combine multiple readers into a single reader. Records are read sequentially
+ * Combine multiple readers into a single reader. Records are read sequentially - thus if the first reader has
+ * 100 records, and the second reader has 200 records, ConcatenatingRecordReader will have 300 records.
+ *
+ * See also {@link ComposableRecordReader} for a version that combines each record from underlying readers.
+ *
+ * @author Alex Black
  */
 public class ConcatenatingRecordReader extends BaseRecordReader {
 
