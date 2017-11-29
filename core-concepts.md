@@ -35,48 +35,27 @@ you can use it to retrieve the data in a format suited for training a neural net
 
 ### Normalizing Data
 
-Neural networks work best when the data they are using is constrained to a range between -1 and 1. The reason for this is that they are trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), and their activation functions usually having an active range somewhere between -1 and 1. But even when using an activation function that doesn't saturate quickly, it is still good practice to constrain your values to this range; even then it typically improves performance.
+Neural networks work best when the data they're fed is constrained to a range between -1 and 1. There are several reasons for that. One is that nets are trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), and their activation functions usually having an active range somewhere between -1 and 1. Even when using an activation function that doesn't saturate quickly, it is still good practice to constrain your values to this range to improve performance.
 
-Normalizing your data is pretty straight forward in DL4J. All you have to do is
-to decide how you want to normalize your data, and set the coresponding 
-[DataNormalization](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html) up as a preprocessor for your DataSetIterator. Currently you
+Normalizing data is pretty easy in DL4J. Decide how you want to normalize your data, and set the coresponding [DataNormalization](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html) up as a preprocessor for your DataSetIterator. Currently you
 can choose from [ImagePreProcessingScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/ImagePreProcessingScaler.html), [NormalizerMinMaxScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerMinMaxScaler.html) and [NormalizerStandardize](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerStandardize.html). 
-The ImagePreProcessingScaler is obviously a good choice for image data, for
-other data you the NormalizerMinMaxScaler is a good choice if you have a uniform
-range along all dimensions of your input data and NormalizerStandardize is 
-what you would usually use in other cases.
+The ImagePreProcessingScaler is obviously a good choice for image data. The `NormalizerMinMaxScaler` is a good choice if you have a uniform range along all dimensions of your input data, and `NormalizerStandardize` is what you would usually use in other cases.
 
-If you have other normalization needs, you are also free to implement the
-DataNormalization interface.
+If you need other types of normalization, you are also free to implement the `DataNormalization` interface.
 
-If you end up using NormalizerStandardize, you should also notice that this is a
-normalizer that depends on statistics that it extracts from the data. So will
-have to save those statistics along with the model in order to restore them when
-you restore your model.
-
+If you use `NormalizerStandardize`, note that this is a normalizer that depends on statistics that it extracts from the data. So you will have to save those statistics along with the model to restore them when you restore your model.
 
 ## DataSet, INDArray and Mini-Batches
 
-As the name suggests, a DataSetIterator returns [DataSet](http://nd4j.org/doc/org/nd4j/linalg/dataset/DataSet.html)
-objects. DataSet objects are just containers for the features and labels of your
-data. But it isn't constrained to holding just a single example at once. Instead
-a DataSet can contain as many examples as needed.
+As the name suggests, a DataSetIterator returns [DataSet](http://nd4j.org/doc/org/nd4j/linalg/dataset/DataSet.html) objects. DataSet objects are containers for the features and labels of your data. But they aren't constrained to holding just a single example at once. A DataSet can contain as many examples as needed.
 
-It does that by keeping the values in several instances of [INDArray](http://nd4j.org/doc/org/nd4j/linalg/api/ndarray/INDArray.html):
-one for the features of your examples, one for the labels and two 
-addional ones for masking if you are using timeseries data (see 
-[Using RNNs / Masking](http://deeplearning4j.org/usingrnns#masking) for more 
-information). 
+It does that by keeping the values in several instances of [INDArray] (http://nd4j.org/doc/org/nd4j/linalg/api/ndarray/INDArray.html): one for the features of your examples, one for the labels and two addional ones for masking, if you are using timeseries data (see [Using RNNs / Masking](http://deeplearning4j.org/usingrnns#masking) for more information). 
 
-An INDArray is one of the n-dimensional arrays, or tensors, provided by ND4J. In the case of the features, it is a matrix of the size 
-`Number of Examples x Number of Features`. Even with only a single 
-example, it will have this shape.
+An INDArray is one of the n-dimensional arrays, or tensors, used in ND4J. In the case of the features, it is a matrix of the size `Number of Examples x Number of Features`. Even with only a single example, it will have this shape.
 
-Why doesn't it contain all of the examples at once? This is another important concept for deep learning: mini-batching. In order to produce 
-highly accurate results, a lot of real world training data is often needed. 
-Often that is more data than can fit in available memory, so storing it in a
-single DataSet sometimes isn't possible. But even if there is enough data storage, there is another important reason not to use all of your data
-at once. With mini-batches you can get more updates to your model in a
+Why doesn't it contain all of the examples at once? 
+
+This is another important concept for deep learning: mini-batching. In order to produce highly accurate results, a lot of real world training data is often needed. Often that is more data than can fit in available memory, so storing it in a single DataSet sometimes isn't possible. But even if there is enough data storage, there is another important reason not to use all of your data at once. With mini-batches you can get more updates to your model in a
 single epoch.
 
 So why bother having more than one example in a DataSet? Since the model
