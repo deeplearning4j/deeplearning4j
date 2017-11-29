@@ -1,9 +1,9 @@
 ---
-title: Introduction to the Core DL4J Concepts
+title: Introduction to the Core Deeplearning4j Concepts
 layout: default
 ---
 
-# Introduction to the Core DL4J Concepts
+# Introduction to Core Deeplearning4j Concepts
 
 > Before diving deeper into DL4J, please make sure you go through the 
 > [Quickstart Guide](http://deeplearning4j.org/quickstart). This will ensure 
@@ -35,11 +35,11 @@ you can use it to retrieve the data in a format suited for training a neural net
 
 ### Normalizing Data
 
-Neural networks work best when the data they're fed is constrained to a range between -1 and 1. There are several reasons for that. One is that nets are trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), and their activation functions usually having an active range somewhere between -1 and 1. Even when using an activation function that doesn't saturate quickly, it is still good practice to constrain your values to this range to improve performance.
+Neural networks work best when the data they're fed is normalized, constrained to a range between -1 and 1. There are several reasons for that. One is that nets are trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), and their activation functions usually having an active range somewhere between -1 and 1. Even when using an activation function that doesn't saturate quickly, it is still good practice to constrain your values to this range to improve performance.
 
-Normalizing data is pretty easy in DL4J. Decide how you want to normalize your data, and set the coresponding [DataNormalization](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html) up as a preprocessor for your DataSetIterator. Currently you
-can choose from [ImagePreProcessingScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/ImagePreProcessingScaler.html), [NormalizerMinMaxScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerMinMaxScaler.html) and [NormalizerStandardize](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerStandardize.html). 
-The ImagePreProcessingScaler is obviously a good choice for image data. The `NormalizerMinMaxScaler` is a good choice if you have a uniform range along all dimensions of your input data, and `NormalizerStandardize` is what you would usually use in other cases.
+Normalizing data is pretty easy in DL4J. Decide how you want to normalize your data, and set the corresponding [DataNormalization](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html) up as a preprocessor for your DataSetIterator. Currently you can choose from [ImagePreProcessingScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/ImagePreProcessingScaler.html), [NormalizerMinMaxScaler](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerMinMaxScaler.html) and [NormalizerStandardize](http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/NormalizerStandardize.html). 
+
+The `ImagePreProcessingScaler` is obviously a good choice for image data. The `NormalizerMinMaxScaler` is a good choice if you have a uniform range along all dimensions of your input data, and `NormalizerStandardize` is what you would usually use in other cases.
 
 If you need other types of normalization, you are also free to implement the `DataNormalization` interface.
 
@@ -58,21 +58,12 @@ Why doesn't it contain all of the examples at once?
 This is another important concept for deep learning: mini-batching. In order to produce highly accurate results, a lot of real world training data is often needed. Often that is more data than can fit in available memory, so storing it in a single DataSet sometimes isn't possible. But even if there is enough data storage, there is another important reason not to use all of your data at once. With mini-batches you can get more updates to your model in a
 single epoch.
 
-So why bother having more than one example in a DataSet? Since the model
-is trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), 
-it requires a good gradient to follow. Using only one example at
-a time will create a gradient that only takes errors in the current
-example into consideration. This will make the learning behavior erratic
-and slow down the learning considerably, and may even result in not
-converging on a usable result.
+So why bother having more than one example in a DataSet? Since the model is trained using [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), it requires a good gradient to follow. Using only one example at
+a time will create a gradient that only takes errors in the current example into consideration. This will make the learning behavior erratic and slow down the learning considerably, and may even result in not converging on a usable result.
 
-A mini-batch should be large enough to provide a representative sample of the
-real world (or at least your data). That means that it should always contain all
-of the classes that you want to predict and that the count of those classes
-should be distributed in approximately the same way as they are in your overall data.
+A mini-batch should be large enough to provide a representative sample of the real world (or at least your data). That means that it should always contain all of the classes that you want to predict and that the count of those classes should be distributed in approximately the same way as they are in your overall data.
 
-
-## Building a Model
+## Building a Neural Net Model
 
 DL4J allows you to build a deep learning model on a very high level. It uses a
 builder pattern in order to declaratively build up the model, as you can see in
