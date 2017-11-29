@@ -25,6 +25,8 @@ endif()
 # -fsanitize=leak
 if (APPLE)
     set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+elseif(WIN32)    
+    set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
 else()
     set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
 endif()
