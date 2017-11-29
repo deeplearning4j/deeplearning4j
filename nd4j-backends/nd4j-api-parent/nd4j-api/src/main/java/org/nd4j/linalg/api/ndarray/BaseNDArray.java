@@ -3771,9 +3771,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
             OpProfiler.getInstance().processScalarCall();
 
-        Nd4j.getCompressor().autoDecompress(this);
-
-
         if (i == 0)
             return data().getDouble(i);
 
