@@ -1471,7 +1471,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
+                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
                                 && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
                                 .getWorkspaceForCurrentThread(
                                         ComputationGraph.workspaceExternal)) {
@@ -1512,7 +1512,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
+                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
                                     && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j
                                     .getWorkspaceManager().getWorkspaceForCurrentThread(
                                             ComputationGraph.workspaceExternal)) {

@@ -333,7 +333,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Do forward pass to the layer to be pretrained
             for (int j = 0; j < layerIdx; j++) {
                 try (MemoryWorkspace wsFF = workspace.notifyScopeEntered()) {
-                    if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspacePretrain))
+                    if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspacePretrain))
                         layerInput = activationFromPrevLayer(j, layerInput, true)
                                         .leverageTo(ComputationGraph.workspacePretrain);
                     else
