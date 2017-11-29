@@ -1,5 +1,9 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.RegressionEvaluation;
@@ -14,8 +18,11 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
  *
  * @author Alex Black
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  //For JSON
 public class TestSetRegressionScoreFunction extends BaseNetScoreFunction {
-    private final RegressionValue regressionValue;
+    private RegressionValue regressionValue;
 
     /**
      * @param regressionValue The type of evaluation to do: MSE, MAE, RMSE, etc

@@ -37,6 +37,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L> {
 
     protected ParameterSpace<ILossFunction> lossFunction;
+    protected ParameterSpace<Boolean> hasBias;
 
     protected BaseOutputLayerSpace(Builder builder) {
         super(builder);
@@ -47,12 +48,15 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         super.setLayerOptionsBuilder(builder, values);
         if (lossFunction != null)
             builder.lossFunction(lossFunction.getValue(values));
+        if (hasBias != null)
+            builder.hasBias(hasBias.getValue(values));
     }
 
     @SuppressWarnings("unchecked")
     public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<T> {
 
         protected ParameterSpace<ILossFunction> lossFunction;
+        protected ParameterSpace<Boolean> hasBias;
 
         public T lossFunction(LossFunction lossFunction) {
             return lossFunction(new FixedValue<>(lossFunction));
@@ -69,6 +73,15 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         public T iLossFunction(ParameterSpace<ILossFunction> lossFunction) {
             this.lossFunction = lossFunction;
             return (T) this;
+        }
+
+        public T hasBias(boolean hasBias){
+            return hasBias(new FixedValue<>(hasBias));
+        }
+
+        public T hasBias(ParameterSpace<Boolean> hasBias){
+            this.hasBias = hasBias;
+            return (T)this;
         }
     }
 }

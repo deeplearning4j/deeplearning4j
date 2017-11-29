@@ -69,7 +69,7 @@ public class TestDL4JLocalExecution {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                        .iterations(100).addLayer(
+                        .addLayer(
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))
@@ -123,7 +123,7 @@ public class TestDL4JLocalExecution {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                        .iterations(100).addLayer(
+                        .addLayer(
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))
@@ -180,7 +180,7 @@ public class TestDL4JLocalExecution {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                        .iterations(1).addLayer(
+                        .addLayer(
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))

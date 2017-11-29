@@ -26,6 +26,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 
 /**
  * Layer space for convolutional layers
@@ -34,15 +35,15 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLayer> {
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
+public abstract class BaseConvolutionLayerSpace<T extends FeedForwardLayer> extends FeedForwardLayerSpace<T> {
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
     protected ParameterSpace<ConvolutionMode> convolutionMode;
     protected ParameterSpace<Boolean> hasBias;
 
-    private ConvolutionLayerSpace(Builder builder) {
+    protected BaseConvolutionLayerSpace(Builder builder) {
         super(builder);
         this.kernelSize = builder.kernelSize;
         this.stride = builder.stride;
@@ -51,13 +52,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         this.hasBias = builder.hasBias;
 
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
-    }
-
-    @Override
-    public ConvolutionLayer getValue(double[] values) {
-        ConvolutionLayer.Builder b = new ConvolutionLayer.Builder();
-        setLayerOptionsBuilder(b, values);
-        return b.build();
     }
 
     protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
@@ -81,7 +75,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     @Override
     public String toString(String delim) {
-        StringBuilder sb = new StringBuilder("ConvolutionLayerSpace(");
+        StringBuilder sb = new StringBuilder();
         if (kernelSize != null)
             sb.append("kernelSize: ").append(kernelSize).append(delim);
         if (stride != null)
@@ -92,65 +86,61 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
             sb.append("convolutionMode: ").append(convolutionMode).append(delim);
         if (hasBias != null)
             sb.append("hasBias: ").append(hasBias).append(delim);
-        sb.append(super.toString(delim)).append(")");
+        sb.append(super.toString(delim));
         return sb.toString();
     }
 
 
-    public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
+    public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<T> {
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
         protected ParameterSpace<ConvolutionMode> convolutionMode;
         protected ParameterSpace<Boolean> hasBias;
 
-        public Builder kernelSize(int... kernelSize) {
+        public T kernelSize(int... kernelSize) {
             return kernelSize(new FixedValue<>(kernelSize));
         }
 
-        public Builder kernelSize(ParameterSpace<int[]> kernelSize) {
+        public T kernelSize(ParameterSpace<int[]> kernelSize) {
             this.kernelSize = kernelSize;
-            return this;
+            return (T)this;
         }
 
-        public Builder stride(int... stride) {
+        public T stride(int... stride) {
             return stride(new FixedValue<>(stride));
         }
 
-        public Builder stride(ParameterSpace<int[]> stride) {
+        public T stride(ParameterSpace<int[]> stride) {
             this.stride = stride;
-            return this;
+            return (T)this;
         }
 
-        public Builder padding(int... padding) {
+        public T padding(int... padding) {
             return padding(new FixedValue<>(padding));
         }
 
-        public Builder padding(ParameterSpace<int[]> padding) {
+        public T padding(ParameterSpace<int[]> padding) {
             this.padding = padding;
-            return this;
+            return (T)this;
         }
 
-        public Builder convolutionMode(ConvolutionMode convolutionMode) {
+        public T convolutionMode(ConvolutionMode convolutionMode) {
             return convolutionMode(new FixedValue<>(convolutionMode));
         }
 
-        public Builder convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
+        public T convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
             this.convolutionMode = convolutionMode;
-            return this;
+            return (T)this;
         }
 
-        public Builder hasBias(boolean hasBias){
+        public T hasBias(boolean hasBias){
             return hasBias(new FixedValue<>(hasBias));
         }
 
-        public Builder hasBias(ParameterSpace<Boolean> hasBias){
+        public T hasBias(ParameterSpace<Boolean> hasBias){
             this.hasBias = hasBias;
-            return this;
-        }
-
-        public ConvolutionLayerSpace build() {
-            return new ConvolutionLayerSpace(this);
+            return (T)this;
         }
 
     }

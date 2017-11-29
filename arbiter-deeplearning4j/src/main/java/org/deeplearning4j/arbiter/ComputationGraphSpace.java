@@ -25,7 +25,9 @@ import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -63,6 +65,10 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     protected ParameterSpace<InputType[]> inputTypes;
     @JsonProperty
     protected int numParameters;
+    @JsonProperty
+    protected WorkspaceMode trainingWorkspaceMode;
+    @JsonProperty
+    protected WorkspaceMode inferenceWorkspaceMode;
 
     //Early stopping configuration / (fixed) number of epochs:
     protected EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
@@ -77,6 +83,8 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         this.networkInputs = builder.networkInputs;
         this.networkOutputs = builder.networkOutputs;
         this.inputTypes = builder.inputTypes;
+        this.trainingWorkspaceMode = builder.trainingWorkspaceMode;
+        this.inferenceWorkspaceMode = builder.inferenceWorkspaceMode;
 
         //Determine total number of parameters:
         List<ParameterSpace> list = LeafUtils.getUniqueObjects(collectLeaves());
@@ -99,7 +107,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         //Build/add our layers and vertices:
         for (LayerConf c : layerSpaces) {
             org.deeplearning4j.nn.conf.layers.Layer l = c.layerSpace.getValue(values);
-            graphBuilder.addLayer(c.getLayerName(), l, c.getInputs());
+            graphBuilder.addLayer(c.getLayerName(), l, c.getPreProcessor(), c.getInputs());
         }
         for (VertexConf gv : vertices) {
             graphBuilder.addVertex(gv.getVertexName(), gv.getGraphVertex(), gv.getInputs());
@@ -118,6 +126,12 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             graphBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
 
         ComputationGraphConfiguration configuration = graphBuilder.build();
+
+        if (trainingWorkspaceMode != null)
+            configuration.setTrainingWorkspaceMode(trainingWorkspaceMode);
+        if (inferenceWorkspaceMode != null)
+            configuration.setInferenceWorkspaceMode(inferenceWorkspaceMode);
+
         return new GraphConfiguration(configuration, earlyStoppingConfiguration, numEpochs);
     }
 
@@ -184,6 +198,8 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         protected String[] networkInputs;
         protected String[] networkOutputs;
         protected ParameterSpace<InputType[]> inputTypes;
+        protected WorkspaceMode trainingWorkspaceMode;
+        protected WorkspaceMode inferenceWorkspaceMode;
 
         //Need: input types
         //Early stopping configuration
@@ -200,7 +216,13 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
 
         public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs) {
-            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false));
+            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false, null));
+            return this;
+        }
+
+        public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, InputPreProcessor preProcessor,
+                                String... layerInputs){
+            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false, preProcessor));
             return this;
         }
 
@@ -225,6 +247,16 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
         public Builder setInputTypes(ParameterSpace<InputType[]> inputTypes) {
             this.inputTypes = inputTypes;
+            return this;
+        }
+
+        public Builder trainingWorkspaceMode(WorkspaceMode workspaceMode){
+            this.trainingWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        public Builder inferenceWorkspaceMode(WorkspaceMode workspaceMode){
+            this.inferenceWorkspaceMode = workspaceMode;
             return this;
         }
 

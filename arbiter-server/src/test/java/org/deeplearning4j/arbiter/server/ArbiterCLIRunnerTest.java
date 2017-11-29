@@ -46,7 +46,6 @@ public class ArbiterCLIRunnerTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                .iterations(100)
                 .addLayer(new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2,10))
                         .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)

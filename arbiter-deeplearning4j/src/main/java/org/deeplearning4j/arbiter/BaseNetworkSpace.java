@@ -55,12 +55,11 @@ import java.util.Map;
  * @param <T> Type of network (MultiLayerNetwork or ComputationGraph)
  * @author Alex Black
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @Data
 public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
-    protected ParameterSpace<Integer> iterations;
     protected Long seed;
     protected ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
     protected ParameterSpace<IActivation> activationFunction;
@@ -100,7 +99,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
     @SuppressWarnings("unchecked")
     protected BaseNetworkSpace(Builder builder) {
-        this.iterations = builder.iterations;
         this.seed = builder.seed;
         this.optimizationAlgo = builder.optimizationAlgo;
         this.activationFunction = builder.activationFunction;
@@ -139,8 +137,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected NeuralNetConfiguration.Builder randomGlobalConf(double[] values) {
         //Create MultiLayerConfiguration...
         NeuralNetConfiguration.Builder builder = new NeuralNetConfiguration.Builder();
-        if (iterations != null)
-            builder.iterations(iterations.getValue(values));
         if (seed != null)
             builder.seed(seed);
         if (optimizationAlgo != null)
@@ -240,13 +236,11 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         protected String[] inputs;
         protected ParameterSpace<Integer> numLayers;
         protected boolean duplicateConfig;
-
+        protected InputPreProcessor preProcessor;
     }
 
     @SuppressWarnings("unchecked")
     protected abstract static class Builder<T extends Builder<T>> {
-
-        private ParameterSpace<Integer> iterations;
         private Long seed;
         private ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
         private ParameterSpace<IActivation> activationFunction;
@@ -277,15 +271,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         //Early stopping configuration / (fixed) number of epochs:
         private EarlyStoppingConfiguration earlyStoppingConfiguration;
         private int numEpochs = 1;
-
-        public T iterations(int iterations) {
-            return iterations(new FixedValue<>(iterations));
-        }
-
-        public T iterations(ParameterSpace<Integer> parameterSpace) {
-            this.iterations = parameterSpace;
-            return (T) this;
-        }
 
         public T seed(long seed) {
             this.seed = seed;
