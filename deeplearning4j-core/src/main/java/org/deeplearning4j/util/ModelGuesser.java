@@ -1,6 +1,5 @@
 package org.deeplearning4j.util;
 
-import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -166,6 +165,7 @@ public class ModelGuesser {
 
         try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f))) {
             IOUtils.copy(stream, os);
+            os.flush();
             return loadModelGuess(f.getAbsolutePath());
         } catch (ModelGuesserException e){
             throw new ModelGuesserException("Unable to load model from input stream (invalid model file not a known model type)");
