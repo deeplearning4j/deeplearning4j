@@ -383,8 +383,16 @@ public class SameDiff {
      * @param shape the shape to associate with
      */
     public void updateShapeForVertexId(int[] vertexId,int[] shape) {
+        if(vertexId == null) {
+            throw new ND4JIllegalStateException("Null vertex ids not allowed");
+        }
+
         if(!vertexIdToShape.containsKey(vertexId)) {
             throw new ND4JIllegalStateException("Shape for " + Arrays.toString(vertexId) + " does not already exist! Please use putShapeForVertexId instead.");
+        }
+
+        if(shape == null) {
+            throw new ND4JIllegalStateException("Null shapes not allowed!");
         }
 
         if(vertexIdToArr.containsKey(vertexId) && !Arrays.equals(vertexIdToArr.get(vertexId).shape(),shape)) {
@@ -407,6 +415,20 @@ public class SameDiff {
 
         vertexIdToShape.put(vertexId,shape);
     }
+
+
+
+
+    /**
+     * Returns true if the given vertex id
+     * and shape already exist.
+     * @param vertexId the vertex id
+     * @return true if the ndarray and vertex id already exist
+     */
+    public boolean shapeAlreadyExistsForVertexId(int...vertexId) {
+        return vertexIdToShape.containsKey(vertexId) || arrayAlreadyExistsForVertexId(vertexId);
+    }
+
 
 
     /**
@@ -3608,9 +3630,21 @@ public class SameDiff {
 
         }
 
+        Set<int[]> initialized = new IntArrayKeySet();
         //update functions after variables are set
         for(DifferentialFunction function : functionInstances.values()) {
-            function.initWithArrays(arrays);
+            //resolve arguments in case
+            for(DifferentialFunction arg : function.args()) {
+                if(!initialized.contains(arg.resultVertexId())) {
+                    arg.initWithArrays(arrays);
+                    initialized.add(arg.resultVertexId());
+                }
+            }
+
+            if(!initialized.contains(function.resultVertexId())) {
+                function.initWithArrays(arrays);
+                initialized.add(function.resultVertexId());
+            }
         }
     }
 
@@ -3848,6 +3882,9 @@ public class SameDiff {
                 Op op = (Op) differentialFunction;
                 if(differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);
+                else if(op.isExecSpecial()) {
+                    op.exec();
+                }
 
                 else {
                     int[] axes = differentialFunction.getDimensions();

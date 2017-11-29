@@ -34,7 +34,6 @@ import java.util.List;
  */
 public class Mmul extends TensorMmul {
 
-    private MMulTranspose mMulTranspose;
 
     /**
      *
@@ -162,7 +161,6 @@ public class Mmul extends TensorMmul {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         Mmul mmul = (Mmul) o;
 

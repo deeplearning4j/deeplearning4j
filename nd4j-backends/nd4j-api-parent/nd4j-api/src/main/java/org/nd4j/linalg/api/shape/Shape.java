@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -238,6 +239,17 @@ public class Shape {
             throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
         }
 
+        for(int i = 0; i < left.length; i++) {
+            if(left[i] < 1)
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+        }
+
+
+
+        for(int i = 0; i < right.length; i++) {
+            if(right[i] < 1)
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+        }
         if (left[1] != right[0])
             throw new IllegalArgumentException("Columns of left not equal to rows of right");
 

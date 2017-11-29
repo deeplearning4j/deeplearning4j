@@ -29,9 +29,8 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.ByteOrder;
 import org.nd4j.graph.FlatArray;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -55,14 +54,13 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -792,7 +790,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int tensorssAlongDimension(int... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
-        if (dimension.length >= rank())
+        if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
             return 1;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -812,7 +810,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
-        if (dimension.length >= rank())
+        if (dimension.length >= rank()  || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
             return this;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)

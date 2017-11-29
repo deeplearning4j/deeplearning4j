@@ -27,7 +27,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            DifferentialFunction i_v1,
                            DifferentialFunction i_v2,
                            int[] dimension) {
-        this(sameDiff,i_v1,i_v2,false,dimension);
+        this(sameDiff, i_v1, i_v2, false, dimension);
     }
 
     public BaseBroadcastOp(SameDiff sameDiff,
@@ -35,18 +35,19 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            DifferentialFunction i_v2,
                            boolean inPlace,
                            int[] dimension) {
-        super(sameDiff,inPlace,new Object[] {i_v2});
+        super(sameDiff, inPlace, new Object[]{i_v2});
         if (i_v1 != null && i_v2 != null) {
-            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)},this);
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[]{sameDiff.setupFunction(i_v1), sameDiff.setupFunction(i_v2)}, this);
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
             f().validateFunctionReference(i_v1);
             f().validateFunctionReference(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
-            this.dimension = dimension;;
+            this.dimension = dimension;
+            ;
             addAsNewVertexId();
-            sameDiff.putShapeForVertexId(vertexId,Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape()));
+            sameDiff.putShapeForVertexId(vertexId, Shape.getBroadcastDimensions(i_v1.getResultShape(), i_v2.getResultShape()));
             f().addFunctionEdges(this);
 
         } else {
@@ -65,17 +66,17 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            DifferentialFunction i_v2,
                            int[] dimension,
                            Object[] extraArgs) {
-        super(sameDiff,extraArgs);
+        super(sameDiff, extraArgs);
         this.dimension = dimension;
         if (i_v1 != null && i_v2 != null) {
-            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v1),sameDiff.setupFunction(i_v2)},this);
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[]{sameDiff.setupFunction(i_v1), sameDiff.setupFunction(i_v2)}, this);
 
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
             addAsNewVertexId();
-            sameDiff.putShapeForVertexId(vertexId,Shape.getBroadcastDimensions(i_v1.getResultShape(),i_v2.getResultShape()));
+            sameDiff.putShapeForVertexId(vertexId, Shape.getBroadcastDimensions(i_v1.getResultShape(), i_v2.getResultShape()));
             f().addFunctionEdges(this);
 
 
@@ -88,10 +89,8 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
 
-
-
-    public BaseBroadcastOp(SameDiff sameDiff,DifferentialFunction i_v,int[] dimension,boolean inPlace) {
-        this(sameDiff,i_v,i_v.getResultShape(),inPlace,dimension,null);
+    public BaseBroadcastOp(SameDiff sameDiff, DifferentialFunction i_v, int[] dimension, boolean inPlace) {
+        this(sameDiff, i_v, i_v.getResultShape(), inPlace, dimension, null);
     }
 
     public BaseBroadcastOp(SameDiff sameDiff,
@@ -100,14 +99,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            boolean inPlace,
                            int[] dimension,
                            Object[] extraArgs) {
-        super(sameDiff,inPlace,extraArgs);
+        super(sameDiff, inPlace, extraArgs);
         this.dimension = dimension;
         if (i_v != null) {
-            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v)},this);
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[]{sameDiff.setupFunction(i_v)}, this);
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
-            sameDiff.putShapeForVertexId(vertexId,shape);
+            sameDiff.putShapeForVertexId(vertexId, shape);
             f().addFunctionEdges(this);
 
         } else {
@@ -123,7 +122,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            DifferentialFunction i_v,
                            int[] dimension,
                            Object[] extraArgs) {
-        this(sameDiff,i_v,i_v.getResultShape(),false,dimension,extraArgs);
+        this(sameDiff, i_v, i_v.getResultShape(), false, dimension, extraArgs);
     }
 
     public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int... dimension) {
@@ -142,11 +141,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     /**
      * Calculate the output shape for this op
+     *
      * @return
      */
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
-        ret.add(Shape.broadcastOutputShape(larg().getResultShape(),rarg().getResultShape()));
+        if (larg().getResultShape() != null && rarg().getResultShape() != null)
+            ret.add(Shape.broadcastOutputShape(larg().getResultShape(), rarg().getResultShape()));
+        ret.add(larg().getResultShape());
         return ret;
     }
 
@@ -164,10 +166,24 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public int[] getDimension() {
-        if(dimension == null) {
-            dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
+        if (dimension == null) {
+            dimension = Shape.getBroadcastDimensions(larg().getResultShape(), rarg().getResultShape());
         }
         return dimension;
+    }
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null) {
+            if (Shape.isRowVectorShape(rarg().getResultShape())) {
+                this.dimension = new int[]{1};
+            } else if(Shape.isColumnVectorShape(rarg().getResultShape()))
+                this.dimension = new int[]{0};
+            else if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null && !sameDiff.isPlaceHolder(larg().resultVertexId()) && !sameDiff.isPlaceHolder(rarg().resultVertexId()))
+                this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(), rarg().getResultShape());
+        }
+
     }
 
     @Override
@@ -178,13 +194,24 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null)
-            this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
+        if (Shape.isRowVectorShape(rarg().getResultShape())) {
+            this.dimension = new int[]{1};
+        } else if (Shape.isColumnVectorShape(rarg().getResultShape()))
+            this.dimension = new int[]{0};
+        else if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null && !sameDiff.isPlaceHolder(larg().resultVertexId()) && !sameDiff.isPlaceHolder(rarg().resultVertexId()))
+            this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(), rarg().getResultShape());
     }
+
+
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(),rarg().getResultShape());
+        if (Shape.isRowVectorShape(rarg().getResultShape())) {
+            this.dimension = new int[]{1};
+        } else if (Shape.isColumnVectorShape(rarg().getResultShape()))
+            this.dimension = new int[]{0};
+        else if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null && !sameDiff.isPlaceHolder(larg().resultVertexId()) && !sameDiff.isPlaceHolder(rarg().resultVertexId()))
+            this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(), rarg().getResultShape());
 
     }
 }

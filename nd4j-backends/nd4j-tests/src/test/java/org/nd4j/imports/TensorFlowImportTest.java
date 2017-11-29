@@ -529,6 +529,95 @@ public class TensorFlowImportTest {
 
     @Test
     public void testInferShape() throws IOException {
+        /**
+         * node {
+         name: "input"
+         op: "Placeholder"
+         attr {
+         key: "dtype"
+         value {
+         type: DT_FLOAT
+         }
+         }
+         attr {
+         key: "shape"
+         value {
+         shape {
+         dim {
+         size: -1
+         }
+         dim {
+         size: 4
+         }
+         }
+         }
+         }
+         }
+         node {
+         name: "bias"
+         op: "Const"
+         attr {
+         key: "dtype"
+         value {
+         type: DT_FLOAT
+         }
+         }
+         attr {
+         key: "value"
+         value {
+         tensor {
+         dtype: DT_FLOAT
+         tensor_shape {
+         dim {
+         size: 4
+         }
+         }
+         tensor_content: "\000\000\200?\000\000\000@\000\000@@\000\000\200@"
+         }
+         }
+         }
+         }
+         node {
+         name: "bias/read"
+         op: "Identity"
+         input: "bias"
+         attr {
+         key: "_class"
+         value {
+         list {
+         s: "loc:@bias"
+         }
+         }
+         }
+         attr {
+         key: "T"
+         value {
+         type: DT_FLOAT
+         }
+         }
+         }
+         node {
+         name: "output"
+         op: "BiasAdd"
+         input: "input"
+         input: "bias/read"
+         attr {
+         key: "data_format"
+         value {
+         s: "NHWC"
+         }
+         }
+         attr {
+         key: "T"
+         value {
+         type: DT_FLOAT
+         }
+         }
+         }
+         library {
+         }
+
+         */
         SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getInputStream());
         assertNotNull(graph);
 

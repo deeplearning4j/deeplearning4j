@@ -1,12 +1,14 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Shape manipulation ops
@@ -69,6 +71,17 @@ public abstract class ShapeOp extends BaseOp {
         List<int[]> ret = new ArrayList<>();
         ret.add(sameDiff.getShapeForVertexId(vertexId));
         return ret;
+    }
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        val shapeOutput = calculateOutputShape();
+        if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVertexId(vertexId))
+            sameDiff.updateShapeForVertexId(vertexId,shapeOutput.get(0));
+        else if(!shapeOutput.isEmpty())
+            sameDiff.putShapeForVertexId(vertexId,shapeOutput.get(0));
+
     }
 
     @Override

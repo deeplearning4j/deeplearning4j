@@ -24,8 +24,8 @@ public class TFGraphTestSingle {
     @Test
     public void testOne() throws  Exception {
         //String modelName = "add_n";
-        //String modelName = "ae_00";
-        String modelName = "bias_add";
+        String modelName = "ae_00";
+        //String modelName = "bias_add";
         //String modelName = "conv_0";
         //String modelName = "g_00";
         //String modelName = "g_01";

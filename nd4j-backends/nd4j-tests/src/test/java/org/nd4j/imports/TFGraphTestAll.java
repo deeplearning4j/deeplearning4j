@@ -1,10 +1,10 @@
 package org.nd4j.imports;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -13,7 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -60,12 +60,8 @@ public class TFGraphTestAll {
     protected static void testSingle(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-4;
         log.info("\n\tRUNNING TEST " + modelName + "...");
-        SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource(BASE_DIR + "/" + modelName + "/frozen_model.pb").getInputStream());
-
-        for (String input : inputs.keySet()) {
-            graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
-        }
-        INDArray res = graph.execAndEndResult();
+        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource(BASE_DIR + "/" + modelName + "/frozen_model.pb").getInputStream());
+        INDArray res = graph.execWithPlaceHolderAndEndResult(inputs);
 
         //for (int i = 0; i < res.length; i++) {
         //    if (i > 0)

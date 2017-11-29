@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -169,6 +170,18 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         else throw new ND4JIllegalStateException("Illegal number of args (can only be 1 or 2)");
     }
 
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        val shape = calculateOutputShape();
+        if(shape.isEmpty() || shape.get(0) == null)  {
+            throw new ND4JIllegalStateException("Shape should not be null or empty");
+        }
+        sameDiff.updateShapeForVertexId(vertexId,shape.get(0));
+    }
+
+
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>(1);
@@ -183,15 +196,14 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-
-
+        if(!sameDiff.shapeAlreadyExistsForVertexId(vertexId))
+            sameDiff.putShapeForVertexId(vertexId,calculateOutputShape().get(0));
     }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        super.initFromOnnx(node, initWith, attributesForNode, graph);
+        if(!sameDiff.shapeAlreadyExistsForVertexId(vertexId))
+            sameDiff.putShapeForVertexId(vertexId,calculateOutputShape().get(0));
 
     }
 

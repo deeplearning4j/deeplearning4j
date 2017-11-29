@@ -322,6 +322,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         else {
             val opName = tfNode.getOp();
             val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
+            if(differentialFunction == null) {
+                throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");
+            }
             try {
                 val newInstance = differentialFunction.getClass().newInstance();
                 val args = new DifferentialFunction[tfNode.getInputCount()];
@@ -352,8 +355,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                      */
                     if(diff.isPlaceHolder(func.getVertexId())) {
                         diff.putPlaceHolderForVertex(indices.getRight(),func.getVertexId());
-
                     }
+
                 }
 
 
@@ -367,7 +370,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                diff.putShapeForVertexId(indices.getRight(),newInstance.getResultShape());
+                if(!diff.shapeAlreadyExistsForVertexId(indices.getRight()) && newInstance.getResultShape() != null)
+                    diff.putShapeForVertexId(indices.getRight(),newInstance.getResultShape());
 
 
             } catch (Exception e) {

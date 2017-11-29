@@ -21,6 +21,8 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import com.google.common.primitives.Ints;
 import lombok.NoArgsConstructor;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -28,12 +30,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
@@ -81,9 +88,18 @@ public class TensorMmul extends BaseAccumulation {
         List<int[]> ret = new ArrayList<>(1);
         int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getResultShape()) : larg().getResultShape();
         int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getResultShape()) : rarg().getResultShape();
-
-        ret.add(  this instanceof Mmul ? Shape.getMatrixMultiplyShape(aShape,bShape)
-                : getTensorMmulShape(aShape,bShape, axes));
+        if(aShape != null && bShape != null) {
+            val shape =  this instanceof Mmul ? Shape.getMatrixMultiplyShape(
+                    aShape,bShape)
+                    : getTensorMmulShape(aShape,bShape, axes);
+            ret.add(shape);
+        }
+        if(!ret.isEmpty()) {
+            for(int i = 0; i < ret.get(0).length; i++) {
+                if(ret.get(0)[i] < 1)
+                    throw new ND4JIllegalStateException("Invalid shape computed at index " +  i);
+            }
+        }
         return ret;
     }
 
@@ -255,6 +271,68 @@ public class TensorMmul extends BaseAccumulation {
     @Override
     public String opName() {
         return "tensormmul";
+    }
+
+    public TensorMmul(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        for(int i = 0; i < args().length; i++) {
+            if(args()[i].getResultShape() == null) {
+                throw new ND4JIllegalStateException("Unable to get shape for arg " + i);
+            }
+        }
+        sameDiff.updateShapeForVertexId(vertexId,calculateOutputShape().get(0));
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        /**
+         * name: "MatMul"
+         op: "MatMul"
+         input: "input"
+         input: "Variable/read"
+         attr {
+         key: "transpose_b"
+         value {
+         b: false
+         }
+         }
+         attr {
+         key: "transpose_a"
+         value {
+         b: false
+         }
+         }
+         attr {
+         key: "T"
+         value {
+         type: DT_FLOAT
+         }
+         }
+
+         */
+
+        val isTransposeA = attributesForNode.get("transpose_a").getB();
+        val isTransposeB = attributesForNode.get("transpose_b").getB();
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(isTransposeA).transposeB(isTransposeB)
+                .build();
+        this.mMulTranspose = mMulTranspose;
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        val isTransposeA = attributesForNode.get("transA").getI() > 0;
+        val isTransposeB = attributesForNode.get("transB").getI() > 0;
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(isTransposeA).transposeB(isTransposeB)
+                .build();
+        this.mMulTranspose = mMulTranspose;
     }
 
     @Override

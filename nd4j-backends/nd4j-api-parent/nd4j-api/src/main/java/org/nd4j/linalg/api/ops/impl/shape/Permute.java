@@ -22,7 +22,6 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,11 +31,10 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Permute extends ShapeOp {
-    private int[] permuteDims;
+public class Permute extends Transpose {
 
     public Permute(SameDiff sameDiff, DifferentialFunction i_v, int[] permuteDims) {
-        super(sameDiff, i_v, false);
+        super(sameDiff,i_v);
         this.permuteDims = permuteDims;
     }
 
@@ -89,7 +87,7 @@ public class Permute extends ShapeOp {
         return "permute";
     }
 
-      @Override
+    @Override
     public INDArray z() {
         return x().transpose();
     }
@@ -105,12 +103,12 @@ public class Permute extends ShapeOp {
 
     @Override
     public String onnxName() {
-        return "transpose";
+        return "Transpose";
     }
 
     @Override
     public String tensorflowName() {
-        return "transpose";
+        return "Transpose";
     }
 
 

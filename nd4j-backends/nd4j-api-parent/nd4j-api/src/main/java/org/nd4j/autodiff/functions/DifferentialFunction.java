@@ -196,7 +196,15 @@ public abstract class DifferentialFunction implements Differential {
      */
     @JsonIgnore
     public int[] getResultShape() {
-        return getResult().getResultShape();
+        val originalShape =  getResult().getResultShape();
+        if(originalShape == null) {
+            List<int[]> outputShapes =  calculateOutputShape();
+            if(outputShapes.isEmpty())
+                return null;
+            return outputShapes.get(0);
+        }
+
+        return originalShape;
     }
 
 
