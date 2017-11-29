@@ -598,8 +598,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 }
 
                 //Masking array entries at end (for align start)
-                if (timeSeriesRandomOffset || alignmentMode == AlignmentMode.ALIGN_START) {
-                    int lastStep = startOffset + sequence.size();
+                int lastStep = startOffset + sequence.size();
+                if (timeSeriesRandomOffset || alignmentMode == AlignmentMode.ALIGN_START || lastStep < maxTSLength) {
                     for (int t2 = lastStep; t2 < maxTSLength; t2++) {
                         maskArray.putScalar(i, t2, 0.0);
                     }

@@ -36,7 +36,7 @@ public class TestParallelEarlyStopping {
     //    @Test
     //    public void testEarlyStoppingIris(){
     //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-    //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+    //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
     //                .updater(Updater.SGD)
     //                .weightInit(WeightInit.XAVIER)
     //                .list()
@@ -81,7 +81,7 @@ public class TestParallelEarlyStopping {
     @Test
     public void testEarlyStoppingEveryNEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
@@ -113,7 +113,7 @@ public class TestParallelEarlyStopping {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(1.0)) //Intentionally huge LR
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)

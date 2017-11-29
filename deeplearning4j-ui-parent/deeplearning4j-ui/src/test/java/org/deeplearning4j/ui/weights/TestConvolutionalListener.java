@@ -33,7 +33,7 @@ public class TestConvolutionalListener {
 
         DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1) // Training iterations as above
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345) // Training iterations as above
                         .l2(0.0005).weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5)

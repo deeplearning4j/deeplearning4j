@@ -213,7 +213,7 @@ public class TransferLearningMLNTest {
         MultiLayerConfiguration confForArchitecture =
                         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).updater(new AdaGrad(0.4)).list()
+                                        .updater(new AdaGrad(0.4)).list()
                                         .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
@@ -246,7 +246,7 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelToTweak =
                         new MultiLayerNetwork(
                                         new NeuralNetConfiguration.Builder().seed(12345)
-                                                        .iterations(1).updater(new RmsProp(0.1))
+                                                        .updater(new RmsProp(0.1))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(10, 10) //Only keep the first layer the same
                                                                         .nIn(3) //3 channels: RGB
@@ -498,7 +498,7 @@ public class TransferLearningMLNTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         MultiLayerNetwork modelToFineTune =
                         new MultiLayerNetwork(
-                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1)
+                                        new NeuralNetConfiguration.Builder().seed(123)
                                                         .weightInit(WeightInit.XAVIER)
                                                         .updater(new Nesterovs(0.01, 0.9))
                                                         .list()

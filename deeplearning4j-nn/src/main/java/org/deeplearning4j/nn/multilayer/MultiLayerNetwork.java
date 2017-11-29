@@ -210,7 +210,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc)<br>
      * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
      * For multiple epochs per layer, appropriately wrap the iterator (for example, a MultipleEpochsIterator) or train
      * each layer manually using {@link #pretrainLayer(int, DataSetIterator)}
@@ -234,7 +234,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, Autoencoders, etc)<br>
      * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
      *
      * @param layerIdx Index of the layer to train (0 to numLayers-1)
@@ -287,7 +287,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, Autoencoders, etc)<br>
      * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
      *
      * @param layerIdx Index of the layer to train (0 to numLayers-1)
@@ -333,7 +333,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Do forward pass to the layer to be pretrained
             for (int j = 0; j < layerIdx; j++) {
                 try (MemoryWorkspace wsFF = workspace.notifyScopeEntered()) {
-                    if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspacePretrain))
+                    if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspacePretrain))
                         layerInput = activationFromPrevLayer(j, layerInput, true)
                                         .leverageTo(ComputationGraph.workspacePretrain);
                     else
@@ -867,6 +867,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return feedForwardToLayer(layers.length - 1, train);
     }
 
+    /**
+     * Perform feed-forward, optionally (not) clearing the layer input arrays.<br>
+     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
+     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
+     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
+     * for more details
+     *
+     * @param train       training mode
+     * @param clearInputs If false: don't clear the layer inputs
+     * @return Activations from feed-forward
+     */
+    public List<INDArray> feedForward(boolean train, boolean clearInputs){
+        return feedForwardToLayer(layers.length-1, train, clearInputs);
+    }
+
     /** Compute the activations from the input to the specified layer.<br>
      * To compute activations for all layers, use feedForward(...) methods<br>
      * Note: output list includes the original input. So list.get(0) is always the original input, and
@@ -905,6 +920,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, boolean train) {
+        return feedForwardToLayer(layerNum, train, true);
+    }
+
+    protected List<INDArray> feedForwardToLayer(int layerNum, boolean train, boolean clearInputs) {
         // TODO: maybe remove that?
         INDArray currInput =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE || !input.isAttached()
@@ -933,6 +952,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (!train)
             if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+
+        if(clearInputs) {
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
+        }
 
         return activations;
     }
@@ -1895,6 +1918,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             INDArray ret = silentOutput(input, train).detach();
 
             layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
             return ret;
         }
     }
@@ -2111,7 +2135,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             // activation for output layer is calculated in computeScore
-            List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(), training);
+            setInput(data.getFeatures());
+            List<INDArray> activations = feedForwardToLayer(layers.length - 2, training, false);    //Don't clear layers, as this clears mask arrays also
             int n = activations.size();
             setLabels(data.getLabels());
             if (getOutputLayer() instanceof IOutputLayer) {
@@ -2132,6 +2157,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (hasMaskArray)
             clearLayerMaskArrays();
+        clearLayersStates();
 
         return score();
     }
@@ -2157,7 +2183,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-        feedForward(data.getFeatureMatrix(), false);
+        setInput(data.getFeatures());
+        feedForwardToLayer(layers.length-1, false, false);
         setLabels(data.getLabels());
 
         INDArray out;
@@ -2235,7 +2262,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //First: do a feed-forward through the network
                 //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
                 // need the input to the output layer to be set (such that backprop can be done)
-                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true);
+                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true, false);
                 if (trainingListeners.size() > 0) {
                     //TODO: We possibly do want output layer activations in some cases here...
                     for (TrainingListener tl : trainingListeners) {

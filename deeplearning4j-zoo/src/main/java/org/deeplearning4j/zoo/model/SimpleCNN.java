@@ -30,18 +30,16 @@ public class SimpleCNN extends ZooModel {
     private int[] inputShape = new int[] {3, 48, 48};
     private int numLabels;
     private long seed;
-    private int iterations;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public SimpleCNN(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public SimpleCNN(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public SimpleCNN(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public SimpleCNN(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -70,7 +68,7 @@ public class SimpleCNN extends ZooModel {
     public MultiLayerConfiguration conf() {
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().trainingWorkspaceMode(workspaceMode)
-                                        .inferenceWorkspaceMode(workspaceMode).seed(seed).iterations(iterations)
+                                        .inferenceWorkspaceMode(workspaceMode).seed(seed)
                                         .activation(Activation.IDENTITY).weightInit(WeightInit.RELU)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .updater(new AdaDelta())

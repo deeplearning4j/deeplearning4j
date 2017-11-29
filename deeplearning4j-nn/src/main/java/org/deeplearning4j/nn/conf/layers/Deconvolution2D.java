@@ -101,5 +101,63 @@ public class Deconvolution2D extends ConvolutionLayer {
                 convolutionMode, nOut, layerIndex, getLayerName(), Deconvolution2DLayer.class);
     }
 
+    public static class Builder extends BaseConvBuilder<Builder> {
+
+        public Builder(int[] kernelSize, int[] stride, int[] padding) {
+            super(kernelSize, stride, padding);
+        }
+
+        public Builder(int[] kernelSize, int[] stride) {
+            super(kernelSize, stride);
+        }
+
+        public Builder(int... kernelSize) {
+            super(kernelSize);
+        }
+
+        public Builder() {
+            super();
+        }
+
+        /**
+         * Set the convolution mode for the Convolution layer.
+         * See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode    Convolution mode for layer
+         */
+        public Builder convolutionMode(ConvolutionMode convolutionMode) {
+            if(convolutionMode == ConvolutionMode.Same){
+                throw new IllegalArgumentException("SAME mode not yet supported for deconvolution layer");
+            }
+            return super.convolutionMode(convolutionMode);
+        }
+
+        /**
+         * Size of the convolution
+         * rows/columns
+         * @param kernelSize the height and width of the
+         *                   kernel
+         * @return
+         */
+        public Builder kernelSize(int... kernelSize) {
+            this.kernelSize = kernelSize;
+            return this;
+        }
+
+        public Builder stride(int... stride) {
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder padding(int... padding) {
+            this.padding = padding;
+            return this;
+        }
+
+        @Override
+        public Deconvolution2D build() {
+            return new Deconvolution2D(this);
+        }
+    }
 
 }

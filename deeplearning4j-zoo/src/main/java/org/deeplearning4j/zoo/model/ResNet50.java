@@ -34,19 +34,17 @@ public class ResNet50 extends ZooModel {
 
     private int[] inputShape = new int[] {3, 224, 224};
     private long seed;
-    private int iterations;
     private int numClasses;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public ResNet50(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public ResNet50(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public ResNet50(int outputNum, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public ResNet50(int outputNum, long seed, WorkspaceMode workspaceMode) {
         this.seed = seed;
         this.numClasses = outputNum;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -173,7 +171,7 @@ public class ResNet50 extends ZooModel {
     public ComputationGraphConfiguration.GraphBuilder graphBuilder() {
 
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
-                        .iterations(iterations).activation(Activation.IDENTITY)
+                        .activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new RmsProp(0.1, 0.96, 0.001)).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0.0, 0.5)).l1(1e-7).l2(5e-5).miniBatch(true)

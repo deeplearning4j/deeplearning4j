@@ -226,7 +226,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5, 2, 1, 0, 4, 3);
         INDArray epsNextOrig = null;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)
                         && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
                                         .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
@@ -376,7 +376,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
         INDArray z = null;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)
                         && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
                                         .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
@@ -396,7 +396,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         z = z.permute(2, 3, 1, 0);
 
         if (cacheMode != CacheMode.NONE
-                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceCache)) {
 
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
@@ -422,7 +422,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
-                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceCache)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
                 preOutput = z.unsafeDuplication();

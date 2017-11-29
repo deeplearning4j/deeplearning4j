@@ -36,7 +36,7 @@ public class TestParallelEarlyStoppingUI {
         UIServer uiServer = UIServer.getInstance();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
                         .layer(1, new OutputLayer.Builder().nIn(3).nOut(3)

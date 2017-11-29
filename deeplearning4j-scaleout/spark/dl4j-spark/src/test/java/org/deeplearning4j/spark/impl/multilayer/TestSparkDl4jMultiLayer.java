@@ -58,7 +58,7 @@ public class TestSparkDl4jMultiLayer extends BaseSparkTest {
         //Create network configuration and conduct network training
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .activation(Activation.LEAKYRELU)
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Nesterovs(0.02, 0.9))

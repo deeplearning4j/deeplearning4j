@@ -105,7 +105,7 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
         if (vertexInputs[0].getType() == InputType.Type.FF) {
             return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize(), tsLength);
-        } else if (vertexInputs[0].getType() != InputType.Type.CNNFlat) {
+        } else if (vertexInputs[0].getType() == InputType.Type.CNNFlat) {
             return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(),
                             tsLength);
         } else {

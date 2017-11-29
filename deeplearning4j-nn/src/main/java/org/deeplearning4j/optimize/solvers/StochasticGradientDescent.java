@@ -56,46 +56,44 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
     @Override
     public boolean optimize() {
-        for (int i = 0; i < conf.getNumIterations(); i++) {
-            Pair<Gradient, Double> pair = gradientAndScore();
+        Pair<Gradient, Double> pair = gradientAndScore();
 
-            Gradient gradient = pair.getFirst();
+        Gradient gradient = pair.getFirst();
 
-            INDArray params = model.params();
+        INDArray params = model.params();
 
-            // if optimizer has GradientsAccumulator defined - go for it
-            if (accumulator != null) {
-                // we're propagating current update
-                accumulator.storeUpdate(gradient.gradient());
+        // if optimizer has GradientsAccumulator defined - go for it
+        if (accumulator != null) {
+            // we're propagating current update
+            accumulator.storeUpdate(gradient.gradient());
 
-                // and getting (possible) pending update from accumulator
-                //INDArray pendingUpdate = accumulator.getUpdate();
-                //stepFunction.step(params, pendingUpdate);
-                accumulator.applyUpdate(stepFunction, params, gradient.gradient());
+            // and getting (possible) pending update from accumulator
+            //INDArray pendingUpdate = accumulator.getUpdate();
+            //stepFunction.step(params, pendingUpdate);
+            accumulator.applyUpdate(stepFunction, params, gradient.gradient());
 
-                // if there's no update available - just go on then
-            } else {
-                // if accumulator isn't used - we just to for direct updates application
-                stepFunction.step(params, gradient.gradient());
-            }
-
-            //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there
-            //However: for pretrain layers, params are NOT a view. Thus a setParams call is necessary
-            //But setParams should be a no-op for MLN and CG
-            model.setParams(params);
-
-            int iterationCount = BaseOptimizer.getIterationCount(model);
-            int epochCount = BaseOptimizer.getEpochCount(model);
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener listener : iterationListeners)
-                    listener.iterationDone(model, iterationCount, epochCount);
-            }
-
-            checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
-
-            BaseOptimizer.incrementIterationCount(model, 1);
-            applyConstraints(model);
+            // if there's no update available - just go on then
+        } else {
+            // if accumulator isn't used - we just to for direct updates application
+            stepFunction.step(params, gradient.gradient());
         }
+
+        //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there
+        //However: for pretrain layers, params are NOT a view. Thus a setParams call is necessary
+        //But setParams should be a no-op for MLN and CG
+        model.setParams(params);
+
+        int iterationCount = BaseOptimizer.getIterationCount(model);
+        int epochCount = BaseOptimizer.getEpochCount(model);
+        try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            for (IterationListener listener : iterationListeners)
+                listener.iterationDone(model, iterationCount, epochCount);
+        }
+
+        checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, iterationCount);
+
+        BaseOptimizer.incrementIterationCount(model, 1);
+        applyConstraints(model);
         return true;
     }
 

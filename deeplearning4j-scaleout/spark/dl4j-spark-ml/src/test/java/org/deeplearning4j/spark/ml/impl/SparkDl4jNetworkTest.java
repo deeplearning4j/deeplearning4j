@@ -95,7 +95,7 @@ public class SparkDl4jNetworkTest {
 
     private MultiLayerConfiguration getNNConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.UNIFORM).updater(new Nesterovs(0.1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())

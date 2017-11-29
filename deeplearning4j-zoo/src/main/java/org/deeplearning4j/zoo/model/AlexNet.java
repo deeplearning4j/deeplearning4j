@@ -44,18 +44,16 @@ public class AlexNet extends ZooModel {
     private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels = 1000;
     private long seed = 42;
-    private int iterations = 1;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public AlexNet(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public AlexNet(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public AlexNet(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public AlexNet(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -85,7 +83,7 @@ public class AlexNet extends ZooModel {
         double nonZeroBias = 1;
         double dropOut = 0.5;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0.0, 0.01))
                         .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Nesterovs(1e-2, 0.9))

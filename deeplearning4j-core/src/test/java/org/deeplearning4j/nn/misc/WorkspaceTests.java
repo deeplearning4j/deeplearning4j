@@ -1,13 +1,13 @@
 package org.deeplearning4j.nn.misc;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,6 +45,39 @@ public class WorkspaceTests {
 
             c.computeGradientAndScore();
         }
+    }
+
+
+    @Test
+    public void testWorkspaceIndependence() {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4337
+        int depthIn = 2;
+        int depthOut = 2;
+        int nOut = 2;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
+                .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, 2)
+                        .stride(1, 1).activation(Activation.TANH).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nOut(nOut).build())
+                .setInputType(InputType.convolutional(5,5,2))
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf.clone());
+        net.init();
+        net.getLayerWiseConfigurations().setInferenceWorkspaceMode(WorkspaceMode.SEPARATE);
+        net.getLayerWiseConfigurations().setTrainingWorkspaceMode(WorkspaceMode.SEPARATE);
+
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf.clone());
+        net2.init();
+        net2.getLayerWiseConfigurations().setInferenceWorkspaceMode(WorkspaceMode.NONE);
+        net2.getLayerWiseConfigurations().setTrainingWorkspaceMode(WorkspaceMode.NONE);
+
+        INDArray in = Nd4j.rand(new int[]{1,2,5,5});
+
+        net.output(in);
+        net2.output(in);    //Op [add_scalar] X argument uses leaked workspace pointer from workspace [LOOP_EXTERNAL]
     }
 
     public static ComputationGraph createNet() throws Exception {

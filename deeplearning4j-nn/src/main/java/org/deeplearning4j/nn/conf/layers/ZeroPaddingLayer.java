@@ -32,6 +32,11 @@ public class ZeroPaddingLayer extends Layer {
 
     private ZeroPaddingLayer(Builder builder) {
         super(builder);
+        if(builder.padding == null || builder.padding.length != 4){
+            throw new IllegalArgumentException("Invalid padding values: must have exactly 4 values [top, bottom, left, right]." +
+                    " Got: " + (builder.padding == null ? null : Arrays.toString(builder.padding)));
+        }
+
         this.padding = builder.padding;
     }
 

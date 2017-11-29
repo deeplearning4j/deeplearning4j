@@ -658,7 +658,8 @@ public class GradientCheckTestsComputationGraph {
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
                         .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2)
+                        .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                                .activation(Activation.IDENTITY).nOut(2)
                                         .build(), "l3", "l4")
                         .setOutputs("out").setInputTypes(InputType.convolutional(inH, inW, 2)).pretrain(false)
                         .backprop(true).build();
@@ -668,7 +669,7 @@ public class GradientCheckTestsComputationGraph {
 
         int[] minibatchSizes = {1, 3};
         for (int mb : minibatchSizes) {
-            INDArray input = Nd4j.rand(new int[] {mb, 2, inH, inW}); //Order: examples, channels, height, width
+            INDArray input = Nd4j.rand(new int[] {mb, 2, inH, inW}).muli(4); //Order: examples, channels, height, width
             INDArray out = Nd4j.rand(mb, 2);
 
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;

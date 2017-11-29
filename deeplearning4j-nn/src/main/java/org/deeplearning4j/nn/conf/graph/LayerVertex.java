@@ -129,7 +129,17 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes.length != 1){
+            throw new IllegalArgumentException("Only one input supported for layer vertices: got "
+                    + Arrays.toString(inputTypes));
+        }
+        InputType it;
+        if(preProcessor != null){
+            it = preProcessor.getOutputType(inputTypes[0]);
+        } else {
+            it = inputTypes[0];
+        }
         //TODO preprocessor memory
-        return layerConf.getLayer().getMemoryReport(inputTypes[0]);
+        return layerConf.getLayer().getMemoryReport(it);
     }
 }

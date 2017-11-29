@@ -55,7 +55,6 @@ import java.util.*;
                 @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
                 @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
                 @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
-                @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
                 @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
                 @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
                 @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
@@ -276,6 +275,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see #dropOut(IDropout)
          */
         public T dropOut(double inputRetainProbability) {
+            if(inputRetainProbability == 0.0){
+                return dropOut(null);
+            }
             return dropOut(new Dropout(inputRetainProbability));
         }
 

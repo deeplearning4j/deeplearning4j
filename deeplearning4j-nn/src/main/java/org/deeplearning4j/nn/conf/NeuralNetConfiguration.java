@@ -90,7 +90,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
-    protected int numIterations;
     //number of line search iterations
     protected int maxNumLineSearchIterations;
     protected long seed;
@@ -109,7 +108,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected CacheMode cacheMode;
 
     //Counter for the number of parameter updates so far for this layer.
-    //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
+    //Note that this is only used for pretrain layers (AE, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
     //contain counters for standard backprop training.
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
@@ -582,7 +581,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected IUpdater biasUpdater = null;
         protected Layer layer;
         protected boolean miniBatch = true;
-        protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
@@ -610,7 +608,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 minimize = newConf.minimize;
                 maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
                 layer = newConf.layer;
-                numIterations = newConf.numIterations;
                 optimizationAlgo = newConf.optimizationAlgo;
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
@@ -762,15 +759,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Number of optimization iterations. Should be set to 1 for >99% of use cases (possible exception:
-         * very tiny full batch dataset training)
-         */
-        public Builder iterations(int numIterations) {
-            this.numIterations = numIterations;
-            return this;
-        }
-
-        /**
          * Random number generator seed. Used for reproducability between runs
          */
         public Builder seed(long seed) {
@@ -830,6 +818,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         public Builder weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return this;
+        }
+
+        /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         *
+         * @param distribution Distribution to use for weight initialization
+         */
+        public Builder weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
         }
 
         /**
@@ -905,6 +904,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see #dropOut(IDropout)
          */
         public Builder dropOut(double inputRetainProbability) {
+            if(inputRetainProbability == 0.0){
+                return dropOut(null);
+            }
             return dropOut(new Dropout(inputRetainProbability));
         }
 
@@ -1042,7 +1044,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
             conf.layer = layer;
-            conf.numIterations = numIterations;
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
             conf.stepFunction = stepFunction;

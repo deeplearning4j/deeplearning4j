@@ -45,7 +45,7 @@ public class TestVariableLengthTS {
             Nd4j.getRandom().setSeed(12345);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
@@ -133,7 +133,7 @@ public class TestVariableLengthTS {
             Nd4j.getRandom().setSeed(12345);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
@@ -181,10 +181,14 @@ public class TestVariableLengthTS {
             net.computeGradientAndScore();
             double score2 = net.score();
             Gradient g2 = net.gradient();
+
+            net.setInput(in2);
+            net.setLabels(labels2);
+            net.setLayerMaskArrays(inputMask, null);
             List<INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
-            assertNotEquals(score1, score2, 0.01);
+            assertNotEquals(score1, score2, 0.005);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();
@@ -206,6 +210,7 @@ public class TestVariableLengthTS {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
                 net.setInput(in2);
+                net.setLayerMaskArrays(inputMask, null);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();

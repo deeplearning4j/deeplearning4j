@@ -48,7 +48,6 @@ public class FineTuneConfiguration {
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected Boolean miniBatch;
-    protected Integer numIterations;
     protected Integer maxNumLineSearchIterations;
     protected Long seed;
     protected OptimizationAlgorithm optimizationAlgo;
@@ -87,12 +86,10 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder iterations(int iterations) {
-            this.numIterations = iterations;
-            return this;
-        }
-
         public Builder dropOut(double dropout){
+            if(dropout == 0.0){
+                return dropout(null);
+            }
             return dropout(new Dropout(dropout));
         }
 
@@ -164,8 +161,6 @@ public class FineTuneConfiguration {
         }
         if (miniBatch != null)
             nnc.setMiniBatch(miniBatch);
-        if (numIterations != null)
-            nnc.setNumIterations(numIterations);
         if (maxNumLineSearchIterations != null)
             nnc.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)
@@ -255,8 +250,6 @@ public class FineTuneConfiguration {
             confBuilder.biasUpdater(biasUpdater);
         if (miniBatch != null)
             confBuilder.setMiniBatch(miniBatch);
-        if (numIterations != null)
-            confBuilder.setNumIterations(numIterations);
         if (maxNumLineSearchIterations != null)
             confBuilder.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)

@@ -185,7 +185,7 @@ public class BNGradientCheckTest {
                             mln.setLabels(ds.getLabels());
                             mln.computeGradientAndScore();
                             double scoreBefore = mln.score();
-                            for (int k = 0; k < 5; k++)
+                            for (int k = 0; k < 20; k++)
                                 mln.fit(ds);
                             mln.computeGradientAndScore();
                             double scoreAfter = mln.score();
@@ -490,7 +490,7 @@ public class BNGradientCheckTest {
                             net.setLabels(ds.getLabels());
                             net.computeGradientAndScore();
                             double scoreBefore = net.score();
-                            for (int k = 0; k < 5; k++)
+                            for (int k = 0; k < 20; k++)
                                 net.fit(ds);
                             net.computeGradientAndScore();
                             double scoreAfter = net.score();

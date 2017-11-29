@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 public class SvhnDataFetcherTest {
 
     @Test
-    public void testMnistDataFetcher() throws Exception {
+    public void testSvhnDataFetcher() throws Exception {
         SvhnDataFetcher fetch = new SvhnDataFetcher();
         File path = fetch.getDataSetPath(DataSetType.TRAIN);
         File path2 = fetch.getDataSetPath(DataSetType.TEST);

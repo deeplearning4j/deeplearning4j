@@ -270,7 +270,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceFeedForward)) {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                 .getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
                     if (isExternal) {
