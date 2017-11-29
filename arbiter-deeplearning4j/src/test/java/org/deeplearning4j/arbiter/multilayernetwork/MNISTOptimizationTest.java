@@ -75,7 +75,7 @@ public class MNISTOptimizationTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.05))
-                        .iterations(1).addLayer(
+                        .addLayer(
                                         new ConvolutionLayerSpace.Builder().nIn(1)
                                                         .nOut(new IntegerParameterSpace(5, 30))
                                                         .kernelSize(new DiscreteParameterSpace<>(new int[] {3, 3},

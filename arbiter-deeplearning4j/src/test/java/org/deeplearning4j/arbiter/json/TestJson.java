@@ -87,7 +87,7 @@ public class TestJson {
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new AdaMaxSpace(new ContinuousParameterSpace(0.0001, 0.1)))
-                        .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(1).addInputs("in")
+                        .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
                         .setInputTypes(InputType.feedForward(4))
                         .addLayer("first",
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))

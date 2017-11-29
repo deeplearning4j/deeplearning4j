@@ -71,7 +71,7 @@ public class TestGraphLocalExecution {
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
-                .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(100).addInputs("in")
+                .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
                 .setInputTypes(InputType.feedForward(4))
                 .addLayer("layer0",
                         new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
@@ -125,7 +125,7 @@ public class TestGraphLocalExecution {
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new AdamSpace(new ContinuousParameterSpace(0.0001, 0.1)))
-                        .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(1).addInputs("in")
+                        .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
                         .setInputTypes(InputType.feedForward(784))
                         .addLayer("first",
                                         new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
