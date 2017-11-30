@@ -19,6 +19,7 @@ package org.datavec.api.records.reader.impl;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.*;
 import org.datavec.api.records.reader.impl.jackson.FieldSelection;
+import org.datavec.api.records.reader.impl.jackson.JacksonLineRecordReader;
 import org.datavec.api.records.reader.impl.jackson.JacksonRecordReader;
 import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
@@ -60,6 +61,8 @@ public class TestSerialization {
         rrs.add(new CSVRegexRecordReader(0, ",", null, new String[] {null, "(.+) (.+) (.+)"}));
         rrs.add(new JacksonRecordReader(new FieldSelection.Builder().addField("a").addField(new Text("MISSING_B"), "b")
                 .addField(new Text("MISSING_CX"), "c", "x").build(), new ObjectMapper(new JsonFactory())));
+        rrs.add(new JacksonLineRecordReader(new FieldSelection.Builder().addField("value1")
+        		.addField("value2").build(), new ObjectMapper(new JsonFactory())));
         rrs.add(new LibSvmRecordReader());
         rrs.add(new SVMLightRecordReader());
         rrs.add(new RegexLineRecordReader("(.+) (.+) (.+)", 0));

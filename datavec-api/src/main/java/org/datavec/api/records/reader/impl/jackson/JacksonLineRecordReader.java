@@ -111,4 +111,9 @@ public class JacksonLineRecordReader extends LineRecordReader {
 
     	return out;
     }
+    
+    @Override
+    public List<String> getLabels() {
+        throw new UnsupportedOperationException();
+    }
 }
