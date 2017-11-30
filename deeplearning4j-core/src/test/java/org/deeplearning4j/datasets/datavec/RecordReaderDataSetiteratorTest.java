@@ -29,6 +29,7 @@ import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordRe
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
@@ -1247,5 +1248,36 @@ public class RecordReaderDataSetiteratorTest {
         iter.hasNext();
         iter.reset();
         iter.next();
+    }
+
+    @Test
+    public void testReadingFromStream() throws Exception {
+        int batchSize = 1;
+        int labelIndex = 4;
+        int numClasses = 3;
+        InputStream dataFile = new ClassPathResource("iris.txt").getInputStream();
+        RecordReader recordReader = new CSVRecordReader(0, ',');
+        recordReader.initialize(new InputStreamInputSplit(dataFile));
+
+        assertTrue(recordReader.hasNext());
+        assertFalse(recordReader.resetSupported());
+
+        DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses);
+        assertFalse(iterator.resetSupported());
+
+        int count = 0;
+        while(iterator.hasNext()){
+            assertNotNull(iterator.next());
+            count++;
+        }
+
+        assertEquals(150, count);
+
+        try{
+            iterator.reset();
+            fail("Expected exception");
+        } catch (Exception e){
+            //expected
+        }
     }
 }

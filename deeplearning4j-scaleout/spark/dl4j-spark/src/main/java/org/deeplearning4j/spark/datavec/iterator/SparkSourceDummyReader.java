@@ -76,6 +76,11 @@ public class SparkSourceDummyReader implements RecordReader, Serializable {
     public void reset() { /* No op */ }
 
     @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException();
     }
