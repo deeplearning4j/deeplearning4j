@@ -3,9 +3,9 @@ package org.deeplearning4j.nn.api.CustomParamInitializer;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -20,22 +20,14 @@ import java.util.Map;
 import static org.deeplearning4j.nn.weights.WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER;
 
 /**
- * extended by jingshu
+ * created by jingshu
  */
-public class ElementWiseParamInitializer implements ParamInitializer {
+public class ElementWiseParamInitializer extends DefaultParamInitializer implements ParamInitializer {
 
     private static final ElementWiseParamInitializer INSTANCE = new ElementWiseParamInitializer();
 
     public static ElementWiseParamInitializer getInstance() {
         return INSTANCE;
-    }
-
-    public final static String WEIGHT_KEY = "W";
-    public final static String BIAS_KEY = "b";
-
-    @Override
-    public int numParams(NeuralNetConfiguration conf) {
-        return numParams(conf.getLayer());
     }
 
     @Override
@@ -111,41 +103,13 @@ public class ElementWiseParamInitializer implements ParamInitializer {
 
         return out;
     }
-    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView, boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        return createBias(layerConf.getNOut(), layerConf.getBiasInit(), biasParamView, initializeParameters);
-    }
-
-    protected INDArray createBias(int nOut, double biasInit, INDArray biasParamView, boolean initializeParameters) {
-        if (initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(nOut, biasInit);
-            biasParamView.assign(ret);
-        }
-        return biasParamView;
-    }
-
-
-    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView,
-                                          boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-
-        if (initializeParameters) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist,
-                    weightParamView, true);
-        } else {
-            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), null, null, weightParamView, false);
-        }
-    }
-
+    
     protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist,
                                           INDArray weightParamView, boolean initializeParameters) {
         int[] shape = new int[] {nIn};
 
         if (initializeParameters) {
-            INDArray ret = initWeights(nIn, //Fan in
+            INDArray ret = ElementWiseParamInitializer.initWeights(nIn, //Fan in
                     nOut, //Fan out
                     shape, weightInit, dist, DEFAULT_WEIGHT_INIT_ORDER,weightParamView);
             return ret;
@@ -215,3 +179,4 @@ public class ElementWiseParamInitializer implements ParamInitializer {
 
 
 }
+
