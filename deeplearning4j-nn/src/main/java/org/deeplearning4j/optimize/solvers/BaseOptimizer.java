@@ -221,47 +221,45 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //calculate initial search direction
         preProcessLine();
 
-        for (int i = 0; i < conf.getNumIterations(); i++) {
-            gradient = (INDArray) searchState.get(GRADIENT_KEY);
-            searchDirection = (INDArray) searchState.get(SEARCH_DIR);
-            parameters = (INDArray) searchState.get(PARAMS_KEY);
+        gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        searchDirection = (INDArray) searchState.get(SEARCH_DIR);
+        parameters = (INDArray) searchState.get(PARAMS_KEY);
 
-            //perform one line search optimization
-            try {
-                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
-            } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
-                step = 0.0;
-            }
-
-            //Update parameters based on final/best step size returned by line search:
-            if (step != 0.0) {
-                // TODO: inject accumulation use here
-                stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
-                model.setParams(parameters);
-            } else {
-                log.debug("Step size returned by line search is 0.0.");
-            }
-
-            pair = gradientAndScore();
-
-            //updates searchDirection
-            postStep(pair.getFirst().gradient());
-
-            //invoke listeners
-            int iterationCount = BaseOptimizer.getIterationCount(model);
-            int epochCount = BaseOptimizer.getEpochCount(model);
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener listener : iterationListeners)
-                    listener.iterationDone(model, iterationCount, epochCount);
-            }
-
-
-            //check for termination conditions based on absolute change in score
-            checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
-            incrementIterationCount(model, 1);
-            applyConstraints(model);
+        //perform one line search optimization
+        try {
+            step = lineMaximizer.optimize(parameters, gradient, searchDirection);
+        } catch (InvalidStepException e) {
+            log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
+            step = 0.0;
         }
+
+        //Update parameters based on final/best step size returned by line search:
+        if (step != 0.0) {
+            // TODO: inject accumulation use here
+            stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
+            model.setParams(parameters);
+        } else {
+            log.debug("Step size returned by line search is 0.0.");
+        }
+
+        pair = gradientAndScore();
+
+        //updates searchDirection
+        postStep(pair.getFirst().gradient());
+
+        //invoke listeners
+        int iterationCount = BaseOptimizer.getIterationCount(model);
+        int epochCount = BaseOptimizer.getEpochCount(model);
+        try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            for (IterationListener listener : iterationListeners)
+                listener.iterationDone(model, iterationCount, epochCount);
+        }
+
+
+        //check for termination conditions based on absolute change in score
+        checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, iterationCount);
+        incrementIterationCount(model, 1);
+        applyConstraints(model);
         return true;
     }
 

@@ -1235,7 +1235,7 @@ public class TrainModule implements UIModule {
                         //MLN or CG parameter naming convention
                         paramName = s.substring(layerName.length() + 1);
                     } else {
-                        //Pretrain layer (VAE, RBM) naming convention
+                        //Pretrain layer (VAE, AE) naming convention
                         paramName = s.substring(layerName.length());
                     }
 

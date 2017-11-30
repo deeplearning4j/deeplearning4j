@@ -56,6 +56,13 @@ public class AlphaDropout implements IDropout {
      */
     public AlphaDropout(double activationRetainProbability){
         this(activationRetainProbability, null, DEFAULT_ALPHA, DEFAULT_LAMBDA);
+        if(activationRetainProbability < 0.0){
+            throw new IllegalArgumentException("Activation retain probability must be > 0. Got: " + activationRetainProbability);
+        }
+        if(activationRetainProbability == 0.0){
+            throw new IllegalArgumentException("Invalid probability value: Dropout with 0.0 probability of retaining "
+                    + "activations is not supported");
+        }
     }
 
     /**

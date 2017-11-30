@@ -104,10 +104,9 @@ public class DenseTest {
     private static MultiLayerNetwork getDenseMLNConfig(boolean backprop, boolean pretrain) {
         int numInputs = 4;
         int outputNum = 3;
-        int iterations = 10;
         long seed = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
                         .updater(new Sgd(1e-3)).l1(0.3).l2(1e-3).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(numInputs).nOut(3)
                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())

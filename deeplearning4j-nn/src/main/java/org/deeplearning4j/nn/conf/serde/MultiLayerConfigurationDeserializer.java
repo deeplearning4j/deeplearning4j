@@ -73,7 +73,9 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                                     && confNode.get("useDropConnect").asBoolean(false)){
                                 ((BaseLayer)layers[i]).setWeightNoise(new DropConnect(d));
                             } else {
-                                layers[i].setIDropout(new Dropout(d));
+                                if(d > 0.0) {
+                                    layers[i].setIDropout(new Dropout(d));
+                                }
                             }
                         }
                     }

@@ -170,7 +170,7 @@ public class TestCompGraphCNN {
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(123).graphBuilder().addInputs("input")
+                                        .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(nChannels, imageWidth,
                                                         imageHeight))
                                         .addLayer("conv1", new ConvolutionLayer.Builder()
@@ -216,7 +216,7 @@ public class TestCompGraphCNN {
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(123).graphBuilder().addInputs("input")
+                                        .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(imageHeight, imageWidth,
                                                         nChannels))
                                         .addLayer("conv1",
@@ -256,7 +256,7 @@ public class TestCompGraphCNN {
         int nChannels = 1;
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
                         //-- kernel size, stride , padding

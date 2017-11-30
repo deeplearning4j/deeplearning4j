@@ -359,6 +359,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         last = null;
+        useCurrent = false;
     }
 
     @Override

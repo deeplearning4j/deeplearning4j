@@ -237,7 +237,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         }
 
         INDArray epsNext;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
                 epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
@@ -329,7 +329,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         INDArray z;
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
                 z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});

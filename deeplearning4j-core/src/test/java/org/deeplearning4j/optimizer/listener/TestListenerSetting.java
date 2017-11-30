@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -34,9 +33,8 @@ public class TestListenerSetting {
         //Pretrain layers should get copies of the listeners, in addition to the
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().nIn(10).nOut(10).build())
-                        .layer(1, new AutoEncoder.Builder().nIn(10).nOut(10).build())
-                        .layer(2, new VariationalAutoencoder.Builder().nIn(10).nOut(10).build()).build();
+                        .layer(0, new AutoEncoder.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new VariationalAutoencoder.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -59,10 +57,9 @@ public class TestListenerSetting {
 
 
         ComputationGraphConfiguration gConf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addLayer("0", new RBM.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("1", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "0")
-                        .addLayer("2", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "1")
-                        .setOutputs("2").build();
+                        .addLayer("0", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "0")
+                        .setOutputs("1").build();
         ComputationGraph cg = new ComputationGraph(gConf);
         cg.init();
 

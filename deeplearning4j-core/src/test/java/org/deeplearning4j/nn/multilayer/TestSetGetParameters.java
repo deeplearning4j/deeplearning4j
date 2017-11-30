@@ -22,7 +22,7 @@ public class TestSetGetParameters {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
-                        .layer(1, new RBM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())

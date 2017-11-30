@@ -80,6 +80,14 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (input.rank() == 2)
             return input; //Should usually never happen
 
+        //Check input: nchw format
+        if(input.size(1) != numChannels || input.size(2) != inputHeight ||
+                input.size(3) != inputWidth){
+            throw new IllegalStateException("Invalid input array: expected shape [minibatch, channels, height, width] = "
+                    + "[minibatch, " + numChannels + ", " + inputHeight + ", " + inputWidth + "] - got "
+                    + Arrays.toString(input.shape()));
+        }
+
         //Assume input is standard rank 4 activations out of CNN layer
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
         if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))

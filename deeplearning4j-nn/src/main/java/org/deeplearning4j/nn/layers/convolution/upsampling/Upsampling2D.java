@@ -84,7 +84,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = layerConf().getSize();
+        int size = getSize();
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
@@ -102,6 +102,10 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(gradient, reshapedEpsilon);
+    }
+
+    protected int getSize(){
+        return layerConf().getSize();
     }
 
     @Override
@@ -128,7 +132,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = layerConf().getSize();
+        int size = getSize();
         int outH = inH * size;
         int outW = inW * size;
 
@@ -158,7 +162,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceCache)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                     .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
                 preOutput = z.unsafeDuplication();

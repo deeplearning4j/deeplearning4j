@@ -25,14 +25,11 @@ public class SymmetricTrainerContextTest {
     int outputNum = 10;
 
     // for GPU you usually want to have higher batchSize
-    int batchSize = 128;
-    int nEpochs = 10;
-    int iterations = 1;
     int seed = 123;
 
     @Test
     public void testEqualUuid1() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                 .l2(0.0005)
                 //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
                 .weightInit(WeightInit.XAVIER)

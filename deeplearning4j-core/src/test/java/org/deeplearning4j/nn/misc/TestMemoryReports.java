@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.misc;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -18,8 +19,11 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -234,5 +238,16 @@ public class TestMemoryReports {
                         MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT));
         assertEquals(0, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.INFERENCE,
                         CacheMode.NONE, DataBuffer.Type.FLOAT));
+    }
+
+    @Test
+    public void testPreprocessors() throws Exception {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4223
+        File f = new ClassPathResource("4223/CompGraphConfig.json").getTempFileFromArchive();
+        String s = FileUtils.readFileToString(f, Charset.defaultCharset());
+
+        ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(s);
+
+        conf.getMemoryReport(InputType.convolutional(17,19,19));
     }
 }

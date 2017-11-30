@@ -80,7 +80,7 @@ public class CenterLossOutputLayerTest {
         int nChannels = 1; // Number of input channels
         int outputNum = 10; // The number of possible outcomes
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1) // Training iterations as above
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345) // Training iterations as above
                         .l2(0.0005).weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9))
                         .graphBuilder().addInputs("input")

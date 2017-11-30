@@ -22,7 +22,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
@@ -32,7 +31,6 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * A neural network layer.
@@ -159,6 +157,17 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         public T weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return (T) this;
+        }
+
+        /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         *
+         * @param distribution Distribution to use for weight initialization
+         */
+        public T weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
         }
 
         /**

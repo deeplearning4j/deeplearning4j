@@ -491,6 +491,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
             }
 
+
+
             InputType outputFromVertex =
                             gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);

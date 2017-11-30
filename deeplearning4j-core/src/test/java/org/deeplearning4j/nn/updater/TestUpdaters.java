@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -237,7 +238,7 @@ public class TestUpdaters {
         double epsilon = Nadam.DEFAULT_NADAM_EPSILON;
 
         NeuralNetConfiguration conf =
-                new NeuralNetConfiguration.Builder().iterations(iteration)
+                new NeuralNetConfiguration.Builder()
                         .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
                                 .updater(Nadam.builder().learningRate(lr).beta1(beta1)
                                         .beta2(beta2).epsilon(epsilon).build())
@@ -720,7 +721,7 @@ public class TestUpdaters {
 
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(lr)).seed(42)
-                        .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                        .layer(new AutoEncoder.Builder()
                                         .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
                                         .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build())
                         .build();

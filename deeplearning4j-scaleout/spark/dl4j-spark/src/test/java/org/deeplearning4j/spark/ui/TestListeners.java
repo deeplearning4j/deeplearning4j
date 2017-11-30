@@ -40,7 +40,7 @@ public class TestListeners extends BaseSparkTest {
         int nExecutors = numExecutors();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

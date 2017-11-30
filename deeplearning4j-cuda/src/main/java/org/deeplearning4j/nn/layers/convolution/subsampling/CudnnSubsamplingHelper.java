@@ -166,7 +166,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
         INDArray outEpsilon;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
                 outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
@@ -248,7 +248,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
                 reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');

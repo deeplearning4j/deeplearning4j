@@ -1390,12 +1390,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train) {
-        if (numInputArrays != input.length)
-            throw new UnsupportedOperationException("Cannot feedForward with " + input.length
-                    + " inputs for graph network with " + numInputArrays + " expected inputs");
-        for (int i = 0; i < input.length; i++)
-            setInput(i, input[i]);
-        return feedForward(train);
+        return feedForward(input, train, true);
+    }
+
+    /**
+     * Conduct forward pass using an array of inputs. This overload allows the forward pass to be conducted, optionally
+     * (not) clearing the layer input arrays.<br>
+     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
+     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
+     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
+     * for more details
+     *
+     * @param input An array of ComputationGraph inputs
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @param clearInputs If true (default for other methods): clear the inputs of all layers after doing forward
+     *                    pass. False don't clear layer inputs.
+     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     */
+    public Map<String, INDArray> feedForward(INDArray[] input, boolean train, boolean clearInputs){
+        setInputs(input);
+        return feedForward(train, false, false, clearInputs);
     }
 
     /**
@@ -1471,7 +1485,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
+                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
                                 && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
                                 .getWorkspaceForCurrentThread(
                                         ComputationGraph.workspaceExternal)) {
@@ -1512,7 +1526,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
+                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
                                     && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j
                                     .getWorkspaceManager().getWorkspaceForCurrentThread(
                                             ComputationGraph.workspaceExternal)) {
@@ -1534,6 +1548,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (!train)
             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+
+        if(publicApi){
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
+        }
 
         return layerActivations;
     }
@@ -1583,6 +1601,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 tmp[x] = tmp[x].detach();
 
             configuration.setTrainingWorkspaceMode(cMode);
+            clearLayersStates();    //Otherwise: invalidated input INDArrays could leak out and cause crash
             return tmp;
         }
     }
@@ -2000,7 +2019,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         workspaceConfigurationExternal, workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-            feedForward(dataSet.getFeatures(), training);
+            setInputs(dataSet.getFeatures());
+            feedForward(training, false, false, false);
             INDArray[] labels = dataSet.getLabels();
             setLabels(labels);
 
@@ -2065,7 +2085,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
-        feedForward(data.getFeatures(), false);
+        setInputs(data.getFeatures());
+        feedForward(false, true, false, false);
         setLabels(data.getLabels());
 
         INDArray out = null;
@@ -2096,6 +2117,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (hasMaskArray)
             clearLayerMaskArrays();
+        clearLayersStates();
         return out;
     }
 
