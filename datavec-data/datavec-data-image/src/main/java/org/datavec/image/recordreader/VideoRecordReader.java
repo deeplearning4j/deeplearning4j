@@ -312,6 +312,14 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     }
 
     @Override
+    public boolean resetSupported(){
+        if(inputSplit == null){
+            return false;
+        }
+        return inputSplit.resetSupported();
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException(
                         "Loading video data via VideoRecordReader + DataInputStream not supported.");

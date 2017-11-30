@@ -159,6 +159,14 @@ public class FileRecordReader extends BaseRecordReader {
     }
 
     @Override
+    public boolean resetSupported() {
+        if(inputSplit != null){
+            return inputSplit.resetSupported();
+        }
+        return false;   //reset() throws exception on reset() if inputSplit is null
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         invokeListeners(uri);
         //Here: reading the entire file to a Text writable

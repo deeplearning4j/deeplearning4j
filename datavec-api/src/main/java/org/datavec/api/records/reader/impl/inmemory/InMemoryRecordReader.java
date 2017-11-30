@@ -106,7 +106,12 @@ public class InMemoryRecordReader implements RecordReader {
      */
     @Override
     public void reset() {
+        iter = records.iterator();
+    }
 
+    @Override
+    public boolean resetSupported() {
+        return true;
     }
 
     /**

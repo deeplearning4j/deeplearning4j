@@ -24,6 +24,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRegexRecordReader;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.IntWritable;
@@ -274,8 +275,8 @@ public class CSVRecordReaderTest {
     @Test
     public void testCsvSkipAllButOneLine() throws IOException, InterruptedException {
         final int numLines = 4;
-        final List<Writable> lineList = Arrays.asList((Writable) new Text(Integer.toString(numLines - 1)),
-                        (Writable) new Text("one"), (Writable) new Text("two"), (Writable) new Text("three"));
+        final List<Writable> lineList = Arrays.<Writable>asList(new Text(Integer.toString(numLines - 1)),
+                new Text("one"), new Text("two"), new Text("three"));
         String header = ",one,two,three";
         List<String> lines = new ArrayList<>();
         for (int i = 0; i < numLines; i++)
@@ -288,5 +289,28 @@ public class CSVRecordReaderTest {
         rr.reset();
         assertTrue(rr.hasNext());
         assertEquals(rr.next(), lineList);
+    }
+
+
+    @Test
+    public void testStreamReset() throws Exception {
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
+        rr.initialize(new InputStreamInputSplit(new ClassPathResource("iris.dat").getInputStream()));
+
+        int count = 0;
+        while(rr.hasNext()){
+            assertNotNull(rr.next());
+            count++;
+        }
+        assertEquals(150, count);
+
+        assertFalse(rr.resetSupported());
+
+        try{
+            rr.reset();
+            fail("Expected exception");
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

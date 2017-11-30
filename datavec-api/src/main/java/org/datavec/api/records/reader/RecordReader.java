@@ -109,6 +109,12 @@ public interface RecordReader extends Closeable, Serializable, Configurable {
     void reset();
 
     /**
+     * @return True if the record reader can be reset, false otherwise. Note that some record readers cannot be reset -
+     * for example, if they are backed by a non-resettable input split (such as certain types of streams)
+     */
+    boolean resetSupported();
+
+    /**
      * Load the record from the given DataInputStream
      * Unlike {@link #next()} the internal state of the RecordReader is not modified
      * Implementations of this method should not close the DataInputStream

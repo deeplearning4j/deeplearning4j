@@ -73,6 +73,11 @@ public class ListStringSplit implements InputSplit {
         //No op
     }
 
+    @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
     /**
      * Serialize the fields of this object to <code>out</code>.
      *

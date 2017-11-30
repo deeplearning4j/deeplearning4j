@@ -246,17 +246,17 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         List<Integer> currLabels = null;
         List<Writable> currLabelsWritable = null;
         while (cnt < num && iter.hasNext()) {
-            File currFile = iter.next();
-            currBatch.add(currFile);
+            currentFile = iter.next();
+            currBatch.add(currentFile);
             if (appendLabel || writeLabel) {
                 if(labelGenerator.inferLabelClasses()){
                     if(currLabels == null)
                         currLabels = new ArrayList<>();
-                    currLabels.add(labels.indexOf(getLabel(currFile.getPath())));
+                    currLabels.add(labels.indexOf(getLabel(currentFile.getPath())));
                 } else {
                     if(currLabelsWritable == null)
                         currLabelsWritable = new ArrayList<>();
-                    currLabelsWritable.add(labelGenerator.getLabelForPath(currFile.getPath()));
+                    currLabelsWritable.add(labelGenerator.getLabelForPath(currentFile.getPath()));
                 }
             }
             cnt++;
@@ -384,6 +384,14 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         } else if (record != null) {
             hitImage = false;
         }
+    }
+
+    @Override
+    public boolean resetSupported(){
+        if(inputSplit == null){
+            return false;
+        }
+        return inputSplit.resetSupported();
     }
 
     /**

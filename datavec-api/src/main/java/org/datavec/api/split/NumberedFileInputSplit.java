@@ -92,6 +92,11 @@ public class NumberedFileInputSplit implements InputSplit {
     }
 
     @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
     public void write(DataOutput out) throws IOException {
 
     }

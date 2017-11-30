@@ -20,6 +20,7 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaDataImageURI;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.NDArrayWritable;
@@ -58,11 +59,15 @@ public class TestObjectDetectionRecordReader {
         int gW = 13;
         int gH = 10;
 
+        //Enforce consistent iteration order for tests
+        URI[] u = new FileSplit(new File(path)).locations();
+        Arrays.sort(u);
+
         RecordReader rr = new ObjectDetectionRecordReader(h, w, c, gH, gW, lp);
-        rr.initialize(new FileSplit(new File(path)));
+        rr.initialize(new CollectionInputSplit(u));
 
         RecordReader imgRR = new ImageRecordReader(h, w, c);
-        imgRR.initialize(new FileSplit(new File(path)));
+        imgRR.initialize(new CollectionInputSplit(u));
 
         List<String> labels = rr.getLabels();
         assertEquals(Arrays.asList("car", "cat"), labels);
@@ -150,7 +155,7 @@ public class TestObjectDetectionRecordReader {
 
         ImageTransform transform = new ResizeImageTransform(37, 42);
         RecordReader rrTransform = new ObjectDetectionRecordReader(42, 37, c, gH, gW, lp, transform);
-        rrTransform.initialize(new FileSplit(new File(path)));
+        rrTransform.initialize(new CollectionInputSplit(u));
         i = 0;
         while (rrTransform.hasNext()) {
             List<Writable> next = rrTransform.next();
@@ -161,7 +166,7 @@ public class TestObjectDetectionRecordReader {
 
         ImageTransform transform2 = new ResizeImageTransform(1024, 2048);
         RecordReader rrTransform2 = new ObjectDetectionRecordReader(2048, 1024, c, gH, gW, lp, transform2);
-        rrTransform2.initialize(new FileSplit(new File(path)));
+        rrTransform2.initialize(new CollectionInputSplit(u));
         i = 0;
         while (rrTransform2.hasNext()) {
             List<Writable> next = rrTransform2.next();
