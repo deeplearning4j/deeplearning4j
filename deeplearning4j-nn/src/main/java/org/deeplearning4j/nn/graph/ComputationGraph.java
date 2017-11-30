@@ -766,17 +766,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         ComputationGraph.workspaceConfigurationCache,
                         ComputationGraph.workspaceCache);
 
-        MemoryWorkspace wsFF = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                workspaceConfigurationFeedForward, workspaceFeedForward);
-
-        MemoryWorkspace wsPTR = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                workspaceConfigurationFeedForward, workspacePretrain);
+        MemoryWorkspace wsFF;
+        MemoryWorkspace wsPTR;
+        switch (configuration.getTrainingWorkspaceMode()){
+            case NONE:
+                wsFF = new DummyWorkspace();
+                wsPTR = new DummyWorkspace();
+                break;
+            case SINGLE:
+                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                break;
+            case SEPARATE:
+                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
+                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspacePretrain);
+                break;
+            default:
+                throw new RuntimeException();
+        }
 
         while (iter.hasNext()) {
             MultiDataSet multiDataSet = iter.next();
@@ -1459,12 +1466,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                                 boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                ? new DummyWorkspace()
-                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                workspaceConfigurationFeedForward, workspaceFeedForward);
+        MemoryWorkspace workspace;
+        switch(configuration.getTrainingWorkspaceMode()){
+            case NONE:
+                workspace = new DummyWorkspace();
+                break;
+            case SINGLE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                break;
+            case SEPARATE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
+                break;
+            default:
+                throw new RuntimeException();
+        }
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -1666,16 +1681,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             initGradientsView();
         }
 
-
-        MemoryWorkspace workspace =
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                        ? Nd4j.getWorkspaceManager()
-                        .getWorkspaceForCurrentThread(workspaceExternal)
-                        //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationFeedForward,
-                        workspaceFeedForward);
+        MemoryWorkspace workspace;
+        switch (configuration.getTrainingWorkspaceMode()){
+            case NONE:
+                workspace = new DummyWorkspace();
+                break;
+            case SINGLE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                break;
+            case SEPARATE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward,workspaceFeedForward);
+                break;
+            default:
+                throw new RuntimeException();
+        }
 
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();

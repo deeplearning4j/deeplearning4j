@@ -149,8 +149,7 @@ public class WorkspaceTests {
 
     @Test
     public void testWithPreprocessorsMLN(){
-//        for(WorkspaceMode wm : WorkspaceMode.values()) {
-        for(WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.SEPARATE}) {
+        for(WorkspaceMode wm : WorkspaceMode.values()) {
             System.out.println(wm);
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .trainingWorkspaceMode(wm)

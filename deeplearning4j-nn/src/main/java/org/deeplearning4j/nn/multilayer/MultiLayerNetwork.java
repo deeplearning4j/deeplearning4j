@@ -781,8 +781,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return the activation from the previous layer
      */
     public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training) {
-        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize());
+        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
+                    && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)) {
+                //WS single, or FF as part of backprop
+                //NOTE: we *could* leverage instead (less memory, worse performance), but most preprocessors will only
+                //allocate 1 array (i.e., the new output), so this is usually preferable in practice
+                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                        .getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                    input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize());
+                }
+            } else {
+                input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize());
+            }
+        }
+
         INDArray ret = layers[curr].activate(input, training);
         return ret;
     }
@@ -923,7 +936,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return feedForwardToLayer(layerNum, train, true);
     }
 
-    protected List<INDArray> feedForwardToLayer(int layerNum, boolean train, boolean clearInputs) {
+    protected List<INDArray> feedForwardToLayer(int layerNum, boolean train, boolean publicApi) {
         // TODO: maybe remove that?
         INDArray currInput =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE || !input.isAttached()
@@ -942,9 +955,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for (int i = 0; i <= layerNum; i++) {
             // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                currInput = activationFromPrevLayer(i, currInput, train).leverageTo(workspaceExternal);
-                //currInput = activationFromPrevLayer(i, currInput, train);
-                //applies drop connect to the activation
+                if(publicApi){
+                    currInput = currInput.detach();
+                } else {
+                    currInput = activationFromPrevLayer(i, currInput, train).leverageTo(workspaceExternal);
+                }
                 activations.add(currInput);
             }
         }
@@ -953,7 +968,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
-        if(clearInputs) {
+        if(publicApi) {
             clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
         }
 
