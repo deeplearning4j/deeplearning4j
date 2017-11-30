@@ -43,8 +43,7 @@ public class InputStreamInputSplit implements InputSplit {
      * @param path the path to use
      */
     public InputStreamInputSplit(InputStream is, String path) {
-        this.is = is;
-        this.location = new URI[] {URI.create(path)};
+        this(is, URI.create(path));
     }
 
     /**
@@ -54,8 +53,7 @@ public class InputStreamInputSplit implements InputSplit {
      * @param path the path to use
      */
     public InputStreamInputSplit(InputStream is, File path) {
-        this.is = is;
-        this.location = new URI[] {path.toURI()};
+        this(is, path.toURI());
     }
 
     /**
@@ -97,18 +95,13 @@ public class InputStreamInputSplit implements InputSplit {
     @Override
     public void reset() {
         //No op
-        try{
-            is.reset();
-        } catch (IOException e){
-            throw new RuntimeException("Error reseting input stream",e);
+        if(!resetSupported()) {
+            throw new UnsupportedOperationException("Reset not supported from streams");
         }
     }
 
     @Override
     public boolean resetSupported() {
-        if( is != null){
-            return is.markSupported();
-        }
         return location != null;
     }
 

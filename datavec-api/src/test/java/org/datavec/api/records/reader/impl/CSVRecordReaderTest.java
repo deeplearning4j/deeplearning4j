@@ -32,7 +32,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
