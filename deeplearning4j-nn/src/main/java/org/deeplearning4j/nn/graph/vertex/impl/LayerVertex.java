@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.deeplearning4j.nn.layers.OutputLayer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -237,5 +238,33 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         return true;
+    }
+
+    public double computeScore(double l1, double l2, boolean training){
+        if(!(layer instanceof IOutputLayer)){
+            throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
+                    + layer.getClass().getSimpleName());
+        }
+        //Edge case: output layer - never did forward pass hence layer.setInput was never called...
+        if(!setLayerInput){
+            applyPreprocessorAndSetInput();
+        }
+
+        IOutputLayer ol = (IOutputLayer)layer;
+        return ol.computeScore(l1, l2, training);
+    }
+
+    public INDArray computeScoreForExamples(double l1, double l2){
+        if(!(layer instanceof IOutputLayer)){
+            throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
+                    + layer.getClass().getSimpleName());
+        }
+        //Edge case: output layer - never did forward pass hence layer.setInput was never called...
+        if(!setLayerInput){
+            applyPreprocessorAndSetInput();
+        }
+
+        IOutputLayer ol = (IOutputLayer)layer;
+        return ol.computeScoreForExamples(l1, l2);
     }
 }

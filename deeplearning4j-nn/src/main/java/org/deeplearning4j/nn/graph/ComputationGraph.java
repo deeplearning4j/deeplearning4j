@@ -2049,7 +2049,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
-                Layer outLayer = verticesMap.get(s).getLayer();
+                GraphVertex gv = verticesMap.get(s);
+                Layer outLayer = gv.getLayer();
                 if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
                     log.warn("Cannot calculate score: vertex \"" + s + "\" is not an output layer");
                     return 0.0;
@@ -2058,7 +2059,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 IOutputLayer ol = (IOutputLayer) outLayer;
                 ol.setLabels(labels[i++]);
 
-                score += ol.computeScore(l1, l2, training);
+                score += ((LayerVertex)gv).computeScore(l1, l2, training);
 
                 //Only want to add l1/l2 once...
                 l1 = 0.0;
@@ -2114,7 +2115,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         double l2 = (addRegularizationTerms ? calcL2() : 0.0);
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
-            Layer outLayer = verticesMap.get(s).getLayer();
+            GraphVertex gv = verticesMap.get(s);
+            Layer outLayer = gv.getLayer();
             if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
                 throw new UnsupportedOperationException(
                         "Cannot calculate score: vertex \"" + s + "\" is not an output layer");
@@ -2123,7 +2125,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
-            INDArray scoreCurrLayer = ol.computeScoreForExamples(l1, l2);
+            INDArray scoreCurrLayer = ((LayerVertex)gv).computeScoreForExamples(l1, l2);
             if (out == null)
                 out = scoreCurrLayer;
             else
