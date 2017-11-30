@@ -1,4 +1,4 @@
-package Utils.Utils_dpl4j.CustomLayer;
+package org.deeplearning4j.nn.layers.CustomLayer;
 
 
 import Utils.Utils_dpl4j.CustomParamInitializer.ElementWiseParamInitializer;
@@ -59,7 +59,6 @@ public class ElementWiseMultiplicationLayer_impl extends BaseLayer<ElementWiseMu
         //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
         //        INDArray delta = epsilon.muli(activationDerivative);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
-
 //        if activation is a identity function
 //        delta = Nd4j.ones(this.layerConf().getNIn());
 
@@ -69,7 +68,10 @@ public class ElementWiseMultiplicationLayer_impl extends BaseLayer<ElementWiseMu
 
         Gradient ret = new DefaultGradient();
 
-        INDArray weightGrad = gradientViews.get(ElementWiseParamInitializer.WEIGHT_KEY); //f order
+//        INDArray weightGrad = Nd4j.zeros( gradientViews.get(ElementWiseParamInitializer.WEIGHT_KEY).shape(),'f'); //f order
+        INDArray weightGrad =  gradientViews.get(ElementWiseParamInitializer.WEIGHT_KEY); //f order
+//        reset weight gradients
+        weightGrad.subi(weightGrad);
 
         for(int row =0;row<input.rows();row++){
             weightGrad.addi(input.getRow(row).mul(delta.getRow(row)));
@@ -92,8 +94,8 @@ public class ElementWiseMultiplicationLayer_impl extends BaseLayer<ElementWiseMu
         return new Pair<>(ret, epsilonNext);
     }
 
-    @Override
-    public void fit(INDArray input) {}
+/*    @Override
+    public void fit(INDArray input) {}*/
 
     /**
      * Returns true if the layer can be trained in an unsupervised/pretrain manner (VAE, RBMs etc)
