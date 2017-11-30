@@ -592,8 +592,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         // this is for safety. We have to be sure that no ops were left non-processed
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().commit();
 
 
         // checking, if we should reallocate this workspace to higher amount of memory
