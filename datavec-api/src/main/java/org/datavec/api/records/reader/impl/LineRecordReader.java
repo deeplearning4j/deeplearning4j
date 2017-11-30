@@ -157,12 +157,21 @@ public class LineRecordReader extends BaseRecordReader {
         if (inputSplit == null)
             throw new UnsupportedOperationException("Cannot reset without first initializing");
         try {
+            inputSplit.reset();
             initialize(inputSplit);
             splitIndex = 0;
         } catch (Exception e) {
             throw new RuntimeException("Error during LineRecordReader reset", e);
         }
         lineIndex = 0;
+    }
+
+    @Override
+    public boolean resetSupported() {
+        if(inputSplit != null){
+            return inputSplit.resetSupported();
+        }
+        return true;
     }
 
     @Override

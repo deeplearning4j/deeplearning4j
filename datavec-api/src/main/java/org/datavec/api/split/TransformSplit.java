@@ -79,6 +79,11 @@ public class TransformSplit extends BaseInputSplit {
         //No op: BaseInputSplit doesn't support randomization directly, and TransformSplit doesn't either
     }
 
+    @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
     public interface URITransform {
         URI apply(URI uri) throws URISyntaxException;
     }

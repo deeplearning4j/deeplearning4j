@@ -1,5 +1,5 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
+/*
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -31,20 +31,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author sonali
+ * Combine multiple readers into a single reader. Records are read sequentially - thus if the first reader has
+ * 100 records, and the second reader has 200 records, ConcatenatingRecordReader will have 300 records.
+ *
+ * See also {@link ComposableRecordReader} for a version that combines each record from underlying readers.
+ *
+ * @author Alex Black
  */
-/**
-RecordReader for each pipeline. Individual record is a concatenation of the two collections.
-        Create a recordreader that takes recordreaders and iterates over them and concatenates them
-        hasNext would be the & of all the recordreaders
-        concatenation would be next & addAll on the collection
-        return one record
- */
-public class ComposableRecordReader extends BaseRecordReader {
+public class ConcatenatingRecordReader extends BaseRecordReader {
 
     private RecordReader[] readers;
 
-    public ComposableRecordReader(RecordReader... readers) {
+    public ConcatenatingRecordReader(RecordReader... readers) {
         this.readers = readers;
     }
 
@@ -60,23 +58,25 @@ public class ComposableRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next() {
-        List<Writable> ret = new ArrayList<>();
-        if (this.hasNext()) {
-            for (RecordReader reader : readers) {
-                ret.addAll(reader.next());
+        List<Writable> out = null;
+        for( RecordReader rr : readers){
+            if(rr.hasNext()){
+                out = rr.next();
+                break;
             }
         }
-        invokeListeners(ret);
-        return ret;
+        invokeListeners(out);
+        return out;
     }
 
     @Override
     public boolean hasNext() {
-        boolean readersHasNext = true;
         for (RecordReader reader : readers) {
-            readersHasNext = readersHasNext && reader.hasNext();
+            if(reader.hasNext()){
+                return true;
+            }
         }
-        return readersHasNext;
+        return false;
     }
 
     @Override
@@ -99,17 +99,13 @@ public class ComposableRecordReader extends BaseRecordReader {
 
     @Override
     public Configuration getConf() {
-        for (RecordReader reader : readers) {
-            return reader.getConf();
-        }
-        return null;
+        return readers[0].getConf();
     }
 
     @Override
     public void reset() {
         for (RecordReader reader : readers)
             reader.reset();
-
     }
 
     @Override

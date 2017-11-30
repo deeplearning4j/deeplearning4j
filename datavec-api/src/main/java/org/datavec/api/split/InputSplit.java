@@ -53,4 +53,10 @@ public interface InputSplit extends Writable {
      * For InputSplits that have randomization: reset should shuffle the order.
      */
     void reset();
+
+    /**
+     * @return True if the reset() method is supported (or is a no-op), false otherwise. If false is returned, reset()
+     *         may throw an exception
+     */
+    boolean resetSupported();
 }

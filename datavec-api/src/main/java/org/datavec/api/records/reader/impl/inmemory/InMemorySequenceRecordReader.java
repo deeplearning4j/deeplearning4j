@@ -190,6 +190,11 @@ public class InMemorySequenceRecordReader implements SequenceRecordReader {
         this.iter = records.iterator();
     }
 
+    @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
     /**
      * Load the record from the given DataInputStream
      * Unlike {@link #next()} the internal state of the RecordReader is not modified

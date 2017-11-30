@@ -213,6 +213,11 @@ public class MapFileRecordReader implements RecordReader {
     }
 
     @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException();
     }

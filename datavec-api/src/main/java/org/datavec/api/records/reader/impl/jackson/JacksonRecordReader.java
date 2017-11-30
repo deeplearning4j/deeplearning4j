@@ -156,6 +156,11 @@ public class JacksonRecordReader extends BaseRecordReader {
     }
 
     @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));
         StringBuilder sb = new StringBuilder();
