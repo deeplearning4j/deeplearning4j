@@ -1,4 +1,4 @@
-package Utils.Utils_dpl4j.CustomLayer;
+package org.deeplearning4j.nn.layers.CustomLayer;
 
 import Utils.Utils_dpl4j.CustomParamInitializer.ElementWiseParamInitializer;
 import lombok.*;

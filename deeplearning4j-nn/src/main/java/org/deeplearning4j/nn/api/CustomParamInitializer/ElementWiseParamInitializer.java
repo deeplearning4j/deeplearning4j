@@ -1,4 +1,4 @@
-package Utils.Utils_dpl4j.CustomParamInitializer;
+package org.deeplearning4j.nn.api.CustomParamInitializer;
 
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.ParamInitializer;
