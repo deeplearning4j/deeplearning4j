@@ -956,6 +956,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 currInput = activationFromPrevLayer(i, currInput, train);
+
                 if(publicApi){
                     currInput = currInput.detach();
                 } else {
@@ -1940,7 +1941,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     protected INDArray silentOutput(INDArray input, boolean train) {
-        List<INDArray> activations = feedForward(input, train);
+        setInput(input);
+        List<INDArray> activations = feedForwardToLayer(layers.length-1, train, false);
 
         //last activation is output
         return activations.get(activations.size() - 1);
