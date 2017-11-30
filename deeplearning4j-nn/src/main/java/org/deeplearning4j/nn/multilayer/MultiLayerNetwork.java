@@ -955,10 +955,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for (int i = 0; i <= layerNum; i++) {
             // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                currInput = activationFromPrevLayer(i, currInput, train);
                 if(publicApi){
                     currInput = currInput.detach();
                 } else {
-                    currInput = activationFromPrevLayer(i, currInput, train).leverageTo(workspaceExternal);
+                    currInput = currInput.leverageTo(workspaceExternal);
                 }
                 activations.add(currInput);
             }
