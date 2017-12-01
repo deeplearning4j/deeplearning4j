@@ -18,7 +18,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ## Main Features
 - Versatile n-dimensional array class
-- GPU integration(Supports devices starting from Kepler,cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
+- GPU integration (supports devices starting from Kepler, cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
 
 
 ---
@@ -44,7 +44,7 @@ We are not supporting Stackoverflow right now. Github issues should focus on bug
 
 ## Installation
 
-To install Deeplearning4J, there are a couple approaches briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](http://deeplearning4j.org/gettingstarted.html).
+To install Deeplearning4J, see our [Quickstart](http://deeplearning4j.org/quickstart.html) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
 
@@ -91,3 +91,4 @@ Note, be sure to install the ND4J modules you need first, especially the backend
    the repository to configure the Eclipse formatter, or by [using the INtellij
    plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 6. Send a pull request and bug us on Gitter until it gets merged and published. :)
+7. Add technical documentation on the [Deeplearning4j website](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) and fix any typos you see.
