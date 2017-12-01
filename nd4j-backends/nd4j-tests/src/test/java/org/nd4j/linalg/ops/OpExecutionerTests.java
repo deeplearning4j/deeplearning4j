@@ -165,7 +165,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray x = Nd4j.ones(5);
         INDArray xDup = x.dup();
         INDArray solution = Nd4j.valueArrayOf(5, 2.0);
-        opExecutioner.exec(new AddOp(x, xDup, x));
+        opExecutioner.exec(new AddOp(new INDArray[]{x, xDup},new INDArray[]{x}));
         assertEquals(getFailureMessage(), solution, x);
     }
 
@@ -186,7 +186,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray x = Nd4j.ones(5);
         INDArray xDup = x.dup();
         INDArray solution = Nd4j.valueArrayOf(5, 2.0);
-        opExecutioner.exec(new AddOp(x, xDup, x));
+        opExecutioner.exec(new AddOp(new INDArray[]{x, xDup},new INDArray[]{x}));
         assertEquals(getFailureMessage(), solution, x);
         Sum acc = new Sum(x.dup());
         opExecutioner.exec(acc);

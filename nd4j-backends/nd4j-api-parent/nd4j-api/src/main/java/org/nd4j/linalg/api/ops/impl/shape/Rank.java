@@ -24,8 +24,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -41,40 +40,12 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Slf4j
-public class Rank extends ShapeOp {
+public class Rank extends DynamicCustomOp {
 
 
-    public Rank(SameDiff sameDiff, DifferentialFunction i_v) {
-        super(sameDiff, i_v, false);
-    }
 
-    public Rank(SameDiff sameDiff, DifferentialFunction i_v,Object[] extraArgs, int[] shape1) {
-        super(sameDiff, i_v, null, false, extraArgs);
-    }
 
     public Rank() {}
-
-    public Rank(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public Rank(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Rank(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Rank(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
 
 
     @Override

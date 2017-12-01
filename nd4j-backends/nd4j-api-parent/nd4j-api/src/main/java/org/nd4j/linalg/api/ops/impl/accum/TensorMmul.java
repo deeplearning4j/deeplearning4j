@@ -27,11 +27,10 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -49,7 +48,7 @@ import static org.nd4j.linalg.util.ArrayUtil.*;
  * @author Adam Gibson
  */
 @NoArgsConstructor
-public class TensorMmul extends BaseAccumulation {
+public class TensorMmul extends DynamicCustomOp {
     private int[][] axes;
     protected boolean addedEdges;
     protected MMulTranspose mMulTranspose;
@@ -66,7 +65,6 @@ public class TensorMmul extends BaseAccumulation {
                       DifferentialFunction i_v2,
                       int[][] dimensions,
                       MMulTranspose mMulTranspose) {
-        super(sameDiff);
         this.sameDiff = sameDiff;
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
@@ -226,7 +224,7 @@ public class TensorMmul extends BaseAccumulation {
 
 
     public TensorMmul(INDArray x, INDArray y, int[][] axes) {
-        super(x, y);
+        super(null,new INDArray[]{x, y},null);
         this.axes = axes;
         this.extraArgs = new Object[] {axes};
     }
@@ -241,22 +239,10 @@ public class TensorMmul extends BaseAccumulation {
      * @param z the result
      */
     public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
-        super(x, y, z, 0);
+        super(null,new INDArray[]{x, y, z},null);
         this.axes = axes;
     }
 
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if (this.z != null)
-            this.z.assign(Nd4j.tensorMmul(x, y, z, axes));
-        else
-            this.z = Nd4j.tensorMmul(x, y, axes);
-    }
 
     @Override
     public int opNum() {
@@ -264,18 +250,10 @@ public class TensorMmul extends BaseAccumulation {
     }
 
     @Override
-    public long n() {
-        return 0;
-    }
-
-    @Override
     public String opName() {
         return "tensormmul";
     }
 
-    public TensorMmul(SameDiff sameDiff) {
-        super(sameDiff);
-    }
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap) {
@@ -359,7 +337,7 @@ public class TensorMmul extends BaseAccumulation {
 
     @Override
     public Op.Type opType() {
-        return Type.REDUCE;
+        return Op.Type.CUSTOM;
     }
 
     @Override

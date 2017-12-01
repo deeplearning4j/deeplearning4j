@@ -2,7 +2,6 @@ package org.nd4j.linalg.collection;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.util.*;
@@ -130,6 +129,10 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
 
         @Override
         public int compareTo(IntArray intArray) {
+            if(this.backingArray.length == 0 || intArray.backingArray.length == 0) {
+                return 1;
+            }
+
             return Ints.compare(Ints.max(backingArray),Ints.max(intArray.backingArray));
         }
     }

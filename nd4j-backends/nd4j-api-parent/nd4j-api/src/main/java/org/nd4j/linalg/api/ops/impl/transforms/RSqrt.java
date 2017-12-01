@@ -21,14 +21,13 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.List;
 
 /**
- * RSqrt function
+ * Sqrt function
  *
  * @author Adam Gibson
  */
@@ -65,7 +64,7 @@ public class RSqrt extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 76;
+        return 14;
     }
 
     @Override
@@ -75,13 +74,14 @@ public class RSqrt extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        return "Rsqrt";
     }
 
     @Override
     public String tensorflowName() {
-        return "rsqrt";
+        return "Rsqrt";
     }
+
 
 
     @Override

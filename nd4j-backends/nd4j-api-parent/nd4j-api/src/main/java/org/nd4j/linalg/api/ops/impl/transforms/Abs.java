@@ -81,7 +81,7 @@ public class Abs extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "abs";
+        return "Abs";
     }
 
 

@@ -45,7 +45,7 @@ public class TensorArrayV3 extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
-        val idd = nodeDef.getInput(1);
+        val idd = nodeDef.getInput(nodeDef.getInputCount() - 1);
         NodeDef iddNode = null;
         for(int i = 0; i < graph.getNodeCount(); i++) {
             if(graph.getNode(i).getName().equals(idd)) {

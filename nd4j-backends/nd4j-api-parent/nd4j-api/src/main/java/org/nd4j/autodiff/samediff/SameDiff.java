@@ -264,6 +264,9 @@ public class SameDiff {
     public DifferentialFunction[] getArgsFor(DifferentialFunction output) {
         Set<DifferentialFunction> ret = new LinkedHashSet<>();
         val from = graph().getFromFor(output.getVertexId());
+        if(from == null)
+            return new DifferentialFunction[0];
+
         val singlularFunction = getFunctionForVertexId(from);
         if(singlularFunction != null)
             ret.add(singlularFunction);
@@ -3110,7 +3113,6 @@ public class SameDiff {
 
             }
 
-
             Op op = (Op) differentialFunction;
             differentialFunction.fillInArrays();
             op.setN(op.x().length());
@@ -4180,8 +4182,13 @@ public class SameDiff {
             return 40;
         } else if (type == Op.Type.IF || type == Op.Type.CONDITIONAL) {
             return 10;
-        } else if (type == Op.Type.CUSTOM)
+        } else if (type == Op.Type.CUSTOM) {
+            val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
+            if(name2 == null)
+                return 0;
             return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+
+        }
         else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
     }

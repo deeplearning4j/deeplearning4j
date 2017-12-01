@@ -79,7 +79,7 @@ public class Sqrt extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sqrt";
+        return "Sqrt";
     }
 
 

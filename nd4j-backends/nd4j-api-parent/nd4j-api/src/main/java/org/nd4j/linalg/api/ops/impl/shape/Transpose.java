@@ -26,7 +26,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -42,60 +42,20 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class Transpose extends ShapeOp {
+public class Transpose extends DynamicCustomOp {
     protected int[] permuteDims;
 
     public Transpose(SameDiff sameDiff, DifferentialFunction i_v) {
-        super(sameDiff, i_v, ArrayUtil.reverseCopy(i_v.getResultShape()),false,null);
+        super(null,sameDiff,new DifferentialFunction[]{i_v});
 
     }
 
     public Transpose() {}
 
-    public Transpose(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public Transpose(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Transpose(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Transpose(INDArray x) {
-        super(x);
-    }
 
 
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
 
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.transpose());
-        }
-        else {
-            this.z = x.transpose();
-        }
-
-    }
-
-    @Override
-    public int opNum() {
-        return 0;
-    }
-
-    @Override
+   @Override
     public String opName() {
         return "transpose";
     }
@@ -168,12 +128,7 @@ public class Transpose extends ShapeOp {
         return null;
     }
 
-    @Override
-    public INDArray z() {
-        if(x() != null)
-            return x().transpose();
-        return null;
-    }
+
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

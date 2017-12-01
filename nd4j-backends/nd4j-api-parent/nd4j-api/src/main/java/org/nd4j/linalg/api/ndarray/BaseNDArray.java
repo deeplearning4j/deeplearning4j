@@ -3293,7 +3293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new AddOp(this, other, result));
+        Nd4j.getExecutioner().exec(new AddOp(new INDArray[]{this, other},new INDArray[]{ result}));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

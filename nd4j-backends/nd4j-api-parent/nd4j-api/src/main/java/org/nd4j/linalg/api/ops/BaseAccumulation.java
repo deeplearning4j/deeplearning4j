@@ -35,6 +35,8 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -170,6 +172,17 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
 
+    @Override
+    public List<int[]> calculateOutputShape() {
+        if(args().length < 1) {
+            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
+        }
+
+        List<int[]> ret = new ArrayList<>(1);
+        val reducedShape = Shape.getReducedShape(arg().getResultShape(),dimensions);
+        ret.add(reducedShape);
+        return ret;
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {

@@ -194,24 +194,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if (Shape.isRowVectorShape(rarg().getResultShape())) {
-            this.dimension = new int[]{1};
-        } else if (Shape.isColumnVectorShape(rarg().getResultShape()))
-            this.dimension = new int[]{0};
-        else if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null && !sameDiff.isPlaceHolder(larg().resultVertexId()) && !sameDiff.isPlaceHolder(rarg().resultVertexId()))
-            this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(), rarg().getResultShape());
     }
 
 
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        if (Shape.isRowVectorShape(rarg().getResultShape())) {
-            this.dimension = new int[]{1};
-        } else if (Shape.isColumnVectorShape(rarg().getResultShape()))
-            this.dimension = new int[]{0};
-        else if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null && !sameDiff.isPlaceHolder(larg().resultVertexId()) && !sameDiff.isPlaceHolder(rarg().resultVertexId()))
-            this.dimension = Shape.getBroadcastDimensions(larg().getResultShape(), rarg().getResultShape());
 
     }
 }

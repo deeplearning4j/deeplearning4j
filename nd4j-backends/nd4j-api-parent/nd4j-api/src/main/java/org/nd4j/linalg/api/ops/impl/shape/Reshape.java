@@ -25,8 +25,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -41,58 +40,21 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Slf4j
-public class Reshape extends ShapeOp {
+public class Reshape extends DynamicCustomOp {
 
     private int[] shape;
 
     public Reshape(SameDiff sameDiff, DifferentialFunction i_v,int[] shape) {
-        super(sameDiff, i_v, false);
+        super(null,sameDiff, new DifferentialFunction[]{i_v});
         this.shape = shape;
     }
 
-    public Reshape(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs, int[] shape1) {
-        super(sameDiff, i_v, shape, false, extraArgs);
-        this.shape = shape1;
-    }
 
     public Reshape() {}
 
-    public Reshape(INDArray x, INDArray z) {
-        super(x, z);
-    }
 
-    public Reshape(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
 
-    public Reshape(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
 
-    public Reshape(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.reshape(shape));
-        }
-        else {
-            this.z = x.reshape(shape);
-        }
-
-    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -133,10 +95,6 @@ public class Reshape extends ShapeOp {
 
     }
 
-    @Override
-    public int opNum() {
-        return 0;
-    }
 
     @Override
     public String opName() {

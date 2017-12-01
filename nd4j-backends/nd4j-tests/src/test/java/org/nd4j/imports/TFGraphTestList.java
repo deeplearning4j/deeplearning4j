@@ -28,11 +28,11 @@ public class TFGraphTestList {
     public static String[] modelNames = new String[]{
             //"add_n",
             //"ae_00",
-            "bias_add",
+            //"bias_add",
             //"conv_0",
             //"deep_mnist",
             //"deep_mnist_no_dropout",
-            //"g_00",
+             "g_00",
             //"g_01",
             //"math_mul_order",
             //"mlp_00",
@@ -41,8 +41,8 @@ public class TFGraphTestList {
             //"transpose",
     };
     //change this to SAMEDIFF for samediff
-    //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
-    public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
+    public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
+   // public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
     public static String modelDir = TFGraphTestAllHelper.COMMON_BASE_DIR; //this is for later if we want to check in models separately for samediff and libnd4j
 
     private String modelName;

@@ -21,7 +21,6 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,43 +39,6 @@ public class Permute extends Transpose {
 
     public Permute() {}
 
-    public Permute(INDArray x, INDArray z,Object[] extraArgs) {
-        super(x, z);
-    }
-
-    public Permute(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Permute(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Permute(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.permute(permuteDims));
-        }
-        else {
-            x.permutei(permuteDims);
-        }
-
-    }
-
     @Override
     public int opNum() {
         return 0;
@@ -85,11 +47,6 @@ public class Permute extends Transpose {
     @Override
     public String opName() {
         return "permute";
-    }
-
-    @Override
-    public INDArray z() {
-        return x().transpose();
     }
 
 

@@ -186,7 +186,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
 
-    private String getNodeName(String name) {
+    /**
+     * Map a tensorflow node name
+     * to the samediff equivalent
+     * for import
+     * @param name the name to change
+     * @return the input tensorflow name
+     */
+    public String getNodeName(String name) {
         //tensorflow adds colons to the end of variables representing input index, this strips those off
         String ret = name;
         if(ret.startsWith("^"))
@@ -350,7 +357,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                      * the output/result variable
                      * with its inputs and notifying
                      * the variable that it has a place holder argument
-                     * it should resoolve before trying to execute
+                     * it should resolve before trying to execute
                      * anything.
                      */
                     if(diff.isPlaceHolder(func.getVertexId())) {
@@ -370,9 +377,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                if(!diff.shapeAlreadyExistsForVertexId(indices.getRight()) && newInstance.getResultShape() != null)
+             /*   if(!diff.shapeAlreadyExistsForVertexId(indices.getRight()) && newInstance.getResultShape() != null)
                     diff.putShapeForVertexId(indices.getRight(),newInstance.getResultShape());
-
+*/
 
             } catch (Exception e) {
                 log.error("Failed with [{}]", opName);

@@ -22,8 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.List;
 
@@ -32,63 +31,16 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Broadcast extends ShapeOp {
+public class Broadcast extends DynamicCustomOp {
 
-    public Broadcast(SameDiff sameDiff, int[] shape) {
-        super(sameDiff);
+    public Broadcast(SameDiff sameDiff,DifferentialFunction iX, int[] shape) {
+        super(null,sameDiff,new DifferentialFunction[]{iX});
     }
 
-    public Broadcast(SameDiff sameDiff, DifferentialFunction i_v, int[] shape) {
-        super(sameDiff, i_v, shape,false,null);
-    }
 
     public Broadcast() {}
 
-    public Broadcast(INDArray x, INDArray z) {
-        super(x, z);
-    }
 
-    public Broadcast(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Broadcast(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Broadcast(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        int[] permuteDims = extraArgs == null ? z().shape() : (int[]) extraArgs[0];
-        if(x != z) {
-            if(x.isScalar() && !z.isScalar()) {
-                z.assign(x.getDouble(0));
-            }
-            else
-                z.assign(x.broadcast(permuteDims));
-        }
-        else {
-            if(x.isScalar() && !z.isScalar()) {
-                z.assign(x.getDouble(0));
-            }
-            else
-                this.z = x.broadcast(permuteDims);
-        }
-
-    }
 
 
     @Override

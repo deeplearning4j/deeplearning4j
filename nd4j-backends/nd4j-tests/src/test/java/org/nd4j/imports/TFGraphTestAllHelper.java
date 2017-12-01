@@ -89,6 +89,9 @@ public class TFGraphTestAllHelper {
         log.info("\n\tRUNNING TEST " + modelName + "...");
         val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/frozen_model.pb").getInputStream());
         INDArray nd4jPred = null;
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
         if (execType.equals(ExecuteWith.SAMEDIFF)) {
             nd4jPred = graph.execWithPlaceHolderAndEndResult(inputs); //This is expected to be just one result
         } else if (execType.equals(ExecuteWith.LIBND4J)) {

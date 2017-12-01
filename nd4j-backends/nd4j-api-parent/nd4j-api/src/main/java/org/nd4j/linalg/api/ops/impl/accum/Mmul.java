@@ -109,29 +109,6 @@ public class Mmul extends TensorMmul {
     }
 
 
-    @Override
-    public long n() {
-        return 0;
-    }
-
-    @Override
-    public boolean isPassThrough() {
-        return true;
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(this.z != null)
-            x.mmul(y,z,mMulTranspose);
-        else
-            this.z = x.mmul(y,mMulTranspose);
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {

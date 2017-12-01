@@ -76,6 +76,8 @@ public class Conv2D extends DynamicCustomOp {
             conv2DConfig.setKh(array.size(0));
             conv2DConfig.setKw(array.size(1));
         }
+
+
     }
 
     @Override
@@ -112,6 +114,7 @@ public class Conv2D extends DynamicCustomOp {
                 .isSameMode(isSameMode)
                 .build();
         this.conv2DConfig = conv2DConfig;
+
         addArgs();
 
     }
@@ -152,7 +155,7 @@ public class Conv2D extends DynamicCustomOp {
                 .build();
         this.conv2DConfig = conv2DConfig;
         addArgs();
-
+        addArrayInputArguments();
 
     }
 

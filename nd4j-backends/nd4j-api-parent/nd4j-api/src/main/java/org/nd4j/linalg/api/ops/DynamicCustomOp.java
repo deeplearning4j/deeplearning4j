@@ -29,6 +29,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     private String opName;
     @Getter @Builder.Default private List<INDArray> inputArguments = new ArrayList<>();
     @Getter @Builder.Default private List<INDArray> outputArguments = new ArrayList<>();
+
+
     @Getter @Builder.Default private List<Double> tArguments = new ArrayList<>();
     @Getter @Builder.Default  private List<Integer> iArguments = new ArrayList<>();
     @Getter private boolean inplaceCall;
@@ -56,7 +58,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     /**
      * Initialize this custom op with all of the
      * inputs, outputs, and respective
-     * argumentts for execution
+     * arguments for execution
      * @param opName the opName of the op to execute
      * @param inputs the inputs to the op
      * @param outputs the outputs of the op
@@ -174,9 +176,41 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<int[]> calculateOutputShape() {
+        for(val arg : args()) {
+            if(sameDiff.isPlaceHolder(arg.resultVertexId()))
+                return Collections.emptyList();
+        }
+
         if(outputShapes != null)
             return outputShapes;
+        if(inputArguments.isEmpty()) {
+            throw new ND4JIllegalStateException("Inputs must not be empty when calling this method");
+        }
+
+
+        /**
+         * Note that we are currently getting shape errors
+         * because the input and output arguments are not specified.
+         */
         return Nd4j.getExecutioner().calculateOutputShape(this);
+    }
+
+
+    public void addArrayInputArguments() {
+        for(val func : args()) {
+            val funcVar = sameDiff.getVariableForVertexId(func.resultVertexId());
+            if(funcVar == null) {
+                if(func.getResultShape() == null) {
+                    log.warn("Unable to initialize shape of " +  func + " for vertex id " + Arrays.toString(func.resultVertexId()));
+                    return;
+                }
+
+                val arr = funcVar.getWeightInitScheme().create(func.getResultShape());
+                sameDiff.putArrayForVertexId(func.resultVertexId(),arr);
+                getInputArguments().add(arr);
+            }
+        }
+
     }
 
     @Override
@@ -260,9 +294,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             ret.outputShapes = outputShapes;
             if(outputs.isEmpty() && !outputShapes.isEmpty()) {
                 for (int i = 0; i < outputShapes.size(); i++) {
-                   outputs.add(sameDiff.var(sameDiff.generateVariableName(
-                           "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
-                           false,ret.args()),outputShapes.get(i)));
+                    outputs.add(sameDiff.var(sameDiff.generateVariableName(
+                            "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
+                            false,ret.args()),outputShapes.get(i)));
                 }
 
             }
