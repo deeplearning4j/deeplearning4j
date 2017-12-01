@@ -67,7 +67,7 @@ public class WeightNoise implements IWeightNoise {
             INDArray out = Nd4j.createUninitialized(param.shape(), param.ordering());
 
             if (additive) {
-                Nd4j.getExecutioner().exec(new AddOp(param, noise, out));
+                Nd4j.getExecutioner().exec(new AddOp(new INDArray[]{param, noise},new INDArray[]{out}));
             } else {
                 Nd4j.getExecutioner().exec(new MulOp(param, noise, out));
             }
