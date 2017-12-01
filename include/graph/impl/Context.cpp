@@ -165,7 +165,14 @@ namespace nd4j {
             }
 
             auto p = this->_inputs[idx];
-            return variable(p);
+
+            auto v = variable(p);
+
+            if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
+                nd4j_printf("Node_%i InputIndex[%i] mean value: [%f]", this->_nodeId, idx, (float) v->getNDArray()->meanNumber());
+            }
+
+            return v;
         }
 
         template <typename T>
