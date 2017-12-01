@@ -101,6 +101,8 @@ Recently, we’ve discovered that on some platforms, popular BLAS-libraries can 
 
 To activate fallback mode you only need to set special environment variable: **ND4J_FALLBACK**. Set it to «**true**» or to **1** before launching your app. It’s possible to use this variable in an Apache Spark environment, as well as in a standalone app.
 
+It is also possible to lower the level of optimization used by OpenBLAS, which is sometimes known to cause problems, by setting the **OPENBLAS_CORETYPE** environment variable to a value such as **Athlon** (for AMD processors) or **Core2** (for Intel processors).
+
 
 ## How it works after all?
 
