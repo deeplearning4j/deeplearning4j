@@ -326,11 +326,11 @@ public class VGG16SparkJavaWebApp {
 
 ## <a name="example">Example predictions</a>
 
-Here are the results given on a photo of one of the Skymind cats, which VGG-16 has probably never seen before. (He's very shy is why.)
+Here are the results given on a photo of one of the Skymind cats, which VGG-16 has probably never seen before. (He's very shy is why.) Note that the predictions below are from a 1920x1440 jpeg image. When imported to the model it is scaled to 244x244 to match the input the model was trained on. The image on this web page is a scaled version to 240x80, if you send the small image through for inference you will get different results than the results printed below. 
 
 ![a cat for inference](./../img/cat.jpeg)
 
-	16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
+	Tabby 16.7%  Tiger cat 7.6%  Toilet tissue 6.4%  Egyptian cat 5.4%  Paper towel 5.2%
 
 For this dog found on the internet, which VGG-16 may have seen during training, the results are quite precise.
 
