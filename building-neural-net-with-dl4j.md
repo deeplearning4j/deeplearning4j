@@ -19,13 +19,35 @@ Deeplearning4J has two classes for building and training Neural Networks: `Multi
 
 ### MultiLayerNetwork
 
-`MultiLayerNetwork` configures a neural network with multiple layers in a stack, usually ending in an output layer. 
+`MultiLayerNetwork` is the simpler way to configure a neural network with multiple layers in a stack, usually ending in an output layer. It is trainable via backpropagation, with optional pretraining, depending on the type of layers it contains.
 
-`MultiLayerNetwork` is trainable via backpropagation, with optional pretraining, depending on the type of layers it contains.
+### MultiLayerNetwork Configuration
+
+Here is a configuration of a simple feedForward Networn also from our examples. 
+
+```
+MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+	.seed(seed)
+    .iterations(iterations)
+	 .activation("tanh")
+	 .weightInit(WeightInit.XAVIER)
+	 .learningRate(0.1)
+	 .regularization(true).l2(1e-4)
+	 .list()
+	 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3)
+	     .build())
+	 .layer(1, new DenseLayer.Builder().nIn(3).nOut(3)
+	     .build())
+	 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+	     .activation("softmax")
+	     .nIn(3).nOut(outputNum).build())
+	 .backprop(true).pretrain(false)
+	 .build();					
+```
 
 ### ComputationGraph
 
-`ComputationGraph` is for neural networks with a more complex connection architecture. `ComputationGraph` allows for an arbitrary directed acyclic graph connection structure between layers. A `ComputationGraph` may also have an arbitrary number of inputs and outputs.
+`ComputationGraph` is for neural networks with more complex connection architectures. `ComputationGraph` allows for an arbitrary directed acyclic graph connection structure between layers. A `ComputationGraph` may also have an arbitrary number of inputs and outputs.
 
 ## <a name="configuration">Configuration</a>
 
@@ -56,30 +78,6 @@ ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder
 	.pretrain(false).backprop(true)
 	.build();				
 
-```
-
-### MultiLayerNetwork Configuration
-
-Here is a configuration of a simple FeedForward Network also from our examples. 
-
-```
-MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-	.seed(seed)
-    .iterations(iterations)
-	 .activation("tanh")
-	 .weightInit(WeightInit.XAVIER)
-	 .learningRate(0.1)
-	 .regularization(true).l2(1e-4)
-	 .list()
-	 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3)
-	     .build())
-	 .layer(1, new DenseLayer.Builder().nIn(3).nOut(3)
-	     .build())
-	 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-	     .activation("softmax")
-	     .nIn(3).nOut(outputNum).build())
-	 .backprop(true).pretrain(false)
-	 .build();					
 ```
 
 ## <a name="configurationdetails">Configuration Details</a>
@@ -124,7 +122,7 @@ Some examples:
 
 ### Supported Activation Functions
 
-DeepLearning4J supports the following Activation functions
+DeepLearning4j supports the following activation functions:
 
 * CUBE
 * ELU
@@ -250,3 +248,18 @@ model.setListeners(new StatsListener(statsStorage),new ScoreIterationListener(1)
 uiServer.attach(statsStorage);
 
 ```
+
+### <a name="beginner">Other Deep Learning Tutorials</a>
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Convolutional Networks](./convolutionalnets)
+* [Deeplearning4j Quickstart Examples](./quickstart)
+* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Reinforcement Learning](./reinforcementlearning)
+* [Deeplearning4j Programming Guide](https://deeplearning4j.org/programmingguide/01_intro)
