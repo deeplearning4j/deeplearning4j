@@ -27,6 +27,7 @@ import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
@@ -39,8 +40,11 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
+import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
@@ -51,18 +55,24 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class TestGraphLocalExecution {
 
     @Test
-    @Ignore
     public void testLocalExecution() throws Exception {
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
@@ -75,7 +85,7 @@ public class TestGraphLocalExecution {
                 .setInputTypes(InputType.feedForward(4))
                 .addLayer("layer0",
                         new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
-                                .activation(new DiscreteParameterSpace<>(Activation.RELU,Activation.TANH))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                                 .build(),
                         "in")
                 .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
@@ -97,45 +107,131 @@ public class TestGraphLocalExecution {
             throw new RuntimeException();
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                        new MaxCandidatesCondition(100))
-                        .build();
+                .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
+                .terminationConditions(new MaxTimeCondition(20, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(10))
+                .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
-                        new ComputationGraphTaskCreator(new ClassificationEvaluator()));
+                new ComputationGraphTaskCreator(new ClassificationEvaluator()));
 
         runner.execute();
 
-        System.out.println("----- COMPLETE -----");
+        assertEquals(0, runner.numCandidatesFailed());
+        assertTrue(runner.numCandidatesCompleted() > 0);
     }
 
     @Test
-    @Ignore
+    public void testLocalExecutionMDS() throws Exception {
+        //Define: network config (hyperparameter space)
+        ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
+                .setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0",
+                        new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
+                                .build(),
+                        "in")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
+                .setOutputs("out").numEpochs(3).pretrain(false).backprop(true).build();
+
+        //Define configuration:
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, null);
+
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest\\").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if (f.exists())
+            f.delete();
+        f.mkdir();
+        f.deleteOnExit();
+        if (!f.exists())
+            throw new RuntimeException();
+
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                .candidateGenerator(candidateGenerator)
+                .dataProvider(new TestMdsDataProvider(1, 32))
+                .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
+                .terminationConditions(new MaxTimeCondition(20, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(10))
+                .scoreFunction(ScoreFunctions.testSetAccuracy())
+                .build();
+
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new ComputationGraphTaskCreator());
+
+        runner.execute();
+
+        assertEquals(0, runner.numCandidatesFailed());
+        assertTrue(runner.numCandidatesCompleted() > 0);
+    }
+
+    public static class TestMdsDataProvider implements DataProvider {
+        private int numEpochs;
+        private int batchSize;
+
+        public TestMdsDataProvider(@JsonProperty("numEpochs") int numEpochs, @JsonProperty("batchSize") int batchSize) {
+            this.numEpochs = numEpochs;
+            this.batchSize = batchSize;
+        }
+
+        private TestMdsDataProvider() {
+        }
+
+
+        @Override
+        public Object trainData(Map<String, Object> dataParameters) {
+            try {
+                DataSetIterator underlying = new MnistDataSetIterator(batchSize, Math.min(60000, 10 * batchSize), false, true, true, 12345);
+                return new MultiDataSetIteratorAdapter(new MultipleEpochsIterator(numEpochs, underlying));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Object testData(Map<String, Object> dataParameters) {
+            try {
+                DataSetIterator underlying = new MnistDataSetIterator(batchSize, Math.min(10000, 5 * batchSize), false, false, false, 12345);
+                return new MultiDataSetIteratorAdapter(underlying);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public Class<?> getDataType() {
+            return MultiDataSetIterator.class;
+        }
+    }
+
+    @Test
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
-                        .scoreCalculator(new DataSetLossCalculatorCG(new MnistDataSetIterator(128, 1280), true))
-                        .modelSaver(new InMemoryModelSaver()).build();
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(15))
+                .scoreCalculator(new DataSetLossCalculatorCG(new MnistDataSetIterator(128, 1280), true))
+                .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define: network config (hyperparameter space)
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new AdamSpace(new ContinuousParameterSpace(0.0001, 0.1)))
-                        .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
-                        .setInputTypes(InputType.feedForward(784))
-                        .addLayer("first",
-                                        new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
-                                                        .activation(new DiscreteParameterSpace<>(Activation.RELU,
-                                                                        Activation.TANH))
-                                                        .build(),
-                                        "in") //1-2 identical layers (except nIn)
-                        .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
-                        .setOutputs("out").earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new AdamSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
+                .setInputTypes(InputType.feedForward(784))
+                .addLayer("first",
+                        new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                        Activation.TANH))
+                                .build(),
+                        "in") //1-2 identical layers (except nIn)
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
+                .setOutputs("out").earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
 
         //Define configuration:
 
@@ -154,18 +250,19 @@ public class TestGraphLocalExecution {
             throw new RuntimeException();
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                        new MaxCandidatesCondition(100))
-                        .build();
+                .candidateGenerator(candidateGenerator)
+                .dataProvider(dataProvider)
+                .scoreFunction(ScoreFunctions.testSetF1())
+                .modelSaver(new FileModelSaver(modelSavePath))
+                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(10))
+                .build();
 
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
-                        new ComputationGraphTaskCreator(new ClassificationEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new ComputationGraphTaskCreator());
         runner.execute();
 
-
-        System.out.println("----- COMPLETE -----");
+        assertEquals(0, runner.numCandidatesFailed());
+        assertTrue(runner.numCandidatesCompleted() > 0);
     }
 }

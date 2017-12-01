@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.scoring.util;
 
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
+import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -33,11 +34,15 @@ public class ScoreUtil {
      * @return the datasetiterator from the given objects
      */
     public static MultiDataSetIterator getMultiIterator(Object o) {
-        if (o instanceof MultiDataSetIterator)
+        if (o instanceof MultiDataSetIterator) {
             return (MultiDataSetIterator) o;
-        else if (o instanceof MultiDataSetIteratorFactory) {
+        } else if (o instanceof MultiDataSetIteratorFactory) {
             MultiDataSetIteratorFactory factory = (MultiDataSetIteratorFactory) o;
             return factory.create();
+        } else if( o instanceof DataSetIterator ){
+            return new MultiDataSetIteratorAdapter((DataSetIterator)o);
+        } else if( o instanceof DataSetIteratorFactory ){
+            return new MultiDataSetIteratorAdapter(((DataSetIteratorFactory)o).create());
         }
 
         throw new IllegalArgumentException("Type must either be DataSetIterator or DataSetIteratorFactory");

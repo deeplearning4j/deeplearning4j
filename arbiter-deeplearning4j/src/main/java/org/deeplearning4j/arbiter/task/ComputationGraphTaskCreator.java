@@ -37,6 +37,7 @@ import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -108,16 +109,15 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
             }
 
-            //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator =
-                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            //For DataSetIterator: wraps in a MultiDataSetIterator, hence method can be used for both
+            MultiDataSetIterator iterator = ScoreUtil.getMultiIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
             EarlyStoppingConfiguration<ComputationGraph> esConfig =
                             ((GraphConfiguration) candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
-                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null); //dl4jListener);
+                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, iterator, null);
                 esResult = trainer.fit();
                 net = esResult.getBestModel(); //Can return null if failed OR if
 
@@ -136,7 +136,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 //Fixed number of epochs
                 int nEpochs = ((GraphConfiguration) candidate.getValue()).getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
-                    net.fit(dataSetIterator);
+                    net.fit(iterator);
                 }
                 ci.setCandidateStatus(CandidateStatus.Complete);
             }
