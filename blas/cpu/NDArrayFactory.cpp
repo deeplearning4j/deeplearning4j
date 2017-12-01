@@ -424,9 +424,9 @@ namespace nd4j {
             if (BlasHelper::getInstance()->template hasGEMM<T>()) {
                 nd4j_debug("Using provided GEMM pointer\n","");
                 if (sizeof(T) == 4)
-                    BlasHelper::getInstance()->sgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float) alpha, (float *) pA->getBuffer(), lda, (float *) pB->getBuffer(), ldb, (float) beta, (float *) pC->getBuffer(), ldc);
+                    BlasHelper::getInstance()->sgemm()(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, (float) alpha, (float *) pA->getBuffer(), lda, (float *) pB->getBuffer(), ldb, (float) beta, (float *) pC->getBuffer(), ldc);
                 else if (sizeof(T) == 8)
-                    BlasHelper::getInstance()->dgemm()(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, (double) alpha, (double *) pA->getBuffer(), lda, (double *) pB->getBuffer(), ldb, (double) beta, (double *) pC->getBuffer(), ldc);
+                    BlasHelper::getInstance()->dgemm()(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, (double) alpha, (double *) pA->getBuffer(), lda, (double *) pB->getBuffer(), ldb, (double) beta, (double *) pC->getBuffer(), ldc);
                 else
                     nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
             } else {

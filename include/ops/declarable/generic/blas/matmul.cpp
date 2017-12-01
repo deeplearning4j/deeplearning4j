@@ -79,8 +79,8 @@ namespace nd4j {
                 shape[1] = 1;
             } else if (shape::isMatrix(inA) && shape::isVector(inB)) {
                 // gemv case
-                shape[0] = 1;
-                shape[1] = (int) shape::length(inB);
+                shape[0] = inA[1];
+                shape[1] = inB[2];
             } else if ((shape::isMatrix(inA) && shape::isMatrix(inB)) || (shape::isVector(inA) && shape::isMatrix(inB))) {
                 // gemv case
                 shape[0] = inA[1];
