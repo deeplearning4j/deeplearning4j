@@ -135,7 +135,22 @@
             </dependencies>
         </profile>
 
-
+        <profile>
+            <id>s3-repo</id>
+            <activation>
+                <property>
+                    <name>local.software.repository</name>
+                    <value>s3-repo</value>
+                </property>
+            </activation>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>s3-repo</id>
+                    <name>s3-repo</name>
+                    <url>s3://${s3.repo.url}</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
         <profile>
             <id>local-nexus</id>
             <activation>
@@ -433,7 +448,13 @@
 
 
     <build>
-
+        <extensions>
+            <extension>
+                <groupId>org.kuali.maven.wagons</groupId>
+                <artifactId>maven-s3-wagon</artifactId>
+                <version>1.2.1</version>
+            </extension>
+        </extensions>
         <pluginManagement>
             <plugins>
                 <plugin>
