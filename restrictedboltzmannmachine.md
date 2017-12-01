@@ -194,7 +194,7 @@ Next, we'll show you how to implement a [deep-belief network](./deepbeliefnetwor
 * [Deeplearning.net's Restricted Boltzmann Machine Tutorial](http://deeplearning.net/tutorial/rbm.html)
 * [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf); Geoff Hinton
 
-### Other Beginner's Guides
+### Other Deep Learning Beginner's Guides
 
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Neural Networks](./neuralnet-overview.html)
@@ -202,3 +202,10 @@ Next, we'll show you how to implement a [deep-belief network](./deepbeliefnetwor
 * [Neural Networks & Regression](./linear-regression.html)
 * [Convolutional Networks](./convolutionalnets.html)
 * [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Deeplearning4j Quickstart Examples](./quickstart)
+* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Reinforcement Learning](./reinforcementlearning)
+* [DL4J Programming Guide](https://deeplearning4j.org/programmingguide/01_intro)
