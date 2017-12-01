@@ -27,6 +27,8 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataComposableMap;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.ConcatenatingRecordReader;
+import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -170,6 +172,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.collectMetaData = collectMetaData;
     }
 
+    private void initializeUnderlying(){
+        if (underlying == null) {
+            Record next = recordReader.nextRecord();
+            initializeUnderlying(next);
+        }
+    }
+
     private void initializeUnderlying(Record next) {
         int totalSize = next.getRecord().size();
 
@@ -178,7 +187,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             labelIndex = totalSize - 1;
         }
 
-        recordReader.reset();
+        if(recordReader.resetSupported()) {
+            recordReader.reset();
+        } else {
+            //Hack around the fact that we need the first record to initialize the underlying RRMDSI, but can't reset
+            // the original reader
+            recordReader = new ConcatenatingRecordReader(
+                    new CollectionRecordReader(Collections.singletonList(next.getRecord())),
+                    recordReader);
+        }
 
         RecordReaderMultiDataSetIterator.Builder builder = new RecordReaderMultiDataSetIterator.Builder(batchSize);
         if (recordReader instanceof SequenceRecordReader) {
@@ -297,8 +314,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         if (underlying == null) {
-            Record next = recordReader.nextRecord();
-            initializeUnderlying(next);
+            initializeUnderlying();
         }
 
 
@@ -343,7 +359,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean resetSupported() {
-        return true;
+        if(underlying == null){
+            initializeUnderlying();
+        }
+        return underlying.resetSupported();
     }
 
     @Override

@@ -31,7 +31,10 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.deeplearning4j.nn.layers.OutputLayer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
@@ -47,6 +50,7 @@ public class LayerVertex extends BaseGraphVertex {
 
     private Layer layer;
     private final InputPreProcessor layerPreProcessor;
+    private boolean setLayerInput;
 
     /**
      * Create a network input vertex:
@@ -100,7 +104,29 @@ public class LayerVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
+        applyPreprocessorAndSetInput();
         return layer.activate(training);
+    }
+
+    protected void applyPreprocessorAndSetInput(){
+        //Apply preprocessor
+        INDArray currInput = inputs[0];
+        if (layerPreProcessor != null) {
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)
+                    && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
+                //WS single, or FF as part of backprop
+                //NOTE: we *could* leverage instead (less memory, worse performance), but most preprocessors will only
+                //allocate 1 array (i.e., the new output), so this is usually preferable in practice
+                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                        .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                    currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+                }
+            } else {
+                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+            }
+        }
+        layer.setInput(currInput);
+        setLayerInput = true;
     }
 
     @Override
@@ -114,6 +140,11 @@ public class LayerVertex extends BaseGraphVertex {
                         + " (idx " + vertexIndex + ") numInputs " + getNumInputArrays() + "; numOutputs "
                         + getNumOutputConnections());
             }
+        }
+
+        //Edge case: output layer - never did forward pass hence layer.setInput was never called...
+        if(!setLayerInput){
+            applyPreprocessorAndSetInput();
         }
 
         Pair<Gradient, INDArray> pair;
@@ -143,12 +174,7 @@ public class LayerVertex extends BaseGraphVertex {
                             "Invalid input number: LayerVertex instances have only 1 input (got inputNumber = "
                                             + inputNumber + ")");
         inputs[inputNumber] = input;
-
-        INDArray currInput = inputs[0];
-        if (layerPreProcessor != null) {
-            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
-        }
-        layer.setInput(currInput);
+        setLayerInput = false;
     }
 
     @Override
@@ -212,5 +238,33 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         return true;
+    }
+
+    public double computeScore(double l1, double l2, boolean training){
+        if(!(layer instanceof IOutputLayer)){
+            throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
+                    + layer.getClass().getSimpleName());
+        }
+        //Edge case: output layer - never did forward pass hence layer.setInput was never called...
+        if(!setLayerInput){
+            applyPreprocessorAndSetInput();
+        }
+
+        IOutputLayer ol = (IOutputLayer)layer;
+        return ol.computeScore(l1, l2, training);
+    }
+
+    public INDArray computeScoreForExamples(double l1, double l2){
+        if(!(layer instanceof IOutputLayer)){
+            throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
+                    + layer.getClass().getSimpleName());
+        }
+        //Edge case: output layer - never did forward pass hence layer.setInput was never called...
+        if(!setLayerInput){
+            applyPreprocessorAndSetInput();
+        }
+
+        IOutputLayer ol = (IOutputLayer)layer;
+        return ol.computeScoreForExamples(l1, l2);
     }
 }
