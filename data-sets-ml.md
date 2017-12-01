@@ -5,7 +5,7 @@ layout: default
 
 # DataSets and Machine Learning
 
-One of the hardests problems to solve in deep learning has nothing to do with neural nets: it's the problem of getting the right data in the right format. 
+One of the hardests problems to solve in deep learning has nothing to do with neural nets: it's the problem of getting the *right data* in the *right format*. 
 
 Getting the right data means gathering or identifying the data that correlates with the outcomes you want to predict; i.e. data that contains a signal about events you care about. The data needs to be aligned with the problem you're trying to solve. Kitten pix are not very useful when you're building a facial identification system. Verifying that the data is aligned with the problem you seek to solve must be done by a data scientist. If you do not have the right data, then you efforts to build an AI solution must return to the data collection stage. 
 
