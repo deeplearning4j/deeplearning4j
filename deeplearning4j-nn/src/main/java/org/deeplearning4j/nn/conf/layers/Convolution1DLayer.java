@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -127,6 +128,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         public Builder padding(int padding) {
+            if (this.convolutionMode == ConvolutionMode.Same)
+                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
+
             this.padding[0] = padding;
             return this;
         }

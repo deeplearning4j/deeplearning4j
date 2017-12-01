@@ -239,6 +239,8 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         }
 
         public Builder padding(int... padding) {
+            if (this.convolutionMode == ConvolutionMode.Same)
+                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
             this.padding = padding;
             return this;
         }

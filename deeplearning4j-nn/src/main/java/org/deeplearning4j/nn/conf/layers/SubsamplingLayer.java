@@ -266,6 +266,8 @@ public class SubsamplingLayer extends Layer {
          * @param padding    padding in the height and width dimensions
          */
         public Builder padding(int... padding) {
+            if (this.convolutionMode == ConvolutionMode.Same)
+                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
             if (padding.length != 2)
                 throw new IllegalArgumentException("Invalid input: must be length 2");
             this.padding = padding;
