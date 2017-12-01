@@ -9,7 +9,7 @@ Eclipse Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neura
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping.
 
-The most recent stable release in Maven Central is `0.9.1`, and the current master is `0.9.2-SNAPSHOT`.
+The most recent stable release in Maven Central is `0.9.1`, and the current master on Github can be built from source. 
 
 ---
 ## Using Eclipse Deeplearning4j
@@ -18,7 +18,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ## Main Features
 - Versatile n-dimensional array class
-- GPU integration(Supports devices starting from Kepler,cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
+- GPU integration (supports devices starting from Kepler, cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
 
 
 ---
@@ -44,13 +44,13 @@ We are not supporting Stackoverflow right now. Github issues should focus on bug
 
 ## Installation
 
-To install Deeplearning4J, there are a couple approaches briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](http://deeplearning4j.org/gettingstarted.html).
+To install Deeplearning4J, see our [Quickstart](http://deeplearning4j.org/quickstart.html) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
 
-Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of dependencies.
+Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of dependencies. 
 
-Add the dependency information to your `pom.xml` file. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
+Add the dependency information to your `pom.xml` file. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.** An easy way to get up-to-date dependencies is to use the ones listed in our [dl4j-examples POM](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml).
 
 <!--
 #### Yum Install / Load RPM (Fedora or CentOS)
@@ -91,3 +91,4 @@ Note, be sure to install the ND4J modules you need first, especially the backend
    the repository to configure the Eclipse formatter, or by [using the INtellij
    plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 6. Send a pull request and bug us on Gitter until it gets merged and published. :)
+7. Add technical documentation on the [Deeplearning4j website](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) and fix any typos you see.

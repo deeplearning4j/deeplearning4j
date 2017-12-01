@@ -142,12 +142,14 @@ public abstract class BaseCudnnHelper {
 
             @Override
             public void deallocate() {
-                for (int i = 0; i < capacity; i++) {
+                for (int i = 0; !isNull() && i < capacity; i++) {
                     cudnnTensorStruct t = this.get(cudnnTensorStruct.class, i);
                     checkCudnn(cudnnDestroyTensorDescriptor(t));
                 }
-                owner.deallocate();
-                owner = null;
+                if (owner != null) {
+                    owner.deallocate();
+                    owner = null;
+                }
                 setNull();
             }
         }
