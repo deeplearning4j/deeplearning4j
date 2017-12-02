@@ -4061,7 +4061,7 @@ public class SameDiff {
 
     protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder) {
         val hash = getOpNum(node.opName(), node.opType());
-        log.info("Exporting node: [{}:<{}> - {}]", node.opName(), node.tensorflowName(), hash);
+        log.info("Exporting node: [{}:<{}>; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         float[] extras = node.getExtraArgs() != null ? new float[node.getExtraArgs().length] : new float[0];
         for (int e = 0; e < extras.length; e++) {

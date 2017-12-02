@@ -54,7 +54,7 @@ public class EndlessTests {
             Nd4j.getExecutioner().exec(new SoftMax(arr));
         }
     }
-
+/*
     @Test
     public void testTransformsForeverPairwise(){
         INDArray arr = Nd4j.ones(100,100);
@@ -64,7 +64,7 @@ public class EndlessTests {
             Nd4j.getExecutioner().exec(new AddOp(arr,arr2,arr));
         }
     }
-
+*/
     @Test
     public void testAccumForeverFull(){
         INDArray arr = Nd4j.ones(100,100);

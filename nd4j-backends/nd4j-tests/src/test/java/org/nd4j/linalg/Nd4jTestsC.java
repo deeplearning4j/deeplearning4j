@@ -5488,7 +5488,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         boolean isSameMode = true;
 
-        val input = Nd4j.create(2, 1, inY, inX);
+        val input = Nd4j.linspace(1, 2 * inY * inX, 2 * inY * inX).reshape(2, 1, inY, inX);
         val output = Nd4j.create(2, 1, 5, 5, 28, 28);
 
         val im2colOp = Im2col.builder()
@@ -5511,6 +5511,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         Nd4j.getExecutioner().exec(im2colOp);
+
+        log.info("result: {}", output);
     }
 
 
