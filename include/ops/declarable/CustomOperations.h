@@ -122,7 +122,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(repeat, 1, 1, true, 0, -1);   
         DECLARE_CUSTOM_OP(conv3d, 2, 1, false, 0, 7); 
         DECLARE_CUSTOM_OP(maxpool3d, 1, 2, true, 0, 13); 
-        DECLARE_CUSTOM_OP(permute, 1, 1, true, 0, -1);   
+        DECLARE_CUSTOM_OP(permute, 1, 1, true, 0, -2);   
         DECLARE_CUSTOM_OP(reshapeas, 2, 1, true, 0, 0);      
         DECLARE_CUSTOM_OP(transpose, 1, 1, true, 0, 0);
         DECLARE_CUSTOM_OP(stack, -1, 1, false, 0, 0);

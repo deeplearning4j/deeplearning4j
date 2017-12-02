@@ -1786,7 +1786,7 @@ TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
     Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
     block->fillInputs({-1});
 
-    nd4j::ops::permute<float> permute;
+    nd4j::ops::im2col<float> permute;
     Nd4jStatus status = permute.execute(block);
 
     ASSERT_TRUE(status != 0);
