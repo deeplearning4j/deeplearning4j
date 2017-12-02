@@ -11,12 +11,11 @@ namespace nd4j {
 		OP_IMPL(add, 2, 1, true) {
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = this->getZ(block);
+            NDArray<T> *z = OUTPUT_VARIABLE(0);
 
 			if (!x->isScalar() && !y->isScalar() && x->lengthOf() == y->lengthOf()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
 				x->template applyPairwiseTransform<simdOps::Add<T>>(y, z, nullptr);
-            
             } else if (!x->isScalar() && y->isScalar()) {
                x->template applyScalar<simdOps::Add<T>>(*y, z);
 

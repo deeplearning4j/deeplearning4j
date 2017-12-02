@@ -6843,9 +6843,10 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 
 	// we're using the same fake nodeId everywhere here
 
-	std::vector<nd4j::NDArray<T>*> inputs;
-	std::vector<T> ttArgs;
-	std::vector<int> iiArgs;
+	std::vector<nd4j::NDArray<T>*> inputs(numInputs);
+    std::vector<nd4j::NDArray<T>*> outputs;
+	std::vector<T> ttArgs(numTArgs);
+	std::vector<int> iiArgs(numIArgs);
 
 	// filling block now
 	for (int e = 0; e < numInputs; e++) {
@@ -6854,16 +6855,19 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 
 		// auto var = new Variable<T>(new NDArray<T>(buffer, shape));
 		// block.getVariables()->emplace_back(var);
-		inputs.push_back(new nd4j::NDArray<T>(buffer, shape));
+		auto array = new nd4j::NDArray<T>(buffer, shape);
+		//array->setSpecialBuffers( (T *) inputBuffers[e + numInputs],  (int *) inputShapes[e + numInputs]);
+
+		inputs[e] = array;
 	}
 
-	for (int e = 0; e < numIArgs; e++) {
-		iiArgs.push_back(iArgs[e]);
-	}
+	for (int e = 0; e < numIArgs; e++)
+		iiArgs[e] = iArgs[e];
 
-	for (int e = 0; e < numTArgs; e++) {
-		ttArgs.push_back(tArgs[e]);
-	}
+
+	for (int e = 0; e < numTArgs; e++)
+		ttArgs[e] = tArgs[e];
+
 
 	// hypothetically at this point we have everything filled
 	auto result = op->execute(inputs, ttArgs, iiArgs, isInplace);
@@ -6888,10 +6892,8 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 	delete result;
 
 
-	for (int e = 0; e < inputs.size(); e++) {
-		auto ptr = inputs.at(e);
+	for (auto ptr: inputs)
 		delete ptr;
-	}
 
 
 	return ND4J_STATUS_OK;

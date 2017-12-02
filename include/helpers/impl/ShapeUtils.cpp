@@ -474,6 +474,16 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
         return newAxis;
     }
 
+    template<typename T>
+    std::vector<int> ShapeUtils<T>::pullShapeFromShapeInfo(int *shapeInfo) {
+        std::vector<int> shape((int) shape::rank(shapeInfo));
+
+        for (int e = 0; e < shape.size(); e++)
+            shape[e] = shape::shapeOf(shapeInfo)[e];
+
+        return shape;
+    }
+
 
 
 

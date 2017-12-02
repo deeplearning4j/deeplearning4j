@@ -28,7 +28,7 @@ namespace nd4j {
          *
          * @tparam T
          */
-        CONFIGURABLE_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
+        CUSTOM_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
@@ -69,6 +69,18 @@ namespace nd4j {
             STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
+        }
+
+        DECLARE_SHAPE_FN(firas_sparse) {
+            auto inP = inputShape->at(0);
+
+            int *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+
+            std::vector<int> shape({shape::shapeOf(inP)[0], (int) block.getIArguments()->size()});
+            shape::shapeBuffer(2, shape.data(), newShape);
+
+            return new ShapeList(newShape);
         }
     }
 }

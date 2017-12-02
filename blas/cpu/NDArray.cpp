@@ -406,6 +406,32 @@ template <typename T>
     }
 
     template<typename T>
+    T* NDArray<T>::specialBuffer() {
+        if (_bufferD == nullptr)
+            return _buffer;
+
+        // FIXME: this should be fixed once CUDA backend added
+        return _bufferD;
+    }
+
+    template<typename T>
+    int* NDArray<T>::specialShapeInfo() {
+        if (_shapeInfoD == nullptr)
+            return _shapeInfo;
+
+        // FIXME: this should be fixed once CUDA backend added
+
+        return _shapeInfoD;
+    }
+
+    template<typename T>
+    void NDArray<T>::setSpecialBuffers(T * buffer, int *shape) {
+        _bufferD = buffer;
+        _shapeInfoD = shape;
+    }
+
+
+    template<typename T>
     int* NDArray<T>::getShapeInfo() const{
         return _shapeInfo;
     }
@@ -598,6 +624,7 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (ordering() == other->ordering() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
             memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
         } else {
+
             // now we invoke dup pwt against target buffer
             NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo,
                                                          _buffer, _shapeInfo, nullptr);

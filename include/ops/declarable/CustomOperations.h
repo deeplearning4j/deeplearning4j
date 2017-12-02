@@ -188,7 +188,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(hardtanh_bp, 2, 1, true, 0, 0);
         DECLARE_CONFIGURABLE_OP(hardsigmoid_bp, 2, 1, true, 0, 0);
 
-        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1);
+        DECLARE_CUSTOM_OP(firas_sparse, 1, 1, false, 0, -1);
 
         DECLARE_BOOLEAN_OP(lt_scalar, 2, true);
         DECLARE_BOOLEAN_OP(gt_scalar, 2, true);

@@ -33,10 +33,9 @@ namespace nd4j {
 
         nd4j::memory::Workspace* _workspace = nullptr;
 
-#ifdef __CUDACC__
         T* _bufferD = nullptr;
         int* _shapeInfoD = nullptr;
-#endif
+
 
         bool _isShapeAlloc = false;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside
         bool _isBuffAlloc = false; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside
@@ -128,6 +127,11 @@ namespace nd4j {
 
         T* getBuffer();
         T* buffer();
+
+
+        T* specialBuffer();
+        int* specialShapeInfo();
+        void setSpecialBuffers(T * buffer, int *shape);
 
 
         int* shapeInfo();

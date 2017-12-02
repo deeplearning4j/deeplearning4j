@@ -128,7 +128,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_5) {
 TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
     NDArray<float> A('c', {3, 3});
     NDArray<float> B('c', {3, 1});
-    NDArray<float> exp('c', {1, 3}, {14.00,  32.00,  50.00});
+    NDArray<float> exp('c', {3, 1}, {14.00,  32.00,  50.00});
 
     NDArrayFactory<float>::linspace(1, A);
     NDArrayFactory<float>::linspace(1, B);

@@ -62,6 +62,9 @@ namespace nd4j {
 
         // evaluate shapeInfo for resulting array of tile operation
         static int* evalTileShapeInfo(const NDArray<T>& arr, const std::vector<int>& reps);
+
+        // returns shape part of shapeInfo as std::vector
+        static std::vector<int> pullShapeFromShapeInfo(int *shapeInfo);
     };
 
 
