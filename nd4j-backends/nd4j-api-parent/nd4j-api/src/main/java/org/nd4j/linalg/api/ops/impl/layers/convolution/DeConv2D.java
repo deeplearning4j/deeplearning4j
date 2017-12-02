@@ -86,7 +86,7 @@ public class DeConv2D extends DynamicCustomOp {
                 .config(config)
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(deConv2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(deConv2DDerivative.outputFunctions()));
         return ret;
     }
 

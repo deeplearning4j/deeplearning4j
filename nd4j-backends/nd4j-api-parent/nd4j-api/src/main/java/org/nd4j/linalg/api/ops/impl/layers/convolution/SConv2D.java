@@ -41,7 +41,7 @@ public class SConv2D extends Conv2D {
                 .conv2DConfig(conv2DConfig)
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(conv2DDerivative.outputFunctions()));
         return ret;
     }
 

@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Getter @Builder.Default  private List<Integer> iArguments = new ArrayList<>();
     @Getter private boolean inplaceCall;
     @Getter private long hash;
-    @Getter
     protected DifferentialFunction[] outputFunctions;
     private List<int[]> outputShapes;
 
@@ -130,6 +130,23 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public DifferentialFunction[] outputFunctions() {
+        if(this.outputFunctions == null) {
+            List<Integer> ids = new ArrayList<>();
+            val inputArgs = args();
+            for (int i = 0; i < inputArgs.length; i++) {
+                for (int idx : inputArgs[i].resultVertexId()) {
+                    ids.add(idx);
+                }
+            }
+
+            val to = sameDiff.graph().getToFor(Ints.toArray(ids));
+            List<DifferentialFunction> funcs = new ArrayList<>();
+            for(int i = 0; i < to.length; i++) {
+                funcs.add(sameDiff.getFunctionForVertexId(new int[]{to[i]}));
+            }
+
+            this.outputFunctions = funcs.toArray(new DifferentialFunction[funcs.size()]);
+        }
         return outputFunctions;
     }
 
@@ -333,7 +350,19 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     }
 
-
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        for(int i = 0; i < args().length; i++) {
+            val var = sameDiff.getVariableForVertexId(args()[i].resultVertexId());
+            if(var != null) {
+                if(var.getArr() == null) {
+                    val shape = sameDiff.getShapeForVertexId(var.getVertexId());
+                    sameDiff.putArrayForVertexId(var.resultVertexId(),var.getWeightInitScheme().create(shape));
+                }
+            }
+        }
+    }
 
     public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {
         return new SameDiffBuilder(opName,sameDiff);

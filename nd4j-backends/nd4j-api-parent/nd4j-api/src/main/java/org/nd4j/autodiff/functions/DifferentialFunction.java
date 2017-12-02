@@ -368,7 +368,7 @@ public abstract class DifferentialFunction implements Differential {
 
 
     public void fillInArrays() {
-        if(this instanceof Op){
+        if(this instanceof Op) {
             Op op = (Op) this;
             op.setX(getX());
             //y is often optional for many problems

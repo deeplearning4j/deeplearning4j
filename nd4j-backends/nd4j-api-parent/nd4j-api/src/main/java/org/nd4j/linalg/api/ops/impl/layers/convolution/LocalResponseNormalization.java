@@ -122,7 +122,7 @@ public class LocalResponseNormalization extends DynamicCustomOp {
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .config(config)
                 .build();
-        ret.addAll(Arrays.asList(localResponseNormalizationDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(localResponseNormalizationDerivative.outputFunctions()));
 
         return ret;
     }

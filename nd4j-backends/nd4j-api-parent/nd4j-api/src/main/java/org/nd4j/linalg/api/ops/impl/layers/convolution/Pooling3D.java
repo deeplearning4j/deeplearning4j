@@ -77,7 +77,7 @@ public class Pooling3D extends DynamicCustomOp {
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .pooling3DConfig(config)
                 .build();
-        ret.addAll(Arrays.asList(pooling3DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(pooling3DDerivative.outputFunctions()));
 
         return ret;
     }

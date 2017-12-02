@@ -143,7 +143,7 @@ public class SameDiffTests {
                 .addOutputShape(new int[]{2,2})
                 .addOutputShape(new int[]{2,3})
                 .build();
-        assertEquals(2,dynamicCustomOp.getOutputFunctions().length);
+        assertEquals(2,dynamicCustomOp.outputFunctions().length);
 
 
     }

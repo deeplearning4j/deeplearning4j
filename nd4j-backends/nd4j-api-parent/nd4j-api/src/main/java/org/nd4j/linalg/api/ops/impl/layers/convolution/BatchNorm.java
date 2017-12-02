@@ -74,7 +74,7 @@ public class BatchNorm extends DynamicCustomOp {
                 .isMiniBatch(isMiniBatch)
                 .training(training)
                 .build();
-        ret.addAll(Arrays.asList(batchNormDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(batchNormDerivative.outputFunctions()));
         return ret;
     }
 

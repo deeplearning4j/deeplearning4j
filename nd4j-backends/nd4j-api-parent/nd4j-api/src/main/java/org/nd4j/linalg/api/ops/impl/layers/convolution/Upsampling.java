@@ -69,7 +69,7 @@ public class Upsampling extends DynamicCustomOp {
                 .scaleFactor(scaleFactor)
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(conv2DDerivative.outputFunctions()));
         return ret;
     }
 

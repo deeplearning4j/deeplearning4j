@@ -85,7 +85,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .sameDiff(sameDiff)
                 .config(config)
                 .build();
-        ret.addAll(Arrays.asList(pooling2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(pooling2DDerivative.outputFunctions()));
         return ret;
     }
 

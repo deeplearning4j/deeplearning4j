@@ -75,7 +75,7 @@ public class FullConv3D extends DynamicCustomOp {
                 .sameDiff(sameDiff)
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(fullConv3DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(fullConv3DDerivative.outputFunctions()));
         return ret;
     }
 

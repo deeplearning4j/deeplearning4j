@@ -175,7 +175,7 @@ public class Conv2D extends DynamicCustomOp {
                 .outputs(getOutputArguments().toArray(new INDArray[getOutputArguments().size()]))
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(conv2DDerivative.outputFunctions()));
         return ret;
     }
 

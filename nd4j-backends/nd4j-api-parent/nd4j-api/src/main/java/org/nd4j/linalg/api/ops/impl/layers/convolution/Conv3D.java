@@ -78,7 +78,7 @@ public class Conv3D extends DynamicCustomOp {
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .sameDiff(sameDiff)
                 .build();
-        ret.addAll(Arrays.asList(conv3DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(conv3DDerivative.outputFunctions()));
         return ret;
     }
 

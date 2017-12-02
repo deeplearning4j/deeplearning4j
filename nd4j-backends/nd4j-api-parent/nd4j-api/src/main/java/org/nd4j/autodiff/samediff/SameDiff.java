@@ -3110,12 +3110,15 @@ public class SameDiff {
             if (differentialFunction instanceof ScalarOp) {
                 ScalarOp scalarOp = (ScalarOp) differentialFunction;
                 scalarOp.setScalar(differentialFunction.getScalarValue());
-
             }
 
             Op op = (Op) differentialFunction;
             differentialFunction.fillInArrays();
             op.setN(op.x().length());
+
+        }
+        else if(differentialFunction instanceof DynamicCustomOp) {
+            DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) differentialFunction;
 
         }
         //if and while are special
@@ -3878,6 +3881,63 @@ public class SameDiff {
 
 
 
+            }
+            else if(differentialFunction instanceof CustomOp) {
+                DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
+                /**
+                 * Setup outputs and inputs relative to samediff.
+                 */
+
+                val inputs = customOp.args();
+                for(DifferentialFunction output : inputs) {
+                    val outputVertexId = output.resultVertexId();
+                    val getArr = getArrForVertexId(outputVertexId);
+                    if(getArr == null) {
+                        val shape = getShapeForVertexId(outputVertexId);
+                        val var = getVariableForVertexId(outputVertexId);
+                        val otherArr = var.getWeightInitScheme().create(shape);
+                        putArrayForVertexId(outputVertexId,otherArr);
+                        customOp.getInputArguments().add(otherArr);
+                    }
+
+                    else
+                        customOp.getInputArguments().add(getArr);
+
+                }
+
+                val outputs = customOp.outputFunctions();
+                for(DifferentialFunction output : outputs) {
+                    if(output == null)
+                        throw new ND4JIllegalStateException("No output can be null");
+                    val outputVertexId = output.resultVertexId();
+                    val getArr = getArrForVertexId(outputVertexId);
+                    if(getArr == null) {
+                        //ensure shape eis defined for output as well
+                        //just in case it hasn't run already
+                        int[] shape = getShapeForVertexId(outputVertexId);
+                        val var = getVariableForVertexId(outputVertexId);
+                        if(shape == null) {
+                            val newOutputShape = customOp.calculateOutputShape();
+                            if(newOutputShape == null ||  newOutputShape.isEmpty()) {
+                                throw new ND4JIllegalStateException("Unable to compute output shape! CalculateOutputShape on op returned null or empty!");
+                            }
+                            for(int outputIdx = 0; outputIdx < newOutputShape.size(); outputIdx++) {
+                                val outputI = outputs[i];
+                                putShapeForVertexId(outputI.resultVertexId(),newOutputShape.get(i));
+                            }
+
+                            shape = getShapeForVertexId(outputVertexId);
+                        }
+
+                        val otherArr = var.getWeightInitScheme().create(shape);
+                        putArrayForVertexId(outputVertexId,otherArr);
+                        customOp.getOutputArguments().add(otherArr);
+                    }
+                    else
+                        customOp.getOutputArguments().add(getArr);
+                }
+
+                Nd4j.getExecutioner().exec(customOp);
             }
 
             else if(differentialFunction instanceof Op) {
