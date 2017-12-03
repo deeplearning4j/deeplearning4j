@@ -169,7 +169,7 @@ namespace nd4j {
             auto v = variable(p);
 
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
-                nd4j_printf("Node_%i InputIndex[%i] mean value: [%f]", this->_nodeId, idx, (float) v->getNDArray()->meanNumber());
+                nd4j_printf("Node_%i InputIndex[%i]; length: [%i]; mean value: [%f]\n", this->_nodeId, idx, v->getNDArray()->lengthOf(), (float) v->getNDArray()->meanNumber());
             }
 
             return v;

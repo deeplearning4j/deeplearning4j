@@ -67,6 +67,7 @@ namespace nd4j {
         DECLARE_OP(greater, 2, 1, true);
         DECLARE_OP(log1p, 2, 1, true);
         DECLARE_OP(toggle_bits, -1, -1, true);
+        DECLARE_OP(rint, 1, 1, true);
 
         DECLARE_OP(scatter_add, 3, 1, true);
         DECLARE_OP(scatter_sub, 3, 1, true);
@@ -151,7 +152,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(meanSqErr, 3, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(sigmCrossEntropy, 3, 1, false, 1, 1);
         DECLARE_CUSTOM_OP(softmaxCrossEntropy, 3, 1, false, 1, 1);      
-        DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);  
+        DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);
+        DECLARE_CUSTOM_OP(unique, 1, 2, false, 0, 0);  
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);

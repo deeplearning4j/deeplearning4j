@@ -12,7 +12,6 @@
 #define MAX_INT 2147483647
 #define MIN_CUTFOFF -3.79297773665f
 #define FLOAT_MIN_NORMAL 1.17549435e-38
-#define FLOAT_MAX_VALUE 3.4028235E38
 #define EPS 1e-5
 #define AFFINITY close
 #ifndef M_E
@@ -943,18 +942,6 @@ namespace simdOps {
 		}
 	};
 
-	
-	template<typename T>
-	class Sigmoid {
-	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
-
-		op_def static T op(T d1, T *params) {
-			return nd4j::math::nd4j_sigmoid<T>(d1);
-		}
-	};
-
 	template<typename T>
 	class Swish {
 	public:
@@ -979,6 +966,40 @@ namespace simdOps {
 		}
 	};
 
+
+	template<typename T>
+	class LogSigmoid {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_log(nd4j::math::nd4j_sigmoid<T>(d1));
+		}
+	};
+
+	template<typename T>
+	class LogSigmoidDerivative {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T ex = nd4j::math::nd4j_pow<T>(M_E, d1);
+			return (T) 1. / (ex + (T) 1.);
+		}
+	};
+
+	template<typename T>
+	class Sigmoid {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_sigmoid<T>(d1);
+		}
+	};
 
 	template<typename T>
 	class SigmoidDerivative {
@@ -1070,6 +1091,17 @@ namespace simdOps {
 
 		op_def static T op(T d1, T *params) {
 			return (T) 1.0f / nd4j::math::nd4j_sqrt<T>(d1);
+		}
+	};
+
+	template<typename T>
+	class Rint {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_rint<T>(d1);
 		}
 	};
 
