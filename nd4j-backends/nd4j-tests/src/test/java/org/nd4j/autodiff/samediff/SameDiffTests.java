@@ -531,7 +531,7 @@ public class SameDiffTests {
                 .biasWeightInitScheme(new ZeroInitScheme('f'))
                 .build();
         linear.exec(Nd4j.linspace(1,20,20).reshape(4,5));
-        assertEquals(1,linear.getOutputArguments().size());
+        assertEquals(1,linear.numOutputArguments());
 
     }
 

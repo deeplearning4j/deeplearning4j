@@ -87,23 +87,103 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
-    public List<INDArray> getInputArguments() {
-        return op.getInputArguments();
+    public INDArray[] outputArguments() {
+        return op.outputArguments();
     }
 
     @Override
-    public List<INDArray> getOutputArguments() {
-        return op.getOutputArguments();
+    public INDArray[] inputArguments() {
+        return op.inputArguments();
     }
 
     @Override
-    public List<Integer> getIArguments() {
-        return op.getIArguments();
+    public int[] iArgs() {
+        return op.iArgs();
     }
 
     @Override
-    public List<Double> getTArguments() {
-        return op.getTArguments();
+    public double[] tArgs() {
+        return op.tArgs();
+    }
+
+    @Override
+    public void addIArgument(int... arg) {
+        op.addIArgument(arg);
+    }
+
+    @Override
+    public void removeIArgument(Integer arg) {
+        op.removeIArgument(arg);
+    }
+
+    @Override
+    public Integer getIArgument(int index) {
+        return op.getIArgument(index);
+    }
+
+    @Override
+    public int numIArguments() {
+        return op.numIArguments();
+    }
+
+    @Override
+    public void addTArgument(double... arg) {
+        op.addTArgument(arg);
+    }
+
+    @Override
+    public void removeTArgument(Double arg) {
+        op.removeTArgument(arg);
+    }
+
+    @Override
+    public Double getTArgument(int index) {
+        return op.getTArgument(index);
+    }
+
+    @Override
+    public int numTArguments() {
+        return op.numTArguments();
+    }
+
+    @Override
+    public void addInputArgument(INDArray... arg) {
+        op.addInputArgument(arg);
+    }
+
+    @Override
+    public void removeInputArgument(INDArray arg) {
+        op.removeInputArgument(arg);
+    }
+
+    @Override
+    public INDArray getInputArgument(int index) {
+        return op.getInputArgument(index);
+    }
+
+    @Override
+    public int numInputArguments() {
+        return op.numInputArguments();
+    }
+
+    @Override
+    public void addOutputArgument(INDArray... arg) {
+        op.addOutputArgument(arg);
+    }
+
+    @Override
+    public void removeOutputArgument(INDArray arg) {
+
+    }
+
+    @Override
+    public INDArray getOutputArgument(int index) {
+        return op.getOutputArgument(index);
+    }
+
+    @Override
+    public int numOutputArguments() {
+        return op.numOutputArguments();
     }
 
     @Override

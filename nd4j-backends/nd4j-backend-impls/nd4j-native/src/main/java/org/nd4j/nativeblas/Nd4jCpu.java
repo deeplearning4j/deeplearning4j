@@ -52,6 +52,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_greater.class,
         float_log1p.class,
         float_toggle_bits.class,
+        float_rint.class,
         float_scatter_add.class,
         float_scatter_sub.class,
         float_scatter_mul.class,
@@ -131,6 +132,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_sigmCrossEntropy.class,
         float_softmaxCrossEntropy.class,
         float_batchnorm.class,
+        float_unique.class,
         float_sru.class,
         float_sru_logic.class,
         float_sru_bi.class,
@@ -220,6 +222,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_greater.class,
         half_log1p.class,
         half_toggle_bits.class,
+        half_rint.class,
         half_scatter_add.class,
         half_scatter_sub.class,
         half_scatter_mul.class,
@@ -299,6 +302,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_sigmCrossEntropy.class,
         half_softmaxCrossEntropy.class,
         half_batchnorm.class,
+        half_unique.class,
         half_sru.class,
         half_sru_logic.class,
         half_sru_bi.class,
@@ -388,6 +392,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_greater.class,
         double_log1p.class,
         double_toggle_bits.class,
+        double_rint.class,
         double_scatter_add.class,
         double_scatter_sub.class,
         double_scatter_mul.class,
@@ -467,6 +472,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_sigmCrossEntropy.class,
         double_softmaxCrossEntropy.class,
         double_batchnorm.class,
+        double_unique.class,
         double_sru.class,
         double_sru_logic.class,
         double_sru_bi.class,
@@ -13357,6 +13363,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
 // #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
+// #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
 // #define STORE_RESULT(A)     this->storeResult(block, 0, A)
 // #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 // #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
@@ -15964,6 +15971,48 @@ private native void allocate();
                 return (double_toggle_bits)super.position(position);
             }
         public double_toggle_bits() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }
+        @Name("nd4j::ops::rint<float>") public static class float_rint extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_rint(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_rint(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_rint position(long position) {
+                return (float_rint)super.position(position);
+            }
+        public float_rint() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::rint<float16>") public static class half_rint extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_rint(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_rint(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_rint position(long position) {
+                return (half_rint)super.position(position);
+            }
+        public half_rint() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::rint<double>") public static class double_rint extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_rint(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_rint(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_rint position(long position) {
+                return (double_rint)super.position(position);
+            }
+        public double_rint() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
@@ -19288,6 +19337,48 @@ private native void allocate();
                 return (double_batchnorm)super.position(position);
             }
         public double_batchnorm() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::unique<float>") public static class float_unique extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_unique(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_unique(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_unique position(long position) {
+                return (float_unique)super.position(position);
+            }
+        public float_unique() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::unique<float16>") public static class half_unique extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_unique(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_unique(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_unique position(long position) {
+                return (half_unique)super.position(position);
+            }
+        public half_unique() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::unique<double>") public static class double_unique extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_unique(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_unique(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_unique position(long position) {
+                return (double_unique)super.position(position);
+            }
+        public double_unique() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }  

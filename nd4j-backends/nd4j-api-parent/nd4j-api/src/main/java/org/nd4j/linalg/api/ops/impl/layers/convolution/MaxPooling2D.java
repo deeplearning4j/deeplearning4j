@@ -36,11 +36,11 @@ public class MaxPooling2D extends DynamicCustomOp {
     public MaxPooling2D(SameDiff sameDiff, DifferentialFunction[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
         super(null,sameDiff, inputs, false);
         if(arrayInputs != null) {
-            getInputArguments().addAll(Arrays.asList(arrayInputs));
+           addInputArgument(arrayInputs);
         }
 
         if(arrayOutputs != null) {
-            getOutputArguments().addAll(Arrays.asList(arrayOutputs));
+            addOutputArgument(arrayOutputs);
         }
 
         this.config = config;
@@ -51,16 +51,17 @@ public class MaxPooling2D extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getIArguments().add(config.getKh());
-        getIArguments().add(config.getKw());
-        getIArguments().add(config.getSy());
-        getIArguments().add(config.getSx());
-        getIArguments().add(config.getPh());
-        getIArguments().add(config.getPw());
-        getIArguments().add(config.getDh());
-        getIArguments().add(config.getDw());
-        getIArguments().add(fromBoolean(config.isSameMode()));
-        getIArguments().add((int) config.getExtra());
+        addIArgument(
+                new int[]{config.getKh(),
+                        config.getKw(),
+                        config.getSy(),
+                        config.getSx(),
+                        config.getPh(),
+                        config.getPw(),
+                        config.getDh(),
+                        config.getDw(),
+                        fromBoolean(config.isSameMode()),
+                        (int) config.getExtra()});
 
     }
 

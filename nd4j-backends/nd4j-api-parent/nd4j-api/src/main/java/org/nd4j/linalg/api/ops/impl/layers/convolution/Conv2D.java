@@ -47,15 +47,15 @@ public class Conv2D extends DynamicCustomOp {
     public Conv2D() {}
 
     protected void addArgs() {
-        getIArguments().add(conv2DConfig.getKh());
-        getIArguments().add(conv2DConfig.getKw());
-        getIArguments().add(conv2DConfig.getSy());
-        getIArguments().add(conv2DConfig.getSx());
-        getIArguments().add(conv2DConfig.getPh());
-        getIArguments().add(conv2DConfig.getPw());
-        getIArguments().add(conv2DConfig.getDh());
-        getIArguments().add(conv2DConfig.getDw());
-        getIArguments().add(fromBoolean(conv2DConfig.isSameMode()));
+       addIArgument(new int[]{conv2DConfig.getKh(),
+      conv2DConfig.getKw(),
+      conv2DConfig.getSy(),
+      conv2DConfig.getSx(),
+      conv2DConfig.getPh(),
+      conv2DConfig.getPw(),
+      conv2DConfig.getDh(),
+      conv2DConfig.getDw(),
+      fromBoolean(conv2DConfig.isSameMode())});
 
     }
 
@@ -180,7 +180,7 @@ public class Conv2D extends DynamicCustomOp {
         inputs.add(f1.get(0));
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
                 .conv2DConfig(conv2DConfig)
-                .outputs(getOutputArguments().toArray(new INDArray[getOutputArguments().size()]))
+                .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
         ret.addAll(Arrays.asList(conv2DDerivative.outputFunctions()));

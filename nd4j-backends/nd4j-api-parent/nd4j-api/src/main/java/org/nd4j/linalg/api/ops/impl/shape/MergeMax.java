@@ -11,7 +11,6 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -69,11 +68,6 @@ public class MergeMax extends DynamicCustomOp {
         this.concatDimension = concatDimension;
         log.debug("Concat dimension: {}", concatDimension);
 
-    }
-
-    @Override
-    public List<Integer> getIArguments() {
-        return Collections.singletonList(concatDimension);
     }
 
     @Override

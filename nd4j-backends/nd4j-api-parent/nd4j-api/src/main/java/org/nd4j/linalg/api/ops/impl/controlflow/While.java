@@ -433,25 +433,104 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public List<INDArray> getInputArguments() {
-        return Collections.emptyList();
+    public INDArray[] outputArguments() {
+        return new INDArray[0];
     }
 
     @Override
-    public List<INDArray> getOutputArguments() {
-        return Collections.emptyList();
+    public INDArray[] inputArguments() {
+        return new INDArray[0];
     }
 
     @Override
-    public List<Integer> getIArguments() {
-        return Collections.emptyList();
+    public int[] iArgs() {
+        return new int[0];
     }
 
     @Override
-    public List<Double> getTArguments() {
-        return Collections.emptyList();
+    public double[] tArgs() {
+        return new double[0];
     }
 
+    @Override
+    public void addIArgument(int... arg) {
+
+    }
+
+    @Override
+    public void removeIArgument(Integer arg) {
+
+    }
+
+    @Override
+    public Integer getIArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numIArguments() {
+        return 0;
+    }
+
+    @Override
+    public void addTArgument(double... arg) {
+
+    }
+
+    @Override
+    public void removeTArgument(Double arg) {
+
+    }
+
+    @Override
+    public Double getTArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numTArguments() {
+        return 0;
+    }
+
+    @Override
+    public void addInputArgument(INDArray... arg) {
+
+    }
+
+    @Override
+    public void removeInputArgument(INDArray arg) {
+
+    }
+
+    @Override
+    public INDArray getInputArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numInputArguments() {
+        return 0;
+    }
+
+    @Override
+    public void addOutputArgument(INDArray... arg) {
+
+    }
+
+    @Override
+    public void removeOutputArgument(INDArray arg) {
+
+    }
+
+    @Override
+    public INDArray getOutputArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numOutputArguments() {
+        return 0;
+    }
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret =  new ArrayList<>();

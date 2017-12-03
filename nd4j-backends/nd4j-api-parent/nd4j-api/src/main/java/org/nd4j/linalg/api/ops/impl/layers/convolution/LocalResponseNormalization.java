@@ -37,11 +37,11 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         super(null,sameDiff, inputFunctions, inPlace);
         this.config = config;
         if(inputs != null) {
-            getInputArguments().addAll(Arrays.asList(inputs));
+            addInputArgument(inputs);
         }
 
         if(outputs!= null) {
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         }
 
         addArgs();
@@ -52,10 +52,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getTArguments().add(config.getAlpha());
-        getTArguments().add(config.getBeta());
-        getTArguments().add(config.getBias());
-        getTArguments().add(config.getDepth());
+        addTArgument(config.getAlpha());
+        addTArgument(config.getBeta());
+        addTArgument(config.getBias());
+        addTArgument(config.getDepth());
     }
 
     @Override

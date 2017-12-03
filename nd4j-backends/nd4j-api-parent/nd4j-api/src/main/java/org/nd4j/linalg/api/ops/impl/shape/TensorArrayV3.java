@@ -58,7 +58,7 @@ public class TensorArrayV3 extends DynamicCustomOp {
 
         if (arr != null) {
             int idx = arr.getInt(0);
-            getIArguments().add(idx);
+            addIArgument(idx);
         }
 
     }

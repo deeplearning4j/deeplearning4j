@@ -28,8 +28,6 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -102,7 +100,7 @@ public class Convolution {
                 .build();
 
         Nd4j.getExecutioner().exec(col2Im);
-        return col2Im.getOutputArguments().get(0);
+        return col2Im.outputArguments()[0];
     }
 
     public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w, int dh, int dw ) {
@@ -178,7 +176,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
@@ -200,7 +198,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
@@ -222,7 +220,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     /**
@@ -318,7 +316,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     /**

@@ -80,7 +80,7 @@ public class Transpose extends DynamicCustomOp {
                 if(permuteArrayOp != null) {
                     this.permuteDims = permuteArrayOp.data().asInt();
                     for(int i = 0; i < permuteDims.length; i++) {
-                        getIArguments().add(permuteDims[i]);
+                        addIArgument(permuteDims[i]);
                     }
                 }
                 else
@@ -93,9 +93,9 @@ public class Transpose extends DynamicCustomOp {
         }
 
         //only add if empty
-        if(getIArguments().isEmpty())
+        if(numOutputArguments() == 0)
             for(int i = 0; i < permuteDims.length; i++) {
-                getIArguments().add(permuteDims[i]);
+                addIArgument(permuteDims[i]);
             }
     }
 
@@ -119,7 +119,7 @@ public class Transpose extends DynamicCustomOp {
             val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
             sameDiff.putShapeForVertexId(resultVertexId(),permutedShape);
             for(int i = 0; i < permuteDims.length; i++) {
-                getIArguments().add(permuteDims[i]);
+                addIArgument(permuteDims[i]);
             }
         }
 

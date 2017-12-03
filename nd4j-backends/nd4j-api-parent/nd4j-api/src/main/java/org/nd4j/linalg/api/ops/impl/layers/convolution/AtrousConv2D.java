@@ -30,26 +30,27 @@ public class AtrousConv2D extends Conv2D {
                         DifferentialFunction[] inputFunctions,
                         INDArray[] inputArrays, INDArray[] outputs,
                         Conv2DConfig conv2DConfig) {
-        super(sameDiff,inputFunctions,inputArrays,outputs,conv2DConfig);
+        super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
         this.sameDiff = sameDiff;
-        sameDiff.associateFunctionsAsArgs(inputFunctions,this);
+        sameDiff.associateFunctionsAsArgs(inputFunctions, this);
 
         this.conv2DConfig = conv2DConfig;
         addArgs();
     }
 
-    public AtrousConv2D() {}
+    public AtrousConv2D() {
+    }
 
     protected void addArgs() {
-        getIArguments().add(conv2DConfig.getKh());
-        getIArguments().add(conv2DConfig.getKw());
-        getIArguments().add(conv2DConfig.getSy());
-        getIArguments().add(conv2DConfig.getSx());
-        getIArguments().add(conv2DConfig.getPh());
-        getIArguments().add(conv2DConfig.getPw());
-        getIArguments().add(conv2DConfig.getDh());
-        getIArguments().add(conv2DConfig.getDw());
-        getIArguments().add(fromBoolean(conv2DConfig.isSameMode()));
+        addIArgument(conv2DConfig.getKh());
+        addIArgument(conv2DConfig.getKw());
+        addIArgument(conv2DConfig.getSy());
+        addIArgument(conv2DConfig.getSx());
+        addIArgument(conv2DConfig.getPh());
+        addIArgument(conv2DConfig.getPw());
+        addIArgument(conv2DConfig.getDh());
+        addIArgument(conv2DConfig.getDw());
+        addIArgument(fromBoolean(conv2DConfig.isSameMode()));
 
     }
 
@@ -67,8 +68,8 @@ public class AtrousConv2D extends Conv2D {
 
         // we know that second input to conv2d is weights array
         //val tensorProto = mapper.getTensorFrom(attributesForNode.get("input"),graph);
-       // val kY =tensorProto.getTensorShape().getDim(0).getSize();
-       // val kX = tensorProto.getTensorShape().getDim(1).getSize();
+        // val kY =tensorProto.getTensorShape().getDim(0).getSize();
+        // val kX = tensorProto.getTensorShape().getDim(1).getSize();
         // val kY =tensorProto.getTensorShape().getDim(0).getSize();
         //val kX = tensorProto.getTensorShape().getDim(1).getSize();
         val kY = nodeDef.getAttrOrThrow("shape").getShape().getDim(0).getSize();
@@ -94,14 +95,10 @@ public class AtrousConv2D extends Conv2D {
     }
 
 
-
     @Override
     public String opName() {
         return "atrous_conv2d";
     }
-
-
-
 
 
     @Override

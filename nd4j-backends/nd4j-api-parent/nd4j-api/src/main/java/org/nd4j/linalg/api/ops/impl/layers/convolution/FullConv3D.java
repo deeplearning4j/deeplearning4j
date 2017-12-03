@@ -25,11 +25,11 @@ public class FullConv3D extends DynamicCustomOp {
         super(null,sameDiff, inputFunctions, false);
         this.conv3DConfig = conv3DConfig;
         if(inputs != null) {
-            getInputArguments().addAll(Arrays.asList(inputs));
+            addInputArgument(inputs);
         }
 
         if(outputs != null) {
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         }
 
         addArgs();
@@ -41,19 +41,20 @@ public class FullConv3D extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getIArguments().add(conv3DConfig.getDT());
-        getIArguments().add(conv3DConfig.getDW());
-        getIArguments().add(conv3DConfig.getDH());
-        getIArguments().add(conv3DConfig.getPT());
-        getIArguments().add(conv3DConfig.getPW());
-        getIArguments().add(conv3DConfig.getPH());
-        getIArguments().add(conv3DConfig.getDilationT());
-        getIArguments().add(conv3DConfig.getDilationW());
-        getIArguments().add(conv3DConfig.getDilationH());
-        getIArguments().add(conv3DConfig.getAT());
-        getIArguments().add(conv3DConfig.getAW());
-        getIArguments().add(conv3DConfig.getAH());
-        getIArguments().add(fromBoolean(conv3DConfig.isBiasUsed()));
+        addIArgument(new int[]{
+                conv3DConfig.getDT(),
+                conv3DConfig.getDW(),
+                conv3DConfig.getDH(),
+                conv3DConfig.getPT(),
+                conv3DConfig.getPW(),
+                conv3DConfig.getPH(),
+                conv3DConfig.getDilationT(),
+                conv3DConfig.getDilationW(),
+                conv3DConfig.getDilationH(),
+                conv3DConfig.getAT(),
+                conv3DConfig.getAW(),
+                conv3DConfig.getAH(),
+                fromBoolean(conv3DConfig.isBiasUsed())});
 
 
     }

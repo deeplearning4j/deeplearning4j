@@ -34,29 +34,29 @@ public class Pooling3D extends DynamicCustomOp {
         this.config = pooling3DConfig;
 
         if(inputArrays != null) {
-            getInputArguments().addAll(Arrays.asList(inputArrays));
+            addInputArgument(inputArrays);
         }
 
         if(outputs != null) {
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         }
         addArgs();
     }
 
 
     private void addArgs() {
-        getIArguments().add(config.getKT());
-        getIArguments().add(config.getKW());
-        getIArguments().add(config.getKH());
-        getIArguments().add(config.getDT());
-        getIArguments().add(config.getDW());
-        getIArguments().add(config.getDH());
-        getIArguments().add(config.getPT());
-        getIArguments().add(config.getPW());
-        getIArguments().add(config.getPH());
-        getIArguments().add(config.getDilationT());
-        getIArguments().add(config.getDilationW());
-        getIArguments().add(config.getDilationH());
+        addIArgument(config.getKT());
+        addIArgument(config.getKW());
+        addIArgument(config.getKH());
+        addIArgument(config.getDT());
+        addIArgument(config.getDW());
+        addIArgument(config.getDH());
+        addIArgument(config.getPT());
+        addIArgument(config.getPW());
+        addIArgument(config.getPH());
+        addIArgument(config.getDilationT());
+        addIArgument(config.getDilationW());
+        addIArgument(config.getDilationH());
 
     }
 

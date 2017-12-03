@@ -29,14 +29,14 @@ public class Upsampling extends DynamicCustomOp {
         super(null,sameDiff, inputs, inPlace);
         this.scaleFactor = scaleFactor;
         if(inputArrays != null) {
-            getInputArguments().addAll(Arrays.asList(inputArrays));
+            addInputArgument(inputArrays);
         }
 
         if(outputs != null) {
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         }
 
-        getIArguments().add(scaleFactor);
+        addIArgument(scaleFactor);
     }
 
 

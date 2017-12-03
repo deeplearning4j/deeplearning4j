@@ -40,11 +40,11 @@ public class Pooling2D extends DynamicCustomOp {
     public Pooling2D(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] arrayInputs, INDArray[] arrayOutputs,Pooling2DConfig config) {
         super(null,sameDiff, inputs, false);
        if(arrayInputs != null) {
-           getInputArguments().addAll(Arrays.asList(arrayInputs));
+           addInputArgument(arrayInputs);
        }
 
        if(arrayOutputs != null) {
-           getOutputArguments().addAll(Arrays.asList(arrayOutputs));
+           addOutputArgument(arrayOutputs);
        }
 
        this.config = config;
@@ -55,16 +55,16 @@ public class Pooling2D extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getIArguments().add(config.getKh());
-        getIArguments().add(config.getKw());
-        getIArguments().add(config.getSy());
-        getIArguments().add(config.getSx());
-        getIArguments().add(config.getPh());
-        getIArguments().add(config.getPw());
-        getIArguments().add(config.getDh());
-        getIArguments().add(config.getDw());
-        getIArguments().add(fromBoolean(config.isSameMode()));
-        getIArguments().add((int) config.getExtra());
+        addIArgument(config.getKh());
+        addIArgument(config.getKw());
+        addIArgument(config.getSy());
+        addIArgument(config.getSx());
+        addIArgument(config.getPh());
+        addIArgument(config.getPw());
+        addIArgument(config.getDh());
+        addIArgument(config.getDw());
+        addIArgument(fromBoolean(config.isSameMode()));
+        addIArgument((int) config.getExtra());
 
     }
 

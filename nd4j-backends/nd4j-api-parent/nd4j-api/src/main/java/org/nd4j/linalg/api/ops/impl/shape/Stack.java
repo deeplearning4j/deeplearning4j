@@ -49,7 +49,7 @@ public class Stack  extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val attrAxis = nodeDef.getAttrOrThrow("axis");
         int axis = (int) attrAxis.getI();
-        getIArguments().add(axis);
+        addIArgument(axis);
     }
 
     @Override

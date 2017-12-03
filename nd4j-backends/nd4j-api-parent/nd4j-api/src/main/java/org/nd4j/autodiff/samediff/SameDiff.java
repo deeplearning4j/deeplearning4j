@@ -3899,11 +3899,11 @@ public class SameDiff {
                         val var = getVariableForVertexId(outputVertexId);
                         val otherArr = var.getWeightInitScheme().create(shape);
                         putArrayForVertexId(outputVertexId,otherArr);
-                        customOp.getInputArguments().add(otherArr);
+                        customOp.addInputArgument(otherArr);
                     }
 
-                    else
-                        customOp.getInputArguments().add(getArr);
+                    else if(customOp.numInputArguments() < inputs.length)
+                        customOp.addInputArgument(getArr);
 
                 }
 
@@ -3938,10 +3938,10 @@ public class SameDiff {
 
                         val otherArr = var.getWeightInitScheme().create(shape);
                         putArrayForVertexId(outputVertexId,otherArr);
-                        customOp.getOutputArguments().add(otherArr);
+                        customOp.addOutputArgument(otherArr);
                     }
-                    else
-                        customOp.getOutputArguments().add(getArr);
+                    else if(customOp.numOutputArguments() < inputs.length)
+                        customOp.addOutputArgument(getArr);
                 }
 
                 Nd4j.getExecutioner().exec(customOp);
@@ -4078,7 +4078,7 @@ public class SameDiff {
         int[] extraBits = null;
         if(node.opType() == Op.Type.CUSTOM) {
             DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
-            extraBits = Ints.toArray(dynamicCustomOp.getIArguments());
+            extraBits = dynamicCustomOp.iArgs();
         }
         else
             extraBits = new int[]{};

@@ -90,9 +90,9 @@ public class Linear extends BaseModule {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
-        ret.add(Shape.getMatrixMultiplyShape(getInputArguments().get(0).shape(),new int[]{nOut,nIn}));
+        ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),new int[]{nOut,nIn}));
 
-        ret.add(Shape.getMatrixMultiplyShape(getInputArguments().get(0).shape(),getInputArguments().get(1).transpose().shape()));
+        ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),inputArguments()[1].transpose().shape()));
         if(biasWeightInitScheme != null) {
             ret.add(new int[]{nOut,1});
         }
@@ -113,21 +113,25 @@ public class Linear extends BaseModule {
 
     @Override
     public void exec(INDArray... inputs) {
-        if(this.getInputArguments().isEmpty()) {
+        val inputArguments = inputArguments();
+        if(inputArguments == null || inputArguments.length < 1) {
             throw new IllegalStateException("No arguments found.");
         }
 
-        INDArray weights = getInputArguments().get(0);
-        INDArray right = getInputArguments().get(1);
-        if(getOutputArguments().isEmpty()) {
-            if(getInputArguments().size() == 1)
-                getOutputArguments().add(inputs[0].mmul(weights.transpose()));
+        INDArray weights = inputArguments[0];
+        INDArray right = inputArguments[1];
+
+        val outputArguments = outputArguments();
+
+        if(outputArguments == null || outputArguments.length < 1) {
+            if(inputArguments.length == 1)
+              addOutputArgument(inputs[0].mmul(weights.transpose()));
             else
-                getOutputArguments().add(inputs[0].mmul(weights.transpose()).addiColumnVector(right));
+                addOutputArgument(inputs[0].mmul(weights.transpose()).addiColumnVector(right));
 
         }
         else {
-            inputs[0].mmul(weights.transpose(),getOutputArguments().get(0));
+            inputs[0].mmul(weights.transpose(),outputArguments[0]);
         }
 
     }

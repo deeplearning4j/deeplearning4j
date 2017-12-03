@@ -31,34 +31,51 @@ public interface CustomOp {
     boolean isInplaceCall();
 
 
-    /**
-     * Input arguments for
-     * this op
-     * @return
-     */
-    List<INDArray> getInputArguments();
 
-    /**
-     * Output arguments for this
-     * @return
-     */
-    List<INDArray> getOutputArguments();
 
-    /**
-     * Integer input arguments for this
-     * @return
-     */
-    List<Integer> getIArguments();
+    INDArray[] outputArguments();
 
-    /**
-     * Floating point arguments
-     * for this op.
-     * The "T" stands for
-     * a generic floating point type
-     * in c++.
-     * @return
-     */
-    List<Double> getTArguments();
+    INDArray[] inputArguments();
+
+    int[] iArgs();
+
+    double[] tArgs();
+
+    void addIArgument(int... arg);
+
+
+    void removeIArgument(Integer arg);
+
+    Integer getIArgument(int index);
+
+    int numIArguments();
+
+    void addTArgument(double... arg);
+
+    void removeTArgument(Double arg);
+
+    Double getTArgument(int index);
+
+    int numTArguments();
+
+
+    void addInputArgument(INDArray... arg);
+
+    void removeInputArgument(INDArray arg);
+
+    INDArray getInputArgument(int index);
+
+    int numInputArguments();
+
+
+    void addOutputArgument(INDArray... arg);
+
+    void removeOutputArgument(INDArray arg);
+
+    INDArray getOutputArgument(int index);
+
+    int numOutputArguments();
+
 
 
     /**

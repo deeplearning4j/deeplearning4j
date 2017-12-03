@@ -11,8 +11,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -60,14 +58,11 @@ public class Concat extends DynamicCustomOp {
             concatDimension = 1;
 
         this.concatDimension = concatDimension;
+        addIArgument(this.concatDimension);
         log.debug("Concat dimension: {}", concatDimension);
 
     }
 
-    @Override
-    public List<Integer> getIArguments() {
-        return Collections.singletonList(concatDimension);
-    }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {

@@ -25,7 +25,10 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -58,34 +61,79 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(!nodeDef.containsAttr("TShape")) {
+        if(!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
             this.shape = new int[] {1,1};
             return;
         }
+        else if(nodeDef.getInputCount() > 1) {
+            val shapeNode = nodeDef.getInput(1);
+            NodeDef shapeNodeInGraph = null;
+            for(int i = 0; i < graph.getNodeCount(); i++) {
+                if (graph.getNode(i).getName().equals(shapeNode)) {
+                    shapeNodeInGraph = graph.getNode(i);
 
-        val shape = nodeDef.getAttrOrThrow("Tshape");
-        if(!shape.hasShape()) {
-            val shapeRet = new int[2];
-            shapeRet[0] = 1;
-            shapeRet[1] = shape.getValueCase().getNumber();
-            this.shape = shapeRet;
-        }
-        else {
-            val shapeVals = shape.getShape().getDimList();
-            if(shapeVals.size() > 1) {
-                this.shape = new int[shapeVals.size()];
-                for(int i = 0; i < shapeVals.size(); i++) {
-                    this.shape[i] = (int) shapeVals.get(i).getSize();
                 }
             }
-            else {
-                this.shape = new int[2];
-                this.shape[0] = 1;
-                this.shape[1] = (int) shapeVals.get(0).getSize();
+
+            val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",shapeNodeInGraph,graph);
+            if(arr != null) {
+                this.shape = arr.data().asInt();
+                addIArgument(this.shape);
             }
+        }
+        else {
+            val shape = nodeDef.getAttrOrThrow("Tshape");
+            if(!shape.hasShape()) {
+                val shapeRet = new int[2];
+                shapeRet[0] = 1;
+                shapeRet[1] = shape.getValueCase().getNumber();
+                this.shape = shapeRet;
+            }
+            else {
+                val shapeVals = shape.getShape().getDimList();
+                if(shapeVals.size() > 1) {
+                    this.shape = new int[shapeVals.size()];
+                    for(int i = 0; i < shapeVals.size(); i++) {
+                        this.shape[i] = (int) shapeVals.get(i).getSize();
+                    }
+                }
+                else {
+                    this.shape = new int[2];
+                    this.shape[0] = 1;
+                    this.shape[1] = (int) shapeVals.get(0).getSize();
+                }
+
+            }
+
+            if(this.shape != null)
+                addIArgument(this.shape);
+
 
         }
 
+
+
+    }
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        if(numIArguments() == 0) {
+            if(args().length > 1) {
+                val arr = sameDiff.getArrForVertexId(args()[1].resultVertexId());
+                if(arr == null) {
+                    throw new ND4JIllegalStateException("Unable to infer shape for reshape. No array found for getting shape data from!");
+                }
+
+                this.shape = arr.data().asInt();
+                addIArgument(this.shape);
+
+            }
+            else if(this.shape != null)
+                addIArgument(this.shape);
+            else
+                throw new ND4JIllegalStateException("Unable to map shape for reshape. No shape found!");
+        }
     }
 
     @Override
@@ -95,6 +143,26 @@ public class Reshape extends DynamicCustomOp {
 
     }
 
+    @Override
+    public void addArrayInputArguments() {
+        if(numInputArguments() > 0)
+            return;
+        val inputArray = sameDiff.getArrForVertexId(args()[0].resultVertexId());
+        if(inputArray == null) {
+            throw new ND4JIllegalStateException("Unable to add null array!");
+        }
+
+        addInputArgument(inputArray);
+    }
+
+    @Override
+    public void addInputArgument(INDArray... arg) {
+        if(numInputArguments() > 1) {
+            throw new ND4JIllegalStateException("Unable to add more input. Reshape should only have 1.");
+        }
+
+        super.addInputArgument(arg);
+    }
 
     @Override
     public String opName() {
