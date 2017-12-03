@@ -150,6 +150,6 @@ public class Range extends BaseRandomOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.RETURN;
+        return Type.CUSTOM;
     }
 }
