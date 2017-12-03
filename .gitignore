@@ -206,6 +206,9 @@ dist/
 nbdist/
 .nb-gradle/
 
+### VSCode ###
+.vscode/
+
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db
