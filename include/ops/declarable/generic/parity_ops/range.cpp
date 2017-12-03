@@ -22,8 +22,18 @@ namespace nd4j {
                 int step = INT_ARG(2);
 
                 int cnt = 0;
-                for (int e = start; e < stop; e += step)
-                    output->putScalar(cnt++, (T) e);
+                T e = start;
+                if (start > stop) {
+                    while (e > (T) stop) {
+                        output->putScalar(cnt++, e);
+                        e = (T) step > (T) 0.0 ? e - step : e + step;
+                    }
+                } else {
+                    while (e < (T) stop) {
+                        output->putScalar(cnt++, (T) e);
+                        e += step;
+                    }
+                }
 
                 STORE_RESULT(output);
             } else if (block.getTArguments()->size() > 0) {
@@ -32,8 +42,18 @@ namespace nd4j {
                 T step = T_ARG(2);
 
                 int cnt = 0;
-                for (T e = start; e < (T) stop; e += step)
-                    output->putScalar(cnt++, (T) e);
+                T e = start;
+                if (start > stop) {
+                    while (e > stop) {
+                        output->putScalar(cnt++, e);
+                        e = step > (T) 0.0 ? e - step : e + step;
+                    }
+                } else {
+                    while (e < stop) {
+                        output->putScalar(cnt++, e);
+                        e += step;
+                    }
+                }
 
                 STORE_RESULT(output);
             } else if (block.width() > 0) {
@@ -47,13 +67,26 @@ namespace nd4j {
                 T stop = arr1->getScalar(0);
                 T step = arr2->getScalar(0);
 
-                for (T e = start; e < (T) stop; e += step)
-                    data.emplace_back((T) e);
+                //for (T e = start; e < (T) stop; e += step)
+                //    data.emplace_back((T) e);
+                T e = (T) start;
+                if (start > stop) {
+                    while (e > stop) {
+                        data.emplace_back(e);
+                        e = step > (T) 0.0 ? e - step : e + step;
+                    }
+                } else {
+                    while (e < stop) {
+                        data.emplace_back(e);
+                        e += step;
+                    }
+                }
 
                 auto array = new nd4j::NDArray<T>(1, data.size(), 'c', block.getWorkspace());
-                memcpy(array->buffer(), data.data(), data.size() * sizeof(T));    
-    
-                block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
+                memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
+
+                //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
+                OVERWRITE_RESULT(array);
             } else {
                 REQUIRE_TRUE(false, 0, "Runtime range should have inputs defined in any possible way: T_args, INT_args, or INPUT variables")
             }
@@ -69,8 +102,18 @@ namespace nd4j {
                 int step = INT_ARG(2);
 
                 int cnt = 0;
-                for (int e = start; e < stop; e += step)
-                    cnt++;
+                T e = (T) start;
+                if (start > stop) {
+                    while (e > (T) stop) {
+                        cnt++;
+                        e = (T) step > (T) 0.0 ? e - step : e + step;
+                    }
+                } else {
+                    while (e < (T) stop) {
+                        cnt++;
+                        e += step;
+                    }
+                }
                 
                 shape.emplace_back(cnt);
             } else if (block.getTArguments()->size() > 0) {
@@ -79,8 +122,18 @@ namespace nd4j {
                 T step = T_ARG(2);
 
                 int cnt = 0;
-                for (T e = start; e < (T) stop; e += step)
-                    cnt++;
+                T e = start;
+                if (start > stop) {
+                    while (e > stop) {
+                        cnt++;
+                        e = step > (T) 0.0 ? e - step : e + step;
+                    }
+                } else {
+                    while (e < stop) {
+                        cnt++;
+                        e += step;
+                    }
+                }
 
                 shape.emplace_back(cnt);
             } else {

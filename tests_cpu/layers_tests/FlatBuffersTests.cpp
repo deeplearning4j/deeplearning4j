@@ -543,6 +543,19 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
     delete graph;
 }
 
+TEST_F(FlatBuffersTest, Ae_00) {
+    nd4j::ops::rank<float> op1;
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+
+    graph->printOut();
+/*
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+*/
+    delete graph;
+}
+
 /*
 TEST_F(FlatBuffersTest, ReadLoops_SimpleWhile_1) {
     // TF graph:

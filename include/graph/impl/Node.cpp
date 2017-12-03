@@ -450,7 +450,7 @@ namespace nd4j {
 
 
                 // these ops allow in-place execution by design
-                if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
+                if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_ACCUMULATION3 || this->_opType == OpType_PAIRWISE || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
                     if (_output.size() <= 1) {
                         _isInplace = true;
                     }

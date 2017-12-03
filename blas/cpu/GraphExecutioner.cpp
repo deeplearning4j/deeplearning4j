@@ -76,7 +76,7 @@ template <typename T>
         fflush(stdout);
     }
 
-    if (node->id() == 3)
+    if (node->id() == 13)
         nd4j_debug("","");
 
     // if true - this is special case: Graph-in-Graph. 
