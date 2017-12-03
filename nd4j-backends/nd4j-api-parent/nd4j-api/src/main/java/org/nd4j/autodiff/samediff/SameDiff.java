@@ -2919,7 +2919,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossNegativeLogLikelihood(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
-        DifferentialFunction result = functionFactory.lossMSLE(getFunctionInput(iX),getFunctionInput(i_y),dimensions);
+        DifferentialFunction result = functionFactory.lossNegativeLogLikelihood(getFunctionInput(iX), getFunctionInput(i_y), dimensions);
         updateVariableName(result.getVertexId(),name);
         return getVariableForVertexId(result.getVertexId());
     }
