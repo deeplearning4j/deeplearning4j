@@ -2393,26 +2393,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<int[]>();
 
-        val inputShapes = new PointerPointer<>(op.getInputArguments().size());
+        val inputShapes = new PointerPointer<>(op.inputArguments().length);
 
         int cnt= 0;
-        for (val in: op.getInputArguments())
+        for (val in: op.inputArguments())
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
 
 
-        val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+        val iArgs = op.iArgs().length > 0 ? new IntPointer(op.iArgs().length) : null;
         cnt = 0;
-        for (val i: op.getIArguments())
-            iArgs.put(cnt++, i.intValue());
+        for (val i: op.iArgs())
+            iArgs.put(cnt++, i);
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            val tArgs = op.getTArguments().size() > 0 ? new FloatPointer(op.getTArguments().size()) : null;
+            val tArgs = op.tArgs().length > 0 ? new FloatPointer(op.tArgs().length) : null;
 
             cnt = 0;
-            for (val t: op.getTArguments())
-                tArgs.put(cnt++, t.floatValue());
+            for (val t: op.tArgs())
+                tArgs.put(cnt++, (float) t);
 
-            val ptrptr= nativeOps.calculateOutputShapesFloat(null, hash, inputShapes, op.getInputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size());
+            val ptrptr= nativeOps.calculateOutputShapesFloat(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
@@ -2426,13 +2426,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             Pointer.free(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            val tArgs = op.getTArguments().size() > 0 ? new DoublePointer(op.getTArguments().size()) : null;
+            val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
 
             cnt = 0;
-            for (val t: op.getTArguments())
-                tArgs.put(cnt++, t.doubleValue());
+            for (val t: op.tArgs())
+                tArgs.put(cnt++, (float) t);
 
-            val ptrptr= nativeOps.calculateOutputShapesDouble(null, hash, inputShapes, op.getInputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size());
+            val ptrptr= nativeOps.calculateOutputShapesDouble(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
@@ -2445,13 +2445,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             Pointer.free(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            val tArgs = op.getTArguments().size() > 0 ? new ShortPointer(op.getTArguments().size()) : null;
+            val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
 
             cnt = 0;
-            for (val t: op.getTArguments())
-                tArgs.put(cnt++, ArrayUtil.toHalf(t.floatValue()));
+            for (val t: op.tArgs())
+                tArgs.put(cnt++, ArrayUtil.toHalf((float) t));
 
-            val ptrptr = nativeOps.calculateOutputShapesHalf(null, hash, inputShapes, op.getInputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size());
+            val ptrptr = nativeOps.calculateOutputShapesHalf(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
@@ -2483,8 +2483,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (op.opName().equalsIgnoreCase("im2col")) {
             val dtype = Nd4j.dataType();
 
-            val xArr = op.getInputArguments().get(0);
-            val zArr = op.getOutputArguments().get(0);
+            val xArr = op.inputArguments()[0];
+            val zArr = op.outputArguments()[0];
 
             CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(zArr);
 
@@ -2510,7 +2510,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
             val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
 
-            val extrass = new double[]{op.getIArguments().get(0), op.getIArguments().get(1), op.getIArguments().get(2), op.getIArguments().get(3), op.getIArguments().get(4), op.getIArguments().get(5), op.getIArguments().get(6), op.getIArguments().get(7), op.getIArguments().get(8)};
+            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8]};
             val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
 
 
@@ -2528,8 +2528,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (op.opName().equalsIgnoreCase("col2im")) {
             val dtype = Nd4j.dataType();
 
-            val xArr = op.getInputArguments().get(0);
-            val zArr = op.getOutputArguments().get(0);
+            val xArr = op.inputArguments()[0];
+            val zArr = op.outputArguments()[0];
 
             CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(zArr);
 
@@ -2555,7 +2555,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
             val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
 
-            val extrass = new double[]{op.getIArguments().get(0), op.getIArguments().get(1), op.getIArguments().get(2), op.getIArguments().get(3), op.getIArguments().get(4), op.getIArguments().get(5), op.getIArguments().get(6), op.getIArguments().get(7)};
+            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7]};
             val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
 
 
@@ -2573,8 +2573,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (op.opName().equalsIgnoreCase("pooling2d")) {
             val dtype = Nd4j.dataType();
 
-            val xArr = op.getInputArguments().get(0);
-            val zArr = op.getOutputArguments().get(0);
+            val xArr = op.inputArguments()[0];
+            val zArr = op.outputArguments()[0];
 
             CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(zArr);
 
@@ -2600,7 +2600,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
             val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
 
-            val extrass = new double[]{op.getIArguments().get(0), op.getIArguments().get(1), op.getIArguments().get(2), op.getIArguments().get(3), op.getIArguments().get(4), op.getIArguments().get(5), op.getIArguments().get(6), op.getIArguments().get(7), op.getIArguments().get(8)};
+            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8]};
             val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
 
 
@@ -2619,7 +2619,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.getOutputArguments().toArray(new INDArray[0]));
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.outputArguments());
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -2631,18 +2631,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferScalar(),
                 context.getBufferReduction());
 
-        if (op.getOutputArguments().size() == 0 && !op.isInplaceCall())
+        val outputArgs = op.outputArguments();
+        val inputArgs = op.inputArguments();
+
+        if (outputArgs.length == 0 && !op.isInplaceCall())
             throw new ND4JIllegalStateException("You can't execute non-inplace CustomOp without outputs being specified");
 
         val lc = op.opName().toLowerCase();
         val hash = op.opHash();
 
 
-        val inputShapes = new PointerPointer<>(op.getInputArguments().size() * 2);
-        val inputBuffers = new PointerPointer<>(op.getInputArguments().size() * 2);
+        val inputShapes = new PointerPointer<>(inputArgs.length * 2);
+        val inputBuffers = new PointerPointer<>(inputArgs.length * 2);
 
         int cnt= 0;
-        for (val in: op.getInputArguments()) {
+        for (val in: inputArgs) {
             val hp = AtomicAllocator.getInstance().getHostPointer(in.shapeInfoDataBuffer());
             inputBuffers.put(cnt,  AtomicAllocator.getInstance().getHostPointer(in));
             inputShapes.put(cnt, hp);
@@ -2650,8 +2653,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             val dp = AtomicAllocator.getInstance().getPointer(in.shapeInfoDataBuffer(), context);
 
-            inputBuffers.put(cnt + op.getInputArguments().size(), AtomicAllocator.getInstance().getPointer(in, context));
-            inputShapes.put(cnt+ op.getInputArguments().size(), dp);
+            inputBuffers.put(cnt + inputArgs.length, AtomicAllocator.getInstance().getPointer(in, context));
+            inputShapes.put(cnt+ inputArgs.length, dp);
 
             if (op.isInplaceCall())
                 AtomicAllocator.getInstance().getAllocationPoint(in).tickHostWrite();
@@ -2660,16 +2663,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        val outputShapes = new PointerPointer<>(op.getOutputArguments().size() * 2);
-        val outputBuffers = new PointerPointer<>(op.getOutputArguments().size() * 2);
+        val outputShapes = new PointerPointer<>(outputArgs.length * 2);
+        val outputBuffers = new PointerPointer<>(outputArgs.length * 2);
 
         cnt= 0;
-        for (val out: op.getOutputArguments()) {
+        for (val out: outputArgs) {
             outputBuffers.put(cnt,  AtomicAllocator.getInstance().getHostPointer(out));
             outputShapes.put(cnt,  AtomicAllocator.getInstance().getHostPointer(out.shapeInfoDataBuffer()));
 
-            outputBuffers.put(cnt + op.getOutputArguments().size(),  AtomicAllocator.getInstance().getPointer(out, context));
-            outputShapes.put(cnt + op.getOutputArguments().size(),  AtomicAllocator.getInstance().getPointer(out.shapeInfoDataBuffer(), context));
+            outputBuffers.put(cnt + outputArgs.length,  AtomicAllocator.getInstance().getPointer(out, context));
+            outputShapes.put(cnt + outputArgs.length,  AtomicAllocator.getInstance().getPointer(out.shapeInfoDataBuffer(), context));
 
             AtomicAllocator.getInstance().getAllocationPoint(out).tickHostWrite();
 
@@ -2677,47 +2680,47 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            val tArgs = op.getTArguments().size() > 0 ? new FloatPointer(op.getTArguments().size()) : null;
-            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+            val tArgs = op.tArgs().length > 0 ? new FloatPointer(op.tArgs().length) : null;
+            val iArgs = op.iArgs().length > 0 ? new IntPointer(op.iArgs().length) : null;
 
             cnt = 0;
-            for (val t: op.getTArguments())
-                tArgs.put(cnt++, t.floatValue());
+            for (val t: op.tArgs())
+                tArgs.put(cnt++, (float) t);
 
             cnt = 0;
-            for (val i: op.getIArguments())
-                iArgs.put(cnt++, i.intValue());
+            for (val i: op.iArgs())
+                iArgs.put(cnt++, i);
 
-            val status = OpStatus.byNumber(nativeOps.execCustomOpFloat(extras, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            val status = OpStatus.byNumber(nativeOps.execCustomOpFloat(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            val tArgs = op.getTArguments().size() > 0 ? new DoublePointer(op.getTArguments().size()) : null;
-            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+            val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
+            val iArgs = op.iArgs().length > 0 ? new IntPointer(op.iArgs().length) : null;
 
             cnt = 0;
-            for (val t: op.getTArguments())
-                tArgs.put(cnt++, t.doubleValue());
+            for (val t: op.tArgs())
+                tArgs.put(cnt++, t);
 
-            for (val i: op.getIArguments())
-                iArgs.put(cnt++, i.intValue());
+            for (val i: op.iArgs())
+                iArgs.put(cnt++, i);
 
-            val status = OpStatus.byNumber(nativeOps.execCustomOpDouble(extras, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            val status = OpStatus.byNumber(nativeOps.execCustomOpDouble(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            val tArgs = op.getTArguments().size() > 0 ? new ShortPointer(op.getTArguments().size()) : null;
-            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+            val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
+            val iArgs = op.iArgs().length > 0 ? new IntPointer(op.iArgs().length) : null;
 
             cnt = 0;
-            for (val t: op.getTArguments())
-                tArgs.put(cnt++, ArrayUtil.toHalf(t.floatValue()));
+            for (val t: op.tArgs())
+                tArgs.put(cnt++, ArrayUtil.toHalf((float) t));
 
             cnt = 0;
-            for (val i: op.getIArguments())
-                iArgs.put(cnt++, i.intValue());
+            for (val i: op.iArgs())
+                iArgs.put(cnt++, i);
 
-            val status = OpStatus.byNumber(nativeOps.execCustomOpHalf(extras, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            val status = OpStatus.byNumber(nativeOps.execCustomOpHalf(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         }
