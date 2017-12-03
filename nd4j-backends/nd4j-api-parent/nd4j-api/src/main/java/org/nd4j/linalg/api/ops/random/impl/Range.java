@@ -9,6 +9,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -23,9 +24,9 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class Range extends BaseRandomOp {
-    private double from;
-    private double to;
-    private double delta;
+    private Double from;
+    private Double to;
+    private Double delta;
     //used for initWithArrays when there are place holder
     //values that need to be resolved
     private int[] fromVertexId,toVertexId,deltaVertexId;
@@ -65,10 +66,6 @@ public class Range extends BaseRandomOp {
     }
 
 
-    @Override
-    public List<int[]> calculateOutputShape() {
-        return super.calculateOutputShape();
-    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -130,6 +127,18 @@ public class Range extends BaseRandomOp {
             this.from = start.getDouble(0);
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
+            setZ(delta);
+            setX(start);
+            if(sameDiff.getArrForVertexId(resultVertexId()) == null)
+                sameDiff.putArrayForVertexId(resultVertexId(),end);
+        }
+        else {
+            StringBuilder errorMessage = new StringBuilder();
+            errorMessage.append("Not all values of range mapped. ");
+            errorMessage.append("Start status is null " + (start == null));
+            errorMessage.append("End status is null " + (end == null));
+            errorMessage.append("Delta status is null " + (delta == null));
+            throw new ND4JIllegalStateException(errorMessage.toString());
         }
 
     }

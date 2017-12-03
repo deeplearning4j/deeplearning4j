@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.Data;
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -211,6 +212,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if (getResult != null) {
                 if (getResult.getArr() != null)
                     this.z = getResult.getArr();
+                else if(sameDiff.getShapeForVertexId(getResult.resultVertexId()) != null) {
+                    val shape = sameDiff.getShapeForVertexId(getResult.resultVertexId());
+                    sameDiff.putArrayForVertexId(getResult.resultVertexId(),getResult.getWeightInitScheme().create(shape));
+                }
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
 

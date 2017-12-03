@@ -15,6 +15,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.*;
 
 import java.io.*;
@@ -373,10 +374,16 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 diff.graph().addEdge(opStateEdge);
                 diff.putFunction(indices.getRight(),newInstance);
                 newInstance.setVertexId(indices.getRight());
+                //make sure variables are properly mapped
+                if(diff.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getName())) == null)
+                    diff.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'),indices.getRight());
                 diff.associateFunctionsAsArgs(args,newInstance);
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+                if(tfNode.getInputCount() != newInstance.args().length) {
+                    throw new ND4JIllegalStateException("Illegal number of arguments imported " + tfNode.getInputCount() + " with function args being resolved to " + newInstance.args().length);
+                }
              /*   if(!diff.shapeAlreadyExistsForVertexId(indices.getRight()) && newInstance.getResultShape() != null)
                     diff.putShapeForVertexId(indices.getRight(),newInstance.getResultShape());
 */

@@ -263,14 +263,15 @@ public abstract class DifferentialFunction implements Differential {
     //by default no op, used for certain situations like
     //place holder arrays
     public void initWithArrays(Map<String,INDArray> arrayMap) {
-        if(hasPlaceHolderInputs()) {
+        val shapeCalc = calculateOutputShape();
+        if(hasPlaceHolderInputs() && shapeCalc != null && !shapeCalc.isEmpty()) {
             //update place holder shapes in case the shapes
             // need to be resolved
             //post adding the variables to the graph.
             if(sameDiff.shapeAlreadyExistsForVertexId(resultVertexId()))
-                sameDiff.updateShapeForVertexId(resultVertexId(),calculateOutputShape().get(0));
+                sameDiff.updateShapeForVertexId(resultVertexId(),shapeCalc.get(0));
             else
-                sameDiff.putShapeForVertexId(resultVertexId(),calculateOutputShape().get(0));
+                sameDiff.putShapeForVertexId(resultVertexId(),shapeCalc.get(0));
 
         }
     }

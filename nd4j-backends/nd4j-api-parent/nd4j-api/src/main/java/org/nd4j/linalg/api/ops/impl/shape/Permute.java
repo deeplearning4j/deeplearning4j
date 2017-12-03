@@ -40,11 +40,6 @@ public class Permute extends Transpose {
     public Permute() {}
 
     @Override
-    public int opNum() {
-        return 0;
-    }
-
-    @Override
     public String opName() {
         return "permute";
     }
@@ -58,15 +53,6 @@ public class Permute extends Transpose {
         return Collections.<DifferentialFunction>singletonList(this);
     }
 
-    @Override
-    public String onnxName() {
-        return "Transpose";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "Transpose";
-    }
 
 
 }

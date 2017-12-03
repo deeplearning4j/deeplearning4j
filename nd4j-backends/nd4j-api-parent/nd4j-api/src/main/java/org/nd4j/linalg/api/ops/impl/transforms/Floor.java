@@ -80,7 +80,7 @@ public class Floor extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "floor";
+        return "Floor";
     }
 
     @Override

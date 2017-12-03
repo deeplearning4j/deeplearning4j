@@ -82,7 +82,7 @@ public class SELU extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "selu";
+        return "Selu";
     }
 
 

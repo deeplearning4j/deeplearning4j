@@ -82,7 +82,7 @@ public class ATan extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "atan";
+        return "Atan";
     }
 
 

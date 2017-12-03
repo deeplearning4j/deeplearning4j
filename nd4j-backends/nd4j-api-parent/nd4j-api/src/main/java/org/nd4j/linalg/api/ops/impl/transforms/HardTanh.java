@@ -81,7 +81,7 @@ public class HardTanh extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "hard_tanh";
+        return "HardTanh";
     }
 
     @Override

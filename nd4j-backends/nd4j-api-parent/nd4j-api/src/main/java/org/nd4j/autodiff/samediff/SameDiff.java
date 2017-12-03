@@ -264,25 +264,16 @@ public class SameDiff {
     public DifferentialFunction[] getArgsFor(DifferentialFunction output) {
         Set<DifferentialFunction> ret = new LinkedHashSet<>();
         val from = graph().getFromFor(output.getVertexId());
-        if(from == null)
-            return new DifferentialFunction[0];
-
-        val singlularFunction = getFunctionForVertexId(from);
-        if(singlularFunction != null)
-            ret.add(singlularFunction);
-
-        for(int i = 0; i < from.length; i++) {
+        for (int i = 0; i < from.length; i++) {
             val currFunc = getFunctionForVertexId(new int[]{from[i]});
-            if(currFunc != null) {
+            if (currFunc != null && !ret.contains(currFunc)) {
                 ret.add(currFunc);
-            }
-            else if(getVariableForVertexId(new int[]{from[i]}) != null) {
+            } else if (getVariableForVertexId(new int[]{from[i]}) != null) {
                 ret.add(getVariableForVertexId(new int[]{from[i]}));
-            }
-
-            else
+            } else
                 throw new ND4JIllegalStateException("No function or variable found for " + Arrays.toString(new int[]{from[i]}));
         }
+
 
         return ret.toArray(new DifferentialFunction[ret.size()]);
     }
@@ -386,13 +377,15 @@ public class SameDiff {
      * @param shape the shape to associate with
      */
     public void updateShapeForVertexId(int[] vertexId,int[] shape) {
+        if(shape == null || shape.length < 2) {
+            throw new ND4JIllegalStateException("Shape must not be null!");
+        }
+
+
         if(vertexId == null) {
             throw new ND4JIllegalStateException("Null vertex ids not allowed");
         }
 
-        if(!vertexIdToShape.containsKey(vertexId)) {
-            throw new ND4JIllegalStateException("Shape for " + Arrays.toString(vertexId) + " does not already exist! Please use putShapeForVertexId instead.");
-        }
 
         if(shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
@@ -412,6 +405,10 @@ public class SameDiff {
      * @param shape the shape to assciate with
      */
     public void putShapeForVertexId(int[] vertexId,int[] shape) {
+        if(shape == null || shape.length < 2) {
+            throw new ND4JIllegalStateException("Shape must not be null!");
+        }
+
         if(vertexIdToShape.containsKey(vertexId)) {
             throw new ND4JIllegalStateException("Shape for " + Arrays.toString(vertexId) + " already exists!");
         }
@@ -3515,9 +3512,6 @@ public class SameDiff {
      */
     public INDArray execWithPlaceHolderAndEndResult(Map<String,INDArray> inputs) {
         resolveVariablesWith(inputs);
-        //resolve the place holders
-
-
         return execAndEndResult();
     }
 
@@ -3610,6 +3604,10 @@ public class SameDiff {
 
         for(val arrayEntry : arrays.entrySet()) {
             val varForName = getVariable(arrayEntry.getKey());
+            if(varForName == null) {
+                throw new ND4JIllegalStateException("No variable name found for " + arrayEntry.getKey());
+            }
+
             if(placeHolderOriginalShapes.containsKey(varForName.getVertexId())) {
                 val originalShape = placeHolderOriginalShapes.get(varForName.getVertexId());
                 for(int i = 0; i < originalShape.length; i++) {
@@ -3640,11 +3638,15 @@ public class SameDiff {
         for(DifferentialFunction function : functionInstances.values()) {
             //resolve arguments in case
             for(DifferentialFunction arg : function.args()) {
+                /**
+                 * Need to resolve shapes and arrays here.
+                 */
                 if(!initialized.contains(arg.resultVertexId())) {
                     arg.initWithArrays(arrays);
                     initialized.add(arg.resultVertexId());
                 }
             }
+
 
             if(!initialized.contains(function.resultVertexId())) {
                 function.initWithArrays(arrays);
@@ -3912,7 +3914,7 @@ public class SameDiff {
                     val outputVertexId = output.resultVertexId();
                     val getArr = getArrForVertexId(outputVertexId);
                     if(getArr == null) {
-                        //ensure shape eis defined for output as well
+                        //ensure shape is defined for output as well
                         //just in case it hasn't run already
                         int[] shape = getShapeForVertexId(outputVertexId);
                         val var = getVariableForVertexId(outputVertexId);
@@ -3921,9 +3923,14 @@ public class SameDiff {
                             if(newOutputShape == null ||  newOutputShape.isEmpty()) {
                                 throw new ND4JIllegalStateException("Unable to compute output shape! CalculateOutputShape on op returned null or empty!");
                             }
+
+                            if(newOutputShape.size() != outputs.length) {
+                                throw new ND4JIllegalStateException("Outputs size not equal to outputs length. Missing output arrays possibly?");
+                            }
+
                             for(int outputIdx = 0; outputIdx < newOutputShape.size(); outputIdx++) {
-                                val outputI = outputs[i];
-                                putShapeForVertexId(outputI.resultVertexId(),newOutputShape.get(i));
+                                val outputI = outputs[outputIdx];
+                                putShapeForVertexId(outputI.resultVertexId(),newOutputShape.get(outputIdx));
                             }
 
                             shape = getShapeForVertexId(outputVertexId);

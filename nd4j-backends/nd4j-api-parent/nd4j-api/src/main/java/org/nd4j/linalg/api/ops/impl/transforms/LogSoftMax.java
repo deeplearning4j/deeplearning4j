@@ -91,7 +91,7 @@ public class LogSoftMax extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "log_softmax";
+        return "LogSoftmax";
     }
 
 

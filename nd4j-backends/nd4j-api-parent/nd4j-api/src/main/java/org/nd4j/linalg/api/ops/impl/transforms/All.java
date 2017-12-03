@@ -105,6 +105,6 @@ public class All extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "all";
+        return "All";
     }
 }

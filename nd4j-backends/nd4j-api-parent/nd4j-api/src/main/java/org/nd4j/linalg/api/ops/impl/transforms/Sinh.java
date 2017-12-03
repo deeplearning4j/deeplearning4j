@@ -81,7 +81,7 @@ public class Sinh extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sinh";
+        return "Sinh";
     }
 
 

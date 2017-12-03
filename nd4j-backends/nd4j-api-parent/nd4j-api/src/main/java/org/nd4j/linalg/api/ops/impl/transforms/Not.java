@@ -97,7 +97,7 @@ public class Not extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "logical_not";
+        return "LogicalNot";
     }
 
     @Override

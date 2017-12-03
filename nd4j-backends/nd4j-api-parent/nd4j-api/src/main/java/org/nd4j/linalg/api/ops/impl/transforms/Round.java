@@ -80,7 +80,7 @@ public class Round extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "logical_or";
+        return "Round";
     }
 
 

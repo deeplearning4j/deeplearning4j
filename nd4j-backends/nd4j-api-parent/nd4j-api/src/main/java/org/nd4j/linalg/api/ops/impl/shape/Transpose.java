@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -55,7 +56,7 @@ public class Transpose extends DynamicCustomOp {
 
 
 
-   @Override
+    @Override
     public String opName() {
         return "transpose";
     }
@@ -73,27 +74,55 @@ public class Transpose extends DynamicCustomOp {
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap) {
         if(permuteDims == null) {
-            val permuteArrayOp = sameDiff.getArrForVertexId(args()[1].resultVertexId());
-            if(permuteArrayOp != null) {
-                this.permuteDims = permuteArrayOp.data().asInt();
+            val args = args();
+            if(args().length > 1) {
+                val permuteArrayOp = sameDiff.getArrForVertexId(args[1].resultVertexId());
+                if(permuteArrayOp != null) {
+                    this.permuteDims = permuteArrayOp.data().asInt();
+                    for(int i = 0; i < permuteDims.length; i++) {
+                        getIArguments().add(permuteDims[i]);
+                    }
+                }
+                else
+                    this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
             }
+            else {
+                this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
+            }
+
         }
+
+        //only add if empty
+        if(getIArguments().isEmpty())
+            for(int i = 0; i < permuteDims.length; i++) {
+                getIArguments().add(permuteDims[i]);
+            }
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        //permute dimensions re not specified as second input
+        if(nodeDef.getInputCount() < 2)
+            return;
         NodeDef permuteDimsNode = null;
         for(int i = 0; i < graph.getNodeCount(); i++) {
             if(graph.getNode(i).getName().equals(nodeDef.getInput(1))) {
                 permuteDimsNode = graph.getNode(i);
             }
+
         }
 
         val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value",permuteDimsNode,graph);
         if(permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
+            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
+            sameDiff.putShapeForVertexId(resultVertexId(),permutedShape);
+            for(int i = 0; i < permuteDims.length; i++) {
+                getIArguments().add(permuteDims[i]);
+            }
         }
+
     }
 
     @Override
@@ -117,7 +146,7 @@ public class Transpose extends DynamicCustomOp {
             return Arrays.asList(permutedShape);
         }
 
-        return Collections.emptyList();
+        throw new ND4JIllegalStateException("Unable to compute shape!");
     }
 
     @Override

@@ -81,7 +81,7 @@ public class ASin extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "asin";
+        return "Asin";
     }
 
 

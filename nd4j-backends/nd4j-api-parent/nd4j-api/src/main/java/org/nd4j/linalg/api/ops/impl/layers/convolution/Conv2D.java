@@ -11,6 +11,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -60,17 +61,24 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public int[] getResultShape() {
-        return this.calculateOutputShape().get(0);
+        val shapes = this.calculateOutputShape();
+        if(shapes.isEmpty()) {
+            throw new ND4JIllegalStateException("Unable to compute shape for conv2d! Perhaps missing inputs?");
+        }
+        return shapes.get(0);
     }
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap) {
-        val var = sameDiff.getVariableForVertexId(vertexId);
+        val var = sameDiff.getVariableForVertexId(args()[1].resultVertexId());
         //place holder variable
         if (var.getArr() == null) {
             //assuming the array hasn't been initialized, setup the config
             //resolving the place holder variable.
             INDArray array = arrayMap.get(var.getVarName());
+            if(array == null) {
+                throw new ND4JIllegalStateException("Array for variable " + var.getVarName() + " was null!");
+            }
             array = (array.permute(3, 2, 0, 1).dup('c'));
             sameDiff.updateVariable(var.getVarName(), array);
             conv2DConfig.setKh(array.size(0));

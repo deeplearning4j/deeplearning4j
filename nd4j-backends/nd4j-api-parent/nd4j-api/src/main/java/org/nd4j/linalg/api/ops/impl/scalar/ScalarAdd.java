@@ -87,7 +87,7 @@ public class ScalarAdd extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "add";
+        return "RealAdd";
     }
 
 

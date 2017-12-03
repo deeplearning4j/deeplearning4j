@@ -103,7 +103,7 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "pow";
+        return "Pow";
     }
 
     @Override

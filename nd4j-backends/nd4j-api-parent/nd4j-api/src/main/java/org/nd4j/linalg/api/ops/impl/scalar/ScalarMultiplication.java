@@ -89,7 +89,7 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "mul";
+        return "RealMul";
     }
 
 

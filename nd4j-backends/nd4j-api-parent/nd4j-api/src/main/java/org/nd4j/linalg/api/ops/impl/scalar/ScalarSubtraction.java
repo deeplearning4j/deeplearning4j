@@ -91,7 +91,7 @@ public class ScalarSubtraction extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "sub";
+        return "RealSub";
     }
 
 

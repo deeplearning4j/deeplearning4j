@@ -67,7 +67,7 @@ public class Histogram extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "histogram";
+        return "Histogram";
     }
 
     @Override

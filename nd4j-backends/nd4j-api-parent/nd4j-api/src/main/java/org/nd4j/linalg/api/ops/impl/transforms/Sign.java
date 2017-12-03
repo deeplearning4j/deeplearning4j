@@ -81,7 +81,7 @@ public class Sign extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sign";
+        return "Sign";
     }
 
 

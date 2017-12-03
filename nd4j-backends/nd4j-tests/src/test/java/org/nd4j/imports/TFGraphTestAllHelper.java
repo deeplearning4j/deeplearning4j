@@ -18,7 +18,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -29,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class TFGraphTestAllHelper {
 
-    public static enum ExecuteWith {
+    public  enum ExecuteWith {
         SAMEDIFF,
         LIBND4J
     }
@@ -93,12 +96,13 @@ public class TFGraphTestAllHelper {
         Nd4j.getExecutioner().enableVerboseMode(true);
 
         if (execType.equals(ExecuteWith.SAMEDIFF)) {
-            nd4jPred = graph.execWithPlaceHolderAndEndResult(inputs); //This is expected to be just one result
+            graph.execWithPlaceHolder(inputs); //This is expected to be just one result
+            nd4jPred = graph.getVariable("output").getArr();
         } else if (execType.equals(ExecuteWith.LIBND4J)) {
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
             assertEquals(1, results.length); //FIXME: Later
-            nd4jPred = results[0];
+            nd4jPred = graph.getVariable("output").getArr();
         }
 
         INDArray tfPred = predictions.get("output");

@@ -92,7 +92,7 @@ public class MaxOut extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "maxout";
+        return "Maxout";
     }
 
     @Override

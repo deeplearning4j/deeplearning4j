@@ -99,7 +99,7 @@ public class And extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "all";
+        return "All";
     }
 
 

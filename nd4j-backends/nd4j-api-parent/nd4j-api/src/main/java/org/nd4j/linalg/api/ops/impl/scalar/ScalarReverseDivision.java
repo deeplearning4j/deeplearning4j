@@ -86,7 +86,7 @@ public class ScalarReverseDivision extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "div";
+        return "RealDiv";
     }
 
 

@@ -79,7 +79,7 @@ public class Ceil extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "ceil";
+        return "Ceil";
     }
 
 

@@ -124,7 +124,7 @@ public class LeakyReLU extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "leaky_relu";
+        return "LeakyRelu";
     }
 
 

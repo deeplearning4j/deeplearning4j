@@ -99,6 +99,6 @@ public class LogX extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "log1p";
+        return "Log1p";
     }
 }

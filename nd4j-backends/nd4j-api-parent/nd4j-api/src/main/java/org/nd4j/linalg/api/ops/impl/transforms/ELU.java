@@ -89,7 +89,7 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "elu";
+        return "Elu";
     }
 
     @Override

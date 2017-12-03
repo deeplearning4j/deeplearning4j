@@ -64,7 +64,7 @@ public class ScalarMin extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "min";
+        return "RealMin";
     }
 
 

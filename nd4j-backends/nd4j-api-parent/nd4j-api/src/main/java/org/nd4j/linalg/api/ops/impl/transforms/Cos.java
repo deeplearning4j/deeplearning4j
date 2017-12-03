@@ -90,7 +90,7 @@ public class Cos extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "cos";
+        return "Cos";
     }
 
 

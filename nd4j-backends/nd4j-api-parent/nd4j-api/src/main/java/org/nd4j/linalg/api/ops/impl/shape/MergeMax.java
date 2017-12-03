@@ -10,6 +10,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,13 @@ public class MergeMax extends DynamicCustomOp {
     }
 
 
+
+    @Override
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>(1);
+        ret.add(arg().getResultShape());
+        return ret;
+    }
 
 
     @Override

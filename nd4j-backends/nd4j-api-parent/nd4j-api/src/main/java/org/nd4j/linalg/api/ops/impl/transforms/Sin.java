@@ -81,7 +81,7 @@ public class Sin extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sin";
+        return "Sin";
     }
 
 

@@ -47,7 +47,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                        int[] shape,
                        WeightInitScheme weightInitScheme,
                        int[] vertexId) {
-        if(shape != null)
+        if(shape != null && shape.length >= 2)
              sameDiff.putShapeForVertexId(vertexId,Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape));
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
@@ -98,10 +98,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return getShape();
     }
 
-
-
-
-
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        //no-op
+    }
 
     /**
      * A getter for the allocated ndarray

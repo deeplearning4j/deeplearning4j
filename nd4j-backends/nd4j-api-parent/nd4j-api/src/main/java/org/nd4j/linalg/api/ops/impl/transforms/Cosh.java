@@ -82,7 +82,7 @@ public class Cosh extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "cosh";
+        return "Cosh";
     }
 
 

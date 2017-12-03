@@ -81,7 +81,7 @@ public class Log extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "log";
+        return "Log";
     }
 
 

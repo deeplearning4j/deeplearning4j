@@ -81,7 +81,7 @@ public class ACos extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "acos";
+        return "Acos";
     }
 
 

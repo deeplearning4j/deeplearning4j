@@ -83,7 +83,7 @@ public class SoftSign extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "softsign";
+        return "Softsign";
     }
 
 

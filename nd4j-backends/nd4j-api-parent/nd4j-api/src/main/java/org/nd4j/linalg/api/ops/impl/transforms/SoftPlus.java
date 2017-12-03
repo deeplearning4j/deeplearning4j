@@ -59,7 +59,7 @@ public class SoftPlus extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "softplus";
+        return "Softplus";
     }
 
     @Override

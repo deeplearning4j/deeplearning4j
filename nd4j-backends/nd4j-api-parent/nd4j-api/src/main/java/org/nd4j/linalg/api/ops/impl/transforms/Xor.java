@@ -101,7 +101,7 @@ public class Xor extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "logical_xor";
+        return "LogicalXor";
     }
 
 

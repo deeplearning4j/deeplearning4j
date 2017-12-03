@@ -70,7 +70,7 @@ public class HardSigmoid extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "hard_sigmoid";
+        return "HardSigmoid";
     }
 
     @Override

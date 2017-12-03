@@ -69,7 +69,7 @@ public class ScalarMax extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "max";
+        return "RealMax";
     }
 
 

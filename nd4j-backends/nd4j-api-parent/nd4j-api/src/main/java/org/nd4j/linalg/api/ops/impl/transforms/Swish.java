@@ -85,7 +85,7 @@ public class Swish extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-       return "swish";
+       return "Swish";
     }
 
 
