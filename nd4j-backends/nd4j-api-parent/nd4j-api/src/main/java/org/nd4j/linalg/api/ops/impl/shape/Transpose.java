@@ -19,149 +19,145 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import org.apache.commons.math3.util.FastMath;
+import com.google.common.primitives.Ints;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.ComplexUtil;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Transpose function
  *
  * @author Adam Gibson
  */
-public class Transpose extends ShapeOp {
+public class Transpose extends DynamicCustomOp {
+    protected int[] permuteDims;
+
     public Transpose(SameDiff sameDiff, DifferentialFunction i_v) {
-        super(sameDiff, i_v, ArrayUtil.reverseCopy(i_v.getShape()),false,null);
+        super(null,sameDiff,new DifferentialFunction[]{i_v});
+
     }
 
     public Transpose() {}
 
-    public Transpose(INDArray x, INDArray z) {
-        super(x, z);
-    }
 
-    public Transpose(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Transpose(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Transpose(INDArray x) {
-        super(x);
-    }
 
 
     @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.transpose());
-        }
-        else {
-            this.z = x.transpose();
-        }
-
-    }
-
-    @Override
-    public int opNum() {
-        return 0;
-    }
-
-    @Override
-    public String name() {
+    public String opName() {
         return "transpose";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.abs(origin);
+    public String onnxName() {
+        return "Transpose";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.abs(origin);
+    public String tensorflowName() {
+        return "Transpose";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.abs(origin);
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        if(permuteDims == null) {
+            val args = args();
+            if(args().length > 1) {
+                val permuteArrayOp = sameDiff.getArrForVertexId(args[1].resultVertexId());
+                if(permuteArrayOp != null) {
+                    this.permuteDims = permuteArrayOp.data().asInt();
+                    for(int i = 0; i < permuteDims.length; i++) {
+                        addIArgument(permuteDims[i]);
+                    }
+                }
+                else
+                    this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
+            }
+            else {
+                this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
+            }
+
+        }
+
+        //only add if empty
+        if(numOutputArguments() == 0)
+            for(int i = 0; i < permuteDims.length; i++) {
+                addIArgument(permuteDims[i]);
+            }
     }
 
     @Override
-    public float op(float origin, float other) {
-        return FastMath.abs(origin);
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        //permute dimensions re not specified as second input
+        if(nodeDef.getInputCount() < 2)
+            return;
+        NodeDef permuteDimsNode = null;
+        for(int i = 0; i < graph.getNodeCount(); i++) {
+            if(graph.getNode(i).getName().equals(nodeDef.getInput(1))) {
+                permuteDimsNode = graph.getNode(i);
+            }
+
+        }
+
+        val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value",permuteDimsNode,graph);
+        if(permuteArrayOp != null) {
+            this.permuteDims = permuteArrayOp.data().asInt();
+            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
+            sameDiff.putShapeForVertexId(resultVertexId(),permutedShape);
+            for(int i = 0; i < permuteDims.length; i++) {
+                addIArgument(permuteDims[i]);
+            }
+        }
+
     }
 
     @Override
-    public double op(double origin, double other) {
-        return FastMath.abs(origin);
-    }
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        if(!attributesForNode.containsKey("perm")) {
 
-    @Override
-    public double op(double origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Transpose(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+        }
         else
-            return new Transpose(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+            this.permuteDims = Ints.toArray(attributesForNode.get("perm").getIntsList());
     }
 
     @Override
-    public INDArray z() {
-        if(x() != null)
-            return x().transpose();
+    public List<int[]> calculateOutputShape() {
+        if(permuteDims == null && arg() != null && arg().getResultShape() != null) {
+            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,arg().getResultShape().length));
+            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
+            return Arrays.asList(permutedShape);
+        }
+        else if(permuteDims != null) {
+            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
+            return Arrays.asList(permutedShape);
+        }
+
+        throw new ND4JIllegalStateException("Unable to compute shape!");
+    }
+
+    @Override
+    public int[] getResultShape() {
+        val shapeList = calculateOutputShape();
+        if(!shapeList.isEmpty())
+            return shapeList.get(0);
         return null;
     }
 
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
-        if (y() != null)
-            return new Transpose(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Transpose(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

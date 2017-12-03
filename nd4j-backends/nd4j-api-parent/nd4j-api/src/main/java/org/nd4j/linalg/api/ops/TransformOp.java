@@ -27,11 +27,4 @@ package org.nd4j.linalg.api.ops;
  */
 public interface TransformOp extends Op {
 
-    /**
-     * The derivative operation for this op
-     *
-     * @return the derivative operation
-     * for this op's inputs
-     */
-    TransformOp derivative();
 }

@@ -4,11 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import lombok.Data;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -39,7 +37,7 @@ import java.util.*;
 public class DifferentialFunctionFactory implements FunctionFactory  {
 
     protected SameDiff sameDiff;
-    private Map<String,Method> methodNames;
+    private static Map<String,Method> methodNames;
 
     /**
      *
@@ -48,10 +46,12 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     public DifferentialFunctionFactory(SameDiff sameDiff) {
         if (sameDiff != null) {
             this.sameDiff = sameDiff;
-            methodNames = new HashMap<>();
-            Method[] methods = getClass().getDeclaredMethods();
-            for(Method method : methods)
-                methodNames.put(method.getName().toLowerCase(),method);
+            if(methodNames == null) {
+                methodNames = new HashMap<>();
+                Method[] methods = getClass().getDeclaredMethods();
+                for (Method method : methods)
+                    methodNames.put(method.getName().toLowerCase(), method);
+            }
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }
@@ -705,14 +705,14 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     @Override
     public DifferentialFunction add(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new AddOp(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new AddOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},false));
 
     }
 
     @Override
     public DifferentialFunction addi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new AddOp(sameDiff(),differentialFunction,i_v,true));
+        return sameDiff().setupFunction(new AddOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},true));
 
     }
 
@@ -958,7 +958,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      */
     public int getInputLength(DifferentialFunction func) {
         validateDifferentialFunctionsameDiff(func);
-        int[] inputShape = func.arg().shape;
+        int[] inputShape = func.arg().getResultShape();
         return ArrayUtil.prod(inputShape);
     }
 
@@ -988,7 +988,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
          * The output variable creation can create skipped vertices.
          */
         if(sameDiff.graph().getVertex(op.vertexId[0]) == null) {
-            SDVariable var = sameDiff.var(op.opName() + "-" + UUID.randomUUID().toString(),op.shape,new ZeroInitScheme('f'),op.vertexId,0);
+            SDVariable var = sameDiff.var(op.opName() + "-" + UUID.randomUUID().toString(),op.getResultShape(),new ZeroInitScheme('f'),op.vertexId,0);
             NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff,op.vertexId[0],0,var);
             sameDiff.graph().addVertex(ndArrayVertex);
         }
@@ -1040,16 +1040,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
         int[] inputIds = Ints.toArray(inputIdsList);
 
-        Op.Type opType = op.opType();
-
         String[] vertexIds = sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds));
-        OpState opState = OpState.builder()
-                .opType(opType).inPlace(op.isInPlace())
-                .opName(opName)
-                .id(opName + "(" + vertexIds + ")")
-                .vertexIds(sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds)))
-                .extraArgs(op.getExtraArgs())
-                .build();
 
 
         /**
@@ -1059,10 +1050,9 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         sameDiff.graph().addEdge(
                 inputIds,
                 outputVertexIds,
-                opState, true);
+                opName + "(" + vertexIds + ")", true);
 
 
-        op.opState = opState;
 
     }
 

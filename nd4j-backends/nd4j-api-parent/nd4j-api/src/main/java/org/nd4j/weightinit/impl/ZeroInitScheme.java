@@ -2,6 +2,7 @@ package org.nd4j.weightinit.impl;
 
 import lombok.Builder;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.BaseWeightInitScheme;
 import org.nd4j.weightinit.WeightInit;
@@ -19,7 +20,10 @@ public class ZeroInitScheme extends BaseWeightInitScheme {
 
     @Override
     public INDArray doCreate(int[] shape, INDArray paramsView) {
-       return Nd4j.createUninitialized(shape, order()).assign(0.0);
+        if(shape == null) {
+            throw new ND4JIllegalStateException("Shape must not be null!");
+        }
+        return Nd4j.createUninitialized(shape, order()).assign(0.0);
     }
 
 

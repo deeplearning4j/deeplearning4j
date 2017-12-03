@@ -2,7 +2,7 @@ package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
@@ -55,53 +55,25 @@ public class BroadcastAMax extends BaseBroadcastOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "broadcast_amax";
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin > other ? 1.0f : 0.0f;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin > other ? 1.0f : 0.0f;
-    }
-
-    @Override
-    public double op(double origin) {
-        return 1;
-    }
-
-    @Override
-    public float op(float origin) {
-        return 1;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
         return null;
     }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx opName found for " + opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow opName found for " + opName());
+
+    }
+
+
 }

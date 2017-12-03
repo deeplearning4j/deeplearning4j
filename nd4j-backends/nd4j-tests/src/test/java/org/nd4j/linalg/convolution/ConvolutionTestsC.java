@@ -196,9 +196,10 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] sizeH = {1, 2, 3};
         int[] padH = {0};
         int[] padW = {0};
-        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.MAX, Pooling2D.Pooling2DType.PNORM};
+        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG,  Pooling2D.Pooling2DType.PNORM, Pooling2D.Pooling2DType.MAX,};
 
         for (Pooling2D.Pooling2DType type: types) {
+            log.info("Trying pooling type: [{}]", type);
             for (int m : miniBatches) {
                 for (int d : depths) {
                     for (int h : inHeights) {
@@ -221,7 +222,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
                                                     INDArray col2d = col.reshape('c', m * d * outSize[0] * outSize[1], kh * kw);
 
-                                                    INDArray output = Nd4j.createUninitialized(m * d * outSize[0] * outSize[1]);
+                                                    INDArray output = Nd4j.create(m * d * outSize[0] * outSize[1]);
 
                                                     INDArray reduced = null;
                                                     switch (type) {
@@ -286,6 +287,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                         4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new int[] {1, 1, 2, 2, 4, 4});
         INDArray im2colTest = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
         assertEquals(assertion, im2colTest);
+
     }
 
 

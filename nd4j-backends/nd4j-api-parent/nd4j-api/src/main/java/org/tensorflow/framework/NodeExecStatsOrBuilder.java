@@ -10,9 +10,9 @@ public interface NodeExecStatsOrBuilder extends
   /**
    * <pre>
    * TODO(tucker): Use some more compact form of node identity than
-   * the full string name.  Either all processes should agree on a
+   * the full string opName.  Either all processes should agree on a
    * global id (cost_id?) for each node, or we should use a hash of
-   * the name.
+   * the opName.
    * </pre>
    *
    * <code>string node_name = 1;</code>
@@ -21,9 +21,9 @@ public interface NodeExecStatsOrBuilder extends
   /**
    * <pre>
    * TODO(tucker): Use some more compact form of node identity than
-   * the full string name.  Either all processes should agree on a
+   * the full string opName.  Either all processes should agree on a
    * global id (cost_id?) for each node, or we should use a hash of
-   * the name.
+   * the opName.
    * </pre>
    *
    * <code>string node_name = 1;</code>

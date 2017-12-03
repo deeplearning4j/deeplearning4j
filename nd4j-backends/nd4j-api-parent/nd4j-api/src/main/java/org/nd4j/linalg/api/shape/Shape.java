@@ -21,11 +21,13 @@ package org.nd4j.linalg.api.shape;
 
 
 import com.google.common.primitives.Ints;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -76,15 +78,15 @@ public class Shape {
         int leftIdx = left.length - 1;
         int rightIdx = right.length - 1;
         for(int i = n - 1; i >= 0; i--) {
-           if(left[leftIdx] != right[rightIdx] && right[rightIdx] == 1 || left[leftIdx] == 1) {
-               dims.add(i);
-           }
-           else if(left[leftIdx] != right[rightIdx]) {
-               throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
-           }
+            if(left[leftIdx] != right[rightIdx] && right[rightIdx] == 1 || left[leftIdx] == 1) {
+                dims.add(i);
+            }
+            else if(left[leftIdx] != right[rightIdx]) {
+                throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
+            }
 
-           leftIdx--;
-           rightIdx--;
+            leftIdx--;
+            rightIdx--;
         }
 
         Collections.reverse(dims);
@@ -173,6 +175,12 @@ public class Shape {
 
         }
 
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] == 0) {
+                shape[i] = 1;
+            }
+        }
+
         return shape;
 
     }
@@ -190,7 +198,7 @@ public class Shape {
      */
     public static boolean isWholeArray(int[] shape, int... dimension) {
         return dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
-                        || dimension.length == shape.length;
+                || dimension.length == shape.length;
     }
 
     /**
@@ -231,6 +239,17 @@ public class Shape {
             throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
         }
 
+        for(int i = 0; i < left.length; i++) {
+            if(left[i] < 1)
+                throw new ND4JIllegalStateException("Left shape contained value < 0 at index " + i);
+        }
+
+
+
+        for(int i = 0; i < right.length; i++) {
+            if(right[i] < 1)
+                throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
+        }
         if (left[1] != right[0])
             throw new IllegalArgumentException("Columns of left not equal to rows of right");
 
@@ -250,9 +269,9 @@ public class Shape {
      */
     public static INDArray toOffsetZero(INDArray arr) {
         if (arr.offset() < 1 && arr.data().length() == arr.length()
-                        || arr instanceof IComplexNDArray && arr.length() * 2 == arr.data().length())
+                || arr instanceof IComplexNDArray && arr.length() * 2 == arr.data().length())
             if (arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride()
-                            || arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
+                    || arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
                 return arr;
 
         if (arr.isRowVector()) {
@@ -374,7 +393,7 @@ public class Shape {
      */
     public static void iterate(INDArray arr, INDArray arr2, CoordinateFunction coordinateFunction) {
         Shape.iterate(0, arr.rank(), arr.shape(), new int[arr.rank()], 0, arr2.rank(), arr2.shape(),
-                        new int[arr2.rank()], coordinateFunction);
+                new int[arr2.rank()], coordinateFunction);
     }
 
     /**
@@ -390,7 +409,7 @@ public class Shape {
      * @param func
      */
     public static void iterate(int dimension, int n, int[] size, int[] res, int dimension2, int n2, int[] size2,
-                    int[] res2, CoordinateFunction func) {
+                               int[] res2, CoordinateFunction func) {
         if (dimension >= n || dimension2 >= n2) {
             // stop clause
             func.process(res, res2);
@@ -466,7 +485,7 @@ public class Shape {
         for (int i = 0; i < shape.length; i++) {
             if (indices[i] >= shape[i])
                 throw new IllegalArgumentException(
-                                String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, shape[i]));
+                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, shape[i]));
             if (shape[i] != 1) {
                 offset += indices[i] * stride[i];
             }
@@ -491,7 +510,7 @@ public class Shape {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] >= size_dimi)
                 throw new IllegalArgumentException(
-                                String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }
@@ -515,7 +534,7 @@ public class Shape {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] > size_dimi)
                 throw new IllegalArgumentException(
-                                String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }
@@ -533,7 +552,7 @@ public class Shape {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] > size_dimi)
                 throw new IllegalArgumentException(
-                                String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }
@@ -552,7 +571,7 @@ public class Shape {
         int rank = rank(shapeInformation);
         if (rank != 2)
             throw new IllegalArgumentException(
-                            "Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
+                    "Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
         return getOffsetUnsafe(shapeInformation, row, col);
     }
 
@@ -565,7 +584,7 @@ public class Shape {
         int size_1 = sizeUnsafe(shapeInformation, 1);
         if (row >= size_0 || col >= size_1)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
-                            + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += row * strideUnsafe(shapeInformation, 0, 2);
@@ -582,7 +601,7 @@ public class Shape {
         int size_1 = sizeUnsafe(shapeInformation, 1);
         if (row >= size_0 || col >= size_1)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
-                            + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += row * strideUnsafe(shapeInformation, 0, 2);
@@ -603,13 +622,13 @@ public class Shape {
         int rank = rank(shapeInformation);
         if (rank != 2)
             throw new IllegalArgumentException(
-                            "Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
+                    "Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
         long offset = 0;
         int size_0 = size(shapeInformation, 0);
         int size_1 = size(shapeInformation, 1);
         if (row >= size_0 || col >= size_1)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
-                            + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += row * stride(shapeInformation, 0);
@@ -631,14 +650,14 @@ public class Shape {
         int rank = rank(shapeInformation);
         if (rank != 3)
             throw new IllegalArgumentException(
-                            "Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
+                    "Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
         long offset = 0;
         int size_0 = size(shapeInformation, 0);
         int size_1 = size(shapeInformation, 1);
         int size_2 = size(shapeInformation, 2);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
-                            + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * stride(shapeInformation, 0);
@@ -662,7 +681,7 @@ public class Shape {
         int rank = rank(shapeInformation);
         if (rank != 3)
             throw new IllegalArgumentException(
-                            "Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
+                    "Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
         return getOffsetUnsafe(shapeInformation, dim0, dim1, dim2);
     }
 
@@ -676,7 +695,7 @@ public class Shape {
         int size_2 = sizeUnsafe(shapeInformation, 2);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
-                            + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 3);
@@ -695,7 +714,7 @@ public class Shape {
         int size_2 = sizeUnsafe(shapeInformation, 2);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
-                            + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
+                    + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 3);
@@ -720,7 +739,7 @@ public class Shape {
         int rank = rank(shapeInformation);
         if (rank != 4)
             throw new IllegalArgumentException(
-                            "Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
+                    "Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
         long offset = 0;
         int size_0 = size(shapeInformation, 0);
         int size_1 = size(shapeInformation, 1);
@@ -728,7 +747,7 @@ public class Shape {
         int size_3 = size(shapeInformation, 3);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2 + ","
-                            + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * stride(shapeInformation, 0);
@@ -755,7 +774,7 @@ public class Shape {
         int rank = rank(shapeInformation);
         if (rank != 4)
             throw new IllegalArgumentException(
-                            "Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
+                    "Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
         return getOffsetUnsafe(shapeInformation, dim0, dim1, dim2, dim3);
     }
 
@@ -767,7 +786,7 @@ public class Shape {
         int size_3 = sizeUnsafe(shapeInformation, 3);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2 + ","
-                            + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 4);
@@ -790,7 +809,7 @@ public class Shape {
         int size_3 = sizeUnsafe(shapeInformation, 3);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2 + ","
-                            + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                    + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 4);
@@ -1035,7 +1054,7 @@ public class Shape {
      */
     public static RawArrayIterationInformation1 prepareRawArrayIter(INDArray dst) {
         return RawArrayIterationInformation1.builder().aOffset(dst.offset()).a(dst.data()).aStrides(dst.stride())
-                        .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
+                .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
     }
 
 
@@ -1913,6 +1932,16 @@ public class Shape {
         return ret.slice();
     }
 
+    public static int[] shapeOf(int[] buffer) {
+        val rank = buffer[0];
+        return Arrays.copyOfRange(buffer, 1, 1 + rank);
+    }
+
+    public static int[] stridesOf(int[] buffer) {
+        val rank = buffer[0];
+        return Arrays.copyOfRange(buffer, 1+rank, 1 + (rank * 2));
+    }
+
     public static int[] flags(DataBuffer buffer) {
         int length = buffer.getInt(0);
         int[] ret = new int[length];
@@ -2154,7 +2183,7 @@ public class Shape {
      * @return the shape information buffer given the parameters
      */
     public static DataBuffer createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
-                    char order) {
+                                                    char order) {
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
 
@@ -2197,7 +2226,7 @@ public class Shape {
     }
 
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
-                    int underlyingRank) {
+                                                     int underlyingRank) {
         int flagLength = flags.length;
         int offsetsLength = sparseOffsets.length;
         int hiddenDimLength = hiddenDimensions.length;

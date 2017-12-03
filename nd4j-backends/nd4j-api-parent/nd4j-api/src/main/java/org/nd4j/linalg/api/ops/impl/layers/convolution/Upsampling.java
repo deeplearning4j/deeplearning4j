@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
@@ -28,14 +29,14 @@ public class Upsampling extends DynamicCustomOp {
         super(null,sameDiff, inputs, inPlace);
         this.scaleFactor = scaleFactor;
         if(inputArrays != null) {
-            getInputArguments().addAll(Arrays.asList(inputArrays));
+            addInputArgument(inputArrays);
         }
 
         if(outputs != null) {
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         }
 
-        getIArguments().add(scaleFactor);
+        addIArgument(scaleFactor);
     }
 
 
@@ -47,6 +48,15 @@ public class Upsampling extends DynamicCustomOp {
         return "upsampling2d";
     }
 
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
 
 
     @Override
@@ -59,7 +69,7 @@ public class Upsampling extends DynamicCustomOp {
                 .scaleFactor(scaleFactor)
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(conv2DDerivative.outputFunctions()));
         return ret;
     }
 

@@ -136,8 +136,8 @@ public class CublasPointer implements AutoCloseable {
         
         buffer = (JCudaBuffer) array.data();
         
-        //the name of this thread for knowing whether to copy data or not
-        //String name = Thread.currentThread().getName();
+        //the opName of this thread for knowing whether to copy data or not
+        //String opName = Thread.currentThread().getName();
         this.arr = array;
         if(array.elementWiseStride() < 0) {
             this.arr = array.dup();
@@ -175,10 +175,10 @@ public class CublasPointer implements AutoCloseable {
         
         //Data is already copied into CUDA buffer during allocation at getPointer
         
-        if(!buffer.copied(name)) {
+        if(!buffer.copied(opName)) {
             ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
             //mark the buffer copied
-            buffer.setCopied(name);
+            buffer.setCopied(opName);
         
         }*/
 

@@ -1058,7 +1058,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             for (int j = 0; j < toConcat[i].rank(); j++) {
                 if (j != dimension && toConcat[i].size(j) != outputShape[j] && !toConcat[i].isVector()) {
                     throw new IllegalArgumentException(
-                                    "Illegal concatneation at array " + i + " and shape element " + j);
+                                    "Illegal concatenation at array " + i + " and shape element " + j);
                 }
             }
         }

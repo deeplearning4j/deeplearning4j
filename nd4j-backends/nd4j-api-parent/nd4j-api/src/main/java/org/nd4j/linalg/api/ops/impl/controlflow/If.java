@@ -2,18 +2,20 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
@@ -25,6 +27,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class If extends DifferentialFunction implements CustomOp {
 
     @Getter
@@ -60,11 +63,11 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBodyExecution = ifStatement.falseBodyExecution;
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.falseBody = ifStatement.falseBody;
-        this.args = ifStatement.args;
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.dummyResult = ifStatement.dummyResult;
-        this.shape = new int[] {1,1};
         addAsNewVertexId();
+        sameDiff.associateFunctionsAsArgs(ifStatement.inputVars,this);
+        sameDiff.putShapeForVertexId(vertexId,new int[]{1,1});
         f().addFunctionEdges(this);
         this.inputVars = ifStatement.inputVars;
         this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
@@ -84,15 +87,7 @@ public class If extends DifferentialFunction implements CustomOp {
         }
 
 
-        OpState opState = OpState.builder()
-                .opName(opName())
-                .opType(Op.Type.CONDITIONAL)
-                .inPlace(false)
-                .id(UUID.randomUUID().toString())
-                .vertexIds(opEdgeIds)
-                .build();
-
-        this.sameDiff.graph().addEdge(inputEdges,vertexId,opState,true);
+        this.sameDiff.graph().addEdge(inputEdges,vertexId,UUID.randomUUID().toString(),true);
 
 
     }
@@ -113,7 +108,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
-        this.args = inputVars;
+        sameDiff.associateFunctionsAsArgs(inputVars,this);
         int[] vertexId = {parent.graph().nextVertexId()};
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
         this.vertexId = vertexId;
@@ -155,15 +150,8 @@ public class If extends DifferentialFunction implements CustomOp {
         this.loopBodyExecution = parent.getFunction(trueBodyName);
         parent.putFunction(vertexId,this);
 
-        OpState opState = OpState.builder()
-                .opName(opName())
-                .opType(Op.Type.CONDITIONAL)
-                .inPlace(false)
-                .id(UUID.randomUUID().toString())
-                .vertexIds(opEdgeIds)
-                .build();
 
-        parent.graph().addEdge(inputEdges,vertexId,opState,true);
+        parent.graph().addEdge(inputEdges,vertexId,UUID.randomUUID().toString(),true);
     }
 
 
@@ -208,14 +196,103 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public List<INDArray> getInputArguments() {
-        return Collections.emptyList();
+    public INDArray[] outputArguments() {
+        return new INDArray[0];
     }
 
     @Override
-    public List<INDArray> getOutputArguments() {
-        return Collections.emptyList();
+    public INDArray[] inputArguments() {
+        return new INDArray[0];
+    }
 
+    @Override
+    public int[] iArgs() {
+        return new int[0];
+    }
+
+    @Override
+    public double[] tArgs() {
+        return new double[0];
+    }
+
+    @Override
+    public void addIArgument(int... arg) {
+
+    }
+
+    @Override
+    public void removeIArgument(Integer arg) {
+
+    }
+
+    @Override
+    public Integer getIArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numIArguments() {
+        return 0;
+    }
+
+    @Override
+    public void addTArgument(double... arg) {
+
+    }
+
+    @Override
+    public void removeTArgument(Double arg) {
+
+    }
+
+    @Override
+    public Double getTArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numTArguments() {
+        return 0;
+    }
+
+    @Override
+    public void addInputArgument(INDArray... arg) {
+
+    }
+
+    @Override
+    public void removeInputArgument(INDArray arg) {
+
+    }
+
+    @Override
+    public INDArray getInputArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numInputArguments() {
+        return 0;
+    }
+
+    @Override
+    public void addOutputArgument(INDArray... arg) {
+
+    }
+
+    @Override
+    public void removeOutputArgument(INDArray arg) {
+
+    }
+
+    @Override
+    public INDArray getOutputArgument(int index) {
+        return null;
+    }
+
+    @Override
+    public int numOutputArguments() {
+        return 0;
     }
 
     @Override
@@ -224,17 +301,29 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public List<Integer> getIArguments() {
-        return Collections.emptyList();
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
     }
 
     @Override
-    public List<Double> getTArguments() {
-        return Collections.emptyList();
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+
     }
+
+
 
     @Override
     public List<int[]> calculateOutputShape() {
         return Arrays.asList(new int[]{1,1});
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "cond";
     }
 }

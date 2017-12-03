@@ -1,12 +1,21 @@
 package org.nd4j.linalg.api.ops;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Shape manipulation ops
+ *
+ * @author Adam Gibson
+ */
+@Slf4j
 public abstract class ShapeOp extends BaseOp {
     public ShapeOp() {}
 
@@ -25,18 +34,18 @@ public abstract class ShapeOp extends BaseOp {
     }
 
     public ShapeOp(SameDiff sameDiff,
-                           DifferentialFunction i_v,
-                           int[] shape,
-                           boolean inPlace,
-                           Object[] extraArgs) {
+                   DifferentialFunction i_v,
+                   int[] shape,
+                   boolean inPlace,
+                   Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.shape = shape;
 
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
+            sameDiff.putShapeForVertexId(vertexId,shape);
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v)},this);
             f().addFunctionEdges(this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -60,8 +69,19 @@ public abstract class ShapeOp extends BaseOp {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
-        ret.add(shape);
+        ret.add(sameDiff.getShapeForVertexId(vertexId));
         return ret;
+    }
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        val shapeOutput = calculateOutputShape();
+        if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVertexId(vertexId))
+            sameDiff.updateShapeForVertexId(vertexId,shapeOutput.get(0));
+        else if(!shapeOutput.isEmpty())
+            sameDiff.putShapeForVertexId(vertexId,shapeOutput.get(0));
+
     }
 
     @Override
@@ -87,4 +107,9 @@ public abstract class ShapeOp extends BaseOp {
     public ShapeOp(INDArray x, INDArray z) {
         super(x, z);
     }
+
+
+
+
+
 }

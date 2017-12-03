@@ -37,7 +37,7 @@ public final class VariableProtos {
       "to\022\ntensorflow\"\301\001\n\013VariableDef\022\025\n\rvariab" +
       "le_name\030\001 \001(\t\022\032\n\022initial_value_name\030\006 \001(" +
       "\t\022\030\n\020initializer_name\030\002 \001(\t\022\025\n\rsnapshot_" +
-      "name\030\003 \001(\t\0229\n\023save_slice_info_def\030\004 \001(\0132" +
+      "opName\030\003 \001(\t\0229\n\023save_slice_info_def\030\004 \001(\0132" +
       "\034.tensorflow.SaveSliceInfoDef\022\023\n\013is_reso" +
       "urce\030\005 \001(\010\"`\n\020SaveSliceInfoDef\022\021\n\tfull_n" +
       "ame\030\001 \001(\t\022\022\n\nfull_shape\030\002 \003(\003\022\022\n\nvar_off" +

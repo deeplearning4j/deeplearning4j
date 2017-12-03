@@ -216,14 +216,14 @@ private static final long serialVersionUID = 0L;
    * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
    * "library" provides user-defined functions.
    * Naming:
-   *   * library.function.name are in a flat namespace.
+   *   * library.function.opName are in a flat namespace.
    *     NOTE: We may need to change it to be hierarchical to support
    *     different orgs. E.g.,
    *     { "/google/nn", { ... }},
    *     { "/google/vision", { ... }}
    *     { "/org_foo/module_bar", { ... }}
    *     map&lt;string, FunctionDefLib&gt; named_lib;
-   *   * If node[i].op is the name of one function in "library",
+   *   * If node[i].op is the opName of one function in "library",
    *     node[i] is deemed as a function call. Otherwise, node[i].op
    *     must be a primitive operation supported by the runtime.
    * Function call semantics:
@@ -247,14 +247,14 @@ private static final long serialVersionUID = 0L;
    * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
    * "library" provides user-defined functions.
    * Naming:
-   *   * library.function.name are in a flat namespace.
+   *   * library.function.opName are in a flat namespace.
    *     NOTE: We may need to change it to be hierarchical to support
    *     different orgs. E.g.,
    *     { "/google/nn", { ... }},
    *     { "/google/vision", { ... }}
    *     { "/org_foo/module_bar", { ... }}
    *     map&lt;string, FunctionDefLib&gt; named_lib;
-   *   * If node[i].op is the name of one function in "library",
+   *   * If node[i].op is the opName of one function in "library",
    *     node[i] is deemed as a function call. Otherwise, node[i].op
    *     must be a primitive operation supported by the runtime.
    * Function call semantics:
@@ -278,14 +278,14 @@ private static final long serialVersionUID = 0L;
    * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
    * "library" provides user-defined functions.
    * Naming:
-   *   * library.function.name are in a flat namespace.
+   *   * library.function.opName are in a flat namespace.
    *     NOTE: We may need to change it to be hierarchical to support
    *     different orgs. E.g.,
    *     { "/google/nn", { ... }},
    *     { "/google/vision", { ... }}
    *     { "/org_foo/module_bar", { ... }}
    *     map&lt;string, FunctionDefLib&gt; named_lib;
-   *   * If node[i].op is the name of one function in "library",
+   *   * If node[i].op is the opName of one function in "library",
    *     node[i] is deemed as a function call. Otherwise, node[i].op
    *     must be a primitive operation supported by the runtime.
    * Function call semantics:
@@ -1174,14 +1174,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1205,14 +1205,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1240,14 +1240,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1281,14 +1281,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1320,14 +1320,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1363,14 +1363,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1402,14 +1402,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1435,14 +1435,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:
@@ -1471,14 +1471,14 @@ private static final long serialVersionUID = 0L;
      * EXPERIMENTAL. DO NOT USE OR DEPEND ON THIS YET.
      * "library" provides user-defined functions.
      * Naming:
-     *   * library.function.name are in a flat namespace.
+     *   * library.function.opName are in a flat namespace.
      *     NOTE: We may need to change it to be hierarchical to support
      *     different orgs. E.g.,
      *     { "/google/nn", { ... }},
      *     { "/google/vision", { ... }}
      *     { "/org_foo/module_bar", { ... }}
      *     map&lt;string, FunctionDefLib&gt; named_lib;
-     *   * If node[i].op is the name of one function in "library",
+     *   * If node[i].op is the opName of one function in "library",
      *     node[i] is deemed as a function call. Otherwise, node[i].op
      *     must be a primitive operation supported by the runtime.
      * Function call semantics:

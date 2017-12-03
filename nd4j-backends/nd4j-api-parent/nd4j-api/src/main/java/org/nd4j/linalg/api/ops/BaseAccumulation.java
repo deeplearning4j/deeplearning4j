@@ -19,16 +19,25 @@
 
 package org.nd4j.linalg.api.ops;
 
+import com.google.common.primitives.Ints;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import onnx.OnnxProto3;
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base class for accumulation, initiates the initial entry
@@ -37,24 +46,24 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
-    protected IComplexNumber finalResultComplex;
-    protected boolean applyFinalTransform = true;
-    protected boolean isComplex = false;
+
+    protected boolean keepDims;
 
     public BaseAccumulation(SameDiff sameDiff,
                             DifferentialFunction i_v,
-                            int[] dimensions) {
+                            int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v},this);
             this.dimensions = dimensions;
-            this.shape = Shape.getReducedShape(i_v.getResultShape(),dimensions);
+            sameDiff.putShapeForVertexId(vertexId,Shape.getReducedShape(i_v.getResultShape(),dimensions));
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
+            this.keepDims = keepDims;
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimensions);
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -65,23 +74,39 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(SameDiff sameDiff,
                             DifferentialFunction i_v,
                             DifferentialFunction i_v2,
-                            int[] dimensions) {
+                            int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v,i_v2};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v,i_v2},this);
             this.dimensions = dimensions;
-            this.shape = Shape.getReducedShape(i_v.getResultShape(),dimensions);
+            sameDiff.putShapeForVertexId(vertexId,Shape.getReducedShape(i_v.getResultShape(),dimensions));
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             addAsNewVertexId();
+            this.keepDims = keepDims;
             f().addFunctionEdges(this);
-            this.opState.setAxes(dimensions);
 
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
+    }
+
+
+
+    public BaseAccumulation(SameDiff sameDiff,
+                            DifferentialFunction i_v,
+                            int[] dimensions) {
+        this(sameDiff,i_v,dimensions,false);
+
+    }
+
+    public BaseAccumulation(SameDiff sameDiff,
+                            DifferentialFunction i_v,
+                            DifferentialFunction i_v2,
+                            int[] dimensions) {
+        this(sameDiff,i_v,i_v2,dimensions,false);
     }
 
 
@@ -146,183 +171,92 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             return x().dup(x().ordering());
     }
 
-    @Override
-    public boolean applyFinalTransform() {
-        return applyFinalTransform;
-    }
-
-    @Override
-    public void setApplyFinalTransform(boolean applyFinalTransform) {
-        this.applyFinalTransform = applyFinalTransform;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 0.0f;
-    }
-
-    @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
-    }
-
-    @Override
-    public long numProcessed() {
-        return numProcessed;
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            this.extraArgs = new Object[] {zeroDouble()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            this.extraArgs = new Object[] {zeroFloat()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            this.extraArgs = new Object[] {zeroHalf()};
-        }
-    }
-
-    @Override
-    public double combineSubResults(double first, double second) {
-        return update(first, second);
-    }
-
-    @Override
-    public float combineSubResults(float first, float second) {
-        return update(first, second);
-    }
-
-    @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        return update(first, second);
-    }
-
-    @Override
-    public double getAndSetFinalResult(double accum) {
-        this.finalResult = accum;
-        if (z() != null && z.isScalar()) {
-            z.assign(accum);
-        }
-        return accum;
-    }
-
-    @Override
-    public float getAndSetFinalResult(float accum) {
-        this.finalResult = accum;
-        if (z() != null && z.isScalar()) {
-            z.assign(accum);
-        }
-        return accum;
-    }
-
-    @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-        this.finalResultComplex = accum;
-        return accum;
-    }
-
-    @Override
-    public double calculateFinalResult(double accum, long n) {
-        return accum;
-    }
-
-    @Override
-    public float calculateFinalResult(float accum, long n) {
-        return accum;
-    }
-
-    @Override
-    public Number currentResult() {
-        return finalResult;
-    }
-
-    @Override
-    public void setFinalResult(Number number) {
-        this.finalResult = number;
-        if (z() != null && z.isScalar()) {
-            z.assign(number);
-        }
-    }
-
-    @Override
-    public Type opType() {
-        if(args() != null && args().length > 1)
-            return Type.REDUCE3;
-        return Type.REDUCE;
-    }
 
     @Override
     public List<int[]> calculateOutputShape() {
+        if(args().length < 1) {
+            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
+        }
+
         List<int[]> ret = new ArrayList<>(1);
-        ret.add(Shape.getReducedShape(arg().getResultShape(),dimensions));
+        val reducedShape = Shape.getReducedShape(arg().getResultShape(),dimensions);
+        ret.add(reducedShape);
         return ret;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
+            this.dimensions = new int[] { Integer.MAX_VALUE };
+        }
+        else if(hasReductionIndices(nodeDef)) {
+            NodeDef reductionNode = null;
+            for(int i = 0; i < graph.getNodeCount(); i++) {
+                if (graph.getNode(i).getName().equals(nodeDef.getName() + "/reduction_indices")) {
+                    reductionNode = graph.getNode(i);
+                    val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", graph.getNode(i), graph);
+
+                    boolean keepAxis = nodeDef.getAttrOrThrow("keep_dims").getB();
+
+                    // keepAxis = false by default
+                    int[] dimensions = ArrayUtils.add(arr.data().asInt(), 0, keepAxis ? 1 : 0);
+
+
+                    this.dimensions = dimensions;
+                    break;
+                }
+            }
+
+            if(reductionNode == null)
+                throw new ND4JIllegalStateException("No node found!");
+
+
+
+        }
+        else {
+            val dims = TFGraphMapper.getInstance().getNDArrayFromTensor("axis",nodeDef,graph).data().asInt();
+            this.dimensions = dims;
+        }
+
+        if(attributesForNode.containsKey("keep_dims")) {
+            val keepDims = attributesForNode.get("keep_dims").getB();
+            this.keepDims = keepDims;
+        }
+    }
+
+    protected boolean hasReductionIndices(NodeDef nodeDef) {
+        for(int i = 0; i < nodeDef.getInputCount(); i++) {
+            if(nodeDef.getInput(i).contains("reduction_indices")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
     @Override
-    public void setFinalResultComplex(IComplexNumber number) {
-        this.finalResultComplex = number;
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        if (!attributesForNode.containsKey("axes")) {
+            this.dimensions = new int[] { Integer.MAX_VALUE };
+        }
+        else {
+            val map = OnnxGraphMapper.getInstance().getAttrMap(node);
+            val dims = Ints.toArray(map.get("axes").getIntsList());
+            this.dimensions = dims;
+        }
     }
 
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+    }
+
+    @Override
+    public void setFinalResult(double value) {
+        this.finalResult = value;
+    }
 
     @Override
     public Number getFinalResult() {
@@ -330,15 +264,22 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public IComplexNumber getFinalResultComplex() {
-        return finalResultComplex;
+    public double zeroDouble() {
+        return 0;
     }
 
-    /**
-     * This method is only used for Distance functions
-     * @return
-     */
-    public boolean isComplexAccumulation() {
-        return isComplex;
+    @Override
+    public float zeroFloat() {
+        return 0;
+    }
+
+    @Override
+    public float zeroHalf() {
+        return 0;
+    }
+
+    @Override
+    public Type opType() {
+        return Type.REDUCE;
     }
 }

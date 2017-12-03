@@ -21,13 +21,16 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.ByteOrder;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -51,14 +54,13 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -788,7 +790,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int tensorssAlongDimension(int... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
-        if (dimension.length >= rank())
+        if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
             return 1;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -808,7 +810,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
-        if (dimension.length >= rank())
+        if (dimension.length >= rank()  || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
             return this;
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] < 0)
@@ -1279,9 +1281,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (i < 0)
             i += rank();
         if (isScalar()) {
-            if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-                OpProfiler.getInstance().processScalarCall();
-
+            autoProcessScalarCall();            
             data.put(i, value);
             return this;
         }
@@ -1326,9 +1326,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else if (indexes.length == 4) {
             return putScalar(indexes[0], indexes[1], indexes[2], indexes[3], value);
         } else {
-            if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-                OpProfiler.getInstance().processScalarCall();
-
+            autoProcessScalarCall();
             long offset = Shape.getOffset(javaShapeInformation, indexes);
             data.put(offset, value);
         }
@@ -1338,9 +1336,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(int row, int col, double value) {
         Nd4j.getCompressor().autoDecompress(this);
-
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-            OpProfiler.getInstance().processScalarCall();
+        autoProcessScalarCall();
 
         if (rank() != 2)
             throw new IllegalStateException("Cannot use putScalar(int,int,double) on a rank " + rank() + " INDArray");
@@ -1352,8 +1348,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, double value) {
         Nd4j.getCompressor().autoDecompress(this);
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-            OpProfiler.getInstance().processScalarCall();
+        autoProcessScalarCall();        
 
         if (rank() != 3)
             throw new IllegalStateException(
@@ -1377,8 +1372,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value) {
         Nd4j.getCompressor().autoDecompress(this);
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-            OpProfiler.getInstance().processScalarCall();
+        autoProcessScalarCall();
 
         if (rank() != 4)
             throw new IllegalStateException(
@@ -1741,11 +1735,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double getDouble(int... indices) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-            OpProfiler.getInstance().processScalarCall();
-
-        Nd4j.getCompressor().autoDecompress(this);
-
+        autoProcessScalarCall();
+        Nd4j.getCompressor().autoDecompress(this);        
+        
         for (int i = 0; i < indices.length; i++) {
             if (indices[i] < 0)
                 indices[i] += rank();
@@ -3301,7 +3293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new AddOp(this, other, result));
+        Nd4j.getExecutioner().exec(new AddOp(new INDArray[]{this, other},new INDArray[]{ result}));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -3764,11 +3756,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
 
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-            OpProfiler.getInstance().processScalarCall();
-
-        Nd4j.getCompressor().autoDecompress(this);
-
+        autoProcessScalarCall();
 
         if (i == 0)
             return data().getDouble(i);
@@ -3825,8 +3813,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray reshape(char order, int... newShape) {
         Nd4j.getCompressor().autoDecompress(this);
 
-
-
         if (newShape == null || newShape.length < 2)
             throw new ND4JIllegalStateException(
                             "Can't reshape(int...) without shape arguments. Got empty shape instead.");
@@ -3836,7 +3822,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for (int i = 0; i < shape.length; i++) {
             if (shape[i] < 0) {
                 if (numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones");
+                    throw new IllegalArgumentException("Only one dimension can be negative ones. Got shape "
+                            + Arrays.toString(newShape));
 
                 numberNegativesOnes++;
 
@@ -3857,8 +3844,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 break;
 
             }
-
         }
+
+        long prod = ArrayUtil.prodLong(newShape);
+        if(numberNegativesOnes > 0)
+            prod = Math.abs(prod);
+        if (prod != this.lengthLong())
+            throw new ND4JIllegalStateException("New shape length doesn't match original length");
+
+
+
 
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
@@ -3884,9 +3879,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalarUnsafe(long offset, double value) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
-            OpProfiler.getInstance().processScalarCall();
-
+        autoProcessScalarCall();
         data().put(offset, value);
         return this;
     }
@@ -4929,6 +4922,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
     }
+    
+    protected void autoProcessScalarCall() {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+    }
 
     /**
      * Checks whether the matrix is a vector.
@@ -5122,11 +5120,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.createComplex(this).addi(n, result);
 
     }
-
-    protected INDArray create(BaseNDArray baseNDArray) {
-        return baseNDArray;
-    }
-
 
     @Override
     public INDArray remainder(INDArray denominator) {
@@ -5523,6 +5516,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         return ret;
 
+    }
+
+    @Override
+    public int toFlatArray(FlatBufferBuilder builder) {
+        int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asInt());
+        int buffer = FlatArray.createBufferVector(builder, this.data().asBytes());
+        int array = FlatArray.createFlatArray(builder, shape, buffer, SameDiff.getDataTypeAsByte(this.data().dataType()), ByteOrder.BE);
+
+        return array;
     }
 
     /*

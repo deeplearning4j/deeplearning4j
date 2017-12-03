@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,6 +17,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public abstract class BaseModule extends DynamicCustomOp implements Module {
     private List<Module> modules = new ArrayList<>();
 

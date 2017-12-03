@@ -112,18 +112,18 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * Optional name of the tensor dimension.
+     * Optional opName of the tensor dimension.
      * </pre>
      *
-     * <code>string name = 2;</code>
+     * <code>string opName = 2;</code>
      */
     String getName();
     /**
      * <pre>
-     * Optional name of the tensor dimension.
+     * Optional opName of the tensor dimension.
      * </pre>
      *
-     * <code>string name = 2;</code>
+     * <code>string opName = 2;</code>
      */
     com.google.protobuf.ByteString
         getNameBytes();
@@ -233,10 +233,10 @@ private static final long serialVersionUID = 0L;
     private volatile Object name_;
     /**
      * <pre>
-     * Optional name of the tensor dimension.
+     * Optional opName of the tensor dimension.
      * </pre>
      *
-     * <code>string name = 2;</code>
+     * <code>string opName = 2;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -252,10 +252,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Optional name of the tensor dimension.
+     * Optional opName of the tensor dimension.
      * </pre>
      *
-     * <code>string name = 2;</code>
+     * <code>string opName = 2;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -629,10 +629,10 @@ private static final long serialVersionUID = 0L;
       private Object name_ = "";
       /**
        * <pre>
-       * Optional name of the tensor dimension.
+       * Optional opName of the tensor dimension.
        * </pre>
        *
-       * <code>string name = 2;</code>
+       * <code>string opName = 2;</code>
        */
       public String getName() {
         Object ref = name_;
@@ -648,10 +648,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Optional name of the tensor dimension.
+       * Optional opName of the tensor dimension.
        * </pre>
        *
-       * <code>string name = 2;</code>
+       * <code>string opName = 2;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -668,10 +668,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Optional name of the tensor dimension.
+       * Optional opName of the tensor dimension.
        * </pre>
        *
-       * <code>string name = 2;</code>
+       * <code>string opName = 2;</code>
        */
       public Builder setName(
           String value) {
@@ -685,10 +685,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Optional name of the tensor dimension.
+       * Optional opName of the tensor dimension.
        * </pre>
        *
-       * <code>string name = 2;</code>
+       * <code>string opName = 2;</code>
        */
       public Builder clearName() {
         
@@ -698,10 +698,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Optional name of the tensor dimension.
+       * Optional opName of the tensor dimension.
        * </pre>
        *
-       * <code>string name = 2;</code>
+       * <code>string opName = 2;</code>
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {

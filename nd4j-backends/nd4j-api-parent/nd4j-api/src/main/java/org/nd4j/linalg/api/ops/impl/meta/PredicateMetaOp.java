@@ -56,7 +56,7 @@ public class PredicateMetaOp extends BaseMetaOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "meta_predicate";
     }
 

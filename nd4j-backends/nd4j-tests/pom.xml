@@ -32,11 +32,24 @@
     <name>nd4j-tests</name>
 
 
+
     <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <scala.binary.version>2.11</scala.binary.version>
+        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+        <maven.compiler.testSource>1.8</maven.compiler.testSource>
     </properties>
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -44,12 +57,18 @@
                 <configuration>
                     <skipTests>true</skipTests>
                 </configuration>
+
             </plugin>
         </plugins>
     </build>
     <dependencies>
-
-
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-core -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.0.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
@@ -86,12 +105,6 @@
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!--<dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-9.0</artifactId>
-            <version>${project.version}</version>
-        </dependency>-->
 
         <dependency>
             <groupId>org.nd4j</groupId>

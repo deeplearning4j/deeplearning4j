@@ -22,10 +22,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +34,6 @@ import java.util.List;
  */
 public class Mmul extends TensorMmul {
 
-    private MMulTranspose mMulTranspose;
 
     /**
      *
@@ -91,7 +87,15 @@ public class Mmul extends TensorMmul {
 
 
 
+    @Override
+    public String onnxName() {
+        return "MatMul";
+    }
 
+    @Override
+    public String tensorflowName() {
+        return "MatMul";
+    }
 
 
     @Override
@@ -100,39 +104,10 @@ public class Mmul extends TensorMmul {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "mmul";
     }
 
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        throw new UnsupportedOperationException();
-
-
-    }
-
-    @Override
-    public long n() {
-        return 0;
-    }
-
-    @Override
-    public boolean isPassThrough() {
-        return true;
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(this.z != null)
-            x.mmul(y,z,mMulTranspose);
-        else
-            this.z = x.mmul(y,mMulTranspose);
-    }
 
 
     @Override
@@ -163,7 +138,6 @@ public class Mmul extends TensorMmul {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         Mmul mmul = (Mmul) o;
 

@@ -116,7 +116,7 @@ public class MetaOpTests {
 
         assertEquals(exp2, array);
     }
-
+/*
     @Ignore
     @Test
     public void testPredicateScalarPairwise1() throws Exception {
@@ -168,7 +168,7 @@ public class MetaOpTests {
 
         assertEquals(exp, arrayX);
     }
-
+*/
     /**
      * This is the MOST crucial test, basically it's test for dup() + following linear op
      *
@@ -346,7 +346,7 @@ public class MetaOpTests {
 
         System.out.println("Enqueue time: " + ((time2 - time1) / 10000000));
     }
-
+/*
 
     @Ignore
     @Test
@@ -382,4 +382,5 @@ public class MetaOpTests {
 
         System.out.println("Execution time Meta: " + ((time2 - time1) / 100000));
     }
+    */
 }

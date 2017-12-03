@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -36,6 +37,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Getter
     @Setter
@@ -94,14 +96,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                            boolean inPlace,
                            Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.shape = i_v.getResultShape();
         this.scalarValue = scalar;
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {sameDiff.setupFunction(i_v)};
             f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
             f().addFunctionEdges(this);
+            sameDiff.putShapeForVertexId(this.vertexId,sameDiff.setupFunction(i_v).getResultShape());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -163,4 +164,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public void setDimension(int... dimension) {
         this.opDimension = dimension;
     }
+
+
+
 }

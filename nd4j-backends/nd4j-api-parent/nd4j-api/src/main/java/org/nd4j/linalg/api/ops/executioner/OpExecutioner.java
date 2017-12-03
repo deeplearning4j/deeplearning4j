@@ -44,11 +44,11 @@ public interface OpExecutioner {
     }
 
     enum ProfilingMode {
-        DISABLED, NAN_PANIC, INF_PANIC, ANY_PANIC, OPERATIONS, METHODS, ALL
+        DISABLED, NAN_PANIC, INF_PANIC, ANY_PANIC, OPERATIONS, METHODS, ALL, SCOPE_PANIC
     }
 
     /**
-     * This method returns name of the last invoked op
+     * This method returns opName of the last invoked op
      *
      * @return
      */
@@ -351,4 +351,10 @@ public interface OpExecutioner {
     void exec(CustomOp op);
 
     List<int[]> calculateOutputShape(CustomOp op);
+
+
+    void enableDebugMode(boolean reallyEnable);
+
+    void enableVerboseMode(boolean reallyEnable);
+
 }

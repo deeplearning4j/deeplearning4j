@@ -36,27 +36,35 @@ import org.bytedeco.javacpp.tools.Logger;
                                               "memory/Workspace.h",
                                               "indexing/NDIndex.h",
                                               "indexing/IndicesList.h",
+                                              "array/DataType.h",
+                                              "graph/VariableType.h",
                                               "NDArray.h",
-                                              "graph/ArrayList.h",
+                                              "array/NDArrayList.h",
+                                              "array/ResultSet.h",
                                               "NDArrayFactory.h",
                                               "graph/Variable.h",
+                                              "graph/FlowPath.h",
                                               "graph/Intervals.h",
                                               "graph/Stash.h",
                                               "graph/VariableSpace.h",
                                               "helpers/helper_generator.h",
-                                              "graph/Block.h",
+                                              "graph/Context.h",
+                                              "graph/ContextPrototype.h",
                                               "helpers/shape.h",
-                                              "graph/ShapeList.h",
+                                              "array/ShapeList.h",
                                               "op_boilerplate.h",
+                                              "ops/InputType.h",
                                               "ops/declarable/OpDescriptor.h",
                                               "ops/declarable/DeclarableOp.h",
+                                              "ops/declarable/DeclarableListOp.h",
                                               "ops/declarable/DeclarableReductionOp.h",
                                               "ops/declarable/DeclarableCustomOp.h",
                                               "ops/declarable/BooleanOp.h",
                                               "ops/declarable/LogicOp.h",
                                               "ops/declarable/OpRegistrator.h",
                                               "ops/declarable/CustomOperations.h"},
-                                compiler = "cpp11", library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
+                                compiler = "cpp11", extensions = "-avx512",
+                                library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
@@ -76,7 +84,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
-        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF").cppTypes().annotations())
+        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE").cppTypes().annotations())
                         .put(new Info("NativeOps").base("org.nd4j.nativeblas.NativeOps"))
                         .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") String",
                                         "@Cast(\"char*\") BytePointer"))
@@ -89,8 +97,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__").define(false))
+               .put(new Info("__JAVACPP_HACK__").define(true))
                .put(new Info("MAX_UINT").translate(false))
-               .put(new Info("std::initializer_list", "cnpy::NpyArray",
+               .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
@@ -102,13 +111,16 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
         String classTemplates[] = {
                 "nd4j::NDArray",
-                "nd4j::ArrayList",
+                "nd4j::NDArrayList",
+                "nd4j::ResultSet",
                 "nd4j::NDArrayFactory",
                 "nd4j::graph::Variable",
                 "nd4j::graph::Stash",
                 "nd4j::graph::VariableSpace",
-                "nd4j::graph::Block",
+                "nd4j::graph::Context",
+                "nd4j::graph::ContextPrototype",
                 "nd4j::ops::DeclarableOp",
+                "nd4j::ops::DeclarableListOp",
                 "nd4j::ops::DeclarableReductionOp",
                 "nd4j::ops::DeclarableCustomOp",
                 "nd4j::ops::BooleanOp",

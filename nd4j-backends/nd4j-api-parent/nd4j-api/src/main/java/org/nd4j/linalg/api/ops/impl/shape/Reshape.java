@@ -19,151 +19,169 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import org.apache.commons.math3.util.FastMath;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.ShapeOp;
-import org.nd4j.linalg.util.ComplexUtil;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reshape function
  *
  * @author Adam Gibson
  */
-public class Reshape extends ShapeOp {
+@Slf4j
+public class Reshape extends DynamicCustomOp {
 
     private int[] shape;
 
     public Reshape(SameDiff sameDiff, DifferentialFunction i_v,int[] shape) {
-        super(sameDiff, i_v, false);
+        super(null,sameDiff, new DifferentialFunction[]{i_v});
         this.shape = shape;
     }
 
-    public Reshape(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs, int[] shape1) {
-        super(sameDiff, i_v, shape, false, extraArgs);
-        this.shape = shape1;
-    }
 
     public Reshape() {}
 
-    public Reshape(INDArray x, INDArray z) {
-        super(x, z);
-    }
 
-    public Reshape(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
 
-    public Reshape(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
 
-    public Reshape(INDArray x) {
-        super(x);
-    }
 
     @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        if(!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
+            this.shape = new int[] {1,1};
+            return;
+        }
+        else if(nodeDef.getInputCount() > 1) {
+            val shapeNode = nodeDef.getInput(1);
+            NodeDef shapeNodeInGraph = null;
+            for(int i = 0; i < graph.getNodeCount(); i++) {
+                if (graph.getNode(i).getName().equals(shapeNode)) {
+                    shapeNodeInGraph = graph.getNode(i);
 
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
+                }
+            }
 
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.reshape(shape));
+            val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",shapeNodeInGraph,graph);
+            if(arr != null) {
+                this.shape = arr.data().asInt();
+                addIArgument(this.shape);
+            }
         }
         else {
-            this.z = x.reshape(shape);
+            val shape = nodeDef.getAttrOrThrow("Tshape");
+            if(!shape.hasShape()) {
+                val shapeRet = new int[2];
+                shapeRet[0] = 1;
+                shapeRet[1] = shape.getValueCase().getNumber();
+                this.shape = shapeRet;
+            }
+            else {
+                val shapeVals = shape.getShape().getDimList();
+                if(shapeVals.size() > 1) {
+                    this.shape = new int[shapeVals.size()];
+                    for(int i = 0; i < shapeVals.size(); i++) {
+                        this.shape[i] = (int) shapeVals.get(i).getSize();
+                    }
+                }
+                else {
+                    this.shape = new int[2];
+                    this.shape[0] = 1;
+                    this.shape[1] = (int) shapeVals.get(0).getSize();
+                }
+
+            }
+
+            if(this.shape != null)
+                addIArgument(this.shape);
+
+
         }
 
-    }
 
 
-    @Override
-    public int opNum() {
-        return 0;
     }
 
     @Override
-    public String name() {
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        if(numIArguments() == 0) {
+            if(args().length > 1) {
+                val arr = sameDiff.getArrForVertexId(args()[1].resultVertexId());
+                if(arr == null) {
+                    throw new ND4JIllegalStateException("Unable to infer shape for reshape. No array found for getting shape data from!");
+                }
+
+                this.shape = arr.data().asInt();
+                addIArgument(this.shape);
+
+            }
+            else if(this.shape != null)
+                addIArgument(this.shape);
+            else
+                throw new ND4JIllegalStateException("Unable to map shape for reshape. No shape found!");
+        }
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        val shape = new OnnxGraphMapper().getShape(node);
+        this.shape = shape;
+
+    }
+
+    @Override
+    public void addArrayInputArguments() {
+        if(numInputArguments() > 0)
+            return;
+        val inputArray = sameDiff.getArrForVertexId(args()[0].resultVertexId());
+        if(inputArray == null) {
+            throw new ND4JIllegalStateException("Unable to add null array!");
+        }
+
+        addInputArgument(inputArray);
+    }
+
+    @Override
+    public void addInputArgument(INDArray... arg) {
+        if(numInputArguments() > 1) {
+            throw new ND4JIllegalStateException("Unable to add more input. Reshape should only have 1.");
+        }
+
+        super.addInputArgument(arg);
+    }
+
+    @Override
+    public String opName() {
         return "reshape";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.abs(origin);
+    public String onnxName() {
+        return "Reshape";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.abs(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Reshape(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Reshape(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
+    public String tensorflowName() {
+        return "Reshape";
     }
 
 
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
-        if (y() != null)
-            return new Reshape(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Reshape(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

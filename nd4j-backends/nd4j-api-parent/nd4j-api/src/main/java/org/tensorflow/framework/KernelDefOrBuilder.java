@@ -9,7 +9,7 @@ public interface KernelDefOrBuilder extends
 
   /**
    * <pre>
-   * Must match the name of an Op.
+   * Must match the opName of an Op.
    * </pre>
    *
    * <code>string op = 1;</code>
@@ -17,7 +17,7 @@ public interface KernelDefOrBuilder extends
   String getOp();
   /**
    * <pre>
-   * Must match the name of an Op.
+   * Must match the opName of an Op.
    * </pre>
    *
    * <code>string op = 1;</code>

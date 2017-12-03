@@ -108,7 +108,7 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * The name of the plugin this data pertains to.
+     * The opName of the plugin this data pertains to.
      * </pre>
      *
      * <code>string plugin_name = 1;</code>
@@ -116,7 +116,7 @@ private static final long serialVersionUID = 0L;
     String getPluginName();
     /**
      * <pre>
-     * The name of the plugin this data pertains to.
+     * The opName of the plugin this data pertains to.
      * </pre>
      *
      * <code>string plugin_name = 1;</code>
@@ -229,7 +229,7 @@ private static final long serialVersionUID = 0L;
     private volatile Object pluginName_;
     /**
      * <pre>
-     * The name of the plugin this data pertains to.
+     * The opName of the plugin this data pertains to.
      * </pre>
      *
      * <code>string plugin_name = 1;</code>
@@ -248,7 +248,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The name of the plugin this data pertains to.
+     * The opName of the plugin this data pertains to.
      * </pre>
      *
      * <code>string plugin_name = 1;</code>
@@ -614,7 +614,7 @@ private static final long serialVersionUID = 0L;
       private Object pluginName_ = "";
       /**
        * <pre>
-       * The name of the plugin this data pertains to.
+       * The opName of the plugin this data pertains to.
        * </pre>
        *
        * <code>string plugin_name = 1;</code>
@@ -633,7 +633,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the plugin this data pertains to.
+       * The opName of the plugin this data pertains to.
        * </pre>
        *
        * <code>string plugin_name = 1;</code>
@@ -653,7 +653,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the plugin this data pertains to.
+       * The opName of the plugin this data pertains to.
        * </pre>
        *
        * <code>string plugin_name = 1;</code>
@@ -670,7 +670,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the plugin this data pertains to.
+       * The opName of the plugin this data pertains to.
        * </pre>
        *
        * <code>string plugin_name = 1;</code>
@@ -683,7 +683,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the plugin this data pertains to.
+       * The opName of the plugin this data pertains to.
        * </pre>
        *
        * <code>string plugin_name = 1;</code>
@@ -879,7 +879,7 @@ private static final long serialVersionUID = 0L;
   private volatile Object displayName_;
   /**
    * <pre>
-   * Display name for viewing in TensorBoard.
+   * Display opName for viewing in TensorBoard.
    * </pre>
    *
    * <code>string display_name = 2;</code>
@@ -898,7 +898,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Display name for viewing in TensorBoard.
+   * Display opName for viewing in TensorBoard.
    * </pre>
    *
    * <code>string display_name = 2;</code>
@@ -1450,7 +1450,7 @@ private static final long serialVersionUID = 0L;
     private Object displayName_ = "";
     /**
      * <pre>
-     * Display name for viewing in TensorBoard.
+     * Display opName for viewing in TensorBoard.
      * </pre>
      *
      * <code>string display_name = 2;</code>
@@ -1469,7 +1469,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Display name for viewing in TensorBoard.
+     * Display opName for viewing in TensorBoard.
      * </pre>
      *
      * <code>string display_name = 2;</code>
@@ -1489,7 +1489,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Display name for viewing in TensorBoard.
+     * Display opName for viewing in TensorBoard.
      * </pre>
      *
      * <code>string display_name = 2;</code>
@@ -1506,7 +1506,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Display name for viewing in TensorBoard.
+     * Display opName for viewing in TensorBoard.
      * </pre>
      *
      * <code>string display_name = 2;</code>
@@ -1519,7 +1519,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Display name for viewing in TensorBoard.
+     * Display opName for viewing in TensorBoard.
      * </pre>
      *
      * <code>string display_name = 2;</code>

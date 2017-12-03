@@ -20,21 +20,22 @@
 package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.NonNull;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.context.Nd4jContext;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -73,13 +74,11 @@ import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
-import org.nd4j.linalg.fft.DefaultFFTInstance;
-import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.versioncheck.VersionCheck;
@@ -89,6 +88,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -161,7 +161,6 @@ public class Nd4j {
     protected static Class<? extends BlasWrapper> sparseBlasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
     protected static Class<? extends NDArrayFactory> sparseNDArrayClazz;
-    protected static Class<? extends FFTInstance> fftInstanceClazz;
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
@@ -180,7 +179,6 @@ public class Nd4j {
     protected static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static NDArrayFactory SPARSE_INSTANCE;
-    protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
@@ -637,23 +635,6 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE;
     }
 
-    /**
-     * Returns the fft instance
-     *
-     * @return the fft instance
-     */
-    public static FFTInstance getFFt() {
-        return FFT_INSTANCE;
-    }
-
-    /**
-     * @param fftInstance
-     */
-    public static void setFft(FFTInstance fftInstance) {
-        if (fftInstance == null)
-            throw new IllegalArgumentException("No null instances allowed");
-        FFT_INSTANCE = fftInstance;
-    }
 
     /**
      * Given a sequence of Iterators over a transform of matrices, fill in all of
@@ -4235,6 +4216,28 @@ public class Nd4j {
         return ret;
     }
 
+
+    public static INDArray create(double[] data, int[] shape, char ordering, long offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
+        }
+
+        if (shape.length == 1) {
+            if (shape[0] == data.length) {
+                shape = new int[] {1, data.length};
+            } else
+                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
+                        + " doesn't match data length: " + data.length);
+        }
+
+        checkShapeValues(data.length, shape);
+
+        INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      *
      * @param data
@@ -6306,9 +6309,6 @@ public class Nd4j {
             affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class
                             .forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
             affinityManager = affinityManagerClazz.newInstance();
-
-            fftInstanceClazz = (Class<? extends FFTInstance>) Class
-                            .forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                             System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
             sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(
@@ -6363,7 +6363,6 @@ public class Nd4j {
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
-            FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
             SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();
@@ -6649,5 +6648,51 @@ public class Nd4j {
      */
     public static INDArray createFromNpyFile(File file) {
         return INSTANCE.createFromNpyFile(file);
+    }
+
+
+    public static INDArray createFromFlatArray(FlatArray array) {
+        val dtype = array.dtype();
+        val order = array.byteOrder();
+        val rank = array.shape(0);
+        val shape = new int[rank * 2 + 4];
+        for (int e = 0; e < shape.length; e++)
+            shape[e] = array.shape(e);
+
+        char ordering = shape[shape.length - 1] == 99 ? 'c' : 'f';
+
+        val shapeOf = Shape.shapeOf(shape);
+        val stridesOf = Shape.stridesOf(shape);
+
+        val _dtype = SameDiff.getDataTypeFromByte(dtype);
+        val _order = SameDiff.getOrderFromByte(order);
+        val prod = ArrayUtil.prod(shapeOf);
+        val doubles = new double[prod];
+
+        val bb = array.bufferAsByteBuffer();
+        switch (_dtype) {
+            case DOUBLE: {
+                val db = bb.order(_order).asDoubleBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = db.get(e);
+            }
+            break;
+            case FLOAT: {
+                val fb = bb.order(_order).asFloatBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = (double) fb.get(e);
+            }
+            break;
+            case HALF: {
+                val sb = bb.order(_order).asShortBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = (double) HalfIndexer.toFloat((int) sb.get(e));
+            }
+            break;
+            default:
+                throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
+        }
+
+        return Nd4j.create(doubles, shapeOf, stridesOf, 0, ordering);
     }
 }

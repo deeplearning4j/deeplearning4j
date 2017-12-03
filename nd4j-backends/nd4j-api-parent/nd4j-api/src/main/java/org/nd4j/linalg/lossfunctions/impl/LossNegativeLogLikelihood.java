@@ -16,7 +16,7 @@ public class LossNegativeLogLikelihood extends LossMCXENT {
     }
 
     /**
-     * The name of this function
+     * The opName of this function
      *
      * @return
      */

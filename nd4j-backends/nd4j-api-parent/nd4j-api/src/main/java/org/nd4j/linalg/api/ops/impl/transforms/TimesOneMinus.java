@@ -21,11 +21,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
@@ -69,73 +67,18 @@ public class TimesOneMinus extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "timesoneminus";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return Nd4j.createComplexNumber(1, 1).subi(origin).muli(origin);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(1, 1).subi(origin).muli(origin);
-
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return Nd4j.createComplexNumber(1, 1).subi(origin).muli(origin);
-
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin * (1 - origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin * (1 - origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin * (1 - origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin * (1 - origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return Nd4j.createComplexNumber(1, 1).subi(origin).muli(origin);
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new TimesOneMinus(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new TimesOneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new TimesOneMinus(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new TimesOneMinus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override

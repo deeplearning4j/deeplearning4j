@@ -24,41 +24,41 @@ public class CudaArgs {
 
     /**
      * For invoking a cuda kernel
-     * this returns the module name for the given op
-     * @param op the op to get the module name for
-     * @return the module name for the given op
+     * this returns the module opName for the given op
+     * @param op the op to get the module opName for
+     * @return the module opName for the given op
      */
     public static String getModuleNameFor(Op op) {
-        //String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
+        //String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.opName() + "_strided" : op.opName();
         String moduleName = null;
         if (op instanceof Accumulation) {
 
             moduleName = "reduce";
 
             // FIXME: special case for reduce3
-            if (op.name().equals("cosinesimilarity")) {
+            if (op.opName().equals("cosinesimilarity")) {
                 moduleName = "reduce3";
-            } else if (op.name().equals("euclidean")) {
+            } else if (op.opName().equals("euclidean")) {
                 moduleName = "reduce3";
-            } else if (op.name().equals("manhattan")) {
+            } else if (op.opName().equals("manhattan")) {
                 moduleName = "reduce3";
             }
 
         } else if (op instanceof TransformOp) {
             // FIXME: we need special case for pairwise transforms for now. Later we should make them separate kernel call
-            if (op.name().equals("add")) {
+            if (op.opName().equals("add")) {
                 moduleName = "pairWiseTransform";
-            } else if (op.name().equals("copy")) {
+            } else if (op.opName().equals("copy")) {
                 moduleName = "pairWiseTransform";
-            } else if (op.name().equals("div")) {
+            } else if (op.opName().equals("div")) {
                 moduleName = "pairWiseTransform";
-            } else if (op.name().equals("mul")) {
+            } else if (op.opName().equals("mul")) {
                 moduleName = "pairWiseTransform";
-            } else if (op.name().equals("rdiv")) {
+            } else if (op.opName().equals("rdiv")) {
                 moduleName = "pairWiseTransform";
-            } else if (op.name().equals("rsub")) {
+            } else if (op.opName().equals("rsub")) {
                 moduleName = "pairWiseTransform";
-            } else if (op.name().equals("sub")) {
+            } else if (op.opName().equals("sub")) {
                 moduleName = "pairWiseTransform";
 
             } else {
@@ -77,7 +77,7 @@ public class CudaArgs {
     public static int getOpCode(Op op) {
         int code = -1;
 
-        String name = op.name();
+        String name = op.opName();
 
         if (op instanceof Accumulation) {
             if (name.equals("mean")) {

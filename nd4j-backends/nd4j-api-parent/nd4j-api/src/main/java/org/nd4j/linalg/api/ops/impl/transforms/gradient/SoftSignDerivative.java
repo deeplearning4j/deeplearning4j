@@ -19,14 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -70,85 +67,19 @@ public class SoftSignDerivative extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "softsignderivative";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return (float) ssderiv(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return ssderiv(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return ssderiv(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return (float) ssderiv(origin);
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension),
-                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension),
-                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
-                            xAlongDimension.length());
-        else
-            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-    }
-
-    private static double ssderiv(double x) {
-        double y = 1 + FastMath.abs(x);
-        return 1.0 / (y * y);
-    }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {

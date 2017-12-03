@@ -32,11 +32,11 @@ public class DeConv2D extends DynamicCustomOp {
         super(null,sameDiff, inputs, inPlace);
         this.config = config;
         if(inputArrays != null) {
-            getInputArguments().addAll(Arrays.asList(inputArrays));
+            addInputArgument(inputArrays);
         }
 
         if(outputs != null) {
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         }
 
 
@@ -46,15 +46,15 @@ public class DeConv2D extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getIArguments().add(config.getKY());
-        getIArguments().add(config.getKX());
-        getIArguments().add(config.getSY());
-        getIArguments().add(config.getSX());
-        getIArguments().add(config.getPY());
-        getIArguments().add(config.getPX());
-        getIArguments().add(config.getDY());
-        getIArguments().add(config.getDX());
-        getIArguments().add(fromBoolean(config.isSameMode()));
+       addIArgument(config.getKY());
+       addIArgument(config.getKX());
+       addIArgument(config.getSY());
+       addIArgument(config.getSX());
+       addIArgument(config.getPY());
+       addIArgument(config.getPX());
+       addIArgument(config.getDY());
+       addIArgument(config.getDX());
+       addIArgument(fromBoolean(config.isSameMode()));
 
     }
 
@@ -64,6 +64,15 @@ public class DeConv2D extends DynamicCustomOp {
         return "deconv2d";
     }
 
+    @Override
+    public String onnxName() {
+        return "ConvTranspose";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "conv2d_transpose";
+    }
 
 
     @Override
@@ -77,7 +86,7 @@ public class DeConv2D extends DynamicCustomOp {
                 .config(config)
                 .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(deConv2DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(deConv2DDerivative.outputFunctions()));
         return ret;
     }
 

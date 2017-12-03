@@ -29,11 +29,12 @@ public class Conv3D extends DynamicCustomOp {
     public Conv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
         super(null,sameDiff, inputFunctions, false);
         setSameDiff(sameDiff);
-        setArgs(inputFunctions);
+        if(inputFunctions != null)
+            sameDiff.associateFunctionsAsArgs(inputFunctions,this);
         if(inputs != null)
-            getInputArguments().addAll(Arrays.asList(inputs));
+            addInputArgument(inputs);
         if(outputs != null)
-            getOutputArguments().addAll(Arrays.asList(outputs));
+            addOutputArgument(outputs);
         this.config = conv3DConfig;
         addArgs();
 
@@ -41,19 +42,19 @@ public class Conv3D extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getIArguments().add(getConfig().getDT());
-        getIArguments().add(getConfig().getDW());
-        getIArguments().add(getConfig().getDH());
-        getIArguments().add(getConfig().getPT());
-        getIArguments().add(getConfig().getPW());
-        getIArguments().add(getConfig().getPH());
-        getIArguments().add(getConfig().getDilationT());
-        getIArguments().add(getConfig().getDilationW());
-        getIArguments().add(getConfig().getDilationH());
-        getIArguments().add(getConfig().getAT());
-        getIArguments().add(getConfig().getAW());
-        getIArguments().add(getConfig().getAH());
-        getIArguments().add(fromBoolean(getConfig().isBiasUsed()));
+        addIArgument(new int[]{getConfig().getDT(),
+        getConfig().getDW(),
+        getConfig().getDH(),
+        getConfig().getPT(),
+        getConfig().getPW(),
+        getConfig().getPH(),
+        getConfig().getDilationT(),
+        getConfig().getDilationW(),
+        getConfig().getDilationH(),
+        getConfig().getAT(),
+        getConfig().getAW(),
+        getConfig().getAH(),
+        fromBoolean(getConfig().isBiasUsed())});
 
     }
 
@@ -73,12 +74,23 @@ public class Conv3D extends DynamicCustomOp {
         Conv3DDerivative conv3DDerivative = Conv3DDerivative.derivativeBuilder()
                .conv3DConfig(config)
                 .inputFunctions(args())
-                .outputs(this.getOutputArguments().toArray(new INDArray[this.getOutputArguments().size()]))
+                .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .sameDiff(sameDiff)
                 .build();
-        ret.addAll(Arrays.asList(conv3DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(conv3DDerivative.outputFunctions()));
         return ret;
     }
 
+
+
+    @Override
+    public String onnxName() {
+        return "Conv";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "Conv3D";
+    }
 }

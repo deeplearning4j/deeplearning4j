@@ -1,15 +1,18 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.*;
+import org.nd4j.graph.*;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -17,16 +20,17 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
+import org.nd4j.linalg.collection.IntArrayKeySet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -36,7 +40,10 @@ import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
+import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 
 /**
@@ -64,10 +71,14 @@ public class SameDiff {
     private DifferentialFunctionFactory functionFactory;
     private Map<String,SDVariable> variableMap;
     private Map<int[],SDVariable> vertexIdToVariable;
+    private Map<int[],int[]> vertexIdToShape;
     //gradient information
     private Map<int[],SDVariable> gradients;
     private Map<int[],SDVariable> forwardVarForGrad;
     private Map<int[],INDArray> vertexIdToArr;
+    private Map<int[],List<int[]>> placeHolderMap;
+    private Map<int[],int[]> placeHolderOriginalShapes;
+    private Set<int[]> placeHolderVertexIds;
     private IdentityHashMap<INDArray,SDVariable> reverseArrayLookup;
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
@@ -145,26 +156,24 @@ public class SameDiff {
 
         }
 
-        for(List<Edge<OpState>> edgeList : graph().getEdges().values()) {
-            for(Edge<OpState> edge : edgeList) {
-                OpStateEdge newEdge = new OpStateEdge(
+        for(List<Edge<String>> edgeList : graph().getEdges().values()) {
+            for(Edge<String> edge : edgeList) {
+                EdgeId newEdge = new EdgeId(
                         new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
                         new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                         cloner.deepCloneDontCloneInstances(edge.getValue()),true);
-                newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
 
                 sameDiff.graph().addEdge(newEdge);
             }
         }
 
 
-        for(List<Edge<OpState>> edgeList : graph().getIncomingEdges().values()) {
-            for(Edge<OpState> edge : edgeList) {
-                OpStateEdge newEdge = new OpStateEdge(
+        for(val edgeList : graph().getIncomingEdges().values()) {
+            for(val edge : edgeList) {
+                EdgeId newEdge = new EdgeId(
                         new int[]{thisVertexIdToNew.get(edge.getFrom()[0])},
                         new int[]{thisVertexIdToNew.get(edge.getTo()[0])},
                         cloner.deepCloneDontCloneInstances(edge.getValue()),true);
-                newEdge.getValue().setVertexIds(sameDiff.generateVertexIds(newEdge.getFrom()[0],newEdge.getTo()[0]));
                 sameDiff.graph().addEdge(newEdge);
 
             }
@@ -220,6 +229,57 @@ public class SameDiff {
 
 
     /**
+     * This is basically a proxy call to {@link SDGraph#addEdge(Edge)}
+     * This just ensures that the inputs and output differential function
+     * are already associated with each other.
+     * @param args the arguments to add
+     * @param output the output to associate with this vertex id
+     */
+    public void associateFunctionsAsArgs(DifferentialFunction[] args,DifferentialFunction output) {
+        if(args == null) {
+            log.warn("Input functions were null. Returning");
+            return;
+        }
+
+
+        List<Integer> argVertexIds = new ArrayList<>();
+        for(DifferentialFunction arg : args) {
+            argVertexIds.addAll(Ints.asList(arg.getVertexId()));
+            if(!functionInstances.containsKey(arg.getVertexId()))
+                putFunction(arg.getVertexId(),arg);
+        }
+
+        val inputVertexId = Ints.toArray(argVertexIds);
+        val outputVertexId = output.resultVertexId();
+        if(graph().getFromFor(outputVertexId) == null)
+            graph().addEdge(inputVertexId,outputVertexId,UUID.randomUUID().toString(),true);
+
+    }
+
+    /**
+     * Returns the arguments for a given output {@link DifferentialFunction}
+     * @param output the output to get the arguments for
+     * @return the arguments for the target function
+     */
+    public DifferentialFunction[] getArgsFor(DifferentialFunction output) {
+        Set<DifferentialFunction> ret = new LinkedHashSet<>();
+        val from = graph().getFromFor(output.getVertexId());
+        for (int i = 0; i < from.length; i++) {
+            val currFunc = getFunctionForVertexId(new int[]{from[i]});
+            if (currFunc != null && !ret.contains(currFunc)) {
+                ret.add(currFunc);
+            } else if (getVariableForVertexId(new int[]{from[i]}) != null) {
+                ret.add(getVariableForVertexId(new int[]{from[i]}));
+            } else
+                throw new ND4JIllegalStateException("No function or variable found for " + Arrays.toString(new int[]{from[i]}));
+        }
+
+
+        return ret.toArray(new DifferentialFunction[ret.size()]);
+    }
+
+
+    /**
      * Get the variable for the given vertex id.
      * WARNING: This function also has side effects.
      * {@link SDVariable} instances will be created
@@ -235,7 +295,7 @@ public class SameDiff {
                 DifferentialFunction func = getFunctionForVertexId(vertexId);
                 if(func == null)
                     throw new IllegalArgumentException("No vertex id of " + Arrays.toString(vertexId) + " function or variable found!");
-                SDVariable newVar = var(generateVariableName(func.opName(),false,func.args()),func.getShape(),func.depth() + 1);
+                SDVariable newVar = var(generateVariableName(func.opName(),false,func.args()),getShapeForVertexId(vertexId),func.depth() + 1);
                 Preconditions.checkState(newVar.getSameDiff() == this,"Same diff instance for variable must be the same!");
                 vertexIdToVariable.put(vertexId,newVar);
                 addVariable(newVar);
@@ -255,10 +315,11 @@ public class SameDiff {
      * @param arr
      */
     public void updateArrayForVertexId(int[] vertexId,INDArray arr) {
-        if(vertexIdToArr.containsKey(vertexId)) {
+        if(!vertexIdToArr.containsKey(vertexId)) {
             throw new ND4JIllegalStateException("Array for " + Arrays.toString(vertexId) + " does not exist. Please use putArrayForVertexId instead.");
         }
         vertexIdToArr.put(vertexId,arr);
+        reverseArrayLookup.put(arr,getVariableForVertexId(vertexId));
     }
 
     /**
@@ -277,6 +338,97 @@ public class SameDiff {
         }
         vertexIdToArr.put(vertexId,arr);
     }
+
+    /**
+     * Get the shape for the given vertex id.
+     * Note that if an array is defined, it will use that shape instead.
+     *
+     * A shape *and* an array should not be defined at the same time.
+     * This wastes memory. The internal map used for tracking shapes for particular
+     * vertex ids should also delete redundant shapes stored to avoid redundant sources of information.
+     * @param vertexId the vertex id to get the shape for
+     * @return the shape for the given vertex if if any.
+     */
+    public int[] getShapeForVertexId(int[] vertexId) {
+        //first check that the shape doesn't already exists.
+        //if it does, remove it
+        if(vertexIdToArr.containsKey(vertexId) && vertexIdToShape.containsKey(vertexId)) {
+            vertexIdToShape.remove(vertexId);
+        }
+
+        if(vertexIdToArr.containsKey(vertexId)) {
+            return vertexIdToArr.get(vertexId).shape();
+        }
+
+
+
+        return vertexIdToShape.get(vertexId);
+    }
+
+
+
+    /**
+     * Update a vertex id with the given shape.
+     * Note that you should use {@link #putShapeForVertexId(int[], int[])}
+     * if you want to add a new shape.
+     * Update is meant to be an in place replacement
+     * of the shape for the vertex id *only*.
+     * @param vertexId the vertex id to associate
+     * @param shape the shape to associate with
+     */
+    public void updateShapeForVertexId(int[] vertexId,int[] shape) {
+        if(shape == null || shape.length < 2) {
+            throw new ND4JIllegalStateException("Shape must not be null!");
+        }
+
+
+        if(vertexId == null) {
+            throw new ND4JIllegalStateException("Null vertex ids not allowed");
+        }
+
+
+        if(shape == null) {
+            throw new ND4JIllegalStateException("Null shapes not allowed!");
+        }
+
+        if(vertexIdToArr.containsKey(vertexId) && !Arrays.equals(vertexIdToArr.get(vertexId).shape(),shape)) {
+            throw new ND4JIllegalStateException("Already found an existing array!");
+        }
+
+        vertexIdToShape.put(vertexId,shape);
+    }
+
+
+    /**
+     * Associate a vertex id with the given shape.
+     * @param vertexId the vertex id to associate
+     * @param shape the shape to assciate with
+     */
+    public void putShapeForVertexId(int[] vertexId,int[] shape) {
+        if(shape == null || shape.length < 2) {
+            throw new ND4JIllegalStateException("Shape must not be null!");
+        }
+
+        if(vertexIdToShape.containsKey(vertexId)) {
+            throw new ND4JIllegalStateException("Shape for " + Arrays.toString(vertexId) + " already exists!");
+        }
+
+        vertexIdToShape.put(vertexId,shape);
+    }
+
+
+
+
+    /**
+     * Returns true if the given vertex id
+     * and shape already exist.
+     * @param vertexId the vertex id
+     * @return true if the ndarray and vertex id already exist
+     */
+    public boolean shapeAlreadyExistsForVertexId(int...vertexId) {
+        return vertexIdToShape.containsKey(vertexId) || arrayAlreadyExistsForVertexId(vertexId);
+    }
+
 
 
     /**
@@ -331,14 +483,13 @@ public class SameDiff {
     /**
      * Associate a {@link SameDiff}
      * namespace as a sub function.
-     * @param name the name of the function
+     * @param name the opName of the function
      * @param nameSpace the namespace
      */
     public void putSubFunction(String name,SameDiff nameSpace) {
         if(sameDiffFunctionInstances.containsKey(name) && sameDiffFunctionInstances.get(name) != nameSpace) {
-            throw new ND4JIllegalStateException("Unable to replace samediff namespace. Please choose another name");
+            throw new ND4JIllegalStateException("Unable to replace samediff namespace. Please choose another opName");
         }
-
 
         sameDiffFunctionInstances.put(name,nameSpace);
     }
@@ -353,33 +504,6 @@ public class SameDiff {
     }
 
 
-    private void ensureSameDiffInstance(SameDiff sameDiff,DifferentialFunction val) {
-        val.setSameDiff(sameDiff);
-        if(val instanceof SDVariable) {
-            SDVariable variable1 = (SDVariable) val;
-            variable1.setSameDiff(sameDiff);
-            variable1.setVertexId(val.getVertexId());
-            sameDiff.setupFunction(variable1);
-
-
-        }
-        else if(val instanceof Constant) {
-            Constant constant = (Constant) val;
-            constant.setSameDiff(sameDiff);
-            sameDiff.setupFunction(constant);
-        }
-
-        //recursive case
-        else if(val.args() != null) {
-            for(DifferentialFunction equation  : val.args()) {
-                sameDiff.setupFunction(equation);
-                ensureSameDiffInstance(sameDiff,equation);
-
-            }
-        }
-
-    }
-
     /**
      * Returns the {@link SDGraph}
      * asociated with this samediff instance.
@@ -390,33 +514,33 @@ public class SameDiff {
     }
 
     /**
-     * Invoke an op by name
+     * Invoke an op by opName
      * @param op the op
      * @param x the first input
      * @param y the second input
      * @return the result variable
      */
     public SDVariable invoke(Op op,SDVariable x,SDVariable y) {
-        if(!opMethods.containsKey(op.name())) {
-            throw new ND4JIllegalStateException("Illegal method name " + op.name());
+        if(!opMethods.containsKey(op.opName())) {
+            throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
         }
 
         if(x != null && y != null) {
             try {
-                return (SDVariable) opMethods.get(op.name()).invoke(this, x, y);
+                return (SDVariable) opMethods.get(op.opName()).invoke(this, x, y);
             }catch(Exception e) {
 
             }
         }
         else {
             try {
-                return (SDVariable) opMethods.get(op.name()).invoke(this, x);
+                return (SDVariable) opMethods.get(op.opName()).invoke(this, x);
             }catch(Exception e) {
 
             }
         }
 
-        throw new ND4JIllegalStateException("Illegal method name " + op.name());
+        throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
 
     }
 
@@ -454,7 +578,7 @@ public class SameDiff {
     }
 
     /**
-     * Invoke an op by name
+     * Invoke an op by opName
      * @param op the op
      * @param x the first input
      * @return the result variable
@@ -467,18 +591,25 @@ public class SameDiff {
         graph = new SDGraph();
         graph.setSameDiff(this);
         functionFactory = new DifferentialFunctionFactory(this);
-        variableMap = new HashMap<>();
-        sameDiffFunctionDefinitionMap = new HashMap<>();
-        sameDiffFunctionInstances = new HashMap<>();
+        variableMap = new LinkedHashMap<>();
+        sameDiffFunctionDefinitionMap = new LinkedHashMap<>();
+        sameDiffFunctionInstances = new LinkedHashMap<>();
         functionInstances = new IntArrayKeyMap<>();
         vertexIdToVariable = new IntArrayKeyMap<>();
         gradients = new IntArrayKeyMap<>();
-        forwardVarForGrad = new IntArrayKeyMap<>();
+        forwardVarForGrad = new LinkedHashMap<>();
         forwardBackwardStates = new HashMap<>();
         opsForResult = new IntArrayKeyMap<>();
         reverseArrayLookup = new IdentityHashMap<>();
         vertexIdToArr = new IntArrayKeyMap<>();
+        vertexIdToShape = new IntArrayKeyMap<>();
+        placeHolderMap = new IntArrayKeyMap<>();
+        placeHolderVertexIds = new IntArrayKeySet();
+        placeHolderOriginalShapes = new IntArrayKeyMap<>();
+
     }
+
+
 
 
     /**
@@ -703,7 +834,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with 1.0
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @return the created variable
      */
@@ -716,7 +847,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with 0.0
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @return the created variable
      */
@@ -730,7 +861,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a  constant
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param constant the value to be initialized with
      * @return the created variable
@@ -744,7 +875,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @return the created variable
@@ -758,7 +889,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @param vertexId  the vertex id to use for the variable
@@ -772,7 +903,7 @@ public class SameDiff {
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @param vertexId  the vertex id to use for the variable
@@ -814,7 +945,7 @@ public class SameDiff {
      * Variable initialization
      * with a specified {@link WeightInitScheme}
      * , depth, and vertex id of{@link SDGraph#nextVertexId}
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the array to be created
      * @param weightInitScheme the weight init scheme
      * @param depth the depth in the graph (default 0)
@@ -845,7 +976,7 @@ public class SameDiff {
      * with the given shape
      * and a depth of 0.
      *
-     * @param name the name of the variable
+     * @param name the opName of the variable
      * @param shape the shape of the variable
      * @return the created variable
      */
@@ -961,8 +1092,8 @@ public class SameDiff {
     }
 
     /**
-     * Get the variable based on the name
-     * @param name the name of the variable
+     * Get the variable based on the opName
+     * @param name the opName of the variable
      * @return the variabel instance if there is one
      *
      */
@@ -1015,11 +1146,11 @@ public class SameDiff {
 
     /**
      * Gradient with respect
-     * to the given variable name.
+     * to the given variable opName.
      * Note that in order to run this function,
      * {@link #execBackwards()} must be executed first.
      * All gradient functions are obtained within that time.
-     * @param varName the variable name to get the gradient for.
+     * @param varName the variable opName to get the gradient for.
      * @return
      */
     public SDVariable grad(String varName) {
@@ -1443,7 +1574,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
-        return gradientBackwardsMarker(generateVariableName(new GradientBackwardsMarker().name(),true,iX),iX);
+        return gradientBackwardsMarker(generateVariableName(new GradientBackwardsMarker().opName(),true,iX),iX);
     }
 
 
@@ -2788,7 +2919,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossNegativeLogLikelihood(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
-        DifferentialFunction result = functionFactory.lossMSLE(getFunctionInput(iX),getFunctionInput(i_y),dimensions);
+        DifferentialFunction result = functionFactory.lossNegativeLogLikelihood(getFunctionInput(iX), getFunctionInput(i_y), dimensions);
         updateVariableName(result.getVertexId(),name);
         return getVariableForVertexId(result.getVertexId());
     }
@@ -2838,12 +2969,12 @@ public class SameDiff {
          * because more than one input can have the same
          * vertex id as a result.
          *
-         * We validate based on variable name instead
+         * We validate based on variable opName instead
          * which takes in to account function names as well
          * as input ids
          */
         if(variableMap.containsKey(variable.getVarName()) && !variableMap.get(variable.getVarName()).equals(variable)) {
-            throw new IllegalArgumentException("Variable already found with variable name " + variable.getVarName());
+            throw new IllegalArgumentException("Variable already found with variable opName " + variable.getVarName());
         }
 
         Preconditions.checkState(variable.getSameDiff() == this,"Same diff instance for variable must be the same!");
@@ -2874,8 +3005,6 @@ public class SameDiff {
                 sb.append("-");
 
 
-                if (variable.getOpState() != null)
-                    sb.append(Arrays.toString(variable.getOpState().getVertexIds()));
                 sb.append(",");
             }
         }
@@ -2908,8 +3037,6 @@ public class SameDiff {
                     sb.append("-");
                 }
 
-                if (getFunctionInput(variable).getOpState() != null)
-                    sb.append(Arrays.toString(getFunctionInput(variable).getOpState().getVertexIds()));
                 sb.append(",");
             }
         }
@@ -2924,10 +3051,10 @@ public class SameDiff {
 
     /**
      * Get a function instance
-     * given the name
-     * @param functionName the name of the function
+     * given the opName
+     * @param functionName the opName of the function
      * @return the same diff function instance
-     * defined for the given name
+     * defined for the given opName
      */
     public SameDiff getFunction(String functionName) {
         return sameDiffFunctionInstances.get(functionName);
@@ -2952,7 +3079,7 @@ public class SameDiff {
             this.vertexIdToVariable.put(vertexId,sdVariable);
         }
         else {
-            this.functionInstances.put(vertexId,function);
+            this. functionInstances.put(vertexId,function);
         }
     }
 
@@ -2980,13 +3107,15 @@ public class SameDiff {
             if (differentialFunction instanceof ScalarOp) {
                 ScalarOp scalarOp = (ScalarOp) differentialFunction;
                 scalarOp.setScalar(differentialFunction.getScalarValue());
-
             }
-
 
             Op op = (Op) differentialFunction;
             differentialFunction.fillInArrays();
             op.setN(op.x().length());
+
+        }
+        else if(differentialFunction instanceof DynamicCustomOp) {
+            DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) differentialFunction;
 
         }
         //if and while are special
@@ -3226,7 +3355,7 @@ public class SameDiff {
 
     /**
      * Exec a given function
-     * @param functionName the name of the function
+     * @param functionName the opName of the function
      *                     to invoke
      * @return
      */
@@ -3237,7 +3366,7 @@ public class SameDiff {
 
     /**
      * Exec a given function
-     * @param functionName the name of the function
+     * @param functionName the opName of the function
      *                     to invoke
      * @return
      */
@@ -3253,7 +3382,7 @@ public class SameDiff {
     /**
      * Exec the given function
      * given the ops
-     * @param functionName the name of the function to
+     * @param functionName the opName of the function to
      *                     exec
      * @param cachedOps the cached operations
      * @return
@@ -3270,6 +3399,7 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
+
         final SameDiff outer = this;
         if(getFunction("grad") == null)
             defineFunction("grad", new SameDiffFunctionDefinition() {
@@ -3298,7 +3428,7 @@ public class SameDiff {
                     Set<DifferentialFunction> seen = new HashSet<>();
 
                     for(OpExecAction action : opOrder) {
-                        if(action == null || action.getOpState() == null) {
+                        if(action == null) {
                             log.warn("Action op state is null");
                             continue;
                         }
@@ -3380,7 +3510,259 @@ public class SameDiff {
      * Creates and executes a list of operations
      * @return
      */
+    public INDArray execWithPlaceHolderAndEndResult(Map<String,INDArray> inputs) {
+        resolveVariablesWith(inputs);
+        return execAndEndResult();
+    }
+
+
+    /**
+     * Set the original shape for a given place holder.
+     * This is used to track original shapes of place holder variables.
+     * The reason we track original shapes is to validate
+     * possible candidate arrays coming in (especially with -1
+     * as the expected shapes).
+     *
+     * Note that if {@link #isPlaceHolder(int[])}
+     * returns false for the passed in vertex id,
+     * a {@link ND4JIllegalStateException} is thrown.
+     *
+     * A vertex id must be added first. You can
+     * do this with {@link #addAsPlaceHolder(int[])}
+     *
+     * @param vertexId the vertex id for the original shape
+     * @param shape the shape of the place holder
+     */
+    public void setOriginalPlaceHolderShape(int[] vertexId,int[] shape) {
+        if(vertexId == null || vertexId.length == 0) {
+            throw new ND4JIllegalStateException("Null and 0 length shape arrays not allowed");
+        }
+
+
+        if(!isPlaceHolder(vertexId)) {
+            throw  new ND4JIllegalStateException("Vertex id " + Arrays.toString(vertexId) + " does not appear to be a place holder. Did you forget to call addPlaceHolder?");
+        }
+
+        if(shape == null) {
+            throw new ND4JIllegalStateException("Null and 0 length shape arrays not allowed");
+        }
+
+
+        if(placeHolderOriginalShapes.containsKey(vertexId)) {
+            throw new ND4JIllegalStateException("Unable to add a new shape for vertex id " + Arrays.toString(vertexId));
+        }
+
+        //after validation now only set once
+        placeHolderOriginalShapes.put(vertexId,shape);
+
+    }
+
+
+    /**
+     * Get the original shape for the vertex id if one was set
+     * (other wise returns null).
+     * This is mainly for use in validating passed in arrays
+     * as arguments to {@link #resolveVariablesWith(Map)}
+     * usually when executing using {@link #execWithPlaceHolder(Map)}
+     * @param vertexId the vertex id to get the original shape for.
+     *
+     * @return the set vertex
+     */
+    public int[] getOriginalShapeForPlaceHolder(int[] vertexId) {
+        return placeHolderOriginalShapes.get(vertexId);
+    }
+
+    /**
+     * Returns true if this vertex id
+     * is a place holder variable or not
+     * @param vertexId the vertex id to test
+     * @return
+     */
+    public boolean isPlaceHolder(int[] vertexId) {
+        return placeHolderVertexIds.contains(vertexId);
+    }
+
+
+    /**
+     * Add  this vertex id as a place holder
+     * @param vertexId the vertex id to add
+     */
+    public void addAsPlaceHolder(int[] vertexId) {
+        placeHolderVertexIds.add(vertexId);
+    }
+
+
+    /**
+     * Resolve all ndarrays by updating the variables
+     * for each array specified in the given map.
+     * An {@link IllegalStateException} will be thrown
+     * if not all arrays are specified for resolution.
+     * @param arrays the arrays to resolve.
+     */
+    public void resolveVariablesWith(Map<String,INDArray> arrays) {
+        Preconditions.checkState(arrays.size() == placeHolderVertexIds.size(),"Not all variables specified. " + arrays.size() + " variables were specified, but needed " + placeHolderVertexIds.size());
+
+        for(val arrayEntry : arrays.entrySet()) {
+            val varForName = getVariable(arrayEntry.getKey());
+            if(varForName == null) {
+                throw new ND4JIllegalStateException("No variable name found for " + arrayEntry.getKey());
+            }
+
+            if(placeHolderOriginalShapes.containsKey(varForName.getVertexId())) {
+                val originalShape = placeHolderOriginalShapes.get(varForName.getVertexId());
+                for(int i = 0; i < originalShape.length; i++) {
+                    if(originalShape[i] != arrayEntry.getValue().shape()[i] && originalShape[i] >= 1) {
+                        throw new ND4JIllegalStateException("Incompatible shape passed for variable. " + Arrays.toString(arrayEntry.getValue().shape()));
+                    }
+                }
+            }
+        }
+
+
+
+        for(val entry : arrays.entrySet()) {
+            val arrVertexId = getVariable(entry.getKey()).getVertexId();
+            if(!placeHolderVertexIds.contains(arrVertexId)) {
+                throw new ND4JIllegalStateException("Illegal variable " + entry.getKey() + " passed in. Variable found not to be a place holder variable");
+            }
+
+
+
+            associateArrayWithVariable(entry.getValue(),getVariable(entry.getKey()));
+            updateArrayForVertexId(arrVertexId,entry.getValue());
+
+        }
+
+        Set<int[]> initialized = new IntArrayKeySet();
+        //update functions after variables are set
+        for(DifferentialFunction function : functionInstances.values()) {
+            //resolve arguments in case
+            for(DifferentialFunction arg : function.args()) {
+                /**
+                 * Need to resolve shapes and arrays here.
+                 */
+                if(!initialized.contains(arg.resultVertexId())) {
+                    arg.initWithArrays(arrays);
+                    initialized.add(arg.resultVertexId());
+                }
+            }
+
+
+            if(!initialized.contains(function.resultVertexId())) {
+                function.initWithArrays(arrays);
+                initialized.add(function.resultVertexId());
+            }
+        }
+    }
+
+    /**
+     * Returns true if all place holder variables
+     * are resolved.
+     * A place holder variable is resolved when
+     * {@link #getVariableForVertexId(int[])}
+     * getArr() does not return null and
+     * the shape is properly resolved.
+     * @return true if all place holder variables are resolved.
+     */
+    public boolean allPlaceHolderVariablesResolved() {
+        for(val vertexId : placeHolderVertexIds) {
+            val var = getVariableForVertexId(vertexId);
+            if(var.getArr() == null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Add one or or more place holder variables
+     * for the given vertex id.
+     *
+     * Note that if a vertex id in placeHolderVariables
+     * isn't present in this samediff instance anyways,
+     * an {@link ND4JIllegalStateException} is thrown
+     *
+     * @param vertexId the vertex id to add place holders for
+     * @param placeHolderVariables the place holder variables
+     *                             to add
+     */
+    public void putPlaceHolderForVertex(int[] vertexId,int[]...placeHolderVariables) {
+        for(int[] placeHolderVariable : placeHolderVariables) {
+            if(!vertexIdToVariable.containsKey(placeHolderVariable)) {
+                throw new ND4JIllegalStateException("No variable found for " + Arrays.toString(placeHolderVariable));
+            }
+        }
+
+
+        List<int[]> placeHolders = placeHolderMap.get(vertexId);
+        if(placeHolders == null) {
+            placeHolders = new ArrayList<>();
+            placeHolderMap.put(vertexId,placeHolders);
+        }
+
+        placeHolders.addAll(Arrays.asList(placeHolderVariables));
+    }
+
+
+    /**
+     * Returns true if the given vertex id
+     * has any placeholder variables
+     * @param vertexId the vertex id to check for
+     * @return true if this vertex has any place holder
+     * variables or not
+     */
+    public boolean hasPlaceHolderVariables(int[] vertexId) {
+        return placeHolderMap.containsKey(vertexId);
+    }
+
+    /**
+     * Get the place holders for a given
+     * vertex id. May return null.
+     *
+     * Consider using {@link #hasPlaceHolderVariables(int[])}
+     * @param vertexId the vertex id to get the place holders for
+     * @return the place holder variables for the given vertex
+     * id or null
+     */
+    public List<int[]> getPlaceHoldersFor(int[] vertexId) {
+        return placeHolderMap.get(vertexId);
+    }
+
+
+
+    /**
+     * Creates and executes a list of operations
+     * based on the given variables passed in.
+     * {@link #resolveVariablesWith(Map)}
+     * is called
+     * @return
+     */
+    public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> execWithPlaceHolder(Map<String,INDArray> inputs) {
+        resolveVariablesWith(inputs);
+        //resolve the place holders
+        for(DifferentialFunction function : functionInstances.values()) {
+            function.initWithArrays(inputs);
+        }
+
+
+        for(val entry : inputs.entrySet()) {
+            associateArrayWithVariable(entry.getValue(),getVariable(entry.getKey()));
+        }
+
+        return exec();
+    }
+
+    /**
+     * Creates and executes a list of operations
+     * @return
+     */
     public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> exec() {
+        if(!allPlaceHolderVariablesResolved()) {
+            throw new ND4JIllegalStateException("Undefined variables found.");
+        }
+
+
         List<DifferentialFunction> ops = new ArrayList<>();
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
 
@@ -3390,60 +3772,61 @@ public class SameDiff {
         for(int i = 0; i < opExecActions.size(); i++) {
 
             OpExecAction opExecAction = opExecActions.get(i);
-            if(!onBackward && opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().name())) {
+            val opName = getFunctionForVertexId(opExecAction.getOutputId()).opName();
+            if(!onBackward && opName.equals(new GradientBackwardsMarker().opName())) {
                 onBackward = true;
             }
 
-            if(opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().name()))
+            if(opName.equals(new GradientBackwardsMarker().opName()))
                 continue;
 
             DifferentialFunction differentialFunction = createOp(
                     opExecAction);
             if(differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
-               if(!onBackward) {
-                   ifOp.getPredicateExecution().exec();
-                   //depending on the block add the proper graph body to this for persistence
-                   //and possible later processing.
-                   if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                       ifOp.getLoopBodyExecution().exec();
-                       ifOp.exectedTrueOrFalse(true);
-                   }
-                   else {
-                       ifOp.getFalseBodyExecution().exec();
-                       ifOp.exectedTrueOrFalse(false);
+                if(!onBackward) {
+                    ifOp.getPredicateExecution().exec();
+                    //depending on the block add the proper graph body to this for persistence
+                    //and possible later processing.
+                    if(ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                        ifOp.getLoopBodyExecution().exec();
+                        ifOp.exectedTrueOrFalse(true);
+                    }
+                    else {
+                        ifOp.getFalseBodyExecution().exec();
+                        ifOp.exectedTrueOrFalse(false);
 
-                   }
-               }
-               else {
-                   if(ifOp.getTrueBodyExecuted() != null) {
-                       Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = null;
-                       List<SDVariable> variablesForFunctions =  null;
-                       if(ifOp.getTrueBodyExecuted()) {
-                           execBackwards = ifOp.getLoopBodyExecution().execBackwards();
-                           variablesForFunctions = ifOp.getLoopBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
-                       }
-                       else {
-                           execBackwards = ifOp.getFalseBodyExecution().execBackwards();
-                           variablesForFunctions = ifOp.getFalseBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
-                       }
+                    }
+                }
+                else {
+                    if(ifOp.getTrueBodyExecuted() != null) {
+                        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = null;
+                        List<SDVariable> variablesForFunctions =  null;
+                        if(ifOp.getTrueBodyExecuted()) {
+                            execBackwards = ifOp.getLoopBodyExecution().execBackwards();
+                            variablesForFunctions = ifOp.getLoopBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
+                        }
+                        else {
+                            execBackwards = ifOp.getFalseBodyExecution().execBackwards();
+                            variablesForFunctions = ifOp.getFalseBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
+                        }
 
-                       /**
-                        * Maps the variables from the child namespace body to
-                        * the parent. This allows access to the underlying ndarray
-                        * and returning a valid variable reference for autodiff.
-                        */
-                       for(SDVariable variable : variablesForFunctions) {
-                           SDVariable proxyVar = var(variable);
-                       }
+                        /**
+                         * Maps the variables from the child namespace body to
+                         * the parent. This allows access to the underlying ndarray
+                         * and returning a valid variable reference for autodiff.
+                         */
+                        for(SDVariable variable : variablesForFunctions) {
+                            SDVariable proxyVar = var(variable);
+                        }
 
 
-                   }
+                    }
 
-                   else
-                       throw new ND4JIllegalStateException("No body was run.");
+                    else
+                        throw new ND4JIllegalStateException("No body was run.");
 
-               }
+                }
 
 
                 ops.add(differentialFunction);
@@ -3501,14 +3884,79 @@ public class SameDiff {
 
 
             }
+            else if(differentialFunction instanceof CustomOp) {
+                DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
+                /**
+                 * Setup outputs and inputs relative to samediff.
+                 */
+
+                val inputs = customOp.args();
+                for(DifferentialFunction output : inputs) {
+                    val outputVertexId = output.resultVertexId();
+                    val getArr = getArrForVertexId(outputVertexId);
+                    if(getArr == null) {
+                        val shape = getShapeForVertexId(outputVertexId);
+                        val var = getVariableForVertexId(outputVertexId);
+                        val otherArr = var.getWeightInitScheme().create(shape);
+                        putArrayForVertexId(outputVertexId,otherArr);
+                        customOp.addInputArgument(otherArr);
+                    }
+
+                    else if(customOp.numInputArguments() < inputs.length)
+                        customOp.addInputArgument(getArr);
+
+                }
+
+                val outputs = customOp.outputFunctions();
+                for(DifferentialFunction output : outputs) {
+                    if(output == null)
+                        throw new ND4JIllegalStateException("No output can be null");
+                    val outputVertexId = output.resultVertexId();
+                    val getArr = getArrForVertexId(outputVertexId);
+                    if(getArr == null) {
+                        //ensure shape is defined for output as well
+                        //just in case it hasn't run already
+                        int[] shape = getShapeForVertexId(outputVertexId);
+                        val var = getVariableForVertexId(outputVertexId);
+                        if(shape == null) {
+                            val newOutputShape = customOp.calculateOutputShape();
+                            if(newOutputShape == null ||  newOutputShape.isEmpty()) {
+                                throw new ND4JIllegalStateException("Unable to compute output shape! CalculateOutputShape on op returned null or empty!");
+                            }
+
+                            if(newOutputShape.size() != outputs.length) {
+                                throw new ND4JIllegalStateException("Outputs size not equal to outputs length. Missing output arrays possibly?");
+                            }
+
+                            for(int outputIdx = 0; outputIdx < newOutputShape.size(); outputIdx++) {
+                                val outputI = outputs[outputIdx];
+                                putShapeForVertexId(outputI.resultVertexId(),newOutputShape.get(outputIdx));
+                            }
+
+                            shape = getShapeForVertexId(outputVertexId);
+                        }
+
+                        val otherArr = var.getWeightInitScheme().create(shape);
+                        putArrayForVertexId(outputVertexId,otherArr);
+                        customOp.addOutputArgument(otherArr);
+                    }
+                    else if(customOp.numOutputArguments() < inputs.length)
+                        customOp.addOutputArgument(getArr);
+                }
+
+                Nd4j.getExecutioner().exec(customOp);
+            }
 
             else if(differentialFunction instanceof Op) {
                 Op op = (Op) differentialFunction;
-                if(opExecAction.getOpState().getAxes() == null)
+                if(differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);
+                else if(op.isExecSpecial()) {
+                    op.exec();
+                }
 
                 else {
-                    int[] axes = opExecAction.getOpState().getAxes();
+                    int[] axes = differentialFunction.getDimensions();
                     if(differentialFunction instanceof Accumulation) {
                         Accumulation accumulation = (Accumulation) differentialFunction;
                         Nd4j.getExecutioner().exec(accumulation,axes);
@@ -3542,8 +3990,8 @@ public class SameDiff {
                     List<SDVariable> functions = new ArrayList<>(opExecAction.getInputsIds().length);
                     SDVariable add = SDVariable.builder()
                             .sameDiff(this)
-                            .varName(!functions.isEmpty() ? generateVariableName(opExecAction.getOpState().getOpName(),true,
-                                    functions.toArray(new SDVariable[functions.size()])) : opExecAction.getOpState().getOpName() + "-" + UUID.randomUUID().toString())
+                            .varName(!functions.isEmpty() ? generateVariableName(opName,true,
+                                    functions.toArray(new SDVariable[functions.size()])) : opName + "-" + UUID.randomUUID().toString())
                             .shape(op.z().shape())
                             .vertexId(opExecAction.getOutputId())
                             .build();
@@ -3567,10 +4015,24 @@ public class SameDiff {
 
 
     /**
-     * Update the name for the variable
+     * Update the {@link INDArray}
+     * ndarray for the given variable name
+     * @param variableName the variable to update
+     * @param arr the array to update with
+     */
+    public void updateVariable(String variableName,INDArray arr) {
+        val vertexId = getVariable(variableName).getVertexId();
+        if(!vertexIdToArr.containsKey(vertexId))
+            putArrayForVertexId(vertexId,arr);
+        else
+            updateArrayForVertexId(vertexId,arr);
+    }
+
+    /**
+     * Update the opName for the variable
      * with the given vertex id
      * @param vertexId the vertex id to update
-     * @param withName thew new name
+     * @param withName thew new opName
      */
     public void updateVariableName(int[] vertexId,String withName) {
         SDVariable oldVarNameRef = getVariableForVertexId(vertexId);
@@ -3579,5 +4041,254 @@ public class SameDiff {
 
     }
 
+
+
+
+
+    protected int asFlatNode(String name,@NonNull SameDiff scope, @NonNull FlatBufferBuilder bufferBuilder) {
+        int scopeName = bufferBuilder.createString(name);
+
+        int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                scopeName,
+                scopeName,
+                OpType.LOGIC,
+                10, // hardcoded value
+                0,
+                0,
+                (byte) 0,
+                0,
+                0,
+                0,
+                0,
+                -1,
+                0.0f, 0, 0);
+
+        return flatNode;
+    }
+
+    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder) {
+        val hash = getOpNum(node.opName(), node.opType());
+        log.info("Exporting node: [{}:<{}>; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
+
+        float[] extras = node.getExtraArgs() != null ? new float[node.getExtraArgs().length] : new float[0];
+        for (int e = 0; e < extras.length; e++) {
+            extras[e] = ((Number) node.getExtraArgs()[e]).floatValue();
+        }
+
+        int[] extraBits = null;
+        if(node.opType() == Op.Type.CUSTOM) {
+            DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
+            extraBits = dynamicCustomOp.iArgs();
+        }
+        else
+            extraBits = new int[]{};
+
+        val inPaired = new ArrayList<Integer>();
+
+        val inputs = graph().getFromFor(node.getVertexId());
+        for(int input : inputs) {
+            for(int i = 0; i < node.resultVertexId().length; i++) {
+                inPaired.add(IntPair.createIntPair(bufferBuilder,input,i));
+            }
+        }
+
+
+        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
+        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
+        int nodesOut = FlatNode.createOutputVector(bufferBuilder, node.getVertexId());
+        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+        int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
+        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getDimensions() != null ? node.getDimensions() : new int[]{});
+        int fname = bufferBuilder.createString(getVariableForVertexId(node.getVertexId()).getVarName());
+        int scopeName = bufferBuilder.createString("");
+
+        if (node.opType() == null)
+            log.warn("Null-op node: {}", node);
+
+        int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                node.getVertexId()[0],
+                fname,
+                getFlatOpType(node.opType()),
+                hash,
+                nodesIn,
+                nodesInPaired,
+                (byte) 0,
+                nodesOut,
+                extraz,
+                integerArgs,
+                dimensions,
+                -1,
+                node.opType() == Op.Type.SCALAR ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName);
+
+        return flatNode;
+    }
+
+
+    public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration) {
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
+
+        val flatVariables = new ArrayList<Integer>();
+        val flatOffsets = new ArrayList<Integer>();
+        val flatNodes = new ArrayList<Integer>();
+
+        // first of all we build VariableSpace dump
+
+        for (val variable: variables()) {
+            log.info("Exporting variable: [{}]", variable.getVarName());
+            if(variable.getArr() == null || variable.getShape() == null)
+                continue;
+
+
+            if(!vertexIdToVariable.containsKey(variable.getVertexId()))
+                putArrayForVertexId(variable.getVertexId(),Nd4j.create(variable.getShape()));
+
+            val arr = variable.getArr();
+
+            int name = bufferBuilder.createString(variable.getVarName());
+            int array = arr.toFlatArray(bufferBuilder);
+            int id = IntPair.createIntPair(bufferBuilder, variable.getVertexId()[0], 0);
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
+            flatVariables.add(flatVariable);
+        }
+
+        //add functions
+        val inOrderFunctions = graph().getOpOrder().getActions();
+        for(val action : inOrderFunctions) {
+            val func = getFunctionForVertexId(action.getOutputId());
+            flatNodes.add(asFlatNode(func,bufferBuilder));
+        }
+
+        // we're dumping scopes now
+        for (val scope: sameDiffFunctionInstances.entrySet()) {
+            flatNodes.add(asFlatNode(scope.getKey(),scope.getValue(), bufferBuilder));
+
+            // converting all ops from node
+            for (val node: scope.getValue().variables()) {
+                flatNodes.add(asFlatNode(node, bufferBuilder));
+            }
+        }
+
+        int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
+        int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
+        int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
+        bufferBuilder.finish(fg);
+
+        return bufferBuilder.dataBuffer();
+    }
+
+    public ByteBuffer asFlatBuffers() {
+        val configuration = ExecutorConfiguration.builder()
+                .outputMode(org.nd4j.autodiff.execution.conf.OutputMode.IMPLICIT)
+                .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
+                .profilingMode(OpExecutioner.ProfilingMode.DISABLED)
+                .gatherTimings(true)
+                .build();
+
+        return asFlatBuffers(configuration);
+    }
+
+    public static ByteOrder getOrderFromByte(byte val) {
+        if (val == org.nd4j.graph.ByteOrder.LE)
+            return ByteOrder.LITTLE_ENDIAN;
+        else
+            return ByteOrder.BIG_ENDIAN;
+    }
+
+    public static byte getOrderAsByte() {
+        if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN))
+            return org.nd4j.graph.ByteOrder.BE;
+        else
+            return org.nd4j.graph.ByteOrder.LE;
+    }
+
+    /**
+     * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
+     *
+     * @param file
+     */
+    public void asFlatFile(@NonNull File file) throws IOException {
+        val fb = asFlatBuffers();
+        val offset = fb.position();
+
+        val array = fb.array();
+
+        try (val fos = new FileOutputStream(file); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+            dos.write(array, offset, array.length - offset);
+        }
+    }
+
+    public static DataBuffer.Type getDataTypeFromByte(byte val) {
+        if (val == DataType.FLOAT)
+            return DataBuffer.Type.FLOAT;
+        else if (val == DataType.DOUBLE)
+            return DataBuffer.Type.DOUBLE;
+        else if (val == DataType.HALF)
+            return DataBuffer.Type.HALF;
+
+        throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
+    }
+
+    public static byte getDataTypeAsByte(DataBuffer.Type type) {
+        switch (type) {
+            case FLOAT: return DataType.FLOAT;
+            case DOUBLE: return DataType.DOUBLE;
+            case HALF: return DataType.HALF;
+            case INT: return DataType.INT32;
+            case LONG: return DataType.INT64;
+            default: throw new ND4JIllegalStateException("Unknown or unsupported DataType used: ["+ type +"]");
+        }
+    }
+
+    public static long getOpNum(String name, Op.Type type) {
+        if (type == Op.Type.LOOP) {
+            return 0;
+        } else if (type == Op.Type.RETURN) {
+            return 40;
+        } else if (type == Op.Type.IF || type == Op.Type.CONDITIONAL) {
+            return 10;
+        } else if (type == Op.Type.CUSTOM) {
+            val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
+            if(name2 == null)
+                return 0;
+            return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+
+        }
+        else
+            return (long) Nd4j.getOpFactory().getOpNumByName(name);
+    }
+
+
+    public static byte getFlatOpType(Op.Type type) {
+        switch (type) {
+            case SCALAR:
+                return OpType.SCALAR;
+            case BROADCAST:
+                return OpType.BROADCAST;
+            case TRANSFORM:
+            case SPECIAL:
+                return OpType.TRANSFORM;
+            case REDUCE:
+                return OpType.ACCUMULATION;
+            case REDUCE3:
+                return OpType.ACCUMULATION3;
+            case INDEXREDUCE:
+                return OpType.INDEX_ACCUMULATION;
+            case LOOP:
+                return OpType.LOGIC;
+            case RETURN:
+                return OpType.LOGIC;
+            case CUSTOM:
+                return OpType.CUSTOM;
+            case SHAPE:
+                return OpType.SHAPE;
+            case PAIRWISE:
+                return OpType.PAIRWISE;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
+    }
 
 }

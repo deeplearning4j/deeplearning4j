@@ -1,20 +1,29 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
+import onnx.OnnxProto3;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by susaneraly on 9/9/16.
  */
 @EqualsAndHashCode
-public class LossCosineProximity implements ILossFunction {
+public class LossCosineProximity extends DifferentialFunction implements ILossFunction {
 
     /**
      *
@@ -126,7 +135,7 @@ public class LossCosineProximity implements ILossFunction {
     }
 
     /**
-     * The name of this function
+     * The opName of this function
      *
      * @return
      */
@@ -139,5 +148,42 @@ public class LossCosineProximity implements ILossFunction {
     @Override
     public String toString() {
         return "LossCosineProximity()";
+    }
+
+    @Override
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+        return null;
+    }
+
+
+
+    @Override
+    public String opName() {
+        return "losscosinedistance";
+    }
+
+    @Override
+    public Op.Type opType() {
+        return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+
+    }
+
+    @Override
+    public String onnxName() {
+        return "CosineDistance";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "CosineDistance";
     }
 }

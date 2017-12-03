@@ -28,8 +28,6 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -83,8 +81,12 @@ public class Convolution {
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
+
+        INDArray output = Nd4j.create(new int[]{col.size(0), col.size(1), h, w});
+
         Col2Im col2Im = Col2Im.builder()
                 .inputArrays(new  INDArray[]{col})
+                .outputs(new INDArray[]{output})
                 .conv2DConfig(Conv2DConfig.builder()
                         .sy(sy)
                         .sx(sx)
@@ -98,7 +100,7 @@ public class Convolution {
                 .build();
 
         Nd4j.getExecutioner().exec(col2Im);
-        return col2Im.getOutputArguments().get(0);
+        return col2Im.outputArguments()[0];
     }
 
     public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w, int dh, int dw ) {
@@ -174,7 +176,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
@@ -196,7 +198,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
@@ -218,7 +220,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     /**
@@ -282,8 +284,24 @@ public class Convolution {
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval,
                                   boolean isSameMode) {
+        INDArray output = null;
+
+        if(isSameMode) {
+            int oH = (int) Math.ceil(img.size(2) * 1.f / sy);
+            int oW = (int) Math.ceil(img.size(3) * 1.f / sx);
+
+            output = Nd4j.createUninitialized(new int[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+        }
+        else {
+            int oH = (img.size(2) - (kh + (kh-1)*(1-1)) + 2* ph)/sy + 1;
+            int oW = (img.size(3) - (kw + (kw-1)*(1-1)) + 2*pw)/sx + 1;
+
+            output = Nd4j.createUninitialized(new int[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+        }
+
         Im2col im2col =  Im2col.builder()
                 .inputArrays(new INDArray[]{img})
+                .outputs(new INDArray[]{output})
                 .conv2DConfig(Conv2DConfig.builder()
                         .kh(kh)
                         .pw(pw)
@@ -298,7 +316,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().exec(im2col);
-        return im2col.getOutputArguments().get(0);
+        return im2col.outputArguments()[0];
     }
 
     /**

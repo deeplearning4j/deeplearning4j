@@ -6,12 +6,16 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-cuda-9.0</artifactId>
+    <artifactId>nd4j-cuda-8.0</artifactId>
     <name>nd4j-cuda</name>
 
     <properties>
-        <cuda.version>9.0</cuda.version>
-        <cudnn.version>7.0</cudnn.version>
+        <cuda.version>8.0</cuda.version>
+        <cudnn.version>6.0</cudnn.version>
+        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+        <maven.compiler.testSource>1.8</maven.compiler.testSource>
     </properties>
 
     <build>
@@ -94,6 +98,7 @@
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
+                        <includePath>${libnd4jhome}/include/array</includePath>
                         <includePath>${libnd4jhome}/include/memory</includePath>
                         <includePath>${libnd4jhome}/include/graph</includePath>
                         <includePath>${libnd4jhome}/include/cnpy</includePath>
@@ -176,6 +181,13 @@
             <version>${dependency.version}</version>
             <type>${dependency.packaging}</type>
             <classifier>${dependency.classifier}</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.0.2.RELEASE</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

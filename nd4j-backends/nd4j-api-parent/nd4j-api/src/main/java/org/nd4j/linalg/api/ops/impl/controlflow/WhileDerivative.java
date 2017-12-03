@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.controlflow;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.Op;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.api.ops.Op;
  * While loop derivative
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class WhileDerivative extends While {
     private While delegate;
 

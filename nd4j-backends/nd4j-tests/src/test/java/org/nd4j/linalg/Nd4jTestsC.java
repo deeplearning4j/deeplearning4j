@@ -5456,6 +5456,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //log.info("C shape: {}", Arrays.toString(c.shapeInfoDataBuffer().asInt()));
     }
 
+    @Test
+    public void testSoftmaxZ1() throws Exception {
+        val original = Nd4j.linspace(1, 100, 100).reshape(10, 10);
+        val reference = original.dup(original.ordering());
+        val expected = original.dup(original.ordering());
+
+        Nd4j.getExecutioner().commit();
+
+        Nd4j.getExecutioner().execAndReturn(new SoftMax(expected));
+
+        val result = Nd4j.getExecutioner().execAndReturn(new SoftMax(original, original.dup(original.ordering())));
+
+        assertEquals(reference, original);
+        assertEquals(expected, result);
+    }
+
 
     @Test
     public void testIm2Col() {
@@ -5472,7 +5488,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         boolean isSameMode = true;
 
-        val input = Nd4j.create(2, 1, inY, inX);
+        val input = Nd4j.linspace(1, 2 * inY * inX, 2 * inY * inX).reshape(2, 1, inY, inX);
         val output = Nd4j.create(2, 1, 5, 5, 28, 28);
 
         val im2colOp = Im2col.builder()
@@ -5495,6 +5511,18 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         Nd4j.getExecutioner().exec(im2colOp);
+
+        log.info("result: {}", output);
+    }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testReshapeFailure() {
+        val a = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        val b = Nd4j.linspace(1, 4, 4).reshape(2,2);
+        val score = a.mmul(b);
+        val reshaped1 = score.reshape(2,100);
+        val reshaped2 = score.reshape(2,1);
     }
 
     @Override

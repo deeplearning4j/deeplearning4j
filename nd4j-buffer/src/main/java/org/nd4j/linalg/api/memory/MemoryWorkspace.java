@@ -42,6 +42,12 @@ public interface MemoryWorkspace extends AutoCloseable {
     Long getThreadId();
 
     /**
+     * This method returns current generation Id
+     * @return
+     */
+    long getGenerationId();
+
+    /**
      * This method does allocation from a given Workspace
      *
      * @param requiredMemory allocation size, in bytes

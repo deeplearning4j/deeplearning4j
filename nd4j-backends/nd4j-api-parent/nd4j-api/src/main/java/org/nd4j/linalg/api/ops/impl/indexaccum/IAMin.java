@@ -19,13 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -59,40 +57,6 @@ public class IAMin extends BaseIndexAccumulation {
     }
 
 
-    public int update(double accum, int accumIdx, double x, int xIdx) {
-        return (FastMath.abs(accum) <= FastMath.abs(x) ? accumIdx : xIdx);
-    }
-
-    public int update(float accum, int accumIdx, float x, int xIdx) {
-        return (FastMath.abs(accum) <= FastMath.abs(x) ? accumIdx : xIdx);
-    }
-
-    public int update(double accum, int accumIdx, double x, double y, int idx) {
-        return (FastMath.abs(accum) <= FastMath.abs(x) ? accumIdx : idx);
-    }
-
-    public int update(float accum, int accumIdx, float x, float y, int idx) {
-        return (FastMath.abs(accum) <= FastMath.abs(x) ? accumIdx : idx);
-    }
-
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx) {
-        return (accum.absoluteValue().doubleValue() <= x.absoluteValue().doubleValue() ? accumIdx : xIdx);
-    }
-
-    @Override
-    public int update(IComplexNumber accum, int accumIdx, double x, int idx) {
-        return (accum.absoluteValue().doubleValue() <= FastMath.abs(x) ? accumIdx : idx);
-    }
-
-    @Override
-    public int update(IComplexNumber accum, int accumIdx, double x, double y, int idx) {
-        return (accum.absoluteValue().doubleValue() <= FastMath.abs(x) ? accumIdx : idx);
-    }
-
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx) {
-        return (accum.absoluteValue().doubleValue() <= x.absoluteValue().doubleValue() ? accumIdx : idx);
-    }
-
 
     @Override
     public int opNum() {
@@ -100,48 +64,8 @@ public class IAMin extends BaseIndexAccumulation {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "iamin";
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return FastMath.abs(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
     }
 
     @Override
@@ -165,26 +89,14 @@ public class IAMin extends BaseIndexAccumulation {
     }
 
     @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new IAMin(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new IAMin(x.vectorAlongDimension(index, dimension));
-
+    public String onnxName() {
+        return "ArgMin";
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new IAMin(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new IAMin(x.tensorAlongDimension(index, dimension));
+    public String tensorflowName() {
+        return "argmin";
     }
-
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

@@ -1717,7 +1717,7 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+     * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
      * are often organized by scope (which contains slashes to convey
      * hierarchy). For example: foo/bar/0
      * </pre>
@@ -1727,7 +1727,7 @@ private static final long serialVersionUID = 0L;
     String getTag();
     /**
      * <pre>
-     * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+     * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
      * are often organized by scope (which contains slashes to convey
      * hierarchy). For example: foo/bar/0
      * </pre>
@@ -2090,7 +2090,7 @@ private static final long serialVersionUID = 0L;
     private volatile Object tag_;
     /**
      * <pre>
-     * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+     * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
      * are often organized by scope (which contains slashes to convey
      * hierarchy). For example: foo/bar/0
      * </pre>
@@ -2111,7 +2111,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+     * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
      * are often organized by scope (which contains slashes to convey
      * hierarchy). For example: foo/bar/0
      * </pre>
@@ -2914,7 +2914,7 @@ private static final long serialVersionUID = 0L;
       private Object tag_ = "";
       /**
        * <pre>
-       * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+       * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
        * are often organized by scope (which contains slashes to convey
        * hierarchy). For example: foo/bar/0
        * </pre>
@@ -2935,7 +2935,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+       * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
        * are often organized by scope (which contains slashes to convey
        * hierarchy). For example: foo/bar/0
        * </pre>
@@ -2957,7 +2957,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+       * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
        * are often organized by scope (which contains slashes to convey
        * hierarchy). For example: foo/bar/0
        * </pre>
@@ -2976,7 +2976,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+       * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
        * are often organized by scope (which contains slashes to convey
        * hierarchy). For example: foo/bar/0
        * </pre>
@@ -2991,7 +2991,7 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * Tag name for the data. Used by TensorBoard plugins to organize data. Tags
+       * Tag opName for the data. Used by TensorBoard plugins to organize data. Tags
        * are often organized by scope (which contains slashes to convey
        * hierarchy). For example: foo/bar/0
        * </pre>

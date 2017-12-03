@@ -1,62 +1,82 @@
 package org.nd4j.autodiff.functions;
 
 import com.rits.cloning.Cloner;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
 @Data
 @NoArgsConstructor
+@Slf4j
 public abstract class DifferentialFunction implements Differential {
 
     @Getter
     @Setter
+    @JsonIgnore
     protected SameDiff sameDiff;
     @Getter
-    protected OpState opState;
-    @Getter
     @Setter
+    @JsonIgnore
     protected int[] vertexId;
 
     @Getter
     @Setter
+    @JsonIgnore
     protected boolean inPlace;
 
-    @Getter
-    @Setter
-    protected int[] shape;
-
-    @Getter
-    @Setter
-    protected DifferentialFunction[] args;
 
 
     @Getter
     @Setter
+    @JsonIgnore
     protected Number scalarValue;
 
 
     @Getter
     @Setter
+    @JsonIgnore
     protected int[] dimensions;
 
+    @JsonIgnore
     protected Object[] extraArgs;
 
 
+    /**
+     * Initialize the function from the given
+     * {@link NodeDef}
+     * @param nodeDef
+     */
+    public DifferentialFunction(SameDiff sameDiff,NodeDef nodeDef, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        this.sameDiff = sameDiff;
+        initFromTensorFlow(nodeDef, sameDiff,attributesForNode ,graph);
+    }
+
+    /**
+     * Iniitialize the function from the given
+     * {@link onnx.OnnxProto3.NodeProto}
+     * @param node
+     */
+    public DifferentialFunction(SameDiff sameDiff,onnx.OnnxProto3.NodeProto node,Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        this.sameDiff = sameDiff;
+        initFromOnnx(node, sameDiff, attributesForNode, graph);
+    }
 
 
     /**
@@ -91,18 +111,20 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunction(SameDiff sameDiff, boolean inPlace, DifferentialFunction[] args) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
-        this.args = args;
+        if(sameDiff != null)
+            sameDiff.associateFunctionsAsArgs(args,this);
 
     }
 
 
-    public DifferentialFunction(SameDiff sameDiff, OpState opState, int[] vertexId, boolean inPlace,int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
+    public DifferentialFunction(SameDiff sameDiff, int[] vertexId, boolean inPlace,int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
         this.sameDiff = sameDiff;
-        this.opState = opState;
         this.vertexId = vertexId;
         this.inPlace = inPlace;
-        this.shape = shape;
-        this.args = args;
+        if(sameDiff != null) {
+            sameDiff.putShapeForVertexId(vertexId, shape);
+            sameDiff.associateFunctionsAsArgs(args, this);
+        }
         this.scalarValue = scalarValue;
         this.dimensions = dimensions;
         this.extraArgs = extraArgs;
@@ -113,15 +135,12 @@ public abstract class DifferentialFunction implements Differential {
     protected void addAsNewVertexId(int[] vertexId) {
         this.vertexId = vertexId;
 
-        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),shape,new ZeroInitScheme('f'),vertexId,maxDepthForArgs());
+        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),getResultShape(),new ZeroInitScheme('f'),vertexId,maxDepthForArgs());
         if(sameDiff.graph().getVertex(vertexId[0]) == null) {
             NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff, var.vertexId[0], depth(), var);
             var.setVertexId(new int[]{ndArrayVertex.vertexID()});
         }
 
-
-
-        var.setOpState(opState);
         sameDiff.addVariable(var);
         sameDiff.putFunction(var.getVertexId(),this);
 
@@ -137,6 +156,7 @@ public abstract class DifferentialFunction implements Differential {
      * Get the output vertex ids for this function
      * @return the set of output vertex ids for this function.
      */
+    @JsonIgnore
     public int[] getOutputVertexIds() {
         NDArrayVertex[] outputs = getVertices();
         int[] ret = new int[outputs.length];
@@ -159,6 +179,7 @@ public abstract class DifferentialFunction implements Differential {
      * Get the vertices of the outputs.
      * @return
      */
+    @JsonIgnore
     public NDArrayVertex[] getVertices() {
         NDArrayVertex[] ret = new NDArrayVertex[vertexId.length];
         for(int i = 0; i < ret.length; i++) {
@@ -173,11 +194,33 @@ public abstract class DifferentialFunction implements Differential {
      * Get the result shape for this function
      * @return
      */
+    @JsonIgnore
     public int[] getResultShape() {
-        return getResult().getResultShape();
+        val originalShape =  getResult().getResultShape();
+        if(originalShape == null) {
+            List<int[]> outputShapes =  calculateOutputShape();
+            if(outputShapes.isEmpty())
+                return null;
+            return outputShapes.get(0);
+        }
+
+        return originalShape;
     }
 
 
+
+    public boolean hasArgs() {
+        val args = args();
+        boolean argsHasArgs = true;
+        if(args != null) {
+            for(val arg : args()) {
+                if(arg.args() == null)
+                    return false;
+            }
+        }
+
+        return args != null && args.length >= 1;
+    }
 
     /**
      * Get the output functions for this function
@@ -187,6 +230,7 @@ public abstract class DifferentialFunction implements Differential {
         return Arrays.asList(this);
     }
 
+    @JsonIgnore
     public  boolean isVariable() {
         return false;
     }
@@ -216,6 +260,31 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    //by default no op, used for certain situations like
+    //place holder arrays
+    public void initWithArrays(Map<String,INDArray> arrayMap) {
+        val shapeCalc = calculateOutputShape();
+        if(hasPlaceHolderInputs() && shapeCalc != null && !shapeCalc.isEmpty()) {
+            //update place holder shapes in case the shapes
+            // need to be resolved
+            //post adding the variables to the graph.
+            if(sameDiff.shapeAlreadyExistsForVertexId(resultVertexId()))
+                sameDiff.updateShapeForVertexId(resultVertexId(),shapeCalc.get(0));
+            else
+                sameDiff.putShapeForVertexId(resultVertexId(),shapeCalc.get(0));
+
+        }
+    }
+
+
+    /**
+     * Returns true if this
+     * function has place holder inputs
+     * @return
+     */
+    public boolean hasPlaceHolderInputs() {
+        return sameDiff.hasPlaceHolderVariables(vertexId);
+    }
 
     @Override
     public abstract String toString();
@@ -227,17 +296,16 @@ public abstract class DifferentialFunction implements Differential {
     }
 
     public  DifferentialFunction[] args() {
-        return args;
+        return sameDiff.getArgsFor(this);
     }
 
     public  DifferentialFunction arg() {
-        return args[0];
+        return args()[0];
     }
 
 
     @Override
     public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-
         List<DifferentialFunction> vals = doDiff(i_v1);
         for(int i = 0; i < args().length; i++) {
             DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
@@ -262,10 +330,6 @@ public abstract class DifferentialFunction implements Differential {
 
 
     public String opName() {
-        if(this instanceof  Op) {
-            Op op = (Op) this;
-            return op.name();
-        }
         throw new UnsupportedOperationException();
     }
 
@@ -275,22 +339,28 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    public int opNum() {
+        throw new UnsupportedOperationException();
+    }
+
+    @JsonIgnore
     private INDArray getX() {
-        INDArray ret =  args()[0].getResult().getArr();
+        INDArray ret =  sameDiff.getArrForVertexId(args()[0].resultVertexId());
         return ret;
     }
 
+    @JsonIgnore
     private INDArray getY() {
         if(args().length > 1) {
-            SDVariable opId = args()[1].getResult();
-            INDArray ret = opId.getArr();
+            INDArray ret =  sameDiff.getArrForVertexId(args()[1].resultVertexId());
             return ret;
         }
         return null;
     }
 
+    @JsonIgnore
     private INDArray getZ() {
-        if(this.opState.isInPlace())
+        if(isInPlace())
             return getX();
         SDVariable opId = getResult();
         INDArray ret = opId.getArr();
@@ -299,7 +369,7 @@ public abstract class DifferentialFunction implements Differential {
 
 
     public void fillInArrays() {
-        if(this instanceof Op){
+        if(this instanceof Op) {
             Op op = (Op) this;
             op.setX(getX());
             //y is often optional for many problems
@@ -311,15 +381,37 @@ public abstract class DifferentialFunction implements Differential {
             throw new IllegalStateException("Unable to fill in arrays. Type must be an operation.");
     }
 
+
+
     /**
      * Get the result
      * @return
      */
+    @JsonIgnore
     public SDVariable getResult() {
         return sameDiff.getVariableForVertexId(vertexId);
     }
 
 
+    /**
+     * Initialize the function from the given
+     * {@link NodeDef}
+     * @param nodeDef
+     * @param initWith
+     * @param attributesForNode
+     * @param graph
+     */
+    public abstract void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph);
+
+    /**
+     * Iniitialize the function from the given
+     * {@link onnx.OnnxProto3.NodeProto}
+     * @param node
+     * @param initWith
+     * @param attributesForNode
+     * @param graph
+     */
+    public abstract void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph);
 
 
 
@@ -328,9 +420,10 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public DifferentialFunction larg() {
+        val args = args();
         if(args == null || args.length == 0)
             throw new ND4JIllegalStateException("No arguments found.");
-        return args[0];
+        return args()[0];
     }
 
     /**
@@ -341,8 +434,9 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public DifferentialFunction rarg() {
+        val args = args();
         if(args == null || args.length != 2)
-            throw new ND4JIllegalStateException("In order to use this function, the numebr of arguments for this function must be 2.");
+            throw new ND4JIllegalStateException("In order to use this function, the number of arguments for this function must be 2.");
         return args[1];
     }
 
@@ -398,7 +492,6 @@ public abstract class DifferentialFunction implements Differential {
         DifferentialFunction that = (DifferentialFunction) o;
 
         if (vertexId != that.vertexId) return false;
-        if (opState != null ? !opState.equals(that.opState) : that.opState != null) return false;
         //if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
         return true;
     }
@@ -406,12 +499,22 @@ public abstract class DifferentialFunction implements Differential {
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(vertexId);
         return result;
     }
 
+    /**
+     * The opName of this function in onnx
+     * @return
+     */
+    public abstract String onnxName();
 
+    /**
+     * The opName of this function tensorflow
+     *
+     * @return
+     */
+    public abstract String tensorflowName();
 
     protected int fromBoolean(boolean bool) {
         return bool ? 1 : 0;

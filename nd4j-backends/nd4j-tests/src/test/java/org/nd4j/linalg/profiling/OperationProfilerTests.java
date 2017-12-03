@@ -2,6 +2,7 @@ package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -284,5 +285,67 @@ public class OperationProfilerTests {
 
         a.muli(3f);
     }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScopePanic1() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+
+        INDArray array;
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+            array = Nd4j.create(10);
+
+            assertTrue(array.isAttached());
+        }
+
+
+        array.add(1.0);
+    }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScopePanic2() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+
+        INDArray array;
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+            array = Nd4j.create(10);
+            assertTrue(array.isAttached());
+
+            assertEquals(1, workspace.getGenerationId());
+        }
+
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+            assertEquals(2, workspace.getGenerationId());
+
+            array.add(1.0);
+
+            assertTrue(array.isAttached());
+        }
+    }
+
+
+    @Test
+    public void testScopePanic3() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+
+        INDArray array;
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+            array = Nd4j.create(10);
+            assertTrue(array.isAttached());
+
+            assertEquals(1, workspace.getGenerationId());
+
+
+            try (MemoryWorkspace workspaceInner = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS2")) {
+                array.add(1.0);
+            }
+        }
+    }
+
 
 }

@@ -302,6 +302,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = LongIndexer.create((LongPointer) pointer);
         }
 
+        workspaceGenerationId = workspace.getGenerationId();
+
         /*
         this.wrappedBuffer = this.pointer.asByteBuffer();
 
@@ -896,6 +898,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     if (workspace != null && (workspace instanceof DummyWorkspace)) {
                         this.attached = true;
                         this.parentWorkspace = workspace;
+                        workspaceGenerationId = workspace.getGenerationId();
                     }
 
                     this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,

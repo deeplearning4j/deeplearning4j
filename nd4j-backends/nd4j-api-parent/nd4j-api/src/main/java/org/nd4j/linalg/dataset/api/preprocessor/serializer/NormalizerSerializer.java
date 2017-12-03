@@ -217,7 +217,7 @@ public class NormalizerSerializer {
         // The next value is a string indicating the normalizer opType
         NormalizerType type = NormalizerType.valueOf(dis.readUTF());
         if (type.equals(NormalizerType.CUSTOM)) {
-            // For custom serializers, the next value is a string with the class name
+            // For custom serializers, the next value is a string with the class opName
             String strategyClassName = dis.readUTF();
             //noinspection unchecked
             return new Header(type, (Class<? extends NormalizerSerializerStrategy>) Class.forName(strategyClassName));
@@ -243,7 +243,7 @@ public class NormalizerSerializer {
         // Write the normalizer opType
         dos.writeUTF(header.normalizerType.toString());
 
-        // If the header contains a custom class name, write that too
+        // If the header contains a custom class opName, write that too
         if (header.customStrategyClass != null) {
             dos.writeUTF(header.customStrategyClass.getName());
         }

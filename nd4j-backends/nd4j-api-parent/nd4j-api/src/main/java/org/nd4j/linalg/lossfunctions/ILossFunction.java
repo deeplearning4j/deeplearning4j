@@ -78,7 +78,7 @@ public interface ILossFunction extends Serializable {
                     INDArray mask, boolean average);
 
     /**
-     * The name of this function
+     * The opName of this function
      * @return
      */
     String name();

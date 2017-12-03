@@ -22,11 +22,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
@@ -89,108 +87,20 @@ public class Stabilize extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "stabilize";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return stabilize(origin);
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return stabilize(origin);
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return stabilize(origin);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return stabilize(origin);
-    }
-
-    private float stabilize(float curr) {
-        if (curr * k > -cutOff)
-            return (float) (-cutOff / k);
-        else if (curr * k < cutOff)
-            return (float) (cutOff / k);
-        return curr;
-    }
-
-    private double stabilize(double curr) {
-        if (curr * k > -cutOff)
-            return (float) (-cutOff / k);
-        else if (curr * k < cutOff)
-            return (float) (cutOff / k);
-        return curr;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return stabilize(origin);
-    }
-
-    @Override
-    public double op(double origin) {
-        return stabilize(origin);
-    }
-
-    @Override
-    public float op(float origin) {
-        return stabilize(origin);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return stabilize(origin);
-    }
-
-
-    private IComplexNumber stabilize(IComplexNumber c) {
-        double realMin = 1.1755e-38f;
-        double cutOff = FastMath.log(realMin);
-        double curr = c.realComponent().doubleValue();
-        if (curr * k > -cutOff)
-            return Nd4j.createDouble(-cutOff / k, c.imaginaryComponent().doubleValue());
-        else if (curr * k < cutOff)
-            return Nd4j.createDouble(cutOff / k, c.imaginaryComponent().doubleValue());
-        return c;
-
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {k};
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Stabilize(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), k);
-        else
-            return new Stabilize(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),
-                            k);
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Stabilize(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), k);
-        else
-            return new Stabilize(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),
-                            k);
-
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {

@@ -9,29 +9,29 @@ public interface NodeDefOrBuilder extends
 
   /**
    * <pre>
-   * The name given to this operator. Used for naming inputs,
+   * The opName given to this operator. Used for naming inputs,
    * logging, visualization, etc.  Unique within a single GraphDef.
    * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   String getName();
   /**
    * <pre>
-   * The name given to this operator. Used for naming inputs,
+   * The opName given to this operator. Used for naming inputs,
    * logging, visualization, etc.  Unique within a single GraphDef.
    * Must match the regexp "[A-Za-z0-9.][A-Za-z0-9_./]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   com.google.protobuf.ByteString
       getNameBytes();
 
   /**
    * <pre>
-   * The operation name.  There may be custom parameters in attrs.
+   * The operation opName.  There may be custom parameters in attrs.
    * Op names starting with an underscore are reserved for internal use.
    * </pre>
    *
@@ -40,7 +40,7 @@ public interface NodeDefOrBuilder extends
   String getOp();
   /**
    * <pre>
-   * The operation name.  There may be custom parameters in attrs.
+   * The operation opName.  There may be custom parameters in attrs.
    * Op names starting with an underscore are reserved for internal use.
    * </pre>
    *
@@ -51,7 +51,7 @@ public interface NodeDefOrBuilder extends
 
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -64,7 +64,7 @@ public interface NodeDefOrBuilder extends
       getInputList();
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -76,7 +76,7 @@ public interface NodeDefOrBuilder extends
   int getInputCount();
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format
@@ -88,7 +88,7 @@ public interface NodeDefOrBuilder extends
   String getInput(int index);
   /**
    * <pre>
-   * Each input is "node:src_output" with "node" being a string name and
+   * Each input is "node:src_output" with "node" being a string opName and
    * "src_output" indicating which output tensor to use from "node". If
    * "src_output" is 0 the ":0" suffix can be omitted.  Regular inputs
    * may optionally be followed by control inputs that have the format

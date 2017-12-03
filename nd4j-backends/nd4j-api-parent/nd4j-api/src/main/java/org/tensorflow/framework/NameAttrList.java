@@ -6,7 +6,7 @@ package org.tensorflow.framework;
 /**
  * <pre>
  * A list of attr names and their values. The whole list is attached
- * with a string name.  E.g., MatMul[T=float].
+ * with a string opName.  E.g., MatMul[T=float].
  * </pre>
  *
  * Protobuf opType {@code tensorflow.NameAttrList}
@@ -110,7 +110,7 @@ private static final long serialVersionUID = 0L;
   public static final int NAME_FIELD_NUMBER = 1;
   private volatile Object name_;
   /**
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public String getName() {
     Object ref = name_;
@@ -125,7 +125,7 @@ private static final long serialVersionUID = 0L;
     }
   }
   /**
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public com.google.protobuf.ByteString
       getNameBytes() {
@@ -392,7 +392,7 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * A list of attr names and their values. The whole list is attached
-   * with a string name.  E.g., MatMul[T=float].
+   * with a string opName.  E.g., MatMul[T=float].
    * </pre>
    *
    * Protobuf opType {@code tensorflow.NameAttrList}
@@ -560,7 +560,7 @@ private static final long serialVersionUID = 0L;
 
     private Object name_ = "";
     /**
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -575,7 +575,7 @@ private static final long serialVersionUID = 0L;
       }
     }
     /**
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -591,7 +591,7 @@ private static final long serialVersionUID = 0L;
       }
     }
     /**
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setName(
         String value) {
@@ -604,7 +604,7 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder clearName() {
       
@@ -613,7 +613,7 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setNameBytes(
         com.google.protobuf.ByteString value) {

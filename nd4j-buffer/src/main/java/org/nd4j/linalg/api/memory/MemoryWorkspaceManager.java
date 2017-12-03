@@ -149,6 +149,14 @@ public interface MemoryWorkspaceManager {
     boolean checkIfWorkspaceExists(String id);
 
     /**
+     * This method checks, if Workspace with a given Id was created before this call, AND is active at the moment of call
+     *
+     * @param id
+     * @return
+     */
+    boolean checkIfWorkspaceExistsAndActive(String id);
+
+    /**
      * This method temporary opens block out of any workspace scope.
      *
      * PLEASE NOTE: Do not forget to close this block.

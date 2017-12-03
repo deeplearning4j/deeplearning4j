@@ -14,7 +14,6 @@ import java.util.Arrays;
 @Data
 @Builder
 public class OpExecAction implements Serializable {
-    private OpState opState;
     private OpExecAction forwardAction;
     private OpExecAction backwardAction;
     private int[] inputsIds;
@@ -35,14 +34,11 @@ public class OpExecAction implements Serializable {
         backwardAction.setForwardAction(this);
     }
 
-    public boolean isInPlace() {
-        return opState.isInPlace();
-    }
+
 
     @Override
     public String toString() {
         return "OpExecAction{" +
-                "opState=" + opState +
                 ", inputsIds=" + Arrays.toString(inputsIds) +
                 ", outputId=" + Arrays.toString(outputId) +
                 '}';
@@ -56,7 +52,6 @@ public class OpExecAction implements Serializable {
         OpExecAction action = (OpExecAction) o;
 
         if (outputId != action.outputId) return false;
-        if (opState != null ? !opState.equals(action.opState) : action.opState != null) return false;
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
         return Arrays.equals(inputsIds, action.inputsIds);
     }
@@ -64,7 +59,6 @@ public class OpExecAction implements Serializable {
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(inputsIds);
         result = 31 * result + Arrays.hashCode(outputId);
         return result;

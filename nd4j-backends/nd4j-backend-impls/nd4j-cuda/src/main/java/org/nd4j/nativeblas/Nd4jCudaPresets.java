@@ -25,12 +25,17 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  *
  * @author saudet
  */
-@Properties(target = "org.nd4j.nativeblas.Nd4jCuda", value = @Platform(include = "NativeOps.h", compiler = "cpp11",
-                library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"))
+@Properties(target = "org.nd4j.nativeblas.Nd4jCuda",
+                value = {@Platform(include = "NativeOps.h", compiler = "cpp11",
+                                library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"),
+                                @Platform(value = "linux", preload = "gomp@.1",
+                                                preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
+                                                                "/usr/lib/powerpc64-linux-gnu/",
+                                                                "/usr/lib/powerpc64le-linux-gnu/"})})
 public class Nd4jCudaPresets implements InfoMapper {
     @Override
     public void map(InfoMap infoMap) {
-        infoMap.put(new Info("thread_local", "ND4J_EXPORT").cppTypes().annotations())
+        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI").cppTypes().annotations())
                         .put(new Info("NativeOps").base("org.nd4j.nativeblas.NativeOps"))
                         .put(new Info("const char", "char").valueTypes("char").pointerTypes("String",
                                         "@Cast(\"const char*\") BytePointer"))

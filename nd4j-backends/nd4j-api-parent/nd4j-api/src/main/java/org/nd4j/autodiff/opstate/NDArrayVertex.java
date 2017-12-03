@@ -14,7 +14,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class NDArrayVertex extends Vertex<SDVariable>  {
-    private OpState opState;
     private SameDiff sameDiff;
 
 
@@ -50,7 +49,7 @@ public class NDArrayVertex extends Vertex<SDVariable>  {
         NDArrayVertex vertex = (NDArrayVertex) o;
         if(vertex.depth != this.depth)
             return false;
-        return opState != null ? opState.equals(vertex.opState) : vertex.opState == null;
+        return true;
     }
 
     @Override
@@ -58,7 +57,6 @@ public class NDArrayVertex extends Vertex<SDVariable>  {
         int result = super.hashCode();
         result *= 31 * depth;
         result *= 31 * idx;
-        result = 31 * result + (opState != null ? opState.hashCode() : 0);
         return result;
     }
 

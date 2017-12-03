@@ -2,7 +2,6 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.Differential;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,6 +24,14 @@ public class FullConv3D extends DynamicCustomOp {
     public FullConv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputs, INDArray[] outputs, FullConv3DConfig conv3DConfig) {
         super(null,sameDiff, inputFunctions, false);
         this.conv3DConfig = conv3DConfig;
+        if(inputs != null) {
+            addInputArgument(inputs);
+        }
+
+        if(outputs != null) {
+            addOutputArgument(outputs);
+        }
+
         addArgs();
     }
 
@@ -34,19 +41,20 @@ public class FullConv3D extends DynamicCustomOp {
 
 
     private void addArgs() {
-        getIArguments().add(conv3DConfig.getDT());
-        getIArguments().add(conv3DConfig.getDW());
-        getIArguments().add(conv3DConfig.getDH());
-        getIArguments().add(conv3DConfig.getPT());
-        getIArguments().add(conv3DConfig.getPW());
-        getIArguments().add(conv3DConfig.getPH());
-        getIArguments().add(conv3DConfig.getDilationT());
-        getIArguments().add(conv3DConfig.getDilationW());
-        getIArguments().add(conv3DConfig.getDilationH());
-        getIArguments().add(conv3DConfig.getAT());
-        getIArguments().add(conv3DConfig.getAW());
-        getIArguments().add(conv3DConfig.getAH());
-        getIArguments().add(fromBoolean(conv3DConfig.isBiasUsed()));
+        addIArgument(new int[]{
+                conv3DConfig.getDT(),
+                conv3DConfig.getDW(),
+                conv3DConfig.getDH(),
+                conv3DConfig.getPT(),
+                conv3DConfig.getPW(),
+                conv3DConfig.getPH(),
+                conv3DConfig.getDilationT(),
+                conv3DConfig.getDilationW(),
+                conv3DConfig.getDilationH(),
+                conv3DConfig.getAT(),
+                conv3DConfig.getAW(),
+                conv3DConfig.getAH(),
+                fromBoolean(conv3DConfig.isBiasUsed())});
 
 
     }
@@ -68,7 +76,7 @@ public class FullConv3D extends DynamicCustomOp {
                 .sameDiff(sameDiff)
                 .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(fullConv3DDerivative.getOutputFunctions()));
+        ret.addAll(Arrays.asList(fullConv3DDerivative.outputFunctions()));
         return ret;
     }
 

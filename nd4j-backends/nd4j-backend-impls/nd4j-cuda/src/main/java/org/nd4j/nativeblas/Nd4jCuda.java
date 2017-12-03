@@ -51,6 +51,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #define ND4J_EXPORT
 // #endif
 // #include <dll.h>
+// #include <helpers/BlasHelper.h>
 
 /*
 int tad_threshold = 1;
@@ -60,8 +61,7 @@ bool debug = false;
 bool verbose = false;
 */
 
-// #include <graph/ShapeList.h>
-
+// #include <array/ShapeList.h>
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -2948,6 +2948,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void initializeDevicesAndFunctions();
 
+    public native void initializeFunctions(@Cast("Nd4jPointer*") PointerPointer functions);
 
     /**
      * This method acquires memory chunk of requested size on host side

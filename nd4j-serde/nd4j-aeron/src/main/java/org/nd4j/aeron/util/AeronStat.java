@@ -137,7 +137,7 @@ public class AeronStat {
             for (final String arg : args) {
                 final int equalsIndex = arg.indexOf('=');
                 if (-1 == equalsIndex) {
-                    System.out.println("Arguments must be in name=pattern format: Invalid '" + arg + "'");
+                    System.out.println("Arguments must be in opName=pattern format: Invalid '" + arg + "'");
                     return;
                 }
 

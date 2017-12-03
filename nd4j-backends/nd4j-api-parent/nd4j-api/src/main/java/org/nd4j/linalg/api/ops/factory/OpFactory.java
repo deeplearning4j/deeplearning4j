@@ -44,7 +44,7 @@ public interface OpFactory {
 
     /**
      * Create a loss function with the given inputs and outputs
-     * @param name the name of the function
+     * @param name the opName of the function
      * @param x the input
      * @param y the output
      * @return a loss function representing the delta between the 2
@@ -54,7 +54,7 @@ public interface OpFactory {
     /**
      * Accumulation operation
      *
-     * @param name the name of the function to create
+     * @param name the opName of the function to create
      * @param x    the input to the function
      * @return the operation
      */
@@ -63,7 +63,7 @@ public interface OpFactory {
     /**
      * Accumulation operation
      *
-     * @param name the name of the function
+     * @param name the opName of the function
      * @param x    the input
      * @param y    the pairwise transformation
      * @param z    the output

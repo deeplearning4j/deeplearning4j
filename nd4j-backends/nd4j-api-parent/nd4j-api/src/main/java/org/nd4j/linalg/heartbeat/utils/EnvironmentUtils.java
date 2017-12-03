@@ -24,7 +24,7 @@ public class EnvironmentUtils {
         environment.setNumCores(Runtime.getRuntime().availableProcessors());
         environment.setAvailableMemory(Runtime.getRuntime().maxMemory());
         environment.setOsArch(System.getProperty("os.arch"));
-        environment.setOsName(System.getProperty("os.name"));
+        environment.setOsName(System.getProperty("os.opName"));
         environment.setBackendUsed(Nd4j.getExecutioner().getClass().getSimpleName());
 
         return environment;

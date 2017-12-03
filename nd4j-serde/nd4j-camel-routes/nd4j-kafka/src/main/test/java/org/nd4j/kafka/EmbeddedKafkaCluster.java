@@ -108,7 +108,7 @@ public class EmbeddedKafkaCluster {
             properties.putAll(baseProperties);
             properties.setProperty("zookeeper.connect", zkConnection);
             properties.setProperty("broker.id", String.valueOf(i + 1));
-            properties.setProperty("host.name", "localhost");
+            properties.setProperty("host.opName", "localhost");
             properties.setProperty("port", Integer.toString(port));
             properties.setProperty("log.dir", logDir.getAbsolutePath());
             properties.setProperty("num.partitions", String.valueOf(1));

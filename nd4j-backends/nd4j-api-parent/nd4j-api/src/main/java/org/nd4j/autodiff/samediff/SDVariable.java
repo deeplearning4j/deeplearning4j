@@ -1,21 +1,20 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -34,6 +33,7 @@ import java.util.Map;
  *
  */
 @Data
+@NoArgsConstructor
 public class SDVariable extends DifferentialFunction implements Serializable {
     @Getter
     @Setter
@@ -43,25 +43,15 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
     @Builder
     private SDVariable(String varName,
-                       OpState opState,
                        SameDiff sameDiff,
                        int[] shape,
                        WeightInitScheme weightInitScheme,
                        int[] vertexId) {
-        this.shape =  shape;
+        if(shape != null && shape.length >= 2)
+             sameDiff.putShapeForVertexId(vertexId,Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape));
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
         this.vertexId = vertexId;
-
-        if(opState == null) {
-            this.opState = OpState.builder()
-                    .opType(Op.Type.RETURN)
-                    .inPlace(true)
-                    .vertexIds(ArrayUtil.convertToString(vertexId))
-                    .opName(varName)
-                    .build();
-        }
-
 
         if(weightInitScheme == null) {
             this.weightInitScheme = new ZeroInitScheme('f');
@@ -77,6 +67,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     @Override
+    public String opName() {
+        return "var";
+    }
+
+    @Override
     public boolean isVariable() {
         return true;
     }
@@ -88,14 +83,25 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+
+    }
+
+
+    @Override
     public int[] getResultShape() {
         return getShape();
     }
 
-
-
-
-
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        //no-op
+    }
 
     /**
      * A getter for the allocated ndarray
@@ -120,6 +126,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                     getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
         }
+        else if(getShape() == null)
+            return null;
+
         else {
             INDArray newAlloc = getWeightInitScheme().create(getShape());
             sameDiff.associateArrayWithVariable(newAlloc,this);
@@ -169,11 +178,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public int[] getShape() {
-        if(shape != null)
-            return shape;
-
-        return sameDiff.getVariableForVertexId(this.vertexId).getShape();
-
+        return sameDiff.getShapeForVertexId(vertexId);
     }
 
 
@@ -183,24 +188,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable dup() {
-        return SDVariable.builder()
-                .varName(varName)
-                .shape(shape)
-                .sameDiff(sameDiff)
-                .build();
+        return sameDiff.var(this);
     }
-
-    private int[] getTransformOutputShape(SDVariable other) {
-        if(shape == null)
-            return other.getShape();
-        if(ArrayUtil.prod(shape) == 1) {
-            return other.getShape();
-        }
-
-        return getShape();
-    }
-
-
 
 
 
@@ -775,7 +764,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
     private void assertShapeEquals(SDVariable variable) {
-        if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1 && Shape.broadcastOutputShape(shape,variable.shape) == null) {
+        val shape = sameDiff.getShapeForVertexId(vertexId);
+        if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1 && Shape.broadcastOutputShape(shape,variable.getShape()) == null) {
             throw new IllegalArgumentException("Input shape must be the same as this shape " + Arrays.toString(shape) + " and shape was " + Arrays.toString(variable.getShape()));
         }
     }
@@ -823,4 +813,15 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         result = 31 * result + (weightInitScheme != null ? weightInitScheme.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
 }

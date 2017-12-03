@@ -34,7 +34,7 @@ public interface SummaryMetadataOrBuilder extends
 
   /**
    * <pre>
-   * Display name for viewing in TensorBoard.
+   * Display opName for viewing in TensorBoard.
    * </pre>
    *
    * <code>string display_name = 2;</code>
@@ -42,7 +42,7 @@ public interface SummaryMetadataOrBuilder extends
   String getDisplayName();
   /**
    * <pre>
-   * Display name for viewing in TensorBoard.
+   * Display opName for viewing in TensorBoard.
    * </pre>
    *
    * <code>string display_name = 2;</code>

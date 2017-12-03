@@ -89,18 +89,18 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * The name of the node. Names are globally unique.
+     * The opName of the node. Names are globally unique.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     String getName();
     /**
      * <pre>
-     * The name of the node. Names are globally unique.
+     * The opName of the node. Names are globally unique.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     com.google.protobuf.ByteString
         getNameBytes();
@@ -1832,10 +1832,10 @@ private static final long serialVersionUID = 0L;
     private volatile Object name_;
     /**
      * <pre>
-     * The name of the node. Names are globally unique.
+     * The opName of the node. Names are globally unique.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -1851,10 +1851,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The name of the node. Names are globally unique.
+     * The opName of the node. Names are globally unique.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -2777,10 +2777,10 @@ private static final long serialVersionUID = 0L;
       private Object name_ = "";
       /**
        * <pre>
-       * The name of the node. Names are globally unique.
+       * The opName of the node. Names are globally unique.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public String getName() {
         Object ref = name_;
@@ -2796,10 +2796,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the node. Names are globally unique.
+       * The opName of the node. Names are globally unique.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -2816,10 +2816,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the node. Names are globally unique.
+       * The opName of the node. Names are globally unique.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setName(
           String value) {
@@ -2833,10 +2833,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the node. Names are globally unique.
+       * The opName of the node. Names are globally unique.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder clearName() {
         
@@ -2846,10 +2846,10 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * The name of the node. Names are globally unique.
+       * The opName of the node. Names are globally unique.
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {

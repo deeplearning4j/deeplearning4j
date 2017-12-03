@@ -148,7 +148,7 @@ private static final long serialVersionUID = 0L;
   private OpDef signature_;
   /**
    * <pre>
-   * The definition of the function's name, arguments, return values,
+   * The definition of the function's opName, arguments, return values,
    * attrs etc.
    * </pre>
    *
@@ -159,7 +159,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * The definition of the function's name, arguments, return values,
+   * The definition of the function's opName, arguments, return values,
    * attrs etc.
    * </pre>
    *
@@ -170,7 +170,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * The definition of the function's name, arguments, return values,
+   * The definition of the function's opName, arguments, return values,
    * attrs etc.
    * </pre>
    *
@@ -881,7 +881,7 @@ private static final long serialVersionUID = 0L;
         OpDef, OpDef.Builder, OpDefOrBuilder> signatureBuilder_;
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -892,7 +892,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -907,7 +907,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -928,7 +928,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -947,7 +947,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -970,7 +970,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -989,7 +989,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -1002,7 +1002,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *
@@ -1018,7 +1018,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * The definition of the function's name, arguments, return values,
+     * The definition of the function's opName, arguments, return values,
      * attrs etc.
      * </pre>
      *

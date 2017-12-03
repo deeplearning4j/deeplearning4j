@@ -19,13 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,60 +72,18 @@ public class SELUDerivative extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "seluderivative";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        throw new UnsupportedOperationException();
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public double op(double d1) {
-        return d1 > 0.0f ? SELU_LAMBDA : SELU_ALPHA * SELU_LAMBDA * FastMath.exp(d1);
-    }
-
-    @Override
-    public float op(float d1) {
-        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_ALPHA * (float) SELU_LAMBDA * (float) FastMath.exp(d1);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        return new SELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        return new SELUDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 

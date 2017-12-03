@@ -21,10 +21,8 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Collections;
 import java.util.List;
@@ -72,78 +70,24 @@ public class Identity extends BaseTransformOp {
     }
 
     @Override
-    public String name() {
+    public String opName() {
         return "identity";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin;
+    public String onnxName() {
+        return "constant";
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        return origin;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        return origin;
-    }
-
-    @Override
-    public double op(double origin) {
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
-
-    @Override
-    public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Identity(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Identity(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
-
-    }
-
-    @Override
-    public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
-        if (y() != null)
-            return new Identity(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Identity(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
-
+    public String tensorflowName() {
+        return "Identity";
     }
 
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        return Collections.<DifferentialFunction> singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+        return Collections.<DifferentialFunction> singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getResultShape()));
     }
 
 }

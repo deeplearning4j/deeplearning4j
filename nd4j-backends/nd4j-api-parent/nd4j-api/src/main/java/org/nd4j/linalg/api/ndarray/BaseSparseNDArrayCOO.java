@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Doubles;
+import com.google.flatbuffers.FlatBufferBuilder;
 import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -131,6 +132,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                     int[] hiddenDimensions, int underlyingRank, int[] shape) {
         this(values, indices, Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
                         hiddenDimensions, underlyingRank), shape);
+    }
+
+    @Override
+    public int toFlatArray(FlatBufferBuilder builder) {
+        throw new UnsupportedOperationException();
     }
 
     /**

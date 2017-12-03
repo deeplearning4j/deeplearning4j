@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -12,6 +13,12 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Index based reduction algo
+ *
+ * @author Adam Gibson
+ */
+@Slf4j
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected int finalResult;
 
@@ -21,7 +28,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[]{i_v},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             addAsNewVertexId();
@@ -38,7 +45,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            this.args = new DifferentialFunction[] {i_v,i_v2};
+            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v,i_v2},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
@@ -116,24 +123,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
     }
 
-    @Override
-    public int combineSubResults(double first, int idxFirst, double second, int idxSecond) {
-        return update(first, idxFirst, second, idxSecond);
-    }
-
-    @Override
-    public int combineSubResults(float first, int idxFirst, float second, int idxSecond) {
-        return update(first, idxFirst, second, idxSecond);
-    }
-
-    @Override
-    public Pair<Double, Integer> combineSubResults(Pair<Double, Integer> first, Pair<Double, Integer> second) {
-        int idxFirst = first.getSecond();
-        int idxSecond = second.getSecond();
-        int idxOut = update(first.getFirst(), idxFirst, second.getFirst(), idxSecond);
-        return (idxOut == idxFirst ? first : second);
-    }
-
 
     @Override
     public List<int[]> calculateOutputShape() {
@@ -153,4 +142,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     public int getFinalResult() {
         return finalResult;
     }
+
+
 }

@@ -60,6 +60,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected byte elementSize;
     //protected transient ByteBuffer wrappedBuffer;
     protected transient DataBuffer wrappedDataBuffer;
+    protected transient long workspaceGenerationId = 0L;
 
     //protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     //protected boolean isPersist = false;
@@ -90,6 +91,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public int getElementSize() {
         return elementSize;
+    }
+
+
+    @Override
+    public long getGenerationId() {
+        return workspaceGenerationId;
     }
 
     /**
@@ -215,6 +222,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
+        workspaceGenerationId = workspace.getGenerationId();
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
         //wrappedBuffer = pointer.asByteBuffer();
     }
@@ -231,6 +239,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asDoublePointer().put(data);
+        workspaceGenerationId = workspace.getGenerationId();
         indexer = DoubleIndexer.create((DoublePointer) pointer);
         //wrappedBuffer = pointer.asByteBuffer();
     }
@@ -248,6 +257,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asIntPointer().put(data);
+        workspaceGenerationId = workspace.getGenerationId();
         indexer = IntIndexer.create((IntPointer) pointer);
         //wrappedBuffer = pointer.asByteBuffer();
     }
@@ -603,8 +613,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
             setIndexer(LongIndexer.create((LongPointer) pointer));
-
         }
+
+        workspaceGenerationId = workspace.getGenerationId();
+
     }
 
     @Override
@@ -1537,8 +1549,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     indexer = IntIndexer.create((IntPointer) pointer);
 
                     break;
-
             }
+
+            workspaceGenerationId = getParentWorkspace().getGenerationId();
         } else {
             switch (dataType()) {
                 case INT:

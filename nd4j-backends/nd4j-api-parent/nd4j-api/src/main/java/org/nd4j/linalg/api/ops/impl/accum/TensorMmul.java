@@ -21,20 +21,25 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import com.google.common.primitives.Ints;
 import lombok.NoArgsConstructor;
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
@@ -43,7 +48,7 @@ import static org.nd4j.linalg.util.ArrayUtil.*;
  * @author Adam Gibson
  */
 @NoArgsConstructor
-public class TensorMmul extends BaseAccumulation {
+public class TensorMmul extends DynamicCustomOp {
     private int[][] axes;
     protected boolean addedEdges;
     protected MMulTranspose mMulTranspose;
@@ -60,17 +65,16 @@ public class TensorMmul extends BaseAccumulation {
                       DifferentialFunction i_v2,
                       int[][] dimensions,
                       MMulTranspose mMulTranspose) {
-        super(sameDiff);
         this.sameDiff = sameDiff;
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
         this.extraArgs = new Object[] {axes,mMulTranspose};
 
-        this.args = new DifferentialFunction[] {i_v1,i_v2};
         f().validateFunctionReference(i_v1);
         f().validateFunctionReference(i_v2);
-        this.shape = calculateOutputShape().get(0);
         addAsNewVertexId();
+        sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v1,i_v2},this);
+        sameDiff.putShapeForVertexId(vertexId,calculateOutputShape().get(0));
         if(!addedEdges) {
             f().addFunctionEdges(this);
             addedEdges = true;
@@ -82,9 +86,18 @@ public class TensorMmul extends BaseAccumulation {
         List<int[]> ret = new ArrayList<>(1);
         int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getResultShape()) : larg().getResultShape();
         int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getResultShape()) : rarg().getResultShape();
-
-        ret.add(  this instanceof Mmul ? Shape.getMatrixMultiplyShape(aShape,bShape)
-                : getTensorMmulShape(aShape,bShape, axes));
+        if(aShape != null && bShape != null) {
+            val shape =  this instanceof Mmul ? Shape.getMatrixMultiplyShape(
+                    aShape,bShape)
+                    : getTensorMmulShape(aShape,bShape, axes);
+            ret.add(shape);
+        }
+        if(!ret.isEmpty()) {
+            for(int i = 0; i < ret.get(0).length; i++) {
+                if(ret.get(0)[i] < 1)
+                    throw new ND4JIllegalStateException("Invalid shape computed at index " +  i);
+            }
+        }
         return ret;
     }
 
@@ -211,7 +224,7 @@ public class TensorMmul extends BaseAccumulation {
 
 
     public TensorMmul(INDArray x, INDArray y, int[][] axes) {
-        super(x, y);
+        super(null,new INDArray[]{x, y},null);
         this.axes = axes;
         this.extraArgs = new Object[] {axes};
     }
@@ -226,22 +239,10 @@ public class TensorMmul extends BaseAccumulation {
      * @param z the result
      */
     public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
-        super(x, y, z, 0);
+        super(null,new INDArray[]{x, y, z},null);
         this.axes = axes;
     }
 
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if (this.z != null)
-            this.z.assign(Nd4j.tensorMmul(x, y, z, axes));
-        else
-            this.z = Nd4j.tensorMmul(x, y, axes);
-    }
 
     @Override
     public int opNum() {
@@ -249,129 +250,67 @@ public class TensorMmul extends BaseAccumulation {
     }
 
     @Override
-    public long n() {
-        return 0;
-    }
-
-    @Override
-    public String name() {
+    public String opName() {
         return "tensormmul";
     }
 
+
     @Override
-    public Op opForDimension(int index, int dimension) {
-        throw new UnsupportedOperationException();
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        super.initWithArrays(arrayMap);
+        for(int i = 0; i < args().length; i++) {
+            if(args()[i].getResultShape() == null) {
+                throw new ND4JIllegalStateException("Unable to get shape for arg " + i);
+            }
+        }
+        sameDiff.updateShapeForVertexId(vertexId,calculateOutputShape().get(0));
     }
 
     @Override
-    public Op opForDimension(int index, int... dimension) {
-        throw new UnsupportedOperationException();
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        /**
+         * name: "MatMul"
+         op: "MatMul"
+         input: "input"
+         input: "Variable/read"
+         attr {
+         key: "transpose_b"
+         value {
+         b: false
+         }
+         }
+         attr {
+         key: "transpose_a"
+         value {
+         b: false
+         }
+         }
+         attr {
+         key: "T"
+         value {
+         type: DT_FLOAT
+         }
+         }
+
+         */
+
+        val isTransposeA = attributesForNode.get("transpose_a").getB();
+        val isTransposeB = attributesForNode.get("transpose_b").getB();
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(isTransposeA).transposeB(isTransposeB)
+                .build();
+        this.mMulTranspose = mMulTranspose;
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        numProcessed++;
-        return origin.mul(other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        numProcessed++;
-        return origin.mul(other);
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        numProcessed++;
-        return origin.mul(other);
-    }
-
-    @Override
-    public float op(float origin, float other) {
-        numProcessed++;
-        return origin * other;
-    }
-
-    @Override
-    public double op(double origin, double other) {
-        numProcessed++;
-        return origin * other;
-    }
-
-    @Override
-    public double op(double origin) {
-        numProcessed++;
-        return origin;
-    }
-
-    @Override
-    public float op(float origin) {
-        return origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin) {
-        return origin;
-    }
-
-    @Override
-    public double update(double accum, double x) {
-        return accum + x;
-    }
-
-    @Override
-    public double update(double accum, double x, double y) {
-        return accum + x * y;
-    }
-
-    @Override
-    public float update(float accum, float x) {
-        return accum + x;
-    }
-
-    @Override
-    public float update(float accum, float x, float y) {
-        return accum + x * y;
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, double x, double y) {
-        return accum.add(x * y);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
-        return accum.add(x);
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
-        return accum.add(x.mul(y));
-    }
-
-    @Override
-    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return accum.add(x.mul(y));
-    }
-
-    @Override
-    public double combineSubResults(double first, double second) {
-        return first + second;
-    }
-
-    @Override
-    public float combineSubResults(float first, float second) {
-        return first + second;
-    }
-
-    @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        return first.add(second);
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        val isTransposeA = attributesForNode.get("transA").getI() > 0;
+        val isTransposeB = attributesForNode.get("transB").getI() > 0;
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(isTransposeA).transposeB(isTransposeB)
+                .build();
+        this.mMulTranspose = mMulTranspose;
     }
 
     @Override
@@ -393,5 +332,21 @@ public class TensorMmul extends BaseAccumulation {
         result = 31 * result + (addedEdges ? 1 : 0);
         result = 31 * result + (mMulTranspose != null ? mMulTranspose.hashCode() : 0);
         return result;
+    }
+
+
+    @Override
+    public Op.Type opType() {
+        return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public String onnxName() {
+        return "Gemm";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "matmul";
     }
 }

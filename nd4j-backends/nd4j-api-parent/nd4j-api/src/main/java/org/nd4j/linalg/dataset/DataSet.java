@@ -923,7 +923,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     /**
      * @param idx the index to pullRows the string label value out of the list if it exists
-     * @return the label name
+     * @return the label opName
      */
     @Override
     public String getLabelName(int idx) {
@@ -941,7 +941,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     /**
      * @param idxs list of index to pullRows the string label value out of the list if it exists
-     * @return the label name
+     * @return the label opName
      */
     @Override
     public List<String> getLabelNames(INDArray idxs) {

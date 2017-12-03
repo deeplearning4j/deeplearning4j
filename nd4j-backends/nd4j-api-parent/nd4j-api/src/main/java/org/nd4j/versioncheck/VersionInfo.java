@@ -31,15 +31,15 @@ public class VersionInfo {
     private String commitIdAbbrev; // =${git.commit.id.abbrev}
     private String describe; // =${git.commit.id.describe}
     private String describeShort; // =${git.commit.id.describe-short}
-    private String commitUserName; // =${git.commit.user.name}
+    private String commitUserName; // =${git.commit.user.opName}
     private String commitUserEmail; // =${git.commit.user.email}
     private String commitMessageFull; // =${git.commit.message.full}
     private String commitMessageShort; // =${git.commit.message.short}
     private String commitTime; // =${git.commit.time}
-    private String closestTagName; // =${git.closest.tag.name}
+    private String closestTagName; // =${git.closest.tag.opName}
     private String closestTagCommitCount; // =${git.closest.tag.commit.count}
 
-    private String buildUserName; // =${git.build.user.name}
+    private String buildUserName; // =${git.build.user.opName}
     private String buildUserEmail; // =${git.build.user.email}
     private String buildTime; // =${git.build.time}
     private String buildHost; // =${git.build.host}

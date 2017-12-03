@@ -7,7 +7,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
@@ -22,8 +21,12 @@ public class Col2Im extends DynamicCustomOp {
     @Builder(builderMethodName = "builder")
     public Col2Im(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
         super(null,inputArrays,outputs);
-        this.sameDiff = sameDiff;
-        this.args = inputFunctions;
+        if(sameDiff != null) {
+            this.sameDiff = sameDiff;
+            sameDiff.associateFunctionsAsArgs(inputFunctions, this);
+        }
+
+
         this.conv2DConfig = conv2DConfig;
 
         addArgs();
@@ -32,15 +35,15 @@ public class Col2Im extends DynamicCustomOp {
     public Col2Im() {}
 
     protected void addArgs() {
-        getIArguments().add(conv2DConfig.getSy());
-        getIArguments().add(conv2DConfig.getSx());
-        getIArguments().add(conv2DConfig.getPh());
-        getIArguments().add(conv2DConfig.getPw());
-        getIArguments().add(conv2DConfig.getKh());
-        getIArguments().add(conv2DConfig.getKw());
-        getIArguments().add(conv2DConfig.getDh());
-        getIArguments().add(conv2DConfig.getDw());
-        getIArguments().add(fromBoolean(conv2DConfig.isSameMode()));
+        addIArgument(conv2DConfig.getSy());
+        addIArgument(conv2DConfig.getSx());
+        addIArgument(conv2DConfig.getPh());
+        addIArgument(conv2DConfig.getPw());
+        addIArgument(conv2DConfig.getKh());
+        addIArgument(conv2DConfig.getKw());
+        addIArgument(conv2DConfig.getDh());
+        addIArgument(conv2DConfig.getDw());
+        addIArgument(fromBoolean(conv2DConfig.isSameMode()));
 
     }
 

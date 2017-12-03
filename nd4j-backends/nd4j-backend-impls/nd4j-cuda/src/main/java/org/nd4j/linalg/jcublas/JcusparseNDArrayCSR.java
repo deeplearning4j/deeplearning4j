@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,5 +41,11 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
         return null;
+    }
+
+
+    @Override
+    public int toFlatArray(FlatBufferBuilder builder) {
+        throw new UnsupportedOperationException();
     }
 }

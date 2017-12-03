@@ -6,7 +6,7 @@ package org.tensorflow.framework;
 /**
  * <pre>
  * Defines an operation. A NodeDef in a GraphDef specifies an Op by
- * using the "op" field which should match the name of a OpDef.
+ * using the "op" field which should match the opName of a OpDef.
  * </pre>
  *
  * Protobuf opType {@code tensorflow.OpDef}
@@ -181,7 +181,7 @@ private static final long serialVersionUID = 0L;
      * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     String getName();
     /**
@@ -189,7 +189,7 @@ private static final long serialVersionUID = 0L;
      * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     com.google.protobuf.ByteString
         getNameBytes();
@@ -217,13 +217,13 @@ private static final long serialVersionUID = 0L;
      * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
      * * For a single tensor: either the "opType" field is set or the
-     *   "type_attr" field is set to the name of an attr with opType "opType".
+     *   "type_attr" field is set to the opName of an attr with opType "opType".
      * * For a sequence of tensors with the same opType: the "number_attr"
-     *   field will be set to the name of an attr with opType "int", and
+     *   field will be set to the opName of an attr with opType "int", and
      *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with opType "list(opType)".
+     *   to the opName of an attr with opType "list(opType)".
      * </pre>
      *
      * <code>.tensorflow.DataType opType = 3;</code>
@@ -234,13 +234,13 @@ private static final long serialVersionUID = 0L;
      * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
      * * For a single tensor: either the "opType" field is set or the
-     *   "type_attr" field is set to the name of an attr with opType "opType".
+     *   "type_attr" field is set to the opName of an attr with opType "opType".
      * * For a sequence of tensors with the same opType: the "number_attr"
-     *   field will be set to the name of an attr with opType "int", and
+     *   field will be set to the opName of an attr with opType "int", and
      *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with opType "list(opType)".
+     *   to the opName of an attr with opType "list(opType)".
      * </pre>
      *
      * <code>.tensorflow.DataType opType = 3;</code>
@@ -440,7 +440,7 @@ private static final long serialVersionUID = 0L;
      * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -459,7 +459,7 @@ private static final long serialVersionUID = 0L;
      * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -524,13 +524,13 @@ private static final long serialVersionUID = 0L;
      * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
      * * For a single tensor: either the "opType" field is set or the
-     *   "type_attr" field is set to the name of an attr with opType "opType".
+     *   "type_attr" field is set to the opName of an attr with opType "opType".
      * * For a sequence of tensors with the same opType: the "number_attr"
-     *   field will be set to the name of an attr with opType "int", and
+     *   field will be set to the opName of an attr with opType "int", and
      *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with opType "list(opType)".
+     *   to the opName of an attr with opType "list(opType)".
      * </pre>
      *
      * <code>.tensorflow.DataType opType = 3;</code>
@@ -543,13 +543,13 @@ private static final long serialVersionUID = 0L;
      * Describes the opType of one or more tensors that are accepted/produced
      * by this input/output arg.  The only legal combinations are:
      * * For a single tensor: either the "opType" field is set or the
-     *   "type_attr" field is set to the name of an attr with opType "opType".
+     *   "type_attr" field is set to the opName of an attr with opType "opType".
      * * For a sequence of tensors with the same opType: the "number_attr"
-     *   field will be set to the name of an attr with opType "int", and
+     *   field will be set to the opName of an attr with opType "int", and
      *   either the "opType" or "type_attr" field will be set as for
      *   single tensors.
      * * For a sequence of tensors, the "type_list_attr" field will be set
-     *   to the name of an attr with opType "list(opType)".
+     *   to the opName of an attr with opType "list(opType)".
      * </pre>
      *
      * <code>.tensorflow.DataType opType = 3;</code>
@@ -1097,7 +1097,7 @@ private static final long serialVersionUID = 0L;
        * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public String getName() {
         Object ref = name_;
@@ -1116,7 +1116,7 @@ private static final long serialVersionUID = 0L;
        * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -1136,7 +1136,7 @@ private static final long serialVersionUID = 0L;
        * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setName(
           String value) {
@@ -1153,7 +1153,7 @@ private static final long serialVersionUID = 0L;
        * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder clearName() {
         
@@ -1166,7 +1166,7 @@ private static final long serialVersionUID = 0L;
        * Name for the input/output.  Should match the regexp "[a-z][a-z0-9_]*".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {
@@ -1275,13 +1275,13 @@ private static final long serialVersionUID = 0L;
        * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
        * * For a single tensor: either the "opType" field is set or the
-       *   "type_attr" field is set to the name of an attr with opType "opType".
+       *   "type_attr" field is set to the opName of an attr with opType "opType".
        * * For a sequence of tensors with the same opType: the "number_attr"
-       *   field will be set to the name of an attr with opType "int", and
+       *   field will be set to the opName of an attr with opType "int", and
        *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with opType "list(opType)".
+       *   to the opName of an attr with opType "list(opType)".
        * </pre>
        *
        * <code>.tensorflow.DataType opType = 3;</code>
@@ -1294,13 +1294,13 @@ private static final long serialVersionUID = 0L;
        * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
        * * For a single tensor: either the "opType" field is set or the
-       *   "type_attr" field is set to the name of an attr with opType "opType".
+       *   "type_attr" field is set to the opName of an attr with opType "opType".
        * * For a sequence of tensors with the same opType: the "number_attr"
-       *   field will be set to the name of an attr with opType "int", and
+       *   field will be set to the opName of an attr with opType "int", and
        *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with opType "list(opType)".
+       *   to the opName of an attr with opType "list(opType)".
        * </pre>
        *
        * <code>.tensorflow.DataType opType = 3;</code>
@@ -1315,13 +1315,13 @@ private static final long serialVersionUID = 0L;
        * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
        * * For a single tensor: either the "opType" field is set or the
-       *   "type_attr" field is set to the name of an attr with opType "opType".
+       *   "type_attr" field is set to the opName of an attr with opType "opType".
        * * For a sequence of tensors with the same opType: the "number_attr"
-       *   field will be set to the name of an attr with opType "int", and
+       *   field will be set to the opName of an attr with opType "int", and
        *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with opType "list(opType)".
+       *   to the opName of an attr with opType "list(opType)".
        * </pre>
        *
        * <code>.tensorflow.DataType opType = 3;</code>
@@ -1335,13 +1335,13 @@ private static final long serialVersionUID = 0L;
        * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
        * * For a single tensor: either the "opType" field is set or the
-       *   "type_attr" field is set to the name of an attr with opType "opType".
+       *   "type_attr" field is set to the opName of an attr with opType "opType".
        * * For a sequence of tensors with the same opType: the "number_attr"
-       *   field will be set to the name of an attr with opType "int", and
+       *   field will be set to the opName of an attr with opType "int", and
        *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with opType "list(opType)".
+       *   to the opName of an attr with opType "list(opType)".
        * </pre>
        *
        * <code>.tensorflow.DataType opType = 3;</code>
@@ -1360,13 +1360,13 @@ private static final long serialVersionUID = 0L;
        * Describes the opType of one or more tensors that are accepted/produced
        * by this input/output arg.  The only legal combinations are:
        * * For a single tensor: either the "opType" field is set or the
-       *   "type_attr" field is set to the name of an attr with opType "opType".
+       *   "type_attr" field is set to the opName of an attr with opType "opType".
        * * For a sequence of tensors with the same opType: the "number_attr"
-       *   field will be set to the name of an attr with opType "int", and
+       *   field will be set to the opName of an attr with opType "int", and
        *   either the "opType" or "type_attr" field will be set as for
        *   single tensors.
        * * For a sequence of tensors, the "type_list_attr" field will be set
-       *   to the name of an attr with opType "list(opType)".
+       *   to the opName of an attr with opType "list(opType)".
        * </pre>
        *
        * <code>.tensorflow.DataType opType = 3;</code>
@@ -1748,22 +1748,22 @@ private static final long serialVersionUID = 0L;
 
     /**
      * <pre>
-     * A descriptive name for the argument.  May be used, e.g. by the
-     * Python client, as a keyword argument name, and so should match
+     * A descriptive opName for the argument.  May be used, e.g. by the
+     * Python client, as a keyword argument opName, and so should match
      * the regexp "[a-z][a-z0-9_]+".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     String getName();
     /**
      * <pre>
-     * A descriptive name for the argument.  May be used, e.g. by the
-     * Python client, as a keyword argument name, and so should match
+     * A descriptive opName for the argument.  May be used, e.g. by the
+     * Python client, as a keyword argument opName, and so should match
      * the regexp "[a-z][a-z0-9_]+".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     com.google.protobuf.ByteString
         getNameBytes();
@@ -2025,12 +2025,12 @@ private static final long serialVersionUID = 0L;
     private volatile Object name_;
     /**
      * <pre>
-     * A descriptive name for the argument.  May be used, e.g. by the
-     * Python client, as a keyword argument name, and so should match
+     * A descriptive opName for the argument.  May be used, e.g. by the
+     * Python client, as a keyword argument opName, and so should match
      * the regexp "[a-z][a-z0-9_]+".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -2046,12 +2046,12 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * A descriptive name for the argument.  May be used, e.g. by the
-     * Python client, as a keyword argument name, and so should match
+     * A descriptive opName for the argument.  May be used, e.g. by the
+     * Python client, as a keyword argument opName, and so should match
      * the regexp "[a-z][a-z0-9_]+".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -2682,12 +2682,12 @@ private static final long serialVersionUID = 0L;
       private Object name_ = "";
       /**
        * <pre>
-       * A descriptive name for the argument.  May be used, e.g. by the
-       * Python client, as a keyword argument name, and so should match
+       * A descriptive opName for the argument.  May be used, e.g. by the
+       * Python client, as a keyword argument opName, and so should match
        * the regexp "[a-z][a-z0-9_]+".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public String getName() {
         Object ref = name_;
@@ -2703,12 +2703,12 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * A descriptive name for the argument.  May be used, e.g. by the
-       * Python client, as a keyword argument name, and so should match
+       * A descriptive opName for the argument.  May be used, e.g. by the
+       * Python client, as a keyword argument opName, and so should match
        * the regexp "[a-z][a-z0-9_]+".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -2725,12 +2725,12 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * A descriptive name for the argument.  May be used, e.g. by the
-       * Python client, as a keyword argument name, and so should match
+       * A descriptive opName for the argument.  May be used, e.g. by the
+       * Python client, as a keyword argument opName, and so should match
        * the regexp "[a-z][a-z0-9_]+".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setName(
           String value) {
@@ -2744,12 +2744,12 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * A descriptive name for the argument.  May be used, e.g. by the
-       * Python client, as a keyword argument name, and so should match
+       * A descriptive opName for the argument.  May be used, e.g. by the
+       * Python client, as a keyword argument opName, and so should match
        * the regexp "[a-z][a-z0-9_]+".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder clearName() {
         
@@ -2759,12 +2759,12 @@ private static final long serialVersionUID = 0L;
       }
       /**
        * <pre>
-       * A descriptive name for the argument.  May be used, e.g. by the
-       * Python client, as a keyword argument name, and so should match
+       * A descriptive opName for the argument.  May be used, e.g. by the
+       * Python client, as a keyword argument opName, and so should match
        * the regexp "[a-z][a-z0-9_]+".
        * </pre>
        *
-       * <code>string name = 1;</code>
+       * <code>string opName = 1;</code>
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {
@@ -3445,7 +3445,7 @@ private static final long serialVersionUID = 0L;
    * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public String getName() {
     Object ref = name_;
@@ -3465,7 +3465,7 @@ private static final long serialVersionUID = 0L;
    * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public com.google.protobuf.ByteString
       getNameBytes() {
@@ -4085,7 +4085,7 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * Defines an operation. A NodeDef in a GraphDef specifies an Op by
-   * using the "op" field which should match the name of a OpDef.
+   * using the "op" field which should match the opName of a OpDef.
    * </pre>
    *
    * Protobuf opType {@code tensorflow.OpDef}
@@ -4409,7 +4409,7 @@ private static final long serialVersionUID = 0L;
      * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -4429,7 +4429,7 @@ private static final long serialVersionUID = 0L;
      * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -4450,7 +4450,7 @@ private static final long serialVersionUID = 0L;
      * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setName(
         String value) {
@@ -4468,7 +4468,7 @@ private static final long serialVersionUID = 0L;
      * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder clearName() {
       
@@ -4482,7 +4482,7 @@ private static final long serialVersionUID = 0L;
      * Names should be CamelCase and match the regexp "[A-Z][a-zA-Z0-9_]*".
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setNameBytes(
         com.google.protobuf.ByteString value) {

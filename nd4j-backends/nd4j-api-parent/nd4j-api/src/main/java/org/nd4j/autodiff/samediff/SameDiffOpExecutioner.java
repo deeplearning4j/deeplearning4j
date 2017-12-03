@@ -66,13 +66,13 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
 
 
     /**
-     * This method returns name of the last invoked op
+     * This method returns opName of the last invoked op
      *
      * @return
      */
     @Override
     public String getLastOp() {
-        return opAtomicReference.get().name();
+        return opAtomicReference.get().opName();
     }
 
     /**
@@ -498,5 +498,16 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     @Override
     public List<int[]> calculateOutputShape(CustomOp op) {
         return backendExecutioner.calculateOutputShape(op);
+    }
+
+
+    @Override
+    public void enableDebugMode(boolean reallyEnable) {
+        backendExecutioner.enableDebugMode(reallyEnable);
+    }
+
+    @Override
+    public void enableVerboseMode(boolean reallyEnable) {
+        backendExecutioner.enableVerboseMode(reallyEnable);
     }
 }

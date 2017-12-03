@@ -1,21 +1,24 @@
 package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Basic implementation for CustomOp
@@ -26,13 +29,14 @@ import java.util.UUID;
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private String opName;
-    @Getter @Builder.Default private List<INDArray> inputArguments = new ArrayList<>();
-    @Getter @Builder.Default private List<INDArray> outputArguments = new ArrayList<>();
-    @Getter @Builder.Default private List<Double> tArguments = new ArrayList<>();
-    @Getter @Builder.Default  private List<Integer> iArguments = new ArrayList<>();
+    @Builder.Default private List<INDArray> inputArguments = new ArrayList<>();
+    @Builder.Default private List<INDArray> outputArguments = new ArrayList<>();
+
+
+    @Builder.Default private List<Double> tArguments = new ArrayList<>();
+    @Builder.Default  private List<Integer> iArguments = new ArrayList<>();
     @Getter private boolean inplaceCall;
     @Getter private long hash;
-    @Getter
     protected DifferentialFunction[] outputFunctions;
     private List<int[]> outputShapes;
 
@@ -55,8 +59,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     /**
      * Initialize this custom op with all of the
      * inputs, outputs, and respective
-     * argumentts for execution
-     * @param opName the name of the op to execute
+     * arguments for execution
+     * @param opName the opName of the op to execute
      * @param inputs the inputs to the op
      * @param outputs the outputs of the op
      * @param tArguments the input float arguments
@@ -73,7 +77,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     /**
      * Initialize this operation for execution (pre created ndarrays)
-     * @param opName the operation name to use
+     * @param opName the operation opName to use
      *               for invocation
      * @param inputs the inputs
      * @param outputs the outputs of the op
@@ -85,9 +89,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     /**
      * Initialize this for {@link SameDiff} execution
      * Any extra int or float arguments for operations
-     * must be added to the respective {@link #getTArguments()}
-     *  or {@link #getIArguments()} lists upon construction
-     * @param opName the operation name
+     * must be added to the respective TArguments
+     *  or IArguments lists upon construction
+     * @param opName the operation opName
      * @param sameDiff the samediff instance to use
      * @param args the arguments to use
      * @param inPlace whether the operation is in place or not
@@ -109,7 +113,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
     /**
-     * This method returns op name as string
+     * This method returns op opName as string
      *
      * @return
      */
@@ -127,6 +131,23 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public DifferentialFunction[] outputFunctions() {
+        if(this.outputFunctions == null) {
+            List<Integer> ids = new ArrayList<>();
+            val inputArgs = args();
+            for (int i = 0; i < inputArgs.length; i++) {
+                for (int idx : inputArgs[i].resultVertexId()) {
+                    ids.add(idx);
+                }
+            }
+
+            val to = sameDiff.graph().getToFor(Ints.toArray(ids));
+            List<DifferentialFunction> funcs = new ArrayList<>();
+            for(int i = 0; i < to.length; i++) {
+                funcs.add(sameDiff.getFunctionForVertexId(new int[]{to[i]}));
+            }
+
+            this.outputFunctions = funcs.toArray(new DifferentialFunction[funcs.size()]);
+        }
         return outputFunctions;
     }
 
@@ -148,6 +169,126 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return hash;
     }
 
+    @Override
+    public INDArray[] outputArguments() {
+        if(!outputArguments.isEmpty())
+            return outputArguments.toArray(new INDArray[outputArguments.size()]);
+        return new INDArray[0];
+    }
+
+    @Override
+    public INDArray[] inputArguments() {
+        if(!inputArguments.isEmpty())
+            return inputArguments.toArray(new INDArray[inputArguments.size()]);
+        return new INDArray[0];
+
+    }
+
+    @Override
+    public int[] iArgs() {
+        return Ints.toArray(iArguments);
+    }
+
+    @Override
+    public double[] tArgs() {
+        return Doubles.toArray(tArguments);
+    }
+
+    @Override
+    public void addIArgument(int... arg) {
+        addIArgument(Ints.asList(arg).toArray(new Integer[arg.length]));
+    }
+
+    private void addIArgument(Integer... arg) {
+        iArguments.addAll(Arrays.asList(arg));
+    }
+
+    @Override
+    public void removeIArgument(Integer arg) {
+        iArguments.remove(arg);
+    }
+
+    @Override
+    public Integer getIArgument(int index) {
+        return iArguments.get(index);
+    }
+
+    @Override
+    public int numIArguments() {
+        return iArguments.size();
+    }
+
+    @Override
+    public void addTArgument(double... arg) {
+        addTArgument(Doubles.asList(arg).toArray(new Double[arg.length]));
+
+    }
+
+    private void addTArgument(Double... arg) {
+        tArguments.addAll(Arrays.asList(arg));
+    }
+
+    @Override
+    public void removeTArgument(Double arg) {
+        tArguments.remove(arg);
+    }
+
+    @Override
+    public Double getTArgument(int index) {
+        return tArguments.get(index);
+    }
+
+    @Override
+    public int numTArguments() {
+        return tArguments.size();
+    }
+
+    @Override
+    public void addInputArgument(INDArray... arg) {
+        inputArguments.addAll(Arrays.asList(arg));
+    }
+
+    @Override
+    public void removeInputArgument(INDArray arg) {
+        inputArguments.remove(arg);
+    }
+
+    @Override
+    public INDArray getInputArgument(int index) {
+        return inputArguments.get(index);
+    }
+
+    @Override
+    public int numInputArguments() {
+        return inputArguments.size();
+    }
+
+    @Override
+    public void addOutputArgument(INDArray... arg) {
+        outputArguments.addAll(Arrays.asList(arg));
+    }
+
+    @Override
+    public void removeOutputArgument(INDArray arg) {
+       outputArguments.remove(arg);
+    }
+
+    @Override
+    public INDArray getOutputArgument(int index) {
+        return outputArguments.get(index);
+    }
+
+    @Override
+    public int numOutputArguments() {
+        return outputArguments.size();
+    }
+
+
+    @Override
+    public int opNum() {
+        return (int) opHash();
+    }
+
     /**
      * This method takes custom opname, and return Op DynamicCustomOpsBuilder instance
      * @param opName
@@ -166,9 +307,55 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<int[]> calculateOutputShape() {
+        for(val arg : args()) {
+            if(sameDiff.isPlaceHolder(arg.resultVertexId()) && !sameDiff.shapeAlreadyExistsForVertexId(arg.resultVertexId()))
+                return Collections.emptyList();
+        }
+
         if(outputShapes != null)
             return outputShapes;
+        if(inputArguments.isEmpty()) {
+            addArrayInputArguments();
+            if(inputArguments.isEmpty())
+                throw new ND4JIllegalStateException("Inputs must not be empty when calling this method");
+        }
+
+
+        /**
+         * Note that we are currently getting shape errors
+         * because the input and output arguments are not specified.
+         */
         return Nd4j.getExecutioner().calculateOutputShape(this);
+    }
+
+
+    public void addArrayInputArguments() {
+        if(!inputArguments.isEmpty()) {
+            return;
+        }
+
+
+        val args = args();
+        for(val func : args) {
+            val funcVar = sameDiff.getVariableForVertexId(func.resultVertexId());
+            if(func.getResultShape() == null) {
+                log.warn("Unable to initialize shape of " +  func + " for vertex id " + Arrays.toString(func.resultVertexId()));
+                return;
+            }
+
+            if(!sameDiff.arrayAlreadyExistsForVertexId(func.resultVertexId())) {
+                val arr = funcVar.getWeightInitScheme().create(func.getResultShape());
+                sameDiff.putArrayForVertexId(func.resultVertexId(),arr);
+                addInputArgument(arr);
+            }
+            else {
+                //already exists, just add
+                addInputArgument(sameDiff.getArrForVertexId(func.resultVertexId()));
+            }
+
+
+        }
+
     }
 
     @Override
@@ -247,14 +434,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         @Override
         public DynamicCustomOp build() {
             DynamicCustomOp ret =  super.build();
-            ret.setArgs(args.toArray(new DifferentialFunction[args.size()]));
+            sameDiff.associateFunctionsAsArgs(args.toArray(new DifferentialFunction[args.size()]),ret);
             ret.setSameDiff(sameDiff);
             ret.outputShapes = outputShapes;
             if(outputs.isEmpty() && !outputShapes.isEmpty()) {
                 for (int i = 0; i < outputShapes.size(); i++) {
-                   outputs.add(sameDiff.var(sameDiff.generateVariableName(
-                           "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
-                           false,ret.args),outputShapes.get(i)));
+                    outputs.add(sameDiff.var(sameDiff.generateVariableName(
+                            "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
+                            false,ret.args()),outputShapes.get(i)));
                 }
 
             }
@@ -266,8 +453,56 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
     @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+
+    @Override
     public Op.Type opType() {
         return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+
+    }
+
+    @Override
+    public void initWithArrays(Map<String, INDArray> arrayMap) {
+        val args = args();
+        for(int i = 0; i < args().length; i++) {
+            val var = sameDiff.getVariableForVertexId(args()[i].resultVertexId());
+            val func = args[i];
+            if(func instanceof DynamicCustomOp) {
+                DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) func;
+                dynamicCustomOp.addArrayInputArguments();
+            }
+
+
+            if(var != null) {
+                if(var.getArr() == null) {
+                    int[] shape = sameDiff.getShapeForVertexId(var.getVertexId());
+                    if(shape == null) {
+                        shape = func.getResultShape();
+                    }
+                    if(shape == null) {
+                        throw new ND4JIllegalStateException("Unable to resolve shape for variable " + var.getVarName());
+                    }
+                    sameDiff.putArrayForVertexId(var.resultVertexId(),var.getWeightInitScheme().create(shape));
+                }
+            }
+        }
     }
 
     public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {

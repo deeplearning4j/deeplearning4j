@@ -20,33 +20,18 @@
 package org.nd4j.linalg.api.ops.factory;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
-import org.nd4j.linalg.api.ops.impl.accum.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.shape.Broadcast;
-import org.nd4j.linalg.api.ops.impl.shape.Permute;
-import org.nd4j.linalg.api.ops.impl.shape.Reshape;
-import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -56,35 +41,9 @@ import java.util.Set;
  */
 @Slf4j
 public class DefaultOpFactory implements OpFactory {
-    private Map<String, Class<? extends Op>> opClazzes;
 
 
     public DefaultOpFactory() {
-        opClazzes = new HashMap<>();
-
-        Reflections f = new Reflections(new ConfigurationBuilder().filterInputsBy(
-                new FilterBuilder().include(FilterBuilder.prefix("org.nd4j")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                        .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*") //Exclude any not in the ops directory
-        )
-
-                .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
-
-        Set<Class<? extends Op>> clazzes = f.getSubTypesOf(Op.class);
-
-        for (Class<? extends Op> clazz : clazzes) {
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
-                continue;
-
-            try {
-                String name = clazz.newInstance().name();
-                if (opClazzes.containsKey(name)) {
-                    throw new ND4JIllegalStateException("OpName duplicate found: " + name);
-                } else
-                    opClazzes.put(name, clazz);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
 
@@ -98,8 +57,8 @@ public class DefaultOpFactory implements OpFactory {
             case "tanhderivative":
                 return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(x,y,z);
             case "gradientbackwards":
-            return new org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker(x,y,z);
-            default: throw new IllegalStateException("Illegal name " + name);
+                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker(x,y,z);
+            default: throw new IllegalStateException("Illegal opName " + name);
         }
     }
 
@@ -112,34 +71,15 @@ public class DefaultOpFactory implements OpFactory {
      */
     @Override
     public Op createShape(String name, INDArray x, INDArray z, Object[] extraArgs) {
-            if (!opClazzes.containsKey(name))
-                throw new ND4JIllegalStateException("Unknown Op requested: " + name);
-
-            switch(name) {
-            case "transpose":
-                return new Transpose(x,z);
-            case "reshape":
-                Reshape ret2 = new Reshape(x,z);
-                ret2.setExtraArgs(extraArgs);
-                return ret2;
-            case "permute":
-                Permute ret = new Permute(x,z,x.lengthLong());
-                ret.setExtraArgs(extraArgs);
-                return ret;
-            case "broadcast":
-                return new Broadcast(x,z);
-        }
-
-        throw new IllegalArgumentException("Illegal name for create shape op" + name);
+        throw new IllegalArgumentException("Illegal opName for create shape op" + name);
     }
 
     @Override
     public LossFunction createLossFunction(String name, INDArray x, INDArray y) {
-        Class<? extends Op> clazz = opClazzes.get(name);
         try {
-            Constructor<Op> constructor =
-                    (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class, INDArray.class);
-            Op create = constructor.newInstance(x, y);
+            Constructor<DifferentialFunction> constructor =
+                    (Constructor<DifferentialFunction>)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getDeclaredConstructor(INDArray.class, INDArray.class);
+            Op create = (Op) constructor.newInstance(x, y);
             return (LossFunction) create;
         } catch (Exception e) {
             throw new IllegalArgumentException("Illegal op " + name);
@@ -164,42 +104,27 @@ public class DefaultOpFactory implements OpFactory {
                                     INDArray y,
                                     INDArray z,
                                     Object[] extraArgs) {
-        if (!opClazzes.containsKey(name))
-            throw new ND4JIllegalStateException("Unknown Op requested: " + name);
 
         Accumulation ret = null;
 
         switch (name) {
             case "mmul":
-                //of note here is that it's always the last arg
-                /*
-                 * The case to watch out for here is
-                 * tensor matrix multiply which has an args format of:
-                 * dimensions, mmul transpose
-                 */
-
-                MMulTranspose mMulTranspose = extraArgs != null  && extraArgs.length >= 1 ? (MMulTranspose) extraArgs[extraArgs.length - 1] : MMulTranspose.allFalse();
-                ret = new Mmul(x,y,z,mMulTranspose);
-                break;
             case "std":
                 ret = new StandardDeviation(x, y,z, x.length(),(boolean) extraArgs[0]);
                 break;
             case "var":
                 ret = new Variance(x, y, z, x.length(),(boolean) extraArgs[0]);
                 break;
-            case "tensorMmul":
-                ret = new TensorMmul(x, y,z,(int[][]) extraArgs[0]);
-                break;
             default:
                 try {
-                    ret = (Accumulation) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
+                    ret = (Accumulation)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
         }
 
         /*
-        switch (name) {
+        switch (opName) {
 
             case "sum":
                 ret = new Sum(x, y, z,x.length());
@@ -255,7 +180,7 @@ public class DefaultOpFactory implements OpFactory {
         */
 
         if(ret == null)
-            throw new IllegalArgumentException("Illegal operation name " + name);
+            throw new IllegalArgumentException("Illegal operation opName " + name);
 
         ret.setExtraArgs(extraArgs);
         return ret;
@@ -277,13 +202,10 @@ public class DefaultOpFactory implements OpFactory {
      */
     @Override
     public IndexAccumulation createIndexAccum(String opName, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
-        if (!opClazzes.containsKey(opName))
-            throw new ND4JIllegalStateException("Unknown Op requested: " + opName);
-
         IndexAccumulation ret = null;
 
         try {
-            ret = (IndexAccumulation) opClazzes.get(opName).getConstructor(INDArray.class, INDArray.class).newInstance(x, y);
+            ret = (IndexAccumulation)  DifferentialFunctionClassHolder.getInstance().getInstance(opName).getClass().getConstructor(INDArray.class, INDArray.class).newInstance(x, y);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -352,9 +274,6 @@ public class DefaultOpFactory implements OpFactory {
                                        INDArray y,
                                        INDArray z,
                                        Object[] extraArgs) {
-        if (!opClazzes.containsKey(name))
-            throw new ND4JIllegalStateException("Unknown Op requested: " + name);
-
         TransformOp op = null;
 
         switch (name) {
@@ -376,9 +295,9 @@ public class DefaultOpFactory implements OpFactory {
             default:
                 try {
                     if (y == null)
-                        op = (TransformOp) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class).newInstance(x, z);
+                        op = (TransformOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class).newInstance(x, z);
                     else
-                        op = (TransformOp) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class, INDArray.class).newInstance(x, y, z);
+                        op = (TransformOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class).newInstance(x, y, z);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -386,7 +305,7 @@ public class DefaultOpFactory implements OpFactory {
 
         /*
 
-        switch (name) {
+        switch (opName) {
             case "set":
                 op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
                 break;
@@ -529,7 +448,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new Negative(x,z);
                 break;
             default:
-                throw new ND4JIllegalStateException("No op found " + name);
+                throw new ND4JIllegalStateException("No op found " + opName);
         }
 */
 
@@ -609,19 +528,16 @@ public class DefaultOpFactory implements OpFactory {
                                           INDArray z,
                                           Object[] extraArgs,
                                           double scalar) {
-        if (!opClazzes.containsKey(name))
-            throw new ND4JIllegalStateException("Unknown Op requested: " + name);
-
         ScalarOp ret = null;
 
         try {
-            ret = (ScalarOp) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class, Number.class).newInstance(x, y, z, x.length(), scalar);
+            ret = (ScalarOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class, Number.class).newInstance(x, y, z, x.length(), scalar);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         /*
-        switch(name) {
+        switch(opName) {
             case "add_scalar":
                 ret = new ScalarAdd(x,y,z,x.length(),scalar);
                 break;
@@ -685,19 +601,16 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, int... dimension) {
-        if (!opClazzes.containsKey(name))
-            throw new ND4JIllegalStateException("Unknown Op requested: " + name);
-
         BroadcastOp broadcastOp = null;
 
         try {
-            broadcastOp = (BroadcastOp) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class, INDArray.class, int[].class).newInstance(x, y, z, dimension);
+            broadcastOp = (BroadcastOp) DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, int[].class).newInstance(x, y, z, dimension);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
  /*
-        switch (name) {
+        switch (opName) {
             case "broadcastadd":
                 broadcastOp = new BroadcastAddOp(x, y, z, dimension);
                 break;
@@ -739,12 +652,9 @@ public class DefaultOpFactory implements OpFactory {
      */
     @Override
     public int getOpNumByName(String opName) {
-        Class<? extends Op> cls = opClazzes.get(opName);
-
         try {
-            Op op = cls.newInstance();
-
-            return op.opNum();
+            DifferentialFunction op =  DifferentialFunctionClassHolder.getInstance().getInstance(opName);
+            return  op.opNum();
         } catch (Exception e) {
             throw new RuntimeException("OpName failed: [" + opName + "]",e);
         }
@@ -752,7 +662,7 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public int getOpNumIfExists(String opName) {
-        if(opClazzes.containsKey(opName)) {
+        if(DifferentialFunctionClassHolder.getInstance().hasName(opName)) {
             return getOpNumByName(opName);
         } else
             return -1;
@@ -760,17 +670,6 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public Op getOpByName(String opName) {
-        if(opClazzes.containsKey(opName)) {
-            Class<? extends Op> cls = opClazzes.get(opName);
-
-            try {
-                Op op = cls.newInstance();
-
-                return op;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else
-            return null;
+        return (Op) DifferentialFunctionClassHolder.getInstance().getInstance(opName);
     }
 }

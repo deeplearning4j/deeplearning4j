@@ -5,11 +5,11 @@ import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.val;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
-import org.nd4j.autodiff.opstate.*;
+import org.nd4j.autodiff.opstate.OpExecAction;
+import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.collection.IntArrayKeySet;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -23,7 +23,7 @@ import java.util.*;
  */
 @NoArgsConstructor
 @Data
-public class SDGraph extends Graph<SDVariable,OpState> {
+public class SDGraph extends Graph<SDVariable,String> {
 
     protected SameDiff sameDiff;
 
@@ -42,10 +42,10 @@ public class SDGraph extends Graph<SDVariable,OpState> {
 
     @Builder
     private SDGraph(boolean allowMultipleEdges,
-                    Map<int[], List<Edge<OpState>>> edges,
+                    Map<int[], List<Edge<String>>> edges,
                     Map<Integer, Vertex<SDVariable>> vertices,
                     boolean frozen,
-                    Map<int[], List<Edge<OpState>>> incomingEdges,
+                    Map<int[], List<Edge<String>>> incomingEdges,
                     SameDiff sameDiff) {
         super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
         this.sameDiff = sameDiff;
@@ -135,7 +135,7 @@ public class SDGraph extends Graph<SDVariable,OpState> {
      */
     public OpExecOrder getOpOrder(boolean reverse) {
         int[][] order = topologicalSort(reverse);
-        Set<OpState> seenStates = new HashSet<>();
+        Set<int[]> seenStates = new IntArrayKeySet();
         if(reverse) {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
             Map<int[],OpExecAction> opExecActionMap = new IntArrayKeyMap<>();
@@ -149,9 +149,9 @@ public class SDGraph extends Graph<SDVariable,OpState> {
             }
 
 
-            Set<Edge<OpState>> allEdges = new HashSet<>();
-            Collection<List<Edge<OpState>>> outgoingEdges = getEdges().values();
-            for(List<Edge<OpState>> edge : outgoingEdges) {
+            Set<Edge<String>> allEdges = new HashSet<>();
+            Collection<List<Edge<String>>> outgoingEdges = getEdges().values();
+            for(List<Edge<String>> edge : outgoingEdges) {
                 allEdges.addAll(edge);
             }
 
@@ -168,8 +168,8 @@ public class SDGraph extends Graph<SDVariable,OpState> {
 
 
             List<IntArrayKeyMap.IntArray> vertices = new ArrayList<>();
-            for(List<Edge<OpState>> edge : getEdges().values())  {
-                for(Edge<OpState> edge1 : edge) {
+            for(List<Edge<String>> edge : getEdges().values())  {
+                for(Edge<String> edge1 : edge) {
                     if(!vertices.contains(new IntArrayKeyMap.IntArray(edge1.getTo()))) {
                         vertices.add(new IntArrayKeyMap.IntArray(edge1.getTo()));
                     }
@@ -197,9 +197,9 @@ public class SDGraph extends Graph<SDVariable,OpState> {
                 int[] ndArrayVertex = depthQueue.poll();
                 OpExecAction action = opExecActionMap.get(ndArrayVertex);
                 //no op means it was a variable
-                if(action != null && !seenStates.contains(action.getOpState())) {
+                if(action != null && !seenStates.contains(action.getOutputId())) {
                     ret.add(action);
-                    seenStates.add(action.getOpState());
+                    seenStates.add(action.getOutputId());
                 }
 
             }
@@ -223,10 +223,10 @@ public class SDGraph extends Graph<SDVariable,OpState> {
                 int numInputs = Math.max(1, getVertexInDegree(order[i]));
                 int inputsCount = 0;
                 List<Integer> inputIdsList = new ArrayList<>();
-                List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
+                List<Edge<String>> inputStrings = getIncomingEdges().get(order[i]);
                 List<SDVariable> inputInfo = new ArrayList<>();
                 //get the inputs for this this output array
-                for (Edge<OpState> edge : inputOpStates) {
+                for (Edge<String> edge : inputStrings) {
                     inputIdsList.addAll(Ints.asList(edge.getFrom()));
                     for(int input : edge.getFrom())  {
                         Preconditions.checkNotNull(getVariableForVertex(input));
@@ -237,14 +237,13 @@ public class SDGraph extends Graph<SDVariable,OpState> {
 
                 // Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
                 //add edges
-                Edge<OpState> opStateEdge = inputOpStates.get(0);
-                if(!seenStates.contains(opStateEdge.getValue())) {
+                Edge<String> edge = inputStrings.get(0);
+                if(!seenStates.contains(edge.getTo())) {
                     ret.add(OpExecAction.builder()
-                            .opState(opStateEdge.getValue())
                             .inputsIds(Ints.toArray(inputIdsList))
                             .outputId(order[i])
                             .build());
-                    seenStates.add(opStateEdge.getValue());
+                    seenStates.add(edge.getTo());
                 }
             }
 
@@ -290,8 +289,8 @@ public class SDGraph extends Graph<SDVariable,OpState> {
      */
     public int[][] topologicalSort(boolean reverse) {
         List<int[]> vertices = new ArrayList<>();
-        for(List<Edge<OpState>> edge : getEdges().values())  {
-            for(Edge<OpState> edge1 : edge) {
+        for(List<Edge<String>> edge : getEdges().values())  {
+            for(Edge<String> edge1 : edge) {
                 if(!ArrayUtil.listOfIntsContains(vertices,edge1.getTo())) {
                     vertices.add(edge1.getTo());
                 }
@@ -327,9 +326,9 @@ public class SDGraph extends Graph<SDVariable,OpState> {
             Collections.reverse(vertices);
 
 
-            Set<Edge<OpState>> allEdges = new HashSet<>();
-            Collection<List<Edge<OpState>>> outgoingEdges = getEdges().values();
-            for(List<Edge<OpState>> edge : outgoingEdges) {
+            Set<Edge<String>> allEdges = new HashSet<>();
+            Collection<List<Edge<String>>> outgoingEdges = getEdges().values();
+            for(List<Edge<String>> edge : outgoingEdges) {
                 allEdges.addAll(edge);
             }
 
@@ -367,10 +366,10 @@ public class SDGraph extends Graph<SDVariable,OpState> {
                     noIncoming.add(key);
                 }
 
-                List<Edge<OpState>> edges = getEdgesOut(i);
+                List<Edge<String>> edges = getEdgesOut(i);
                 Set<int[]> outVertices = new IntArrayKeySet();
                 Set<int[]> currInputs = new IntArrayKeySet();
-                for (Edge<OpState> edge : edges) {
+                for (Edge<String> edge : edges) {
                     outVertices.add(edge.getTo());
                     Set<int[]> outputSetForInputIdx = outputEdges.get(i);
                     if (outputSetForInputIdx == null) {
@@ -382,7 +381,7 @@ public class SDGraph extends Graph<SDVariable,OpState> {
                 }
 
                 if( getIncomingEdges().get(i) != null) {
-                    for (Edge<OpState> edge : getIncomingEdges().get(i)) {
+                    for (Edge<String> edge : getIncomingEdges().get(i)) {
                         currInputs.add(edge.getFrom());
 
                     }

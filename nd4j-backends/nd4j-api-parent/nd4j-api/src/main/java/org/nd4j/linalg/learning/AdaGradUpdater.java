@@ -70,7 +70,7 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
     /**
      * Gets feature specific learning rates
      * Adagrad keeps a history of gradients being passed in.
-     * Note that each gradient passed in becomes adapted over time, hence the name adagrad
+     * Note that each gradient passed in becomes adapted over time, hence the opName adagrad
      *
      * @param gradient  the gradient to get learning rates for
      * @param iteration

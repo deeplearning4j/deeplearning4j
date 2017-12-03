@@ -120,10 +120,10 @@ private static final long serialVersionUID = 0L;
   private volatile Object name_;
   /**
    * <pre>
-   * Fully specified name of the device within a cluster.
+   * Fully specified opName of the device within a cluster.
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public String getName() {
     Object ref = name_;
@@ -139,10 +139,10 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * Fully specified name of the device within a cluster.
+   * Fully specified opName of the device within a cluster.
    * </pre>
    *
-   * <code>string name = 1;</code>
+   * <code>string opName = 1;</code>
    */
   public com.google.protobuf.ByteString
       getNameBytes() {
@@ -691,10 +691,10 @@ private static final long serialVersionUID = 0L;
     private Object name_ = "";
     /**
      * <pre>
-     * Fully specified name of the device within a cluster.
+     * Fully specified opName of the device within a cluster.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public String getName() {
       Object ref = name_;
@@ -710,10 +710,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Fully specified name of the device within a cluster.
+     * Fully specified opName of the device within a cluster.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -730,10 +730,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Fully specified name of the device within a cluster.
+     * Fully specified opName of the device within a cluster.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setName(
         String value) {
@@ -747,10 +747,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Fully specified name of the device within a cluster.
+     * Fully specified opName of the device within a cluster.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder clearName() {
       
@@ -760,10 +760,10 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * Fully specified name of the device within a cluster.
+     * Fully specified opName of the device within a cluster.
      * </pre>
      *
-     * <code>string name = 1;</code>
+     * <code>string opName = 1;</code>
      */
     public Builder setNameBytes(
         com.google.protobuf.ByteString value) {
