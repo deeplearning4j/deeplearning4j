@@ -1,16 +1,14 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
-import lombok.NonNull;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -23,7 +21,7 @@ import java.util.Map;
  *
  * @author raver119@gmail.com
  */
-public class Range extends BaseRandomOp {
+public class Range extends DynamicCustomOp {
     private Double from;
     private Double to;
     private Double delta;
@@ -34,16 +32,7 @@ public class Range extends BaseRandomOp {
         // no-op
     }
 
-    public Range(double from, double to, int length) {
-        this(Nd4j.createUninitialized(new int[] {1, length}, Nd4j.order()), from, to);
-    }
 
-    public Range(@NonNull INDArray z, double from, double to) {
-        this.from = from;
-        this.to = to;
-        init(null, null, z, z.lengthLong());
-        this.extraArgs = new Object[] {from, to};
-    }
 
     @Override
     public int opNum() {
@@ -94,6 +83,7 @@ public class Range extends BaseRandomOp {
             this.from = start.getDouble(0);
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
+            addTArgument(this.from,this.to,this.delta);
 
         }
 
@@ -101,11 +91,9 @@ public class Range extends BaseRandomOp {
         this.toVertexId = sameDiff.getVariable(endNode.getName()).getVertexId();
         this.deltaVertexId = sameDiff.getVariable(deltaNode.getName()).getVertexId();
 
-
-
-
-
     }
+
+
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
@@ -127,10 +115,10 @@ public class Range extends BaseRandomOp {
             this.from = start.getDouble(0);
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
-            setZ(delta);
-            setX(start);
             if(sameDiff.getArrForVertexId(resultVertexId()) == null)
                 sameDiff.putArrayForVertexId(resultVertexId(),end);
+            addTArgument(this.from,this.to,this.delta);
+
         }
         else {
             StringBuilder errorMessage = new StringBuilder();
@@ -150,6 +138,6 @@ public class Range extends BaseRandomOp {
 
     @Override
     public Op.Type opType() {
-        return Type.CUSTOM;
+        return Op.Type.CUSTOM;
     }
 }
