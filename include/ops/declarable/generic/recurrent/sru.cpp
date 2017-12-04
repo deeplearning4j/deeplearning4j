@@ -4,9 +4,6 @@
 // @author yurii@gmail.com
 //
 
-#ifndef LIBND4J_RECURRENT_OPS_H
-#define LIBND4J_RECURRENT_OPS_H
-
 #include <op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
 #include <NDArray.h>
@@ -869,5 +866,3 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 }
 }
-
-#endif //LIBND4J_RECURRENT_OPS_H

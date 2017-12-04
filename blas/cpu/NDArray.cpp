@@ -2570,7 +2570,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     NDArray<T> NDArray<T>::operator()(const Intervals& idx)  const {
 
         if (idx.size() != this->rankOf())
-            throw "NDArray::operator(): number of indices should match with rank of array!";
+            throw "NDArray::operator(Intervals): number of indices should match with rank of array!";
 
         int *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), int);
@@ -2585,7 +2585,7 @@ void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
             // building new shape first
             if (!idx[d].empty()) {
                 if (idx[d].size() != 2)
-                    throw "NDArray::operator(): the interval must contain only two numbers {first, last} !";
+                    throw "NDArray::operator(Intervals): the interval must contain only two numbers {first, last} !";
                 shapeOf[d] = idx[d][1] - idx[d][0];
                 // for offset we're taking only the first index
                 offset += idx[d][0] * stridesOf[d];

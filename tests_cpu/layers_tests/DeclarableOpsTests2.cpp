@@ -3677,4 +3677,543 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test15) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test1) {
     
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 4;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789,0.99926789});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108,3.99987108});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 1.}, {0, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test2) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 4;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589,0.95867589});
+    NDArray<double> expCt('c', {batchSize, numUnits},{1.93001527,1.93001527,1.93001527,1.93001527, 1.93001527,1.93001527,1.93001527,1.93001527});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., -10.5}, {0, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test3) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 4;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568});
+    NDArray<double> expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0., 1.5}, {0, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test4) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 4;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568,0.37992568});
+    NDArray<double> expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0.3, 1.5}, {0, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test5) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 3;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.3,0.3,0.3,0.3,0.3,0.3});
+    NDArray<double> expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0.3, 1.5}, {0, 1});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test6) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 3;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {1.99832496,1.99832496,1.99832496,1.99832496,1.99832496,1.99832496});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188,3.99972188});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 1.5}, {0, 1});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test7) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 3;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.75977136,0.75977136,0.75977136,0.75977136,0.75977136,0.75977136});
+    NDArray<double> expCt('c', {batchSize, numUnits},{0.4,  0.4,  0.4,  0.4,   0.4,  0.4,  0.4,  0.4});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0., 1.5}, {0, 1});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test8) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 4;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.99930672,0.99930672,0.99930672,0.99930672, 0.99930672,0.99930672,0.99930672,0.99930672});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277,3.99996277});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 10.5}, {1, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test9) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 4;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777,0.99501777});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 0., 10.5}, {1, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht,1e-4));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test10) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 3;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {1.99861344,1.99861344,1.99861344,1.99861344,1.99861344,1.99861344});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.99996277,  3.99996277,  3.99996277,  3.99996277,3.99996277,  3.99996277,  3.99996277,  3.99996277});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 10.5}, {1, 1});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test11) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 3;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {1.99003554,1.99003554,1.99003554,1.99003554,1.99003554,1.99003554});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 0., 10.5}, {1, 1});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, lstmCell_test12) {
+    
+    const int batchSize = 2;
+    const int inSize    = 10;
+    const int numProj   = 3;
+    const int numUnits  = 4;
+
+    NDArray<double> xt  ('c', {batchSize, inSize});
+    NDArray<double> ht_1('c', {batchSize, numProj});
+    NDArray<double> ct_1('c', {batchSize, numUnits});
+    NDArray<double> Wx  ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh  ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wp  ('c', {numUnits, numProj});
+    NDArray<double> b   ('c', {1, 4*numUnits});
+
+    xt.assign(1.);
+    ht_1.assign(2.);
+    ct_1.assign(3.);
+    Wx.assign(0.5);
+    Wh.assign(0.5);
+    Wc.assign(0.5);
+    Wp.assign(0.5);
+    b.assign(0.7);
+
+    NDArray<double> expHt('c', {batchSize, numProj}, {1.,1.,1.,1.,1.,1.});
+    NDArray<double> expCt('c', {batchSize, numUnits},{3.,3.,3.,3.,3.,3.,3.,3.});
+
+    nd4j::ops::lstmCell<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 1.,-5.}, {1, 1});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *ht = results->at(0);
+    NDArray<double> *ct = results->at(1);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expCt.isSameShape(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct));
+
+    delete results;
+}

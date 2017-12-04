@@ -237,10 +237,10 @@ namespace nd4j {
 
         // Returns true if these two NDArrays have same shape
         FORCEINLINE bool isSameShape(const NDArray<T> *other) const;
-        FORCEINLINE bool isSameShape(std::initializer_list<int> shape);
-        FORCEINLINE bool isSameShape(std::initializer_list<Nd4jIndex> shape);
-        FORCEINLINE bool isSameShape(std::vector<int>& shape);
-        FORCEINLINE bool isSameShape(std::vector<Nd4jIndex >& shape);
+        FORCEINLINE bool isSameShape(const std::initializer_list<int>& shape) const;
+        FORCEINLINE bool isSameShape(const std::initializer_list<Nd4jIndex>& shape) const;
+        FORCEINLINE bool isSameShape(const std::vector<int>& shape) const;
+        FORCEINLINE bool isSameShape(const std::vector<Nd4jIndex >& shape) const;
 
 		// Returns true if these two NDArrays have same shape
         FORCEINLINE bool isSameShapeStrict(const NDArray<T> *other) const;
@@ -730,21 +730,21 @@ FORCEINLINE bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-FORCEINLINE bool NDArray<T>::isSameShape(std::initializer_list<int> other) {
+FORCEINLINE bool NDArray<T>::isSameShape(const std::initializer_list<int>& other) const {
     std::vector<int> shp(other);
     return isSameShape(shp);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-FORCEINLINE bool NDArray<T>::isSameShape(std::initializer_list<Nd4jIndex> other) {
+FORCEINLINE bool NDArray<T>::isSameShape(const std::initializer_list<Nd4jIndex>& other) const {
     std::vector<Nd4jIndex> shp(other);
     return isSameShape(shp);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-FORCEINLINE bool NDArray<T>::isSameShape(std::vector<Nd4jIndex>& other) {
+FORCEINLINE bool NDArray<T>::isSameShape(const std::vector<Nd4jIndex>& other) const {
     if (this->rankOf() != other.size())
         return false;
     for (int e = 0; e < this->rankOf(); e++) {
@@ -756,7 +756,7 @@ FORCEINLINE bool NDArray<T>::isSameShape(std::vector<Nd4jIndex>& other) {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-FORCEINLINE bool NDArray<T>::isSameShape(std::vector<int>& other) {
+FORCEINLINE bool NDArray<T>::isSameShape(const std::vector<int>& other) const{
     if (this->rankOf() != (int) other.size())
         return false;
     for (int e = 0; e < this->rankOf(); e++) {
