@@ -7,7 +7,9 @@ layout: default
 
 Eclipse Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots.
 
-There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/).
+There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/). 
+
+Our open-core product, the [Skymind Intelligence Layer](https://skymind.ai/quickstart), bundles the Deeplearning4j suite of libraries alongside a Conda environment with Tensorflow, Keras, scikit-learn and other popular machine learning tools. SKIL makes it easy to perform distributed training, testing against production environments, and deployment of trained models to production.
 
 <p align="center">
 <a href="https://skymind.ai/contact" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">CONTACT US</a>
