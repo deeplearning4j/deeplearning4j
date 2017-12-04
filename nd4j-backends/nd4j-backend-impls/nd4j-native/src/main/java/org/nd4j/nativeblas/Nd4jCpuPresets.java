@@ -68,7 +68,11 @@ import org.bytedeco.javacpp.tools.Logger;
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
-                                                                "/usr/lib/powerpc64le-linux-gnu/"})})
+                                                                "/usr/lib/powerpc64le-linux-gnu/"}),
+                @Platform(value = "windows", preload = {"libiomp5md#libiomp5md", "mkl_avx#mkl_avx", "mkl_avx2#mkl_avx2",
+                                "mkl_avx512#mkl_avx512", "mkl_avx512_mic#mkl_avx512_mic", "mkl_def#mkl_def",
+                                "mkl_mc#mkl_mc", "mkl_mc3#mkl_mc3", "mkl_core#mkl_core", "mkl_intel_lp64#mkl_intel_lp64",
+                                "mkl_intel_thread#mkl_intel_thread", "mkl_rt#mkl_rt", "libnd4jcpu"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     private Logger logger;
