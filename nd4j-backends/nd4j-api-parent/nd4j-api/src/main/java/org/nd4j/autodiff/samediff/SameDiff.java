@@ -4276,6 +4276,8 @@ public class SameDiff {
                 return OpType.ACCUMULATION3;
             case INDEXREDUCE:
                 return OpType.INDEX_ACCUMULATION;
+            case RANDOM:
+                return OpType.RANDOM;
             case LOOP:
                 return OpType.LOGIC;
             case RETURN:

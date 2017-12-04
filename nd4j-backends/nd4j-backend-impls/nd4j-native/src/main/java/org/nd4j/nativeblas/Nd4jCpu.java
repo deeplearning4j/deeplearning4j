@@ -8389,6 +8389,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #define LIBND4J_VARIABLESPACE_H
 
 // #include <helpers/logger.h>
+// #include <helpers/helper_random.h>
 // #include <string>
 // #include <vector>
 // #include <list>
@@ -8417,6 +8418,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getPlaceholders();
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
 
             public native @Cast("bool") boolean hasExternalVariable(int it);
             public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
@@ -8478,6 +8481,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getPlaceholders();
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
 
             public native @Cast("bool") boolean hasExternalVariable(int it);
             public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
@@ -8539,6 +8544,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getPlaceholders();
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
 
             public native @Cast("bool") boolean hasExternalVariable(int it);
             public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
@@ -8599,6 +8606,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #ifndef LIBND4J_HELPER_GENERATOR_H
 // #define LIBND4J_HELPER_GENERATOR_H
 
+// #include <pointercast.h>
 // #include <dll.h>
 
 // #ifdef _MSC_VER

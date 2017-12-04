@@ -14,8 +14,9 @@ public final class OpType {
   public static final byte SUMMARYSTATS = 7;
   public static final byte SHAPE = 8;
   public static final byte AGGREGATION = 9;
-  public static final byte CUSTOM = 10;
-  public static final byte GRAPH = 11;
+  public static final byte RANDOM = 10;
+  public static final byte CUSTOM = 11;
+  public static final byte GRAPH = 12;
   public static final byte VARIABLE = 30;
   public static final byte BOOLEAN = 40;
   public static final byte LOGIC = 119;

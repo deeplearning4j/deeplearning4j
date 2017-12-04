@@ -63,6 +63,7 @@ public interface Op {
         LOOP,
         IF,
         RETURN,
+        RANDOM,
     }
 
     /**
