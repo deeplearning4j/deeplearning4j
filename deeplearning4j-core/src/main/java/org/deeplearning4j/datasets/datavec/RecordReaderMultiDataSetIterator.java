@@ -407,7 +407,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 int classIdx = w.toInt();
                 if (classIdx >= details.oneHotNumClasses) {
                     throw new DL4JException("Cannot convert sequence writables to one-hot: class index " + classIdx
-                                    + " >= numClass (" + details.oneHotNumClasses + ")");
+                                    + " >= numClass (" + details.oneHotNumClasses + "). (Note that classes are zero-" +
+                            "indexed, thus only values 0 to nClasses-1 are valid)");
                 }
                 arr.putScalar(i, w.toInt(), 1.0);
             } else {
@@ -580,7 +581,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                     int classIdx = w.toInt();
                     if (classIdx >= details.oneHotNumClasses) {
                         throw new DL4JException("Cannot convert sequence writables to one-hot: class index " + classIdx
-                                        + " >= numClass (" + details.oneHotNumClasses + ")");
+                                        + " >= numClass (" + details.oneHotNumClasses + "). (Note that classes are zero-" +
+                                "indexed, thus only values 0 to nClasses-1 are valid)");
                     }
                     arr.putScalar(i, classIdx, k, 1.0);
                 } else {
