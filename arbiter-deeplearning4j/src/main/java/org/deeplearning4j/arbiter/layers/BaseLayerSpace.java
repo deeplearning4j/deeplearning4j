@@ -246,11 +246,11 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             return (T) this;
         }
 
-        public T biasUpdater(IUpdater updater) {
-            return biasUpdater(new FixedValue<>(updater));
+        public T biasUpdater(IUpdater biasUpdater) {
+            return biasUpdater(new FixedValue<>(biasUpdater));
         }
 
-        public T biasUpdater(ParameterSpace<IUpdater> updater) {
+        public T biasUpdater(ParameterSpace<IUpdater> biasUpdater) {
             this.biasUpdater = biasUpdater;
             return (T) this;
         }
