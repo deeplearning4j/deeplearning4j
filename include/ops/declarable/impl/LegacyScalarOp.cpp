@@ -2,7 +2,7 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#include "ops/declarable/LegacyScalarOp.h"
+#include <ops/declarable/LegacyScalarOp.h>
 
 
 namespace nd4j {

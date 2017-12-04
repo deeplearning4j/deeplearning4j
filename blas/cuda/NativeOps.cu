@@ -6837,7 +6837,7 @@ Nd4jPointer* NativeOps::calculateOutputShapesDouble(Nd4jPointer* extraPointers, 
 }
 
 template<typename T>
-Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, T* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, T* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
 	if (op == nullptr)
 		nd4j_printf("Can't find requested operation: [%lld]\n", hash);
 

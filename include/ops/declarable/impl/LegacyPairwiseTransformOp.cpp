@@ -2,7 +2,7 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#include "ops/declarable/LegacyPairwiseTransformOp.h"
+#include <ops/declarable/LegacyPairwiseTransformOp.h>
 
 
 namespace nd4j {

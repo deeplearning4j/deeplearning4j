@@ -9,6 +9,7 @@
 #define TEMPLATEMATH_H_
 
 #include <math.h>
+#include <cmath>
 #include <dll.h>
 #include <pointercast.h>
 
@@ -22,7 +23,6 @@
 #ifdef __CUDACC__
 #include <types/float16.h>
 #define math_def __host__ __device__
-
 #ifdef CUDA_9
 struct HALFS{
 			half H;
@@ -377,12 +377,22 @@ template<typename T>
 
 		template<>
         math_def inline bool nd4j_isinf<float>(float value) {
-			return value < -FLOAT_MAX_VALUE || value > FLOAT_MAX_VALUE;
+#ifdef __CUDACC__
+            return isinf(value);
+#else
+            return std::isinf(value);
+#endif
+            //return value < -FLOAT_MAX_VALUE || value > FLOAT_MAX_VALUE;
 		}
 
 		template<>
         math_def inline bool nd4j_isinf<double>(double value) {
-			return value < -DOUBLE_MAX_VALUE || value > DOUBLE_MAX_VALUE;
+#ifdef __CUDACC__
+            return isinf(value);
+#else
+            return std::isinf(value);
+#endif
+            //return value < -DOUBLE_MAX_VALUE || value > DOUBLE_MAX_VALUE;
 		}
 
 		template<>

@@ -285,7 +285,7 @@ namespace nd4j {
              */
             if (_descriptor->getNumberOfTArgs() > 0) {
                 if ((int) block.getTArguments()->size() < _descriptor->getNumberOfTArgs()) {
-                    nd4j_printf("%i T args expected, but %i received", _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
+                    nd4j_printf("%i T args expected, but %i received\n", _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
             } else
@@ -297,7 +297,7 @@ namespace nd4j {
 
             if (_descriptor->getNumberOfIArgs() > 0) {
                 if ((int) block.getIArguments()->size() < _descriptor->getNumberOfIArgs()) {
-                    nd4j_printf("%i int args expected, but %i received", _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
+                    nd4j_printf("%i int args expected, but %i received\n", _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
             } else

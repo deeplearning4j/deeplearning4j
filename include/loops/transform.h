@@ -237,7 +237,7 @@ template<typename OpType>
 
 
 			template<typename OpType>
-			static void exec(
+			static void _CUDA_H exec(
                     T *dx,
                     int *xShapeInfo,
                     T *result,
@@ -297,8 +297,6 @@ template<typename OpType>
                     }
 
                 }
-
-
             }
 
 

@@ -2,7 +2,7 @@
 // Created by raver119 on 17.10.2017.
 //
 
-#include "ops/declarable/LegacyStatsOp.h"
+#include <ops/declarable/LegacyStatsOp.h>
 #include <helpers/ShapeUtils.h>
 
 

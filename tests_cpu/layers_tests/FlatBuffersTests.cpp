@@ -489,7 +489,7 @@ TEST_F(FlatBuffersTest, ReadTensorArray_1) {
 }
 
 */
-
+/*
 TEST_F(FlatBuffersTest, ReadStridedSlice_1) {
     // TF graph: https://gist.github.com/raver119/fc3bf2d31c91e465c635b24020fd798d
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_slice.fb");
@@ -508,6 +508,7 @@ TEST_F(FlatBuffersTest, ReadStridedSlice_1) {
 
     delete graph;
 }
+*/
 
 
 TEST_F(FlatBuffersTest, ReduceDim_1) {

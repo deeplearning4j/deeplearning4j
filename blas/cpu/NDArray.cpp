@@ -14,6 +14,7 @@
 #include <helpers/logger.h>
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
+#include <loops/random.h>
 #include <loops/broadcasting.h>
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
@@ -874,6 +875,22 @@ template <typename T>
                                                                                     extraParams);
     }
 
+
+    template<typename T>
+    template<typename OpName>
+    void NDArray<T>::applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y, NDArray<T>* z, T* extraArgs) {
+        Nd4jPointer state = (Nd4jPointer) buffer;
+        if (y == nullptr && z == nullptr) {
+            // we're executing indexed z here
+            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), extraArgs);
+        } else if (y == nullptr && z != nullptr) {
+            // XZ case
+            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
+        } else if (y != nullptr && z != nullptr) {
+            // XYZ case
+            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
+        }
+    }
 
     template <typename T>
     Nd4jIndex NDArray<T>::tensorsAlongDimension(std::initializer_list<int> dimensions) const {

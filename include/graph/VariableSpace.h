@@ -6,6 +6,7 @@
 #define LIBND4J_VARIABLESPACE_H
 
 #include <helpers/logger.h>
+#include <helpers/helper_random.h>
 #include <string>
 #include <vector>
 #include <list>
@@ -27,6 +28,7 @@ namespace nd4j {
         protected:
 
             nd4j::memory::Workspace _workspace;
+            nd4j::random::RandomBuffer* _rng = nullptr;
 
             // stash is NOT cloned
             nd4j::graph::Stash<T> _stash;
@@ -59,6 +61,8 @@ namespace nd4j {
 
             int numberOfPlaceholders();
             std::vector<Variable<T>*>* getPlaceholders();
+            nd4j::random::RandomBuffer* getRNG();
+            void setRNG(nd4j::random::RandomBuffer* rng);
 
             bool hasExternalVariable(int it);
             bool hasExternalVariable(std::pair<int,int>& pair);

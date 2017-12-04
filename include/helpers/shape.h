@@ -1559,6 +1559,8 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
             if(stride1[i] != stride2[i])
                 return false;
         }
+
+        return true;
     }
 
 #ifdef __CUDACC__

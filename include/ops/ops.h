@@ -27,13 +27,13 @@
 #define no_op_exec_special_accumulation_cuda 	static inline __device__ void execSpecialCuda(T *dx, int *xShapeInfo, T *extraParams, T *result, int *resultShapeInfo, int *dimension, int dimensionLength, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {}
 #else
 // hacky fix for isnan/being being out of scope
-#ifdef IOS
-#define isinf(x) 0 // this isn't right. But std::isinf fails
-#define isnan(x) 0
-#else
-#define isnan std::isnan
-#define isinf std::isinf
-#endif
+//#ifdef IOS
+//#define isinf(x) 0 // this isn't right. But std::isinf fails
+//#define isnan(x) 0
+//#else
+//#define isnan std::isnan
+//#define isinf std::isinf
+//#endif
 
 #define meta_def inline
 #define no_op_exec_special_cuda
@@ -900,7 +900,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return isnan(d1) ? (T) 1.0f : (T) 0.0f;
+			return nd4j::math::nd4j_isnan(d1) ? (T) 1.0f : (T) 0.0f;
 		}
 	};
 
@@ -911,7 +911,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return isinf(d1) ? (T) 1.0f : (T) 0.0f;
+			return nd4j::math::nd4j_isinf(d1) ? (T) 1.0f : (T) 0.0f;
 		}
 	};
 
@@ -922,7 +922,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return (!isinf(d1) && ! isnan(d1))? (T) 1.0f : (T) 0.0f;
+			return nd4j::math::nd4j_isfin<T>(d1) ? (T) 1.0f : (T) 0.0f;
 		}
 	};
 
@@ -1394,9 +1394,9 @@ namespace simdOps {
             else if (mode == 7) // abs_greater_than
                 return nd4j::math::nd4j_abs<T>(d1) > compare? 1.0 : 0.0;
             else if (mode == 8) // is inf
-                return isinf(d1) ? 1.0 : 0.0;
+                return nd4j::math::nd4j_isinf(d1) ? 1.0 : 0.0;
             else if (mode == 9) // is nan
-                return isnan(d1) ? 1.0 : 0.0;
+                return nd4j::math::nd4j_isnan(d1) ? 1.0 : 0.0;
             else if (mode == 10)
                 return (d1 == compare) ? 1.0 : 0.0;
             else if (mode == 11)
@@ -3267,7 +3267,7 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T replacement = params[0];
-			return isnan(d1) ? replacement : d1 ;
+			return nd4j::math::nd4j_isnan(d1) ? replacement : d1 ;
 		}
 	};
 
@@ -3324,12 +3324,12 @@ template<typename T>
                 else
                     return d1;
             else if (mode == 8) // is inf
-                if (isinf(d1))
+                if (nd4j::math::nd4j_isinf(d1))
                     return d2;
                 else
                     return d1;
             else if (mode == 9) // is nan
-                if (isnan(d1))
+                if (nd4j::math::nd4j_isnan(d1))
                     return d2;
                 else
                     return d1;
@@ -3416,12 +3416,12 @@ template<typename T>
                 else
                     return d1;
             else if (mode == 8) // is inf
-                if (isinf(d1))
+                if (nd4j::math::nd4j_isinf(d1))
                     return set;
                 else
                     return d1;
             else if (mode == 9) // is nan
-                if (isnan(d1))
+                if (nd4j::math::nd4j_isnan(d1))
                     return set;
                 else
                     return d1;
@@ -3496,12 +3496,12 @@ template<typename T>
                 else
                     return d1;
             else if (mode == 8) // is inf
-                if (isinf(d2))
+                if (nd4j::math::nd4j_isinf(d2))
                     return d2;
                 else
                     return d1;
             else if (mode == 9) // is nan
-                if (isnan(d2))
+                if (nd4j::math::nd4j_isnan(d2))
                     return d2;
                 else
                     return d1;

@@ -40,6 +40,9 @@ namespace nd4j {
 
             this->_executionTime.first = 0;
             this->_executionTime.second = 0;
+
+            if (variableSpace != nullptr)
+                this->_rng = variableSpace->getRNG();
         }
 
         template <typename T>
@@ -67,6 +70,9 @@ namespace nd4j {
         template <typename T>
         void Context<T>::setVariableSpace(VariableSpace<T> *variableSpace) {
             this->_variableSpace = variableSpace;
+
+            if (variableSpace != nullptr)
+                this->_rng = variableSpace->getRNG();
         }
 
         template <typename T>

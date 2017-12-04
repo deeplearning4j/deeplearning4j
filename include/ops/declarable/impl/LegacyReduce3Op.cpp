@@ -2,7 +2,7 @@
 // Created by raver119 on 17.10.2017.
 //
 
-#include "ops/declarable/LegacyReduce3Op.h"
+#include <ops/declarable/LegacyReduce3Op.h>
 #include <helpers/ShapeUtils.h>
 
 namespace nd4j {

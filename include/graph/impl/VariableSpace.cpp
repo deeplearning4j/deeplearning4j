@@ -332,6 +332,22 @@ namespace nd4j {
                 delete p;
 
             _lists.clear();
+
+            if (_rng != nullptr) {
+                delete[] _rng->getBuffer();
+                NativeOps nativeOps;
+                nativeOps.destroyRandom(_rng);
+            }
+        }
+
+        template <typename T>
+        void VariableSpace<T>::setRNG(nd4j::random::RandomBuffer* rng) {
+            _rng = rng;
+        }
+
+        template <typename T>
+        nd4j::random::RandomBuffer* VariableSpace<T>::getRNG() {
+            return _rng;
         }
 
         template <typename T>

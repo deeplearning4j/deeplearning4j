@@ -214,7 +214,7 @@ namespace nd4j {
 
             nd4j_debug("Graph output size: %i\n", _output.size());
             for (int e = 0; e < (int) _output.size(); e++) {
-                nd4j_printf("Output node: %i\n", _output.at(e));
+                nd4j_debug("Output node: %i\n", _output.at(e));
                 res->push_back(_variableSpace->getVariable(_output.at(e)));
             }
 
@@ -738,6 +738,12 @@ namespace nd4j {
             this->_mapped = new std::map<int32_t, Node<T> *> ();
             this->_nodes = new std::vector<int32_t>();
             this->_variableSpace = new VariableSpace<T>();
+            
+            // creating RNG for this instance
+            NativeOps nativeOps;
+            uint64_t *buffer = new uint64_t[1000000];
+            nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 119, 1000000, (Nd4jPointer) buffer); 
+            this->_variableSpace->setRNG(rng);
 
             // add 0 layer
             this->expandOnion(0);

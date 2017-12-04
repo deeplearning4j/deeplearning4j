@@ -5,6 +5,7 @@
 #ifndef LIBND4J_HELPER_GENERATOR_H
 #define LIBND4J_HELPER_GENERATOR_H
 
+#include <pointercast.h>
 #include <dll.h>
 
 #ifdef _MSC_VER

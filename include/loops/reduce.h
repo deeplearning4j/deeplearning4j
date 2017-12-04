@@ -390,32 +390,6 @@ template<typename OpType>
 
 #endif
 
-            static T execScalar(const int opNum, T *x, int *xShapeInfo, T *extraParams) {
-                RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
-            }
-
-            static void exec(const int opNum,
-                             T *x,
-                             int *xShapeInfo,
-                             T *extraParams,
-                             T *result,
-                             int *resultShapeInfoBuffer,
-                             int *dimension,
-                             int dimensionLength,
-                             int *tadShapeInfo,
-                             Nd4jIndex *tadOffset) {
-                DISPATCH_BY_OPNUM(exec, PARAMS(x,
-                                               xShapeInfo,
-                                               extraParams,
-                                               result,
-                                               resultShapeInfoBuffer,
-                                               dimension,
-                                               dimensionLength,
-                                               tadShapeInfo,
-                                               tadOffset),
-                                  REDUCE_OPS);
-            }
-
             /**
              * Reduce down to 1 number
              * @param x the input
@@ -425,10 +399,7 @@ template<typename OpType>
              * @return
              */
             template<typename OpType>
-#ifdef __CUDACC__
-            __host__
-#endif
-            static T execScalar(T *x, int *xShapeInfo, T *extraParams) {
+            static _CUDA_H T execScalar(T *x, int *xShapeInfo, T *extraParams) {
                 const Nd4jIndex length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if (xElementWiseStride >= 1) {
@@ -472,9 +443,34 @@ template<typename OpType>
                     }
 
                     return start;
-
                 }
+            }
 
+
+            static T execScalar(const int opNum, T *x, int *xShapeInfo, T *extraParams) {
+                RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
+            }
+
+            static void exec(const int opNum,
+                             T *x,
+                             int *xShapeInfo,
+                             T *extraParams,
+                             T *result,
+                             int *resultShapeInfoBuffer,
+                             int *dimension,
+                             int dimensionLength,
+                             int *tadShapeInfo,
+                             Nd4jIndex *tadOffset) {
+                DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                                               xShapeInfo,
+                                               extraParams,
+                                               result,
+                                               resultShapeInfoBuffer,
+                                               dimension,
+                                               dimensionLength,
+                                               tadShapeInfo,
+                                               tadOffset),
+                                  REDUCE_OPS);
             }
 
             /**
@@ -491,10 +487,7 @@ template<typename OpType>
 
 
             template<typename OpType>
-#ifdef __CUDACC__
-            __host__
-#endif
-            static void exec(T *x,
+            static void _CUDA_H exec(T *x,
                              int *xShapeInfo,
                              T *extraParams,
                              T *result,
@@ -598,10 +591,6 @@ template<typename OpType>
                     delete tad;
             }
 
-
-
-
-
             /**
             * CPU implementation
             * @param x the input data
@@ -612,10 +601,7 @@ template<typename OpType>
             * @param resultShapeInfo the shape information
             */
             template<typename OpType>
-#ifdef __CUDACC__
-            __host__
-#endif
-            static void exec(T *x,
+            static void _CUDA_H exec(T *x,
                              int *xShapeInfo,
                              T *extraParams,
                              T *result,
@@ -634,10 +620,7 @@ template<typename OpType>
             * @return
             */
             template<typename OpType>
-#ifdef __CUDACC__
-            __host__
-#endif
-            static T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
+            static T _CUDA_H execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
                 T startingVal = OpType::startingValue(x);
                 if (xElementWiseStride == 1) {
                     if (length < ELEMENT_THRESHOLD) {

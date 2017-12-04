@@ -53,6 +53,10 @@ BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (flo
 BUILD_CALL_1(template void nd4j::NDArray<float>::applyTransform, float, (float* extraParams), TRANSFORM_OPS)
 BUILD_CALL_1(template void nd4j::NDArray<double>::applyTransform, double, (double* extraParams), TRANSFORM_OPS)
 
+BUILD_CALL_1(template void nd4j::NDArray<float16>::applyRandom, float16, (nd4j::random::RandomBuffer *buffer, NDArray<float16>* y, NDArray<float16>* z, float16* extraParams), RANDOM_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float>::applyRandom, float, (nd4j::random::RandomBuffer *buffer, NDArray<float>* y, NDArray<float>* z, float* extraParams), RANDOM_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::applyRandom, double, (nd4j::random::RandomBuffer *buffer, NDArray<double>* y, NDArray<double>* z, double* extraParams), RANDOM_OPS)
+
 BUILD_CALL_1(template NDArray<float16> nd4j::NDArray<float16>::transform, float16, (float16* extraParams), TRANSFORM_OPS)
 BUILD_CALL_1(template NDArray<float>   nd4j::NDArray<float>::transform, float, (float* extraParams), TRANSFORM_OPS)
 BUILD_CALL_1(template NDArray<double>  nd4j::NDArray<double>::transform, double, (double* extraParams), TRANSFORM_OPS)

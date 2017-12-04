@@ -27,8 +27,9 @@ enum OpType:byte {
     SUMMARYSTATS = 7,
     SHAPE = 8,
     AGGREGATION = 9, // ???
-    CUSTOM = 10, // custom ops
-    GRAPH = 11, // another graph used as op
+    RANDOM = 10, //
+    CUSTOM = 11, // custom ops
+    GRAPH = 12, // another graph used as op
     VARIABLE = 30,
     BOOLEAN = 40, // booleanOps, for conditionals
     LOGIC = 119, //

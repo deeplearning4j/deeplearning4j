@@ -328,6 +328,9 @@ namespace nd4j {
         void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
 #endif
 
+        template<typename OpName>
+        void applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y = nullptr, NDArray<T>* z = nullptr, T* extraArgs = nullptr);
+
         // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
         NDArray<T> *transpose() const;
 
