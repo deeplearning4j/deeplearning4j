@@ -5,9 +5,11 @@
 #include <NativeOps.h>
 #include <NDArray.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/OpRegistrator.h>
 #include "testlayers.h"
 
 using namespace nd4j;
+using namespace nd4j::ops;
 
 class JavaInteropTests : public testing::Test {
 public:
@@ -274,4 +276,49 @@ TEST_F(JavaInteropTests, TestInplace_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
     ASSERT_NEAR(1.0, input.meanNumber(), 1e-5);
+}
+
+TEST_F(JavaInteropTests, Test_Synonyms_1) {
+    auto op = OpRegistrator::getInstance()->getOperationHalf("RDiv");
+    auto opRef = OpRegistrator::getInstance()->getOperationHalf("reversedivide");
+    std::string nameExp("reversedivide");
+
+    ASSERT_TRUE(op != nullptr);
+    ASSERT_TRUE(opRef != nullptr);
+
+    std::string name = *(op->getOpName());
+    std::string nameRef = *(opRef->getOpName());
+
+    ASSERT_EQ(nameExp, nameRef);
+    ASSERT_EQ(nameRef, name);
+}
+
+TEST_F(JavaInteropTests, Test_Synonyms_2) {
+    auto op = OpRegistrator::getInstance()->getOperationFloat("RDiv");
+    auto opRef = OpRegistrator::getInstance()->getOperationFloat("reversedivide");
+    std::string nameExp("reversedivide");
+
+    ASSERT_TRUE(op != nullptr);
+    ASSERT_TRUE(opRef != nullptr);
+
+    std::string name = *(op->getOpName());
+    std::string nameRef = *(opRef->getOpName());
+
+    ASSERT_EQ(nameExp, nameRef);
+    ASSERT_EQ(nameRef, name);
+}
+
+TEST_F(JavaInteropTests, Test_Synonyms_3) {
+    auto op = OpRegistrator::getInstance()->getOperationDouble("RDiv");
+    auto opRef = OpRegistrator::getInstance()->getOperationDouble("reversedivide");
+    std::string nameExp("reversedivide");
+
+    ASSERT_TRUE(op != nullptr);
+    ASSERT_TRUE(opRef != nullptr);
+
+    std::string name = *(op->getOpName());
+    std::string nameRef = *(opRef->getOpName());
+
+    ASSERT_EQ(nameExp, nameRef);
+    ASSERT_EQ(nameRef, name);
 }

@@ -207,7 +207,7 @@ namespace nd4j {
          */
         nd4j::ops::DeclarableOp<float>* OpRegistrator::getOperationFloat(std::string& name) {
             if (!_declarablesF.count(name)) {
-                nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
+                nd4j_debug("Unknown operation requested: [%s]\n", name.c_str());
                 return nullptr;
             }
 
@@ -268,7 +268,7 @@ namespace nd4j {
 
         nd4j::ops::DeclarableOp<float16> *OpRegistrator::getOperationHalf(std::string& name) {
             if (!_declarablesH.count(name)) {
-                nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
+                nd4j_debug("Unknown operation requested: [%s]\n", name.c_str());
                 return nullptr;
             }
 
@@ -306,7 +306,7 @@ namespace nd4j {
 
         nd4j::ops::DeclarableOp<double> *OpRegistrator::getOperationDouble(std::string& name) {
             if (!_declarablesD.count(name)) {
-                nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
+                nd4j_debug("Unknown operation requested: [%s]\n", name.c_str());
                 return nullptr;
             }
 

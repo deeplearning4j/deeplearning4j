@@ -245,3 +245,20 @@ TEST_F(DeclarableOpsTests3, Test_Range_9) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
+    NDArray<float> x('c', {1, 3}, {2, 2, 2});
+    NDArray<float> y('c', {1, 3}, {4, 6, 8});
+    NDArray<float> exp('c', {1, 3}, {2, 3, 4});
+
+    nd4j::ops::reversedivide<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
