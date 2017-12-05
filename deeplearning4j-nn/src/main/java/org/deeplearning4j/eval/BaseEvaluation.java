@@ -149,14 +149,6 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
     }
 
-
-    @Override
-   public boolean equals(Object other) {
-        if(!(other instanceof BaseEvaluation))
-            return false;
-        BaseEvaluation baseEvaluation = (BaseEvaluation) other;
-        return baseEvaluation.toJson().equals(toJson());
-   }
     @Override
     public String toString() {
         return stats();
