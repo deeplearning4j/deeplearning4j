@@ -146,6 +146,11 @@ public class ZeroPaddingLayer extends Layer {
         }
 
         public Builder(int[] padding) {
+            if(padding.length == 2){
+                padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
+            } else if(padding.length != 4){
+                throw new IllegalArgumentException("Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
+            }
             this.padding = padding;
         }
 

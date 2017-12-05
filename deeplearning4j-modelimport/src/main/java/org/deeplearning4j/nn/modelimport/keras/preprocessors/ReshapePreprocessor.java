@@ -84,7 +84,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
-        if (targetShape != output.shape()) {
+        if (!Arrays.equals(targetShape, output.shape())) {
             throw new IllegalStateException("Unexpected output shape" + Arrays.toString(output.shape())
                     + " (expected to be " + Arrays.toString(targetShape) + ")");
         }
