@@ -26,6 +26,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -5470,6 +5471,28 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(reference, original);
         assertEquals(expected, result);
+
+        val set = Nd4j.getExecutioner().getCustomOperations().keySet();
+        for (val v: set) {
+            log.info("Op: {}", v);
+        }
+    }
+
+    @Test
+    public void testRDiv() throws Exception {
+        val x = Nd4j.create(new double[]{2,2,2});
+        val y = Nd4j.create(new double[]{4,6,8});
+        val result = Nd4j.createUninitialized(1,3);
+
+        val op = DynamicCustomOp.builder("RDiv")
+                .addInputs(x,y)
+                .addOutputs(result)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(Nd4j.create(new double[]{2, 3, 4}), result);
     }
 
 

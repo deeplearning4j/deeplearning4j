@@ -298,13 +298,13 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      */
     public static DynamicCustomOpsBuilder builder(String opName) {
         val map = Nd4j.getExecutioner().getCustomOperations();
-        val lcName = opName.toLowerCase();
+        val lcName = map.containsKey(opName) ? opName : opName.toLowerCase();
         val desc = map.get(lcName);
 
         if (desc == null)
             throw new ND4JIllegalStateException("Unknown operations requested: [" + opName + "]");
 
-        return new DynamicCustomOpsBuilder(opName, desc.getHash(), desc.getNumInputs(), desc.getNumOutputs(), desc.isAllowsInplace(), desc.getNumTArgs(), desc.getNumIArgs());
+        return new DynamicCustomOpsBuilder(lcName, desc.getHash(), desc.getNumInputs(), desc.getNumOutputs(), desc.isAllowsInplace(), desc.getNumTArgs(), desc.getNumIArgs());
     }
 
     @Override
