@@ -19,13 +19,27 @@ package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
+import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -33,9 +47,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for end-to-end Keras model import.
@@ -104,7 +120,7 @@ public class KerasModelEndToEndTest {
     public void importMnistCnnTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
     }
 
     /**
@@ -220,6 +236,11 @@ public class KerasModelEndToEndTest {
 
 
     void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions) throws Exception {
+        importEndModelTest(modelPath, inputsOutputsPath, tfOrdering, checkPredictions, false);
+    }
+
+    void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
+                            boolean checkGradients) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -255,6 +276,19 @@ public class KerasModelEndToEndTest {
              */
             INDArray outputs = getOutputs(outputsArchive, true)[0];
             compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, 10, EPS);
+        }
+
+        if (checkGradients){
+            Random r = new Random(12345);
+            INDArray input = getInputs(outputsArchive, tfOrdering)[0];
+            INDArray predictionsDl4j = model.output(input, false);
+
+            //Infer one-hot labels... this probably won't work for all
+            INDArray testLabels = Nd4j.create(predictionsDl4j.shape());
+            for( int i=0; i<testLabels.size(0); i++ ){
+                testLabels.putScalar(i, r.nextInt(testLabels.size(1)), 1.0);
+            }
+            checkGradients(model, input, testLabels);
         }
     }
 
@@ -306,7 +340,7 @@ public class KerasModelEndToEndTest {
         return predictions;
     }
 
-    static public void compareINDArrays(String label, INDArray a, INDArray b, double eps) {
+    public static void compareINDArrays(String label, INDArray a, INDArray b, double eps) {
         INDArray diff = a.sub(b);
         double min = diff.minNumber().doubleValue();
         double max = diff.maxNumber().doubleValue();
@@ -314,7 +348,7 @@ public class KerasModelEndToEndTest {
         assert (a.equalsWithEps(b, eps));
     }
 
-    static public void compareMulticlassAUC(String label, INDArray target, INDArray a, INDArray b, int nbClasses,
+    public static void compareMulticlassAUC(String label, INDArray target, INDArray a, INDArray b, int nbClasses,
                                             double eps) {
         ROCMultiClass evalA = new ROCMultiClass(100);
         evalA.eval(target, a);
@@ -331,5 +365,50 @@ public class KerasModelEndToEndTest {
             aucB[i] = evalB.calculateAUC(i);
         }
         assertArrayEquals(aucA, aucB, EPS);
+    }
+
+    public static void checkGradients(MultiLayerNetwork net, INDArray input, INDArray labels){
+        double eps = 1e-6;
+        double max_rel_error = 1e-3;
+        double min_abs_error = 1e-8;
+
+        MultiLayerNetwork netToTest;
+        if(net.getOutputLayer() instanceof IOutputLayer){
+            netToTest = net;
+        } else {
+            netToTest = new TransferLearning.Builder(net)
+                    .fineTuneConfiguration(new FineTuneConfiguration.Builder()
+                            .updater(new NoOp())
+                            .dropOut(0.0)
+                    .build())
+                    .addLayer(new LossLayer.Builder()
+                    .lossFunction(LossFunctions.LossFunction.MSE)
+                    .activation(Activation.IDENTITY)
+                    .build())
+                    .build();
+        }
+
+        System.out.println("Num params: " + net.numParams());
+
+        //Remove any dropout manually - until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/4368
+        for(Layer l : netToTest.getLayers()){
+            l.conf().getLayer().setIDropout(null);
+
+            //Also swap out activation functions... this is a bit of a hack, but should make the net gradient checkable...
+            if(l instanceof FeedForwardLayer){
+                FeedForwardLayer ffl = (FeedForwardLayer)l;
+                IActivation activation = ffl.getActivationFn();
+                if(activation instanceof ActivationReLU || activation instanceof ActivationLReLU){
+                    ffl.setActivationFn(new ActivationSoftPlus());
+                } else if(activation instanceof ActivationHardTanH){
+                    ffl.setActivationFn(new ActivationTanH());
+                }
+            }
+        }
+
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        boolean passed = GradientCheckUtil.checkGradients(netToTest, eps, max_rel_error, min_abs_error, true, false,
+                input, labels, null, null, true, 9);
+        assertTrue("Gradient check failed", passed);
     }
 }
