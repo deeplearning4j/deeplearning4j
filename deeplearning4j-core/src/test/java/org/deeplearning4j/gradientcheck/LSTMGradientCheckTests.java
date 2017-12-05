@@ -17,7 +17,11 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossMAE;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.util.Random;
 
@@ -463,5 +467,70 @@ public class LSTMGradientCheckTests {
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
         assertTrue(gradOK);
+    }
+
+    @Test
+    public void testRnnLossLayer() {
+        Nd4j.getRandom().setSeed(12345L);
+
+        int timeSeriesLength = 4;
+        int nIn = 2;
+        int layerSize = 2;
+        int nOut = 2;
+        int miniBatchSize = 5;
+
+        ILossFunction[] lfs = new ILossFunction[]{ new LossMSE(), new LossMCXENT()};
+
+        for(ILossFunction lf : lfs){
+
+            Layer l0 = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                        .updater(new NoOp()).build();
+            Layer l1 = new LSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                        .updater(new NoOp()).build();
+
+            MultiLayerConfiguration conf =
+                    new NeuralNetConfiguration.Builder().seed(12345L).list()
+                            .layer(0, l0).layer(1,
+                            l1)
+                            .layer(2, new RnnLossLayer.Builder(LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX)
+                                    .build())
+                            .pretrain(false).backprop(true).build();
+
+            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+            mln.init();
+
+            Random r = new Random(12345L);
+            INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
+            for (int i = 0; i < miniBatchSize; i++) {
+                for (int j = 0; j < nIn; j++) {
+                    for (int k = 0; k < timeSeriesLength; k++) {
+                        input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
+                    }
+                }
+            }
+
+            INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
+            for (int i = 0; i < miniBatchSize; i++) {
+                for (int j = 0; j < timeSeriesLength; j++) {
+                    int idx = r.nextInt(nOut);
+                    labels.putScalar(new int[] {i, idx, j}, 1.0);
+                }
+            }
+
+            String testName = "testRnnLossLayer()";
+            if (PRINT_RESULTS) {
+                System.out.println(testName);
+                for (int j = 0; j < mln.getnLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+            assertTrue(testName, gradOK);
+        }
     }
 }

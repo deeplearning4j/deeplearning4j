@@ -63,7 +63,6 @@ public class RegressionTest071 {
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertEquals("softmax", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
@@ -108,7 +107,6 @@ public class RegressionTest071 {
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertTrue(l1.getActivationFn() instanceof ActivationIdentity);
-        assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
@@ -163,7 +161,6 @@ public class RegressionTest071 {
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
         assertEquals("sigmoid", l2.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());

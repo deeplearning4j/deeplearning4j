@@ -32,27 +32,6 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         return hasBias;
     }
 
-    /**
-     *
-     * @deprecated As of 0.6.0. Use {@link #getLossFn()} instead
-     */
-    @Deprecated
-    public LossFunction getLossFunction() {
-        //To maintain backward compatibility only (as much as possible)
-        if (lossFn instanceof LossNegativeLogLikelihood) {
-            return LossFunction.NEGATIVELOGLIKELIHOOD;
-        } else if (lossFn instanceof LossMCXENT) {
-            return LossFunction.MCXENT;
-        } else if (lossFn instanceof LossMSE) {
-            return LossFunction.MSE;
-        } else if (lossFn instanceof LossBinaryXENT) {
-            return LossFunction.XENT;
-        } else {
-            //TODO: are there any others??
-            return null;
-        }
-    }
-
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //Basically a dense layer...
