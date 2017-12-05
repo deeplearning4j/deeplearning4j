@@ -3637,7 +3637,8 @@ public class SameDiff {
         //update functions after variables are set
         for(DifferentialFunction function : functionInstances.values()) {
             //resolve arguments in case
-            for(DifferentialFunction arg : function.args()) {
+            val args = function.args();
+            for(DifferentialFunction arg : args) {
                 /**
                  * Need to resolve shapes and arrays here.
                  */
@@ -3936,11 +3937,13 @@ public class SameDiff {
                             shape = getShapeForVertexId(outputVertexId);
                         }
 
-                        val otherArr = var.getWeightInitScheme().create(shape);
-                        putArrayForVertexId(outputVertexId,otherArr);
-                        customOp.addOutputArgument(otherArr);
+                        if(customOp.numOutputArguments() < 1) {
+                            val otherArr = var.getWeightInitScheme().create(shape);
+                            putArrayForVertexId(outputVertexId, otherArr);
+                            customOp.addOutputArgument(otherArr);
+                        }
                     }
-                    else if(customOp.numOutputArguments() < inputs.length)
+                    else if(customOp.numOutputArguments() < outputs.length)
                         customOp.addOutputArgument(getArr);
                 }
 

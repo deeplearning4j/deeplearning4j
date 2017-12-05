@@ -132,20 +132,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public DifferentialFunction[] outputFunctions() {
         if(this.outputFunctions == null) {
-            List<Integer> ids = new ArrayList<>();
-            val inputArgs = args();
-            for (int i = 0; i < inputArgs.length; i++) {
-                for (int idx : inputArgs[i].resultVertexId()) {
-                    ids.add(idx);
+            int[] to = sameDiff.graph().getToFor(vertexId);
+            if(to == null) {
+                val args = args();
+                List<Integer> ids = new ArrayList<>();
+                for(int i = 0; i < args.length; i++) {
+                    ids.addAll(Ints.asList(args[i].resultVertexId()));
+                }
+
+                to = sameDiff.graph().getToFor(Ints.toArray(ids));
+                if(to == null) {
+                    throw new ND4JIllegalStateException("Unable to find to vertex id output functions for vertex " + Arrays.toString(resultVertexId()));
                 }
             }
 
-            val to = sameDiff.graph().getToFor(Ints.toArray(ids));
             List<DifferentialFunction> funcs = new ArrayList<>();
-            for(int i = 0; i < to.length; i++) {
-                funcs.add(sameDiff.getFunctionForVertexId(new int[]{to[i]}));
-            }
-
+            funcs.add(sameDiff.getFunctionForVertexId(to));
             this.outputFunctions = funcs.toArray(new DifferentialFunction[funcs.size()]);
         }
         return outputFunctions;
@@ -270,7 +272,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public void removeOutputArgument(INDArray arg) {
-       outputArguments.remove(arg);
+        outputArguments.remove(arg);
     }
 
     @Override

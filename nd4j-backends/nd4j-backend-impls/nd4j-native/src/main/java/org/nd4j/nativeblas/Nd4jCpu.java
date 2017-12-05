@@ -133,6 +133,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_softmaxCrossEntropy.class,
         float_batchnorm.class,
         float_unique.class,
+        float_lstmCell.class,
         float_sru.class,
         float_sru_logic.class,
         float_sru_bi.class,
@@ -303,6 +304,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_softmaxCrossEntropy.class,
         half_batchnorm.class,
         half_unique.class,
+        half_lstmCell.class,
         half_sru.class,
         half_sru_logic.class,
         half_sru_bi.class,
@@ -473,6 +475,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_softmaxCrossEntropy.class,
         double_batchnorm.class,
         double_unique.class,
+        double_lstmCell.class,
         double_sru.class,
         double_sru_logic.class,
         double_sru_bi.class,
@@ -19389,7 +19392,49 @@ private native void allocate();
         public double_unique() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                                                }  
+                                                                                }
+        @Name("nd4j::ops::lstmCell<float>") public static class float_lstmCell extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_lstmCell(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_lstmCell(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_lstmCell position(long position) {
+                return (float_lstmCell)super.position(position);
+            }
+        public float_lstmCell() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::lstmCell<float16>") public static class half_lstmCell extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_lstmCell(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_lstmCell(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_lstmCell position(long position) {
+                return (half_lstmCell)super.position(position);
+            }
+        public half_lstmCell() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::lstmCell<double>") public static class double_lstmCell extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_lstmCell(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_lstmCell(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_lstmCell position(long position) {
+                return (double_lstmCell)super.position(position);
+            }
+        public double_lstmCell() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 
         // recurrent ops
         @Name("nd4j::ops::sru<float>") public static class float_sru extends FloatDeclarableCustomOp {

@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -84,7 +85,11 @@ public class Range extends DynamicCustomOp {
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
             addTArgument(this.from,this.to,this.delta);
-
+            if(sameDiff.getArrForVertexId(resultVertexId()) == null) {
+                val arr = Nd4j.create(getResultShape());
+                sameDiff.putArrayForVertexId(resultVertexId(), arr);
+                addOutputArgument(arr);
+            }
         }
 
         this.fromVertexId = sameDiff.getVariable(startNode.getName()).resultVertexId();
@@ -100,10 +105,7 @@ public class Range extends DynamicCustomOp {
         super.initFromOnnx(node, initWith, attributesForNode, graph);
     }
 
-    @Override
-    public int[] getResultShape() {
-        return new int[] {1, Math.max(1,(int) (from - to))};
-    }
+
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
@@ -115,9 +117,12 @@ public class Range extends DynamicCustomOp {
             this.from = start.getDouble(0);
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
-            if(sameDiff.getArrForVertexId(resultVertexId()) == null)
-                sameDiff.putArrayForVertexId(resultVertexId(),end);
             addTArgument(this.from,this.to,this.delta);
+            if(sameDiff.getArrForVertexId(resultVertexId()) == null) {
+                val arr = Nd4j.create(getResultShape());
+                sameDiff.putArrayForVertexId(resultVertexId(), arr);
+                addOutputArgument(arr);
+            }
 
         }
         else {
