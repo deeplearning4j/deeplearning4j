@@ -201,7 +201,7 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder maxNumLineSearchIterations(Integer maxNumLineSearchIterations) {
+        public Builder maxNumLineSearchIterations(int maxNumLineSearchIterations) {
             this.maxNumLineSearchIterations = maxNumLineSearchIterations;
             return this;
         }
@@ -225,7 +225,7 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder minimize(Boolean minimize) {
+        public Builder minimize(boolean minimize) {
             this.minimize = minimize;
             return this;
         }
@@ -235,7 +235,7 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder gradientNormalizationThreshold(Double gradientNormalizationThreshold) {
+        public Builder gradientNormalizationThreshold(double gradientNormalizationThreshold) {
             this.gradientNormalizationThreshold = gradientNormalizationThreshold;
             return this;
         }
@@ -250,12 +250,12 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder pretrain(Boolean pretrain) {
+        public Builder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
             return this;
         }
 
-        public Builder backprop(Boolean backprop) {
+        public Builder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
         }
@@ -265,12 +265,12 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder tbpttFwdLength(Integer tbpttFwdLength) {
+        public Builder tbpttFwdLength(int tbpttFwdLength) {
             this.tbpttFwdLength = tbpttFwdLength;
             return this;
         }
 
-        public Builder tbpttBackLength(Integer tbpttBackLength) {
+        public Builder tbpttBackLength(int tbpttBackLength) {
             this.tbpttBackLength = tbpttBackLength;
             return this;
         }
