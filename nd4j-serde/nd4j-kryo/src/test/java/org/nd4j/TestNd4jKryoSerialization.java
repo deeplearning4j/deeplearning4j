@@ -6,17 +6,21 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.apache.spark.serializer.SerializerInstance;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.*;
 import scala.Tuple2;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 04/07/2016.
@@ -53,6 +57,47 @@ public class TestNd4jKryoSerialization {
         JavaRDD<INDArray> rdd = sc.parallelize(list);
 
         rdd.foreach(new AssertFn(b));
+    }
+
+    @Test
+    public void testSerializationPrimitives(){
+
+        Counter<Integer> c = new Counter<>();
+        c.incrementCount(5, 3.0);
+
+        CounterMap<Integer,Double> cm = new CounterMap<>();
+        cm.setCount(7, 3.0, 4.5);
+
+        Object[] objs = new Object[]{
+                new AtomicBoolean(true),
+                new AtomicBoolean(false),
+                new AtomicDouble(5.0),
+                c,
+                cm,
+                new ImmutablePair<>(5,3.0),
+                new ImmutableQuad<>(1,2.0,3.0f,4L),
+                new ImmutableTriple<>(1,2.0,3.0f),
+                new Pair<>(5, 3.0),
+                new Quad<>(1,2.0,3.0f,4L),
+                new Triple<>(1,2.0,3.0f)};
+
+
+        SerializerInstance si = sc.env().serializer().newInstance();
+
+        for (Object o : objs) {
+            System.out.println(o.getClass());
+            //System.out.println(ie.getClass());
+            testSerialization(o, si);
+        }
+    }
+
+    private <T> void testSerialization(T in, SerializerInstance si) {
+        ByteBuffer bb = si.serialize(in, null);
+        T deserialized = (T)si.deserialize(bb, null);
+
+//        assertEquals(in, deserialized);
+        boolean equals = in.equals(deserialized);
+        assertTrue(in.getClass() + "\t" + in.toString(), equals);
     }
 
 

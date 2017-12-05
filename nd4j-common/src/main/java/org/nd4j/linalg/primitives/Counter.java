@@ -237,6 +237,19 @@ public class Counter<T> implements Serializable {
         dirty.set(false);
     }
 
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof Counter))
+            return false;
+        Counter c2 = (Counter)o;
+        return map.equals(c2.map);
+    }
+
+    @Override
+    public int hashCode(){
+        return map.hashCode();
+    }
+
     /**
      * Returns total number of tracked elements
      *

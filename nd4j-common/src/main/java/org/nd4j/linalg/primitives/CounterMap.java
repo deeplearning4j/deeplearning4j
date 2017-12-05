@@ -1,5 +1,7 @@
 package org.nd4j.linalg.primitives;
 
+import lombok.EqualsAndHashCode;
+
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
@@ -10,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author raver119@gmail.com
  */
+@EqualsAndHashCode
 public class CounterMap<F, S> implements Serializable{
     private static final long serialVersionUID = 119L;
 
