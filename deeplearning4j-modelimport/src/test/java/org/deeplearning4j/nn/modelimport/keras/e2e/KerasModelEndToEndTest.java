@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
@@ -76,28 +77,28 @@ public class KerasModelEndToEndTest {
     public void importMnistMlpTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
     }
 
     @Test
     public void importMnistMlpThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true);
+        importEndModelTest(modelPath, inputsOutputPath, false, true, true);
     }
 
     @Test
     public void importMnistMlpTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
     }
 
     @Test
     public void importMnistMlpReshapeTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
     }
 
     /**
@@ -113,7 +114,7 @@ public class KerasModelEndToEndTest {
     public void importMnistCnnThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true);
+        importEndModelTest(modelPath, inputsOutputPath, false, true, true);
     }
 
     @Test
@@ -184,21 +185,21 @@ public class KerasModelEndToEndTest {
     public void importSimpleLstmTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false);
+        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
     }
 
     @Test
     public void importSimpleLstmThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false);
+        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
     }
 
     @Test
     public void importSimpleLstmTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false);
+        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
     }
 
     /**
@@ -208,7 +209,7 @@ public class KerasModelEndToEndTest {
     public void importCnnNoBiasTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/cnn_no_bias/mnist_cnn_no_bias_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/cnn_no_bias/mnist_cnn_no_bias_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false);
+        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
     }
 
     /**
@@ -285,8 +286,18 @@ public class KerasModelEndToEndTest {
 
             //Infer one-hot labels... this probably won't work for all
             INDArray testLabels = Nd4j.create(predictionsDl4j.shape());
-            for( int i=0; i<testLabels.size(0); i++ ){
-                testLabels.putScalar(i, r.nextInt(testLabels.size(1)), 1.0);
+            if(testLabels.rank() == 2){
+                for( int i=0; i<testLabels.size(0); i++ ){
+                    testLabels.putScalar(i, r.nextInt(testLabels.size(1)), 1.0);
+                }
+            } else if(testLabels.rank() == 3){
+                for( int i=0; i<testLabels.size(0); i++ ){
+                    for( int j=0; j<testLabels.size(1); j++ ){
+                        testLabels.putScalar(i, j, r.nextInt(testLabels.size(1)), 1.0);
+                    }
+                }
+            } else {
+                throw new RuntimeException("Cannot gradient check 4d output array");
             }
             checkGradients(model, input, testLabels);
         }
@@ -376,15 +387,27 @@ public class KerasModelEndToEndTest {
         if(net.getOutputLayer() instanceof IOutputLayer){
             netToTest = net;
         } else {
+            org.deeplearning4j.nn.conf.layers.Layer l;
+            if(labels.rank() == 2){
+                l = new LossLayer.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .activation(Activation.IDENTITY)
+                        .build();
+            } else {
+                //Rank 3
+                l = new RnnOutputLayer.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .activation(Activation.IDENTITY)
+                        .nIn(labels.size(1))
+                        .nOut(labels.size(1))
+                        .build();
+            }
             netToTest = new TransferLearning.Builder(net)
                     .fineTuneConfiguration(new FineTuneConfiguration.Builder()
                             .updater(new NoOp())
                             .dropOut(0.0)
                     .build())
-                    .addLayer(new LossLayer.Builder()
-                    .lossFunction(LossFunctions.LossFunction.MSE)
-                    .activation(Activation.IDENTITY)
-                    .build())
+                    .addLayer(l)
                     .build();
         }
 
