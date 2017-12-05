@@ -246,6 +246,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         @Override
         @SuppressWarnings("unchecked")
         public SeparableConvolution2D build() {
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new SeparableConvolution2D(this);

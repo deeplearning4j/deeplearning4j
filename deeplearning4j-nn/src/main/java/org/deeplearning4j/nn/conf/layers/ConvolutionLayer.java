@@ -298,6 +298,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         @SuppressWarnings("unchecked")
         public ConvolutionLayer build() {
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new ConvolutionLayer(this);
