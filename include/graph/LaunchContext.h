@@ -9,7 +9,7 @@ namespace nd4j {
     namespace graph {
         class LaunchContext {
         public:
-            LaunchContext() = default;
+            LaunchContext();
             ~LaunchContext() = default;
         };
     }

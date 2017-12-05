@@ -2962,6 +2962,8 @@ public:
 
     // flatbuffers execution
     Nd4jPointer executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+    Nd4jPointer executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+    Nd4jPointer executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
 
     // protobuf execution
     Nd4jPointer executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer);

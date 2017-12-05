@@ -12,6 +12,8 @@ namespace nd4j {
 
             T lr = (T) 0.0f;
 
+            REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: params and gradients should have the same shape");
+
             if (block.width() == 3) {
                 auto tarr = INPUT_VARIABLE(2);
                 lr = tarr->getScalar(0);

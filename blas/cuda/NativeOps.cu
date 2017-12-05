@@ -6785,8 +6785,18 @@ Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const 
 }
 
 Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-return nullptr;
+	return nullptr;
 }
+
+Nd4jPointer NativeOps::executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+	return nullptr;
+}
+
+	
+Nd4jPointer NativeOps::executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+	return nullptr;
+}
+		
 
 
 const char* NativeOps::getAllCustomOps() {

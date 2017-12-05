@@ -496,31 +496,33 @@ namespace nd4j {
                         this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
-                    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(this->opNum());
-                    if (op == nullptr) {
-                        nd4j_verbose("Can't find operation: %lld\n", this->opNum());
-                        throw "Boom";
-                    }
-
-                    auto block = new ContextPrototype<T>(this->id());
-
-                    for (int e = 0; e < this->input()->size(); e++) {
-                        block->inputs()->emplace_back(this->input()->at(e));
-                    }
-
-                    if (node->extraInteger() != nullptr)
-                        for (uint32_t e = 0; e < node->extraInteger()->size(); e++) {
-                            int v = node->extraInteger()->Get(e);
-                            block->getIArguments()->push_back(v);
+                    if (sizeof(T) == 4) {
+                        auto op = nd4j::ops::OpRegistrator::getInstance()->template getOperationT<T>(this->opNum());
+                        if (op == nullptr) {
+                            nd4j_verbose("Can't find operation: %lld\n", this->opNum());
+                            throw "Boom";
                         }
 
-                    if (node->extraParams() != nullptr)
-                        for (uint32_t e = 0; e < node->extraParams()->size(); e++)
-                            block->getTArguments()->emplace_back(node->extraParams()->Get(e));
+                        auto block = new ContextPrototype<T>(this->id());
 
-                    this->setContextPrototype(block);
+                        for (int e = 0; e < this->input()->size(); e++) {
+                            block->inputs()->emplace_back(this->input()->at(e));
+                        }
 
-                    this->setCustomOp(op);
+                        if (node->extraInteger() != nullptr)
+                            for (uint32_t e = 0; e < node->extraInteger()->size(); e++) {
+                                int v = node->extraInteger()->Get(e);
+                                block->getIArguments()->push_back(v);
+                            }
+
+                        if (node->extraParams() != nullptr)
+                            for (uint32_t e = 0; e < node->extraParams()->size(); e++)
+                                block->getTArguments()->emplace_back(node->extraParams()->Get(e));
+
+                        this->setContextPrototype(block);
+
+                        this->setCustomOp(op);
+                    }
                 }
             } else {
                 // empty dynamic node, tests probably
@@ -578,7 +580,7 @@ namespace nd4j {
         }
 
         template class ND4J_EXPORT Node<float>;
-        //template class ND4J_EXPORT Node<float16>;
-        //template class ND4J_EXPORT Node<double>;
+        template class ND4J_EXPORT Node<float16>;
+        template class ND4J_EXPORT Node<double>;
     }
 }

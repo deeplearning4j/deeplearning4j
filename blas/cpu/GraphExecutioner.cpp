@@ -636,18 +636,16 @@ Graph<T>* GraphExecutioner<T>::importFromFlatBuffers(const char *filename) {
     uint8_t* data = readFlatBuffers(filename);
 
     auto fg = GetFlatGraph(data);
-    auto restoredGraph = new Graph<float>(fg);
+    auto restoredGraph = new Graph<T>(fg);
 
     delete[] data;
-    //delete fg;
-
+    
     return restoredGraph;
 }
 
 
-template class ND4J_EXPORT GraphExecutioner<float>;
-
-
-
-}
+        template class ND4J_EXPORT GraphExecutioner<float>;
+        template class ND4J_EXPORT GraphExecutioner<float16>;
+        template class ND4J_EXPORT GraphExecutioner<double>;
+    }
 }

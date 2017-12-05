@@ -22,6 +22,10 @@ namespace nd4j {
             NDArray<T>* weights = INPUT_VARIABLE(1);
             NDArray<T>* bias = nullptr;
 
+
+            REQUIRE_TRUE(input->rankOf() == 4, 0, "Conv2D: input should be 4D NDArray, but got %i instead", input->rankOf());
+            REQUIRE_TRUE(weights->rankOf() == 4, 0, "Conv2D: weights should be 4D NDArray, but got %i instead", weights->rankOf());
+
             if (block.width() == 3)
                 bias = INPUT_VARIABLE(2);
 

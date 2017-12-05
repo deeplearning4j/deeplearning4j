@@ -20,6 +20,7 @@ namespace nd4j {
             if (input->isMatrix())
                 input->addRowVector(bias, z);
             else {
+                // TODO: we might want to use NDArray::applyTrueBroadcast here, like AddOp does
                 std::vector<int> shape({-1, (int) bias->lengthOf()});
                 //nd4j_debug("Reshaping to: [%i, %i]\n", -1, (int) bias->lengthOf());
                 auto tArr = input->reshape(input->ordering(), shape);

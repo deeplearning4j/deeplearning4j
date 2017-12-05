@@ -25,9 +25,13 @@ namespace nd4j {
             }
             else if (x->isScalar() && y->isScalar()) { // (x->isScalar() && y->isScalar())
                 z->putScalar(0, simdOps::FloorDiv<T>::op(x->getScalar(0),y->getScalar(0), nullptr));
-            } else {
+            } else if (ShapeUtils<T>::areShapesBroadcastable(*x, *y)) {
                 auto tZ = x->template applyTrueBroadcast<simdOps::FloorDiv<T>>(y);
                 OVERWRITE_RESULT(tZ);
+            } else {
+                auto sx = ShapeUtils<T>::shapeAsString(*x);
+                auto sy = ShapeUtils<T>::shapeAsString(*y);
+                REQUIRE_TRUE(false, 0, "FloorDiv: shapes should be equal, or broadcastable. But got %s vs %s instead", sx.c_str(), sy.c_str());
             }
 
             return ND4J_STATUS_OK;

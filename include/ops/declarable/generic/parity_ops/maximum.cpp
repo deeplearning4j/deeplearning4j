@@ -12,6 +12,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
+            REQUIRE_TRUE(x->isSameShape(y),0, "Maximum: operands should have same shape");
+
             x->template applyPairwiseTransform<simdOps::Max<T>>(y, z, nullptr);
 
             STORE_RESULT(*z);

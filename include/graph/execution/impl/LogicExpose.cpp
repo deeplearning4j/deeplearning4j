@@ -13,7 +13,7 @@ namespace nd4j {
         }
 
         template class ND4J_EXPORT LogicExpose<float>;
-        //   template class ND4J_EXPORT LogicExpose<float16>;
-        //   template class ND4J_EXPORT LogicExpose<double>;
+        template class ND4J_EXPORT LogicExpose<float16>;
+        template class ND4J_EXPORT LogicExpose<double>;
     }
 }

@@ -285,25 +285,25 @@ namespace nd4j {
              */
             if (_descriptor->getNumberOfTArgs() > 0) {
                 if ((int) block.getTArguments()->size() < _descriptor->getNumberOfTArgs()) {
-                    nd4j_printf("%i T args expected, but %i received\n", _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
+                    nd4j_printf("%s: %i T args expected, but %i received\n", this->getOpName()->c_str(), _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
             } else
             if (_descriptor->getNumberOfTArgs() == -1)
                 if (block.getTArguments()->size() == 0) {
-                    nd4j_printf("Number of T arguments should be positive number, but got 0 arguments\n", "");
+                    nd4j_printf("%s: Number of T arguments should be positive number, but got 0 arguments\n", this->getOpName()->c_str());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
 
             if (_descriptor->getNumberOfIArgs() > 0) {
                 if ((int) block.getIArguments()->size() < _descriptor->getNumberOfIArgs()) {
-                    nd4j_printf("%i int args expected, but %i received\n", _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
+                    nd4j_printf("%s: %i int args expected, but %i received\n", this->getOpName()->c_str(), _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
             } else
             if (_descriptor->getNumberOfIArgs() == -1)
                 if (block.getIArguments()->size() == 0) {
-                    nd4j_printf("Number of Integer arguments should be positive number, but got 0 arguments\n", "");
+                    nd4j_printf("%s: Number of Integer arguments should be positive number, but got 0 arguments\n", this->getOpName()->c_str());
                     return ND4J_STATUS_BAD_PARAMS;
                 }
 
@@ -350,8 +350,10 @@ namespace nd4j {
             if (this->getOpDescriptor()->getNumberOfInputs() == -2)
                 return ND4J_STATUS_OK;
 
-            if (block.width() < 1)
+            if (block.width() < 1) {
+                nd4j_printf("%s: no operands provided for the op", this->getOpName()->c_str());
                 return ND4J_STATUS_BAD_INPUT;
+            }
 
 
             int cnt = 0;
@@ -363,7 +365,7 @@ namespace nd4j {
                     } else {
                         nd4j_printf("Node [%i:<noname>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
                     }
-                    throw "Bad input";
+                    return ND4J_STATUS_BAD_INPUT;
                 }
 
                 if (v->variableType() == VariableType::NDARRAY) {

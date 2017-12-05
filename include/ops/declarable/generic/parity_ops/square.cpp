@@ -10,8 +10,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            T extras[] = {(T) 2.0f};
-            input->template applyTransform<simdOps::Pow<T>>(output, extras);
+            T extras = (T) 2.0f;
+            input->template applyTransform<simdOps::Pow<T>>(output, &extras);
 
             return ND4J_STATUS_OK;
         }

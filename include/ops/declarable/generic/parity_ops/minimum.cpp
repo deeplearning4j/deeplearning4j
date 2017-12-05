@@ -12,6 +12,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
+            REQUIRE_TRUE(x->isSameShape(y),0, "Minimum: operands should have same shape");
+
             x->template applyPairwiseTransform<simdOps::Min<T>>(y, z, nullptr);
 
             STORE_RESULT(*z);

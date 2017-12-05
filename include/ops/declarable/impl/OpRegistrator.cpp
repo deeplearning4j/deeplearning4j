@@ -313,6 +313,21 @@ namespace nd4j {
             return _declarablesD.at(name);
         }
 
+        template <>
+        DeclarableOp<float> * OpRegistrator::getOperationT<float>(Nd4jIndex hash) {
+            return this->getOperationFloat(hash);
+        }
+
+        template <>
+        DeclarableOp<float16> * OpRegistrator::getOperationT<float16>(Nd4jIndex hash) {
+            return this->getOperationHalf(hash);
+        }
+
+        template <>
+        DeclarableOp<double> * OpRegistrator::getOperationT<double>(Nd4jIndex hash) {
+            return this->getOperationDouble(hash);
+        }
+
         nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
     }
 }

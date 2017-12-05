@@ -52,7 +52,7 @@ namespace nd4j {
         };
 
         template class ND4J_EXPORT LogicSwitch<float>;
-        //template class ND4J_EXPORT LogicSwitch<float16>;
-        //template class ND4J_EXPORT LogicSwitch<double>;
+        template class ND4J_EXPORT LogicSwitch<float16>;
+        template class ND4J_EXPORT LogicSwitch<double>;
     }
 }

@@ -3089,6 +3089,14 @@ Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPoi
     return nd4j::graph::GraphExecutioner<float>::executeFlatBuffer(flatBufferPointer);
 }
 
+Nd4jPointer NativeOps::executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+    return nd4j::graph::GraphExecutioner<float16>::executeFlatBuffer(flatBufferPointer);
+}
+
+Nd4jPointer NativeOps::executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+    return nd4j::graph::GraphExecutioner<double>::executeFlatBuffer(flatBufferPointer);
+}
+
 Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer) {
     return nullptr;
 }

@@ -67,9 +67,6 @@ namespace nd4j {
 
             nd4j_debug("Executing list op: [%s]\n", this->getOpName()->c_str());
 
-            // basic validation: ensure inputs are set
-            //REQUIRE_OK(this->validateNonEmptyInput(*block));
-
             // ensure number of IArgs, TArgs match our expectations
             REQUIRE_OK(this->validateArguments(*block));
 

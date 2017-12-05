@@ -81,6 +81,9 @@ namespace nd4j {
             nd4j::ops::DeclarableOp<double >* getOperationDouble(const char *name);
             nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jIndex hash);
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name);
+
+            template <typename T>
+            DeclarableOp<T> * getOperationT(Nd4jIndex hash);
     };
 
 

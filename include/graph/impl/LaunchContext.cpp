@@ -6,6 +6,8 @@
 
 namespace nd4j {
     namespace graph {
-
+        LaunchContext::LaunchContext() {
+            // default constructor, just to make clang/ranlib happy
+        }
     }
 }

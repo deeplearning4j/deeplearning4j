@@ -17,8 +17,8 @@ namespace nd4j {
             NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = this->getZ(block);
 
-            x->printShapeInfo("x shape");
-            y->printShapeInfo("y shape");
+            //x->printShapeInfo("x shape");
+            //y->printShapeInfo("y shape");
 
             T alpha = (T) 1.0f;
             T beta = (T) 0.0f;

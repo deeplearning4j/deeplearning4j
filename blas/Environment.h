@@ -15,23 +15,29 @@ namespace nd4j{
         std::atomic<int> _elementThreshold;
         std::atomic<bool> _verbose;
         std::atomic<bool> _debug;
+        std::atomic<int> _maxThreads;
 
         static Environment* _instance;
 
         Environment();
         ~Environment();
     public:
-
         static Environment* getInstance();
+
         bool isVerbose();
         void setVerbose(bool reallyVerbose);
         bool isDebug();
         bool isDebugAndVerbose();
         void setDebug(bool reallyDebug);
+        
         int tadThreshold();
         void setTadThreshold(int threshold);
+
         int elementwiseThreshold();
         void setElementwiseThreshold(int threshold);
+
+        int maxThreads();
+        void setMaxThreads(int max);
     };
 }
 

@@ -21,7 +21,7 @@ namespace nd4j {
 
         template <typename T>
         Nd4jStatus LegacyRandomOp<T>::validateAndExecute(Context<T> &block) {
-            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead")
+            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
 
             auto input = INPUT_VARIABLE(0);
 

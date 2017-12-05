@@ -2,6 +2,8 @@
 // Created by raver119 on 06.10.2017.
 //
 
+#include <iostream>
+#include <cstdlib>
 #include "Environment.h"
 
 namespace nd4j {
@@ -11,6 +13,19 @@ namespace nd4j {
         _elementThreshold.store(32);
         _verbose.store(false);
         _debug.store(false);
+
+        const char* omp_threads = std::getenv("OMP_NUM_THREADS");
+        if (omp_threads != nullptr) {
+            try {
+                std::string omp(omp_threads);
+                int val = std::stoi(omp);
+                _maxThreads.store(val);
+            } catch (std::invalid_argument &e) {
+                // just do nothing
+            } catch (std::out_of_range &e) {
+                // still do nothing
+            }
+        }
     }
 
     nd4j::Environment::~Environment() {
@@ -58,6 +73,14 @@ namespace nd4j {
 
     void Environment::setElementwiseThreshold(int threshold) {
         _elementThreshold = threshold;
+    }
+
+    int Environment::maxThreads() {
+        return _maxThreads.load();
+    }
+
+    void Environment::setMaxThreads(int max) {
+        _maxThreads.store(max);
     }
 
     nd4j::Environment *nd4j::Environment::_instance = 0;
