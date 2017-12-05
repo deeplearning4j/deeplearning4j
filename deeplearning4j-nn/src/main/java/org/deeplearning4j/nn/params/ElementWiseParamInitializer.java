@@ -1,7 +1,6 @@
-package org.deeplearning4j.nn.api.CustomParamInitializer;
+package org.deeplearning4j.nn.params;
 
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -22,7 +21,7 @@ import static org.deeplearning4j.nn.weights.WeightInitUtil.DEFAULT_WEIGHT_INIT_O
 /**
  * created by jingshu
  */
-public class ElementWiseParamInitializer extends DefaultParamInitializer implements ParamInitializer {
+public class ElementWiseParamInitializer extends DefaultParamInitializer{
 
     private static final ElementWiseParamInitializer INSTANCE = new ElementWiseParamInitializer();
 
@@ -103,7 +102,7 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer impleme
 
         return out;
     }
-    
+
     protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist,
                                           INDArray weightParamView, boolean initializeParameters) {
         int[] shape = new int[] {nIn};
@@ -176,7 +175,6 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer impleme
 
         return paramView;
     }
-
 
 }
 

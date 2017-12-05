@@ -1,6 +1,6 @@
-package org.deeplearning4j.nn.layers.CustomLayer;
+package org.deeplearning4j.nn.conf.layers;
 
-import Utils.Utils_dpl4j.CustomParamInitializer.ElementWiseParamInitializer;
+import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -20,7 +20,6 @@ import java.util.Map;
  * created by jingshu
  */
 @Data
-@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.layers.FeedForwardLayer {
@@ -41,7 +40,7 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         if(this.nIn!=this.nOut) throw  new IllegalStateException("element wise layer must have the same input and output size!!!");
-        ElementWiseMultiplicationLayer_impl ret = new ElementWiseMultiplicationLayer_impl(conf);
+        org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret = new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
