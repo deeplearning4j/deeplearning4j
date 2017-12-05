@@ -266,8 +266,6 @@ public class SubsamplingLayer extends Layer {
          * @param padding    padding in the height and width dimensions
          */
         public Builder padding(int... padding) {
-            if (this.convolutionMode == ConvolutionMode.Same)
-                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
             if (padding.length != 2)
                 throw new IllegalArgumentException("Invalid input: must be length 2");
             this.padding = padding;
@@ -299,6 +297,7 @@ public class SubsamplingLayer extends Layer {
             if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
                 throw new IllegalStateException(
                                 "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new SubsamplingLayer(this);

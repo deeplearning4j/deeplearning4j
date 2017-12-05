@@ -308,6 +308,23 @@ public class ConvolutionUtils {
         return shape[1];
     }
 
+
+    /**
+     * Check that the convolution mode is consistent with the padding specification
+     *
+     */
+    public static void validateConvolutionModePadding(ConvolutionMode mode, int[] padding) {
+        if (mode == ConvolutionMode.Same) {
+            boolean nullPadding = true;
+            for (int i : padding){
+                if (i != 0) nullPadding = false;
+            }
+            if (!nullPadding)
+                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
+        }
+    }
+
+
     /**
      * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
      * stride, and values >= 0 for padding.
