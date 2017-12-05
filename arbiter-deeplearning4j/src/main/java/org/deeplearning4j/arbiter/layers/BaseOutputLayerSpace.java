@@ -42,6 +42,7 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
     protected BaseOutputLayerSpace(Builder builder) {
         super(builder);
         this.lossFunction = builder.lossFunction;
+        this.hasBias = builder.hasBias;
     }
 
     protected void setLayerOptionsBuilder(BaseOutputLayer.Builder builder, double[] values) {
