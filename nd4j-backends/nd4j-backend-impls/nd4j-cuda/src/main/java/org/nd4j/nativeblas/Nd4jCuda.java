@@ -5048,6 +5048,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     // flatbuffers execution
     public native @Cast("Nd4jPointer") Pointer executeFlatGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native @Cast("Nd4jPointer") Pointer executeFlatGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native @Cast("Nd4jPointer") Pointer executeFlatGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
 
     // protobuf execution
     public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer protoBufferPointer);

@@ -4223,6 +4223,69 @@ public class SameDiff {
         }
     }
 
+    public String asFlatPrint() {
+        val sb = new StringBuilder();
+        val fb = asFlatBuffers();
+
+        val graph = FlatGraph.getRootAsFlatGraph(fb);
+
+        sb.append("\nExternal variables:\n\n");
+        for (int e = 0; e < graph.variablesLength(); e++) {
+            val var = graph.variables(e);
+            val ndarray = Nd4j.createFromFlatArray(var.ndarray());
+
+            sb.append(var.id().first())
+                    .append(":<").append(var.name()).append("> ")
+                    .append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("\n");
+        }
+
+        val map = Nd4j.getExecutioner().getCustomOperations();
+
+
+        sb.append("\nOps sequence:\n\n");
+        for (int e = 0; e <graph.nodesLength(); e++) {
+            val node = graph.nodes(e);
+
+            log.info("{}:<{}>", node.id(), node.name());
+            sb.append(node.id())
+                    .append(":<").append(node.name()).append("> ").append(SameDiff.getTypeFromByte(node.opType()));
+
+            if (SameDiff.getTypeFromByte(node.opType()) != Op.Type.CUSTOM)
+                sb.append(": ").append(node.opNum());
+            else {
+                val keys = map.keySet();
+                String opName = null;
+                for (val k: keys) {
+                    val d = map.get(k);
+                    if (d.getHash() == node.opNum())
+                        opName = k;
+                }
+
+                if (opName == null)
+                    opName = "unknown";
+
+                sb.append(": ").append(opName);
+            }
+
+            sb.append("; Inputs: {");
+
+            for (int i = 0; i < node.inputPairedLength(); i++) {
+                val pair = node.inputPaired(i);
+
+                sb.append("[").append(pair.first()).append(":").append(pair.second()).append("]");
+
+                if (i < node.inputPairedLength() - 1)
+                    sb.append(", ");
+            }
+
+            sb.append("}\n");
+        }
+
+
+
+        return sb.toString();
+    }
+
     public static DataBuffer.Type getDataTypeFromByte(byte val) {
         if (val == DataType.FLOAT)
             return DataBuffer.Type.FLOAT;
@@ -4261,6 +4324,35 @@ public class SameDiff {
         }
         else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
+    }
+
+    public static Op.Type getTypeFromByte(byte type) {
+        switch (type) {
+            case OpType.SCALAR:
+                return Op.Type.SCALAR;
+            case OpType.BROADCAST:
+                return Op.Type.BROADCAST;
+            case OpType.TRANSFORM:
+                return Op.Type.TRANSFORM;
+            case OpType.ACCUMULATION:
+                return Op.Type.REDUCE;
+            case OpType.ACCUMULATION3:
+                return Op.Type.REDUCE3;
+            case OpType.INDEX_ACCUMULATION:
+                return Op.Type.INDEXREDUCE;
+            case OpType.RANDOM:
+                return Op.Type.RANDOM;
+            case OpType.LOGIC:
+                return Op.Type.META;
+            case OpType.CUSTOM:
+                return Op.Type.CUSTOM;
+            case OpType.SHAPE:
+                return Op.Type.SHAPE;
+            case OpType.PAIRWISE:
+                return Op.Type.PAIRWISE;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
     }
 
 
