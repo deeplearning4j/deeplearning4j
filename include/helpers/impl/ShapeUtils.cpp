@@ -8,6 +8,7 @@
 #include <numeric>
 #include <algorithm>
 #include <set>
+#include <flatbuffers/util.h>
 
 
 namespace nd4j {
@@ -484,6 +485,25 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
         return shape;
     }
 
+    template<typename T>
+    std::string ShapeUtils<T>::shapeAsString(NDArray<T> &array) {
+        auto vec = array.getShapeAsVector();
+        return shapeAsString(vec);
+    }
+    template<typename T>
+    std::string ShapeUtils<T>::shapeAsString(std::vector<int>& shape) {
+        std::string result;
+
+        result.append("[");
+        for (int e = 0; e < shape.size(); e++) {
+            result += flatbuffers::NumToString(shape.at(e));
+            if (e < shape.size() - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
 
 
 

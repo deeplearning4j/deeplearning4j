@@ -3,6 +3,7 @@
 //
 
 #include <Context.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -175,7 +176,8 @@ namespace nd4j {
             auto v = variable(p);
 
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
-                nd4j_printf("Node_%i InputIndex[%i]; length: [%i]; mean value: [%f]\n", this->_nodeId, idx, v->getNDArray()->lengthOf(), (float) v->getNDArray()->meanNumber());
+                std::string shape_ = ShapeUtils<T>::shapeAsString(*(v->getNDArray()));
+                nd4j_printf("Debug info for node_%i input[%i]; shape: [%s]; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), (float) v->getNDArray()->meanNumber());
             }
 
             return v;

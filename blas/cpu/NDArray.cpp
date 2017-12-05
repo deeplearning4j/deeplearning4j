@@ -617,7 +617,7 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
     void NDArray<T>::assign(const NDArray<T> *other) {
 
         if (other->lengthOf() != lengthOf()) {
-            nd4j_printf("This length [%i]; Other length: [%i]\n", lengthOf(), other->lengthOf());
+            nd4j_printf("Can't assign new value to the array: this length [%i]; other length: [%i]\n", lengthOf(), other->lengthOf());
             throw "Lengths of arrays are mismatched";
         }
 

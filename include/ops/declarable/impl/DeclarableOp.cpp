@@ -361,7 +361,7 @@ namespace nd4j {
                     if (this->getOpName() != nullptr) {
                         nd4j_printf("Node [%i:<%s>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, 0, 0);
                     } else {
-                        nd4j_printf("Node [%i:<%s>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
+                        nd4j_printf("Node [%i:<noname>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
                     }
                     throw "Bad input";
                 }
@@ -373,7 +373,7 @@ namespace nd4j {
                         if (this->getOpName() != nullptr) {
                             nd4j_printf("Node [%i:<%s>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, 0, 0);
                         } else {
-                            nd4j_printf("Node [%i:<%s>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
+                            nd4j_printf("Node [%i:<noname>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
                         }
                         return ND4J_STATUS_BAD_INPUT;
                     }

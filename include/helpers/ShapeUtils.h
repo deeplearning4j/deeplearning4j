@@ -65,6 +65,9 @@ namespace nd4j {
 
         // returns shape part of shapeInfo as std::vector
         static std::vector<int> pullShapeFromShapeInfo(int *shapeInfo);
+
+        static std::string shapeAsString(NDArray<T> &array);
+        static std::string shapeAsString(std::vector<int>& shape);
     };
 
 
