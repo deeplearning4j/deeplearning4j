@@ -72,7 +72,7 @@ public class Transpose extends DynamicCustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         if(permuteDims == null) {
             val args = args();
             if(args().length > 1) {

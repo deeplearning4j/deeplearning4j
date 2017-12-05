@@ -74,7 +74,7 @@ public abstract class ShapeOp extends BaseOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         val shapeOutput = calculateOutputShape();
         if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVertexId(vertexId))

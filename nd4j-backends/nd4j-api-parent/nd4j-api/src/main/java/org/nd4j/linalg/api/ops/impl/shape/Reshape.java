@@ -116,7 +116,7 @@ public class Reshape extends DynamicCustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         if(numIArguments() == 0) {
             if(args().length > 1) {

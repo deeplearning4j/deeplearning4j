@@ -66,7 +66,7 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
     @Override
     public Set<int[]> keySet() {
         Set<IntArray> intArrays = map.keySet();
-        Set<int[]> ret = new HashSet<>();
+        Set<int[]> ret = new LinkedHashSet<>();
         for(IntArray intArray : intArrays)
             ret.add(intArray.backingArray);
         return ret;
@@ -109,7 +109,7 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
 
         public IntArray(int[] backingArray) {
             Preconditions.checkNotNull(backingArray,"Backing array must not be null!");
-            this.backingArray = Ints.toArray(new HashSet<>(Ints.asList(backingArray)));
+            this.backingArray = Ints.toArray(new LinkedHashSet<>(Ints.asList(backingArray)));
         }
 
         @Override

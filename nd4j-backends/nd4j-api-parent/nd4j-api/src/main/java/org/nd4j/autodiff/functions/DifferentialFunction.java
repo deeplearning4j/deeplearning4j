@@ -262,7 +262,7 @@ public abstract class DifferentialFunction implements Differential {
 
     //by default no op, used for certain situations like
     //place holder arrays
-    public void initWithArrays(Map<String,INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         val shapeCalc = calculateOutputShape();
         if(hasPlaceHolderInputs() && shapeCalc != null && !shapeCalc.isEmpty()) {
             //update place holder shapes in case the shapes

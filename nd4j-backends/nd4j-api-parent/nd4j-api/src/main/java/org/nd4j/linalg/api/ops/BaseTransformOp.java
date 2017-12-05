@@ -172,7 +172,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         if(!sameDiff.shapeAlreadyExistsForVertexId(vertexId) && sameDiff.getArrForVertexId(vertexId) == null) {
             val shape = calculateOutputShape();

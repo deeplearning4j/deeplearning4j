@@ -27,7 +27,7 @@ public class TFGraphTestList {
 
     public static String[] modelNames = new String[]{
             //"add_n",
-           //"ae_00",
+           "ae_00",
            // "bias_add",
            // "conv_0",
             //"deep_mnist",
@@ -38,7 +38,7 @@ public class TFGraphTestList {
             //"math_mul_order",
             //"mlp_00",
             //"mnist_00",
-            "transform_0",
+            //"transform_0",
             //"transpose",
     };
     //change this to SAMEDIFF for samediff

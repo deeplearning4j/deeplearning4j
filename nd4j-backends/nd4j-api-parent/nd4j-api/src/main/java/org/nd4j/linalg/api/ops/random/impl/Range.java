@@ -106,7 +106,7 @@ public class Range extends DynamicCustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         val start = sameDiff.getVariableForVertexId(fromVertexId).getArr();
         val end = sameDiff.getVariableForVertexId(toVertexId).getArr();

@@ -69,7 +69,7 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         val var = sameDiff.getVariableForVertexId(args()[1].resultVertexId());
         //place holder variable
         if (var.getArr() == null) {

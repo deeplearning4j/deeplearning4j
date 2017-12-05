@@ -82,8 +82,11 @@ public class Mmul extends TensorMmul {
 
     public Mmul() {}
 
+    @Override
+    public List<int[]> calculateOutputShape() {
 
-
+        return super.calculateOutputShape();
+    }
 
 
 

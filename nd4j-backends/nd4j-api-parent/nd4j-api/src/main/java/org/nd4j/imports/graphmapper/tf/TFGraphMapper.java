@@ -31,7 +31,7 @@ import java.util.*;
  */
 @Slf4j
 public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,NodeDef> {
-    private Set<String> seenNodes = new HashSet<>();
+    private Set<String> seenNodes = new LinkedHashSet<>();
     public final static String VALUE_ATTR_KEY = "value";
     public final static String SHAPE_KEY = "shape";
     private static TFGraphMapper MAPPER_INSTANCE = new TFGraphMapper();

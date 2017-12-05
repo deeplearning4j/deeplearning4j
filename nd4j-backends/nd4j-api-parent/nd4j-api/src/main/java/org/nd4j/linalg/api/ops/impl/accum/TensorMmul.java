@@ -256,7 +256,7 @@ public class TensorMmul extends DynamicCustomOp {
 
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         for(int i = 0; i < args().length; i++) {
             if(args()[i].getResultShape() == null) {
@@ -301,6 +301,7 @@ public class TensorMmul extends DynamicCustomOp {
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
         this.mMulTranspose = mMulTranspose;
+        val args = args();
     }
 
     @Override

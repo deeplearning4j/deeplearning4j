@@ -65,7 +65,7 @@ public class Rank extends DynamicCustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         val arr = sameDiff.getArrForVertexId(resultVertexId());
         if(arr == null) {

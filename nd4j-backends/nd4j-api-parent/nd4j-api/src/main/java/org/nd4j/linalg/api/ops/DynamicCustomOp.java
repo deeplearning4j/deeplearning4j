@@ -479,7 +479,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         val args = args();
         for(int i = 0; i < args().length; i++) {
             val var = sameDiff.getVariableForVertexId(args()[i].resultVertexId());

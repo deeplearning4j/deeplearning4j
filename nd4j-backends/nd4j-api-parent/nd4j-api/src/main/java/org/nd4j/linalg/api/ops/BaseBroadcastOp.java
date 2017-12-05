@@ -173,7 +173,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap) {
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         if (args().length > 1 && larg() != null && rarg() != null && larg().getResultShape() != null && rarg().getResultShape() != null) {
             if (Shape.isRowVectorShape(rarg().getResultShape())) {
