@@ -155,6 +155,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);
         DECLARE_CUSTOM_OP(unique, 1, 2, false, 0, 0);
         DECLARE_CUSTOM_OP(lstmCell, 8, 2, false, 3, 2);
+        DECLARE_CUSTOM_OP(sruCell, 4, 2, false, 0, 0);
+        DECLARE_CUSTOM_OP(gruCell, 5, 1, false, 0, 0);
 
         // recurrent ops
         DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);

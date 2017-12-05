@@ -101,8 +101,17 @@ BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template applyAllRed
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template applyAllReduce3, float16, (const nd4j::NDArray<float16>* alpha, const std::vector<int> & beta, float16 const* gamma) const, REDUCE3_OPS)
 BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template applyAllReduce3, double, (const nd4j::NDArray<double>* alpha, const std::vector<int> & beta, double const* gamma) const, REDUCE3_OPS)
 
-template NDArray<float> mmul(const NDArray<float>& left, const NDArray<float>& right);
+template NDArray<float>   mmul(const NDArray<float>&   left, const NDArray<float>& right);
 template NDArray<float16> mmul(const NDArray<float16>& left, const NDArray<float16>& right);
-template NDArray<double> mmul(const NDArray<double>& left, const NDArray<double>& right);
+template NDArray<double>  mmul(const NDArray<double>&  left, const NDArray<double>& right);
+
+template NDArray<float>   operator-(const float,   const NDArray<float>&);
+template NDArray<float16> operator-(const float16, const NDArray<float16>&);
+template NDArray<double>  operator-(const double,  const NDArray<double>&);
+
+template NDArray<float>   operator+(const float,   const NDArray<float>&);
+template NDArray<float16> operator+(const float16, const NDArray<float16>&);
+template NDArray<double>  operator+(const double,  const NDArray<double>&);
+
 
 #endif
