@@ -202,8 +202,20 @@ public class PlayUIServer extends UIServer {
         }
 
         Router router = routingDsl.build();
-        server = Server.forRouter(router, Mode.PROD, port);
-        this.port = port;
+        try {
+            server = Server.forRouter(router, Mode.PROD, port);
+        } catch (Throwable e){
+            if(e.getMessage().contains("'play.crypto.provider")){
+                //Usual cause: user's uber-jar does not include application.conf
+                log.error("Error starting UI server: No application.conf found. This usually occurs due to missing" +
+                        " application.conf file. DL4J's UI (based on the Play framework) requires this file in order" +
+                        " to run. File can be missing due to incorrect creation of uber-jars that do not include resource" +
+                        " files. See https://deeplearning4j.org/visualization#issues for more information", e);
+            } else {
+                log.error("Unknown error when starting UI server",e);
+            }
+            throw e;
+        }
 
         log.info("DL4J UI Server started at {}", getAddress());
 
