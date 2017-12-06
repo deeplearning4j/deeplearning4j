@@ -557,6 +557,21 @@ TEST_F(FlatBuffersTest, Ae_00) {
     delete graph;
 }
 
+
+TEST_F(FlatBuffersTest, transpose) {
+    nd4j::ops::rank<float> op1;
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/transpose.fb");
+
+    graph->printOut();
+
+    //auto result = GraphExecutioner<float>::execute(graph);
+    //ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    delete graph;
+}
+
+
 /*
 TEST_F(FlatBuffersTest, ReadLoops_SimpleWhile_1) {
     // TF graph:

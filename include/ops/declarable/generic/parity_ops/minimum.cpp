@@ -3,6 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -12,11 +13,12 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(x->isSameShape(y),0, "Minimum: operands should have same shape");
-
-            x->template applyPairwiseTransform<simdOps::Min<T>>(y, z, nullptr);
-
-            STORE_RESULT(*z);
+            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Min<T>>(x, y, z);
+            if (tZ == nullptr)
+                return ND4J_STATUS_KERNEL_FAILURE;
+            else if (tZ != z) {
+                OVERWRITE_RESULT(tZ);
+            }
 
             return ND4J_STATUS_OK;
         }

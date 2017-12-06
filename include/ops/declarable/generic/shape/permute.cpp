@@ -19,8 +19,13 @@ namespace nd4j {
             auto arguments = block.getIArguments();
             if (block.width() == 2 && arguments->size() == 0) {
                 auto axis = INPUT_VARIABLE(1);
-                for (int e = 0; e < axis->lengthOf(); e++)
-                    arguments->emplace_back((int) axis->getScalar(e));
+                for (int e = 0; e < axis->lengthOf(); e++) {
+                    int ax = (int) axis->getScalar(e);
+                    if (ax < 0)
+                        ax += x->rankOf();
+
+                    arguments->emplace_back(ax);
+                }
 
                 replace = true;
             } else if (arguments->size() == 0) {

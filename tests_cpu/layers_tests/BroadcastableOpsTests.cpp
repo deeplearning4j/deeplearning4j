@@ -127,3 +127,39 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
 
     delete result;
 }
+
+
+TEST_F(BroadcastableOpsTests, Test_Maximum_1) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 1, 2, 3, 2});
+    NDArray<float> row('c', {1, 3}, {2, 2, 2});
+    NDArray<float> exp('c', {2, 3}, {2, 2, 2, 2, 3, 2});
+
+    nd4j::ops::maximum<float> op;
+    auto result = op.execute({&x, &row}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 1, 2, 3, 2});
+    NDArray<float> col('c', {2, 1}, {2, 1});
+    NDArray<float> exp('c', {2, 3}, {1, 2, 1, 1, 1, 1});
+
+    nd4j::ops::minimum<float> op;
+    auto result = op.execute({&x, &col}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
