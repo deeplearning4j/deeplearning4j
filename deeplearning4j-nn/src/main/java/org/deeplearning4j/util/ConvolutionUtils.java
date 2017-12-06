@@ -79,6 +79,44 @@ public class ConvolutionUtils {
     }
 
     /**
+     * Get the output size (height/width/depth) for the given input data and CNN3D configuration
+     *
+     * @param inputData         Input data
+     * @param kernel            Kernel size (height/width/depth)
+     * @param strides           Strides (height/width/depth)
+     * @param padding           Padding (height/width/depth)
+     * @param convolutionMode   Convolution mode (Same, Strict, Truncate)
+     * @param dilation          Kernel dilation (height/width/depth)
+     * @return                  Output size: int[3] with output height/width/depth
+     */
+    public static int[] get3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
+                                      ConvolutionMode convolutionMode, int[] dilation) {
+        int inH = inputData.size(2);
+        int inW = inputData.size(3);
+        int inD = inputData.size(4);
+
+        int[] eKernel = effectiveKernelSize(kernel, dilation);
+        boolean atrous = (eKernel == kernel);
+
+        // TODO: make 3d
+        validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inH, inW, atrous);
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            int outH = (int) Math.ceil(inH / ((double) strides[0]));
+            int outW = (int) Math.ceil(inW / ((double) strides[1]));
+            int outD = (int) Math.ceil(inD / ((double) strides[2]));
+
+            return new int[] {outH, outW, outD};
+        }
+
+        int hOut = (inH - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int wOut = (inW - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
+        int dOut = (inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
+
+        return new int[] {hOut, wOut, dOut};
+    }
+
+    /**
      * Get the output size (height/width) for the given input data and CNN configuration
      *
      * @param inputData         Input data
@@ -209,10 +247,26 @@ public class ConvolutionUtils {
     public static int[] effectiveKernelSize(int[] kernel, int[] dilation){
         //Determine the effective kernel size, accounting for dilation
         //http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions
-        if(dilation[0] == 1 && dilation[1] == 1){
-            return kernel;
+        if (kernel.length == 2) {
+            if(dilation[0] == 1 && dilation[1] == 1){
+                return kernel;
+            } else {
+                return new int[]{
+                        kernel[0] + (kernel[0]-1)*(dilation[0]-1),
+                        kernel[1] + (kernel[1]-1)*(dilation[1]-1)};
+            }
+        } else if (kernel.length == 3) {
+            if(dilation[0] == 1 && dilation[1] == 1 && dilation[2] == 1){
+                return kernel;
+            } else {
+                return new int[]{
+                        kernel[0] + (kernel[0]-1)*(dilation[0]-1),
+                        kernel[1] + (kernel[1]-1)*(dilation[1]-1),
+                        kernel[2] + (kernel[2]-1)*(dilation[2]-1)
+                };
+            }
         } else {
-            return new int[]{ kernel[0] + (kernel[0]-1)*(dilation[0]-1), kernel[1] + (kernel[1]-1)*(dilation[1]-1)};
+            throw new IllegalArgumentException("Kernel size has to be either 2 or three, got: " + kernel.length);
         }
     }
 
@@ -225,6 +279,24 @@ public class ConvolutionUtils {
         }
         return s + ", strides=" + Arrays.toString(strides) + ", padding="
                         + Arrays.toString(padding) + ", dilation=" + Arrays.toString(dilation);
+    }
+
+    /**
+     * Get top and left padding for same mode only for 3d convolutions
+     *
+     * @param outSize
+     * @param inSize
+     * @param kernel
+     * @param strides
+     * @return
+     */
+    public static int[] get3DSameModeTopLeftPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
+        int[] eKernel = effectiveKernelSize(kernel, dilation);
+        int[] outPad = new int[3];
+        outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0]) / 2;
+        outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1]) / 2;
+        outPad[2] = ((outSize[2] - 1) * strides[2] + eKernel[2] - inSize[2]) / 2;
+        return outPad;
     }
 
     /**
