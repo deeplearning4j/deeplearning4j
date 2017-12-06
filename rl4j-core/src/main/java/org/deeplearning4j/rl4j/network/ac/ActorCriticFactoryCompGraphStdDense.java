@@ -32,16 +32,19 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
     Configuration conf;
 
     public ActorCriticCompGraph buildActorCritic(int[] numInputs, int numOutputs) {
-
+        int nIn = 1;
+        for (int i : numInputs) {
+            nIn *= i;
+        }
         ComputationGraphConfiguration.GraphBuilder confB =
                         new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED).iterations(1)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                                         .weightInit(WeightInit.XAVIER)
                                         .l2(conf.getL2()).graphBuilder()
-                                        .setInputTypes(conf.isUseLSTM() ? InputType.recurrent(numInputs[0])
-                                                        : InputType.feedForward(numInputs[0])).addInputs("input")
-                                        .addLayer("0", new DenseLayer.Builder().nIn(numInputs[0])
+                                        .setInputTypes(conf.isUseLSTM() ? InputType.recurrent(nIn)
+                                                        : InputType.feedForward(nIn)).addInputs("input")
+                                        .addLayer("0", new DenseLayer.Builder().nIn(nIn)
                                                         .nOut(conf.getNumHiddenNodes()).activation(Activation.RELU).build(),
                                                         "input");
 

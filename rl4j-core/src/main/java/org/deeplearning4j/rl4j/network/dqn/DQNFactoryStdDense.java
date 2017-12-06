@@ -29,9 +29,10 @@ public class DQNFactoryStdDense implements DQNFactory {
     Configuration conf;
 
     public DQN buildDQN(int[] numInputs, int numOutputs) {
-
-        System.out.println(conf);
-
+        int nIn = 1;
+        for (int i : numInputs) {
+            nIn *= i;
+        }
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         //.updater(Updater.NESTEROVS).momentum(0.9)
@@ -39,7 +40,7 @@ public class DQNFactoryStdDense implements DQNFactory {
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
                         .l2(conf.getL2())
-                        .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
+                        .list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(conf.getNumHiddenNodes())
                                         .activation(Activation.RELU).build());
 
 

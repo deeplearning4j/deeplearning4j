@@ -32,14 +32,16 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
     Configuration conf;
 
     public ActorCriticSeparate buildActorCritic(int[] numInputs, int numOutputs) {
-
-
+        int nIn = 1;
+        for (int i : numInputs) {
+            nIn *= i;
+        }
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
                         .l2(conf.getL2())
-                        .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
+                        .list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(conf.getNumHiddenNodes())
                                         .activation(Activation.RELU).build());
 
 
@@ -58,7 +60,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                             .nIn(conf.getNumHiddenNodes()).nOut(1).build());
         }
 
-        confB.setInputType(conf.isUseLSTM() ? InputType.recurrent(numInputs[0]) : InputType.feedForward(numInputs[0]));
+        confB.setInputType(conf.isUseLSTM() ? InputType.recurrent(nIn) : InputType.feedForward(nIn));
         MultiLayerConfiguration mlnconf2 = confB.pretrain(false).backprop(true).build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf2);
         model.init();
@@ -74,7 +76,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                         .weightInit(WeightInit.XAVIER)
                         //.regularization(true)
                         //.l2(conf.getL2())
-                        .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
+                        .list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(conf.getNumHiddenNodes())
                                         .activation(Activation.RELU).build());
 
 
@@ -93,7 +95,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                             .activation(Activation.SOFTMAX).nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
         }
 
-        confB2.setInputType(conf.isUseLSTM() ? InputType.recurrent(numInputs[0]) : InputType.feedForward(numInputs[0]));
+        confB2.setInputType(conf.isUseLSTM() ? InputType.recurrent(nIn) : InputType.feedForward(nIn));
         MultiLayerConfiguration mlnconf = confB2.pretrain(false).backprop(true).build();
         MultiLayerNetwork model2 = new MultiLayerNetwork(mlnconf);
         model2.init();
