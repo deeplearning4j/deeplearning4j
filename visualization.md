@@ -249,33 +249,64 @@ This exception is not due to DL4J directly, but is due to a missing application.
 
 The recommended solution (for Maven) is to use the Maven Shade plugin to produce an uber-jar, configured as follows:
 ```
-<plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-shade-plugin</artifactId>
-	<version>3.1.0</version>
-	<configuration>
-		<shadedArtifactAttached>true</shadedArtifactAttached>
-		<shadedClassifierName>${shadedClassifier}</shadedClassifierName>
-		<createDependencyReducedPom>true</createDependencyReducedPom>
-	</configuration>
-	<executions>
-		<execution>
-			<phase>package</phase>
-			<goals>
-				<goal>shade</goal>
-			</goals>
-			<configuration>
-				<transformers>
-					<transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-						<resource>reference.conf</resource>
-					</transformer>
-					<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-					<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
-				</transformers>
-			</configuration>
-		</execution>
-	</executions>
-</plugin>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <configuration>
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                    <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <!--<exclude>org/datanucleus/**</exclude>-->
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        <plugins>
+    <build>
 ```
 
 Then, create your uber-jar with ```mvn package``` and run via ```cd target && java -cp dl4j-examples-0.9.1-bin.jar org.deeplearning4j.examples.userInterface.UIExample```. Note the "-bin" suffix for the generated JAR file: this includes all dependencies.
