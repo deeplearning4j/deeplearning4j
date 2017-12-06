@@ -15,8 +15,14 @@
 namespace nd4j {
 
     template<typename T> class ND4J_EXPORT NDArray;
-    template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
-    template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
+    // template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
+    // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
+    ND4J_EXPORT NDArray<float> operator-(const float, const NDArray<float>&);
+    ND4J_EXPORT NDArray<float16> operator-(const float16, const NDArray<float16>&);
+    ND4J_EXPORT NDArray<double> operator-(const double, const NDArray<double>&);
+    ND4J_EXPORT NDArray<float> operator+(const float, const NDArray<float>&);
+    ND4J_EXPORT NDArray<float16> operator+(const float16, const NDArray<float16>&);
+    ND4J_EXPORT NDArray<double> operator+(const double, const NDArray<double>&);
     template<typename T> NDArray<T> mmul(const NDArray<T>&, const NDArray<T>&);
 
 
@@ -494,13 +500,21 @@ namespace nd4j {
 
         // addition operator array + scalar
         NDArray<T> operator+(const T scalar) const;
-#ifndef _MSC_VER
+
         // addition operator scalar + array
-        friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
-#endif
+        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
+        // subtraction operator scalar - array
+        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
+
+        // addition operator scalar + array
+        friend NDArray<float> nd4j::operator+(const float scalar, const NDArray<float>& arr);
+        friend NDArray<float16> nd4j::operator+(const float16 scalar, const NDArray<float16>& arr);
+        friend NDArray<double> nd4j::operator+(const double scalar, const NDArray<double>& arr);
 
         // subtraction operator scalar - array
-        friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
+        friend NDArray<float> nd4j::operator-(const float scalar, const NDArray<float>& arr);
+        friend NDArray<float16> nd4j::operator-(const float16 scalar, const NDArray<float16>& arr);
+        friend NDArray<double> nd4j::operator-(const double scalar, const NDArray<double>& arr);
 
         // addition operator array1 += array2    
         void operator+=(const NDArray<T>& other);
