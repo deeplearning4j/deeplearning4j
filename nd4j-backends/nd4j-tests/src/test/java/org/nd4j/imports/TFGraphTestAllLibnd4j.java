@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
+import static org.nd4j.imports.TFGraphTestAllHelper.checkOnlyOutput;
 import static org.nd4j.imports.TFGraphTestAllHelper.fetchTestParams;
-import static org.nd4j.imports.TFGraphTestAllHelper.testSingle;
 
 /**
  * Created by susaneraly on 11/29/17.
@@ -21,6 +21,7 @@ public class TFGraphTestAllLibnd4j {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
+    private Map<String, INDArray[]> intermediatePredictions;
     private static final TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
 
     @Parameterized.Parameters
@@ -28,15 +29,17 @@ public class TFGraphTestAllLibnd4j {
         return fetchTestParams(executeWith);
     }
 
-    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, Map<String, INDArray[]> intermediatePredictions) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
+        this.intermediatePredictions = intermediatePredictions; //currently unused
     }
 
     @Test
     public void test() throws Exception {
         Nd4j.create(1);
-        testSingle(inputs, predictions, modelName, executeWith);
+        checkOnlyOutput(inputs, predictions, modelName, executeWith);
     }
+
 }

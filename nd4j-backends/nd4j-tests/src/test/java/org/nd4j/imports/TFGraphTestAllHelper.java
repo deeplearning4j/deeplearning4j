@@ -2,12 +2,14 @@ package org.nd4j.imports;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -19,10 +21,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class TFGraphTestAllHelper {
 
-    public  enum ExecuteWith {
+    public enum ExecuteWith {
         SAMEDIFF,
         LIBND4J,
         JUST_PRINT
@@ -62,10 +61,11 @@ public class TFGraphTestAllHelper {
         String[] modelNames = modelDirNames(baseDir);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
-            Object[] currentParams = new Object[3];
+            Object[] currentParams = new Object[4];
             currentParams[0] = inputVars(modelNames[i], baseDir); //input variable map - could be null
             currentParams[1] = outputVars(modelNames[i], baseDir); //saved off predictions
             currentParams[2] = modelNames[i];
+            currentParams[3] = intermediateVars(modelNames[i], baseDir); //intermediate map
             modelParams.add(currentParams);
         }
         return modelParams;
@@ -73,32 +73,38 @@ public class TFGraphTestAllHelper {
 
     protected static List<Object[]> fetchTestParams(String baseDir, String modelName) throws IOException {
         List<Object[]> modelParams = new ArrayList<>();
-        Object[] currentParams = new Object[3];
+        Object[] currentParams = new Object[4];
         currentParams[0] = inputVars(modelName, baseDir); //input variable map - could be null
         currentParams[1] = outputVars(modelName, baseDir); //saved off predictions
         currentParams[2] = modelName;
+        currentParams[3] = intermediateVars(modelName, baseDir); //intermediate map
         modelParams.add(currentParams);
         return modelParams;
     }
 
-    protected static void testSingle(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
         if (execType.equals(ExecuteWith.SAMEDIFF)) {
-            testSingle(inputs, predictions, modelName, SAMEDIFF_DEFAULT_BASE_DIR, execType);
+            checkOnlyOutput(inputs, predictions, modelName, SAMEDIFF_DEFAULT_BASE_DIR, execType);
         } else if (execType.equals(ExecuteWith.LIBND4J)) {
-            testSingle(inputs, predictions, modelName, LIBND4J_DEFAULT_BASE_DIR, execType);
+            checkOnlyOutput(inputs, predictions, modelName, LIBND4J_DEFAULT_BASE_DIR, execType);
         }
     }
 
-    protected static void testSingle(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType) throws IOException {
+    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType) throws IOException {
         Nd4j.EPS_THRESHOLD = 1e-4;
-        log.info("\n\tRUNNING TEST " + modelName + "...");
-        val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/frozen_model.pb").getInputStream());
         INDArray nd4jPred = null;
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
 
+        val graph = getGraph(baseDir, modelName);
+
         if (execType.equals(ExecuteWith.SAMEDIFF)) {
-            graph.execWithPlaceHolder(inputs); //This is expected to be just one result
+            if (!inputs.isEmpty()) {
+                graph.execWithPlaceHolder(inputs); //This is expected to be just one result
+            }
+            else {
+                graph.execAndEndResult("output"); //there are graphs with no placeholders like g_00
+            }
             nd4jPred = graph.getVariable("output").getArr();
         } else if (execType.equals(ExecuteWith.LIBND4J)) {
             val executioner = new NativeGraphExecutioner();
@@ -121,6 +127,47 @@ public class TFGraphTestAllHelper {
 
     }
 
+    public static void checkIntermediate(Map<String, INDArray> inputs, Map<String, INDArray> predictions, Map<String, INDArray[]> intermediates, String modelName, ExecuteWith execType) throws IOException {
+        if (execType.equals(ExecuteWith.SAMEDIFF)) {
+            checkIntermediate(inputs, predictions, intermediates, modelName, SAMEDIFF_DEFAULT_BASE_DIR, execType);
+        } else if (execType.equals(ExecuteWith.LIBND4J)) {
+            checkIntermediate(inputs, predictions, intermediates, modelName, LIBND4J_DEFAULT_BASE_DIR, execType);
+        }
+    }
+
+    public static void checkIntermediate(Map<String, INDArray> inputs, Map<String, INDArray> predictions, Map<String, INDArray[]> intermediates, String modelName, String baseDir, ExecuteWith execType) throws IOException {
+        if (!execType.equals(ExecuteWith.SAMEDIFF)) {
+            throw new IllegalArgumentException("Currently not supported");
+        }
+        Nd4j.EPS_THRESHOLD = 1e-4;
+        INDArray nd4jPred = null;
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        val graph = getGraph(baseDir, modelName);
+        if (!inputs.isEmpty()) {
+            graph.execWithPlaceHolder(inputs); //This is expected to be just one result
+        }
+        else {
+            graph.execAndEndResult("output"); //there are tests with no placeholders in the graph like g_00
+        }
+        for (String varName : graph.variableMap().keySet()) {
+            if (!inputs.containsKey(varName)) { //avoiding placeholders
+                if (!intermediates.containsKey(varName)) throw new RuntimeException(varName + "not found in resources");
+                if (intermediates.get(varName).length > 1)
+                    throw new RuntimeException(varName + "has more than one output. Currently not handled");
+                assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(intermediates.get(varName)[0].shape()), ArrayUtils.toString(graph.getVariable(varName).getResultShape()));
+                //This is acting strange; I can't get it to give proper values - I want to assert equality of values
+                //assertEquals(intermediates.get(varName)[0], graph.getArrForVertexId(graph.variableMap().get(varName).getVertexId()))
+                log.info("\n\tShapes equal for " + varName);
+            }
+        }
+    }
+
+    public static SameDiff getGraph(String baseDir, String modelName) throws IOException {
+        log.info("\n\tRUNNING TEST " + modelName + "...");
+        return TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/frozen_model.pb").getInputStream());
+    }
+
     private static String[] modelDirNames(String base_dir) throws IOException {
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(base_dir).getClassLoader());
         Resource[] resources = resolver.getResources("classpath*:" + base_dir + "/**/frozen_model.pb");
@@ -132,35 +179,73 @@ public class TFGraphTestAllHelper {
     }
 
     protected static Map<String, INDArray> inputVars(String modelName, String base_dir) throws IOException {
-        Map<String, INDArray> inputVarMap = new HashMap<>();
-        String modelDir = base_dir + "/" + modelName;
-        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
-        Resource[] resources = resolver.getResources("classpath*:" + modelDir + "/**.shape");
-        for (int i = 0; i < resources.length; i++) {
-            String inputFileName = resources[i].getFilename();
-            String inputPath = modelDir + "/" + inputFileName;
-            String inputName = inputFileName.split(".shape")[0];
-            int[] inputShape = Nd4j.readNumpy(new ClassPathResource(inputPath).getInputStream(), ",").data().asInt();
-            INDArray input = Nd4j.readNumpy(new ClassPathResource(modelDir + "/" + inputName + ".csv").getInputStream(), ",").reshape(inputShape);
-            inputVarMap.put(inputName, input);
-        }
-        return inputVarMap;
+        return readVars(modelName, base_dir, "placeholder");
     }
 
 
-    //TODO: I don't check shapes
     protected static Map<String, INDArray> outputVars(String modelName, String base_dir) throws IOException {
-        Map<String, INDArray> outputVarMap = new HashMap<>();
+        return readVars(modelName, base_dir, "prediction");
+    }
+
+    /**
+     * Possible for a single node to give multiple outputs though none of the tests cover this currently
+     */
+    protected static Map<String, INDArray[]> intermediateVars(String modelName, String base_dir) throws IOException {
+        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, "prediction_inbw");
+        Map<String, Integer> nodeNamesOutputCount = nodeNamesWithOutputCount(nodeSepOutput.keySet());
+
+        Map<String, INDArray[]> nodeWithOutput = new HashMap<>();
+
+        for (String nodeName : nodeNamesOutputCount.keySet()) {
+            INDArray[] outputsForNode = new INDArray[nodeNamesOutputCount.get(nodeName)];
+            for (int i = 0; i < nodeNamesOutputCount.get(nodeName); i++) {
+                outputsForNode[i] = nodeSepOutput.get(nodeName + "." + i); // zero indexed
+            }
+            nodeWithOutput.put(nodeName, outputsForNode);
+        }
+
+        return nodeWithOutput;
+    }
+
+    private static Map<String, Integer> nodeNamesWithOutputCount(Set<String> nodesWithOutput) {
+        Map<String, Integer> nodeWithOutputCount = new HashMap<>();
+        for (String nodeWithOutput : nodesWithOutput) {
+            String nodeName = nodeWithOutput.substring(0, nodeWithOutput.lastIndexOf('.'));
+            if (nodeWithOutputCount.containsKey(nodeName)) {
+                nodeWithOutputCount.put(nodeName, nodeWithOutputCount.get(nodeName) + 1);
+            } else {
+                nodeWithOutputCount.put(nodeName, 1);
+            }
+        }
+        return nodeWithOutputCount;
+    }
+
+    protected static Map<String, INDArray> readVars(String modelName, String base_dir, String pattern) throws IOException {
+        Map<String, INDArray> varMap = new HashMap<>();
         String modelDir = base_dir + "/" + modelName;
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
-        Resource[] resources = resolver.getResources("classpath*:" + modelDir + "/**prediction.csv");
+        Resource[] resources = resolver.getResources("classpath*:" + modelDir + "/**." + pattern + ".shape");
         for (int i = 0; i < resources.length; i++) {
-            String outputFileName = resources[i].getFilename();
-            String outputPath = modelDir + "/" + outputFileName;
-            String outputName = outputFileName.split(".prediction.csv")[0];
-            INDArray output = Nd4j.readNumpy(new ClassPathResource(outputPath).getInputStream(), ",");
-            outputVarMap.put(outputName, output);
+            String fileName = resources[i].getFilename();
+            String varPath = modelDir + "/" + fileName;
+            String varName = fileName.split("." + pattern + ".shape")[0];
+            int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
+            if (varShape.length == 1) {
+                if (varShape[0] == 0) {
+                    varShape = new int[]{1, 1}; //scalars are mapped to a 1,1 INDArray
+                } else {
+                    int vectorSize = varShape[0];
+                    varShape = new int[]{1, vectorSize}; //vectors are mapped to a row vector
+                }
+            }
+            INDArray varValue = Nd4j.readNumpy(new ClassPathResource(modelDir + "/" + varName + "." + pattern + ".csv").getInputStream(), ",").reshape(varShape);
+            if (varName.contains("____")) {
+                //these are intermediate node outputs
+                varMap.put(varName.replaceAll("____", "/"), varValue);
+            } else {
+                varMap.put(varName, varValue);
+            }
         }
-        return outputVarMap;
+        return varMap;
     }
 }
