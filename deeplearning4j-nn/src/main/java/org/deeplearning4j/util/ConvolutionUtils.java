@@ -24,6 +24,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 
@@ -366,5 +367,34 @@ public class ConvolutionUtils {
                             "Invalid padding configuration: values must be >= 0 for all dimensions. Got: "
                                             + Arrays.toString(padding));
         }
+    }
+
+
+    public static INDArray reshape4dTo2d(INDArray in){
+        if (in.rank() != 4)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4");
+        int[] shape = in.shape();
+
+        //Reshape: from [n,c,h,w] to [n*h*w,c]
+
+        INDArray out = in.permute(0,2,3,1);
+        if(out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
+            out = out.dup('c');
+
+        return out.reshape('c', shape[0]*shape[2]*shape[3], shape[1]);
+    }
+
+    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape){
+        if(in2d.rank() != 2)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
+        if(toShape.length != 4)
+            throw new IllegalArgumentException("Invalid input: expect toShape with 4 elements: got " + Arrays.toString(toShape));
+
+        //Reshape: from [n*h*w,c] to [n,h,w,c] to [n,c,h,w]
+        if(in2d.ordering() != 'c' || !Shape.strideDescendingCAscendingF(in2d))
+            in2d = in2d.dup('c');
+
+        INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
+        return out.permute(0,3,1,2);
     }
 }
