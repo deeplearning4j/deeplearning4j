@@ -521,6 +521,13 @@ namespace nd4j {
     }
 
     template <typename T>
+    NDArray<T>* NDArrayFactory<T>::valueOf(std::vector<int>& shape, T value, char order) {
+        auto result = new NDArray<T>(order, shape);
+        result->assign(value);
+        return result;
+    }
+
+    template <typename T>
     NDArray<T>* NDArrayFactory<T>::concat(const std::vector<NDArray<T> *>& vectors, int axis, NDArray<T>* target) {
         NDArray<T>* result = target;
 

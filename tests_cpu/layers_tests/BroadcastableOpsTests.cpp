@@ -89,3 +89,41 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
 
     delete result;
 }
+
+
+TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_1) {
+    NDArray<float> x('c', {1, 1}, {1});
+    NDArray<float> y('c', {1, 3}, {0, 1, 2});
+    NDArray<float> exp('c', {1,3}, {1, 0, -1});
+
+    nd4j::ops::subtract<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
+    NDArray<float> x('c', {1, 1}, {1});
+    NDArray<float> y('c', {1, 3}, {0, 1, 2});
+    NDArray<float> exp('c', {1,3}, {1, 2, 3});
+
+    nd4j::ops::add<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

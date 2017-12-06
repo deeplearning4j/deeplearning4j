@@ -2,6 +2,7 @@
 //  @author raver119@gmail.com
 //
 
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -11,6 +12,14 @@ namespace nd4j {
             NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = OUTPUT_VARIABLE(0);
 
+            auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::FloorDiv<T>>(x, y, z);
+            if (tZ == nullptr)
+                return ND4J_STATUS_KERNEL_FAILURE;
+            else if (tZ != z) {
+                OVERWRITE_RESULT(tZ);
+            }
+
+            /*
             if (!x->isScalar() && !y->isScalar() && x->lengthOf() == y->lengthOf()) {
                 REQUIRE_OK(this->validateInputLengthMatch(block));
                 // REQUIRE_OK(this->validateInputDimensionsMatch(block));
@@ -33,6 +42,7 @@ namespace nd4j {
                 auto sy = ShapeUtils<T>::shapeAsString(*y);
                 REQUIRE_TRUE(false, 0, "FloorDiv: shapes should be equal, or broadcastable. But got %s vs %s instead", sx.c_str(), sy.c_str());
             }
+            */
 
             return ND4J_STATUS_OK;
         }
