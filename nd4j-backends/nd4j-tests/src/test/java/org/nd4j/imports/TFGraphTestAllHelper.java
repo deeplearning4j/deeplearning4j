@@ -19,7 +19,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -101,12 +100,14 @@ public class TFGraphTestAllHelper {
         if (execType.equals(ExecuteWith.SAMEDIFF)) {
             if (!inputs.isEmpty()) {
                 graph.execWithPlaceHolder(inputs); //This is expected to be just one result
-            }
-            else {
+            } else {
                 graph.execAndEndResult("output"); //there are graphs with no placeholders like g_00
             }
             nd4jPred = graph.getVariable("output").getArr();
         } else if (execType.equals(ExecuteWith.LIBND4J)) {
+            for (String input : inputs.keySet()) {
+                graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
+            }
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
             assertEquals(1, results.length); //FIXME: Later
@@ -146,8 +147,7 @@ public class TFGraphTestAllHelper {
         val graph = getGraph(baseDir, modelName);
         if (!inputs.isEmpty()) {
             graph.execWithPlaceHolder(inputs); //This is expected to be just one result
-        }
-        else {
+        } else {
             graph.execAndEndResult("output"); //there are tests with no placeholders in the graph like g_00
         }
         for (String varName : graph.variableMap().keySet()) {

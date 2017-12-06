@@ -41,12 +41,14 @@ public class TFGraphTestAllSameDiff {
         checkOnlyOutput(inputs, predictions, modelName, executeWith);
     }
 
+    /*
     @Test
     public void testAlsoIntermediate() throws Exception {
         Nd4j.create(1);
         checkIntermediate(inputs,predictions,intermediatePredictions,modelName,executeWith);
 
     }
+    */
 
 
 }
