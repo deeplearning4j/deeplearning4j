@@ -8,8 +8,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer;
-import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
+import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
+import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -30,7 +30,7 @@ public class Convolution3D extends ConvolutionLayer {
     protected int dilation[] = new int[]{1, 1, 1};
 
     /**
-     * Deconvolution2D layer
+     * 3-dimensional convolutional layer configuration
      * nIn in the input layer is the number of channels
      * nOut is the number of filters to be used in the net or in other words the depth
      * The builder specifies the filter/kernel size, the stride and padding
@@ -41,7 +41,7 @@ public class Convolution3D extends ConvolutionLayer {
         initializeConstraints(builder);
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
@@ -60,10 +60,9 @@ public class Convolution3D extends ConvolutionLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        LayerValidation.assertNInNOutSet("Deconvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
+        LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        Deconvolution2DLayer ret =
-                new Deconvolution2DLayer(conf);
+        Convolution3DLayer ret = new Convolution3DLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -75,18 +74,17 @@ public class Convolution3D extends ConvolutionLayer {
 
     @Override
     public ParamInitializer initializer() {
-        return DeconvolutionParamInitializer.getInstance();
+        return Convolution3DParamInitializer.getInstance();
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+        if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
+            throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
+                    + "\"): Expected CNN3D input, got " + inputType);
         }
-
-        return InputTypeUtil.getOutputTypeDeconvLayer(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), Deconvolution2DLayer.class);
+        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, dilation,
+                convolutionMode, nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
 
