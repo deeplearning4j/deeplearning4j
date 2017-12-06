@@ -37,7 +37,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
             nIn *= i;
         }
         ComputationGraphConfiguration.GraphBuilder confB =
-                        new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED).iterations(1)
+                        new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                                         .weightInit(WeightInit.XAVIER)
