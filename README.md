@@ -4,8 +4,8 @@ Native operations for nd4j. Build using cmake
 
 ## Prerequisites
 
-* GCC 4.9 or 5.x
-* CUDA 7.5 or 8.0 (if desired)
+* GCC 4.9+
+* CUDA 8.0 or 9.0 (if desired)
 * CMake 3.8 (as of Nov 2017, in near future will require 3.9)
 
 ### Additional build arguments
@@ -36,7 +36,7 @@ export ANDROID_NDK=/path/to/android-ndk/
 cd libnd4j
 bash buildnativeoperations.sh -platform android-xxx
 cd ../nd4j
-mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
+mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
 ```
 
 ### OSX
@@ -124,6 +124,10 @@ See [Windows.md](windows.md)
         ./buildnativeoperations.sh
         ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
         ```
+
+## OpenMP support
+
+OpenMP 4.0+ should be used to compile libnd4j. However, this shouldn't be any trouble, since OpenMP 4 was released in 2015 and should be available on all major platforms.
 
 ## Linking with MKL
 
