@@ -39,8 +39,6 @@ public class RnnLossLayer extends FeedForwardLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
-
         org.deeplearning4j.nn.layers.recurrent.RnnLossLayer ret =
                         new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf);
         ret.setListeners(iterationListeners);
@@ -60,7 +58,7 @@ public class RnnLossLayer extends FeedForwardLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
+            throw new IllegalStateException("Invalid input type for RnnLossLayer (layer index = " + layerIndex
                             + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
         return inputType;
