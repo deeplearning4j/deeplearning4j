@@ -496,11 +496,12 @@ namespace nd4j {
         NDArray<T> operator+(const T scalar) const;
 #ifndef _MSC_VER
         // addition operator scalar + array
-        friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);
+        friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
+#endif
 
         // subtraction operator scalar - array
-        friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);        
-#endif
+        friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
+
         // addition operator array1 += array2    
         void operator+=(const NDArray<T>& other);
 

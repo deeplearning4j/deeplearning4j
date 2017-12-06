@@ -135,7 +135,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(pad, 2, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(expose, -1, -1, true, 0, 0);
-        DECLARE_CUSTOM_OP(where, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(Where, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(select, 3, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(shape_of, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(gather, 2, 1, false, 0, 1);

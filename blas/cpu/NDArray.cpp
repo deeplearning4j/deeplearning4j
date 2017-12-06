@@ -2629,6 +2629,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     NDArray<T> operator+(const T scalar, const NDArray<T>& arr) {
         return arr + scalar;
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////
     // subtraction operator scalar - array
@@ -2640,7 +2641,6 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
         return result;
     }
-#endif
     
     ////////////////////////////////////////////////////////////////////////
     // addition operator array1 += array2
