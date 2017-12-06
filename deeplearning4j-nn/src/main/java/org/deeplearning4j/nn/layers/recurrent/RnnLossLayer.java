@@ -46,9 +46,10 @@ import java.util.List;
  * Recurrent Neural Network Loss Layer.<br>
  * Handles calculation of gradients etc for various objective functions.<br>
  * NOTE: Unlike {@link RnnOutputLayer} this RnnLossLayer does not have any parameters - i.e., there is no time
- * distributed dense component here.<br>
+ * distributed dense component here. Consequently, the output activations size is equail to the input size.<br>
  * Input and output activations are same as other RNN layers: 3 dimensions with shape
  * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.
+ *
  * @author Alex Black
  * @see RnnOutputLayer
  */
