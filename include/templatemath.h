@@ -132,6 +132,9 @@ template<typename T>
         math_def inline T nd4j_erf(T num);
 
 		template<typename T>
+        math_def inline T nd4j_erfc(T num);
+
+		template<typename T>
         math_def inline T nd4j_sigmoid(T val) {
 			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T>(-val));
 		}
@@ -710,6 +713,21 @@ template<typename T>
         template<>
         math_def inline float16 nd4j_erf<float16>(float16 num) {
             return (float16) erff((float) num);
+        }
+
+		template<>
+        math_def inline float nd4j_erfc<float>(float num) {
+            return erfcf(num);
+        }
+
+        template<>
+        math_def inline double nd4j_erfc<double>(double num) {
+            return erfc(num);
+        }
+
+        template<>
+        math_def inline float16 nd4j_erfc<float16>(float16 num) {
+            return (float16) erfcf((float) num);
         }
 
 

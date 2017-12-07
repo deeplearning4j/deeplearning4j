@@ -27,6 +27,7 @@ namespace nd4j {
         DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1);
         DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
         DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
+        DECLARE_REDUCTION_OP(norm, 1, 1, false, 1, -2);
 
         DECLARE_OP(noop, -1, -1, true);
         DECLARE_OP(testop2i2o, 2, 2, true);
@@ -68,6 +69,14 @@ namespace nd4j {
         DECLARE_OP(log1p, 2, 1, true);
         DECLARE_OP(toggle_bits, -1, -1, true);
         DECLARE_OP(rint, 1, 1, true);
+
+        DECLARE_OP(to_double, 1, 1, true);
+        DECLARE_OP(to_float16, 1, 1, true);
+        DECLARE_OP(to_float32, 1, 1, true);
+        DECLARE_OP(to_int32, 1, 1, true);
+        DECLARE_OP(to_int64, 1, 1, true);
+        DECLARE_OP(to_uint32, 1, 1, true);
+        DECLARE_OP(to_uint64, 1, 1, true);
 
         DECLARE_OP(scatter_add, 3, 1, true);
         DECLARE_OP(scatter_sub, 3, 1, true);
@@ -155,6 +164,9 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);
         DECLARE_CUSTOM_OP(unique, 1, 2, false, 0, 0);
         DECLARE_CUSTOM_OP(lstmCell, 8, 2, false, 3, 2);
+        DECLARE_CUSTOM_OP(set_seed, -2, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(get_seed, -2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(shapes_of, -1, -1, false, 0, 0)
         DECLARE_CUSTOM_OP(sruCell, 4, 2, false, 0, 0);
         DECLARE_CUSTOM_OP(gruCell, 5, 1, false, 0, 0);
 
@@ -167,6 +179,8 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(sru_bi_bp,   8, 4, true,  0, 0);
                 
         DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0);
+        DECLARE_CONFIGURABLE_OP(clipbynorm, 1, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(clipbyavgnorm, 1, 1, true, 1, 0);
         DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1);
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0);        
         DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0);        

@@ -859,6 +859,18 @@ namespace simdOps {
 
 
 	template<typename T>
+	class Erfc {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_erfc<T>(d1);
+		}
+	};
+
+
+	template<typename T>
 	class Pow {
 	public:
 		no_op_exec_special
@@ -901,6 +913,18 @@ namespace simdOps {
 
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_isnan(d1) ? (T) 1.0f : (T) 0.0f;
+		}
+	};
+
+
+	template<typename T>
+	class Expm1 {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_exp(d1) - (T) 1.0f;
 		}
 	};
 
@@ -2159,6 +2183,62 @@ namespace simdOps {
 		}
 	};
 
+	template<typename T>
+	class NormFrobenius {
+	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
+		op_def static T startingValue(const T *input) {
+			return (T) 0.0f;
+		}
+
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+		op_def static T op(T d1, T *extraParams) {
+			T v = nd4j::math::nd4j_abs(d1);
+			return v * v;
+		}
+
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return nd4j::math::nd4j_sqrt<T>(reduction);
+		}
+	};
+
+	template<typename T>
+	class NormP {
+	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
+		op_def static T startingValue(const T *input) {
+			return (T) 0.0f;
+		}
+
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+		op_def static T op(T d1, T *extraParams) {
+			return nd4j::math::nd4j_pow(nd4j::math::nd4j_abs(d1), extraParams[0]);
+		}
+
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return nd4j::math::nd4j_pow(reduction, (T) 1.0 / extraParams[0]);
+		}
+	};
 
 	template<typename T>
 	class NormMax {
