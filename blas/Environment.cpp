@@ -16,6 +16,7 @@ namespace nd4j {
         _verbose.store(false);
         _debug.store(false);
 
+#ifndef ANDROID
         const char* omp_threads = std::getenv("OMP_NUM_THREADS");
         if (omp_threads != nullptr) {
             try {
@@ -28,6 +29,7 @@ namespace nd4j {
                 // still do nothing
             }
         }
+#endif
     }
 
     nd4j::Environment::~Environment() {
