@@ -28,7 +28,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_SHAPE_FN(get_seed) {
+        DECLARE_SHAPE_FN(set_seed) {
             int *newshape;
             ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), int);
 
