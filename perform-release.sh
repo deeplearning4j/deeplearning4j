@@ -10,9 +10,10 @@ RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 STAGING_REPOSITORY=${3:-}
 SKIP_BUILD=${SKIP_BUILD:-0}
+RELEASE_PROFILE=${RELEASE_PROFILE:-sonatype-nexus}
 
-echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $STAGING_REPOSITORY"
-echo "========================================================================================"
+echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $RELEASE_PROFILE $STAGING_REPOSITORY"
+echo "========================================================================================================="
 
 if [[ ! -z $(git tag -l "gym-java-client-$RELEASE_VERSION") ]]; then
     echo "Error: Version $RELEASE_VERSION has already been released!"
@@ -24,7 +25,7 @@ sed -i "s/<datavec.version>.*<\/datavec.version>/<datavec.version>$RELEASE_VERSI
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
 
 if [[ "${SKIP_BUILD}" == "0" ]]; then
-mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 fi
 
 git commit -s -a -m "Update to version $RELEASE_VERSION"
@@ -36,4 +37,4 @@ sed -i "s/<datavec.version>.*<\/datavec.version>/<datavec.version>$SNAPSHOT_VERS
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$SNAPSHOT_VERSION
 git commit -s -a -m "Update to version $SNAPSHOT_VERSION"
 
-echo "Successfully performed release of version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $STAGING_REPOSITORY"
+echo "Successfully performed release of version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $RELEASE_PROFILE $STAGING_REPOSITORY"
