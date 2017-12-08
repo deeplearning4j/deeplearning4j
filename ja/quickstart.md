@@ -1,5 +1,5 @@
 ----
-title:Deeplearning4jのクイックスタートガイド
+title: Quick Start Guide for Deeplearning4j
 layout: default
 ---
 <!-- Begin Inspectlet Embed Code -->
