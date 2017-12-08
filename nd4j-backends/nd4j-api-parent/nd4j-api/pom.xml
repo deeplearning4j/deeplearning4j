@@ -21,13 +21,13 @@
     <parent>
         <artifactId>nd4j-api-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.9.2_skil-1.0.0</version>
+        <version>0.9.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
 
     <artifactId>nd4j-api</artifactId>
-    <version>0.9.2_skil-1.0.0</version>
+    <version>0.9.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-api</name>
