@@ -133,6 +133,11 @@ public class Keras1ModelConfigurationTest {
         runSequentialConfigTest("configs/keras1/mnist_mlp_tf_config.json", true);
     }
 
+    @Test
+    public void embeddingConv1DTfTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/keras1_tf_embedding_conv1d_config.json", true);
+    }
+
     void runSequentialConfigTest(String path, boolean training) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =

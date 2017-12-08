@@ -53,8 +53,13 @@ public class KerasConvolutionUtils {
             strides = ArrayUtil.toArray(stridesList);
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH()) && dimension == 1) {
            /* 1D Convolutional layers. */
-            int subsampleLength = (int) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
-            strides = new int[]{subsampleLength};
+           if ((int) layerConfig.get("keras_version")== 2) {
+               List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
+               strides = ArrayUtil.toArray(stridesList);
+           } else {
+               int subsampleLength = (int) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
+               strides = new int[]{subsampleLength};
+           }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_STRIDES()) && dimension == 2) {
             /* 2D Pooling layers. */
             List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_STRIDES());
@@ -91,8 +96,8 @@ public class KerasConvolutionUtils {
             List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
             atrousRate = ArrayUtil.toArray(atrousRateList);
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 1) {
-            int atrousValue = (int) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
-            atrousRate = new int[]{ atrousValue };
+            List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
+            atrousRate = ArrayUtil.toArray(atrousRateList);
         } else {
             // If we are using keras 1, for regular convolutions, there is no "atrous" argument, for keras
             // 2 there always is.
@@ -181,16 +186,16 @@ public class KerasConvolutionUtils {
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
             /* 1D Convolutional layers. */
-                int filterLength = (int) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
-                kernelSize = new int[]{ filterLength };
+                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
+                kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension == 2) {
             /* 2D Pooling layers. */
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_1D_SIZE()) && dimension == 1) {
             /* 1D Pooling layers. */
-                int poolSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE());
-                kernelSize = new int[]{ poolSize1D };
+                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE());
+                kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else {
                 throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
                         + conf.getLAYER_FIELD_KERNEL_SIZE() + ", or "
