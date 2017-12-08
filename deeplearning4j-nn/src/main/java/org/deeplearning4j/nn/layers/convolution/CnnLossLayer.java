@@ -47,7 +47,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.RnnLossLayer> implements IOutputLayer {
+public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.CnnLossLayer> implements IOutputLayer {
     @Setter @Getter protected INDArray labels;
 
     public CnnLossLayer(NeuralNetConfiguration conf) {
@@ -65,12 +65,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
 
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(input);
         INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels);
-        INDArray maskReshaped;
-        if(this.maskArray != null){
-            throw new RuntimeException("Label masks not yet implemented")
-        } else {
-            maskReshaped = null;
-        }
+        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input);
 
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
@@ -188,18 +183,9 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
-        INDArray maskReshaped;
-        if(this.maskArray != null){
-            if(this.maskArray.rank() == 3){
-                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray);
-            } else {
-                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray);
-            }
-        } else {
-            maskReshaped = null;
-        }
+        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input);
+        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels);
+        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
@@ -225,12 +211,13 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
 
-        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
+        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input);
+        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels);
+        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                lossFunction.computeScoreArray(labels2d, input2d, layerConf().getActivationFn(), maskArray);
+                lossFunction.computeScoreArray(labels2d, input2d, layerConf().getActivationFn(), maskReshaped);
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 

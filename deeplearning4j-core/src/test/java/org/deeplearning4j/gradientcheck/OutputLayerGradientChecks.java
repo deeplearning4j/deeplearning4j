@@ -1,8 +1,11 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -44,9 +47,9 @@ public class OutputLayerGradientChecks {
         int nOut = 2;
         int miniBatchSize = 3;
 
-        ILossFunction[] lfs = new ILossFunction[]{ new LossMSE(), new LossMCXENT()};
+        ILossFunction[] lfs = new ILossFunction[]{new LossMSE(), new LossMCXENT()};
 
-        for( int maskType=0; maskType<3; maskType++ ) {
+        for (int maskType = 0; maskType < 3; maskType++) {
 
             Random r = new Random(12345L);
             INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
@@ -60,7 +63,7 @@ public class OutputLayerGradientChecks {
 
             INDArray labelMask;
             String mt;
-            switch (maskType){
+            switch (maskType) {
                 case 0:
                     //No masking
                     labelMask = null;
@@ -93,8 +96,8 @@ public class OutputLayerGradientChecks {
                                 .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build())
-                                .layer( new RnnLossLayer.Builder(lf)
-                                        .activation( oa )
+                                .layer(new RnnLossLayer.Builder(lf)
+                                        .activation(oa)
                                         .build())
                                 .pretrain(false).backprop(true).build();
 
@@ -113,6 +116,112 @@ public class OutputLayerGradientChecks {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, labelMask);
 
                 assertTrue(testName, gradOK);
+            }
+        }
+    }
+
+
+    @Test
+    public void testCnnLossLayer() {
+        Nd4j.getRandom().setSeed(12345L);
+
+        int dIn = 2;
+        int layerSize = 2;
+        int dOut = 2;
+        int miniBatchSize = 3;
+
+        ILossFunction[] lfs = new ILossFunction[]{new LossMSE(), new LossMCXENT()};
+
+        int[] heights = {4, 4, 5};
+        int[] widths = {4, 5, 6};
+
+        for (int i = 0; i < heights.length; i++) {
+            int h = heights[i];
+            int w = widths[i];
+
+            for (int maskType = 0; maskType < 4; maskType++) {
+
+                Random r = new Random(12345L);
+                INDArray input = Nd4j.rand(new int[]{miniBatchSize, dIn, h, w});
+
+                INDArray labelMask;
+                String mt;
+                switch (maskType) {
+                    case 0:
+                        //No masking
+                        labelMask = null;
+                        mt = "none";
+                        break;
+                    case 1:
+                        //Per example masking (2d mask, shape [minibatch, 1]
+                        labelMask = Nd4j.createUninitialized(miniBatchSize, 1);
+                        Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
+                        mt = "PerTimeStep";
+                        break;
+                    case 2:
+                        //Per x/y masking (3d mask, shape [minibatch, h, w])
+                        labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, h, w});
+                        Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
+                        mt = "PerXY";
+                        break;
+                    case 3:
+                        //Per output masking (4d mask, same shape as output [minibatch, c, h, w])
+                        labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, dOut, h, w});
+                        Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
+                        mt = "PerOutput";
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                for (ILossFunction lf : lfs) {
+
+                    INDArray labels;
+                    if (lf instanceof LossMSE) {
+                        labels = Nd4j.rand(new int[]{miniBatchSize, dOut, h, w});
+                    } else {
+                        labels = Nd4j.zeros(miniBatchSize, dOut, h, w);
+                        for (int mb = 0; mb < miniBatchSize; mb++) {
+                            for (int x = 0; x < w; x++) {
+                                for (int y = 0; y < h; y++) {
+                                    int idx = r.nextInt(dOut);
+                                    labels.putScalar(new int[]{mb, idx, y, x}, 1.0);
+                                }
+                            }
+                        }
+                    }
+
+                    Activation oa = maskType == 3 ? Activation.SIGMOID : Activation.SOFTMAX;
+
+                    MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder().seed(12345L)
+                                    .updater(new NoOp())
+                                    .convolutionMode(ConvolutionMode.Same)
+                                    .list()
+                                    .layer(new ConvolutionLayer.Builder().nIn(dIn).nOut(dOut).activation(Activation.TANH)
+                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                            .updater(new NoOp()).build())
+                                    .layer(new CnnLossLayer.Builder(lf)
+                                            .activation(oa)
+                                            .build())
+                                    .pretrain(false).backprop(true).build();
+
+                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                    mln.init();
+
+                    String testName = "testRnnLossLayer(lf=" + lf + ", maskType=" + mt + ", outputActivation = " + oa + ")";
+                    if (PRINT_RESULTS) {
+                        System.out.println(testName);
+                        for (int j = 0; j < mln.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                    }
+
+                    System.out.println("Starting test: " + testName);
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, labelMask);
+
+                    assertTrue(testName, gradOK);
+                }
             }
         }
     }

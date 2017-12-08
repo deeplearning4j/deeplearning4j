@@ -520,6 +520,5 @@ public class OutputLayerTest {
         assertEquals(mln.score(), mln2.score(), 1e-6);
 
         TestUtils.testModelSerialization(mln);
-
     }
 }

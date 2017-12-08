@@ -237,9 +237,20 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
         INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
 
+        INDArray maskReshaped;
+        if(this.maskArray != null){
+            if(this.maskArray.rank() == 3){
+                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray);
+            } else {
+                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray);
+            }
+        } else {
+            maskReshaped = null;
+        }
+
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                lossFunction.computeScoreArray(labels2d, input2d, layerConf().getActivationFn(), maskArray);
+                lossFunction.computeScoreArray(labels2d, input2d, layerConf().getActivationFn(), maskReshaped);
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 
