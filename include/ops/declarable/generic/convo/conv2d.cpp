@@ -39,6 +39,10 @@ namespace nd4j {
             const int dX = INT_ARG(7);
             const bool isSameMode = INT_ARG(8) != 0;
 
+            REQUIRE_TRUE(weights->sizeAt(2) == kY, 0, "Conv2D: weights dim 2 should be equal to %i, but got %i instead. Not a NCHW?", kY, weights->sizeAt(2));
+            REQUIRE_TRUE(weights->sizeAt(3) == kX, 0, "Conv2D: weights dim 3 should be equal to %i, but got %i instead. Not a NCHW?", kX, weights->sizeAt(3));
+            REQUIRE_TRUE(weights->sizeAt(1) == input->sizeAt(1), 0, "Conv2D: weights dim 0 should be equal to number of input channels. But got %i vs %i. Not a NCHW?", weights->sizeAt(1), input->sizeAt(1))
+
             int oY = 0;
             int oX = 0;
 
