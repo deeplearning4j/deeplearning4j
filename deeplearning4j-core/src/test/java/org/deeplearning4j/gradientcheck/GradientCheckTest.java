@@ -1,5 +1,6 @@
-package org.deeplearning4j.nn.layers.customLayerTest;
+package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.layers.ElementWiseMultiplicationLayer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -97,6 +98,8 @@ public class GradientCheckTest {
         msg = "elementWiseMultiplicationLayerTest() - activationFn=" + "ID" + ", lossFn=" + "Cos-sim"
                 + ", outputActivation=" + "Id" + ", doLearningFirst=" + "true";
         assertTrue(msg, gradOK);
+
+        TestUtils.testModelSerialization(netGraph);
 
     }
 

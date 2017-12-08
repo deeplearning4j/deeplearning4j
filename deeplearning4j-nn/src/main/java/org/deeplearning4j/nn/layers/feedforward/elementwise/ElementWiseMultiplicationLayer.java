@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -28,27 +27,6 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
 
     public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
-    }
-
-    @Override
-    public Gradient error(INDArray errorSignal) {
-        INDArray W = getParam(ElementWiseParamInitializer.WEIGHT_KEY);
-        Gradient nextLayerGradient = new DefaultGradient();
-        INDArray wErrorSignal = errorSignal.mul(W);
-        nextLayerGradient.gradientForVariable().put(ElementWiseParamInitializer.WEIGHT_KEY, wErrorSignal);
-        return nextLayerGradient;
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        Gradient ret = new DefaultGradient();
-        INDArray weightErrorSignal = layerError.getGradientFor(ElementWiseParamInitializer.WEIGHT_KEY);
-        INDArray weightError = weightErrorSignal.mul(activation);
-        ret.gradientForVariable().put(ElementWiseParamInitializer.WEIGHT_KEY, weightError);
-        INDArray biasGradient = weightError.mean(0);
-        ret.gradientForVariable().put(ElementWiseParamInitializer.BIAS_KEY, biasGradient);
-
-        return ret;
     }
 
     @Override
@@ -81,6 +59,42 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
     }
 
     /**
+     * @return The current iteration count (number of parameter updates) for the layer/network
+     */
+    @Override
+    public int getIterationCount() {
+        return 0;
+    }
+
+    /**
+     * @return The current epoch count (number of training epochs passed) for the layer/network
+     */
+    @Override
+    public int getEpochCount() {
+        return 0;
+    }
+
+    /**
+     * Set the current iteration count (number of parameter updates) for the layer/network
+     *
+     * @param iterationCount
+     */
+    @Override
+    public void setIterationCount(int iterationCount) {
+
+    }
+
+    /**
+     * Set the current epoch count (number of epochs passed ) for the layer/network
+     *
+     * @param epochCount
+     */
+    @Override
+    public void setEpochCount(int epochCount) {
+
+    }
+
+    /**
      * Returns true if the layer can be trained in an unsupervised/pretrain manner (VAE, RBMs etc)
      *
      * @return true if the layer can be pretrained (using fit(INDArray), false otherwise
@@ -91,7 +105,6 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
     }
 
     public INDArray preOutput(boolean training) {
-        applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
@@ -102,9 +115,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
                             + W.shapeInfoToString() + ") " + layerId());
         }
 
-        if (conf.isUseDropConnect() && training && layerConf().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
-        }
+        applyDropOutIfNecessary(training);
 
         INDArray ret = Nd4j.zeros(input.rows(),input.columns());
 
