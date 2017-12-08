@@ -96,8 +96,13 @@ public class KerasConvolutionUtils {
             List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
             atrousRate = ArrayUtil.toArray(atrousRateList);
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 1) {
-            List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
-            atrousRate = ArrayUtil.toArray(atrousRateList);
+            if ((int) layerConfig.get("keras_version") == 2) {
+                List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
+                atrousRate = ArrayUtil.toArray(atrousRateList);
+            } else {
+                int atrous = (int) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
+                atrousRate = new int[] { atrous };
+            }
         } else {
             // If we are using keras 1, for regular convolutions, there is no "atrous" argument, for keras
             // 2 there always is.
