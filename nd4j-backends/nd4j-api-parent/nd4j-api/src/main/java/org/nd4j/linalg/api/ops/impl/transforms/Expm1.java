@@ -25,53 +25,52 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Arcsin elementwise function
+ * Erfc function
  *
- * @author Adam Gibson
- */
-public class ASinh extends BaseTransformOp {
-    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+ * @author raver119@gmail.com
+  */
+public class Expm1 extends BaseTransformOp {
+    public Expm1(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public Expm1(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public Expm1(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ASinh() {}
+    public Expm1() {}
 
-    public ASinh(INDArray x, INDArray z) {
+    public Expm1(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public ASinh(INDArray x, INDArray z, long n) {
+    public Expm1(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public ASinh(INDArray x, INDArray y, INDArray z, long n) {
+    public Expm1(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public ASinh(INDArray x) {
+    public Expm1(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 84;
+        return 91;
     }
 
     @Override
     public String opName() {
-        return "asinh";
+        return "expm1";
     }
 
     @Override
@@ -81,14 +80,14 @@ public class ASinh extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Asinh";
+        return "Exp1m";
     }
+
+
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().div(f().one(getResultShape()),f().sqrt(f().add(f().pow(arg(),2),
-                f().one(getResultShape()))));
-
-        return Collections.singletonList(ret);
+        throw new UnsupportedOperationException();
     }
+
 }

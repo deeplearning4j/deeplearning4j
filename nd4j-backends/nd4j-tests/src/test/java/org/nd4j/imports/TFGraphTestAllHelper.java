@@ -108,6 +108,9 @@ public class TFGraphTestAllHelper {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
+
+            val string = graph.asFlatPrint();
+            log.info("Graph structure: \n{}", string);
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
             assertEquals(1, results.length); //FIXME: Later

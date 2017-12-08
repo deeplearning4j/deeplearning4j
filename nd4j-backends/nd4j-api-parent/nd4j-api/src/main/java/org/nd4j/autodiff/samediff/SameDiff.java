@@ -4184,7 +4184,7 @@ public class SameDiff {
 
             sb.append(var.id().first())
                     .append(":<").append(var.name()).append("> ")
-                    .append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("\n");
+                    .append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("; Values: ").append(Arrays.toString(ndarray.data().asFloat())).append(";\n");
         }
 
         val map = Nd4j.getExecutioner().getCustomOperations();

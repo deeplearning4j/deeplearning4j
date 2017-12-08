@@ -16,11 +16,11 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class MergeMax extends DynamicCustomOp {
+public class MergeSum extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "mergemax";
+        return "mergesum";
     }
 
 
@@ -35,7 +35,7 @@ public class MergeMax extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        // no-op
+        // noop
     }
 
     @Override
@@ -50,7 +50,7 @@ public class MergeMax extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "MergeMax";
+        return "AddN";
     }
 
 

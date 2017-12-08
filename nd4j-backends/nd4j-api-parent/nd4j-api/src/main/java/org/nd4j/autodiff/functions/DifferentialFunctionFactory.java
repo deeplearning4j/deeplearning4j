@@ -419,10 +419,20 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     }
 
-
     @Override
     public DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
         return sameDiff().setupFunction(new SigmoidDerivative(sameDiff(),iX,wrt));
+    }
+
+    @Override
+    public DifferentialFunction logSigmoid(DifferentialFunction iX) {
+        return sameDiff().setupFunction(new LogSigmoid(sameDiff(),iX,null));
+
+    }
+
+    @Override
+    public DifferentialFunction logSigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
+        return sameDiff().setupFunction(new LogSigmoidDerivative(sameDiff(),iX,wrt));
     }
 
     @Override

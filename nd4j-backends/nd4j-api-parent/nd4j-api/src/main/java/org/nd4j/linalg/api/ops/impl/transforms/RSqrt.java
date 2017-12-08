@@ -27,10 +27,10 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import java.util.List;
 
 /**
- * Sqrt function
+ * RSqrt function
  *
  * @author Adam Gibson
- */
+  */
 public class RSqrt extends BaseTransformOp {
     public RSqrt(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
@@ -64,7 +64,7 @@ public class RSqrt extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 14;
+        return 76;
     }
 
     @Override

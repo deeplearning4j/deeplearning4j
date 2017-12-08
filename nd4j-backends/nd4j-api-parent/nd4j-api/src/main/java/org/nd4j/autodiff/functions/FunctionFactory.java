@@ -122,6 +122,10 @@ public interface FunctionFactory {
 
     DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt);
 
+    DifferentialFunction logSigmoid(DifferentialFunction iX);
+
+    DifferentialFunction logSigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt);
+
     DifferentialFunction swish(DifferentialFunction iX);
 
     DifferentialFunction swishDerivative(DifferentialFunction iX, DifferentialFunction wrt);

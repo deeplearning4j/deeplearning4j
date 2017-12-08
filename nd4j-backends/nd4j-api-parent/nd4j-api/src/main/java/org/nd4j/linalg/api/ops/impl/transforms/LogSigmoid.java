@@ -21,7 +21,6 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
@@ -29,66 +28,72 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Arcsin elementwise function
+ * LogSigmoid function
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
-public class ASinh extends BaseTransformOp {
-    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+public class LogSigmoid extends BaseTransformOp {
+    public LogSigmoid(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public LogSigmoid(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public LogSigmoid(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ASinh() {}
+    public LogSigmoid() {}
 
-    public ASinh(INDArray x, INDArray z) {
+    public LogSigmoid(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public ASinh(INDArray x, INDArray z, long n) {
+    public LogSigmoid(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public ASinh(INDArray x, INDArray y, INDArray z, long n) {
+    public LogSigmoid(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public ASinh(INDArray x) {
-        super(x);
+    public LogSigmoid(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.lengthLong());
+    }
+
+    public LogSigmoid(INDArray ndArray) {
+        super(ndArray);
     }
 
     @Override
     public int opNum() {
-        return 84;
+        return 88;
     }
 
     @Override
     public String opName() {
-        return "asinh";
+        return "logsigmoid";
     }
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        return "LogSigmoid";
     }
 
     @Override
     public String tensorflowName() {
-        return "Asinh";
+        return "LogSigmoid";
     }
+
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().div(f().one(getResultShape()),f().sqrt(f().add(f().pow(arg(),2),
-                f().one(getResultShape()))));
+        DifferentialFunction ret = f().logSigmoidDerivative(arg(), i_v.get(0));
 
         return Collections.singletonList(ret);
     }
+
+
 }
