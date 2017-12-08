@@ -2,7 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#include <NativeOps.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
