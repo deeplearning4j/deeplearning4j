@@ -532,6 +532,24 @@ public abstract class DifferentialFunction implements Differential {
         return result;
     }
 
+
+    /**
+     * The opName of this function in onnx
+     * @return
+     */
+    public  String[] onnxNames() {
+        return new String[] {onnxName()};
+    }
+
+    /**
+     * The opName of this function tensorflow
+     *
+     * @return
+     */
+    public  String[] tensorflowNames() {
+        return new String[] {tensorflowName()};
+    }
+
     /**
      * The opName of this function in onnx
      * @return

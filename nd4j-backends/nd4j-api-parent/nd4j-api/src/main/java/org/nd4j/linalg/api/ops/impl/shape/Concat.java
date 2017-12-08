@@ -80,6 +80,10 @@ public class Concat extends DynamicCustomOp {
     }
 
 
+    @Override
+    public String[] tensorflowNames() {
+        return new String[]  {"Concat","ConcatV2"};
+    }
 
     @Override
     public Op.Type opType() {

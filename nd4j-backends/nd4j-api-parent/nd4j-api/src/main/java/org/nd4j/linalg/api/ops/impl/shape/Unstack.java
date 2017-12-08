@@ -2,15 +2,12 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
 import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,43 +15,43 @@ import java.util.Map;
  *
  * @author raver119@gmail.com
  */
-public class Stack  extends DynamicCustomOp {
+public class Unstack extends DynamicCustomOp {
+
+    private int num;
+    private int axis;
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx opName found for " + opName());
+    public String[] tensorflowNames() {
+        return new String[] {"Unstack","Unpack"};
     }
 
     @Override
     public String tensorflowName() {
-        return "stack";
+        return "Unstack";
     }
 
-    @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        throw new UnsupportedOperationException("Differentiation not supported yet.");
-    }
 
-    @Override
-    public String toString() {
-        return opName();
-    }
 
-    @Override
-    public String[] tensorflowNames() {
-        return new String[] {"Pack","Stack"};
-    }
 
     @Override
     public String opName() {
-        return "stack";
+        return "unstack";
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val attrAxis = nodeDef.getAttrOrThrow("axis");
+        int num = -1;
+        if(attributesForNode.containsKey("num")) {
+            num = (int) nodeDef.getAttrOrThrow("num").getI();
+        }
+
+
         int axis = (int) attrAxis.getI();
+        this.axis = axis;
         addIArgument(axis);
+        if(num > 0)
+            addIArgument(this.num);
     }
 
     @Override

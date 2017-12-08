@@ -62,7 +62,8 @@ public class DifferentialFunctionClassHolder {
                     log.info("Adding converter for [" + name + "]");
                     nodeConverters.put(name, node);
                     try {
-                        tensorFlowNames.put(node.tensorflowName(),node);
+                        for(String s : node.tensorflowNames())
+                            tensorFlowNames.put(s,node);
                     }catch (NoOpNameFoundException e) {
                         log.trace("Skipping op " + name + " for tensorflow.");
                     }
