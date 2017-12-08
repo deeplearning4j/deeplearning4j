@@ -1,5 +1,5 @@
-----
-title: Quick Start Guide for Deeplearning4j
+---
+title:Quick Start Guide for Deeplearning4j
 layout: default
 ---
 <!-- Begin Inspectlet Embed Code -->
@@ -18,7 +18,7 @@ setTimeout(ldinsp, 500); document.readyState != "complete" ?(window.attachEvent 
 
 このページでは、DL4Jのexampleを動作させるために必要なことすべてをご説明します。
 
-弊社の[Gitter Live Chat（Gitterライブチャット）](https://gitter.im/deeplearning4j/deeplearning4j)に参加されることをおすすめします。Gitterでは、ヘルプが必要な方へのサポートを提供し、フィードバックも受け付けています。なお、質問のある方は、以下のガイドにいくつかの質問とその回答を紹介していますので、できればそちらを先にお読みください。ディープラーニングの初心者の方には[初心者用手引き](https://deeplearning4j.org/ja/deeplearningforbeginners.html)にて、ディープラーニングの学習ができるコースのリンク、読み物、その他のリソースをご紹介しています。 
+弊社の[Gitter Live Chat（Gitterライブチャット）](https://gitter.im/deeplearning4j/deeplearning4j)に参加されることをおすすめします。Gitterでは、ヘルプが必要な方へのサポートを提供し、フィードバックも受け付けています。なお、質問のある方は、以下のガイドにいくつかの質問とその回答を紹介していますので、できればそちらを先にお読みください。ディープラーニングの始め方が分からない初心者の方には[こちら](https://deeplearning4j.org/ja/deeplearningforbeginners.html)でディープラーニングの学習ができるコースのリンク、読み物、その他のリソースをご紹介しています。 
 
 #### コードについて
 
@@ -82,7 +82,7 @@ Macをお使いの方は、以下のコマンドを入力してください。
 brew install maven
 ```
 
-MavenはJavaの開発者の間で広く使用されており、 DL4Jには必要不可欠です。これまでMavenを使う機会がなかった方は、[ApacheのMavenに関する概要](http://maven.apache.org/what-is-maven.html)、及びトラブルシューティングのヒントを載せた弊社の[Javaのプログラマーでない方々のためのMavenガイド](http://deeplearning4j.org/maven.html)をお読みください。IvyやGradleなど[その他のビルドツール](../buildtools)も使用できますが、Mavenが最も使いやすいでしょう。
+MavenはJavaの開発者の間で広く使用されており、 DL4Jには必要不可欠です。これまでMavenを使う機会がなかった方は、[ApacheのMavenに関する概要](http://maven.apache.org/what-is-maven.html)、及びトラブルシューティングのヒントを載せた弊社の[Javaのプログラマーでない方々のためのMavenガイド](http://deeplearning4j.org/ja/maven.html)をお読みください。IvyやGradleなど[その他のビルドツール](../buildtools)も使用できますが、Mavenが最も使いやすいでしょう。
 
 #### <a name="IntelliJ">IntelliJ IDEA</a>
 
@@ -139,7 +139,7 @@ IntelliJ内で、最初に実行するDeeplearning4jのサンプルを選ぶ必�
 
 ![run IntelliJ example](./img/mlp_classifier_viz.png)
 
-お疲れ様でした！たった今、Deeplearning4jでの初めてのニューラルネットワークのトレーニングが完了しました。ほっと一息着いたところで、次のチュートリアルに進んでみませんか?[**初心者のためのMNIST**](https://deeplearning4j.org/ja/mnist-for-beginners)では、画像の分類方法が学習できます。 
+お疲れ様でした！たった今、Deeplearning4jでの初めてのニューラルネットワークのトレーニングが完了しました。無事終了したところで、次のチュートリアル[**初心者のためのMNIST**](https://deeplearning4j.org/ja/mnist-for-beginners)進んでみませんか?このチュートリアルでは、画像の分類方法をご説明します。 
 
 ## 次のステップ
 
@@ -170,3 +170,4 @@ IntelliJ内で、最初に実行するDeeplearning4jのサンプルを選ぶ必�
 **質問：** 次のようなエラーが発生します。`Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll`.そしてJVMがシャットダウンしてしまいます。（クラッシュはしませんが、ストップしてしまいます ... ）
 
 **回答：** `rc3.10`やそれ以降（弊社では0.4.0）は、ライブラリ`libnd4j`がパスにあってもIntelのマス カーネル ライブラリー（MKL）を正常に読み込みません。しかし、この問題は、`System.loadLibrary("mkl_rt")`を追加すると解消されます。
+
