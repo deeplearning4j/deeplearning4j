@@ -470,4 +470,47 @@ public class ConvolutionUtils {
                             + Arrays.toString(padding));
         }
     }
+
+    /**
+     * Perform validation on the CNN3D layer kernel/stride/padding. Expect 3d int[], with values > 0 for kernel size and
+     * stride, and values >= 0 for padding.
+     *
+     * @param kernelSize Kernel size array to check
+     * @param stride     Stride array to check
+     * @param padding    Padding array to check
+     */
+    public static void validateCnn3DKernelStridePadding(int[] kernelSize, int[] stride, int[] padding) {
+        if (kernelSize == null || kernelSize.length != 3) {
+            throw new IllegalStateException("Invalid kernel size: expected int[] of length 3, got "
+                    + (kernelSize == null ? null : Arrays.toString(kernelSize)));
+        }
+
+        if (stride == null || stride.length != 3) {
+            throw new IllegalStateException("Invalid stride configuration: expected int[] of length 3, got "
+                    + (stride == null ? null : Arrays.toString(stride)));
+        }
+
+        if (padding == null || padding.length != 3) {
+            throw new IllegalStateException("Invalid padding configuration: expected int[] of length 3, got "
+                    + (padding == null ? null : Arrays.toString(padding)));
+        }
+
+        if (kernelSize[0] <= 0 || kernelSize[1] <= 0 || kernelSize[2] <= 0) {
+            throw new IllegalStateException(
+                    "Invalid kernel size: values must be positive (> 0) for all dimensions. Got: "
+                            + Arrays.toString(kernelSize));
+        }
+
+        if (stride[0] <= 0 || stride[1] <= 0 || stride[2] <= 0) {
+            throw new IllegalStateException(
+                    "Invalid stride configuration: values must be positive (> 0) for all dimensions. Got: "
+                            + Arrays.toString(stride));
+        }
+
+        if (padding[0] < 0 || padding[1] < 0 || padding[2] < 0) {
+            throw new IllegalStateException(
+                    "Invalid padding configuration: values must be >= 0 for all dimensions. Got: "
+                            + Arrays.toString(padding));
+        }
+    }
 }
