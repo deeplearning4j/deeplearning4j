@@ -1368,6 +1368,10 @@ struct __registratorDouble_##NAME {\
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
+#define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')\
+                                        shape::shapeBuffer(shape::rank(SRC), shape::shapeOf(SRC), TGT);\
+                                    else \
+                                        shape::shapeBufferFortran(shape::rank(SRC), shape::shapeOf(SRC), TGT);\
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;

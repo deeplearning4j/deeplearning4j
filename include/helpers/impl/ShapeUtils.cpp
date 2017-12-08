@@ -298,12 +298,16 @@ int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dime
 template <typename T>
 bool ShapeUtils<T>::areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2)
 {
+    return areShapesBroadcastable((int *) arr1.getShapeInfo(), (int *) arr2.getShapeInfo());   
+}
 
-    int minRank = arr1.rankOf() < arr2.rankOf() ? arr1.rankOf() : arr2.rankOf();    
+template <typename T>
+bool ShapeUtils<T>::areShapesBroadcastable(int *arr1, int *arr2) {
+    int minRank = shape::rank(arr1) < shape::rank(arr2) ? shape::rank(arr1) : shape::rank(arr2);
        
-    for (int i = -1; i >= -minRank; --i)        
-        if (arr1.sizeAt(i) != arr2.sizeAt(i) && arr1.sizeAt(i) != 1 && arr2.sizeAt(i) != 1)
-            return false;
+    for (int i = -1; i >= -minRank; --i) {
+        if (shape::sizeAt(arr1, i) != shape::sizeAt(arr2, i) && shape::sizeAt(arr1, i) != 1 && shape::sizeAt(arr2, i) != 1) return false;
+    }
     
     return true;
 }
@@ -315,17 +319,21 @@ bool ShapeUtils<T>::areShapesBroadcastable(const NDArray<T> &arr1, const NDArray
 template <typename T>
 bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<T> &min, const bool evalMinMax, int*& resultShapeInfo)
 {
-    
+    return evalBroadcastShapeInfo((int *) max.getShapeInfo(), (int *) min.getShapeInfo(), evalMinMax, resultShapeInfo, max.getWorkspace());
+}
+
+template <typename T>
+bool ShapeUtils<T>::evalBroadcastShapeInfo(int *max, int*min, const bool evalMinMax, int*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
     // check whether broadcast operation is possible for input arrays
     if(!areShapesBroadcastable(max, min))
         return false;
 
-    int* maxShapeInfo = max.getShapeInfo(); 
-    int* minShapeInfo = min.getShapeInfo();
+    int* maxShapeInfo = max; //max.getShapeInfo(); 
+    int* minShapeInfo = min; //min.getShapeInfo();
 
-    if(evalMinMax && (max.rankOf() < min.rankOf())) {
-        maxShapeInfo = min.getShapeInfo(); 
-        minShapeInfo = max.getShapeInfo();
+    if(evalMinMax && (shape::rank(max) < shape::rank(min))) {
+        maxShapeInfo = min;
+        minShapeInfo = max;
     }
        
     const int  maxRank      = maxShapeInfo[0];
@@ -335,13 +343,13 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
     if(resultShapeInfo != nullptr)
         throw "ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !" ;
     
-    ALLOCATE(resultShapeInfo, max.getWorkspace(), shape::shapeInfoLength(maxRank), int);
+    ALLOCATE(resultShapeInfo, workspace, shape::shapeInfoLength(maxRank), int);
     memcpy(resultShapeInfo, maxShapeInfo, shape::shapeInfoLength(maxRank) * sizeof(int));
     for (int i = 0; i < minRank; ++i)
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
             resultShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
 
-    shape::updateStrides(resultShapeInfo, max.ordering());
+    shape::updateStrides(resultShapeInfo, shape::order(max));
 
     return true;
 }

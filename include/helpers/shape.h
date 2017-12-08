@@ -109,6 +109,12 @@ namespace shape {
 #ifdef __CUDACC__
 __host__ __device__
 #endif
+    ND4J_EXPORT int sizeAt(int *shape, int dim);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     ND4J_EXPORT void traceNew(int id);
 
 
@@ -3486,6 +3492,16 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
                 return false;
 
         return true;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int sizeAt(int *shape, int dim) {
+        if (dim >= 0)
+            return shape[1+dim];
+        else
+            return shape[1+(rank(shape) + dim)];
     }
 
     /**

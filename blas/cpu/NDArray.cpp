@@ -828,6 +828,12 @@ template <typename T>
         return functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extraParams);
     }
 
+    template<typename T>
+    template<typename OpName>
+    Nd4jIndex NDArray<T>::indexReduceNumber(T *extraParams) {
+        return (Nd4jIndex) functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, extraParams);
+    }
+
 // perform array transformation
     template<typename T>
     template<typename OpName>

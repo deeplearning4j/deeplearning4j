@@ -57,3 +57,12 @@ TEST_F(NDArrayTest2, Test_ByteVector_3) {
 
     delete restored;
 }
+
+TEST_F(NDArrayTest2, Test_IndexReduce_1) {
+    NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
+
+    float extras[] = {3.0, 0.0, 10};
+    int idx = x.template indexReduceNumber<simdOps::FirstIndex<float>>(extras);
+
+    ASSERT_EQ(2, idx);
+}

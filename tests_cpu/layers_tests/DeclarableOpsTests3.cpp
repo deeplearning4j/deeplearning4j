@@ -186,7 +186,61 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
+    NDArray<float> x('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {1, 4}, {1, 3, 6, 10});
 
+    nd4j::ops::cumsum<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
+    NDArray<float> x('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
+    NDArray<float> exp('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
+
+    nd4j::ops::cumsum<float> op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
+    NDArray<float> x('c', {1, 6}, {1, 2, 3, 4, 5, 6});
+    NDArray<float> y('c', {1, 3}, {1, 3, 5});
+
+    NDArray<float> exp0('c', {1, 3}, {2, 4, 6});
+    NDArray<float> exp1('c', {1, 3}, {1, 3, 5});
+
+    nd4j::ops::listdiff<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z0 = result->at(0);
+    auto z1 = result->at(1);
+
+    ASSERT_TRUE(exp0.isSameShape(z0));
+    ASSERT_TRUE(exp0.equalsTo(z0));
+
+    ASSERT_TRUE(exp1.isSameShape(z1));
+    ASSERT_TRUE(exp1.equalsTo(z1));
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests3, Test_Range_1) {
     NDArray<float> start('c', {1, 1}, {2});
