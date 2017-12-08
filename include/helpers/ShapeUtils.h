@@ -68,6 +68,9 @@ namespace nd4j {
 
         static std::string shapeAsString(NDArray<T> &array);
         static std::string shapeAsString(std::vector<int>& shape);
+
+        // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
+        static int* evalDiagShapeInfo(const NDArray<T>& arr);
     };
 
 

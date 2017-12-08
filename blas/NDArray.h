@@ -90,7 +90,7 @@ namespace nd4j {
 		// copy constructor
         NDArray(const NDArray<T>& other);
 
-		// constructor new NDArray using shape information from "shape" array, set all elements in new array to be zeros
+		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
 		NDArray(const int* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument

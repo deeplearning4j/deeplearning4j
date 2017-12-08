@@ -17,11 +17,11 @@ namespace nd4j {
 
         static ResultSet<T>* multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions);
 
-        static ResultSet<T>* allTensorsAlongDimension(NDArray<T>* ndArray, const std::vector<int> &dimensions);
+        static ResultSet<T>* allTensorsAlongDimension(const NDArray<T>* ndArray, const std::vector<int> &dimensions);
 
         static ResultSet<T>* allExamples(NDArray<T>* ndArray);
 
-        static ResultSet<T>* allTensorsAlongDimension(NDArray<T>* ndArray, const std::initializer_list<int> dimensions);
+        static ResultSet<T>* allTensorsAlongDimension(const NDArray<T>* ndArray, const std::initializer_list<int> dimensions);
 
         static NDArray<T>* tile(NDArray<T> *original, std::vector<int>& dimensions);
 
