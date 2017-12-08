@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -21,15 +22,21 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Recurrent Neural Network Loss Layer.<br>
+ * Convolutional Neural Network Loss Layer.<br>
  * Handles calculation of gradients etc for various objective functions.<br>
- * NOTE: Unlike {@link RnnOutputLayer} this RnnLossLayer does not have any parameters - i.e., there is no time
- * distributed dense component here. Consequently, the output activations size is equal to the input size.<br>
- * Input and output activations are same as other RNN layers: 3 dimensions with shape
- * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.
+ * NOTE: CnnLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
+ * Input and output activations are same as other CNN layers: 4 dimensions with shape [miniBatchSize,channels,height,width]<br>
+ * CnnLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
+ * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied depth-wise:
+ * that is, softmax is applied along dimension 1 (depth) for each minibatch, and x/y location separately.<br>
+ * <br>
+ * Note that 3 types of masking are supported: (n=minibatchSize, c=channels, h=height, w=width)<br>
+ * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1]<br>
+ * - Per x/y location masking: where each spatial X/Y location is present or not (all channels at a given x/y are masked by it).
+ * Mask shape: [n,h,w].<br>
+ * - Per output masking: Where each output activation value is present or not - mask shape [n,c,h,w] (same as output)<br>
  *
  * @author Alex Black
- * @see RnnOutputLayer
  */
 @Data
 @NoArgsConstructor
@@ -95,7 +102,7 @@ public class CnnLossLayer extends FeedForwardLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder() {
-
+            this.activationFn = Activation.IDENTITY.getActivationFunction();
         }
 
         public Builder(LossFunction lossFunction) {
