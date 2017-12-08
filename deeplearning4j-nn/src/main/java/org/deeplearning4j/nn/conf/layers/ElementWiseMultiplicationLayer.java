@@ -25,7 +25,8 @@ import java.util.Map;
 public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.layers.FeedForwardLayer {
 
 //  ATTENTION!!! we have to add an empty constructor for custom layers otherwise we will have errors when loading the model
-    public ElementWiseMultiplicationLayer(){}
+    public ElementWiseMultiplicationLayer(){
+    }
 
     protected ElementWiseMultiplicationLayer(Builder builder){
         super(builder);
@@ -71,7 +72,7 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if (getDropOut() > 0) {
+        if  (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...

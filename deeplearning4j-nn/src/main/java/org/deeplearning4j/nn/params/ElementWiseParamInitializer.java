@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.weights.WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER;
+import static org.deeplearning4j.nn.weights.WeightInitUtil.initWeights;
 
 /**
  * created by jingshu
@@ -105,10 +106,10 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
 
     protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist,
                                           INDArray weightParamView, boolean initializeParameters) {
-        int[] shape = new int[] {nIn};
+        int[] shape = new int[] {1,nIn};
 
         if (initializeParameters) {
-            INDArray ret = ElementWiseParamInitializer.initWeights(nIn, //Fan in
+            INDArray ret = initWeights(nIn, //Fan in
                     nOut, //Fan out
                     shape, weightInit, dist, DEFAULT_WEIGHT_INIT_ORDER,weightParamView);
             return ret;
@@ -118,63 +119,6 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
         }
     }
 
-    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme,
-                                       Distribution dist, char order, INDArray paramView) {
-        //Note: using f order here as params get flattened to f order
-
-        INDArray ret;
-        switch (initScheme) {
-            case DISTRIBUTION:
-                ret = dist.sample(shape);
-                break;
-            case RELU:
-                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
-                break;
-            case RELU_UNIFORM:
-                double u = Math.sqrt(6.0 / fanIn);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
-                break;
-            case SIGMOID_UNIFORM:
-                double r = 4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-r, r));
-                break;
-            case UNIFORM:
-                double a = 1.0 / Math.sqrt(fanIn);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
-                break;
-            case XAVIER:
-                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
-                break;
-            case XAVIER_UNIFORM:
-                //As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
-                //Eq 16: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
-                double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
-                break;
-            case XAVIER_FAN_IN:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
-                break;
-            case XAVIER_LEGACY:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(shape[0] + shape[1]));
-                break;
-            case ZERO:
-                ret = Nd4j.create(shape, order);
-                break;
-
-            default:
-                throw new IllegalStateException("Illegal weight init value: " + initScheme);
-        }
-
-        INDArray flat = Nd4j.toFlattened(order, ret);
-        if (flat.length() != paramView.length())
-            throw new RuntimeException("ParamView length does not match initialized weights length (view length: "
-                    + paramView.length() + ", view shape: " + Arrays.toString(paramView.shape())
-                    + "; flattened length: " + flat.length());
-
-        paramView.assign(flat);
-
-        return paramView;
-    }
 
 }
 
