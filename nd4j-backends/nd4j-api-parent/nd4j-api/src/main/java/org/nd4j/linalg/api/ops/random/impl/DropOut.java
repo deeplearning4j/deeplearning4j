@@ -82,7 +82,7 @@ public class DropOut extends BaseRandomOp {
 
     @Override
     public Type opType() {
-        return Type.TRANSFORM;
+        return Type.RANDOM ;
     }
 
     @Override

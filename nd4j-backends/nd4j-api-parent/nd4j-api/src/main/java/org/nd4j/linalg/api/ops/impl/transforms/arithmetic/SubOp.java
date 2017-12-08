@@ -22,9 +22,10 @@ package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,46 +33,28 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class SubOp extends BaseTransformOp {
-    public SubOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public SubOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
+public class SubOp extends DynamicCustomOp {
 
     public SubOp() {}
 
-    public SubOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public SubOp( SameDiff sameDiff, DifferentialFunction[] args, boolean inPlace) {
+        super(null, sameDiff, args, inPlace);
     }
 
-    public SubOp(INDArray x) {
-        super(x);
-    }
-
-    public SubOp(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public SubOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public SubOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public SubOp( INDArray[] inputs, INDArray[] outputs) {
+        super(null, inputs, outputs);
     }
 
     @Override
-    public int opNum() {
-        return 9;
+    public List<int[]> calculateOutputShape() {
+        return Arrays.asList(arg().getResultShape());
     }
 
     @Override
     public String opName() {
         return "sub";
     }
+
 
     @Override
     public String onnxName() {
@@ -81,16 +64,6 @@ public class SubOp extends BaseTransformOp {
     @Override
     public String tensorflowName() {
         return "Sub";
-    }
-
-
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to subtract");
     }
 
 

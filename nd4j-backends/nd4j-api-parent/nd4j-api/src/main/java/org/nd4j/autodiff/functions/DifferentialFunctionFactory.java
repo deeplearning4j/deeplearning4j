@@ -719,14 +719,14 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     @Override
     public DifferentialFunction sub(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new SubOp(sameDiff(),differentialFunction,i_v));
+        return sameDiff().setupFunction(new SubOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},false));
 
     }
 
     @Override
     public DifferentialFunction subi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new SubOp(sameDiff(),differentialFunction,i_v,true));
+        return sameDiff().setupFunction(new SubOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},true));
 
     }
 

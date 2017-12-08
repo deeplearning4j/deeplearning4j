@@ -143,17 +143,7 @@ public class Reshape extends DynamicCustomOp {
 
     }
 
-    @Override
-    public void addArrayInputArguments() {
-        if(numInputArguments() > 0)
-            return;
-        val inputArray = sameDiff.getArrForVertexId(args()[0].resultVertexId());
-        if(inputArray == null) {
-            throw new ND4JIllegalStateException("Unable to add null array!");
-        }
 
-        addInputArgument(inputArray);
-    }
 
     @Override
     public void addInputArgument(INDArray... arg) {

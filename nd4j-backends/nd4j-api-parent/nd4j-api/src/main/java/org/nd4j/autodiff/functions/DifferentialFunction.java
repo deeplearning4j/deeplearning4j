@@ -57,6 +57,14 @@ public abstract class DifferentialFunction implements Differential {
     @JsonIgnore
     protected Object[] extraArgs;
 
+    //array initialized method being called
+    @JsonIgnore
+    protected boolean isArrayInit = false;
+
+    //array already initialized
+    @JsonIgnore
+    protected  boolean arrayInitialized = false;
+
 
     /**
      * Initialize the function from the given
@@ -260,9 +268,14 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+
     //by default no op, used for certain situations like
     //place holder arrays
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+    public void initOutputWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        if(isArrayInit() || isArrayInitialized()) {
+            return;
+        }
+
         val shapeCalc = calculateOutputShape();
         if(hasPlaceHolderInputs() && shapeCalc != null && !shapeCalc.isEmpty()) {
             //update place holder shapes in case the shapes
@@ -274,7 +287,23 @@ public abstract class DifferentialFunction implements Differential {
                 sameDiff.putShapeForVertexId(resultVertexId(),shapeCalc.get(0));
 
         }
+
+        this.arrayInitialized = true;
     }
+
+    //by default no op, used for certain situations like
+    //place holder arrays
+    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        if(isArrayInit() || isArrayInitialized()) {
+            return;
+        }
+
+        for(val arg : args()) {
+            arg.initWithArrays(arrayMap,extraArgs);
+        }
+
+    }
+
 
 
     /**

@@ -101,7 +101,7 @@ public class TFGraphTestAllHelper {
             if (!inputs.isEmpty()) {
                 graph.execWithPlaceHolder(inputs); //This is expected to be just one result
             } else {
-                graph.execAndEndResult("output"); //there are graphs with no placeholders like g_00
+                graph.execAndEndResult(); //there are graphs with no placeholders like g_00
             }
             nd4jPred = graph.getVariable("output").getArr();
         } else if (execType.equals(ExecuteWith.LIBND4J)) {
@@ -148,7 +148,7 @@ public class TFGraphTestAllHelper {
         if (!inputs.isEmpty()) {
             graph.execWithPlaceHolder(inputs); //This is expected to be just one result
         } else {
-            graph.execAndEndResult("output"); //there are tests with no placeholders in the graph like g_00
+            graph.execAndEndResult(); //there are tests with no placeholders in the graph like g_00
         }
         for (String varName : graph.variableMap().keySet()) {
             if (!inputs.containsKey(varName)) { //avoiding placeholders

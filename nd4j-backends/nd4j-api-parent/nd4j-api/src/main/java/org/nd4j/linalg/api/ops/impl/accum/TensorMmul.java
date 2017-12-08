@@ -257,15 +257,31 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        if (isArrayInit() || isArrayInitialized())
+            return;
+
+
         super.initWithArrays(arrayMap);
-        for(int i = 0; i < args().length; i++) {
-            if(args()[i].getResultShape() == null) {
+        for (int i = 0; i < args().length; i++) {
+            if (args()[i].getResultShape() == null) {
                 throw new ND4JIllegalStateException("Unable to get shape for arg " + i);
             }
         }
-        sameDiff.updateShapeForVertexId(vertexId,calculateOutputShape().get(0));
-    }
 
+        val var = sameDiff.getVariableForVertexId(resultVertexId());
+        INDArray arr = sameDiff.getArrForVertexId(var.resultVertexId());
+        if (arr == null) {
+            arr = var.getWeightInitScheme().create(calculateOutputShape().get(0));
+            sameDiff.putArrayForVertexId(vertexId, arr);
+            addOutputArgument(arr);
+        }
+
+        else if(numOutputArguments() < outputFunctions().length)
+            addOutputArgument(arr);
+
+
+
+    }
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);

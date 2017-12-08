@@ -286,17 +286,39 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public INDArray x() {
+        if(x == null) {
+            if(sameDiff != null) {
+                this.x = sameDiff.getArrForVertexId(args()[0].resultVertexId());
+                if(x == null) {
+                    throw new ND4JIllegalStateException("No input found for vertex id " + Arrays.toString(args()[0].resultVertexId()) + " and op type " + opName() + " and shape " + Arrays.toString(args()[0].getResultShape()));
+                }
+            }
+        }
         return x;
     }
 
     @Override
     public INDArray y() {
+        if(y == null) {
+            if(sameDiff != null && args().length > 1) {
+                this.y = sameDiff.getArrForVertexId(args()[1].resultVertexId());
+                if(y == null) {
+                    throw new ND4JIllegalStateException("No input found for vertex id " + Arrays.toString(args()[1].resultVertexId()) + " and op type " + opName());
+                }
+            }
+        }
         return y;
     }
 
 
     @Override
     public INDArray z() {
+        if(z == null) {
+            if(sameDiff != null) {
+                this.z = sameDiff.getArrForVertexId(resultVertexId());
+            }
+        }
+
         return z;
     }
 

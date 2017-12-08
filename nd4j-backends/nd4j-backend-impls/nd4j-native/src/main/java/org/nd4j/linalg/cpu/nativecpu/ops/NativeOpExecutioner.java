@@ -630,6 +630,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             st = profilingHookIn(op);
 
 
+
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
 
@@ -1535,6 +1536,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         val result = new ArrayList<int[]>();
+        if(op.numInputArguments() < 1) {
+            throw new ND4JIllegalStateException("No inputs found for op " + op);
+        }
+
 
         val inputShapes = new PointerPointer<>(op.numInputArguments());
         val inputArgs = op.inputArguments();

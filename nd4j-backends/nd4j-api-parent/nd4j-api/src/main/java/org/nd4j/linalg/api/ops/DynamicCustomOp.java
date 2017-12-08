@@ -316,11 +316,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         if(outputShapes != null)
             return outputShapes;
-        if(inputArguments.isEmpty()) {
-            addArrayInputArguments();
-            if(inputArguments.isEmpty())
-                throw new ND4JIllegalStateException("Inputs must not be empty when calling this method");
-        }
 
 
         /**
@@ -331,34 +326,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
 
-    public void addArrayInputArguments() {
-        if(!inputArguments.isEmpty()) {
-            return;
-        }
 
-
-        val args = args();
-        for(val func : args) {
-            val funcVar = sameDiff.getVariableForVertexId(func.resultVertexId());
-            if(func.getResultShape() == null) {
-                log.warn("Unable to initialize shape of " +  func + " for vertex id " + Arrays.toString(func.resultVertexId()));
-                return;
-            }
-
-            if(!sameDiff.arrayAlreadyExistsForVertexId(func.resultVertexId())) {
-                val arr = funcVar.getWeightInitScheme().create(func.getResultShape());
-                sameDiff.putArrayForVertexId(func.resultVertexId(),arr);
-                addInputArgument(arr);
-            }
-            else {
-                //already exists, just add
-                addInputArgument(sameDiff.getArrForVertexId(func.resultVertexId()));
-            }
-
-
-        }
-
-    }
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
@@ -481,16 +449,81 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void initOutputWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        val outputFunctions = outputFunctions();
+
+        //ensure output functions are initialized as well
+        for(val outputFunction : outputFunctions) {
+            outputFunction.initWithArrays(arrayMap,extraArgs);
+        }
+
+
+        if(outputArguments.size() < outputFunctions.length) {
+            //ambiguous state, clear just in case
+            outputArguments.clear();
+            /**
+             * Need to think about how I want to handle this.
+             * Should each vertex id set itself?
+             *
+             *
+             */
+            for(val function : outputFunctions) {
+                INDArray arr = sameDiff.getArrForVertexId(function.resultVertexId());
+                if(arr == null) {
+                    val var = sameDiff.getVariableForVertexId(function.resultVertexId());
+                    arr = var.getWeightInitScheme().create(function.getResultShape());
+                    sameDiff.putArrayForVertexId(function.resultVertexId(),arr);
+                }
+
+                addOutputArgument(arr);
+            }
+        }
+
+        if(outputFunctions.length > 1) {
+            INDArray arr = sameDiff.getVariableForVertexId(resultVertexId()).getArr();
+            if (arr == null) {
+                val var = sameDiff.getVariableForVertexId(resultVertexId());
+                arr = var.getWeightInitScheme().create(getResultShape());
+                sameDiff.putArrayForVertexId(resultVertexId(), arr);
+            }
+        }
+
+        //alias
+        else {
+            val arr = sameDiff.getArrForVertexId(outputFunctions[0].resultVertexId());
+            if(sameDiff.getArrForVertexId(resultVertexId()) == null)
+                sameDiff.putArrayForVertexId(resultVertexId(),arr);
+
+        }
+
+
+
+    }
+
+    @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        if(isArrayInit() || isArrayInitialized()) {
+            return;
+        }
+
+        //already initialized
+        if(inputArguments.size() == args().length && outputArguments.size() == outputFunctions().length || isArrayInit() || isArrayInitialized())
+            return;
+
+
         val args = args();
+
+
+        //ensure there's no redundant calls
+        isArrayInit = true;
+        for(int i = 0; i < args.length; i++) {
+            args[i].initWithArrays(arrayMap,extraArgs);
+        }
+
+
         for(int i = 0; i < args().length; i++) {
             val var = sameDiff.getVariableForVertexId(args()[i].resultVertexId());
             val func = args[i];
-            if(func instanceof DynamicCustomOp) {
-                DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) func;
-                dynamicCustomOp.addArrayInputArguments();
-            }
-
 
             if(var != null) {
                 if(var.getArr() == null) {
@@ -501,10 +534,23 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     if(shape == null) {
                         throw new ND4JIllegalStateException("Unable to resolve shape for variable " + var.getVarName());
                     }
+
                     sameDiff.putArrayForVertexId(var.resultVertexId(),var.getWeightInitScheme().create(shape));
                 }
+
+                addInputArgument(var.getArr());
             }
+
         }
+
+
+
+        if(inputArguments.size()  != args.length)
+            throw new ND4JIllegalStateException("Input arguments not initialized!");
+
+        arrayInitialized = true;
+
+
     }
 
     public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {

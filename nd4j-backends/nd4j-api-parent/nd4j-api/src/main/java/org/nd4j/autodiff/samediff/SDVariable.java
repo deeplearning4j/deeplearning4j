@@ -48,7 +48,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                        WeightInitScheme weightInitScheme,
                        int[] vertexId) {
         if(shape != null && shape.length >= 2)
-             sameDiff.putShapeForVertexId(vertexId,Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape));
+            sameDiff.putShapeForVertexId(vertexId,Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape));
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
         this.vertexId = vertexId;
@@ -101,6 +101,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         //no-op
+    }
+
+
+    /**
+     * Allocate and return a  new array
+     * based on the vertex id and weight initialization.
+     * @return the allocated array
+     */
+    public INDArray storeAndAllocateNewArray() {
+        if(getResultShape() == null) {
+            throw new ND4JIllegalStateException("Unable to allocate new array. No shape found for variable " + varName);
+        }
+
+        val arr = getWeightInitScheme().create(getResultShape());
+        sameDiff.putArrayForVertexId(vertexId,arr);
+        return arr;
     }
 
     /**

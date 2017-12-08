@@ -79,9 +79,15 @@ public class Transpose extends DynamicCustomOp {
                 val permuteArrayOp = sameDiff.getArrForVertexId(args[1].resultVertexId());
                 if(permuteArrayOp != null) {
                     this.permuteDims = permuteArrayOp.data().asInt();
-                    for(int i = 0; i < permuteDims.length; i++) {
-                        addIArgument(permuteDims[i]);
+                    if(permuteDims.length < args[0].getResultShape().length) {
+                        this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
                     }
+                    else {
+                        for(int i = 0; i < permuteDims.length; i++) {
+                            addIArgument(permuteDims[i]);
+                        }
+                    }
+
                 }
                 else
                     this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
@@ -97,6 +103,10 @@ public class Transpose extends DynamicCustomOp {
             for(int i = 0; i < permuteDims.length; i++) {
                 addIArgument(permuteDims[i]);
             }
+
+
+        if(permuteDims != null && permuteDims.length < arg().getResultShape().length)
+            throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");
     }
 
     @Override
@@ -122,6 +132,21 @@ public class Transpose extends DynamicCustomOp {
                 addIArgument(permuteDims[i]);
             }
         }
+
+
+        INDArray arr = sameDiff.getArrForVertexId(arg().resultVertexId());
+        if(arr == null) {
+            val  arrVar = sameDiff.getVariableForVertexId(arg().resultVertexId());
+            arr = arrVar.getWeightInitScheme().create(arrVar.getResultShape());
+            sameDiff.putArrayForVertexId(arg().resultVertexId(),arr);
+        }
+
+        addInputArgument(arr);
+
+
+        if(permuteDims != null && permuteDims.length < arg().getResultShape().length)
+            throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");
+
 
     }
 

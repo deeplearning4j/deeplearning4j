@@ -127,7 +127,6 @@ public class StridedSlice extends DynamicCustomOp {
             // do nothing
         }
 
-        addArrayInputArguments();
 
 
     }
@@ -135,7 +134,6 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        addArrayInputArguments();
     }
 
     @Override

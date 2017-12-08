@@ -21,17 +21,14 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -173,7 +170,26 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        if(isArrayInit() || isArrayInitialized()) {
+            return;
+        }
+
+
         super.initWithArrays(arrayMap);
+
+
+
+        val args = args();
+        for(val arg : args) {
+            arg.initWithArrays(arrayMap,extraArgs);
+        }
+}
+
+
+    @Override
+    public void initOutputWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+        super.initOutputWithArrays(arrayMap, extraArgs);
+
         if(!sameDiff.shapeAlreadyExistsForVertexId(vertexId) && sameDiff.getArrForVertexId(vertexId) == null) {
             val shape = calculateOutputShape();
             if (shape.isEmpty() || shape.get(0) == null) {
@@ -183,24 +199,64 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             sameDiff.putShapeForVertexId(vertexId, shape.get(0));
 
         }
-    }
 
+
+
+        if(!sameDiff.shapeAlreadyExistsForVertexId(vertexId) && sameDiff.getArrForVertexId(vertexId) == null) {
+            val shape = calculateOutputShape();
+            if (shape.isEmpty() || shape.get(0) == null) {
+                throw new ND4JIllegalStateException("Shape should not be null or empty");
+            }
+
+            sameDiff.putShapeForVertexId(vertexId, shape.get(0));
+
+        }
+
+        val args = args();
+        if(sameDiff.getArrForVertexId(vertexId) == null || x == null) {
+            if(sameDiff.getArrForVertexId(args[0].resultVertexId()) != null) {
+                this.x = sameDiff.getArrForVertexId(args[0].resultVertexId());
+            }
+            else
+                throw new ND4JIllegalStateException("No input found for vertex id " + Arrays.toString(resultVertexId()) + " and op " + opName());
+            if(args().length  > 1) {
+                if(sameDiff.getArrForVertexId(args[1].resultVertexId()) != null) {
+                    this.y = sameDiff.getArrForVertexId(args[1].resultVertexId());
+                }
+
+                else
+                    throw new ND4JIllegalStateException("No second input found for vertex id " + Arrays.toString(resultVertexId()) + " and op " + opName());
+
+            }
+        }
+
+        arrayInitialized = true;
+
+        val outputFunctions = outputFunctions();
+       /*
+        for(val arg : outputFunctions) {
+            arg.initOutputWithArrays(arrayMap,extraArgs);
+        }
+*/
+        if(sameDiff.getArrForVertexId(vertexId) == null || z == null) {
+            if(sameDiff.getArrForVertexId(args[0].resultVertexId()) != null) {
+                this.z = sameDiff.getArrForVertexId(outputFunctions[0].resultVertexId());
+            }
+            else
+                throw new ND4JIllegalStateException("No input found for vertex id " + Arrays.toString(resultVertexId()) + " and op " + opName());
+        }
+    }
 
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>(1);
-        ret.add(arg().getResultShape());
+        val arr = sameDiff.getArrForVertexId(arg().resultVertexId());
+        if(arr == null)
+            throw new ND4JIllegalStateException("Array must not be null for argument!");
+        ret.add(arr.shape());
         return ret;
     }
 
 
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
 
 }
