@@ -48,10 +48,8 @@ public class KerasConvolution1DTest {
     private final double DROPOUT_KERAS = 0.3;
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
-    private final int[] DILATION = new int[]{2, 2};
-    private final int[] INPUT_SHAPE = new int[]{100, 20};
+    private final int[] DILATION = new int[]{2};
     private final int[] STRIDE = new int[]{3, 4};
-    private final PoolingType POOLING_TYPE = PoolingType.MAX;
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
