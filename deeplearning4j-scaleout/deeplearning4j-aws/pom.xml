@@ -21,12 +21,12 @@
   <parent>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.9.2_skil-1.0.0</version>
+    <version>0.9.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>deeplearning4j-aws_2.11</artifactId>
   <name>DeepLearning4j-AWS</name>
-  <version>0.9.2_skil-1.0.0_spark_1</version>
+  <version>0.9.2_spark_1-SNAPSHOT</version>
 
   <build>
     <plugins>
