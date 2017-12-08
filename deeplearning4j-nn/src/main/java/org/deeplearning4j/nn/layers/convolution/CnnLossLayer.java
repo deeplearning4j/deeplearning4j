@@ -156,7 +156,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
 
     @Override
     public Type type() {
-        return Type.RECURRENT;
+        return Type.CONVOLUTIONAL;
     }
 
     @Override
@@ -189,9 +189,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                                                           int minibatchSize) {
-        this.maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
-        this.maskState = currentMaskState;
-
+        this.maskArray = maskArray;
         return null; //Last layer in network
     }
 
