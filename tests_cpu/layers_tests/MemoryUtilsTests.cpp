@@ -17,6 +17,12 @@ TEST_F(MemoryUtilsTests, BasicRetrieve_1) {
     MemoryReport reportA;
     MemoryReport reportB;
 
+#ifdef _WIN32
+    if (1 > 0)
+        return;
+#endif
+
+
     MemoryUtils::retrieveMemoryStatistics(reportA);
 
 
