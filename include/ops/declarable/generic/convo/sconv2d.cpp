@@ -48,11 +48,13 @@ namespace nd4j {
             const int inY = input->shapeOf()[2];
             const int inX = input->shapeOf()[3];
 
+            REQUIRE_TRUE(inDepth == input->sizeAt(1), 0, "Sconv2d: input number of channels shout match weightsDepth dim 1, but got %i vs %i instead", input->sizeAt(1), inDepth);
+
             if (weightsPoint != nullptr) {
-                REQUIRE_TRUE(weightsPoint->sizeAt(2) == 1  && weightsPoint->sizeAt(3) == 1, 0, "For sconv2d point-wise kernelHeight and kernelWidth should be equal to 1");
+                REQUIRE_TRUE(weightsPoint->sizeAt(2) == 1  && weightsPoint->sizeAt(3) == 1, 0, "Sconv2d: for sconv2d point-wise kernelHeight and kernelWidth should be equal to 1");
             }
 
-            REQUIRE_TRUE(weightsDepth->shapeOf()[2] == kY && weightsDepth->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weightsDepth->sizeAt(2), weightsDepth->sizeAt(3));
+            REQUIRE_TRUE(weightsDepth->shapeOf()[2] == kY && weightsDepth->shapeOf()[3] == kX, 0, "Sconv2d: kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weightsDepth->sizeAt(2), weightsDepth->sizeAt(3));
 
             if (input->sizeAt(1) == 1) {
                 nd4j_debug("Separable conv2d for 1 channel equals to standard conv2d\n","");
@@ -109,7 +111,6 @@ namespace nd4j {
                     op.execute({z_, weightsPoint}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
                 else
                     op.execute({z_, weightsPoint, bias}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
-
 
                 delete z_;
             }

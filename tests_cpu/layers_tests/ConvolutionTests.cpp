@@ -668,7 +668,7 @@ TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
 }
 
 TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
-    NDArray<double> input('c', {3, 8, 8, 8});
+    NDArray<double> input('c', {3, 3, 8, 8});
     NDArray<double> weightsD('c', {1, 3, 1, 1});
     NDArray<double> weightsP('c', {2, 3, 1, 1});
     NDArray<double> bias('c', {1, 2});
