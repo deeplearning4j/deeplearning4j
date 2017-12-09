@@ -20,7 +20,6 @@ public class TFGraphTestAllSameDiff {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
-    private Map<String, INDArray[]> intermediatePredictions;
     private static final ExecuteWith executeWith = ExecuteWith.SAMEDIFF;
 
     @Parameterized.Parameters
@@ -28,11 +27,10 @@ public class TFGraphTestAllSameDiff {
         return fetchTestParams(executeWith);
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, Map<String, INDArray[]> intermediatePredictions) throws IOException {
+    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
-        this.intermediatePredictions = intermediatePredictions;
     }
 
     @Test
@@ -40,15 +38,5 @@ public class TFGraphTestAllSameDiff {
         Nd4j.create(1);
         checkOnlyOutput(inputs, predictions, modelName, executeWith);
     }
-
-    /*
-    @Test
-    public void testAlsoIntermediate() throws Exception {
-        Nd4j.create(1);
-        checkIntermediate(inputs,predictions,intermediatePredictions,modelName,executeWith);
-
-    }
-    */
-
 
 }

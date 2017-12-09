@@ -21,7 +21,6 @@ public class TFGraphTestAllLibnd4j {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
-    private Map<String, INDArray[]> intermediatePredictions;
     private static final TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
 
     @Parameterized.Parameters
@@ -29,11 +28,10 @@ public class TFGraphTestAllLibnd4j {
         return fetchTestParams(executeWith);
     }
 
-    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, Map<String, INDArray[]> intermediatePredictions) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
-        this.intermediatePredictions = intermediatePredictions; //currently unused
     }
 
     @Test
