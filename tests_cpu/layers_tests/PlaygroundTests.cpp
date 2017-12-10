@@ -15,6 +15,11 @@ class PlaygroundTests : public testing::Test {
 public:
     int numIterations = 10;
     int poolSize = 10;
+
+    PlaygroundTests() {
+        printf("\n");
+        fflush(stdout);
+    }
 };
 
 
@@ -128,6 +133,118 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
     nd4j_printf("Non-cached PWT time %lld us\n", outerTime / numIterations);
+
+    for (auto v: pool1)
+        delete v;
+
+    for (auto v: pool2)
+        delete v;
+}
+
+
+TEST_F(PlaygroundTests, ReductionTest_1) {
+    std::vector<NDArray<float> *> pool1(poolSize);
+    std::vector<NDArray<float> *> pool2(poolSize);
+    NDArray<float> source('c', {1, 100});
+    for (int e = 0; e < pool1.size(); e++) {
+        pool1[e] = source.dup();
+        pool2[e] = source.dup();
+    }
+
+
+    auto timeStart = std::chrono::system_clock::now();
+    int cnt = 0;
+    for (int e = 0; e < 100000; e++) {
+        auto v = pool1[poolSize - 1 - cnt];
+        auto r = v->sumNumber();
+
+        if (cnt == poolSize)
+            cnt = 0;
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+
+    auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
+    auto outerTimeMs = std::chrono::duration_cast<std::chrono::milliseconds> (timeEnd - timeStart).count();
+
+    nd4j_printf("Non-cached reduction time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000, outerTimeMs);
+
+    for (auto v: pool1)
+        delete v;
+
+    for (auto v: pool2)
+        delete v;
+}
+
+
+TEST_F(PlaygroundTests, ScalarTest_1) {
+    std::vector<NDArray<float> *> pool1(poolSize);
+    std::vector<NDArray<float> *> pool2(poolSize);
+    NDArray<float> source('c', {1, 100});
+    for (int e = 0; e < pool1.size(); e++) {
+        pool1[e] = source.dup();
+        pool2[e] = source.dup();
+    }
+
+
+    auto timeStart = std::chrono::system_clock::now();
+    int cnt = 0;
+    float *buff = source.buffer();
+    for (int e = 0; e < 100000; e++) {
+        //auto v = pool1[poolSize - 1 - cnt];
+        //v->template applyScalar<simdOps::Add<float>>(2.0f);
+        source.template applyScalar<simdOps::Add<float>>(2.0f);
+        //functions::scalar::ScalarTransform<float>::template transformEx<simdOps::Add<float>>(source.buffer(), 1, source.buffer(), 1, 2.0f, nullptr, source.lengthOf());
+        //functions::scalar::ScalarTransform<float>::template transform<simdOps::Add<float>>(buff, 1, buff, 1, 2.0f, nullptr, 100);
+
+        cnt++;
+        if (cnt == poolSize)
+            cnt = 0;
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+
+    auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
+    auto outerTimeMs = std::chrono::duration_cast<std::chrono::milliseconds> (timeEnd - timeStart).count();
+
+    nd4j_printf("Cached scalar time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000L, outerTimeMs);
+
+    for (auto v: pool1)
+        delete v;
+
+    for (auto v: pool2)
+        delete v;
+}
+
+
+TEST_F(PlaygroundTests, ScalarTest_2) {
+    std::vector<NDArray<float> *> pool1(poolSize);
+    std::vector<NDArray<float> *> pool2(poolSize);
+    NDArray<float> source('c', {1, 100});
+    for (int e = 0; e < pool1.size(); e++) {
+        pool1[e] = source.dup();
+        pool2[e] = source.dup();
+    }
+
+
+    auto timeStart = std::chrono::system_clock::now();
+    int cnt = 0;
+    float * array = source.buffer();
+    for (int e = 0; e < 100000; e++) {
+
+#pragma omp simd
+        for (int i = 0; i < source.lengthOf(); i++) {
+            array[i] = simdOps::Add<float>::op(array[i], 2.0f);
+        }
+
+        cnt++;
+        if (cnt == poolSize)
+            cnt = 0;
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+
+    auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
+    auto outerTimeMs = std::chrono::duration_cast<std::chrono::milliseconds> (timeEnd - timeStart).count();
+
+    nd4j_printf("Cached manual scalar time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000, outerTimeMs);
 
     for (auto v: pool1)
         delete v;

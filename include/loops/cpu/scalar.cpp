@@ -142,6 +142,11 @@ namespace functions {
 
             nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
 
+            if (xElementWiseStride == 1 && shape::elementWiseStride(resultShapeInfo) == 1 && xOrdering == resultOrdering) {
+                transform<OpType>(x, 1, result, 1, scalar, extraParams, shape::length(xShapeInfo));
+                return;
+            }
+
             int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
             if(xOrdering != resultOrdering || xElementWiseStride < 1 || resultElementWiseStride < 0) {
                 int shapeIter[MAX_RANK];
@@ -225,37 +230,51 @@ namespace functions {
             template<typename T>
             template<typename OpType>
             void ScalarTransform<T>::transform(T *x, int xStride, T *result, int resultStride, T scalar, T *extraParams, const Nd4jIndex n) {
-
+/*
                 Nd4jIndex elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-                Nd4jIndex span = (n / num_threads) + 8;
+*/
+                int num_threads = 1;
+                Nd4jIndex span = 100;// (n / num_threads) + 8;
 
                 if (xStride == 1 && resultStride == 1) {
-
+                    if (num_threads > 1) {
 #pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        Nd4jIndex tid = omp_get_thread_num();
-                        Nd4jIndex start = span * tid;
-                        Nd4jIndex end = span * (tid + 1);
-                        if (end > n) end = n;
+                        {
+                            Nd4jIndex tid = omp_get_thread_num();
+                            Nd4jIndex start = span * tid;
+                            Nd4jIndex end = span * (tid + 1);
+                            if (end > n) end = n;
 #pragma omp simd
-                        for (Nd4jIndex i = start; i < end; i++) {
+                            for (Nd4jIndex i = start; i < end; i++) {
+                                result[i] = OpType::op(x[i], scalar, extraParams);
+                            }
+                        }
+                    } else {
+#pragma omp simd
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             result[i] = OpType::op(x[i], scalar, extraParams);
                         }
                     }
                 }
 
                 else {
+                    if (num_threads > 1) {
 #pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        Nd4jIndex tid = omp_get_thread_num();
-                        Nd4jIndex start = span * tid;
-                        Nd4jIndex end = span * (tid + 1);
-                        if (end > n) end = n;
+                        {
+                            Nd4jIndex tid = omp_get_thread_num();
+                            Nd4jIndex start = span * tid;
+                            Nd4jIndex end = span * (tid + 1);
+                            if (end > n) end = n;
 #pragma omp simd
-                        for (Nd4jIndex i = start; i < end; i++) {
+                            for (Nd4jIndex i = start; i < end; i++) {
+                                result[i * resultStride] = OpType::op(x[i * xStride], scalar, extraParams);
+                            }
+                        }
+                    } else {
+#pragma omp simd
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             result[i * resultStride] = OpType::op(x[i * xStride], scalar, extraParams);
                         }
                     }

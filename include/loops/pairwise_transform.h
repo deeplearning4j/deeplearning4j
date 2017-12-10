@@ -381,28 +381,42 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 int span = (n / _threads) + 8;
 
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
+                    if (_threads > 1) {
 #pragma omp parallel num_threads(_threads) if (_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        Nd4jIndex tid = omp_get_thread_num();
-                        Nd4jIndex start = span * tid;
-                        Nd4jIndex end = span * (tid + 1);
-                        if (end > n) end = n;
+                        {
+                            Nd4jIndex tid = omp_get_thread_num();
+                            Nd4jIndex start = span * tid;
+                            Nd4jIndex end = span * (tid + 1);
+                            if (end > n) end = n;
 #pragma omp simd
-                        for (Nd4jIndex i = start; i < end; i++) {
+                            for (Nd4jIndex i = start; i < end; i++) {
+                                result[i] = OpType::op(dx[i], y[i], extraParams);
+                            }
+                        }
+                    } else {
+#pragma omp simd
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             result[i] = OpType::op(dx[i], y[i], extraParams);
                         }
                     }
                 }
                 else {
+                    if (_threads > 1) {
 #pragma omp parallel num_threads(_threads) if (_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        Nd4jIndex tid = omp_get_thread_num();
-                        Nd4jIndex start = span * tid;
-                        Nd4jIndex end = span * (tid + 1);
-                        if (end > n) end = n;
+                        {
+                            Nd4jIndex tid = omp_get_thread_num();
+                            Nd4jIndex start = span * tid;
+                            Nd4jIndex end = span * (tid + 1);
+                            if (end > n) end = n;
 
 #pragma omp simd
-                        for (Nd4jIndex i = start; i < end; i++) {
+                            for (Nd4jIndex i = start; i < end; i++) {
+                                result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
+                            }
+                        }
+                    } else {
+#pragma omp simd
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
                         }
                     }
