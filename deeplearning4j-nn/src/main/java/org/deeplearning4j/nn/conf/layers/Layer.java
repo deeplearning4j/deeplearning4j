@@ -70,7 +70,8 @@ import java.util.*;
                 @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer"),
                 @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
                 @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer"),
-                @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer")
+                @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
+                @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer")
 })
 @Data
 @NoArgsConstructor
