@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -219,7 +218,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
      */
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        //For RNN: need to sum up the score over each time step before returning.
+        //For CNN: need to sum up the score over each x/y location before returning
 
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
@@ -231,11 +230,13 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
                 lossFunction.computeScoreArray(labels2d, input2d, layerConf().getActivationFn(), maskReshaped);
-        //scoreArray: shape [minibatch*timeSeriesLength, 1]
-        //Reshape it to [minibatch, timeSeriesLength] then sum over time step
+        //scoreArray: shape [minibatch*h*w, 1]
+        //Reshape it to [minibatch, 1, h, w] then sum over x/y to give [minibatch, 1]
 
-        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, input.size(0));
-        INDArray summedScores = scoreArrayTs.sum(1);
+        int[] newShape = input.shape().clone();
+        newShape[1] = 1;
+        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape);
+        INDArray summedScores = scoreArrayTs.sum(1,2,3);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {

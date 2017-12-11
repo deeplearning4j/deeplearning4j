@@ -535,6 +535,7 @@ public class OutputLayerTest {
                             .convolutionMode(ConvolutionMode.Same)
                             .list()
                             .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
+                                    .kernelSize(2,2).stride(1,1)
                                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
                                     .updater(new NoOp()).build())
                             .layer(new CnnLossLayer.Builder(LossFunction.MSE)
@@ -548,6 +549,7 @@ public class OutputLayerTest {
                             .convolutionMode(ConvolutionMode.Same)
                             .list()
                             .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(a)
+                                    .kernelSize(2,2).stride(1,1)
                                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
                                     .updater(new NoOp()).build())
                             .layer(new CnnLossLayer.Builder(LossFunction.MSE)
@@ -585,6 +587,17 @@ public class OutputLayerTest {
 
             assertEquals(mln.score(), mln2.score(), 1e-6);
             assertEquals(mln.gradient().gradient(), mln2.gradient().gradient());
+
+            //Also check computeScoreForExamples
+            INDArray in2a = Nd4j.rand(new int[]{1,3,5,5});
+            INDArray labels2a = Nd4j.rand(new int[]{1,4,5,5});
+
+            INDArray in2 = Nd4j.concat(0, in2a, in2a);
+            INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
+
+            INDArray s = mln.scoreExamples(new DataSet(in2, labels2), false);
+            assertArrayEquals(new int[]{2,1}, s.shape());
+            assertEquals(s.getDouble(0), s.getDouble(1), 1e-6);
 
             TestUtils.testModelSerialization(mln);
         }

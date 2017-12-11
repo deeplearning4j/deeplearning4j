@@ -209,7 +209,7 @@ public class OutputLayerGradientChecks {
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
 
-                    String testName = "testRnnLossLayer(lf=" + lf + ", maskType=" + mt + ", outputActivation = " + oa + ")";
+                    String testName = "testCnnLossLayer(lf=" + lf + ", maskType=" + mt + ", outputActivation = " + oa + ")";
                     if (PRINT_RESULTS) {
                         System.out.println(testName);
                         for (int j = 0; j < mln.getnLayers(); j++)
