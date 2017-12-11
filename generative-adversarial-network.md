@@ -49,6 +49,8 @@ Each side of the GAN can overpower the other. If the discriminator is too good, 
 
 GANs take a long time to train. On a single GPU a GAN might take hours, and on a single CPU more than a day. While difficult to tune and therefore to use, GANs have stimulated a lot of [interesting research and writing](https://blog.openai.com/generative-models/). 
 
+**Note:** Deeplearning4j's latest release on Maven does not include GANs, but it will soon be possible to build and use them via auto-differentiation and model import from Keras and Tensorflow, all of which are currently available in the master repository on Github.
+
 ## GAN Use Cases
 
 * [Text to Image Generation](https://arxiv.org/abs/1605.05396)
