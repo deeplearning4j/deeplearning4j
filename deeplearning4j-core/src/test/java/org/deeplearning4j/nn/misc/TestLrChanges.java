@@ -2,12 +2,9 @@ package org.deeplearning4j.nn.misc;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.MultiLayerUpdater;
-import org.deeplearning4j.util.NetworkUtils;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,7 +54,7 @@ public class TestLrChanges {
         conf2.setIterationCount(conf.getIterationCount());
         net2.setParams(net.params().dup());
 
-        NetworkUtils.setLearningRate(net, 0, 0.5);  //Set LR for layer 0 to 0.5
+        net.setLearningRate(0, 0.5);  //Set LR for layer 0 to 0.5
 
         assertEquals(conf, conf2);
         assertEquals(conf.toJson(), conf2.toJson());
@@ -105,7 +102,7 @@ public class TestLrChanges {
         conf3.setIterationCount(conf.getIterationCount());
         net3.setParams(net.params().dup());
 
-        NetworkUtils.setLearningRate(net, 0.3);
+        net.setLearningRate(0.3);
 
         //Perform some parameter updates - check things are actually in sync...
         for( int i=0; i<3; i++ ){
@@ -156,7 +153,7 @@ public class TestLrChanges {
         conf2.setIterationCount(conf.getIterationCount());
         net2.setParams(net.params().dup());
 
-        NetworkUtils.setLearningRate(net, new ExponentialSchedule(ScheduleType.ITERATION, 0.5, 0.8 ));  //Set LR for layer 0 to 0.5
+        net.setLearningRate(new ExponentialSchedule(ScheduleType.ITERATION, 0.5, 0.8 ));  //Set LR for layer 0 to 0.5
 
         assertEquals(conf, conf2);
         assertEquals(conf.toJson(), conf2.toJson());

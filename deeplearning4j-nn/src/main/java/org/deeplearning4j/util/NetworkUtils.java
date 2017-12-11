@@ -66,10 +66,28 @@ public class NetworkUtils {
         return cg;
     }
 
+    /**
+     * Set the learning rate for all layers in the network to the specified value. Note that if any learning rate
+     * schedules are currently present, these will be removed in favor of the new (fixed) learning rate.<br>
+     * <br>
+     * <b>Note</b>: <i>This method not free from a performance point of view</i>: a proper learning rate schedule
+     * should be used in preference to calling this method at every iteration.
+     *
+     * @param net   Network to set the LR for
+     * @param newLr New learning rate for all layers
+     */
     public  static void setLearningRate(MultiLayerNetwork net, double newLr) {
         setLearningRate(net, newLr, null);
     }
 
+    /**
+     * Set the learning rate schedule for all layers in the network to the specified schedule.
+     * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
+     * Note that the iteration/epoch counts will <i>not</i> be reset. Use {@link MultiLayerConfiguration#setIterationCount(int)}
+     * and {@link MultiLayerConfiguration#setEpochCount(int)} if this is required
+     *
+     * @param newLrSchedule New learning rate schedule for all layers
+     */
     public  static void setLearningRate(MultiLayerNetwork net, ISchedule newLrSchedule) {
         setLearningRate(net, Double.NaN, newLrSchedule);
     }
@@ -82,8 +100,34 @@ public class NetworkUtils {
         refreshUpdater(net);
     }
 
+    /**
+     * Set the learning rate for a single layer in the network to the specified value. Note that if any learning rate
+     * schedules are currently present, these will be removed in favor of the new (fixed) learning rate.<br>
+     * <br>
+     * <b>Note</b>: <i>This method not free from a performance point of view</i>: a proper learning rate schedule
+     * should be used in preference to calling this method at every iteration. Note also that
+     * {@link #setLearningRate(MultiLayerNetwork, double)} should also be used in preference, when all layers need to be set to a new LR
+     *
+     * @param layerNumber Number of the layer to set the LR for
+     * @param newLr New learning rate for a single layers
+     */
     public static void setLearningRate(MultiLayerNetwork net, int layerNumber, double newLr){
         setLearningRate(net, layerNumber, newLr, null, true);
+    }
+
+    /**
+     * Set the learning rate schedule for a single layer in the network to the specified value.<br>
+     * Note also that {@link #setLearningRate(ISchedule)} should also be used in preference, when all layers need
+     * to be set to a new LR schedule.<br>
+     * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
+     * Note also that the iteration/epoch counts will <i>not</i> be reset. Use {@link MultiLayerConfiguration#setIterationCount(int)}
+     * and {@link MultiLayerConfiguration#setEpochCount(int)} if this is required
+     *
+     * @param layerNumber Number of the layer to set the LR schedule for
+     * @param lrSchedule New learning rate for a single layer
+     */
+    public static void setLearningRate(MultiLayerNetwork net, int layerNumber, ISchedule lrSchedule){
+        setLearningRate(net, layerNumber, Double.NaN, lrSchedule, true);
     }
 
     private static void setLearningRate(MultiLayerNetwork net, int layerNumber, double newLr, ISchedule newLrSchedule, boolean refreshUpdater){

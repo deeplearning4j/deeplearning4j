@@ -71,6 +71,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.File;
@@ -3211,6 +3212,69 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public ComputationGraph toComputationGraph(){
         return NetworkUtils.toComputationGraph(this);
+    }
+
+    /**
+     * Set the learning rate for all layers in the network to the specified value. Note that if any learning rate
+     * schedules are currently present, these will be removed in favor of the new (fixed) learning rate.<br>
+     * <br>
+     * <b>Note</b>: <i>This method not free from a performance point of view</i>: a proper learning rate schedule
+     * should be used in preference to calling this method at every iteration.
+     *
+     * @param newLr New learning rate for all layers
+     * @see #setLearningRate(ISchedule)
+     * @see #setLearningRate(int, double)
+     */
+    public void setLearningRate(double newLr){
+        NetworkUtils.setLearningRate(this, newLr);
+    }
+
+    /**
+     * Set the learning rate schedule for all layers in the network to the specified schedule.
+     * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
+     * Note that the iteration/epoch counts will <i>not</i> be reset. Use {@link MultiLayerConfiguration#setIterationCount(int)}
+     * and {@link MultiLayerConfiguration#setEpochCount(int)} if this is required
+     *
+     * @param newLr New learning rate schedule for all layers
+     * @see #setLearningRate(ISchedule)
+     * @see #setLearningRate(int, double)
+     */
+    public void setLearningRate(ISchedule newLr){
+        NetworkUtils.setLearningRate(this, newLr);
+    }
+
+    /**
+     * Set the learning rate for a single layer in the network to the specified value. Note that if any learning rate
+     * schedules are currently present, these will be removed in favor of the new (fixed) learning rate.<br>
+     * <br>
+     * <b>Note</b>: <i>This method not free from a performance point of view</i>: a proper learning rate schedule
+     * should be used in preference to calling this method at every iteration. Note also that
+     * {@link #setLearningRate(double)} should also be used in preference, when all layers need to be set to a new LR
+     *
+     * @param layerNumber Number of the layer to set the LR for
+     * @param newLr New learning rate for a single layer
+     * @see #setLearningRate(ISchedule)
+     * @see #setLearningRate(int, double)
+     */
+    public void setLearningRate(int layerNumber, double newLr){
+        NetworkUtils.setLearningRate(this, layerNumber, newLr);
+    }
+
+    /**
+     * Set the learning rate schedule for a single layer in the network to the specified value.<br>
+     * Note also that {@link #setLearningRate(ISchedule)} should also be used in preference, when all layers need
+     * to be set to a new LR schedule.<br>
+     * This schedule will replace any/all existing schedules, and also any fixed learning rate values.<br>
+     * Note also that the iteration/epoch counts will <i>not</i> be reset. Use {@link MultiLayerConfiguration#setIterationCount(int)}
+     * and {@link MultiLayerConfiguration#setEpochCount(int)} if this is required
+     *
+     * @param layerNumber Number of the layer to set the LR schedule for
+     * @param newLr New learning rate for a single layer
+     * @see #setLearningRate(ISchedule)
+     * @see #setLearningRate(int, double)
+     */
+    public void setLearningRate(int layerNumber, ISchedule newLr){
+        NetworkUtils.setLearningRate(this, layerNumber, newLr);
     }
 
     /**
