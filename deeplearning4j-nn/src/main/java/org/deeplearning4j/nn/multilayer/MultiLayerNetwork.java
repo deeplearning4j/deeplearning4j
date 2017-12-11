@@ -50,6 +50,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
+import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -3201,6 +3202,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public static MultiLayerNetwork load(File f, boolean loadUpdater) throws IOException {
         return ModelSerializer.restoreMultiLayerNetwork(f, loadUpdater);
+    }
+
+    /**
+     * Convert this MultiLayerNetwork to a ComputationGraph
+     *
+     * @return ComputationGraph equivalent to this network (including parameters and updater state)
+     */
+    public ComputationGraph toComputationGraph(){
+        return NetworkUtils.toComputationGraph(this);
     }
 
     /**
