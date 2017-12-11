@@ -1140,6 +1140,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))
                     bLayer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
             }
+
+            if (layer instanceof ActivationLayer){
+                ActivationLayer al = (ActivationLayer)layer;
+                if(al.getActivationFn() == null)
+                    al.setActivationFn(activationFn);
+            }
         }
     }
 
