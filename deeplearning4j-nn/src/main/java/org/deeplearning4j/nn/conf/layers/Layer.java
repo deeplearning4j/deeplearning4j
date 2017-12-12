@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -71,8 +72,8 @@ import java.util.*;
                 @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
                 @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer"),
                 @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
-                @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer")
-})
+                @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
+                @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional")})
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {

@@ -133,7 +133,7 @@ public class UpdaterBlock {
         //Second: apply learning rate policy. Note that by definition we have the same LR policy for every single
         // variable in the block
         Layer l0 = layersAndVariablesInBlock.get(0).getLayer();
-        if (!(l0.conf().getLayer() instanceof BaseLayer)) {
+        if (l0.numParams() == 0) {
             //No params for this layer
             return;
         }
