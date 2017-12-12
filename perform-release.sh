@@ -10,7 +10,7 @@ RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 STAGING_REPOSITORY=${3:-}
 SKIP_BUILD=${SKIP_BUILD:-0}
-RELEASE_PROFILE=${RELEASE_PROFILE:-sonatype-nexus}
+RELEASE_PROFILE=${RELEASE_PROFILE:-sonatype}
 
 echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $RELEASE_PROFILE $STAGING_REPOSITORY"
 echo "========================================================================================================="
