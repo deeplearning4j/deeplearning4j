@@ -16,8 +16,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class BidirectionalParamInitializer implements ParamInitializer {
-    public static final String FORWARD_PREFIX = "F_";
-    public static final String BACKWARD_PREFIX = "R_";
+    public static final String FORWARD_PREFIX = "f-";
+    public static final String BACKWARD_PREFIX = "b-";
 
     private final Bidirectional layer;
     private final BaseRecurrentLayer underlying;
@@ -87,8 +87,20 @@ public class BidirectionalParamInitializer implements ParamInitializer {
         INDArray forwardView = paramsView.get(point(0), interval(0, n));
         INDArray backwardView = paramsView.get(point(0), interval(n, 2*n));
 
-        Map<String, INDArray> origFwd = underlying.initializer().init(conf, forwardView, initializeParams);
-        Map<String, INDArray> origBwd = underlying.initializer().init(conf, backwardView, initializeParams);
+        NeuralNetConfiguration c1 = conf.clone();
+        NeuralNetConfiguration c2 = conf.clone();
+        c1.setLayer(underlying);
+        c2.setLayer(underlying);
+        Map<String, INDArray> origFwd = underlying.initializer().init(c1, forwardView, initializeParams);
+        Map<String, INDArray> origBwd = underlying.initializer().init(c2, backwardView, initializeParams);
+
+        Map<String,Double> l1ByParam = addPrefixes(c1.getL1ByParam(), c2.getL1ByParam());
+        Map<String,Double> l2ByParam = addPrefixes(c1.getL2ByParam(), c2.getL2ByParam());
+        List<String> variables = addPrefixes(c1.getVariables(), c2.getVariables());
+
+        conf.setL1ByParam(l1ByParam);
+        conf.setL2ByParam(l2ByParam);
+        conf.setVariables(variables);
 
         Map<String,INDArray> out = new LinkedHashMap<>();
         for( Map.Entry<String, INDArray> e : origFwd.entrySet()){
@@ -98,6 +110,37 @@ public class BidirectionalParamInitializer implements ParamInitializer {
             out.put(BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
+        return out;
+    }
+
+    private <T> Map<String,T> addPrefix(Map<String,T> in, boolean fwd){
+        Map<String,T> out = new LinkedHashMap<>();
+        for(Map.Entry<String,T> e : in.entrySet()){
+            out.put((fwd ? FORWARD_PREFIX : BACKWARD_PREFIX) + e.getKey(), e.getValue());
+        }
+        return out;
+    }
+
+    private <T> Map<String,T> addPrefixes(Map<String,T> fwd, Map<String,T> bwd){
+        Map<String,T> out = new LinkedHashMap<>();
+        for(Map.Entry<String,T> e : fwd.entrySet()){
+            out.put(FORWARD_PREFIX + e.getKey(), e.getValue());
+        }
+        for(Map.Entry<String,T> e : bwd.entrySet()){
+            out.put(BACKWARD_PREFIX + e.getKey(), e.getValue());
+        }
+
+        return out;
+    }
+
+    private List<String> addPrefixes(List<String> fwd, List<String> bwd){
+        List<String> out = new ArrayList<>();
+        for(String s : fwd){
+            out.add(FORWARD_PREFIX + s);
+        }
+        for(String s : bwd){
+            out.add(BACKWARD_PREFIX + s);
+        }
         return out;
     }
 
@@ -123,7 +166,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
 
     private BaseRecurrentLayer underlying(Layer layer){
         Bidirectional b = (Bidirectional)layer;
-        return (BaseRecurrentLayer)b.getUnderlying();
+        return (BaseRecurrentLayer)b.getFwd();
     }
 
     private List<String> withPrefixes(List<String> orig){

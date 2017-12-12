@@ -117,6 +117,9 @@ public class TimeSeriesUtils {
 
 
     public static INDArray reverseTimeSeries(INDArray in){
+        if(in == null){
+            return null;
+        }
         INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
         CustomOp op = DynamicCustomOp.builder("reverse")
                 .addIntegerArguments(new int[]{0,1})
