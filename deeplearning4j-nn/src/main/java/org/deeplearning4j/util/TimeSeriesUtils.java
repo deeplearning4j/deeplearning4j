@@ -145,6 +145,14 @@ public class TimeSeriesUtils {
         if(mask == null){
             return null;
         }
+        if(mask.rank() == 3){
+            //Should normally not be used - but handle the per-output masking case
+            return reverseTimeSeries(mask);
+        } else if(mask.rank() != 2){
+            throw new IllegalArgumentException("Invalid mask rank: must be rank 2 or 3. Got rank " + mask.rank()
+                    + " with shape " + Arrays.toString(mask.shape()));
+        }
+
         //Assume input mask is 2d: [minibatch, tsLength]
         INDArray out = Nd4j.createUninitialized(mask.shape(), 'f');
         CustomOp op = DynamicCustomOp.builder("reverse")
