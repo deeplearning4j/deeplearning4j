@@ -8,6 +8,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
@@ -103,6 +105,9 @@ public class SameDiff {
     private static Map<String,Method> opMethods;
 
     private  Map<String,DifferentialFunction> functionInstancesById;
+
+    // flag, shows if graph was already registered with libnd4j
+    private transient AtomicBoolean wasRegistered = new AtomicBoolean(false);
 
 
     //debug mode variables
@@ -3173,6 +3178,38 @@ public class SameDiff {
     }
 
 
+    public INDArray yetAnotherExecMethod(@NonNull Map<String, INDArray> inputs){
+        if (!wasRegistered.get()) {
+            synchronized (this) {
+                if (!wasRegistered.get()) {
+                    val bb = asFlatBuffers();
+                    val ptr = new BytePointer(bb);
+
+                    Nd4j.getExecutioner().registerGraph(this.hashCode(), ptr);
+
+                    wasRegistered.set(true);
+                }
+            }
+        }
+
+        val newMap = new LinkedHashMap<Integer, INDArray>();
+        val keySet = inputs.keySet();
+
+        for (val key: keySet) {
+            val vx = variableMap.get(key);
+            newMap.put(vx.getVertexId(), inputs.get(key));
+        }
+
+        val result = Nd4j.getExecutioner().executeGraph(this.hashCode(), newMap);
+        if (result.size() == 0)
+            throw new ND4JIllegalStateException("Execution failed");
+
+        val list = new ArrayList<INDArray>(result.values());
+
+        return list.get(list.size() - 1);
+    }
+
+
     /**
      * Executes the list of operations.
      * This exec method is for
@@ -4143,6 +4180,7 @@ public class SameDiff {
 
 
     public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration) {
+        Nd4j.getExecutioner().commit();
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
 
         val flatVariables = new ArrayList<Integer>();

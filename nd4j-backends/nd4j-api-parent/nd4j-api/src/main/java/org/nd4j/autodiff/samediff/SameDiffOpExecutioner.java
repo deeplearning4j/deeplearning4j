@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.Getter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -500,6 +501,21 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
         return backendExecutioner.calculateOutputShape(op);
     }
 
+
+    @Override
+    public void registerGraph(long id, Pointer graph) {
+        backendExecutioner.registerGraph(id, graph);
+    }
+
+    @Override
+    public Map<Integer, INDArray> executeGraph(long id, Map<Integer, INDArray> map) {
+        return backendExecutioner.executeGraph(id, map);
+    }
+
+    @Override
+    public void forgetGraph(long id) {
+        backendExecutioner.forgetGraph(id);
+    }
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {

@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
@@ -666,5 +667,20 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void registerGraph(long id, Pointer graph) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public Map<Integer, INDArray>  executeGraph(long id, Map<Integer, INDArray> map) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public void forgetGraph(long id) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

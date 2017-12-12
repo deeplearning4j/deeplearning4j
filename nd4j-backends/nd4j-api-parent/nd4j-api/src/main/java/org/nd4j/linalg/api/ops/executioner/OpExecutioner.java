@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -356,5 +357,12 @@ public interface OpExecutioner {
     void enableDebugMode(boolean reallyEnable);
 
     void enableVerboseMode(boolean reallyEnable);
+
+
+    void registerGraph(long id, Pointer graph);
+
+    Map<Integer, INDArray> executeGraph(long id, Map<Integer, INDArray> map);
+
+    void forgetGraph(long id);
 
 }

@@ -1607,4 +1607,21 @@ public abstract class NativeOps extends Pointer {
     public abstract PointerPointer calculateOutputShapesFloat(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
     public abstract PointerPointer calculateOutputShapesHalf(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, @Cast("float16") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
     public abstract PointerPointer calculateOutputShapesDouble(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+
+    public abstract int registerGraphFloat(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
+    public abstract int registerGraphDouble(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
+    public abstract int registerGraphHalf(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
+
+    public abstract Pointer executeStoredGraphFloat(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public abstract Pointer executeStoredGraphDouble(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public abstract Pointer executeStoredGraphHalf(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+
+    public abstract int unregisterGraph(PointerPointer extraPointers, long graphId);
+
+    public abstract void deleteIntArray(Pointer pointer);
+    public abstract void deletePointerArray(Pointer pointer);
+
+    public abstract void deleteVariablesSetFloat(Pointer pointer);
+    public abstract void deleteVariablesSetDouble(Pointer pointer);
+    public abstract void deleteVariablesSetHalf(Pointer pointer);
 }

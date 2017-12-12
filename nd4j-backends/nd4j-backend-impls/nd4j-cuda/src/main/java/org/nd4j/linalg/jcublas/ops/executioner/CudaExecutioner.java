@@ -57,6 +57,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
+import org.nd4j.nativeblas.Nd4jCuda;
 
 import java.util.*;
 
@@ -2734,6 +2735,149 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public void enableVerboseMode(boolean reallyEnable) {
         nativeOps.enableVerboseMode(reallyEnable);
+    }
+
+    @Override
+    public void registerGraph(long id, Pointer graph) {
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT)
+            nativeOps.registerGraphFloat(null, id, graph);
+        else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+            nativeOps.registerGraphDouble(null, id, graph);
+        else if (Nd4j.dataType() == DataBuffer.Type.HALF)
+            nativeOps.registerGraphHalf(null, id, graph);
+    }
+
+    @Override
+    public Map<Integer, INDArray>  executeGraph(long id, Map<Integer, INDArray> map) {
+
+        this.commit();
+
+        val ptrBuffers = new PointerPointer(map.size() * 2);
+        val ptrShapes = new PointerPointer(map.size() * 2);
+        val ptrIndices = new IntPointer(map.size());
+
+        int cnt = 0;
+        val keySet = map.keySet();
+        for (val key: keySet) {
+            val array = map.get(key);
+
+            ptrBuffers.put(cnt, AtomicAllocator.getInstance().getHostPointer(array));
+            ptrShapes.put(cnt, AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()));
+            ptrIndices.put(cnt, key);
+
+            cnt++;
+        }
+
+        val newMap = new LinkedHashMap<Integer, INDArray>();
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            val result = (Nd4jCuda.FloatVariablesSet) nativeOps.executeStoredGraphFloat(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+
+            val status = OpStatus.byNumber(result.status());
+
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
+
+            for (int e = 0; e < result.size(); e++) {
+                val var = result.at(e);
+                val nodeId = var.id();
+                val index = var.index();
+                val shapeInfo = var.getNDArray().shapeInfo();
+                val buffer = var.getNDArray().buffer();
+
+                val rank = shapeInfo.get(0);
+                val jshape = new int[rank * 2 + 4];
+                for (int i = 0; i < jshape.length; i++) {
+                    jshape[i] = shapeInfo.get(i);
+                }
+
+                val shapeOf = Shape.shapeOf(jshape);
+                val stridesOf = Shape.stridesOf(jshape);
+                val order = Shape.order(jshape);
+                val array = Nd4j.create(shapeOf, stridesOf, 0, order);
+
+
+                Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
+                AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
+
+                newMap.put(nodeId, array);
+            }
+            nativeOps.deleteVariablesSetFloat(result);
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            val result = (Nd4jCuda.DoubleVariablesSet) nativeOps.executeStoredGraphDouble(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+
+            val status = OpStatus.byNumber(result.status());
+
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
+
+            for (int e = 0; e < result.size(); e++) {
+                val var = result.at(e);
+                val nodeId = var.id();
+                val index = var.index();
+                val shapeInfo = var.getNDArray().shapeInfo();
+                val buffer = var.getNDArray().buffer();
+
+                val rank = shapeInfo.get(0);
+                val jshape = new int[rank * 2 + 4];
+                for (int i = 0; i < jshape.length; i++) {
+                    jshape[i] = shapeInfo.get(i);
+                }
+
+                val shapeOf = Shape.shapeOf(jshape);
+                val stridesOf = Shape.stridesOf(jshape);
+                val order = Shape.order(jshape);
+                val array = Nd4j.create(shapeOf, stridesOf, 0, order);
+
+
+                Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
+                AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
+
+                newMap.put(nodeId, array);
+            }
+
+            nativeOps.deleteVariablesSetDouble(result);
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            val result = (Nd4jCuda.DoubleVariablesSet) nativeOps.executeStoredGraphHalf(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+
+            val status = OpStatus.byNumber(result.status());
+
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
+
+            for (int e = 0; e < result.size(); e++) {
+                val var = result.at(e);
+                val nodeId = var.id();
+                val index = var.index();
+                val shapeInfo = var.getNDArray().shapeInfo();
+                val buffer = var.getNDArray().buffer();
+
+                val rank = shapeInfo.get(0);
+                val jshape = new int[rank * 2 + 4];
+                for (int i = 0; i < jshape.length; i++) {
+                    jshape[i] = shapeInfo.get(i);
+                }
+
+                val shapeOf = Shape.shapeOf(jshape);
+                val stridesOf = Shape.stridesOf(jshape);
+                val order = Shape.order(jshape);
+                val array = Nd4j.create(shapeOf, stridesOf, 0, order);
+
+
+                Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
+                AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
+
+                newMap.put(nodeId, array);
+            }
+
+            nativeOps.deleteVariablesSetHalf(result);
+        }
+
+        return newMap;
+    }
+
+    @Override
+    public void forgetGraph(long id) {
+        nativeOps.unregisterGraph(null, id);
     }
 }
 

@@ -9,6 +9,137 @@ import org.bytedeco.javacpp.annotation.*;
 public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     static { Loader.load(); }
 
+@Name("std::vector<nd4j::NDArray<float>*>") public static class FloatNDArrayVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public FloatNDArrayVector(Pointer p) { super(p); }
+    public FloatNDArrayVector(FloatNDArray ... array) { this(array.length); put(array); }
+    public FloatNDArrayVector()       { allocate();  }
+    public FloatNDArrayVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef FloatNDArrayVector put(@ByRef FloatNDArrayVector x);
+
+    public native long size();
+    public native void resize(@Cast("size_t") long n);
+
+    @Index public native FloatNDArray get(@Cast("size_t") long i);
+    public native FloatNDArrayVector put(@Cast("size_t") long i, FloatNDArray value);
+
+    public native @ByVal Iterator begin();
+    public native @ByVal Iterator end();
+    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
+        public Iterator(Pointer p) { super(p); }
+        public Iterator() { }
+
+        public native @Name("operator++") @ByRef Iterator increment();
+        public native @Name("operator==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator*") FloatNDArray get();
+    }
+
+    public FloatNDArrayVector put(FloatNDArray ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            put(i, array[i]);
+        }
+        return this;
+    }
+}
+
+@Name("std::vector<nd4j::NDArray<float16>*>") public static class HalfNDArrayVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public HalfNDArrayVector(Pointer p) { super(p); }
+    public HalfNDArrayVector(HalfNDArray ... array) { this(array.length); put(array); }
+    public HalfNDArrayVector()       { allocate();  }
+    public HalfNDArrayVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef HalfNDArrayVector put(@ByRef HalfNDArrayVector x);
+
+    public native long size();
+    public native void resize(@Cast("size_t") long n);
+
+    @Index public native HalfNDArray get(@Cast("size_t") long i);
+    public native HalfNDArrayVector put(@Cast("size_t") long i, HalfNDArray value);
+
+    public native @ByVal Iterator begin();
+    public native @ByVal Iterator end();
+    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
+        public Iterator(Pointer p) { super(p); }
+        public Iterator() { }
+
+        public native @Name("operator++") @ByRef Iterator increment();
+        public native @Name("operator==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator*") HalfNDArray get();
+    }
+
+    public HalfNDArrayVector put(HalfNDArray ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            put(i, array[i]);
+        }
+        return this;
+    }
+}
+
+@Name("std::vector<nd4j::NDArray<double>*>") public static class DoubleNDArrayVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public DoubleNDArrayVector(Pointer p) { super(p); }
+    public DoubleNDArrayVector(DoubleNDArray ... array) { this(array.length); put(array); }
+    public DoubleNDArrayVector()       { allocate();  }
+    public DoubleNDArrayVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef DoubleNDArrayVector put(@ByRef DoubleNDArrayVector x);
+
+    public native long size();
+    public native void resize(@Cast("size_t") long n);
+
+    @Index public native DoubleNDArray get(@Cast("size_t") long i);
+    public native DoubleNDArrayVector put(@Cast("size_t") long i, DoubleNDArray value);
+
+    public native @ByVal Iterator begin();
+    public native @ByVal Iterator end();
+    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
+        public Iterator(Pointer p) { super(p); }
+        public Iterator() { }
+
+        public native @Name("operator++") @ByRef Iterator increment();
+        public native @Name("operator==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator*") DoubleNDArray get();
+    }
+
+    public DoubleNDArrayVector put(DoubleNDArray ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            put(i, array[i]);
+        }
+        return this;
+    }
+}
+
+@NoOffset @Name("std::pair<int,int>") public static class IntIntPair extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public IntIntPair(Pointer p) { super(p); }
+    public IntIntPair(int firstValue, int secondValue) { this(); put(firstValue, secondValue); }
+    public IntIntPair()       { allocate();  }
+    private native void allocate();
+    public native @Name("operator=") @ByRef IntIntPair put(@ByRef IntIntPair x);
+
+
+    @MemberGetter public native int first(); public native IntIntPair first(int first);
+    @MemberGetter public native int second();  public native IntIntPair second(int second);
+
+    public IntIntPair put(int firstValue, int secondValue) {
+        first(firstValue);
+        second(secondValue);
+        return this;
+    }
+}
+
 // Parsed from NativeOps.h
 
 //
@@ -62,6 +193,7 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
+// #include <graph/VariablesSet.h>
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -3104,7 +3236,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native String getDeviceName(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("char*") String getDeviceName(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
 
     /**
      *
@@ -5038,8 +5170,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] indices, @Cast("float16*") short[] values, @Cast("Nd4jIndex") long length, int rank);
 
 
-    public native @Cast("Nd4jIndex*") LongPointer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, String fileName, @Cast("Nd4jIndex") long length);
-    public native @Cast("Nd4jIndex*") LongBuffer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("const char*") BytePointer fileName, @Cast("Nd4jIndex") long length);
+    public native @Cast("Nd4jIndex*") LongPointer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String fileName, @Cast("Nd4jIndex") long length);
+    public native @Cast("Nd4jIndex*") LongBuffer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer fileName, @Cast("Nd4jIndex") long length);
 
     public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") LongPointer ptrMap, @Cast("Nd4jIndex") long length);
     public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") LongBuffer ptrMap, @Cast("Nd4jIndex") long length);
@@ -5053,10 +5185,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     // protobuf execution
     public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer protoBufferPointer);
-    public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, String fileName);
-    public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("const char*") BytePointer fileName);
+    public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String fileName);
+    public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer fileName);
 
-    public native String getAllCustomOps();
+    public native @Cast("char*") String getAllCustomOps();
 
     // customOp executioner
     public native int execCustomOpFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, @Cast("bool") boolean isInplace);
@@ -5078,10 +5210,8734 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
     public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
     public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+
+    public native int registerGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native int registerGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native int registerGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+
+    public native FloatVariablesSet executeStoredGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native FloatVariablesSet executeStoredGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native FloatVariablesSet executeStoredGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+    public native DoubleVariablesSet executeStoredGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native DoubleVariablesSet executeStoredGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native DoubleVariablesSet executeStoredGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+    public native HalfVariablesSet executeStoredGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native HalfVariablesSet executeStoredGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native HalfVariablesSet executeStoredGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+
+    public native int unregisterGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId);
+
+    public native void deleteIntArray(@Cast("Nd4jPointer") Pointer pointer);
+    public native void deletePointerArray(@Cast("Nd4jPointer") Pointer pointer);
+
+    public native void deleteVariablesSetFloat(@Cast("Nd4jPointer") Pointer pointer);
+    public native void deleteVariablesSetDouble(@Cast("Nd4jPointer") Pointer pointer);
+    public native void deleteVariablesSetHalf(@Cast("Nd4jPointer") Pointer pointer);
 }
 
 
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
+
+
+// Parsed from memory/Workspace.h
+
+//
+// This class implements Workspace functionality in c++
+//
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_WORKSPACE_H
+// #define LIBND4J_WORKSPACE_H
+
+// #include <atomic>
+// #include <vector>
+// #include <mutex>
+// #include <dll.h>
+// #include <pointercast.h>
+// #include <types/float16.h>
+
+//        void ping();
+
+        /** enum nd4j::memory::MemoryType */
+        public static final int
+            HOST = 0,
+            DEVICE = 1;
+
+        @Namespace("nd4j::memory") @NoOffset public static class Workspace extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public Workspace(Pointer p) { super(p); }
+        
+            public Workspace(@Cast("Nd4jIndex") long initialSize/*=0*/) { super((Pointer)null); allocate(initialSize); }
+            private native void allocate(@Cast("Nd4jIndex") long initialSize/*=0*/);
+            public Workspace() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jIndex") long getCurrentSize();
+            public native @Cast("Nd4jIndex") long getCurrentOffset();
+            public native @Cast("Nd4jIndex") long getSpilledSize();
+
+//            bool resizeSupported();
+
+            public native Pointer allocateBytes(@Cast("Nd4jIndex") long numBytes);
+            public native Pointer allocateBytes(@Cast("nd4j::memory::MemoryType") int type, @Cast("Nd4jIndex") long numBytes);
+
+            public native void scopeIn();
+            public native void scopeOut();
+
+            /*
+             * This method creates NEW workspace of the same memory size and returns pointer to it
+             */
+            public native Workspace clone();
+        }
+    
+
+
+// #endif //LIBND4J_WORKSPACE_H
+
+
+// Parsed from indexing/NDIndex.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_NDINDEX_H
+// #define LIBND4J_NDINDEX_H
+
+// #include <vector>
+// #include <dll.h>
+    @Namespace("nd4j") @NoOffset public static class NDIndex extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public NDIndex(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public NDIndex(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public NDIndex position(long position) {
+            return (NDIndex)super.position(position);
+        }
+    
+        public NDIndex() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native @Cast("bool") boolean isAll();
+
+        public native @StdVector IntPointer getIndices();
+        public native int stride();
+
+        public static native NDIndex all();
+        public static native NDIndex point(int pt);
+        public static native NDIndex interval(int start, int end, int stride/*=1*/);
+        public static native NDIndex interval(int start, int end);
+    }
+
+    @Namespace("nd4j") public static class NDIndexAll extends NDIndex {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public NDIndexAll(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public NDIndexAll(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public NDIndexAll position(long position) {
+            return (NDIndexAll)super.position(position);
+        }
+    
+        public NDIndexAll() { super((Pointer)null); allocate(); }
+        private native void allocate();
+    }
+
+
+    @Namespace("nd4j") public static class NDIndexPoint extends NDIndex {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public NDIndexPoint(Pointer p) { super(p); }
+    
+        public NDIndexPoint(int point) { super((Pointer)null); allocate(point); }
+        private native void allocate(int point);
+    }
+
+    @Namespace("nd4j") public static class NDIndexInterval extends NDIndex {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public NDIndexInterval(Pointer p) { super(p); }
+    
+        public NDIndexInterval(int start, int end, int stride/*=1*/) { super((Pointer)null); allocate(start, end, stride); }
+        private native void allocate(int start, int end, int stride/*=1*/);
+        public NDIndexInterval(int start, int end) { super((Pointer)null); allocate(start, end); }
+        private native void allocate(int start, int end);
+    }
+
+
+
+
+// #endif //LIBND4J_NDINDEX_H
+
+
+// Parsed from indexing/IndicesList.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_INDICESLIST_H
+// #define LIBND4J_INDICESLIST_H
+
+// #include <initializer_list>
+// #include "NDIndex.h"
+    @Namespace("nd4j") @NoOffset public static class IndicesList extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public IndicesList(Pointer p) { super(p); }
+    
+
+        public native int size();
+        public native NDIndex at(int idx);
+        public native void push_back(NDIndex idx);
+    }
+
+// #endif //LIBND4J_INDICESLIST_H
+
+
+// Parsed from array/DataType.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef ND4J_DATATYPE_H
+// #define ND4J_DATATYPE_H
+    /** enum nd4j::DataType */
+    public static final int
+        DataType_INHERIT = 0,
+        DataType_BOOL = 1,
+        DataType_FLOAT8 = 2,
+        DataType_HALF = 3,
+        DataType_HALF2 = 4,
+        DataType_FLOAT = 5,
+        DataType_DOUBLE = 6,
+        DataType_INT8 = 7,
+        DataType_INT16 = 8,
+        DataType_INT32 = 9,
+        DataType_INT64 = 10,
+        DataType_UINT8 = 11,
+        DataType_UINT16 = 12,
+        DataType_UINT32 = 13,
+        DataType_UINT64 = 14,
+        DataType_QINT8 = 15,
+        DataType_QINT16 = 16;
+
+
+// #endif
+
+// Parsed from graph/VariableType.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef ND4J_VARIABLE_TYPE_H
+// #define ND4J_VARIABLE_TYPE_H
+        /** enum nd4j::graph::VariableType */
+        public static final int
+            NDARRAY = 0,
+            ARRAY_LIST = 1,
+            FLOW = 2;
+    
+
+
+// #endif
+
+// Parsed from NDArray.h
+
+// #ifndef NDARRAY_H
+// #define NDARRAY_H
+
+// #include <initializer_list>
+// #include <functional>
+// #include <shape.h>
+// #include "NativeOpExcutioner.h"
+// #include <memory/Workspace.h>
+// #include <indexing/NDIndex.h>
+// #include <indexing/IndicesList.h>
+// #include <graph/Intervals.h>
+// #include <array/DataType.h>
+    // template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
+    // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(float arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short arg0, @Const @ByRef HalfNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") DoubleNDArray subtract(double arg0, @Const @ByRef DoubleNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") FloatNDArray add(float arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") HalfNDArray add(@Cast("const float16") short arg0, @Const @ByRef HalfNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") DoubleNDArray add(double arg0, @Const @ByRef DoubleNDArray arg1);
+
+
+    @Name("nd4j::NDArray<float>") @NoOffset public static class FloatNDArray extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public FloatNDArray(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public FloatNDArray(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public FloatNDArray position(long position) {
+            return (FloatNDArray)super.position(position);
+        }
+    
+        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
+        public native @Name("operator delete") void _delete(Pointer p);
+
+		// forbid assignment operator
+		public native @ByRef @Name("operator =") FloatNDArray put(@Const @ByRef FloatNDArray other);
+        
+        // accessing operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+
+        // modifying operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+        public native @ByRef @Name("operator ()") FloatPointer apply(@Cast("const Nd4jIndex") long i);
+
+        // accessing operator for 2D array, i - row, j - column        
+
+        // modifying operator for 2D array, i - row, j - column
+        public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j);
+
+        // accessing operator for 3D array        
+
+        // modifying operator for 3D array
+        public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j, int k);
+
+        // default constructor, do not allocate memory, memory for array is passed from outside 
+        public FloatNDArray(FloatPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(FloatPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        public FloatNDArray() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        public FloatNDArray(FloatBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(FloatBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(float[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(float[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+
+        //constructor, create empty array with at workspace
+        public FloatNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
+        private native void allocate(Workspace workspace);
+
+        // this constructor creates 2D NDArray, memory for array is allocated in constructor
+        public FloatNDArray(int rows, int columns, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(rows, columns, order, workspace); }
+        private native void allocate(int rows, int columns, char order, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(int rows, int columns, char order) { super((Pointer)null); allocate(rows, columns, order); }
+        private native void allocate(int rows, int columns, char order);
+
+        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        public FloatNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
+        private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
+        private native void allocate(@Cast("const Nd4jIndex") long length, char order);
+
+        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        public FloatNDArray(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
+        private native void allocate(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(@Const FloatNDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const FloatNDArray other);
+		
+		// copy constructor
+
+		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+		public FloatNDArray(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public FloatNDArray(@Const IntPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const IntPointer shapeInfo);
+		public FloatNDArray(@Const IntBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const IntBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public FloatNDArray(@Const IntBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const IntBuffer shapeInfo);
+		public FloatNDArray(@Const int[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const int[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public FloatNDArray(@Const int[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const int[] shapeInfo);
+
+        // this constructor creates new array using shape information contained in initializer_list/vector argument
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
+        public FloatNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector IntPointer shape);
+        public FloatNDArray(char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(char order, @StdVector IntBuffer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector IntBuffer shape);
+        public FloatNDArray(char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(char order, @StdVector int[] shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector int[] shape);
+
+        public FloatNDArray(char order, @StdVector IntPointer shape, @StdVector FloatPointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector IntPointer shape, @StdVector FloatPointer data, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(char order, @StdVector IntPointer shape, @StdVector FloatPointer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector IntPointer shape, @StdVector FloatPointer data);
+        public FloatNDArray(char order, @StdVector IntBuffer shape, @StdVector FloatBuffer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector IntBuffer shape, @StdVector FloatBuffer data, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(char order, @StdVector IntBuffer shape, @StdVector FloatBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector IntBuffer shape, @StdVector FloatBuffer data);
+        public FloatNDArray(char order, @StdVector int[] shape, @StdVector float[] data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector int[] shape, @StdVector float[] data, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(char order, @StdVector int[] shape, @StdVector float[] data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector int[] shape, @StdVector float[] data);
+
+        public FloatNDArray(FloatPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(FloatPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(FloatPointer buffer, char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(FloatPointer buffer, char order, @StdVector IntPointer shape);
+        public FloatNDArray(FloatBuffer buffer, char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(FloatBuffer buffer, char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(FloatBuffer buffer, char order, @StdVector IntBuffer shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(FloatBuffer buffer, char order, @StdVector IntBuffer shape);
+        public FloatNDArray(float[] buffer, char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(float[] buffer, char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/);
+        public FloatNDArray(float[] buffer, char order, @StdVector int[] shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(float[] buffer, char order, @StdVector int[] shape);
+
+        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        public native void replacePointers(FloatPointer buffer, IntPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(FloatPointer buffer, IntPointer shapeInfo);
+        public native void replacePointers(FloatBuffer buffer, IntBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(FloatBuffer buffer, IntBuffer shapeInfo);
+        public native void replacePointers(float[] buffer, int[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(float[] buffer, int[] shapeInfo);
+ 
+        public native FloatNDArray repeat(int dimension, @StdVector IntPointer reps);
+        public native FloatNDArray repeat(int dimension, @StdVector IntBuffer reps);
+        public native FloatNDArray repeat(int dimension, @StdVector int[] reps);
+
+        public native void repeat(int dimension, @ByRef FloatNDArray target);
+
+        public native @Cast("nd4j::DataType") int dataType();
+
+        public native FloatNDArray getView();
+
+        public native FloatNDArray subarray(@ByRef IndicesList indices);
+
+        public native FloatNDArray subarray(@ByRef IndicesList indices, @StdVector IntPointer strides);
+        public native FloatNDArray subarray(@ByRef IndicesList indices, @StdVector IntBuffer strides);
+        public native FloatNDArray subarray(@ByRef IndicesList indices, @StdVector int[] strides);
+
+        public native FloatNDArray subarray(@Const @ByRef Intervals idx);
+
+        public native FloatNDArray cast(@Cast("nd4j::DataType") int dtype);
+
+        public native void cast(FloatNDArray target, @Cast("nd4j::DataType") int dtype);
+
+        public native Workspace getWorkspace();
+
+        public native FloatPointer getBuffer();
+        public native FloatPointer buffer();
+
+
+        public native FloatPointer specialBuffer();
+        public native IntPointer specialShapeInfo();
+        public native void setSpecialBuffers(FloatPointer buffer, IntPointer shape);
+        public native void setSpecialBuffers(FloatBuffer buffer, IntBuffer shape);
+        public native void setSpecialBuffers(float[] buffer, int[] shape);
+
+
+        public native IntPointer shapeInfo();
+        public native IntPointer getShapeInfo();
+
+        public native void setShapeInfo(IntPointer shapeInfo);
+        public native void setShapeInfo(IntBuffer shapeInfo);
+        public native void setShapeInfo(int[] shapeInfo);
+
+        public native void setBuffer(FloatPointer buffer);
+        public native void setBuffer(FloatBuffer buffer);
+        public native void setBuffer(float[] buffer);
+
+        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
+
+        public native int sizeAt(int dim);
+
+        // This method returns order of this NDArray
+        public native char ordering();
+
+        public native @Cast("bool") boolean isView();
+
+        // This method returns shape portion of shapeInfo
+        public native IntPointer shapeOf();
+
+        // This method returns strides portion of shapeInfo
+        public native IntPointer stridesOf();
+
+        // This method returns rank of this NDArray
+        public native int rankOf();
+
+        // This method returns length of this NDArray
+        public native @Cast("Nd4jIndex") long lengthOf();
+
+        public native void svd(@ByRef FloatNDArray u, @ByRef FloatNDArray w, @ByRef FloatNDArray vt);
+        public native @Cast("bool") boolean permutei(@StdVector IntPointer dimensions);
+        public native @Cast("bool") boolean permutei(@StdVector IntBuffer dimensions);
+        public native @Cast("bool") boolean permutei(@StdVector int[] dimensions);
+        public native @Cast("bool") boolean permutei(@Const IntPointer dimensions, int rank);
+        public native @Cast("bool") boolean permutei(@Const IntBuffer dimensions, int rank);
+        public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
+        public native FloatNDArray permute(@StdVector IntPointer dimensions);
+        public native FloatNDArray permute(@StdVector IntBuffer dimensions);
+        public native FloatNDArray permute(@StdVector int[] dimensions);
+        public native FloatNDArray permute(@Const IntPointer dimensions, int rank);
+        public native FloatNDArray permute(@Const IntBuffer dimensions, int rank);
+        public native FloatNDArray permute(@Const int[] dimensions, int rank);
+
+        public native void permute(@Const IntPointer dimensions, int rank, @ByRef FloatNDArray target);
+        public native void permute(@Const IntBuffer dimensions, int rank, @ByRef FloatNDArray target);
+        public native void permute(@Const int[] dimensions, int rank, @ByRef FloatNDArray target);
+        public native void permute(@StdVector IntPointer dimensions, @ByRef FloatNDArray target);
+        public native void permute(@StdVector IntBuffer dimensions, @ByRef FloatNDArray target);
+        public native void permute(@StdVector int[] dimensions, @ByRef FloatNDArray target);
+
+        // This method returns number of rows in this NDArray
+        public native int rows();
+
+        // This method returns number of columns in this NDArray
+        public native int columns();
+
+        // This method returns sizeof(T) for this NDArray
+        public native int sizeOfT();
+
+        public native @Cast("bool") boolean isContiguous();
+
+        // print information about array shape
+        public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
+        public native void printShapeInfo();
+        public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
+
+        public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
+        public native void printBuffer();
+        public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
+
+        public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
+        public native void printIndexedBuffer();
+        public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
+
+        // This method assigns values of given NDArray to this one, wrt order
+        public native void assign(@Const FloatNDArray other);
+
+        // This method assigns given value to all elements in this NDArray
+        public native void assign(float value);
+
+        // This method returns new copy of this NDArray, optionally in different order
+        public native FloatNDArray dup(char newOrder/*='a'*/);
+        public native FloatNDArray dup();
+
+        // Returns true if these two NDArrays have same shape
+        public native @Cast("bool") boolean isSameShape(@Const FloatNDArray other);
+        public native @Cast("bool") boolean isSameShape(@StdVector IntPointer shape);
+        public native @Cast("bool") boolean isSameShape(@StdVector IntBuffer shape);
+        public native @Cast("bool") boolean isSameShape(@StdVector int[] shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongPointer shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongBuffer shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector long[] shape);
+
+		// Returns true if these two NDArrays have same shape
+        public native @Cast("bool") boolean isSameShapeStrict(@Const FloatNDArray other);
+
+        // This method returns sum of all elements of this NDArray
+        public native float sumNumber();
+
+        // This method returns mean number of this NDArray
+        public native float meanNumber();
+
+        public native int ews();
+
+        // method calculates sum along dimension(s) in this array and save it reduced array
+
+		// method reduces array by excluding its shapes along axes present in dimensions vector
+		
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // 
+
+        public native @Cast("Nd4jIndex") long argMax();
+
+        // perform array transformation
+
+        // perform array transformation
+
+        // perform array transformation
+
+        // perform pairwise transformation
+
+        // perform pairwise transformation
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
+        public native FloatNDArray transpose();
+
+        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
+        public native void transpose(@ByRef FloatNDArray target);
+
+        // This method applies in-place transpose to this array, so this array becomes transposed 
+        public native void transposei();
+
+        public native FloatNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
+        public native FloatNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
+        public native FloatNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
+
+        // this method returns number of tensors along specified dimension(s)
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
+
+        // This method returns true if buffer && shapeInfo were defined
+        public native @Cast("bool") boolean nonNull();
+
+        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other, float eps/*=(T) 1e-5f*/);
+        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other);
+
+        // Return value from linear buffer
+        public native float getScalar(@Cast("const Nd4jIndex") long i);
+        
+        public native float getIndexedScalar(@Cast("const Nd4jIndex") long i);
+
+        // Returns value from 2D matrix by coordinates/indexes         
+        public native float getScalar(int i, int j);
+
+        // returns value from 3D tensor by coordinates        
+        public native float getScalar(int i, int j, int k);        
+        
+        public native void putIndexedScalar(@Cast("const Nd4jIndex") long i, float value);        
+
+        // This method sets value in linear buffer to position i        
+        public native void putScalar(@Cast("const Nd4jIndex") long i, float value);        
+
+        // This method sets value in 2D matrix to position i, j         
+        public native void putScalar(int i, int j, float value);        
+
+        // This method sets value in 3D matrix to position i,j,k        
+        public native void putScalar(int i, int j, int k, float value);
+        
+        // This method adds given row to all rows in this NDArray, that is this array becomes affected
+        public native void addiRowVector(@Const FloatNDArray row);
+
+        public native void addRowVector(@Const FloatNDArray row, FloatNDArray target);
+        
+        public native void subRowVector(@Const FloatNDArray row, FloatNDArray target);
+        
+        public native void mulRowVector(@Const FloatNDArray row, FloatNDArray target);
+
+        public native void divRowVector(@Const FloatNDArray row, FloatNDArray target);
+
+        public native void addColumnVector(@Const FloatNDArray column, FloatNDArray target);
+
+		// This method adds given column to all columns in this NDArray, that is this array becomes affected
+		public native void addiColumnVector(@Const FloatNDArray column);
+
+		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
+		public native void muliColumnVector(@Const FloatNDArray column);
+
+        // this method returns number of bytes used by buffer & shapeInfo
+        public native @Cast("Nd4jIndex") long memoryFootprint();
+
+        // this method returns true if this ndarray is 2d
+        public native @Cast("bool") boolean isMatrix();
+
+        // this method returns true if this ndarray is vector
+        public native @Cast("bool") boolean isVector();
+
+        // this method returns true if this ndarray is column vector
+        public native @Cast("bool") boolean isColumnVector();
+
+        // this method returns true if this ndarray is row vector
+        public native @Cast("bool") boolean isRowVector();
+
+        // this method returns true if this ndarray is scalar
+        public native @Cast("bool") boolean isScalar();
+
+        // these methods suited for FlatBuffers use.
+        public native @StdVector FloatPointer getBufferAsVector();
+
+        public native @StdVector IntPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeInfoAsVector();
+		
+		// set new order and shape in case of suitable array length 
+	
+		// set new order and shape in case of suitable array length 
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+	
+		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
+		public native FloatNDArray reshape(char order, @StdVector IntPointer shape);
+		public native FloatNDArray reshape(char order, @StdVector IntBuffer shape);
+		public native FloatNDArray reshape(char order, @StdVector int[] shape);
+		
+		// calculate strides 
+		public native void updateStrides(char order);
+
+		// change an array by repeating it the number of times given by reps.
+		public native void tilei(@StdVector IntPointer reps);
+		public native void tilei(@StdVector IntBuffer reps);
+		public native void tilei(@StdVector int[] reps);
+
+		// tile an array by repeating it the number of times given by reps.
+		public native @ByVal FloatNDArray tile(@StdVector IntPointer reps);
+		public native @ByVal FloatNDArray tile(@StdVector IntBuffer reps);
+		public native @ByVal FloatNDArray tile(@StdVector int[] reps);
+
+        // tile an array by repeating it the number of times given by reps.
+        public native void tile(@StdVector IntPointer reps, @ByRef FloatNDArray target);
+        public native void tile(@StdVector IntBuffer reps, @ByRef FloatNDArray target);
+        public native void tile(@StdVector int[] reps, @ByRef FloatNDArray target);
+        
+		// return array which is broadcasted from this and argument array  
+		public native FloatNDArray broadcast(@Const @ByRef FloatNDArray other);
+		
+		// check whether array's rows (arg=0) or columns create orthogonal basis
+		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
+		
+		// check whether array is identity matrix
+		public native @Cast("bool") boolean isIdentityMatrix(); 
+
+		// check whether array is unitary matrix
+		public native @Cast("bool") boolean isUnitary(); 
+                
+        // reduce dimensions in this array relying on index operations
+
+        // apply reduce3 operations to this and other array, return result in new output array
+
+        // apply reduce3 (execAll) operations to this and other array, return result in new output array
+        
+        // apply reduce3 (exec) operations to this and other array, return result in new output array
+
+        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
+
+        // addition operator array + array
+        public native @ByVal @Name("operator +") FloatNDArray add(@Const @ByRef FloatNDArray other);
+
+        // addition operator array + scalar
+        public native @ByVal @Name("operator +") FloatNDArray add(float scalar);
+
+        // addition operator scalar + array
+        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
+        // subtraction operator scalar - array
+        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
+
+        // addition operator scalar + array
+        
+        
+        
+
+        // subtraction operator scalar - array
+        
+        
+        
+
+        // addition operator array1 += array2    
+        public native @Name("operator +=") void addPut(@Const @ByRef FloatNDArray other);
+
+        // subtraction operator array - array
+        public native @ByVal @Name("operator -") FloatNDArray subtract(@Const @ByRef FloatNDArray other);
+
+        // subtraction operator array - scalar
+        public native @ByVal @Name("operator -") FloatNDArray subtract(float scalar);        
+
+        // negative operator, it makes all array elements = -elements
+        public native @ByVal @Name("operator -") FloatNDArray subtract();
+
+        // multiplication operator array1*array2
+        public native @ByVal @Name("operator *") FloatNDArray multiply(@Const @ByRef FloatNDArray other);        
+    
+        // multiplication operator array*scalar
+        public native @ByVal @Name("operator *") FloatNDArray multiply(float scalar);
+
+        // multiplication operator array1 *= array2
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef FloatNDArray other);
+
+        // multiplication operator array*scalar
+        public native @Name("operator *=") void multiplyPut(float scalar);
+
+        // division operator array1/array2
+        public native @ByVal @Name("operator /") FloatNDArray divide(@Const @ByRef FloatNDArray other);        
+
+        // division operator array1 /= array2
+        public native @Name("operator /=") void dividePut(@Const @ByRef FloatNDArray other);
+
+        // division operator array /= scalar
+        public native @Name("operator /=") void dividePut(float scalar);
+
+        // mathematical multiplication of two arrays
+        
+
+        public native void assign(@Const @ByRef FloatNDArray other, @Const @ByRef Intervals idx);
+
+        public native @StdVector BytePointer asByteVector();
+
+        // default destructor 
+
+    }
+
+
+    @Name("nd4j::NDArray<float16>") @NoOffset public static class HalfNDArray extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public HalfNDArray(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public HalfNDArray(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public HalfNDArray position(long position) {
+            return (HalfNDArray)super.position(position);
+        }
+    
+        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
+        public native @Name("operator delete") void _delete(Pointer p);
+
+		// forbid assignment operator
+		public native @ByRef @Name("operator =") HalfNDArray put(@Const @ByRef HalfNDArray other);
+        
+        // accessing operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+
+        // modifying operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(@Cast("const Nd4jIndex") long i);
+
+        // accessing operator for 2D array, i - row, j - column        
+
+        // modifying operator for 2D array, i - row, j - column
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j);
+
+        // accessing operator for 3D array        
+
+        // modifying operator for 3D array
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j, int k);
+
+        // default constructor, do not allocate memory, memory for array is passed from outside 
+        public HalfNDArray(@Cast("float16*") ShortPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(@Cast("float16*") ShortPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        public HalfNDArray() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        public HalfNDArray(@Cast("float16*") ShortBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(@Cast("float16*") ShortBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(@Cast("float16*") short[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(@Cast("float16*") short[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+
+        //constructor, create empty array with at workspace
+        public HalfNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
+        private native void allocate(Workspace workspace);
+
+        // this constructor creates 2D NDArray, memory for array is allocated in constructor
+        public HalfNDArray(int rows, int columns, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(rows, columns, order, workspace); }
+        private native void allocate(int rows, int columns, char order, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(int rows, int columns, char order) { super((Pointer)null); allocate(rows, columns, order); }
+        private native void allocate(int rows, int columns, char order);
+
+        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        public HalfNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
+        private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
+        private native void allocate(@Cast("const Nd4jIndex") long length, char order);
+
+        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        public HalfNDArray(@Const HalfNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
+        private native void allocate(@Const HalfNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(@Const HalfNDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const HalfNDArray other);
+		
+		// copy constructor
+
+		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+		public HalfNDArray(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public HalfNDArray(@Const IntPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const IntPointer shapeInfo);
+		public HalfNDArray(@Const IntBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const IntBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public HalfNDArray(@Const IntBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const IntBuffer shapeInfo);
+		public HalfNDArray(@Const int[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const int[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public HalfNDArray(@Const int[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const int[] shapeInfo);
+
+        // this constructor creates new array using shape information contained in initializer_list/vector argument
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
+        public HalfNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector IntPointer shape);
+        public HalfNDArray(char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(char order, @StdVector IntBuffer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector IntBuffer shape);
+        public HalfNDArray(char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(char order, @StdVector int[] shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector int[] shape);
+
+        public HalfNDArray(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data);
+        public HalfNDArray(char order, @StdVector IntBuffer shape, @Cast("float16*") @StdVector ShortBuffer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector IntBuffer shape, @Cast("float16*") @StdVector ShortBuffer data, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(char order, @StdVector IntBuffer shape, @Cast("float16*") @StdVector ShortBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector IntBuffer shape, @Cast("float16*") @StdVector ShortBuffer data);
+        public HalfNDArray(char order, @StdVector int[] shape, @Cast("float16*") @StdVector short[] data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector int[] shape, @Cast("float16*") @StdVector short[] data, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(char order, @StdVector int[] shape, @Cast("float16*") @StdVector short[] data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector int[] shape, @Cast("float16*") @StdVector short[] data);
+
+        public HalfNDArray(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape);
+        public HalfNDArray(@Cast("float16*") ShortBuffer buffer, char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(@Cast("float16*") ShortBuffer buffer, char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(@Cast("float16*") ShortBuffer buffer, char order, @StdVector IntBuffer shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(@Cast("float16*") ShortBuffer buffer, char order, @StdVector IntBuffer shape);
+        public HalfNDArray(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/);
+        public HalfNDArray(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape);
+
+        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        public native void replacePointers(@Cast("float16*") ShortPointer buffer, IntPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(@Cast("float16*") ShortPointer buffer, IntPointer shapeInfo);
+        public native void replacePointers(@Cast("float16*") ShortBuffer buffer, IntBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(@Cast("float16*") ShortBuffer buffer, IntBuffer shapeInfo);
+        public native void replacePointers(@Cast("float16*") short[] buffer, int[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(@Cast("float16*") short[] buffer, int[] shapeInfo);
+ 
+        public native HalfNDArray repeat(int dimension, @StdVector IntPointer reps);
+        public native HalfNDArray repeat(int dimension, @StdVector IntBuffer reps);
+        public native HalfNDArray repeat(int dimension, @StdVector int[] reps);
+
+        public native void repeat(int dimension, @ByRef HalfNDArray target);
+
+        public native @Cast("nd4j::DataType") int dataType();
+
+        public native HalfNDArray getView();
+
+        public native HalfNDArray subarray(@ByRef IndicesList indices);
+
+        public native HalfNDArray subarray(@ByRef IndicesList indices, @StdVector IntPointer strides);
+        public native HalfNDArray subarray(@ByRef IndicesList indices, @StdVector IntBuffer strides);
+        public native HalfNDArray subarray(@ByRef IndicesList indices, @StdVector int[] strides);
+
+        public native HalfNDArray subarray(@Const @ByRef Intervals idx);
+
+        public native HalfNDArray cast(@Cast("nd4j::DataType") int dtype);
+
+        public native void cast(HalfNDArray target, @Cast("nd4j::DataType") int dtype);
+
+        public native Workspace getWorkspace();
+
+        public native @Cast("float16*") ShortPointer getBuffer();
+        public native @Cast("float16*") ShortPointer buffer();
+
+
+        public native @Cast("float16*") ShortPointer specialBuffer();
+        public native IntPointer specialShapeInfo();
+        public native void setSpecialBuffers(@Cast("float16*") ShortPointer buffer, IntPointer shape);
+        public native void setSpecialBuffers(@Cast("float16*") ShortBuffer buffer, IntBuffer shape);
+        public native void setSpecialBuffers(@Cast("float16*") short[] buffer, int[] shape);
+
+
+        public native IntPointer shapeInfo();
+        public native IntPointer getShapeInfo();
+
+        public native void setShapeInfo(IntPointer shapeInfo);
+        public native void setShapeInfo(IntBuffer shapeInfo);
+        public native void setShapeInfo(int[] shapeInfo);
+
+        public native void setBuffer(@Cast("float16*") ShortPointer buffer);
+        public native void setBuffer(@Cast("float16*") ShortBuffer buffer);
+        public native void setBuffer(@Cast("float16*") short[] buffer);
+
+        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
+
+        public native int sizeAt(int dim);
+
+        // This method returns order of this NDArray
+        public native char ordering();
+
+        public native @Cast("bool") boolean isView();
+
+        // This method returns shape portion of shapeInfo
+        public native IntPointer shapeOf();
+
+        // This method returns strides portion of shapeInfo
+        public native IntPointer stridesOf();
+
+        // This method returns rank of this NDArray
+        public native int rankOf();
+
+        // This method returns length of this NDArray
+        public native @Cast("Nd4jIndex") long lengthOf();
+
+        public native void svd(@ByRef HalfNDArray u, @ByRef HalfNDArray w, @ByRef HalfNDArray vt);
+        public native @Cast("bool") boolean permutei(@StdVector IntPointer dimensions);
+        public native @Cast("bool") boolean permutei(@StdVector IntBuffer dimensions);
+        public native @Cast("bool") boolean permutei(@StdVector int[] dimensions);
+        public native @Cast("bool") boolean permutei(@Const IntPointer dimensions, int rank);
+        public native @Cast("bool") boolean permutei(@Const IntBuffer dimensions, int rank);
+        public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
+        public native HalfNDArray permute(@StdVector IntPointer dimensions);
+        public native HalfNDArray permute(@StdVector IntBuffer dimensions);
+        public native HalfNDArray permute(@StdVector int[] dimensions);
+        public native HalfNDArray permute(@Const IntPointer dimensions, int rank);
+        public native HalfNDArray permute(@Const IntBuffer dimensions, int rank);
+        public native HalfNDArray permute(@Const int[] dimensions, int rank);
+
+        public native void permute(@Const IntPointer dimensions, int rank, @ByRef HalfNDArray target);
+        public native void permute(@Const IntBuffer dimensions, int rank, @ByRef HalfNDArray target);
+        public native void permute(@Const int[] dimensions, int rank, @ByRef HalfNDArray target);
+        public native void permute(@StdVector IntPointer dimensions, @ByRef HalfNDArray target);
+        public native void permute(@StdVector IntBuffer dimensions, @ByRef HalfNDArray target);
+        public native void permute(@StdVector int[] dimensions, @ByRef HalfNDArray target);
+
+        // This method returns number of rows in this NDArray
+        public native int rows();
+
+        // This method returns number of columns in this NDArray
+        public native int columns();
+
+        // This method returns sizeof(T) for this NDArray
+        public native int sizeOfT();
+
+        public native @Cast("bool") boolean isContiguous();
+
+        // print information about array shape
+        public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
+        public native void printShapeInfo();
+        public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
+
+        public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
+        public native void printBuffer();
+        public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
+
+        public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
+        public native void printIndexedBuffer();
+        public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
+
+        // This method assigns values of given NDArray to this one, wrt order
+        public native void assign(@Const HalfNDArray other);
+
+        // This method assigns given value to all elements in this NDArray
+        public native void assign(@Cast("const float16") short value);
+
+        // This method returns new copy of this NDArray, optionally in different order
+        public native HalfNDArray dup(char newOrder/*='a'*/);
+        public native HalfNDArray dup();
+
+        // Returns true if these two NDArrays have same shape
+        public native @Cast("bool") boolean isSameShape(@Const HalfNDArray other);
+        public native @Cast("bool") boolean isSameShape(@StdVector IntPointer shape);
+        public native @Cast("bool") boolean isSameShape(@StdVector IntBuffer shape);
+        public native @Cast("bool") boolean isSameShape(@StdVector int[] shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongPointer shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongBuffer shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector long[] shape);
+
+		// Returns true if these two NDArrays have same shape
+        public native @Cast("bool") boolean isSameShapeStrict(@Const HalfNDArray other);
+
+        // This method returns sum of all elements of this NDArray
+        public native @Cast("float16") short sumNumber();
+
+        // This method returns mean number of this NDArray
+        public native @Cast("float16") short meanNumber();
+
+        public native int ews();
+
+        // method calculates sum along dimension(s) in this array and save it reduced array
+
+		// method reduces array by excluding its shapes along axes present in dimensions vector
+		
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // 
+
+        public native @Cast("Nd4jIndex") long argMax();
+
+        // perform array transformation
+
+        // perform array transformation
+
+        // perform array transformation
+
+        // perform pairwise transformation
+
+        // perform pairwise transformation
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
+        public native HalfNDArray transpose();
+
+        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
+        public native void transpose(@ByRef HalfNDArray target);
+
+        // This method applies in-place transpose to this array, so this array becomes transposed 
+        public native void transposei();
+
+        public native HalfNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
+        public native HalfNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
+        public native HalfNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
+
+        // this method returns number of tensors along specified dimension(s)
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
+
+        // This method returns true if buffer && shapeInfo were defined
+        public native @Cast("bool") boolean nonNull();
+
+        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+        public native @Cast("bool") boolean equalsTo(@Const HalfNDArray other, @Cast("float16") short eps/*=(T) 1e-5f*/);
+        public native @Cast("bool") boolean equalsTo(@Const HalfNDArray other);
+
+        // Return value from linear buffer
+        public native @Cast("float16") short getScalar(@Cast("const Nd4jIndex") long i);
+        
+        public native @Cast("float16") short getIndexedScalar(@Cast("const Nd4jIndex") long i);
+
+        // Returns value from 2D matrix by coordinates/indexes         
+        public native @Cast("float16") short getScalar(int i, int j);
+
+        // returns value from 3D tensor by coordinates        
+        public native @Cast("float16") short getScalar(int i, int j, int k);        
+        
+        public native void putIndexedScalar(@Cast("const Nd4jIndex") long i, @Cast("const float16") short value);        
+
+        // This method sets value in linear buffer to position i        
+        public native void putScalar(@Cast("const Nd4jIndex") long i, @Cast("const float16") short value);        
+
+        // This method sets value in 2D matrix to position i, j         
+        public native void putScalar(int i, int j, @Cast("const float16") short value);        
+
+        // This method sets value in 3D matrix to position i,j,k        
+        public native void putScalar(int i, int j, int k, @Cast("const float16") short value);
+        
+        // This method adds given row to all rows in this NDArray, that is this array becomes affected
+        public native void addiRowVector(@Const HalfNDArray row);
+
+        public native void addRowVector(@Const HalfNDArray row, HalfNDArray target);
+        
+        public native void subRowVector(@Const HalfNDArray row, HalfNDArray target);
+        
+        public native void mulRowVector(@Const HalfNDArray row, HalfNDArray target);
+
+        public native void divRowVector(@Const HalfNDArray row, HalfNDArray target);
+
+        public native void addColumnVector(@Const HalfNDArray column, HalfNDArray target);
+
+		// This method adds given column to all columns in this NDArray, that is this array becomes affected
+		public native void addiColumnVector(@Const HalfNDArray column);
+
+		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
+		public native void muliColumnVector(@Const HalfNDArray column);
+
+        // this method returns number of bytes used by buffer & shapeInfo
+        public native @Cast("Nd4jIndex") long memoryFootprint();
+
+        // this method returns true if this ndarray is 2d
+        public native @Cast("bool") boolean isMatrix();
+
+        // this method returns true if this ndarray is vector
+        public native @Cast("bool") boolean isVector();
+
+        // this method returns true if this ndarray is column vector
+        public native @Cast("bool") boolean isColumnVector();
+
+        // this method returns true if this ndarray is row vector
+        public native @Cast("bool") boolean isRowVector();
+
+        // this method returns true if this ndarray is scalar
+        public native @Cast("bool") boolean isScalar();
+
+        // these methods suited for FlatBuffers use.
+        public native @Cast("float16*") @StdVector ShortPointer getBufferAsVector();
+
+        public native @StdVector IntPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeInfoAsVector();
+		
+		// set new order and shape in case of suitable array length 
+	
+		// set new order and shape in case of suitable array length 
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+	
+		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
+		public native HalfNDArray reshape(char order, @StdVector IntPointer shape);
+		public native HalfNDArray reshape(char order, @StdVector IntBuffer shape);
+		public native HalfNDArray reshape(char order, @StdVector int[] shape);
+		
+		// calculate strides 
+		public native void updateStrides(char order);
+
+		// change an array by repeating it the number of times given by reps.
+		public native void tilei(@StdVector IntPointer reps);
+		public native void tilei(@StdVector IntBuffer reps);
+		public native void tilei(@StdVector int[] reps);
+
+		// tile an array by repeating it the number of times given by reps.
+		public native @ByVal HalfNDArray tile(@StdVector IntPointer reps);
+		public native @ByVal HalfNDArray tile(@StdVector IntBuffer reps);
+		public native @ByVal HalfNDArray tile(@StdVector int[] reps);
+
+        // tile an array by repeating it the number of times given by reps.
+        public native void tile(@StdVector IntPointer reps, @ByRef HalfNDArray target);
+        public native void tile(@StdVector IntBuffer reps, @ByRef HalfNDArray target);
+        public native void tile(@StdVector int[] reps, @ByRef HalfNDArray target);
+        
+		// return array which is broadcasted from this and argument array  
+		public native HalfNDArray broadcast(@Const @ByRef HalfNDArray other);
+		
+		// check whether array's rows (arg=0) or columns create orthogonal basis
+		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
+		
+		// check whether array is identity matrix
+		public native @Cast("bool") boolean isIdentityMatrix(); 
+
+		// check whether array is unitary matrix
+		public native @Cast("bool") boolean isUnitary(); 
+                
+        // reduce dimensions in this array relying on index operations
+
+        // apply reduce3 operations to this and other array, return result in new output array
+
+        // apply reduce3 (execAll) operations to this and other array, return result in new output array
+        
+        // apply reduce3 (exec) operations to this and other array, return result in new output array
+
+        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
+
+        // addition operator array + array
+        public native @ByVal @Name("operator +") HalfNDArray add(@Const @ByRef HalfNDArray other);
+
+        // addition operator array + scalar
+        public native @ByVal @Name("operator +") HalfNDArray add(@Cast("const float16") short scalar);
+
+        // addition operator scalar + array
+        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
+        // subtraction operator scalar - array
+        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
+
+        // addition operator scalar + array
+        
+        
+        
+
+        // subtraction operator scalar - array
+        
+        
+        
+
+        // addition operator array1 += array2    
+        public native @Name("operator +=") void addPut(@Const @ByRef HalfNDArray other);
+
+        // subtraction operator array - array
+        public native @ByVal @Name("operator -") HalfNDArray subtract(@Const @ByRef HalfNDArray other);
+
+        // subtraction operator array - scalar
+        public native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short scalar);        
+
+        // negative operator, it makes all array elements = -elements
+        public native @ByVal @Name("operator -") HalfNDArray subtract();
+
+        // multiplication operator array1*array2
+        public native @ByVal @Name("operator *") HalfNDArray multiply(@Const @ByRef HalfNDArray other);        
+    
+        // multiplication operator array*scalar
+        public native @ByVal @Name("operator *") HalfNDArray multiply(@Cast("const float16") short scalar);
+
+        // multiplication operator array1 *= array2
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef HalfNDArray other);
+
+        // multiplication operator array*scalar
+        public native @Name("operator *=") void multiplyPut(@Cast("const float16") short scalar);
+
+        // division operator array1/array2
+        public native @ByVal @Name("operator /") HalfNDArray divide(@Const @ByRef HalfNDArray other);        
+
+        // division operator array1 /= array2
+        public native @Name("operator /=") void dividePut(@Const @ByRef HalfNDArray other);
+
+        // division operator array /= scalar
+        public native @Name("operator /=") void dividePut(@Cast("const float16") short scalar);
+
+        // mathematical multiplication of two arrays
+        
+
+        public native void assign(@Const @ByRef HalfNDArray other, @Const @ByRef Intervals idx);
+
+        public native @StdVector BytePointer asByteVector();
+
+        // default destructor 
+
+    }
+
+
+    @Name("nd4j::NDArray<double>") @NoOffset public static class DoubleNDArray extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DoubleNDArray(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public DoubleNDArray(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public DoubleNDArray position(long position) {
+            return (DoubleNDArray)super.position(position);
+        }
+    
+        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
+        public native @Name("operator delete") void _delete(Pointer p);
+
+		// forbid assignment operator
+		public native @ByRef @Name("operator =") DoubleNDArray put(@Const @ByRef DoubleNDArray other);
+        
+        // accessing operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+
+        // modifying operator for matrix, i - absolute index
+        // be careful this method doesn't check the boundaries of array
+        public native @ByRef @Name("operator ()") DoublePointer apply(@Cast("const Nd4jIndex") long i);
+
+        // accessing operator for 2D array, i - row, j - column        
+
+        // modifying operator for 2D array, i - row, j - column
+        public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j);
+
+        // accessing operator for 3D array        
+
+        // modifying operator for 3D array
+        public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j, int k);
+
+        // default constructor, do not allocate memory, memory for array is passed from outside 
+        public DoubleNDArray(DoublePointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(DoublePointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        public DoubleNDArray(DoubleBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(DoubleBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(double[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
+        private native void allocate(double[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+
+        //constructor, create empty array with at workspace
+        public DoubleNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
+        private native void allocate(Workspace workspace);
+
+        // this constructor creates 2D NDArray, memory for array is allocated in constructor
+        public DoubleNDArray(int rows, int columns, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(rows, columns, order, workspace); }
+        private native void allocate(int rows, int columns, char order, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(int rows, int columns, char order) { super((Pointer)null); allocate(rows, columns, order); }
+        private native void allocate(int rows, int columns, char order);
+
+        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        public DoubleNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
+        private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
+        private native void allocate(@Cast("const Nd4jIndex") long length, char order);
+
+        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        public DoubleNDArray(@Const DoubleNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
+        private native void allocate(@Const DoubleNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(@Const DoubleNDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const DoubleNDArray other);
+		
+		// copy constructor
+
+		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+		public DoubleNDArray(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public DoubleNDArray(@Const IntPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const IntPointer shapeInfo);
+		public DoubleNDArray(@Const IntBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const IntBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public DoubleNDArray(@Const IntBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const IntBuffer shapeInfo);
+		public DoubleNDArray(@Const int[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
+		private native void allocate(@Const int[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+		public DoubleNDArray(@Const int[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Const int[] shapeInfo);
+
+        // this constructor creates new array using shape information contained in initializer_list/vector argument
+        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
+        public DoubleNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector IntPointer shape);
+        public DoubleNDArray(char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(char order, @StdVector IntBuffer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector IntBuffer shape);
+        public DoubleNDArray(char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
+        private native void allocate(char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(char order, @StdVector int[] shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @StdVector int[] shape);
+
+        public DoubleNDArray(char order, @StdVector IntPointer shape, @StdVector DoublePointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector IntPointer shape, @StdVector DoublePointer data, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(char order, @StdVector IntPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector IntPointer shape, @StdVector DoublePointer data);
+        public DoubleNDArray(char order, @StdVector IntBuffer shape, @StdVector DoubleBuffer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector IntBuffer shape, @StdVector DoubleBuffer data, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(char order, @StdVector IntBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector IntBuffer shape, @StdVector DoubleBuffer data);
+        public DoubleNDArray(char order, @StdVector int[] shape, @StdVector double[] data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
+        private native void allocate(char order, @StdVector int[] shape, @StdVector double[] data, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(char order, @StdVector int[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @StdVector int[] shape, @StdVector double[] data);
+
+        public DoubleNDArray(DoublePointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(DoublePointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(DoublePointer buffer, char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(DoublePointer buffer, char order, @StdVector IntPointer shape);
+        public DoubleNDArray(DoubleBuffer buffer, char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(DoubleBuffer buffer, char order, @StdVector IntBuffer shape, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(DoubleBuffer buffer, char order, @StdVector IntBuffer shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(DoubleBuffer buffer, char order, @StdVector IntBuffer shape);
+        public DoubleNDArray(double[] buffer, char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
+        private native void allocate(double[] buffer, char order, @StdVector int[] shape, Workspace workspace/*=nullptr*/);
+        public DoubleNDArray(double[] buffer, char order, @StdVector int[] shape) { super((Pointer)null); allocate(buffer, order, shape); }
+        private native void allocate(double[] buffer, char order, @StdVector int[] shape);
+
+        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        public native void replacePointers(DoublePointer buffer, IntPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(DoublePointer buffer, IntPointer shapeInfo);
+        public native void replacePointers(DoubleBuffer buffer, IntBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(DoubleBuffer buffer, IntBuffer shapeInfo);
+        public native void replacePointers(double[] buffer, int[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
+        public native void replacePointers(double[] buffer, int[] shapeInfo);
+ 
+        public native DoubleNDArray repeat(int dimension, @StdVector IntPointer reps);
+        public native DoubleNDArray repeat(int dimension, @StdVector IntBuffer reps);
+        public native DoubleNDArray repeat(int dimension, @StdVector int[] reps);
+
+        public native void repeat(int dimension, @ByRef DoubleNDArray target);
+
+        public native @Cast("nd4j::DataType") int dataType();
+
+        public native DoubleNDArray getView();
+
+        public native DoubleNDArray subarray(@ByRef IndicesList indices);
+
+        public native DoubleNDArray subarray(@ByRef IndicesList indices, @StdVector IntPointer strides);
+        public native DoubleNDArray subarray(@ByRef IndicesList indices, @StdVector IntBuffer strides);
+        public native DoubleNDArray subarray(@ByRef IndicesList indices, @StdVector int[] strides);
+
+        public native DoubleNDArray subarray(@Const @ByRef Intervals idx);
+
+        public native DoubleNDArray cast(@Cast("nd4j::DataType") int dtype);
+
+        public native void cast(DoubleNDArray target, @Cast("nd4j::DataType") int dtype);
+
+        public native Workspace getWorkspace();
+
+        public native DoublePointer getBuffer();
+        public native DoublePointer buffer();
+
+
+        public native DoublePointer specialBuffer();
+        public native IntPointer specialShapeInfo();
+        public native void setSpecialBuffers(DoublePointer buffer, IntPointer shape);
+        public native void setSpecialBuffers(DoubleBuffer buffer, IntBuffer shape);
+        public native void setSpecialBuffers(double[] buffer, int[] shape);
+
+
+        public native IntPointer shapeInfo();
+        public native IntPointer getShapeInfo();
+
+        public native void setShapeInfo(IntPointer shapeInfo);
+        public native void setShapeInfo(IntBuffer shapeInfo);
+        public native void setShapeInfo(int[] shapeInfo);
+
+        public native void setBuffer(DoublePointer buffer);
+        public native void setBuffer(DoubleBuffer buffer);
+        public native void setBuffer(double[] buffer);
+
+        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
+
+        public native int sizeAt(int dim);
+
+        // This method returns order of this NDArray
+        public native char ordering();
+
+        public native @Cast("bool") boolean isView();
+
+        // This method returns shape portion of shapeInfo
+        public native IntPointer shapeOf();
+
+        // This method returns strides portion of shapeInfo
+        public native IntPointer stridesOf();
+
+        // This method returns rank of this NDArray
+        public native int rankOf();
+
+        // This method returns length of this NDArray
+        public native @Cast("Nd4jIndex") long lengthOf();
+
+        public native void svd(@ByRef DoubleNDArray u, @ByRef DoubleNDArray w, @ByRef DoubleNDArray vt);
+        public native @Cast("bool") boolean permutei(@StdVector IntPointer dimensions);
+        public native @Cast("bool") boolean permutei(@StdVector IntBuffer dimensions);
+        public native @Cast("bool") boolean permutei(@StdVector int[] dimensions);
+        public native @Cast("bool") boolean permutei(@Const IntPointer dimensions, int rank);
+        public native @Cast("bool") boolean permutei(@Const IntBuffer dimensions, int rank);
+        public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
+        public native DoubleNDArray permute(@StdVector IntPointer dimensions);
+        public native DoubleNDArray permute(@StdVector IntBuffer dimensions);
+        public native DoubleNDArray permute(@StdVector int[] dimensions);
+        public native DoubleNDArray permute(@Const IntPointer dimensions, int rank);
+        public native DoubleNDArray permute(@Const IntBuffer dimensions, int rank);
+        public native DoubleNDArray permute(@Const int[] dimensions, int rank);
+
+        public native void permute(@Const IntPointer dimensions, int rank, @ByRef DoubleNDArray target);
+        public native void permute(@Const IntBuffer dimensions, int rank, @ByRef DoubleNDArray target);
+        public native void permute(@Const int[] dimensions, int rank, @ByRef DoubleNDArray target);
+        public native void permute(@StdVector IntPointer dimensions, @ByRef DoubleNDArray target);
+        public native void permute(@StdVector IntBuffer dimensions, @ByRef DoubleNDArray target);
+        public native void permute(@StdVector int[] dimensions, @ByRef DoubleNDArray target);
+
+        // This method returns number of rows in this NDArray
+        public native int rows();
+
+        // This method returns number of columns in this NDArray
+        public native int columns();
+
+        // This method returns sizeof(T) for this NDArray
+        public native int sizeOfT();
+
+        public native @Cast("bool") boolean isContiguous();
+
+        // print information about array shape
+        public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
+        public native void printShapeInfo();
+        public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
+
+        public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
+        public native void printBuffer();
+        public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
+
+        public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
+        public native void printIndexedBuffer();
+        public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
+
+        // This method assigns values of given NDArray to this one, wrt order
+        public native void assign(@Const DoubleNDArray other);
+
+        // This method assigns given value to all elements in this NDArray
+        public native void assign(double value);
+
+        // This method returns new copy of this NDArray, optionally in different order
+        public native DoubleNDArray dup(char newOrder/*='a'*/);
+        public native DoubleNDArray dup();
+
+        // Returns true if these two NDArrays have same shape
+        public native @Cast("bool") boolean isSameShape(@Const DoubleNDArray other);
+        public native @Cast("bool") boolean isSameShape(@StdVector IntPointer shape);
+        public native @Cast("bool") boolean isSameShape(@StdVector IntBuffer shape);
+        public native @Cast("bool") boolean isSameShape(@StdVector int[] shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongPointer shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongBuffer shape);
+        public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector long[] shape);
+
+		// Returns true if these two NDArrays have same shape
+        public native @Cast("bool") boolean isSameShapeStrict(@Const DoubleNDArray other);
+
+        // This method returns sum of all elements of this NDArray
+        public native double sumNumber();
+
+        // This method returns mean number of this NDArray
+        public native double meanNumber();
+
+        public native int ews();
+
+        // method calculates sum along dimension(s) in this array and save it reduced array
+
+		// method reduces array by excluding its shapes along axes present in dimensions vector
+		
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // method reduces array by excluding its shapes along axes present in dimensions vector
+
+        // 
+
+        public native @Cast("Nd4jIndex") long argMax();
+
+        // perform array transformation
+
+        // perform array transformation
+
+        // perform array transformation
+
+        // perform pairwise transformation
+
+        // perform pairwise transformation
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
+        public native DoubleNDArray transpose();
+
+        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
+        public native void transpose(@ByRef DoubleNDArray target);
+
+        // This method applies in-place transpose to this array, so this array becomes transposed 
+        public native void transposei();
+
+        public native DoubleNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
+        public native DoubleNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
+        public native DoubleNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
+
+        // this method returns number of tensors along specified dimension(s)
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
+
+        // This method returns true if buffer && shapeInfo were defined
+        public native @Cast("bool") boolean nonNull();
+
+        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+        public native @Cast("bool") boolean equalsTo(@Const DoubleNDArray other, double eps/*=(T) 1e-5f*/);
+        public native @Cast("bool") boolean equalsTo(@Const DoubleNDArray other);
+
+        // Return value from linear buffer
+        public native double getScalar(@Cast("const Nd4jIndex") long i);
+        
+        public native double getIndexedScalar(@Cast("const Nd4jIndex") long i);
+
+        // Returns value from 2D matrix by coordinates/indexes         
+        public native double getScalar(int i, int j);
+
+        // returns value from 3D tensor by coordinates        
+        public native double getScalar(int i, int j, int k);        
+        
+        public native void putIndexedScalar(@Cast("const Nd4jIndex") long i, double value);        
+
+        // This method sets value in linear buffer to position i        
+        public native void putScalar(@Cast("const Nd4jIndex") long i, double value);        
+
+        // This method sets value in 2D matrix to position i, j         
+        public native void putScalar(int i, int j, double value);        
+
+        // This method sets value in 3D matrix to position i,j,k        
+        public native void putScalar(int i, int j, int k, double value);
+        
+        // This method adds given row to all rows in this NDArray, that is this array becomes affected
+        public native void addiRowVector(@Const DoubleNDArray row);
+
+        public native void addRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+        
+        public native void subRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+        
+        public native void mulRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+
+        public native void divRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+
+        public native void addColumnVector(@Const DoubleNDArray column, DoubleNDArray target);
+
+		// This method adds given column to all columns in this NDArray, that is this array becomes affected
+		public native void addiColumnVector(@Const DoubleNDArray column);
+
+		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
+		public native void muliColumnVector(@Const DoubleNDArray column);
+
+        // this method returns number of bytes used by buffer & shapeInfo
+        public native @Cast("Nd4jIndex") long memoryFootprint();
+
+        // this method returns true if this ndarray is 2d
+        public native @Cast("bool") boolean isMatrix();
+
+        // this method returns true if this ndarray is vector
+        public native @Cast("bool") boolean isVector();
+
+        // this method returns true if this ndarray is column vector
+        public native @Cast("bool") boolean isColumnVector();
+
+        // this method returns true if this ndarray is row vector
+        public native @Cast("bool") boolean isRowVector();
+
+        // this method returns true if this ndarray is scalar
+        public native @Cast("bool") boolean isScalar();
+
+        // these methods suited for FlatBuffers use.
+        public native @StdVector DoublePointer getBufferAsVector();
+
+        public native @StdVector IntPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeInfoAsVector();
+		
+		// set new order and shape in case of suitable array length 
+	
+		// set new order and shape in case of suitable array length 
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+	
+		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
+		public native DoubleNDArray reshape(char order, @StdVector IntPointer shape);
+		public native DoubleNDArray reshape(char order, @StdVector IntBuffer shape);
+		public native DoubleNDArray reshape(char order, @StdVector int[] shape);
+		
+		// calculate strides 
+		public native void updateStrides(char order);
+
+		// change an array by repeating it the number of times given by reps.
+		public native void tilei(@StdVector IntPointer reps);
+		public native void tilei(@StdVector IntBuffer reps);
+		public native void tilei(@StdVector int[] reps);
+
+		// tile an array by repeating it the number of times given by reps.
+		public native @ByVal DoubleNDArray tile(@StdVector IntPointer reps);
+		public native @ByVal DoubleNDArray tile(@StdVector IntBuffer reps);
+		public native @ByVal DoubleNDArray tile(@StdVector int[] reps);
+
+        // tile an array by repeating it the number of times given by reps.
+        public native void tile(@StdVector IntPointer reps, @ByRef DoubleNDArray target);
+        public native void tile(@StdVector IntBuffer reps, @ByRef DoubleNDArray target);
+        public native void tile(@StdVector int[] reps, @ByRef DoubleNDArray target);
+        
+		// return array which is broadcasted from this and argument array  
+		public native DoubleNDArray broadcast(@Const @ByRef DoubleNDArray other);
+		
+		// check whether array's rows (arg=0) or columns create orthogonal basis
+		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
+		
+		// check whether array is identity matrix
+		public native @Cast("bool") boolean isIdentityMatrix(); 
+
+		// check whether array is unitary matrix
+		public native @Cast("bool") boolean isUnitary(); 
+                
+        // reduce dimensions in this array relying on index operations
+
+        // apply reduce3 operations to this and other array, return result in new output array
+
+        // apply reduce3 (execAll) operations to this and other array, return result in new output array
+        
+        // apply reduce3 (exec) operations to this and other array, return result in new output array
+
+        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
+
+        // addition operator array + array
+        public native @ByVal @Name("operator +") DoubleNDArray add(@Const @ByRef DoubleNDArray other);
+
+        // addition operator array + scalar
+        public native @ByVal @Name("operator +") DoubleNDArray add(double scalar);
+
+        // addition operator scalar + array
+        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
+        // subtraction operator scalar - array
+        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
+
+        // addition operator scalar + array
+        
+        
+        
+
+        // subtraction operator scalar - array
+        
+        
+        
+
+        // addition operator array1 += array2    
+        public native @Name("operator +=") void addPut(@Const @ByRef DoubleNDArray other);
+
+        // subtraction operator array - array
+        public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
+
+        // subtraction operator array - scalar
+        public native @ByVal @Name("operator -") DoubleNDArray subtract(double scalar);        
+
+        // negative operator, it makes all array elements = -elements
+        public native @ByVal @Name("operator -") DoubleNDArray subtract();
+
+        // multiplication operator array1*array2
+        public native @ByVal @Name("operator *") DoubleNDArray multiply(@Const @ByRef DoubleNDArray other);        
+    
+        // multiplication operator array*scalar
+        public native @ByVal @Name("operator *") DoubleNDArray multiply(double scalar);
+
+        // multiplication operator array1 *= array2
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef DoubleNDArray other);
+
+        // multiplication operator array*scalar
+        public native @Name("operator *=") void multiplyPut(double scalar);
+
+        // division operator array1/array2
+        public native @ByVal @Name("operator /") DoubleNDArray divide(@Const @ByRef DoubleNDArray other);        
+
+        // division operator array1 /= array2
+        public native @Name("operator /=") void dividePut(@Const @ByRef DoubleNDArray other);
+
+        // division operator array /= scalar
+        public native @Name("operator /=") void dividePut(double scalar);
+
+        // mathematical multiplication of two arrays
+        
+
+        public native void assign(@Const @ByRef DoubleNDArray other, @Const @ByRef Intervals idx);
+
+        public native @StdVector BytePointer asByteVector();
+
+        // default destructor 
+
+    }
+
+
+//////////////////////////////////////////////////////////////////////////
+///// IMLEMENTATION OF INLINE METHODS ///// 
+//////////////////////////////////////////////////////////////////////////
+
+
+    
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for matrix, i - absolute index
+
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for matrix, i - absolute index
+
+
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for 2D matrix, i - row, j - column
+
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for 2D matrix, i - row, j - column
+
+
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for 3D array, i - row, j - column
+
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for 3D array
+
+
+//////////////////////////////////////////////////////////////////////////
+// Return value from linear buffer
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+// Returns value from 2D matrix by coordinates/indexes         
+
+
+//////////////////////////////////////////////////////////////////////////
+// returns value from 3D tensor by coordinates        
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in linear buffer to position i        
+
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 2D matrix to position i, j         
+
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 3D matrix to position i,j,k        
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+// returns true if these two NDArrays have same shape
+// still the definition of inline function must be in header file
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+// returns true if these two NDArrays have same _shapeInfo
+// still the definition of inline function must be in header file
+
+
+
+
+
+// #endif
+
+
+// Parsed from array/NDArrayList.h
+
+//
+// This class describes collection of NDArrays
+//
+// @author raver119!gmail.com
+//
+
+// #ifndef NDARRAY_LIST_H
+// #define NDARRAY_LIST_H
+
+// #include <string>
+// #include <atomic>
+// #include <map>
+// #include <NDArray.h>
+// #include <memory/Workspace.h>
+    @Name("nd4j::NDArrayList<float>") @NoOffset public static class FloatNDArrayList extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public FloatNDArrayList(Pointer p) { super(p); }
+    
+        public FloatNDArrayList(int height, @Cast("bool") boolean expandable/*=false*/) { super((Pointer)null); allocate(height, expandable); }
+        private native void allocate(int height, @Cast("bool") boolean expandable/*=false*/);
+        public FloatNDArrayList(int height) { super((Pointer)null); allocate(height); }
+        private native void allocate(int height);
+
+        public native FloatNDArray read(int idx);
+        public native FloatNDArray readRaw(int idx);
+        public native @Cast("Nd4jStatus") int write(int idx, FloatNDArray array);
+        public native FloatNDArray pick(@StdVector IntPointer indices);
+        public native FloatNDArray pick(@StdVector IntBuffer indices);
+        public native FloatNDArray pick(@StdVector int[] indices);
+        public native @Cast("bool") boolean isWritten(int index);
+
+        public native FloatNDArray stack();
+        public native void unstack(FloatNDArray array, int axis);
+
+        public native @ByRef IntIntPair id();
+        public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
+        public native Workspace workspace();
+
+        public native FloatNDArrayList clone();
+
+        public native @Cast("bool") boolean equals(@ByRef FloatNDArrayList other);
+
+        public native int elements();
+        public native int height();
+
+        public native int counter();
+    }
+    @Name("nd4j::NDArrayList<float16>") @NoOffset public static class HalfNDArrayList extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public HalfNDArrayList(Pointer p) { super(p); }
+    
+        public HalfNDArrayList(int height, @Cast("bool") boolean expandable/*=false*/) { super((Pointer)null); allocate(height, expandable); }
+        private native void allocate(int height, @Cast("bool") boolean expandable/*=false*/);
+        public HalfNDArrayList(int height) { super((Pointer)null); allocate(height); }
+        private native void allocate(int height);
+
+        public native HalfNDArray read(int idx);
+        public native HalfNDArray readRaw(int idx);
+        public native @Cast("Nd4jStatus") int write(int idx, HalfNDArray array);
+        public native HalfNDArray pick(@StdVector IntPointer indices);
+        public native HalfNDArray pick(@StdVector IntBuffer indices);
+        public native HalfNDArray pick(@StdVector int[] indices);
+        public native @Cast("bool") boolean isWritten(int index);
+
+        public native HalfNDArray stack();
+        public native void unstack(HalfNDArray array, int axis);
+
+        public native @ByRef IntIntPair id();
+        public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
+        public native Workspace workspace();
+
+        public native HalfNDArrayList clone();
+
+        public native @Cast("bool") boolean equals(@ByRef HalfNDArrayList other);
+
+        public native int elements();
+        public native int height();
+
+        public native int counter();
+    }
+    @Name("nd4j::NDArrayList<double>") @NoOffset public static class DoubleNDArrayList extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DoubleNDArrayList(Pointer p) { super(p); }
+    
+        public DoubleNDArrayList(int height, @Cast("bool") boolean expandable/*=false*/) { super((Pointer)null); allocate(height, expandable); }
+        private native void allocate(int height, @Cast("bool") boolean expandable/*=false*/);
+        public DoubleNDArrayList(int height) { super((Pointer)null); allocate(height); }
+        private native void allocate(int height);
+
+        public native DoubleNDArray read(int idx);
+        public native DoubleNDArray readRaw(int idx);
+        public native @Cast("Nd4jStatus") int write(int idx, DoubleNDArray array);
+        public native DoubleNDArray pick(@StdVector IntPointer indices);
+        public native DoubleNDArray pick(@StdVector IntBuffer indices);
+        public native DoubleNDArray pick(@StdVector int[] indices);
+        public native @Cast("bool") boolean isWritten(int index);
+
+        public native DoubleNDArray stack();
+        public native void unstack(DoubleNDArray array, int axis);
+
+        public native @ByRef IntIntPair id();
+        public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
+        public native Workspace workspace();
+
+        public native DoubleNDArrayList clone();
+
+        public native @Cast("bool") boolean equals(@ByRef DoubleNDArrayList other);
+
+        public native int elements();
+        public native int height();
+
+        public native int counter();
+    }
+
+
+// #endif
+
+// Parsed from array/ResultSet.h
+
+//
+// This class is suited for execution results representation. 
+// 
+// PLESE NOTE: It will delete all stored NDArrays upon destructor call
+//
+// Created by raver119 on 07.09.17.
+//
+
+// #ifndef LIBND4J_RESULTSET_H
+// #define LIBND4J_RESULTSET_H
+
+// #include <NDArray.h>
+// #include <vector>
+// #include <graph/generated/result_generated.h>
+    @Name("nd4j::ResultSet<float>") @NoOffset public static class FloatResultSet extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public FloatResultSet(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public FloatResultSet(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public FloatResultSet position(long position) {
+            return (FloatResultSet)super.position(position);
+        }
+    
+        // default constructor
+        public FloatResultSet() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native int size();
+        public native FloatNDArray at(@Cast("unsigned long") long idx);
+        public native void push_back(FloatNDArray array);
+
+        public native @Cast("Nd4jStatus") int status();
+        public native void setStatus(@Cast("Nd4jStatus") int status);
+        public native void purge();
+        public native void setNonRemovable();
+    }
+    @Name("nd4j::ResultSet<float16>") @NoOffset public static class HalfResultSet extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public HalfResultSet(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public HalfResultSet(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public HalfResultSet position(long position) {
+            return (HalfResultSet)super.position(position);
+        }
+    
+        // default constructor
+        public HalfResultSet() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native int size();
+        public native HalfNDArray at(@Cast("unsigned long") long idx);
+        public native void push_back(HalfNDArray array);
+
+        public native @Cast("Nd4jStatus") int status();
+        public native void setStatus(@Cast("Nd4jStatus") int status);
+        public native void purge();
+        public native void setNonRemovable();
+    }
+    @Name("nd4j::ResultSet<double>") @NoOffset public static class DoubleResultSet extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DoubleResultSet(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public DoubleResultSet(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public DoubleResultSet position(long position) {
+            return (DoubleResultSet)super.position(position);
+        }
+    
+        // default constructor
+        public DoubleResultSet() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native int size();
+        public native DoubleNDArray at(@Cast("unsigned long") long idx);
+        public native void push_back(DoubleNDArray array);
+
+        public native @Cast("Nd4jStatus") int status();
+        public native void setStatus(@Cast("Nd4jStatus") int status);
+        public native void purge();
+        public native void setNonRemovable();
+    }
+
+
+// #endif //LIBND4J_RESULTSET_H
+
+
+// Parsed from NDArrayFactory.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_NDARRAYFACTORY_H
+// #define LIBND4J_NDARRAYFACTORY_H
+
+// #include "NDArray.h"
+// #include <array/ResultSet.h>
+    @Name("nd4j::NDArrayFactory<float>") public static class FloatNDArrayFactory extends Pointer {
+        static { Loader.load(); }
+        /** Default native constructor. */
+        public FloatNDArrayFactory() { super((Pointer)null); allocate(); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public FloatNDArrayFactory(long size) { super((Pointer)null); allocateArray(size); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public FloatNDArrayFactory(Pointer p) { super(p); }
+        private native void allocate();
+        private native void allocateArray(long size);
+        @Override public FloatNDArrayFactory position(long position) {
+            return (FloatNDArrayFactory)super.position(position);
+        }
+    
+
+        public static native FloatNDArray createUninitialized(FloatNDArray other);
+
+        public static native FloatResultSet multipleTensorsAlongDimension(FloatNDArray ndArray, @StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public static native FloatResultSet multipleTensorsAlongDimension(FloatNDArray ndArray, @StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public static native FloatResultSet multipleTensorsAlongDimension(FloatNDArray ndArray, @StdVector int[] indices, @StdVector int[] dimensions);
+
+        public static native FloatResultSet allTensorsAlongDimension(@Const FloatNDArray ndArray, @StdVector IntPointer dimensions);
+        public static native FloatResultSet allTensorsAlongDimension(@Const FloatNDArray ndArray, @StdVector IntBuffer dimensions);
+        public static native FloatResultSet allTensorsAlongDimension(@Const FloatNDArray ndArray, @StdVector int[] dimensions);
+
+        public static native FloatResultSet allExamples(FloatNDArray ndArray);
+
+        public static native FloatNDArray tile(FloatNDArray original, @StdVector IntPointer dimensions);
+        public static native FloatNDArray tile(FloatNDArray original, @StdVector IntBuffer dimensions);
+        public static native FloatNDArray tile(FloatNDArray original, @StdVector int[] dimensions);
+
+        public static native FloatNDArray repeat(FloatNDArray original, @StdVector IntPointer repeats);
+        public static native FloatNDArray repeat(FloatNDArray original, @StdVector IntBuffer repeats);
+        public static native FloatNDArray repeat(FloatNDArray original, @StdVector int[] repeats);
+
+        public static native FloatNDArray mmulHelper(FloatNDArray A, FloatNDArray B, FloatNDArray C/*=nullptr*/, float alpha/*=1.0f*/, float beta/*=0.0f*/);
+        public static native FloatNDArray mmulHelper(FloatNDArray A, FloatNDArray B);
+
+        public static native FloatNDArray tensorDot(@Const FloatNDArray A, @Const FloatNDArray B, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
+        public static native FloatNDArray tensorDot(@Const FloatNDArray A, @Const FloatNDArray B, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
+        public static native FloatNDArray tensorDot(@Const FloatNDArray A, @Const FloatNDArray B, @StdVector int[] axesA, @StdVector int[] axesB);
+
+        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
+        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
+        public static native void tensorDot(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, @StdVector int[] axesA, @StdVector int[] axesB);
+
+        public static native FloatNDArray linspace(float from, float to, @Cast("Nd4jIndex") long numElements);
+        
+        public static native void linspace(float from, @ByRef FloatNDArray arr, float step/*=1.0f*/);
+        public static native void linspace(float from, @ByRef FloatNDArray arr);
+
+        public static native FloatNDArray scalar(float value);
+        public static native FloatNDArray valueOf(@StdVector IntPointer shape, float value, char order/*='c'*/);
+        public static native FloatNDArray valueOf(@StdVector IntPointer shape, float value);
+        public static native FloatNDArray valueOf(@StdVector IntBuffer shape, float value, char order/*='c'*/);
+        public static native FloatNDArray valueOf(@StdVector IntBuffer shape, float value);
+        public static native FloatNDArray valueOf(@StdVector int[] shape, float value, char order/*='c'*/);
+        public static native FloatNDArray valueOf(@StdVector int[] shape, float value);
+
+        public static native FloatNDArray concat(@Const @ByRef FloatNDArrayVector vectors, int axis/*=0*/, FloatNDArray target/*=nullptr*/);
+        public static native FloatNDArray concat(@Const @ByRef FloatNDArrayVector vectors);
+
+        public static native FloatNDArray simpleMMul(@Const FloatNDArray a, @Const FloatNDArray b, FloatNDArray c, float alpha, float beta);
+
+    }
+    @Name("nd4j::NDArrayFactory<float16>") public static class HalfNDArrayFactory extends Pointer {
+        static { Loader.load(); }
+        /** Default native constructor. */
+        public HalfNDArrayFactory() { super((Pointer)null); allocate(); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public HalfNDArrayFactory(long size) { super((Pointer)null); allocateArray(size); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public HalfNDArrayFactory(Pointer p) { super(p); }
+        private native void allocate();
+        private native void allocateArray(long size);
+        @Override public HalfNDArrayFactory position(long position) {
+            return (HalfNDArrayFactory)super.position(position);
+        }
+    
+
+        public static native HalfNDArray createUninitialized(HalfNDArray other);
+
+        public static native HalfResultSet multipleTensorsAlongDimension(HalfNDArray ndArray, @StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public static native HalfResultSet multipleTensorsAlongDimension(HalfNDArray ndArray, @StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public static native HalfResultSet multipleTensorsAlongDimension(HalfNDArray ndArray, @StdVector int[] indices, @StdVector int[] dimensions);
+
+        public static native HalfResultSet allTensorsAlongDimension(@Const HalfNDArray ndArray, @StdVector IntPointer dimensions);
+        public static native HalfResultSet allTensorsAlongDimension(@Const HalfNDArray ndArray, @StdVector IntBuffer dimensions);
+        public static native HalfResultSet allTensorsAlongDimension(@Const HalfNDArray ndArray, @StdVector int[] dimensions);
+
+        public static native HalfResultSet allExamples(HalfNDArray ndArray);
+
+        public static native HalfNDArray tile(HalfNDArray original, @StdVector IntPointer dimensions);
+        public static native HalfNDArray tile(HalfNDArray original, @StdVector IntBuffer dimensions);
+        public static native HalfNDArray tile(HalfNDArray original, @StdVector int[] dimensions);
+
+        public static native HalfNDArray repeat(HalfNDArray original, @StdVector IntPointer repeats);
+        public static native HalfNDArray repeat(HalfNDArray original, @StdVector IntBuffer repeats);
+        public static native HalfNDArray repeat(HalfNDArray original, @StdVector int[] repeats);
+
+        public static native HalfNDArray mmulHelper(HalfNDArray A, HalfNDArray B, HalfNDArray C/*=nullptr*/, @Cast("float16") short alpha/*=1.0f*/, @Cast("float16") short beta/*=0.0f*/);
+        public static native HalfNDArray mmulHelper(HalfNDArray A, HalfNDArray B);
+
+        public static native HalfNDArray tensorDot(@Const HalfNDArray A, @Const HalfNDArray B, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
+        public static native HalfNDArray tensorDot(@Const HalfNDArray A, @Const HalfNDArray B, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
+        public static native HalfNDArray tensorDot(@Const HalfNDArray A, @Const HalfNDArray B, @StdVector int[] axesA, @StdVector int[] axesB);
+
+        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
+        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
+        public static native void tensorDot(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @StdVector int[] axesA, @StdVector int[] axesB);
+
+        public static native HalfNDArray linspace(@Cast("float16") short from, @Cast("float16") short to, @Cast("Nd4jIndex") long numElements);
+        
+        public static native void linspace(@Cast("float16") short from, @ByRef HalfNDArray arr, @Cast("float16") short step/*=1.0f*/);
+        public static native void linspace(@Cast("float16") short from, @ByRef HalfNDArray arr);
+
+        public static native HalfNDArray scalar(@Cast("float16") short value);
+        public static native HalfNDArray valueOf(@StdVector IntPointer shape, @Cast("float16") short value, char order/*='c'*/);
+        public static native HalfNDArray valueOf(@StdVector IntPointer shape, @Cast("float16") short value);
+        public static native HalfNDArray valueOf(@StdVector IntBuffer shape, @Cast("float16") short value, char order/*='c'*/);
+        public static native HalfNDArray valueOf(@StdVector IntBuffer shape, @Cast("float16") short value);
+        public static native HalfNDArray valueOf(@StdVector int[] shape, @Cast("float16") short value, char order/*='c'*/);
+        public static native HalfNDArray valueOf(@StdVector int[] shape, @Cast("float16") short value);
+
+        public static native HalfNDArray concat(@Const @ByRef HalfNDArrayVector vectors, int axis/*=0*/, HalfNDArray target/*=nullptr*/);
+        public static native HalfNDArray concat(@Const @ByRef HalfNDArrayVector vectors);
+
+        public static native HalfNDArray simpleMMul(@Const HalfNDArray a, @Const HalfNDArray b, HalfNDArray c, @Cast("const float16") short alpha, @Cast("const float16") short beta);
+
+    }
+    @Name("nd4j::NDArrayFactory<double>") public static class DoubleNDArrayFactory extends Pointer {
+        static { Loader.load(); }
+        /** Default native constructor. */
+        public DoubleNDArrayFactory() { super((Pointer)null); allocate(); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public DoubleNDArrayFactory(long size) { super((Pointer)null); allocateArray(size); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DoubleNDArrayFactory(Pointer p) { super(p); }
+        private native void allocate();
+        private native void allocateArray(long size);
+        @Override public DoubleNDArrayFactory position(long position) {
+            return (DoubleNDArrayFactory)super.position(position);
+        }
+    
+
+        public static native DoubleNDArray createUninitialized(DoubleNDArray other);
+
+        public static native DoubleResultSet multipleTensorsAlongDimension(DoubleNDArray ndArray, @StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public static native DoubleResultSet multipleTensorsAlongDimension(DoubleNDArray ndArray, @StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public static native DoubleResultSet multipleTensorsAlongDimension(DoubleNDArray ndArray, @StdVector int[] indices, @StdVector int[] dimensions);
+
+        public static native DoubleResultSet allTensorsAlongDimension(@Const DoubleNDArray ndArray, @StdVector IntPointer dimensions);
+        public static native DoubleResultSet allTensorsAlongDimension(@Const DoubleNDArray ndArray, @StdVector IntBuffer dimensions);
+        public static native DoubleResultSet allTensorsAlongDimension(@Const DoubleNDArray ndArray, @StdVector int[] dimensions);
+
+        public static native DoubleResultSet allExamples(DoubleNDArray ndArray);
+
+        public static native DoubleNDArray tile(DoubleNDArray original, @StdVector IntPointer dimensions);
+        public static native DoubleNDArray tile(DoubleNDArray original, @StdVector IntBuffer dimensions);
+        public static native DoubleNDArray tile(DoubleNDArray original, @StdVector int[] dimensions);
+
+        public static native DoubleNDArray repeat(DoubleNDArray original, @StdVector IntPointer repeats);
+        public static native DoubleNDArray repeat(DoubleNDArray original, @StdVector IntBuffer repeats);
+        public static native DoubleNDArray repeat(DoubleNDArray original, @StdVector int[] repeats);
+
+        public static native DoubleNDArray mmulHelper(DoubleNDArray A, DoubleNDArray B, DoubleNDArray C/*=nullptr*/, double alpha/*=1.0f*/, double beta/*=0.0f*/);
+        public static native DoubleNDArray mmulHelper(DoubleNDArray A, DoubleNDArray B);
+
+        public static native DoubleNDArray tensorDot(@Const DoubleNDArray A, @Const DoubleNDArray B, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
+        public static native DoubleNDArray tensorDot(@Const DoubleNDArray A, @Const DoubleNDArray B, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
+        public static native DoubleNDArray tensorDot(@Const DoubleNDArray A, @Const DoubleNDArray B, @StdVector int[] axesA, @StdVector int[] axesB);
+
+        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector IntPointer axesA, @StdVector IntPointer axesB);
+        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector IntBuffer axesA, @StdVector IntBuffer axesB);
+        public static native void tensorDot(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, @StdVector int[] axesA, @StdVector int[] axesB);
+
+        public static native DoubleNDArray linspace(double from, double to, @Cast("Nd4jIndex") long numElements);
+        
+        public static native void linspace(double from, @ByRef DoubleNDArray arr, double step/*=1.0f*/);
+        public static native void linspace(double from, @ByRef DoubleNDArray arr);
+
+        public static native DoubleNDArray scalar(double value);
+        public static native DoubleNDArray valueOf(@StdVector IntPointer shape, double value, char order/*='c'*/);
+        public static native DoubleNDArray valueOf(@StdVector IntPointer shape, double value);
+        public static native DoubleNDArray valueOf(@StdVector IntBuffer shape, double value, char order/*='c'*/);
+        public static native DoubleNDArray valueOf(@StdVector IntBuffer shape, double value);
+        public static native DoubleNDArray valueOf(@StdVector int[] shape, double value, char order/*='c'*/);
+        public static native DoubleNDArray valueOf(@StdVector int[] shape, double value);
+
+        public static native DoubleNDArray concat(@Const @ByRef DoubleNDArrayVector vectors, int axis/*=0*/, DoubleNDArray target/*=nullptr*/);
+        public static native DoubleNDArray concat(@Const @ByRef DoubleNDArrayVector vectors);
+
+        public static native DoubleNDArray simpleMMul(@Const DoubleNDArray a, @Const DoubleNDArray b, DoubleNDArray c, double alpha, double beta);
+
+    }
+
+
+
+// #endif //LIBND4J_NDARRAYFACTORY_H
+
+
+// Parsed from graph/Variable.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_VARIABLE_H
+// #define LIBND4J_VARIABLE_H
+
+// #include <string>
+// #include <NDArray.h>
+// #include <array/NDArrayList.h>
+// #include <graph/VariableType.h>
+// #include <graph/generated/array_generated.h>
+// #include <graph/generated/node_generated.h>
+// #include <graph/generated/graph_generated.h>
+        @Name("nd4j::graph::Variable<float>") @NoOffset public static class FloatVariable extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatVariable(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatVariable(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatVariable position(long position) {
+                return (FloatVariable)super.position(position);
+            }
+        
+            public FloatVariable(@Cast("bool") boolean placeHolder) { super((Pointer)null); allocate(placeHolder); }
+            private native void allocate(@Cast("bool") boolean placeHolder);
+            public FloatVariable(FloatNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(FloatNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/);
+            public FloatVariable(FloatNDArray arrayw, @Cast("char*") String name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(FloatNDArray arrayw, @Cast("char*") String name, int id);
+            public FloatVariable(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/);
+            public FloatVariable(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id);
+            public FloatVariable(FloatNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(FloatNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/);
+            public FloatVariable() { super((Pointer)null); allocate(); }
+            private native void allocate();
+            public FloatVariable(FloatNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(FloatNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/);
+
+            public native FloatVariable clone();
+
+            public native @Cast("bool") boolean hasNDArray();
+            public native FloatNDArray getNDArray();
+            public native void setNDArray(FloatNDArray array);
+
+            public native @Cast("bool") boolean hasNDArrayList();
+            public native FloatNDArrayList getNDArrayList();
+            public native void setNDArrayList(FloatNDArrayList list);
+
+            public native @Cast("bool") boolean isExternal();
+            public native @Cast("bool") boolean isReadOnly();
+            public native @Cast("bool") boolean isEmpty();
+            public native @Cast("bool") boolean isRemovable();
+
+            public native @Cast("bool") boolean isPlaceholder();
+
+            public native @Cast("nd4j::graph::VariableType") int variableType();
+            public native void setVariableType(@Cast("nd4j::graph::VariableType") int variableType);
+
+            /**
+             * This method returns InputType of this variable  
+             */
+            //InputType variableType() {
+            //    return _variableType;
+            //}
+
+            public native void markExternal(@Cast("bool") boolean reallyExternal);
+            public native void markReadOnly(@Cast("bool") boolean reallyReadOnly);
+            public native void markRemovable(@Cast("bool") boolean reallyRemovable);
+
+            public native int id();
+            public native int index();
+            public native void setId(int id);
+            public native void setId(int id, int idx);
+
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
+            public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+        }
+        @Name("nd4j::graph::Variable<float16>") @NoOffset public static class HalfVariable extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfVariable(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfVariable(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfVariable position(long position) {
+                return (HalfVariable)super.position(position);
+            }
+        
+            public HalfVariable(@Cast("bool") boolean placeHolder) { super((Pointer)null); allocate(placeHolder); }
+            private native void allocate(@Cast("bool") boolean placeHolder);
+            public HalfVariable(HalfNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(HalfNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/);
+            public HalfVariable(HalfNDArray arrayw, @Cast("char*") String name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(HalfNDArray arrayw, @Cast("char*") String name, int id);
+            public HalfVariable(HalfNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(HalfNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/);
+            public HalfVariable(HalfNDArray arrayw, @Cast("char*") BytePointer name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(HalfNDArray arrayw, @Cast("char*") BytePointer name, int id);
+            public HalfVariable(HalfNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(HalfNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/);
+            public HalfVariable() { super((Pointer)null); allocate(); }
+            private native void allocate();
+            public HalfVariable(HalfNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(HalfNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/);
+
+            public native HalfVariable clone();
+
+            public native @Cast("bool") boolean hasNDArray();
+            public native HalfNDArray getNDArray();
+            public native void setNDArray(HalfNDArray array);
+
+            public native @Cast("bool") boolean hasNDArrayList();
+            public native HalfNDArrayList getNDArrayList();
+            public native void setNDArrayList(HalfNDArrayList list);
+
+            public native @Cast("bool") boolean isExternal();
+            public native @Cast("bool") boolean isReadOnly();
+            public native @Cast("bool") boolean isEmpty();
+            public native @Cast("bool") boolean isRemovable();
+
+            public native @Cast("bool") boolean isPlaceholder();
+
+            public native @Cast("nd4j::graph::VariableType") int variableType();
+            public native void setVariableType(@Cast("nd4j::graph::VariableType") int variableType);
+
+            /**
+             * This method returns InputType of this variable  
+             */
+            //InputType variableType() {
+            //    return _variableType;
+            //}
+
+            public native void markExternal(@Cast("bool") boolean reallyExternal);
+            public native void markReadOnly(@Cast("bool") boolean reallyReadOnly);
+            public native void markRemovable(@Cast("bool") boolean reallyRemovable);
+
+            public native int id();
+            public native int index();
+            public native void setId(int id);
+            public native void setId(int id, int idx);
+
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
+            public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+        }
+        @Name("nd4j::graph::Variable<double>") @NoOffset public static class DoubleVariable extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleVariable(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleVariable(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleVariable position(long position) {
+                return (DoubleVariable)super.position(position);
+            }
+        
+            public DoubleVariable(@Cast("bool") boolean placeHolder) { super((Pointer)null); allocate(placeHolder); }
+            private native void allocate(@Cast("bool") boolean placeHolder);
+            public DoubleVariable(DoubleNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(DoubleNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/);
+            public DoubleVariable(DoubleNDArray arrayw, @Cast("char*") String name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(DoubleNDArray arrayw, @Cast("char*") String name, int id);
+            public DoubleVariable(DoubleNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(DoubleNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/);
+            public DoubleVariable(DoubleNDArray arrayw, @Cast("char*") BytePointer name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(DoubleNDArray arrayw, @Cast("char*") BytePointer name, int id);
+            public DoubleVariable(DoubleNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(DoubleNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/);
+            public DoubleVariable() { super((Pointer)null); allocate(); }
+            private native void allocate();
+            public DoubleVariable(DoubleNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(DoubleNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/);
+
+            public native DoubleVariable clone();
+
+            public native @Cast("bool") boolean hasNDArray();
+            public native DoubleNDArray getNDArray();
+            public native void setNDArray(DoubleNDArray array);
+
+            public native @Cast("bool") boolean hasNDArrayList();
+            public native DoubleNDArrayList getNDArrayList();
+            public native void setNDArrayList(DoubleNDArrayList list);
+
+            public native @Cast("bool") boolean isExternal();
+            public native @Cast("bool") boolean isReadOnly();
+            public native @Cast("bool") boolean isEmpty();
+            public native @Cast("bool") boolean isRemovable();
+
+            public native @Cast("bool") boolean isPlaceholder();
+
+            public native @Cast("nd4j::graph::VariableType") int variableType();
+            public native void setVariableType(@Cast("nd4j::graph::VariableType") int variableType);
+
+            /**
+             * This method returns InputType of this variable  
+             */
+            //InputType variableType() {
+            //    return _variableType;
+            //}
+
+            public native void markExternal(@Cast("bool") boolean reallyExternal);
+            public native void markReadOnly(@Cast("bool") boolean reallyReadOnly);
+            public native void markRemovable(@Cast("bool") boolean reallyRemovable);
+
+            public native int id();
+            public native int index();
+            public native void setId(int id);
+            public native void setId(int id, int idx);
+
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
+            public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+        }
+    
+
+
+
+// #endif //LIBND4J_VARIABLE_H
+
+
+// Parsed from graph/VariablesSet.h
+
+//
+// Created by raver119 on 15/11/17.
+//
+
+// #ifndef LIBND4J_VARIABLESSET_H
+// #define LIBND4J_VARIABLESSET_H
+
+// #include <iterator>
+// #include <vector>
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <graph/Variable.h>
+        @Name("nd4j::graph::VariablesSet<float>") @NoOffset public static class FloatVariablesSet extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatVariablesSet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatVariablesSet position(long position) {
+                return (FloatVariablesSet)super.position(position);
+            }
+        
+            public FloatVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
+            public FloatVariablesSet() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jStatus") int status();
+
+            public native int size();
+
+            public native void push_back(FloatVariable variable);
+
+            public native FloatVariable at(int index);
+
+        }
+        @Name("nd4j::graph::VariablesSet<float16>") @NoOffset public static class HalfVariablesSet extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfVariablesSet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfVariablesSet position(long position) {
+                return (HalfVariablesSet)super.position(position);
+            }
+        
+            public HalfVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
+            public HalfVariablesSet() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jStatus") int status();
+
+            public native int size();
+
+            public native void push_back(HalfVariable variable);
+
+            public native HalfVariable at(int index);
+
+        }
+        @Name("nd4j::graph::VariablesSet<double>") @NoOffset public static class DoubleVariablesSet extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleVariablesSet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleVariablesSet position(long position) {
+                return (DoubleVariablesSet)super.position(position);
+            }
+        
+            public DoubleVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
+            public DoubleVariablesSet() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jStatus") int status();
+
+            public native int size();
+
+            public native void push_back(DoubleVariable variable);
+
+            public native DoubleVariable at(int index);
+
+        }
+    
+
+
+
+
+// #endif //LIBND4J_VARIABLESSET_H
+
+
+// Parsed from graph/FlowPath.h
+
+//
+// Created by raver119 on 16/11/17.
+//
+
+// #ifndef LIBND4J_FLOWPATH_H
+// #define LIBND4J_FLOWPATH_H
+
+// #include <map>
+// #include <pointercast.h>
+// #include <graph/NodeState.h>
+// #include <dll.h>
+        @Namespace("nd4j::graph") @NoOffset public static class FlowPath extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FlowPath(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FlowPath(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FlowPath position(long position) {
+                return (FlowPath)super.position(position);
+            }
+        
+            public FlowPath() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native void setInnerTime(int nodeId, @Cast("Nd4jIndex") long time);
+            public native void setOuterTime(int nodeId, @Cast("Nd4jIndex") long time);
+
+            public native @Cast("Nd4jIndex") long innerTime(int nodeId);
+            public native @Cast("Nd4jIndex") long outerTime(int nodeId);
+
+            public native @Cast("bool") boolean isActive(int nodeId);
+            
+            public native void markActive(int nodeId, @Cast("bool") boolean isActive);
+
+            public native int branch(int nodeId);
+            public native void markBranch(int nodeId, int index);
+        }
+    
+
+
+
+// #endif //LIBND4J_FLOWPATH_H
+
+
+// Parsed from graph/Intervals.h
+
+//
+// Created by yurii@skymind.io on 24.10.2017.
+//
+
+// #ifndef LIBND4J_INTERVALS_H
+// #define LIBND4J_INTERVALS_H
+
+// #include <vector>
+// #include <initializer_list>
+// #include <dll.h>
+
+    @Namespace("nd4j") public static class Intervals extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public Intervals(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public Intervals(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public Intervals position(long position) {
+            return (Intervals)super.position(position);
+        }
+    
+
+        // default constructor
+        public Intervals() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        
+        // constructor
+        
+        // accessing operator
+        public native @StdVector @Name("operator []") IntPointer get(int i);
+
+        // returns size of _content
+        public native int size();
+
+    }
+
+
+
+
+// #endif //LIBND4J_INTERVALS_H
+
+
+// Parsed from graph/Stash.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_STASH_H
+// #define LIBND4J_STASH_H
+
+//#include <graph/Block.h>
+// #include <NDArray.h>
+// #include <map>
+// #include <string>
+// #include <atomic>
+// #include <pointercast.h>
+        @Namespace("nd4j::graph") @NoOffset public static class KeyPair extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public KeyPair(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public KeyPair(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public KeyPair position(long position) {
+                return (KeyPair)super.position(position);
+            }
+        
+            public KeyPair(int node/*=0*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(node, name); }
+            private native void allocate(int node/*=0*/, @Cast("char*") String name/*=nullptr*/);
+            public KeyPair() { super((Pointer)null); allocate(); }
+            private native void allocate();
+            public KeyPair(int node/*=0*/, @Cast("char*") BytePointer name/*=nullptr*/) { super((Pointer)null); allocate(node, name); }
+            private native void allocate(int node/*=0*/, @Cast("char*") BytePointer name/*=nullptr*/);
+
+            public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef KeyPair other);
+        }
+
+        @Name("nd4j::graph::Stash<float>") @NoOffset public static class FloatStash extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatStash(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatStash(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatStash position(long position) {
+                return (FloatStash)super.position(position);
+            }
+        
+            public FloatStash() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            //void storeArray(nd4j::graph::Block<T>& block, const char *name, nd4j::NDArray<T> *array);
+            public native void storeArray(int nodeId, @Cast("char*") String name, FloatNDArray array);
+            public native void storeArray(int nodeId, @Cast("char*") BytePointer name, FloatNDArray array);
+
+            //bool checkStash(nd4j::graph::Block<T>& block, const char *name);
+            public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") String name);
+            public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") BytePointer name);
+
+            //nd4j::NDArray<T>* extractArray(nd4j::graph::Block<T>& block, const char *name);
+            public native FloatNDArray extractArray(int nodeId, @Cast("char*") String name);
+            public native FloatNDArray extractArray(int nodeId, @Cast("char*") BytePointer name);
+
+            public native void clear();
+        }
+
+        @Name("nd4j::graph::Stash<float16>") @NoOffset public static class HalfStash extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfStash(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfStash(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfStash position(long position) {
+                return (HalfStash)super.position(position);
+            }
+        
+            public HalfStash() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            //void storeArray(nd4j::graph::Block<T>& block, const char *name, nd4j::NDArray<T> *array);
+            public native void storeArray(int nodeId, @Cast("char*") String name, HalfNDArray array);
+            public native void storeArray(int nodeId, @Cast("char*") BytePointer name, HalfNDArray array);
+
+            //bool checkStash(nd4j::graph::Block<T>& block, const char *name);
+            public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") String name);
+            public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") BytePointer name);
+
+            //nd4j::NDArray<T>* extractArray(nd4j::graph::Block<T>& block, const char *name);
+            public native HalfNDArray extractArray(int nodeId, @Cast("char*") String name);
+            public native HalfNDArray extractArray(int nodeId, @Cast("char*") BytePointer name);
+
+            public native void clear();
+        }
+
+        @Name("nd4j::graph::Stash<double>") @NoOffset public static class DoubleStash extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleStash(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleStash(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleStash position(long position) {
+                return (DoubleStash)super.position(position);
+            }
+        
+            public DoubleStash() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            //void storeArray(nd4j::graph::Block<T>& block, const char *name, nd4j::NDArray<T> *array);
+            public native void storeArray(int nodeId, @Cast("char*") String name, DoubleNDArray array);
+            public native void storeArray(int nodeId, @Cast("char*") BytePointer name, DoubleNDArray array);
+
+            //bool checkStash(nd4j::graph::Block<T>& block, const char *name);
+            public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") String name);
+            public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") BytePointer name);
+
+            //nd4j::NDArray<T>* extractArray(nd4j::graph::Block<T>& block, const char *name);
+            public native DoubleNDArray extractArray(int nodeId, @Cast("char*") String name);
+            public native DoubleNDArray extractArray(int nodeId, @Cast("char*") BytePointer name);
+
+            public native void clear();
+        }
+    
+
+
+
+
+
+// #endif //LIBND4J_STASH_H
+
+
+// Parsed from graph/VariableSpace.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_VARIABLESPACE_H
+// #define LIBND4J_VARIABLESPACE_H
+
+// #include <helpers/logger.h>
+// #include <helpers/helper_random.h>
+// #include <string>
+// #include <vector>
+// #include <list>
+// #include <map>
+// #include <mutex>
+// #include <NDArray.h>
+// #include <array/NDArrayList.h>
+// #include <graph/Variable.h>
+// #include <memory/Workspace.h>
+// #include <graph/Stash.h>
+// #include <graph/FlowPath.h>
+
+        @Name("nd4j::graph::VariableSpace<float>") @NoOffset public static class FloatVariableSpace extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatVariableSpace(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatVariableSpace(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatVariableSpace position(long position) {
+                return (FloatVariableSpace)super.position(position);
+            }
+        
+            public FloatVariableSpace() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int numberOfPlaceholders();
+            public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getPlaceholders();
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
+
+            public native @Cast("bool") boolean hasExternalVariable(int it);
+            public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasExternalVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native @Cast("bool") boolean hasVariable(int id);
+            public native @Cast("bool") boolean hasVariable(int id, int idx);
+            public native @Cast("bool") boolean hasVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native FloatVariable getVariable(int id);
+            public native FloatVariable getVariable(int id, int idx);
+            public native FloatVariable getVariable(@ByRef IntIntPair pair);
+            public native FloatVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native void putVariable(@ByRef IntIntPair pair, FloatNDArray array);
+            public native void putVariable(@ByRef IntIntPair pair, FloatVariable variable);
+            public native void putVariable(int id, FloatVariable variable);
+            public native void putVariable(int id, FloatNDArray array);
+            public native void putVariable(int id, int idx, FloatNDArray array);
+            public native void putVariable(int id, int idx, FloatVariable array);
+
+            public native void trackList(FloatNDArrayList list);
+
+            public native void putOutputVariable(FloatVariable variable);
+
+            // memory-related statistics
+            public native @Cast("Nd4jIndex") long externalMemory();
+            public native @Cast("Nd4jIndex") long internalMemory();
+            public native @Cast("Nd4jIndex") long totalMemory();
+
+            public native int externalEntries();
+            public native int internalEntries();
+            public native int totalEntries();
+
+            public native FloatVariableSpace clone();
+
+            public native FloatStash getStash();
+
+            public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getExternalVariables();
+
+            public native void setFlowPath(FlowPath timers);
+            public native FlowPath flowPath();
+        }
+
+        @Name("nd4j::graph::VariableSpace<float16>") @NoOffset public static class HalfVariableSpace extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfVariableSpace(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfVariableSpace(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfVariableSpace position(long position) {
+                return (HalfVariableSpace)super.position(position);
+            }
+        
+            public HalfVariableSpace() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int numberOfPlaceholders();
+            public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getPlaceholders();
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
+
+            public native @Cast("bool") boolean hasExternalVariable(int it);
+            public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasExternalVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native @Cast("bool") boolean hasVariable(int id);
+            public native @Cast("bool") boolean hasVariable(int id, int idx);
+            public native @Cast("bool") boolean hasVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native HalfVariable getVariable(int id);
+            public native HalfVariable getVariable(int id, int idx);
+            public native HalfVariable getVariable(@ByRef IntIntPair pair);
+            public native HalfVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native void putVariable(@ByRef IntIntPair pair, HalfNDArray array);
+            public native void putVariable(@ByRef IntIntPair pair, HalfVariable variable);
+            public native void putVariable(int id, HalfVariable variable);
+            public native void putVariable(int id, HalfNDArray array);
+            public native void putVariable(int id, int idx, HalfNDArray array);
+            public native void putVariable(int id, int idx, HalfVariable array);
+
+            public native void trackList(HalfNDArrayList list);
+
+            public native void putOutputVariable(HalfVariable variable);
+
+            // memory-related statistics
+            public native @Cast("Nd4jIndex") long externalMemory();
+            public native @Cast("Nd4jIndex") long internalMemory();
+            public native @Cast("Nd4jIndex") long totalMemory();
+
+            public native int externalEntries();
+            public native int internalEntries();
+            public native int totalEntries();
+
+            public native HalfVariableSpace clone();
+
+            public native HalfStash getStash();
+
+            public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getExternalVariables();
+
+            public native void setFlowPath(FlowPath timers);
+            public native FlowPath flowPath();
+        }
+
+        @Name("nd4j::graph::VariableSpace<double>") @NoOffset public static class DoubleVariableSpace extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleVariableSpace(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleVariableSpace(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleVariableSpace position(long position) {
+                return (DoubleVariableSpace)super.position(position);
+            }
+        
+            public DoubleVariableSpace() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int numberOfPlaceholders();
+            public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getPlaceholders();
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
+
+            public native @Cast("bool") boolean hasExternalVariable(int it);
+            public native @Cast("bool") boolean hasExternalVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasExternalVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native @Cast("bool") boolean hasVariable(int id);
+            public native @Cast("bool") boolean hasVariable(int id, int idx);
+            public native @Cast("bool") boolean hasVariable(@ByRef IntIntPair pair);
+            public native @Cast("bool") boolean hasVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native DoubleVariable getVariable(int id);
+            public native DoubleVariable getVariable(int id, int idx);
+            public native DoubleVariable getVariable(@ByRef IntIntPair pair);
+            public native DoubleVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+
+            public native void putVariable(@ByRef IntIntPair pair, DoubleNDArray array);
+            public native void putVariable(@ByRef IntIntPair pair, DoubleVariable variable);
+            public native void putVariable(int id, DoubleVariable variable);
+            public native void putVariable(int id, DoubleNDArray array);
+            public native void putVariable(int id, int idx, DoubleNDArray array);
+            public native void putVariable(int id, int idx, DoubleVariable array);
+
+            public native void trackList(DoubleNDArrayList list);
+
+            public native void putOutputVariable(DoubleVariable variable);
+
+            // memory-related statistics
+            public native @Cast("Nd4jIndex") long externalMemory();
+            public native @Cast("Nd4jIndex") long internalMemory();
+            public native @Cast("Nd4jIndex") long totalMemory();
+
+            public native int externalEntries();
+            public native int internalEntries();
+            public native int totalEntries();
+
+            public native DoubleVariableSpace clone();
+
+            public native DoubleStash getStash();
+
+            public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getExternalVariables();
+
+            public native void setFlowPath(FlowPath timers);
+            public native FlowPath flowPath();
+        }
+    
+
+
+
+// #endif //LIBND4J_VARIABLESPACE_H
+
+
+// Parsed from helpers/helper_generator.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_HELPER_GENERATOR_H
+// #define LIBND4J_HELPER_GENERATOR_H
+
+// #include <pointercast.h>
+// #include <dll.h>
+
+// #ifdef _MSC_VER
+// include for uint64_t on MSVC
+// #include <stdint.h>
+// #elif ANDROID
+// #include <stdint.h>
+
+// #ifndef UINT64_C
+// #if defined(__LP64__)
+// #define UINT64_C(c)     c ## UL
+// #else
+// #define UINT64_C(c)     c ## ULL
+// #endif //LP64
+// #endif // UINT64
+
+// #endif // MSVC/ANDROID
+
+
+// #ifdef __GNUC__
+// #include <inttypes.h>
+// #endif
+
+
+public static native @MemberGetter long MAX_UINT();
+public static final long MAX_UINT = MAX_UINT();
+
+// #ifdef __CUDACC__
+// #else
+        @Namespace("nd4j::random") @NoOffset public static class RandomBuffer extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public RandomBuffer(Pointer p) { super(p); }
+        
+            /**
+             * This method allocates buffer of size * sizeof(Nd4jIndex)
+             *
+             * @param size
+             * @return
+             */
+// #ifdef __CUDACC__
+// #endif
+            public RandomBuffer(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") LongPointer buffer) { super((Pointer)null); allocate(seed, size, buffer); }
+            private native void allocate(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") LongPointer buffer);
+            public RandomBuffer(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") LongBuffer buffer) { super((Pointer)null); allocate(seed, size, buffer); }
+            private native void allocate(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") LongBuffer buffer);
+            public RandomBuffer(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") long[] buffer) { super((Pointer)null); allocate(seed, size, buffer); }
+            private native void allocate(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") long[] buffer);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t*") LongPointer getBuffer();
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t*") LongPointer getDeviceBuffer();
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getSize();
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getSeed();
+
+// #ifdef __CUDACC__
+// #endif
+            public native void setSeed(@Cast("Nd4jIndex") long seed);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getAllocatedSize();
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getOffset();
+
+// #ifdef __CUDACC__
+// #endif
+            public native void setOffset(@Cast("Nd4jIndex") long offset);
+
+// #ifdef __CUDACC__
+// #endif
+            public native void reSeed(@Cast("Nd4jIndex") long amplifier);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t") long getElement(@Cast("Nd4jIndex") long position);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t") long next64(@Cast("uint64_t") long shiftedSeed);
+
+// #ifdef __CUDACC__
+// #endif
+            public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+
+// #ifdef __CUDACC__
+// #endif
+            public static native @Cast("uint64_t") long safeShift(@Cast("uint64_t") long x, @Cast("uint64_t") long y);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t") long seedConv(@Cast("Nd4jIndex") long seed);
+
+// #ifdef __CUDACC__
+// #endif
+            public native void incrementGeneration();
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getNextIndex();
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t") long getNextElement();
+
+
+            /**
+             * This method skips X elements from buffer
+             *
+             * @param numberOfElements number of elements to skip
+             */
+// #ifdef __CUDACC__
+// #endif
+            public native void rewindH(@Cast("Nd4jIndex") long numberOfElements);
+
+
+            /**
+ * This method returns random int in range [0..MAX_INT]
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+            public native int nextInt();
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t") long nextUInt();
+
+            /**
+             * This method returns random int in range [0..to]
+             * @param to
+             * @return
+             */
+// #ifdef __CUDACC__
+// #endif
+            public native int nextInt(int to);
+
+            /**
+             * This method returns random int in range [from..to]
+             * @param from
+             * @param to
+             * @return
+             */
+// #ifdef __CUDACC__
+// #endif
+            public native int nextInt(int from, int to);
+
+
+            /**
+             * This method returns random T in range of [0..MAX_FLOAT]
+             * @return
+             */
+
+
+            /**
+             * This method returns random T in range of [0..1]
+             * @return
+             */
+
+            /**
+             * This method returns random T in range of [0..to]
+             * @param to
+             * @return
+             */
+
+            /**
+             * This method returns random T in range [from..to]
+             * @param from
+             * @param to
+             * @return
+             */
+
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("uint64_t") long relativeUInt(@Cast("Nd4jIndex") long index);
+
+            /**
+             *  relative methods are made as workaround for lock-free concurrent execution
+             */
+
+// #ifdef __CUDACC__
+// #endif
+            public native int relativeInt(@Cast("Nd4jIndex") long index);
+
+            /**
+             * This method returns random int within [0..to]
+             *
+             * @param index
+             * @param to
+             * @return
+             */
+// #ifdef __CUDACC__
+// #endif
+            public native int relativeInt(@Cast("Nd4jIndex") long index, int to);
+
+            /**
+             * This method returns random int within [from..to]
+             *
+             * @param index
+             * @param to
+             * @param from
+             * @return
+             */
+// #ifdef __CUDACC__
+// #endif
+            public native int relativeInt(@Cast("Nd4jIndex") long index, int from, int to);
+
+            /**
+             * This method returns random T within [0..1]
+             *
+             * @param index
+             * @return
+             */
+/*
+            template <typename T>
+            T relativeT(Nd4jIndex index);
+
+            template <typename T>
+            T relativeT(Nd4jIndex index, T to);
+
+            template <typename T>
+            T relativeT(Nd4jIndex index, T from, T to);
+
+            */
+
+/**
+ * This method returns random T within [0..to]
+ *
+ * @param index
+ * @param to
+ * @return
+ */
+
+/**
+ * This method returns random T within [from..to]
+ *
+ * @param index
+ * @param from
+ * @param to
+ * @return
+ */
+
+        }
+
+        @Namespace("nd4j::random") @NoOffset public static class IGenerator extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public IGenerator(Pointer p) { super(p); }
+        
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+            public native RandomBuffer getBuffer();
+
+// #ifdef __CUDACC__
+// #endif
+            public native void setOffset(@Cast("Nd4jIndex") long offset);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getElementAbsolute(@Cast("Nd4jIndex") long position);
+
+// #ifdef __CUDACC__
+// #endif
+            public native @Cast("Nd4jIndex") long getElementRelative(@Cast("Nd4jIndex") long position);
+
+// #ifdef __CUDACC__
+// #endif
+            public native void refreshBuffer();
+        }
+
+
+
+        @Namespace("nd4j::random") @NoOffset public static class Xoroshiro128 extends IGenerator {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public Xoroshiro128(Pointer p) { super(p); }
+        
+// #ifdef __CUDACC__
+// #endif
+            public Xoroshiro128(RandomBuffer buffer) { super((Pointer)null); allocate(buffer); }
+            private native void allocate(RandomBuffer buffer);
+
+// #ifdef __CUDACC__
+// #endif
+            public native void refreshBuffer();
+        }
+    
+
+// #endif //LIBND4J_HELPER_GENERATOR_H
+
+
+// Parsed from graph/Context.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_BLOCK_H
+// #define LIBND4J_BLOCK_H
+
+// #include <vector>
+// #include <graph/Variable.h>
+// #include <graph/VariableSpace.h>
+// #include <graph/ContextPrototype.h>
+// #include <memory/Workspace.h>
+
+
+// CUDA-specific includes
+// #ifdef __CUDACC__
+
+// #endif
+        /**
+         * This class defines input desired for any given node/operation within graph
+         */
+        @Name("nd4j::graph::Context<float>") @NoOffset public static class FloatContext extends FloatContextPrototype {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatContext(Pointer p) { super(p); }
+        
+            // TODO: maybe override new here as well?
+
+            // CUDA-specific fields
+// #ifdef __CUDACC__
+// #endif
+
+            public FloatContext(FloatContextPrototype prototype, FloatVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(FloatContextPrototype prototype, FloatVariableSpace variableSpace);
+
+            public FloatContext(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            private native void allocate(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/);
+            public FloatContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            private native void allocate(int nodeId);
+            public FloatContext(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            private native void allocate(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace);
+
+            // default destructor
+
+            // these methods are for execution timing
+            public native void setOuterTime(@Cast("Nd4jIndex") long time);
+            public native void setInnerTime(@Cast("Nd4jIndex") long time);
+            public native @Cast("Nd4jIndex") long getOuterTime();
+            public native @Cast("Nd4jIndex") long getInnerTime();
+
+            // these methods are related to Workspace abstraction
+            public native @Cast("bool") boolean hasWorkspaceProvided();
+            public native void attachWorkspace(Workspace workspace);
+            public native void forgetWorkspace();
+            public native Workspace getWorkspace();
+            public native Workspace workspace();
+
+            public native void setVariableSpace(FloatVariableSpace variableSpace);
+
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
+
+            // these fields define, if we can execute specific node in-place, without generating new array
+
+
+            // these variables are only for Divergent Nodes
+            public native int getBranch();
+            public native void setBranch(int branch);
+
+            /**
+             *
+             * @return
+             */
+            public native FloatStash getStash();
+
+            /**
+             *
+             */
+            public native void trackList(FloatNDArrayList list);
+
+
+            /**
+             * This method returns variable for a given input index for this block
+             * @param idx
+             * @return
+             */
+            public native FloatVariable getVariable(int idx);
+            public native FloatVariable variable(int idx);
+
+
+            /**
+             * This method fetches variable from Workspace DIRECTLY
+             * @param p
+             * @return
+             */
+            public native FloatVariable variable(int node, int index);
+            public native FloatVariable variable(@ByRef IntIntPair p);
+
+
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, FloatNDArray array);
+
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, FloatNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, FloatNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, FloatNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, FloatNDArrayList list);
+
+            public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
+            public native @Cast("bool") boolean isValueAvailable();
+
+            public native FloatVariable ensureVariable(int idx/*=0*/);
+            public native FloatVariable ensureVariable();
+        }
+        @Name("nd4j::graph::Context<float16>") @NoOffset public static class HalfContext extends HalfContextPrototype {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfContext(Pointer p) { super(p); }
+        
+            // TODO: maybe override new here as well?
+
+            // CUDA-specific fields
+// #ifdef __CUDACC__
+// #endif
+
+            public HalfContext(HalfContextPrototype prototype, HalfVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(HalfContextPrototype prototype, HalfVariableSpace variableSpace);
+
+            public HalfContext(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            private native void allocate(int nodeId, HalfVariableSpace variableSpace/*=nullptr*/);
+            public HalfContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            private native void allocate(int nodeId);
+            public HalfContext(int nodeId, HalfVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            private native void allocate(int nodeId, HalfVariableSpace variableSpace, @Cast("bool") boolean isInplace);
+
+            // default destructor
+
+            // these methods are for execution timing
+            public native void setOuterTime(@Cast("Nd4jIndex") long time);
+            public native void setInnerTime(@Cast("Nd4jIndex") long time);
+            public native @Cast("Nd4jIndex") long getOuterTime();
+            public native @Cast("Nd4jIndex") long getInnerTime();
+
+            // these methods are related to Workspace abstraction
+            public native @Cast("bool") boolean hasWorkspaceProvided();
+            public native void attachWorkspace(Workspace workspace);
+            public native void forgetWorkspace();
+            public native Workspace getWorkspace();
+            public native Workspace workspace();
+
+            public native void setVariableSpace(HalfVariableSpace variableSpace);
+
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
+
+            // these fields define, if we can execute specific node in-place, without generating new array
+
+
+            // these variables are only for Divergent Nodes
+            public native int getBranch();
+            public native void setBranch(int branch);
+
+            /**
+             *
+             * @return
+             */
+            public native HalfStash getStash();
+
+            /**
+             *
+             */
+            public native void trackList(HalfNDArrayList list);
+
+
+            /**
+             * This method returns variable for a given input index for this block
+             * @param idx
+             * @return
+             */
+            public native HalfVariable getVariable(int idx);
+            public native HalfVariable variable(int idx);
+
+
+            /**
+             * This method fetches variable from Workspace DIRECTLY
+             * @param p
+             * @return
+             */
+            public native HalfVariable variable(int node, int index);
+            public native HalfVariable variable(@ByRef IntIntPair p);
+
+
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, HalfNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, HalfNDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, HalfNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, HalfNDArray array);
+
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, HalfNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, HalfNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, HalfNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, HalfNDArrayList list);
+
+            public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
+            public native @Cast("bool") boolean isValueAvailable();
+
+            public native HalfVariable ensureVariable(int idx/*=0*/);
+            public native HalfVariable ensureVariable();
+        }
+        @Name("nd4j::graph::Context<double>") @NoOffset public static class DoubleContext extends DoubleContextPrototype {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleContext(Pointer p) { super(p); }
+        
+            // TODO: maybe override new here as well?
+
+            // CUDA-specific fields
+// #ifdef __CUDACC__
+// #endif
+
+            public DoubleContext(DoubleContextPrototype prototype, DoubleVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(DoubleContextPrototype prototype, DoubleVariableSpace variableSpace);
+
+            public DoubleContext(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            private native void allocate(int nodeId, DoubleVariableSpace variableSpace/*=nullptr*/);
+            public DoubleContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            private native void allocate(int nodeId);
+            public DoubleContext(int nodeId, DoubleVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            private native void allocate(int nodeId, DoubleVariableSpace variableSpace, @Cast("bool") boolean isInplace);
+
+            // default destructor
+
+            // these methods are for execution timing
+            public native void setOuterTime(@Cast("Nd4jIndex") long time);
+            public native void setInnerTime(@Cast("Nd4jIndex") long time);
+            public native @Cast("Nd4jIndex") long getOuterTime();
+            public native @Cast("Nd4jIndex") long getInnerTime();
+
+            // these methods are related to Workspace abstraction
+            public native @Cast("bool") boolean hasWorkspaceProvided();
+            public native void attachWorkspace(Workspace workspace);
+            public native void forgetWorkspace();
+            public native Workspace getWorkspace();
+            public native Workspace workspace();
+
+            public native void setVariableSpace(DoubleVariableSpace variableSpace);
+
+            public native RandomBuffer getRNG();
+            public native void setRNG(RandomBuffer rng);
+
+            // these fields define, if we can execute specific node in-place, without generating new array
+
+
+            // these variables are only for Divergent Nodes
+            public native int getBranch();
+            public native void setBranch(int branch);
+
+            /**
+             *
+             * @return
+             */
+            public native DoubleStash getStash();
+
+            /**
+             *
+             */
+            public native void trackList(DoubleNDArrayList list);
+
+
+            /**
+             * This method returns variable for a given input index for this block
+             * @param idx
+             * @return
+             */
+            public native DoubleVariable getVariable(int idx);
+            public native DoubleVariable variable(int idx);
+
+
+            /**
+             * This method fetches variable from Workspace DIRECTLY
+             * @param p
+             * @return
+             */
+            public native DoubleVariable variable(int node, int index);
+            public native DoubleVariable variable(@ByRef IntIntPair p);
+
+
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, DoubleNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, DoubleNDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, DoubleNDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, DoubleNDArray array);
+
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, DoubleNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, DoubleNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, DoubleNDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, DoubleNDArrayList list);
+
+            public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
+            public native @Cast("bool") boolean isValueAvailable();
+
+            public native DoubleVariable ensureVariable(int idx/*=0*/);
+            public native DoubleVariable ensureVariable();
+        }
+    
+
+
+
+// #endif //LIBND4J_BLOCK_H
+
+
+// Parsed from graph/ContextPrototype.h
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef ND4J_CONTEXT_PROTOTYPE_H
+// #define ND4J_CONTEXT_PROTOTYPE_H
+
+// #include <vector>
+        @Name("nd4j::graph::ContextPrototype<float>") @NoOffset public static class FloatContextPrototype extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatContextPrototype(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatContextPrototype position(long position) {
+                return (FloatContextPrototype)super.position(position);
+            }
+        
+            public FloatContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
+            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public FloatContextPrototype() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int getNodeId();
+            public native int nodeId();
+
+            // this method returns true, if inputs are defined
+            public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native @Cast("bool") boolean isInplace();
+            public native void markInplace(@Cast("bool") boolean reallyInplace);
+
+            public native void pickInput(int input);
+            public native void pickInput(int input, int index);
+            public native void pickInput(@ByRef IntIntPair p);
+            public native void fillInputs(@StdVector IntPointer inputs);
+            public native void fillInputs(@StdVector IntBuffer inputs);
+            public native void fillInputs(@StdVector int[] inputs);
+            public native @StdVector IntIntPair inputs();
+
+            public native @StdVector FloatPointer getTArguments();
+            public native @StdVector IntPointer getIArguments();
+
+            public native IntIntPair input(int idx);
+
+            public native int opNum();
+            public native void setOpNum(int opNum);
+
+            /**
+             * This method returns number of inputs available in this block
+             * @return
+             */
+            public native @Cast("unsigned long") long width();
+        }
+        @Name("nd4j::graph::ContextPrototype<float16>") @NoOffset public static class HalfContextPrototype extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfContextPrototype(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfContextPrototype position(long position) {
+                return (HalfContextPrototype)super.position(position);
+            }
+        
+            public HalfContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
+            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public HalfContextPrototype() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int getNodeId();
+            public native int nodeId();
+
+            // this method returns true, if inputs are defined
+            public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native @Cast("bool") boolean isInplace();
+            public native void markInplace(@Cast("bool") boolean reallyInplace);
+
+            public native void pickInput(int input);
+            public native void pickInput(int input, int index);
+            public native void pickInput(@ByRef IntIntPair p);
+            public native void fillInputs(@StdVector IntPointer inputs);
+            public native void fillInputs(@StdVector IntBuffer inputs);
+            public native void fillInputs(@StdVector int[] inputs);
+            public native @StdVector IntIntPair inputs();
+
+            public native @Cast("float16*") @StdVector ShortPointer getTArguments();
+            public native @StdVector IntPointer getIArguments();
+
+            public native IntIntPair input(int idx);
+
+            public native int opNum();
+            public native void setOpNum(int opNum);
+
+            /**
+             * This method returns number of inputs available in this block
+             * @return
+             */
+            public native @Cast("unsigned long") long width();
+        }
+        @Name("nd4j::graph::ContextPrototype<double>") @NoOffset public static class DoubleContextPrototype extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleContextPrototype(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleContextPrototype position(long position) {
+                return (DoubleContextPrototype)super.position(position);
+            }
+        
+            public DoubleContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
+            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public DoubleContextPrototype() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native int getNodeId();
+            public native int nodeId();
+
+            // this method returns true, if inputs are defined
+            public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native @Cast("bool") boolean isInplace();
+            public native void markInplace(@Cast("bool") boolean reallyInplace);
+
+            public native void pickInput(int input);
+            public native void pickInput(int input, int index);
+            public native void pickInput(@ByRef IntIntPair p);
+            public native void fillInputs(@StdVector IntPointer inputs);
+            public native void fillInputs(@StdVector IntBuffer inputs);
+            public native void fillInputs(@StdVector int[] inputs);
+            public native @StdVector IntIntPair inputs();
+
+            public native @StdVector DoublePointer getTArguments();
+            public native @StdVector IntPointer getIArguments();
+
+            public native IntIntPair input(int idx);
+
+            public native int opNum();
+            public native void setOpNum(int opNum);
+
+            /**
+             * This method returns number of inputs available in this block
+             * @return
+             */
+            public native @Cast("unsigned long") long width();
+        }
+    
+
+
+// #endif //ND4J_CONTEXT_PROTOTYPE_H
+
+// Parsed from helpers/shape.h
+
+/*
+ * shape.h
+ *
+ *  Created on: Dec 28, 2015
+ *      Author: agibsonccc
+ */
+
+// #ifndef SHAPE_H_
+// #define SHAPE_H_
+
+// #include <cstring>
+// #include <cstdio>
+// #include "../dll.h"
+// #include "../nd4jmalloc.h"
+// #include "../templatemath.h"
+// #include "../helpers/logger.h"
+// #include "../pointercast.h"
+// #include "../cnpy/cnpy.h"
+
+public static final int MAX_DIMENSION = 0x7fffffff;
+public static final int MAX_NUM_THREADS =  1024;
+public static final int MAX_RANK = 32;
+public static final int MAX_COORD = 3;
+public static final int PREALLOC_SIZE = 33554432;
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #else
+// #define INLINEDEF inline
+// #endif
+
+// #include "../pairwise_util.h"
+
+/**
+ * Shape information approximating
+ * the information on an ndarray
+ */
+    @Namespace("shape") @NoOffset public static class ShapeInformation extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public ShapeInformation(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public ShapeInformation(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public ShapeInformation position(long position) {
+            return (ShapeInformation)super.position(position);
+        }
+    
+// #ifdef __CUDACC__
+// #endif
+        public ShapeInformation(IntPointer shape_/*=nullptr*/, IntPointer stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
+        private native void allocate(IntPointer shape_/*=nullptr*/, IntPointer stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
+        public ShapeInformation() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        public ShapeInformation(IntBuffer shape_/*=nullptr*/, IntBuffer stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
+        private native void allocate(IntBuffer shape_/*=nullptr*/, IntBuffer stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
+        public ShapeInformation(int[] shape_/*=nullptr*/, int[] stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
+        private native void allocate(int[] shape_/*=nullptr*/, int[] stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
+
+        public native IntPointer shape(); public native ShapeInformation shape(IntPointer shape);
+        public native IntPointer stride(); public native ShapeInformation stride(IntPointer stride);
+        public native char order(); public native ShapeInformation order(char order);
+        public native int rank(); public native ShapeInformation rank(int rank);
+        public native int offset(); public native ShapeInformation offset(int offset);
+        public native int elementWiseStride(); public native ShapeInformation elementWiseStride(int elementWiseStride);
+    }
+
+/**
+ * Indexing information
+ * for bounds checking
+ */
+    @Namespace("shape") public static class CurrentIndexing extends Pointer {
+        static { Loader.load(); }
+        /** Default native constructor. */
+        public CurrentIndexing() { super((Pointer)null); allocate(); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public CurrentIndexing(long size) { super((Pointer)null); allocateArray(size); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public CurrentIndexing(Pointer p) { super(p); }
+        private native void allocate();
+        private native void allocateArray(long size);
+        @Override public CurrentIndexing position(long position) {
+            return (CurrentIndexing)super.position(position);
+        }
+    
+        public native int numElementsPerThread(); public native CurrentIndexing numElementsPerThread(int numElementsPerThread);
+        public native int blockStartingIndex(); public native CurrentIndexing blockStartingIndex(int blockStartingIndex);
+        public native int startingThreadIndex(); public native CurrentIndexing startingThreadIndex(int startingThreadIndex);
+        public native int endingThreadIndex(); public native CurrentIndexing endingThreadIndex(int endingThreadIndex);
+
+    }
+
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,IntPointer shape1,int shape2Rank,IntPointer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,IntBuffer shape1,int shape2Rank,IntBuffer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,int[] shape1,int shape2Rank,int[] shape2);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(IntPointer shapeInfo1,IntPointer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(IntBuffer shapeInfo1,IntBuffer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int[] shapeInfo1,int[] shapeInfo2);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,IntPointer shape1,int shape2Rank,IntPointer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,IntBuffer shape1,int shape2Rank,IntBuffer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,int[] shape1,int shape2Rank,int[] shape2);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(IntPointer shapeInfo1,IntPointer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(IntBuffer shapeInfo1,IntBuffer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int[] shapeInfo1,int[] shapeInfo2);
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(IntPointer stride1,int rank1,IntPointer stride2,int rank2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(IntBuffer stride1,int rank1,IntBuffer stride2,int rank2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int[] stride1,int rank1,int[] stride2,int rank2);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(IntPointer shapeA, IntPointer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(IntBuffer shapeA, IntBuffer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(int[] shapeA, int[] shapeB);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(IntPointer shapeA, IntPointer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(IntBuffer shapeA, IntBuffer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(int[] shapeA, int[] shapeB);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int sizeAt(IntPointer shape, int dim);
+    @Namespace("shape") public static native int sizeAt(IntBuffer shape, int dim);
+    @Namespace("shape") public static native int sizeAt(int[] shape, int dim);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void traceNew(int id);
+
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int tadIndexForLinear(int linearIndex, int tadLength);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int tadLength(IntPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native int tadLength(IntBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native int tadLength(int[] shapeInfo, int[] dimension, int dimensionLength);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, IntPointer oldShape, int newRank, IntPointer newShape, @Cast("bool") boolean isFOrder);
+    @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, IntBuffer oldShape, int newRank, IntBuffer newShape, @Cast("bool") boolean isFOrder);
+    @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, int[] oldShape, int newRank, int[] newShape, @Cast("bool") boolean isFOrder);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, IntPointer oldShape, int newRank, IntPointer newShape, @Cast("bool") boolean isFOrder, IntPointer target);
+    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, IntBuffer oldShape, int newRank, IntBuffer newShape, @Cast("bool") boolean isFOrder, IntBuffer target);
+    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, int[] oldShape, int newRank, int[] newShape, @Cast("bool") boolean isFOrder, int[] target);
+/**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeBuffer(int rank, IntPointer shape);
+    @Namespace("shape") public static native IntBuffer shapeBuffer(int rank, IntBuffer shape);
+    @Namespace("shape") public static native int[] shapeBuffer(int rank, int[] shape);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeBuffer(int rank, IntPointer shape, IntPointer buffer);
+    @Namespace("shape") public static native IntBuffer shapeBuffer(int rank, IntBuffer shape, IntBuffer buffer);
+    @Namespace("shape") public static native int[] shapeBuffer(int rank, int[] shape, int[] buffer);
+
+    /**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeBufferFortran(int rank, IntPointer shape);
+    @Namespace("shape") public static native IntBuffer shapeBufferFortran(int rank, IntBuffer shape);
+    @Namespace("shape") public static native int[] shapeBufferFortran(int rank, int[] shape);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeBufferFortran(int rank, IntPointer shape, IntPointer output);
+    @Namespace("shape") public static native IntBuffer shapeBufferFortran(int rank, IntBuffer shape, IntBuffer output);
+    @Namespace("shape") public static native int[] shapeBufferFortran(int rank, int[] shape, int[] output);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void doPermuteShapeBuffer(IntPointer shapeBuffer,IntPointer rearrange, IntPointer tmpBuffer);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(IntBuffer shapeBuffer,IntBuffer rearrange, IntBuffer tmpBuffer);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int[] shapeBuffer,int[] rearrange, int[] tmpBuffer);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,IntPointer shapeBuffer,IntPointer rearrange, IntPointer tmpBuffer);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,IntBuffer shapeBuffer,IntBuffer rearrange, IntBuffer tmpBuffer);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,int[] shapeBuffer,int[] rearrange, int[] tmpBuffer);
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStridesFortran(IntPointer shape, int rank);
+    @Namespace("shape") public static native IntBuffer calcStridesFortran(IntBuffer shape, int rank);
+    @Namespace("shape") public static native int[] calcStridesFortran(int[] shape, int rank);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStridesFortran(IntPointer shape, int rank, IntPointer ret);
+    @Namespace("shape") public static native IntBuffer calcStridesFortran(IntBuffer shape, int rank, IntBuffer ret);
+    @Namespace("shape") public static native int[] calcStridesFortran(int[] shape, int rank, int[] ret);
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStrides(IntPointer shape, int rank);
+    @Namespace("shape") public static native IntBuffer calcStrides(IntBuffer shape, int rank);
+    @Namespace("shape") public static native int[] calcStrides(int[] shape, int rank);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStrides(IntPointer shape, int rank, IntPointer ret);
+    @Namespace("shape") public static native IntBuffer calcStrides(IntBuffer shape, int rank, IntBuffer ret);
+    @Namespace("shape") public static native int[] calcStrides(int[] shape, int rank, int[] ret);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void updateStrides(IntPointer shape, char order);
+    @Namespace("shape") public static native void updateStrides(IntBuffer shape, char order);
+    @Namespace("shape") public static native void updateStrides(int[] shape, char order);
+
+
+// check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean isDimPermuted(@Const IntPointer dimensions, int dimSize);
+    @Namespace("shape") public static native @Cast("bool") boolean isDimPermuted(@Const IntBuffer dimensions, int dimSize);
+    @Namespace("shape") public static native @Cast("bool") boolean isDimPermuted(@Const int[] dimensions, int dimSize);
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStridesFortran(IntPointer shape, int rank, int startNum);
+    @Namespace("shape") public static native IntBuffer calcStridesFortran(IntBuffer shape, int rank, int startNum);
+    @Namespace("shape") public static native int[] calcStridesFortran(int[] shape, int rank, int startNum);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStridesFortran(IntPointer shape, int rank, int startNum, IntPointer ret);
+    @Namespace("shape") public static native IntBuffer calcStridesFortran(IntBuffer shape, int rank, int startNum, IntBuffer ret);
+    @Namespace("shape") public static native int[] calcStridesFortran(int[] shape, int rank, int startNum, int[] ret);
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStrides(IntPointer shape, int rank, int startNum);
+    @Namespace("shape") public static native IntBuffer calcStrides(IntBuffer shape, int rank, int startNum);
+    @Namespace("shape") public static native int[] calcStrides(int[] shape, int rank, int startNum);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer calcStrides(IntPointer shape, int rank, int startNum, IntPointer ret);
+    @Namespace("shape") public static native IntBuffer calcStrides(IntBuffer shape, int rank, int startNum, IntBuffer ret);
+    @Namespace("shape") public static native int[] calcStrides(int[] shape, int rank, int startNum, int[] ret);
+
+/**
+ * @param toCopy the shape to copy
+ * @return a copy of the original struct
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native ShapeInformation shapeCopy( ShapeInformation toCopy);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(IntPointer shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(IntBuffer shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(int[] shapeBuffer);
+
+/**
+ * Compute the element wise stride
+ * for a given shape/stride configuration
+ * @param rank the rank of the shape/stride
+ * @param shape the shape
+ * @param stride the stride
+ * @param isFOrder 0 or 1 for whether the array is f
+ * ordered or not
+ * @return -1 if there is no element wise stride the
+ * element wise stride of reshape(1,length) otherwise
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, IntPointer shape, IntPointer stride, int isFOrder);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, IntBuffer shape, IntBuffer stride, int isFOrder);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, int[] shape, int[] stride, int isFOrder);
+
+/**
+ * Compute the element wise stride
+ * for a given shape/stride configuration
+ * @param rank the rank of the shape/stride
+ * @param shape the shape
+ * @param stride the stride
+ * @param isFOrder 0 or 1 for whether the array is f
+ * ordered or not
+ * @return -1 if there is no element wise stride the
+ * element wise stride of reshape(1,length) otherwise
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, IntPointer shape, IntPointer stride, int isFOrder,
+                                               IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, IntBuffer shape, IntBuffer stride, int isFOrder,
+                                               IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, int[] shape, int[] stride, int isFOrder,
+                                               int[] dimension, int dimensionLength);
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeInfoOnlyShapeAndStride(IntPointer shapeInfo, IntPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public static native IntBuffer shapeInfoOnlyShapeAndStride(IntBuffer shapeInfo, IntBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public static native int[] shapeInfoOnlyShapeAndStride(int[] shapeInfo, int[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeInfoOnlyShapeAndStride(IntPointer shapeInfo, IntPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, IntPointer buffer);
+    @Namespace("shape") public static native IntBuffer shapeInfoOnlyShapeAndStride(IntBuffer shapeInfo, IntBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, IntBuffer buffer);
+    @Namespace("shape") public static native int[] shapeInfoOnlyShapeAndStride(int[] shapeInfo, int[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, int[] buffer);
+/**
+ *
+ * @param length
+ * @param shape
+ * @param rearrange
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer doPermuteSwap(int length, IntPointer shape, IntPointer rearrange);
+    @Namespace("shape") public static native IntBuffer doPermuteSwap(int length, IntBuffer shape, IntBuffer rearrange);
+    @Namespace("shape") public static native int[] doPermuteSwap(int length, int[] shape, int[] rearrange);
+
+
+
+/**
+ * In place permute swap
+ * @param length
+ * @param shape
+ * @param rearrange
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void doPermuteSwap(int length, @Cast("int**") PointerPointer shape, IntPointer rearrange);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer permuteShapeBuffer(IntPointer shapeBuffer,IntPointer rearrange);
+    @Namespace("shape") public static native IntBuffer permuteShapeBuffer(IntBuffer shapeBuffer,IntBuffer rearrange);
+    @Namespace("shape") public static native int[] permuteShapeBuffer(int[] shapeBuffer,int[] rearrange);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void permuteShapeBufferInPlace(IntPointer shapeBuffer,IntPointer rearrange,IntPointer out);
+    @Namespace("shape") public static native void permuteShapeBufferInPlace(IntBuffer shapeBuffer,IntBuffer rearrange,IntBuffer out);
+    @Namespace("shape") public static native void permuteShapeBufferInPlace(int[] shapeBuffer,int[] rearrange,int[] out);
+
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void doPermuteShapeBuffer(IntPointer shapeBuffer,IntPointer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(IntBuffer shapeBuffer,IntBuffer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int[] shapeBuffer,int[] rearrange);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,IntPointer shapeBuffer,IntPointer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,IntBuffer shapeBuffer,IntBuffer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,int[] shapeBuffer,int[] rearrange);
+    /**
+     * Rearrange the permute indexes
+     * according to which  dimensions are specified.
+     *
+     * For example, dimension is implicitly:
+     * 0,1,2
+     *
+     * If you want to do a reduce along dimensions 0 and 1,
+     * you need to permute the indexes to be:
+     * 2,0,1
+     *
+     * which will give us the ability to ierate along an element
+     * wise stride.
+     */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer createPermuteIndexes(int originalRank,IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native IntBuffer createPermuteIndexes(int originalRank,IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native int[] createPermuteIndexes(int originalRank,int[] dimension,int dimensionLength);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer computeResultShape(IntPointer originalShapeBuffer,IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native IntBuffer computeResultShape(IntBuffer originalShapeBuffer,IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native int[] computeResultShape(int[] originalShapeBuffer,int[] dimension,int dimensionLength);
+
+
+/**
+ * Get the ordering for the device
+ * @param length
+ * @param shape
+ * @param stride
+ * @param elementStride
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native char getOrder(int length, IntPointer shape, IntPointer stride, int elementStride);
+    @Namespace("shape") public static native char getOrder(int length, IntBuffer shape, IntBuffer stride, int elementStride);
+    @Namespace("shape") public static native char getOrder(int length, int[] shape, int[] stride, int elementStride);
+
+/**
+ * Ensure that every value in the re arrange
+ * array is unique
+ * @param arr
+ * @param shape
+ * @param arrLength
+ * @param shapeLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int checkArrangeArray(IntPointer arr, int arrLength, int shapeLength);
+    @Namespace("shape") public static native int checkArrangeArray(IntBuffer arr, int arrLength, int shapeLength);
+    @Namespace("shape") public static native int checkArrangeArray(int[] arr, int arrLength, int shapeLength);
+
+/**
+ * Permute the shape information
+ * @param info the shape information to permute
+ * @param rearrange the order to re arrange
+ * @param rank the rank of the rearrange array
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, IntPointer rearrange, int rank);
+    @Namespace("shape") public static native void permute(@ByPtrPtr ShapeInformation info, IntPointer rearrange, int rank);
+    @Namespace("shape") public static native void permute(@ByPtrPtr ShapeInformation info, IntBuffer rearrange, int rank);
+    @Namespace("shape") public static native void permute(@ByPtrPtr ShapeInformation info, int[] rearrange, int rank);
+
+/**
+ * Returns whether the
+ * given shape is a vector or not
+ * @param shape the shape of the array
+ * @param rank the rank of cthe shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int isVector(IntPointer shape, int rank);
+    @Namespace("shape") public static native int isVector(IntBuffer shape, int rank);
+    @Namespace("shape") public static native int isVector(int[] shape, int rank);
+
+
+    /**
+     * When 1 dimension is the whole length of the
+     * array
+     */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int oneDimEqualToLength(IntPointer shape, int rank);
+    @Namespace("shape") public static native int oneDimEqualToLength(IntBuffer shape, int rank);
+    @Namespace("shape") public static native int oneDimEqualToLength(int[] shape, int rank);
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int oneDimEqualToLength(IntPointer shapeInfo);
+    @Namespace("shape") public static native int oneDimEqualToLength(IntBuffer shapeInfo);
+    @Namespace("shape") public static native int oneDimEqualToLength(int[] shapeInfo);
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int isVector(IntPointer shapeInfo);
+    @Namespace("shape") public static native int isVector(IntBuffer shapeInfo);
+    @Namespace("shape") public static native int isVector(int[] shapeInfo);
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(IntPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(IntBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(int[] shapeInfo);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(IntPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(IntBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(int[] shapeInfo);
+    /**
+ * Returns whether the
+ * given shape is a vector or not
+ * @param shape the shape of the array
+ * @param rank the rank of the shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int isMatrix(IntPointer shape, int rank);
+    @Namespace("shape") public static native int isMatrix(IntBuffer shape, int rank);
+    @Namespace("shape") public static native int isMatrix(int[] shape, int rank);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int isMatrix(IntPointer shapeInfo);
+    @Namespace("shape") public static native int isMatrix(IntBuffer shapeInfo);
+    @Namespace("shape") public static native int isMatrix(int[] shapeInfo);
+/**
+ * Returns the shape portion of an information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer shapeOf(IntPointer buffer);
+    @Namespace("shape") public static native IntBuffer shapeOf(IntBuffer buffer);
+    @Namespace("shape") public static native int[] shapeOf(int[] buffer);
+
+/**
+ * Return a copy of a buffer.
+ * This buffer allocates memory
+ * that must be freed elsewhere.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer copyOf(int length, IntPointer toCopy);
+    @Namespace("shape") public static native IntBuffer copyOf(int length, IntBuffer toCopy);
+    @Namespace("shape") public static native int[] copyOf(int length, int[] toCopy);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer copyOf(int length, IntPointer toCopy, IntPointer ret);
+    @Namespace("shape") public static native IntBuffer copyOf(int length, IntBuffer toCopy, IntBuffer ret);
+    @Namespace("shape") public static native int[] copyOf(int length, int[] toCopy, int[] ret);
+
+    /**
+ * Return a copy of a buffer.
+ * This buffer allocates memory
+ * that must be freed elsewhere.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void copyTo(int length, IntPointer from, IntPointer to);
+    @Namespace("shape") public static native void copyTo(int length, IntBuffer from, IntBuffer to);
+    @Namespace("shape") public static native void copyTo(int length, int[] from, int[] to);
+    /**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void copyTo(int length, IntPointer from, IntPointer to, IntPointer indexes);
+    @Namespace("shape") public static native void copyTo(int length, IntBuffer from, IntBuffer to, IntBuffer indexes);
+    @Namespace("shape") public static native void copyTo(int length, int[] from, int[] to, int[] indexes);
+
+/**
+ * Permute the given strides
+ * in the given rearrange order
+ * @param toPermute the buffer to permute
+ * @param shapeRank the length of the buffer to permute
+ * @param rearrange the rearrange order (must be 0 based indexes
+ * and all must be filled in)
+ * @return the rearranged array
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer permutedStrides(IntPointer toPermute, int shapeRank, IntPointer rearrange);
+    @Namespace("shape") public static native IntBuffer permutedStrides(IntBuffer toPermute, int shapeRank, IntBuffer rearrange);
+    @Namespace("shape") public static native int[] permutedStrides(int[] toPermute, int shapeRank, int[] rearrange);
+
+/**
+ * Return the slice (shape + 1 in pointer arithmetic)
+ * @param shape the shape to take the slice of
+ * @return the shape array - the first entry
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer slice(IntPointer shape);
+    @Namespace("shape") public static native IntBuffer slice(IntBuffer shape);
+    @Namespace("shape") public static native int[] slice(int[] shape);
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int slices(IntPointer shapeBuffer);
+    @Namespace("shape") public static native int slices(IntBuffer shapeBuffer);
+    @Namespace("shape") public static native int slices(int[] shapeBuffer);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer sliceOfShapeBuffer(int sliceIdx,IntPointer shapeBuffer);
+    @Namespace("shape") public static native IntBuffer sliceOfShapeBuffer(int sliceIdx,IntBuffer shapeBuffer);
+    @Namespace("shape") public static native int[] sliceOfShapeBuffer(int sliceIdx,int[] shapeBuffer);
+/**
+ * Returns the length of the
+ * shape information buffer:
+ * rank * 2 + 3
+ * @param rank the rank to get the shape
+ * info length for
+ * @return rank * 2 + 4
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int shapeInfoLength(int rank);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int shapeInfoLength(IntPointer shapeInfo);
+    @Namespace("shape") public static native int shapeInfoLength(IntBuffer shapeInfo);
+    @Namespace("shape") public static native int shapeInfoLength(int[] shapeInfo);
+
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(int rank);
+
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(IntPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(IntBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(int[] shapeInfo);
+
+/**
+ * Returns the rank portion of
+ * an information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int rank( IntPointer buffer);
+    @Namespace("shape") public static native int rank( IntBuffer buffer);
+    @Namespace("shape") public static native int rank( int[] buffer);
+
+/**
+ * Converts a raw int buffer of the layout:
+ * rank
+ * shape
+ * stride
+ * offset
+ * elementWiseStride
+ *
+ * where shape and stride are both straight int pointers
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native ShapeInformation infoFromBuffer(IntPointer buffer);
+    @Namespace("shape") public static native ShapeInformation infoFromBuffer(IntBuffer buffer);
+    @Namespace("shape") public static native ShapeInformation infoFromBuffer(int[] buffer);
+
+/**
+ * Returns the stride portion of an information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer stride(IntPointer buffer);
+    @Namespace("shape") public static native IntBuffer stride(IntBuffer buffer);
+    @Namespace("shape") public static native int[] stride(int[] buffer);
+
+/**
+ * Compute the length of the given shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long length(IntPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long length(IntBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long length(int[] shapeInfo);
+
+// #ifdef __CUDACC__
+// #endif
+
+/***
+ * Returns the offset portion of an information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int offset(IntPointer buffer);
+    @Namespace("shape") public static native int offset(IntBuffer buffer);
+    @Namespace("shape") public static native int offset(int[] buffer);
+
+/**
+ * Returns the ordering
+ * for this shape information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native char order(IntPointer buffer);
+    @Namespace("shape") public static native char order(IntBuffer buffer);
+    @Namespace("shape") public static native char order(int[] buffer);
+
+/**
+ * Returns the element wise stride for this information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int elementWiseStride(IntPointer buffer);
+    @Namespace("shape") public static native int elementWiseStride(IntBuffer buffer);
+    @Namespace("shape") public static native int elementWiseStride(int[] buffer);
+
+
+    /**
+ * Returns the element wise stride for this information
+ * buffer
+     * relative to a dimension and ordering for a reduction index
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int reductionIndexElementWiseStride(IntPointer buffer, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native int reductionIndexElementWiseStride(IntBuffer buffer, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native int reductionIndexElementWiseStride(int[] buffer, int[] dimension, int dimensionLength);
+
+/**
+ * Returns whether
+ * the given shape info buffer
+ * represents a scalar shape
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int isScalar(IntPointer info);
+    @Namespace("shape") public static native int isScalar(IntBuffer info);
+    @Namespace("shape") public static native int isScalar(int[] info);
+
+/**
+ * Returns whether
+ * the given shape information
+ * represents a scalar
+ * shape or not
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int isScalar(ShapeInformation info);
+
+/**
+ * Return a copy of this array with the
+ * given index omitted
+ *
+ * @param data  the data to copy
+ * @param indexes the index of the item to remove
+ * @param dataLength the length of the data array
+ * @param indexesLength the length of the data array
+ * @return the new array with the omitted
+ *
+ * item
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void removeIndex(IntPointer data, IntPointer indexes, int dataLength, int indexesLength,
+                                   IntPointer out);
+    @Namespace("shape") public static native void removeIndex(IntBuffer data, IntBuffer indexes, int dataLength, int indexesLength,
+                                   IntBuffer out);
+    @Namespace("shape") public static native void removeIndex(int[] data, int[] indexes, int dataLength, int indexesLength,
+                                   int[] out);
+
+    /**
+ * Return a copy of this array with the
+ * given index omitted
+ *
+ * @param data  the data to copy
+ * @param indexes the index of the item to remove
+ * @param dataLength the length of the data array
+ * @param indexesLength the length of the data array
+ * @return the new array with the omitted
+ *
+ * item
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer removeIndex(IntPointer data, IntPointer indexes, int dataLength, int indexesLength);
+    @Namespace("shape") public static native IntBuffer removeIndex(IntBuffer data, IntBuffer indexes, int dataLength, int indexesLength);
+    @Namespace("shape") public static native int[] removeIndex(int[] data, int[] indexes, int dataLength, int indexesLength);
+
+    /**
+     * Iterate over a given set of indexes
+     * the begin and end indexes are 0 based.
+     * 1 padding is automatically assumed for the ending.
+     *
+     * For example if you want to iterate over 0 to 4
+     * it will go to 4 rather than 3.
+     *
+     * indexes should be the indexes to exclude
+     * indexes length should be the length of indexes
+     */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer everyIndexBut(IntPointer indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public static native IntBuffer everyIndexBut(IntBuffer indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public static native int[] everyIndexBut(int[] indexes,int indexesLength,int begin,int end);
+
+/**
+ * Computes the offset for accessing
+ * a global element given the shape information
+ * and the offset to be read.
+ */
+//#ifdef __CUDACC__
+//    __device__
+//#endif
+//    ND4J_EXPORT int tadOffset(shape::ShapeInformation *xInfo, int offset);
+
+/**
+ * Returns a shape
+ * forces the given length to be 2.
+ * @param shape the shape to modify
+ * @param dimension the dimension (row or column)
+ * for the shape to be returned as
+ * @return the new shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer ensureVectorShape(IntPointer shape);
+    @Namespace("shape") public static native IntBuffer ensureVectorShape(IntBuffer shape);
+    @Namespace("shape") public static native int[] ensureVectorShape(int[] shape);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer createScalarShapeInfo();
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer createScalarShapeInfo(IntPointer ret);
+    @Namespace("shape") public static native IntBuffer createScalarShapeInfo(IntBuffer ret);
+    @Namespace("shape") public static native int[] createScalarShapeInfo(int[] ret);
+
+/**
+ * Generate an int buffer
+ * up to the given length
+ * at the specified increment
+ *
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer range(int from, int to, int increment);
+
+/**
+ * Range between from and two with an
+ * increment of 1
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer range(int from, int to);
+
+/**
+ * Keep the given indexes
+ * in the data
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer keep(IntPointer data, IntPointer index, int indexLength, int dataLength);
+    @Namespace("shape") public static native IntBuffer keep(IntBuffer data, IntBuffer index, int indexLength, int dataLength);
+    @Namespace("shape") public static native int[] keep(int[] data, int[] index, int indexLength, int dataLength);
+
+/**
+ * Generate reverse copy of the data
+ * @param data
+ * @param length
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer reverseCopy(IntPointer data, int length);
+    @Namespace("shape") public static native IntBuffer reverseCopy(IntBuffer data, int length);
+    @Namespace("shape") public static native int[] reverseCopy(int[] data, int length);
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void reverseCopyTo(IntPointer from, IntPointer to, int length);
+    @Namespace("shape") public static native void reverseCopyTo(IntBuffer from, IntBuffer to, int length);
+    @Namespace("shape") public static native void reverseCopyTo(int[] from, int[] to, int length);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void reverseCopyTo(IntPointer from, IntPointer to, IntPointer indexes,int length);
+    @Namespace("shape") public static native void reverseCopyTo(IntBuffer from, IntBuffer to, IntBuffer indexes,int length);
+    @Namespace("shape") public static native void reverseCopyTo(int[] from, int[] to, int[] indexes,int length);
+/**
+ *
+ * @param arr1
+ * @param arr1Length
+ * @param arr2
+ * @param arr2Length
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer concat(IntPointer arr1, int arr1Length, IntPointer arr2, int arr2Length);
+    @Namespace("shape") public static native IntBuffer concat(IntBuffer arr1, int arr1Length, IntBuffer arr2, int arr2Length);
+    @Namespace("shape") public static native int[] concat(int[] arr1, int arr1Length, int[] arr2, int arr2Length);
+
+/**
+ *
+ * @param numArrays
+ * @param numTotalElements
+ * @param arr
+ * @param lengths
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer concat(int numArrays, int numTotalElements, @Cast("int**") PointerPointer arr, IntPointer lengths);
+    @Namespace("shape") public static native IntPointer concat(int numArrays, int numTotalElements, @ByPtrPtr IntPointer arr, IntPointer lengths);
+    @Namespace("shape") public static native IntBuffer concat(int numArrays, int numTotalElements, @ByPtrPtr IntBuffer arr, IntBuffer lengths);
+    @Namespace("shape") public static native int[] concat(int numArrays, int numTotalElements, @ByPtrPtr int[] arr, int[] lengths);
+
+/**
+ * Get the length per slice of the
+ * given shape and the dimension
+ * @param rank the rank of the shape
+ * @param shape the shape of to get
+ * the length per slice for
+ * @param dimension the dimension to
+ * get the length per slice for
+ * @param dimensionLength the length of the dimension array
+ * @return the length per slice of the given shape
+ * along the given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int lengthPerSlice(int rank, IntPointer shape, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native int lengthPerSlice(int rank, IntBuffer shape, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native int lengthPerSlice(int rank, int[] shape, int[] dimension, int dimensionLength);
+
+/**
+ * calculates the offset for a tensor
+ * @param index
+ * @param arr
+ * @param tensorShape
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int sliceOffsetForTensor(int rank,
+                                           int index,
+                                           IntPointer shape,
+                                           IntPointer tensorShape,
+                                           int tensorShapeLength,
+                                           IntPointer dimension,
+                                           int dimensionLength);
+    @Namespace("shape") public static native int sliceOffsetForTensor(int rank,
+                                           int index,
+                                           IntBuffer shape,
+                                           IntBuffer tensorShape,
+                                           int tensorShapeLength,
+                                           IntBuffer dimension,
+                                           int dimensionLength);
+    @Namespace("shape") public static native int sliceOffsetForTensor(int rank,
+                                           int index,
+                                           int[] shape,
+                                           int[] tensorShape,
+                                           int tensorShapeLength,
+                                           int[] dimension,
+                                           int dimensionLength);
+
+/**
+ * calculates the offset for a tensor
+ * @param index
+ * @param arr
+ * @param tensorShape
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int sliceOffsetForTensor(int index,int tensorLength,int lengthPerSlice2);
+/**
+ * Computes the tensor along dimension
+ * offset
+ * @param index the index to get the offset for the tad for
+ * @param rank the rank of the shapes and strides
+ * @param info the shape information to use for tad
+ * @param dimension the dimensions to use for computing the tensor along dimensions
+ */
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//
+//    ND4J_EXPORT int offset(int index,
+//                         int rank,
+//                         shape::ShapeInformation *info,
+//                         int *dimension,
+//                         int dimensionLength);
+
+
+/**
+ * Computes the number
+ * of tensors along
+ * a given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int tensorsAlongDimension(int rank,
+                                            int length,
+                                            IntPointer shape,
+                                            IntPointer dimension,
+                                            int dimensionLength);
+    @Namespace("shape") public static native int tensorsAlongDimension(int rank,
+                                            int length,
+                                            IntBuffer shape,
+                                            IntBuffer dimension,
+                                            int dimensionLength);
+    @Namespace("shape") public static native int tensorsAlongDimension(int rank,
+                                            int length,
+                                            int[] shape,
+                                            int[] dimension,
+                                            int dimensionLength);
+
+/**
+ * Computes the number
+ * of tensors along
+ * a given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int tensorsAlongDimension(IntPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native int tensorsAlongDimension(IntBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native int tensorsAlongDimension(int[] shapeInfo, int[] dimension, int dimensionLength);
+
+
+
+/**
+ * Returns the tensor along dimension
+ * for the given block index
+ * @param blockSize
+ * @param blockIdx
+ * @param i
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int tadForBlockIndex(int blockSize, int blockIdx, int i);
+
+/**
+ * Computes the number of tads per block
+ *
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int tadsPerBlock(int blockSize, int tads);
+
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//
+//    ND4J_EXPORT int *tadShapeInfo(int index, int *xShapeInfo, int *dimension,
+//                                int dimensionLength);
+
+/**
+ * Returns a shape buffer
+ * for the shape information metadata.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer toShapeBuffer( ShapeInformation info);
+
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer toShapeBuffer( ShapeInformation info, IntPointer ret);
+    @Namespace("shape") public static native IntBuffer toShapeBuffer( ShapeInformation info, IntBuffer ret);
+    @Namespace("shape") public static native int[] toShapeBuffer( ShapeInformation info, int[] ret);
+
+/**
+ * Returns the number of elements per thread
+ */
+//#ifdef __CUDACC__
+//    __device__
+//#endif
+//    int numElementsPerThread(int N);
+
+/**
+ * Returns the block starting index
+ */
+//#ifdef __CUDACC__
+//    __device__
+//#endif
+//    int blockStartingIndex(int N);
+
+/**
+ * Returns the thread starting index
+ */
+//#ifdef __CUDACC__
+//    __device__
+//#endif
+//    int threadStartingIndex(int N, int stride, int offset);
+
+/**
+ * Returns the thread ending index
+ */
+//#ifdef __CUDACC__
+//    __device__
+//#endif
+//    int threadEndingIndex(int N, int stride, int offset);
+
+/**
+ * Returns indexing information
+ * for the current kernel invocation
+ */
+//#ifdef __CUDACC__
+//    __device__
+//#endif
+//    CurrentIndexing *currentIndex(int N, int offset, int stride);
+
+/** Given an linear index, element wise stride
+ * and the length of each tad
+ * map a linear index to a tad
+ * @param i the index to map
+ * @param the element wise stride for the tads
+ * @param numElementsPerTad the number of elements
+ * per tad
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
+
+/**
+ * Map a tad to a
+ * reduction index.
+ * @param tadIndexForOriginal the original tad index for the
+ * split up problem (eg: split is dimension 3 mapping to a 2,3 problem)
+ * @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
+ * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
+                                 int tadsForOriginal);
+
+/**
+ * Computes the number of tads
+ * per reduce index for the
+ * reduction tad.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
+
+/**
+ * Maps a linear index to a reduction index
+ * @param i the linear index to map
+ * @param elementWiseStride the element wise stride
+ * for the multiple problem
+ * @param tadNum the number of tads for the shrunken problem
+ * @param originalTadNum the tad number for the reduced version of the problem
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
+                                    int tadNum, int originalTadNum);
+
+/**
+ * Returns the prod of the data
+ * up to the given length
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native int prod(IntPointer data, int length);
+    @Namespace("shape") public static native int prod(IntBuffer data, int length);
+    @Namespace("shape") public static native int prod(int[] data, int length);
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long prodLong( IntPointer data, int length);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long prodLong( IntBuffer data, int length);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long prodLong( int[] data, int length);
+
+    /**
+     * Returns the rear most left over item not present in
+     * the dimension array. This assumes that the dimension array is sorted.
+     *
+     * For example, given a dimension array of:
+     * 0,2
+     *
+     * and
+     *
+     * 12,4,2,1 in data
+     *
+     * You end up with 1 (data[3])
+     * since the first item won't match
+     * the last item of the dimension array
+     */
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength);
+
+    /**
+* Get an offset for retrieval
+* from a data buffer
+* based on the given
+* shape stride and given indices
+* @param baseOffset the offset to start from
+* @param shape the shape of the array
+* @param stride the stride of the array
+* @param indices the indices to iterate over
+* @return the double at the specified index
+*/
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long getOffset(@Cast("Nd4jIndex") long baseOffset,  IntPointer shape,  IntPointer stride,  IntPointer indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long getOffset(@Cast("Nd4jIndex") long baseOffset,  IntBuffer shape,  IntBuffer stride,  IntBuffer indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long getOffset(@Cast("Nd4jIndex") long baseOffset,  int[] shape,  int[] stride,  int[] indices,int rank);
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer createShapeInfo(IntPointer shape, IntPointer stride, int rank);
+    @Namespace("shape") public static native IntBuffer createShapeInfo(IntBuffer shape, IntBuffer stride, int rank);
+    @Namespace("shape") public static native int[] createShapeInfo(int[] shape, int[] stride, int rank);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer createShapeInfo(IntPointer shape, IntPointer stride, int rank, IntPointer buffer);
+    @Namespace("shape") public static native IntBuffer createShapeInfo(IntBuffer shape, IntBuffer stride, int rank, IntBuffer buffer);
+    @Namespace("shape") public static native int[] createShapeInfo(int[] shape, int[] stride, int rank, int[] buffer);
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer ind2sub(int rank,  IntPointer shape,int index,int numIndices);
+    @Namespace("shape") public static native IntBuffer ind2sub(int rank,  IntBuffer shape,int index,int numIndices);
+    @Namespace("shape") public static native int[] ind2sub(int rank,  int[] shape,int index,int numIndices);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer ind2sub(int rank,  IntPointer shape,int index);
+    @Namespace("shape") public static native IntBuffer ind2sub(int rank,  IntBuffer shape,int index);
+    @Namespace("shape") public static native int[] ind2sub(int rank,  int[] shape,int index);
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @param numIndices the number of total indices (typically prod of shape(
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void ind2sub(int rank,IntPointer shape,int index,int numIndices,IntPointer out);
+    @Namespace("shape") public static native void ind2sub(int rank,IntBuffer shape,int index,int numIndices,IntBuffer out);
+    @Namespace("shape") public static native void ind2sub(int rank,int[] shape,int index,int numIndices,int[] out);
+
+/**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void ind2sub(int rank, IntPointer shape, int index, IntPointer out);
+    @Namespace("shape") public static native void ind2sub(int rank, IntBuffer shape, int index, IntBuffer out);
+    @Namespace("shape") public static native void ind2sub(int rank, int[] shape, int index, int[] out);
+
+    /**
+  * Convert a linear index to
+  * the equivalent nd index
+  * @param shape the shape of the dimensions
+  * @param index the index to map
+  * @param numIndices the number of total indices (typically prod of shape(
+  * @return the mapped indexes along each dimension
+  */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer ind2subC(int rank, IntPointer shape, int index);
+    @Namespace("shape") public static native IntBuffer ind2subC(int rank, IntBuffer shape, int index);
+    @Namespace("shape") public static native int[] ind2subC(int rank, int[] shape, int index);
+    /**
+  * Convert a linear index to
+  * the equivalent nd index
+  * @param shape the shape of the dimensions
+  * @param index the index to map
+  * @param numIndices the number of total indices (typically prod of shape(
+  * @return the mapped indexes along each dimension
+  */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer ind2subC(int rank, IntPointer shape, int index, int numIndices);
+    @Namespace("shape") public static native IntBuffer ind2subC(int rank, IntBuffer shape, int index, int numIndices);
+    @Namespace("shape") public static native int[] ind2subC(int rank, int[] shape, int index, int numIndices);
+
+    /**
+   * Convert a linear index to
+   * the equivalent nd index
+   * @param shape the shape of the dimensions
+   * @param index the index to map
+   * @param numIndices the number of total indices (typically prod of shape(
+   * @return the mapped indexes along each dimension
+   */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void ind2subC(int rank, IntPointer shape, int index, int numIndices, IntPointer out);
+    @Namespace("shape") public static native void ind2subC(int rank, IntBuffer shape, int index, int numIndices, IntBuffer out);
+    @Namespace("shape") public static native void ind2subC(int rank, int[] shape, int index, int numIndices, int[] out);
+
+/**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void ind2subC(int rank, IntPointer shape, int index, IntPointer out);
+    @Namespace("shape") public static native void ind2subC(int rank, IntBuffer shape, int index, IntBuffer out);
+    @Namespace("shape") public static native void ind2subC(int rank, int[] shape, int index, int[] out);
+
+    /**
+  * Convert the given index (such as 1,1)
+  * to a linear index
+  * @param shape the shape of the indexes to convert
+  * @param indices the index to convert
+  * @return the linear index given the shape
+  * and indices
+  */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int sub2Ind(int rank, IntPointer shape, IntPointer indices);
+    @Namespace("shape") public static native int sub2Ind(int rank, IntBuffer shape, IntBuffer indices);
+    @Namespace("shape") public static native int sub2Ind(int rank, int[] shape, int[] indices);
+
+    /**
+   * Compute the real linear indices for the given shape and stride
+   */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("Nd4jIndex*") LongPointer computeIndices(int rank,  IntPointer shape,  IntPointer stride);
+    @Namespace("shape") public static native @Cast("Nd4jIndex*") LongBuffer computeIndices(int rank,  IntBuffer shape,  IntBuffer stride);
+    @Namespace("shape") public static native @Cast("Nd4jIndex*") long[] computeIndices(int rank,  int[] shape,  int[] stride);
+
+    /**
+   * Compute the real linear indices for the
+     * given shape buffer. Shape,stride and rank are derived
+     * from the buffer
+   */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native @Cast("Nd4jIndex*") LongPointer computeIndices( IntPointer shapeBuffer);
+    @Namespace("shape") public static native @Cast("Nd4jIndex*") LongBuffer computeIndices( IntBuffer shapeBuffer);
+    @Namespace("shape") public static native @Cast("Nd4jIndex*") long[] computeIndices( int[] shapeBuffer);
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void ind2subOrder(IntPointer shapeInfo,int index,int numIndices,IntPointer out);
+    @Namespace("shape") public static native void ind2subOrder(IntBuffer shapeInfo,int index,int numIndices,IntBuffer out);
+    @Namespace("shape") public static native void ind2subOrder(int[] shapeInfo,int index,int numIndices,int[] out);
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void ind2subOrder(IntPointer shapeInfo,int index,IntPointer out);
+    @Namespace("shape") public static native void ind2subOrder(IntBuffer shapeInfo,int index,IntBuffer out);
+    @Namespace("shape") public static native void ind2subOrder(int[] shapeInfo,int index,int[] out);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void printShapeInfo(IntPointer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfo(IntBuffer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfo(int[] shapeInfo);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void printShapeInfoLinear(IntPointer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(IntBuffer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(int[] shapeInfo);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void printIntArray(IntPointer arr,int length);
+    @Namespace("shape") public static native void printIntArray(IntBuffer arr,int length);
+    @Namespace("shape") public static native void printIntArray(int[] arr,int length);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void printArray(FloatPointer arr,int length);
+    @Namespace("shape") public static native void printArray(FloatBuffer arr,int length);
+    @Namespace("shape") public static native void printArray(float[] arr,int length);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntPointer shape,@Cast("bool") boolean fortranOrder);
+    @Namespace("shape") public static native IntBuffer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntBuffer shape,@Cast("bool") boolean fortranOrder);
+    @Namespace("shape") public static native int[] shapeBufferOfNpy(int rank, @Cast("unsigned int*") int[] shape,@Cast("bool") boolean fortranOrder);
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    ND4J_EXPORT int *shapeBufferOfNpyBuffer(char *buffer);
+
+
+// #ifdef __CUDACC__
+// #endif
+    // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
+    // also sort input array of dimensions, this operation is also necessary for creating TAD object
+    @Namespace("shape") public static native void checkDimensions(int rank, @StdVector IntPointer dimensions);
+    @Namespace("shape") public static native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
+    @Namespace("shape") public static native void checkDimensions(int rank, @StdVector int[] dimensions);
+
+
+// #ifdef __CUDACC__
+// #endif
+    // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array 
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const IntPointer maxShapeInfo, @Const IntPointer minShapeInfo, int maxIdx);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const IntBuffer maxShapeInfo, @Const IntBuffer minShapeInfo, int maxIdx);
+    @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const int[] maxShapeInfo, @Const int[] minShapeInfo, int maxIdx);
+
+
+
+//END HEADERS
+
+
+    //BEGIN IMPLEMENTATIONS
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Length of a tad given
+* the shape information
+*/
+// #ifdef __CUDACC__
+// #endif
+
+
+
+/**
+ * Tad element wise stride:
+ * given the inner most dimension (the sorted dimension of the last)
+ * the element wise stride of the tad (disregarding order) is the
+ * last dimension's stride.
+ *
+ * For a given singular dimension this will just be the only entry.
+ * For example, given the following c order shape/stride:
+ * 2,2,3,2
+ * 12,6,2,1
+ *
+ * The tad element wise stride for 3 will be 1.
+ * For zero it wil be 12
+ *
+ * For 2,3 it's 1
+ *
+ * Note here that the multi dimensional 2,3 case
+ * is equivalent to the singular 3 case.
+ *
+ *
+ * Note that this is for the dimension that ultimately
+ * ends up removed.
+ *
+ * Again: this may not preserve ordering of the tad
+ * but maybe used for reductions.
+ */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int tadElementWiseStride(IntPointer shapeInfo,IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native int tadElementWiseStride(IntBuffer shapeInfo,IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native int tadElementWiseStride(int[] shapeInfo,int[] dimension,int dimensionLength);
+
+
+
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the standard packed array strides for a given shape.
+ *
+ * @param shape    the shape of a matrix:
+ * @param startNum the start number for the strides
+ * @return the strides for a matrix of n dimensions
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
+// #ifdef __CUDACC__
+// #endif
+
+
+/**
+ * @param toCopy the shape to copy
+ * @return a copy of the original struct
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Get the shape info buffer
+ * for the given rank and shape.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+     * This is special method, it returns ONLY 2D shapebuffer.
+     *
+     * This method is used only for SoftMax
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Get the shape info buffer
+* for the given rank and shape.
+*/
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Compute the real linear indices for the given shape and stride
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Compute the real linear indices for the given shape and stride
+*/
+// #ifdef __CUDACC__
+// #endif
+
+
+/**
+* Convert the given index (such as 1,1)
+* to a linear index
+* @param shape the shape of the indexes to convert
+* @param indices the index to convert
+* @return the linear index given the shape
+* and indices
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index.
+ * Infers the number of indices from the specified shape.
+ *
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Convert a linear index to
+* the equivalent nd index
+* @param shape the shape of the dimensions
+* @param index the index to map
+* @param numIndices the number of total indices (typically prod of shape(
+* @return the mapped indexes along each dimension
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index.
+ * Infers the number of indices from the specified shape.
+ *
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Convert a linear index to
+* the equivalent nd index
+* @param shape the shape of the dimensions
+* @param index the index to map
+* @param numIndices the number of total indices (typically prod of shape(
+* @return the mapped indexes along each dimension
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Convert a linear index to
+* the equivalent nd index
+* @param shape the shape of the dimensions
+* @param index the index to map
+* @param numIndices the number of total indices (typically prod of shape(
+* @return the mapped indexes along each dimension
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+
+
+
+/**
+ *
+ * @param length
+ * @param shape
+ * @param rearrange
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ *
+ * @param length
+ * @param shape
+ * @param rearrange
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Get the ordering for the device
+ * @param length
+ * @param shape
+ * @param stride
+ * @param elementStride
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+
+/**
+ * Ensure that every value in the re arrange
+ * array is unique
+ * @param arr
+ * @param shape
+ * @param arrLength
+ * @param shapeLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Permute the shape information
+ * @param info the shape information to permute
+ * @param rearrange the order to re arrange
+ * @param rank the rank of the rearrange array
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns whether the
+ * given shape is a vector or not
+ * @param shape the shape of the array
+ * @param rank the rank of the shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Returns whether the
+* given shape is a vector or not
+* @param shape the shape of the array
+* @param rank the rank of the shape
+*/
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the shape portion of an information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Return a copy of a buffer.
+ * This buffer allocates memory
+ * that must be freed elsewhere.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Permute the given strides
+ * in the given rearrange order
+ * @param toPermute the buffer to permute
+ * @param shapeRank the length of the buffer to permute
+ * @param rearrange the rearrange order (must be 0 based indexes
+ * and all must be filled in)
+ * @return the rearranged array
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Return the slice (shape + 1 in pointer arithmetic)
+ * @param shape the shape to take the slice of
+ * @return the shape array - the first entry
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the length of the
+ * shape information buffer:
+ * rank * 2 + 3
+ * @param rank the rank to get the shape
+ * info length for
+ * @return rank * 2 + 4
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the rank portion of
+ * an information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Converts a raw int buffer of the layout:
+ * rank
+ * shape
+ * stride
+ * offset
+ * elementWiseStride
+ *
+ * where shape and stride are both straight int pointers
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the stride portion of an information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+/**
+ * Compute the length of the given shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/***
+ * Returns the offset
+ * portion of an information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the ordering
+ * for this shape information buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the element wise stride for this information
+ * buffer
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+* Returns the element wise stride for this information
+* buffer relative to a dimension and reduction index
+*/
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns whether
+ * the given shape info buffer
+ * represents a scalar shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns whether
+ * the given shape information
+ * represents a scalar
+ * shape or not
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Return a copy of this array with the
+ * given index omitted
+ *
+ * @param data  the data to copy
+ * @param indexes the index of the item to remove
+ * @param dataLength the length of the data array
+ * @param indexesLength the length of the data array
+ * @return the new array with the omitted
+ *
+ * item
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+ * Return a copy of this array with the
+ * given index omitted
+ *
+ * @param data  the data to copy
+ * @param indexes the index of the item to remove
+ * @param dataLength the length of the data array
+ * @param indexesLength the length of the data array
+ * @return the new array with the omitted
+ *
+ * item
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the offset for accessing
+ * a global element given the shape information
+ * and the offset to be read.
+ */
+// #ifdef __CUDACC__
+
+// #endif
+
+/**
+ * Returns a shape
+ * forces the given length to be 2.
+ * @param shape the shape to modify
+ * @param dimension the dimension (row or column)
+ * for the shape to be returned as
+ * @return the new shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native IntPointer ensureVectorShape(IntPointer shape, int dimension);
+    @Namespace("shape") public static native IntBuffer ensureVectorShape(IntBuffer shape, int dimension);
+    @Namespace("shape") public static native int[] ensureVectorShape(int[] shape, int dimension);
+
+/**
+ * Returns a shape
+ * forces the given length to be 2.
+ * @param shape the shape to modify
+ * @param dimension the dimension (row or column)
+ * for the shape to be returned as
+ * @return the new shape
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+     * This method does STRICT comparison for two shape buffers
+     *
+     * @param shape
+     * @return
+     */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+     * This method does SOFT comparison for two shape buffers, we compare only rank & shapes
+     *
+     * @param shape
+     * @return
+     */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Generate an int buffer
+ * up to the given length
+ * at the specified increment
+ *
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Generate a range
+ * beginning at from and ending at to
+ * incrementing by 1
+ * @param from the start
+ * @param to the end
+ * @return the int array starting at from and ending at to
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Keep the given indexes in the data
+ * @param data
+ * @param index
+ * @param indexLength
+ * @param dataLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Generate a reverse
+ * copy of the data
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ *
+ * @param arr1
+ * @param arr1Length
+ * @param arr2
+ * @param arr2Length
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ *
+ * @param numArrays
+ * @param numTotalElements
+ * @param arr
+ * @param lengths
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Get the length per slice of the
+ * given shape and the dimension
+ * @param rank the rank of the shape
+ * @param shape the shape of to get
+ * the length per slice for
+ * @param dimension the dimension to
+ * get the length per slice for
+ * @param dimensionLength the length of the dimension array
+ * @return the length per slice of the given shape
+ * along the given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * calculates the offset for a tensor
+ * @param index
+ * @param arr
+ * @param tensorShape
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+    /**
+ * calculates the offset for a tensor
+ * @param index
+ * @param arr
+ * @param tensorShape
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+
+/**
+ * Computes the number
+ * of tensors along
+ * a given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the number
+ * of tensors along
+ * a given dimension
+ */
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+/**
+* Get an offset for retrieval
+* from a data buffer
+* based on the given
+* shape stride and given indices
+* @param baseOffset the offset to start from
+* @param shape the shape of the array
+* @param stride the stride of the array
+* @param indices the indices to iterate over
+* @return the double at the specified index
+*/
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+/**
+ * Returns the tensor along dimension
+ * for the given block index
+ * @param blockSize
+ * @param blockIdx
+ * @param i
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the number of tads per block
+ *
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns a shape buffer
+ * for the shape information metadata.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+/**
+ * Given an linear index, element wise stride
+ * and the length of each tad
+ * map a linear index to a tad
+ * @param i the index to map
+ * @param the element wise stride for the tads
+ * @param numElementsPerTad the number of elements
+ * per tad
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Map a tad to a
+ * reduction index.
+ * @param tadIndexForOriginal the original tad index for the
+ * split up problem (eg: split is dimension 3 mapping to a 2,3 problem)
+ * @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
+ * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Tad index for linear
+ * @param linearIndex
+ * @param tadLength
+ * @return
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Computes the number of tads
+ * per reduce index for the
+ * reduction tad.
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Maps a linear index to a reduction index
+ * @param i the linear index to map
+ * @param elementWiseStride the element wise stride
+ * for the multiple problem
+ * @param tadNum the number of tads for the shrunken problem
+ * @param originalTadNum the tad number for the reduced version of the problem
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the prod of the data
+ * up to the given length
+ */
+// #ifdef __CUDACC__
+// #endif
+
+/**
+ * Returns the prod of the data
+ * up to the given length
+ */
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native int rearMostLeftOverItem(IntPointer data, IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native int rearMostLeftOverItem(IntBuffer data, IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native int rearMostLeftOverItem(int[] data, int[] dimension,int dimensionLength);
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+// #ifdef __CUDACC__
+// #endif
+
+
+
+
+
+//#ifdef __CUDACC__
+//    __host__ __device__
+//#endif
+//    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer) {
+//        unsigned int *shape;
+//        unsigned int ndims, wordSize;
+//        bool fortranOrder;
+//        cnpy::parseNpyHeaderStr(std::string(buffer),wordSize,shape,ndims,fortranOrder);
+//        int * ret =  shape::shapeBufferOfNpy(ndims,shape,fortranOrder);
+//        delete[] shape;
+//        return ret;
+//    }
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+    // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
+    // also sort input array of dimensions, this operation is also necessary for creating TAD object
+
+
+// #ifdef __CUDACC__
+// #endif
+// return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
+
+
+
+
+
+// #endif /* SHAPE_H_ */
+
+
+// Parsed from array/ShapeList.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_SHAPELIST_H
+// #define LIBND4J_SHAPELIST_H
+
+// #include <vector>
+// #include <shape.h>
+    @Namespace("nd4j") @NoOffset public static class ShapeList extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public ShapeList(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public ShapeList(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public ShapeList position(long position) {
+            return (ShapeList)super.position(position);
+        }
+    
+        public ShapeList(IntPointer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+        private native void allocate(IntPointer shape/*=nullptr*/);
+        public ShapeList() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        public ShapeList(IntBuffer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+        private native void allocate(IntBuffer shape/*=nullptr*/);
+        public ShapeList(int[] shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+        private native void allocate(int[] shape/*=nullptr*/);
+        public ShapeList(@Cast("int**") @StdVector PointerPointer shapes) { super((Pointer)null); allocate(shapes); }
+        private native void allocate(@Cast("int**") @StdVector PointerPointer shapes);
+        //ShapeList(bool autoRemovable);
+
+        public native @Cast("int**") @StdVector PointerPointer asVector();
+        public native void destroy();
+        public native int size();
+        public native IntPointer at(int idx);
+        public native void push_back(IntPointer shape);
+        public native void push_back(IntBuffer shape);
+        public native void push_back(int[] shape);
+    }
+
+
+
+// #endif //LIBND4J_SHAPELIST_H
+
+
+// Parsed from op_boilerplate.h
+
+/*
+ * This set of macros is used to generate kernel calls/method calls/cuda kernels on the fly, during precompile phase.
+ *
+ * Entry macros start with DISPATCH_* name.
+ * Basically they are rolling through *_OPS list, building list of kernels.
+ * And DISPATCH_KERNEL_META rolls through any two *_OPS list, building meta kernels and their host counterparts
+ *
+ *
+ * Those scary FE_*, FX_*, FZ_*, FM_* etc macro walls are used to give preprocessor ability to loop over list of argument,
+ * which emulates forEach() pattern.
+ *
+ * I.e. here's macro call which generates CUDA kernels for RANDOM_OPS:
+ *
+ * DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+ *
+ * we provide arguments:
+ *      output method template
+ *      target generic kernel
+ *      dataType
+ *      signature
+ *      parameters to be passed into generic kernel
+ *      list of operations
+ *
+ *
+ * List of operations used are defined in the same *.h file, i.e. for RandomOps it's defined as:
+ * #define RANDOM_OPS \
+ *       (0, randomOps::UniformDistribution) ,\
+ *       (1, randomOps::DropOut) ,\
+ *       (2, randomOps::DropOutInverted) ,\
+ *       (3, randomOps::ProbablisticMerge) ,\
+ *       (4, randomOps::Linspace) ,\
+ *       (5, randomOps::Choice) ,\
+ *       (6, randomOps::GaussianDistribution) ,\
+ *       (7, randomOps::BernoulliDistribution) ,\
+ *       (8, randomOps::BinomialDistribution)
+ *
+ *
+ * So, DISPATCH_KERNEL_SIMPLE call will generate one kernel for each of ops.
+ * This allows us easy addition of new operations. Basically one should just add new Op to the list, and recompile libnd4j
+ *
+ * HINT: To debug macro you might want to use simple trick: open console and run "watch -n 1 gcc -e file.h"
+ * This will give you real-time result of macro preprocessing, which will greatly simplify invention process.
+ *
+ *
+ * @author Paul Dubs (@treo)
+ * @author raver119@gmail.com
+ */
+// #pragma once
+// #ifndef OP_BOILERPLATE_HH
+// #define OP_BOILERPLATE_HH
+
+public static native @MemberGetter int ELEMENT_THRESHOLD();
+public static final int ELEMENT_THRESHOLD = ELEMENT_THRESHOLD();
+public static native @MemberGetter int TAD_THRESHOLD();
+public static final int TAD_THRESHOLD = TAD_THRESHOLD();
+
+// #define EXTRACT(...) EXTRACT __VA_ARGS__ 
+// #define NOTHING_EXTRACT 
+// #define PASTE(x, ...) x ## __VA_ARGS__ 
+// #define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__) 
+// #define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x) 
+// #define EVAL( x ) x
+// #define EVAL0(...)  EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
+// #define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
+// #define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
+// #define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
+// #define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
+// #define EVAL5(...) __VA_ARGS__
+
+// #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
+
+
+// #define CONCAT2(A,B) A ## B
+// #define CONCAT3(A,B,C) A ## B ## C
+
+// #define ARGMIX3(A,B,C) A ## B ## _## C
+// #define ARGMIX4(A,B,C,D) A ## B ## _## C ## _ ## D
+
+// #define MIX2(A,B) A ## _ ## B
+// #define MIX3(A,B,C) A ## _ ## B ## _## C
+// #define MIX4(A,B,C,D) A ## _ ## B ## _## C ## _ ## D
+
+
+// #define EMPTY()
+// #define DEFER(id) id EMPTY()
+// #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
+// #define EXPAND(...) __VA_ARGS__
+
+// #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ FN<TYPE<T>>SIG; }
+// #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<T>>SIG; }
+// #define _EXPAND_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
+// #define _EXPAND_RETURNING_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _RETURNING_OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
+
+// #define FE_1(WHAT, FN, SIG, OPNUM_PAIR) WHAT(FN, SIG, OPNUM_PAIR)
+// #define FE_2(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_1(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_3(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_2(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_4(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_3(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_5(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_4(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_6(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_5(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_7(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_6(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_8(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_7(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_9(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_8(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_10(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_9(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_11(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_10(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_12(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_11(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_13(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_12(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_14(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_13(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_15(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_14(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_16(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_15(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_17(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_16(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_18(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_17(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_19(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_18(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_20(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_19(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_21(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_20(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_22(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_21(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_23(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_22(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_24(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_23(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_25(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_24(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_26(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_25(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_27(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_26(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_28(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_27(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_29(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_28(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_30(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_29(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_31(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_30(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_32(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_31(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_33(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_32(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_34(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_33(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_35(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_34(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_36(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_35(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_37(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_36(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_38(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_37(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_39(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_38(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_40(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_39(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_41(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_40(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_42(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_41(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_43(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_42(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_44(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_43(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_45(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_44(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_46(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_45(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_47(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_46(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_48(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_47(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_49(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_48(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_50(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_49(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_51(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_50(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_52(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_51(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_53(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_52(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_54(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_53(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_55(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_54(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_56(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_55(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_57(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_56(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_58(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_57(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_59(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_58(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_60(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_59(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_61(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_60(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_62(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_61(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_63(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_62(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_64(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_63(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_65(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_64(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_66(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_65(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_67(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_66(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_68(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_67(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_69(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_68(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_70(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_69(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_71(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_70(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_72(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_71(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_73(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_72(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_74(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_73(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_75(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_74(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_76(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_75(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_77(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_76(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_78(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_77(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_79(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_78(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_80(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_79(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_81(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_80(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_82(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_81(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_83(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_82(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_84(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_83(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_85(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_84(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_86(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_85(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_87(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_86(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_88(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_87(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_89(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_88(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_90(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_89(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_91(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_90(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_92(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_91(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_93(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_92(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_94(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_93(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_95(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_94(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_96(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_95(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_97(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_96(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_98(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_97(WHAT, FN, SIG, __VA_ARGS__))
+// #define FE_99(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_98(WHAT, FN, SIG, __VA_ARGS__))
+
+
+// #define CL1_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
+// #define CL1_2(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_1(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_3(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_2(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_4(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_3(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_5(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_4(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_6(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_5(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_7(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_6(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_8(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_7(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_9(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_8(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_10(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_9(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_11(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_10(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_12(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_11(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_13(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_12(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_14(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_13(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_15(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_14(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_16(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_15(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_17(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_16(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_18(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_17(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_19(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_18(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_20(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_19(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_21(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_20(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_22(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_21(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_23(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_22(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_24(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_23(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_25(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_24(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_26(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_25(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_27(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_26(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_28(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_27(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_29(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_28(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_30(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_29(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_31(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_30(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_32(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_31(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_33(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_32(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_34(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_33(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_35(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_34(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_36(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_35(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_37(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_36(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_38(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_37(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_39(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_38(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_40(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_39(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_41(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_40(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_42(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_41(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_43(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_42(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_44(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_43(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_45(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_44(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_46(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_45(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_47(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_46(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_48(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_47(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_49(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_48(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_50(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_49(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_51(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_50(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_52(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_51(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_53(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_52(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_54(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_53(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_55(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_54(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_56(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_55(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_57(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_56(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_58(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_57(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_59(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_58(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_60(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_59(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_61(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_60(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_62(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_61(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_63(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_62(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_64(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_63(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_65(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_64(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_66(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_65(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_67(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_66(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_68(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_67(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_69(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_68(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_70(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_69(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_71(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_70(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_72(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_71(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_73(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_72(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_74(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_73(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_75(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_74(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_76(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_75(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_77(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_76(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_78(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_77(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_79(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_78(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_80(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_79(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_81(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_80(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_82(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_81(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_83(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_82(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_84(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_83(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_85(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_84(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_86(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_85(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_87(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_86(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_88(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_87(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_89(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_88(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_90(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_89(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_91(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_90(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_92(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_91(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_93(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_92(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_94(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_93(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_95(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_94(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_96(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_95(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define CL1_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+
+// #define FZ_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
+// #define FZ_2(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_1(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_3(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_2(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_4(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_3(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_5(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_4(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_6(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_5(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_7(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_6(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_8(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_7(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_9(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_8(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_10(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_9(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_11(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_10(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_12(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_11(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_13(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_12(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_14(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_13(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_15(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_14(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_16(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_15(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_17(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_16(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_18(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_17(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_19(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_18(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_20(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_19(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_21(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_20(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_22(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_21(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_23(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_22(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_24(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_23(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_25(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_24(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_26(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_25(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_27(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_26(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_28(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_27(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_29(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_28(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_30(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_29(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_31(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_30(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_32(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_31(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_33(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_32(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_34(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_33(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_35(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_34(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_36(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_35(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_37(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_36(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_38(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_37(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_39(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_38(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_40(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_39(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_41(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_40(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_42(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_41(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_43(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_42(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_44(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_43(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_45(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_44(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_46(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_45(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_47(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_46(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_48(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_47(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_49(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_48(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_50(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_49(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_51(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_50(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_52(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_51(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_53(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_52(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_54(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_53(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_55(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_54(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_56(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_55(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_57(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_56(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_58(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_57(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_59(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_58(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_60(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_59(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_61(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_60(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_62(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_61(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_63(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_62(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_64(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_63(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_65(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_64(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_66(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_65(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_67(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_66(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_68(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_67(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_69(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_68(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_70(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_69(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_71(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_70(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_72(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_71(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_73(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_72(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_74(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_73(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_75(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_74(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_76(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_75(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_77(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_76(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_78(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_77(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_79(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_78(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_80(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_79(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_81(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_80(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_82(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_81(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_83(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_82(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_84(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_83(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_85(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_84(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_86(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_85(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_87(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_86(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_88(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_87(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_89(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_88(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_90(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_89(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_91(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_90(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_92(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_91(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_93(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_92(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_94(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_93(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_95(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_94(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_96(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_95(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define FZ_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+// #define FF_1(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)
+// #define FF_2(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_1(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_3(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_2(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_4(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_3(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_5(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_4(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_6(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_5(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_7(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_6(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_8(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_7(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_9(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_8(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_10(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_9(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_11(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_10(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_12(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_11(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_13(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_12(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_14(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_13(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_15(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_14(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_16(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_15(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_17(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_16(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_18(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_17(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_19(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_18(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FF_20(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_19(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+
+
+// #define FFI_1(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)
+// #define FFI_2(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_1(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_3(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_2(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_4(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_3(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_5(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_4(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_6(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_5(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_7(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_6(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_8(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_7(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_9(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_8(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_10(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_9(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_11(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_10(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_12(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_11(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_13(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_12(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_14(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_13(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_15(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_14(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_16(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_15(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_17(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_16(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_18(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_17(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_19(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_18(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FFI_20(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_19(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+
+// #define FM_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)
+// #define FM_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR,__VA_ARGS__))
+// #define FM_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FM_70(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+
+
+// #define FX_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)
+// #define FX_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FX_70(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+
+
+// #define FK_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)
+// #define FK_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FK_70(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+
+
+
+// #define FI_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)
+// #define FI_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FI_70(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+
+
+// #define FS_1(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)
+// #define FS_2(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_1(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_3(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_2(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_4(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_3(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_5(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_4(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_6(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_5(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_7(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_6(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_8(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_7(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_9(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_8(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_10(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_9(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_11(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_10(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_12(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_11(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_13(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_12(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_14(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_13(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_15(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_14(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_16(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_15(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_17(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_16(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_18(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_17(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_19(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_18(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_20(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_19(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_21(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_20(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_22(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_21(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_23(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_22(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_24(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_23(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_25(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_24(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_26(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_25(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_27(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_26(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_28(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_27(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_29(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_28(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_30(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_29(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_31(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_30(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_32(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_31(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_33(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_32(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_34(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_33(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_35(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_34(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_36(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_35(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_37(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_36(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_38(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_37(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_39(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_38(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_40(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_39(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_41(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_40(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_42(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_41(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_43(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_42(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_44(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_43(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_45(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_44(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_46(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_45(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_47(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_46(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_48(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_47(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_49(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_48(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_50(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_49(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_51(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_50(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_52(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_51(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_53(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_52(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_54(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_53(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_55(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_54(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_56(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_55(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_57(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_56(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_58(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_57(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_59(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_58(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_60(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_59(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_61(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_60(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_62(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_61(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_63(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_62(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_64(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_63(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_65(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_64(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_66(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_65(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_67(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_66(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_68(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_67(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_69(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_68(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_70(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_69(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_71(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_70(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_72(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_71(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_73(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_72(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_74(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_73(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_75(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_74(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_76(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_75(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_77(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_76(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_78(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_77(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_79(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_78(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_80(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_79(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_81(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_80(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_82(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_81(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_83(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_82(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_84(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_83(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_85(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_84(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_86(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_85(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_87(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_86(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_88(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_87(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_89(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_88(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_90(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_89(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_91(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_90(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_92(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_91(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_93(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_92(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_94(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_93(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_95(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_94(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_96(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_95(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_97(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_96(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_98(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_97(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FS_99(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_98(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+
+//////////////////////////////
+// #ifdef __clang__
+// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 256, 1024, *stream) SIG; };
+// #elif _MSC_VER
+// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 256, 1024, *stream) SIG; };
+// #elif __GNUC__
+// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 256, 1024, *stream) SIG; }
+// #elif __CUDACC__
+// #endif
+// #define _EXPAND_OP_SIMPLE(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) case NUM_A: {MIX3(NAME, NUM_A, TYPE) LAUNCH(launchDims.x, launchDims.y, launchDims.z, *stream) PARAMZ;} break;
+
+// #define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
+
+// #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
+
+// #define _EXPAND_PACKED_CALL_1(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_1(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
+
+// #define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, TYPE)INPUTZ {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<TYPE>, TYPE_B<TYPE>>>PARAMZ ;};
+// #define _EXPAND_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, NUM_A, TYPE_A) extern "C" __global__ void ARGMIX3(NAME, NUM_A, TYPE)INPUTZ {KERNEL<TYPE, TYPE_A<TYPE>>PARAMZ ;};
+// #define _EXPAND_PACKED_SIMPLE(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_SIMPLE(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
+// #define _EXPAND_PACKED_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _KERNEL_SIMPLE (NAME, KERNEL, TYPE, INPUTZ, PARAMZ, UNPAREN(OPNUM_PAIR)))
+// #define _EXPAND_PACKED_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _KERNEL_CALL (NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
+// #define _EXPAND_PACKED_META_CALL(FN, SIG, OPCLASS, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _META_CALL (FN, SIG, OPCLASS, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A) ))
+
+// #define _EXPAND_PACKED_FACTORY_CALL(TYPE, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _FACTORY_CALL (TYPE, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
+//////////////////////////////
+
+// #define GET_MACROS_1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
+
+// #define  GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
+// #define GET_MACROS(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
+// #define GET_MACROX(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
+// #define GET_MACROE(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
+// #define GET_MACROK(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
+// #define GET_MACROI(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
+// #define GET_MACROF(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
+// #define FOR_EACH(WHAT, NAME, SIGNATURE, ...) EVAL(GET_MACRO(__VA_ARGS__,  FE_99, FE_98, FE_97, FE_96, FE_95, FE_94, FE_93, FE_92, FE_91, FE_90, FE_89, FE_88, FE_87, FE_86, FE_85, FE_84, FE_83, FE_82, FE_81, FE_80, FE_79, FE_78, FE_77, FE_76, FE_75, FE_74, FE_73, FE_72, FE_71, FE_70, FE_69, FE_68, FE_67, FE_66, FE_65, FE_64, FE_63, FE_62, FE_61, FE_60, FE_59, FE_58, FE_57, FE_56, FE_55, FE_54, FE_53, FE_52, FE_51, FE_50, FE_49, FE_48, FE_47, FE_46, FE_45, FE_44, FE_43, FE_42, FE_41, FE_40, FE_39, FE_38, FE_37, FE_36, FE_35, FE_34, FE_33, FE_32, FE_31, FE_30, FE_29, FE_28, FE_27, FE_26, FE_25, FE_24, FE_23, FE_22, FE_21, FE_20, FE_19, FE_18, FE_17, FE_16, FE_15, FE_14, FE_13, FE_12, FE_11, FE_10, FE_9, FE_8, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, FE_1)(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+
+// #define FOR_EACH_M(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROX(__VA_ARGS__, FM_70, FM_69, FM_68, FM_67, FM_66, FM_65, FM_64, FM_63, FM_62, FM_61, FM_60, FM_59, FM_58, FM_57, FM_56, FM_55, FM_54, FM_53, FM_52, FM_51, FM_50, FM_49, FM_48, FM_47, FM_46, FM_45, FM_44, FM_43, FM_42, FM_41, FM_40, FM_39, FM_38, FM_37, FM_36, FM_35, FM_34, FM_33, FM_32, FM_31, FM_30, FM_29, FM_28, FM_27, FM_26, FM_25, FM_24, FM_23, FM_22, FM_21, FM_20, FM_19, FM_18, FM_17, FM_16, FM_15, FM_14, FM_13, FM_12, FM_11, FM_10, FM_9, FM_8, FM_7, FM_6, FM_5, FM_4, FM_3, FM_2, FM_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+// #define FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROE(__VA_ARGS__, FX_70, FX_69, FX_68, FX_67, FX_66, FX_65, FX_64, FX_63, FX_62, FX_61, FX_60, FX_59, FX_58, FX_57, FX_56, FX_55, FX_54, FX_53, FX_52, FX_51, FX_50, FX_49, FX_48, FX_47, FX_46, FX_45, FX_44, FX_43, FX_42, FX_41, FX_40, FX_39, FX_38, FX_37, FX_36, FX_35, FX_34, FX_33, FX_32, FX_31, FX_30, FX_29, FX_28, FX_27, FX_26, FX_25, FX_24, FX_23, FX_22, FX_21, FX_20, FX_19, FX_18, FX_17, FX_16, FX_15, FX_14, FX_13, FX_12, FX_11, FX_10, FX_9, FX_8, FX_7, FX_6, FX_5, FX_4, FX_3, FX_2, FX_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
+
+// #define FOR_EACH_CALL_1(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS_1(__VA_ARGS__,  CL1_99, CL1_98, CL1_97, CL1_96, CL1_95, CL1_94, CL1_93, CL1_92, CL1_91, CL1_90, CL1_89, CL1_88, CL1_87, CL1_86, CL1_85, CL1_84, CL1_83, CL1_82, CL1_81, CL1_80, CL1_79, CL1_78, CL1_77, CL1_76, CL1_75, CL1_74, CL1_73, CL1_72, CL1_71, CL1_70, CL1_69, CL1_68, CL1_67, CL1_66, CL1_65, CL1_64, CL1_63, CL1_62, CL1_61, CL1_60, CL1_59, CL1_58, CL1_57, CL1_56, CL1_55, CL1_54, CL1_53, CL1_52, CL1_51, CL1_50, CL1_49, CL1_48, CL1_47, CL1_46, CL1_45, CL1_44, CL1_43, CL1_42, CL1_41, CL1_40, CL1_39, CL1_38, CL1_37, CL1_36, CL1_35, CL1_34, CL1_33, CL1_32, CL1_31, CL1_30, CL1_29, CL1_28, CL1_27, CL1_26, CL1_25, CL1_24, CL1_23, CL1_22, CL1_21, CL1_20, CL1_19, CL1_18, CL1_17, CL1_16, CL1_15, CL1_14, CL1_13, CL1_12, CL1_11, CL1_10, CL1_9, CL1_8, CL1_7, CL1_6, CL1_5, CL1_4, CL1_3, CL1_2, CL1_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
+
+// #define FOR_EACH_Z(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FZ_99, FZ_98, FZ_97, FZ_96, FZ_95, FZ_94, FZ_93, FZ_92, FZ_91, FZ_90, FZ_89, FZ_88, FZ_87, FZ_86, FZ_85, FZ_84, FZ_83, FZ_82, FZ_81, FZ_80, FZ_79, FZ_78, FZ_77, FZ_76, FZ_75, FZ_74, FZ_73, FZ_72, FZ_71, FZ_70, FZ_69, FZ_68, FZ_67, FZ_66, FZ_65, FZ_64, FZ_63, FZ_62, FZ_61, FZ_60, FZ_59, FZ_58, FZ_57, FZ_56, FZ_55, FZ_54, FZ_53, FZ_52, FZ_51, FZ_50, FZ_49, FZ_48, FZ_47, FZ_46, FZ_45, FZ_44, FZ_43, FZ_42, FZ_41, FZ_40, FZ_39, FZ_38, FZ_37, FZ_36, FZ_35, FZ_34, FZ_33, FZ_32, FZ_31, FZ_30, FZ_29, FZ_28, FZ_27, FZ_26, FZ_25, FZ_24, FZ_23, FZ_22, FZ_21, FZ_20, FZ_19, FZ_18, FZ_17, FZ_16, FZ_15, FZ_14, FZ_13, FZ_12, FZ_11, FZ_10, FZ_9, FZ_8, FZ_7, FZ_6, FZ_5, FZ_4, FZ_3, FZ_2, FZ_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
+// #define FOR_EACH_S(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FS_99, FS_98, FS_97, FS_96, FS_95, FS_94, FS_93, FS_92, FS_91, FS_90, FS_89, FS_88, FS_87, FS_86, FS_85, FS_84, FS_83, FS_82, FS_81, FS_80, FS_79, FS_78, FS_77, FS_76, FS_75, FS_74, FS_73, FS_72, FS_71, FS_70, FS_69, FS_68, FS_67, FS_66, FS_65, FS_64, FS_63, FS_62, FS_61, FS_60, FS_59, FS_58, FS_57, FS_56, FS_55, FS_54, FS_53, FS_52, FS_51, FS_50, FS_49, FS_48, FS_47, FS_46, FS_45, FS_44, FS_43, FS_42, FS_41, FS_40, FS_39, FS_38, FS_37, FS_36, FS_35, FS_34, FS_33, FS_32, FS_31, FS_30, FS_29, FS_28, FS_27, FS_26, FS_25, FS_24, FS_23, FS_22, FS_21, FS_20, FS_19, FS_18, FS_17, FS_16, FS_15, FS_14, FS_13, FS_12, FS_11, FS_10, FS_9, FS_8, FS_7, FS_6, FS_5, FS_4, FS_3, FS_2, FS_1)(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
+// #define FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROI(__VA_ARGS__, FI_70, FI_69, FI_68, FI_67, FI_66, FI_65, FI_64, FI_63, FI_62, FI_61, FI_60, FI_59, FI_58, FI_57, FI_56, FI_55, FI_54, FI_53, FI_52, FI_51, FI_50, FI_49, FI_48, FI_47, FI_46, FI_45, FI_44, FI_43, FI_42, FI_41, FI_40, FI_39, FI_38, FI_37, FI_36, FI_35, FI_34, FI_33, FI_32, FI_31, FI_30, FI_29, FI_28, FI_27, FI_26, FI_25, FI_24, FI_23, FI_22, FI_21, FI_20, FI_19, FI_18, FI_17, FI_16, FI_15, FI_14, FI_13, FI_12, FI_11, FI_10, FI_9, FI_8, FI_7, FI_6, FI_5, FI_4, FI_3, FI_2, FI_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+// #define FOR_EACH_K(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROK(__VA_ARGS__, FK_70, FK_69, FK_68, FK_67, FK_66, FK_65, FK_64, FK_63, FK_62, FK_61, FK_60, FK_59, FK_58, FK_57, FK_56, FK_55, FK_54, FK_53, FK_52, FK_51, FK_50, FK_49, FK_48, FK_47, FK_46, FK_45, FK_44, FK_43, FK_42, FK_41, FK_40, FK_39, FK_38, FK_37, FK_36, FK_35, FK_34, FK_33, FK_32, FK_31, FK_30, FK_29, FK_28, FK_27, FK_26, FK_25, FK_24, FK_23, FK_22, FK_21, FK_20, FK_19, FK_18, FK_17, FK_16, FK_15, FK_14, FK_13, FK_12, FK_11, FK_10, FK_9, FK_8, FK_7, FK_6, FK_5, FK_4, FK_3, FK_2, FK_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
+
+// #define FOR_EACH_F(WHAT, TYPE, OPNUM_PAIR, ...) EXPAND(GET_MACROF(__VA_ARGS__, FF_20, FF_19, FF_18, FF_17, FF_16, FF_15, FF_14, FF_13, FF_12, FF_11, FF_10, FF_9, FF_8, FF_7, FF_6, FF_5, FF_4, FF_3, FF_2, FF_1)(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+// #define FOR_EACH_FI(WHAT, TYPE, OPNUM_PAIR, ...) EXPAND(GET_MACROF(__VA_ARGS__, FFI_20, FFI_19, FFI_18, FFI_17, FFI_16, FFI_15, FFI_14, FFI_13, FFI_12, FFI_11, FFI_10, FFI_9, FFI_8, FFI_7, FFI_6, FFI_5, FFI_4, FFI_3, FFI_2, FFI_1)(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+
+
+// #define _EXEC_OPS(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define _EXEC_OP_SIMPLE(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_Z(THETA, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+// #define _EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_CALL_1(CALL_1, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+// #define _EXEC_META_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, ...) EVAL(FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, __VA_ARGS__))
+// #define _EXEC_META_M(WHAT, NAME, SIGNATURE, OPCLASS, LIST_A, ...) EVAL(FOR_EACH_M(ALPHA, NAME, SIGNATURE, OPCLASS, OPS_A(LIST_A), __VA_ARGS__))
+// #define _EXEC_FACTORY(WHAT, TYPE, LIST_A, ...) EVAL(FOR_EACH_F(PHI, TYPE, OPS_A(LIST_A), __VA_ARGS__))
+// #define _EXEC_FACTORY_INTERNAL(WHAT, TYPE, ACTIVATION, ...) EVAL(FOR_EACH_FI(WHAT, TYPE, ACTIVATION, __VA_ARGS__))
+
+// #define _EXEC_KERNEL_F(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EVAL(FOR_EACH_S(GAMMA, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__ ))
+// #define _EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, ...) EVAL(FOR_EACH_K(BETA, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPS_A(LIST_A), __VA_ARGS__ ))
+// #define _EXEC_KERNEL_X(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ,  OPNUM_PAIR_A, ...) EVAL(FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_A, __VA_ARGS__))
+//_EXPAND_PACKED_OP_CALL
+// #define DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }
+
+// #ifdef __clang__
+// #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B))
+// #elif _MSC_VER
+// #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B))
+// #elif __GNUC__
+// #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) if(false){} EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNumA, __FILE__, __LINE__); }
+// #elif __CUDACC__
+// #endif
+
+// #define BUILD_LAYERS_FACTORY(TYPE, LIST_A, LIST_B) EVAL(_EXEC_FACTORY(RANDOMWHAT, TYPE, (LIST_A), LIST_B))
+
+// #define DISPATCH_SIMPLE(NAME, TYPE, SIGNATURE, LIST_A) switch(opNum) { EVAL(_EXEC_OP_SIMPLE(NAME, TYPE, (SIGNATURE), LIST_A)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
+
+// #define DISPATCH_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, LIST_A) EVAL(_EXEC_KERNEL_F(NAME, KERNEL, TYPE, (INPUTZ), (PARAMZ), LIST_A))
+// #define DISPATCH_KERNEL_META(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, LIST_B ) EVAL(_EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, (INPUTZ), (PARAMZ), (LIST_A), LIST_B))
+// #define DISPATCH_INTERNAL(NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_B, ...) EXPAND(_EXEC_META_X(_EXPAND_PACKED_META_CALL, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_B, __VA_ARGS__))
+
+// #define DISPATCH_FACTORY(TYPE, ACTIVATION, ...) EXPAND(_EXEC_FACTORY_INTERNAL(_EXPAND_PACKED_FACTORY_CALL, TYPE, ACTIVATION, __VA_ARGS__))
+
+// #define DISPATCH_KERNEL_INTERNAL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, ...) EXPAND(_EXEC_KERNEL_X(_EXPAND_PACKED_KERNEL_CALL, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, __VA_ARGS__))
+
+// #define BUILD_CALL_1(NAME, TYPE, SIGNATURE, OPS) EVAL(_EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, OPS))
+
+// #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
+// #define PARAMS(...) __VA_ARGS__
+// #define INPUT(...) __VA_ARGS__
+// #define OPS_A(...) __VA_ARGS__
+// #define OPS_B(...) __VA_ARGS__
+// #define OPS_X(...) __VA_ARGS__
+// #define ALPHA(A, B, C, D, E) EXPAND(DISPATCH_INTERNAL(A, B, C, E, UNPAREN(D)))
+// #define BETA(A, B, C, D, E, F, G, H) EXPAND(DISPATCH_KERNEL_INTERNAL(A, B, C, D, E, F, H, UNPAREN(G)))
+// #define GAMMA(A, B, C, D, E, F) EXPAND(_EXPAND_PACKED_KERNEL_SIMPLE(A, B, C, D, E, F))
+// #define THETA(A, B, C, D) EXPAND(_EXPAND_PACKED_SIMPLE(A, B, C, D))
+// #define PHI(A, B, C) EXPAND(DISPATCH_FACTORY(A, C, UNPAREN(B)))
+
+// #define CALL_1(A, B, C, D) EXPAND(_EXPAND_PACKED_CALL_1(A, B, C, D))
+
+
+
+
+/** graph definitions */
+// #define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return ND4J_STATUS_VALIDATION;
+// #define REQUIRE_TRUE(...) if (nd4j::ops::conditionHelper(__FILE__, __LINE__, __VA_ARGS__) != 0) return ND4J_STATUS_VALIDATION;
+
+// #define DECLARE_ENTRY(NAME, ...)           template struct ND4J_EXPORT __registratorFloat<NAME<float>>;
+//                                       template struct ND4J_EXPORT __registratorHalf<NAME<float16>>;
+//                                       template struct ND4J_EXPORT __registratorDouble<NAME<double>>;
+//                                       template struct ND4J_EXPORT __registratorSynonymHalf<NAME<float16>>;
+//                                       template struct ND4J_EXPORT __registratorSynonymDouble<NAME<double>>;
+//                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
+
+// #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT, INPLACEABLE)
+// #define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT, INPLACEABLE)   template <typename T>
+//                                                 class NAME: public nd4j::ops::DeclarableOp<T> {
+//                                                 public:
+//                                                     NAME();
+//                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
+//                                                 protected:
+//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                                 };
+
+// #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   template <typename T>
+//                                                 class NAME: public nd4j::ops::BooleanOp<T> {
+//                                                 public:
+//                                                     NAME();
+//                                                 protected:
+//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                                 };
+
+// #define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)   template <typename T>
+//                                                 NAME<T>::NAME() : nd4j::ops::BooleanOp<T>(#NAME, NIN, SCALAR) { };
+//                                                 template class ND4J_EXPORT NAME<float>;
+//                                                 template class ND4J_EXPORT NAME<float16>;
+//                                                 template class ND4J_EXPORT NAME<double>;
+// template <typename OpName>
+// struct __registratorFloat_##NAME {
+//     __registratorFloat_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorHalf_##NAME {
+//     __registratorHalf_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorDouble_##NAME {
+//     __registratorDouble_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//     }
+// };
+//                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                 template <typename T>
+//                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
+// #define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      template <typename T>
+//                                                             class NAME: public nd4j::ops::DeclarableListOp<T> {
+//                                                             public:
+//                                                                 NAME();
+//                                                             protected:
+//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                                             };
+
+// #define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)         template <typename T>
+//                                                             NAME<T>::NAME() : nd4j::ops::DeclarableListOp<T>(NIN, NOUT, #NAME, TARGS, IARGS) { };
+//                                                             template class ND4J_EXPORT NAME<float>;
+//                                                             template class ND4J_EXPORT NAME<float16>;
+//                                                             template class ND4J_EXPORT NAME<double>;
+//                                                             template <typename OpName>
+//                                                             struct __registratorFloat_##NAME {
+//                                                                 __registratorFloat_##NAME() {
+//                                                                     OpName *ptr = new OpName();
+//                                                                     OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//                                                                 }
+//                                                             };
+//                                                             template <typename OpName>
+//                                                             struct __registratorHalf_##NAME {
+//                                                                 __registratorHalf_##NAME() {
+//                                                                     OpName *ptr = new OpName();
+//                                                                     OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//                                                                 }
+//                                                             };
+//                                                             template <typename OpName>
+//                                                             struct __registratorDouble_##NAME {
+//                                                                 __registratorDouble_##NAME() {
+//                                                                     OpName *ptr = new OpName();
+//                                                                     OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//                                                                 }
+//                                                             };
+//                                                             static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                             static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                             static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                             template <typename T>
+//                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
+// #define DECLARE_LOGIC_OP(NAME)   template <typename T>
+//                                                 class NAME: public nd4j::ops::LogicOp<T> {
+//                                                 public:
+//                                                     NAME();
+//                                                 protected:
+//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                                 };
+
+// #define LOGIC_OP_IMPL(NAME)     template <typename T>
+//                                 NAME<T>::NAME() : nd4j::ops::LogicOp<T>(#NAME) { };
+//                                 template class ND4J_EXPORT NAME<float>;
+//                                 template class ND4J_EXPORT NAME<float16>;
+//                                 template class ND4J_EXPORT NAME<double>;
+//                                 template <typename OpName>
+//                                 struct __registratorFloat_##NAME {
+//                                     __registratorFloat_##NAME() {
+//                                         OpName *ptr = new OpName();
+//                                         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//                                     }
+//                                 };
+//                                 template <typename OpName>
+//                                 struct __registratorHalf_##NAME {
+//                                     __registratorHalf_##NAME() {
+//                                         OpName *ptr = new OpName();
+//                                         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//                                     }
+//                                 };
+//                                 template <typename OpName>
+//                                 struct __registratorDouble_##NAME {
+//                                     __registratorDouble_##NAME() {
+//                                         OpName *ptr = new OpName();
+//                                         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//                                     }
+//                                 };
+//                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                 template <typename T>
+//                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
+
+
+
+// #define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)   template <typename T>
+//                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { };
+//                                                 template class ND4J_EXPORT NAME<float>;
+//                                                 template class ND4J_EXPORT NAME<float16>;
+//                                                 template class ND4J_EXPORT NAME<double>;
+//                                                 template <typename T>
+//                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+//                                                     auto shapeList = new nd4j::ShapeList();
+//                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                         int* newshape;
+//                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
+//                                                         if (shape::order(inputShape->at(e)) == 'c')
+//                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                         else
+//                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                         shapeList->push_back(newshape);
+//                                                     }
+//                                                     return shapeList;
+//                                                 }
+// template <typename OpName>
+// struct __registratorFloat_##NAME {
+//     __registratorFloat_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorHalf_##NAME {
+//     __registratorHalf_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorDouble_##NAME {
+//     __registratorDouble_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//     }
+// };
+//                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                 template <typename T>
+//                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
+
+// #define DECLARE_SYN(NAME, ORIGINAL)
+// template <typename OpName>
+// struct __registratorSynonymFloat_##NAME {
+//     __registratorSynonymFloat_##NAME(const char *name, const char *oname) {
+//         OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationFloat(oname);
+//         if (ptr == nullptr) {
+//             std::string newName(name);
+//             std::string oldName(oname);
+//             OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+//             return;
+//         }
+//         OpRegistrator::getInstance()->registerOperationFloat(name, ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorSynonymHalf_##NAME {
+//     __registratorSynonymHalf_##NAME(const char *name, const char *oname) {
+//         OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationHalf(oname);
+//         if (ptr == nullptr) {
+//             std::string newName(name);
+//             std::string oldName(oname);
+//             OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+//             return;
+//         }
+//         OpRegistrator::getInstance()->registerOperationHalf(name, ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorSynonymDouble_##NAME {
+//     __registratorSynonymDouble_##NAME(const char *name, const char *oname) {
+//         OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname);
+//         if (ptr == nullptr) {
+//             std::string newName(name);
+//             std::string oldName(oname);
+//             OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+//             return;
+//         }
+//         OpRegistrator::getInstance()->registerOperationDouble(name, ptr);
+//     }
+// };
+//                                         static nd4j::ops::__registratorSynonymFloat_##NAME<ORIGINAL<float>> zzz_register_opf_##NAME(#NAME, #ORIGINAL);
+//                                         static nd4j::ops::__registratorSynonymHalf_##NAME<ORIGINAL<float16>> zzz_register_oph_##NAME(#NAME, #ORIGINAL);
+//                                         static nd4j::ops::__registratorSynonymDouble_##NAME<ORIGINAL<double>> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
+
+// #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  template <typename T>
+//                                                             class NAME: public nd4j::ops::DeclarableOp<T> {
+//                                                             public:
+//                                                                 NAME();
+//                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
+//                                                             protected:
+//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                                             };
+
+
+// #define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)     template <typename T>
+//                                                             NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { };
+//                                                             template class ND4J_EXPORT NAME<float>;
+//                                                             template class ND4J_EXPORT NAME<float16>;
+//                                                             template class ND4J_EXPORT NAME<double>;
+//                                                             template <typename T>
+//                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+//                                                                 auto shapeList = new nd4j::ShapeList();
+//                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                                     int* newshape;
+//                                                                     ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
+//                                                                     if (shape::order(inputShape->at(e)) == 'c')
+//                                                                         shape::shapeBuffer(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                     else
+//                                                                         shape::shapeBufferFortran(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                     shapeList->push_back(newshape);
+//                                                                 }
+//                                                                 return shapeList;
+//                                                             }
+// template <typename OpName>
+// struct __registratorFloat_##NAME {
+//     __registratorFloat_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorHalf_##NAME {
+//     __registratorHalf_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorDouble_##NAME {
+//     __registratorDouble_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//     }
+// };
+//                                                             static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                             static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                             static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                             template <typename T>
+//                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
+// #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T>
+//                                                                                 class NAME: public nd4j::ops::DeclarableOp<T> {
+//                                                                                 public:
+//                                                                                     NAME();
+//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
+//                                                                                 protected:
+//                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                                                                 };
+
+// #define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>
+//                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
+//                                                                                 template class ND4J_EXPORT NAME<float>;
+//                                                                                 template class ND4J_EXPORT NAME<float16>;
+//                                                                                 template class ND4J_EXPORT NAME<double>;
+//                                                                                 template <typename T>
+//                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
+//                                                                                     auto shapeList = new nd4j::ShapeList();
+//                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                                                         int* newshape;
+//                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
+//                                                                                         if (shape::order(inputShape->at(e)) == 'c')
+//                                                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                                         else
+//                                                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                                         shapeList->push_back(newshape);
+//                                                                                     }
+//                                                                                     return shapeList;
+//                                                                                 }
+// template <typename OpName>
+// struct __registratorFloat_##NAME {
+//     __registratorFloat_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorHalf_##NAME {
+//     __registratorHalf_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorDouble_##NAME {
+//     __registratorDouble_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//     }
+// };
+//                                                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+// 
+//                                                                                 template <typename T>
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Context<T>& block)
+
+// #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>
+//                                                                                 class NAME: public nd4j::ops::DeclarableReductionOp<T> {
+//                                                                                 public:
+//                                                                                     NAME();
+//                                                                                 protected:
+//                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
+//                                                                                 };
+
+// #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T>
+//                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
+//                                                                                 template class ND4J_EXPORT NAME<float>;
+//                                                                                 template class ND4J_EXPORT NAME<float16>;
+//                                                                                 template class ND4J_EXPORT NAME<double>;
+// template <typename OpName>
+// struct __registratorFloat_##NAME {
+//     __registratorFloat_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorHalf_##NAME {
+//     __registratorHalf_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorDouble_##NAME {
+//     __registratorDouble_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//     }
+// };
+//                                                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                                                 template <typename T>
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
+
+// #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T>
+//                                                                                 class NAME: public nd4j::ops::DeclarableCustomOp<T> {
+//                                                                                 protected:
+//                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
+//                                                                                 public:
+//                                                                                     NAME();
+//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
+//                                                                                 };
+
+
+// #define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)              template <typename T>
+//                                                                                 NAME<T>::NAME(): nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
+//                                                                                 template class ND4J_EXPORT NAME<float>;
+//                                                                                 template class ND4J_EXPORT NAME<float16>;
+//                                                                                 template class ND4J_EXPORT NAME<double>;
+// template <typename OpName>
+// struct __registratorFloat_##NAME {
+//     __registratorFloat_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorHalf_##NAME {
+//     __registratorHalf_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//     }
+// };
+// template <typename OpName>
+// struct __registratorDouble_##NAME {
+//     __registratorDouble_##NAME() {
+//         OpName *ptr = new OpName();
+//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//     }
+// };
+//                                                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+//                                                                                 template <typename T>
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
+// this declaration MUST follow DECLARE_CUSTOM_OP
+// #define DECLARE_SHAPE_FN(NAME)                                              template<typename T>
+//                                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+
+// #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
+
+// #define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')
+//                                         shape::shapeBuffer(shape::rank(SRC), shape::shapeOf(SRC), TGT);
+//                                     else
+//                                         shape::shapeBufferFortran(shape::rank(SRC), shape::shapeOf(SRC), TGT);
+
+// #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
+// #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
+
+// #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
+// #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
+// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
+// #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
+// #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
+// #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
+// #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+
+// #define STASH(NAME, ARRAY)  block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
+// #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
+// #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
+
+// #define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariable(INDEX)->getNDArray()
+// #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
+
+// #define INPUT_LIST(INDEX)     (nd4j::NDArrayList<T> *) block.getVariable(INDEX)->getNDArrayList()
+
+// #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
+// #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
+
+
+// define macros for compiler enforcement to make function inline  
+// #ifdef __clang__
+// #define FORCEINLINE inline 
+// #elif _MSC_VER
+// #define FORCEINLINE __forceinline inline 
+// #elif __GNUC__
+// #define FORCEINLINE __attribute__((always_inline)) inline 
+// #elif __CUDACC__ 
+// #else
+// #define FORCEINLINE inline 
+// #endif
+
+
+// #ifdef __CUDACC__
+
+// #else
+
+// #define _CUDA_H
+// #define _CUDA_D
+// #define _CUDA_G
+// #define _CUDA_HD
+
+// #endif // CUDACC
+
+
+// #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
+// #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16
+
+// #define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
+// #define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
+
+// #define LAMBDA_F(X, ...) [__VA_ARGS__] (float X) -> float
+// #define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] (float X, float Y) -> float
+
+// #define LAMBDA_T(X, ...) [__VA_ARGS__] (T X) -> T
+// #define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
+
+
+// #endif
+
+
+// Parsed from ops/InputType.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef ND4J_INPUTTYPE_H
+// #define ND4J_INPUTTYPE_H
+        /** enum nd4j::ops::InputType */
+        public static final int
+            InputType_BOOLEAN = 0,
+            InputType_NUMERIC = 1,
+            InputType_STRINGULAR = 2,
+            InputType_NUMERIC_SET = 3,
+            InputType_STRINGULAR_SET = 4;
+    
+
+
+// #endif
+
+// Parsed from ops/declarable/OpDescriptor.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_OPDESCRIPTOR_H
+// #define LIBND4J_OPDESCRIPTOR_H
+
+// #include <string>
+// #include <helpers/helper_hash.h>
+// #include <ops/InputType.h>
+// #include <graph/generated/node_generated.h>
+
+        /**
+        *   This class is very basic info holder for ops. bean/pojo pretty much.
+        *
+        */
+        @Namespace("nd4j::ops") @NoOffset public static class OpDescriptor extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public OpDescriptor(Pointer p) { super(p); }
+        
+            // default constructor
+            public OpDescriptor(int numInputs, int numOutputs, @StdString BytePointer opName, @Cast("bool") boolean allowsInplace) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace); }
+            private native void allocate(int numInputs, int numOutputs, @StdString BytePointer opName, @Cast("bool") boolean allowsInplace);
+            public OpDescriptor(int numInputs, int numOutputs, @StdString String opName, @Cast("bool") boolean allowsInplace) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace); }
+            private native void allocate(int numInputs, int numOutputs, @StdString String opName, @Cast("bool") boolean allowsInplace);
+
+            // constructor for boolean ops
+            public OpDescriptor(int numInputs, @StdString BytePointer opName, @Cast("bool") boolean isScalar) { super((Pointer)null); allocate(numInputs, opName, isScalar); }
+            private native void allocate(int numInputs, @StdString BytePointer opName, @Cast("bool") boolean isScalar);
+            public OpDescriptor(int numInputs, @StdString String opName, @Cast("bool") boolean isScalar) { super((Pointer)null); allocate(numInputs, opName, isScalar); }
+            private native void allocate(int numInputs, @StdString String opName, @Cast("bool") boolean isScalar);
+
+            // default constructor
+
+            // constructor for configurable op
+            public OpDescriptor(int numInputs, int numOutputs, @Cast("char*") String opName, @Cast("bool") boolean allowsInplace, int tArgs, int iArgs) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs); }
+            private native void allocate(int numInputs, int numOutputs, @Cast("char*") String opName, @Cast("bool") boolean allowsInplace, int tArgs, int iArgs);
+            public OpDescriptor(int numInputs, int numOutputs, @Cast("char*") BytePointer opName, @Cast("bool") boolean allowsInplace, int tArgs, int iArgs) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs); }
+            private native void allocate(int numInputs, int numOutputs, @Cast("char*") BytePointer opName, @Cast("bool") boolean allowsInplace, int tArgs, int iArgs);
+
+            // constructor for non-configurable divergent op
+            public OpDescriptor(int numInputs, int numOutputs, @StdString BytePointer opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace, divergent); }
+            private native void allocate(int numInputs, int numOutputs, @StdString BytePointer opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent);
+            public OpDescriptor(int numInputs, int numOutputs, @StdString String opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace, divergent); }
+            private native void allocate(int numInputs, int numOutputs, @StdString String opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent);
+
+            // constructor for non-configurable divergent op
+
+            // constructor for configurable divergent op
+            public OpDescriptor(int numInputs, int numOutputs, @Cast("char*") String opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent, int tArgs, int iArgs) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace, divergent, tArgs, iArgs); }
+            private native void allocate(int numInputs, int numOutputs, @Cast("char*") String opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent, int tArgs, int iArgs);
+            public OpDescriptor(int numInputs, int numOutputs, @Cast("char*") BytePointer opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent, int tArgs, int iArgs) { super((Pointer)null); allocate(numInputs, numOutputs, opName, allowsInplace, divergent, tArgs, iArgs); }
+            private native void allocate(int numInputs, int numOutputs, @Cast("char*") BytePointer opName, @Cast("bool") boolean allowsInplace, @Cast("bool") boolean divergent, int tArgs, int iArgs);
+
+            // constructor for logical ops (while, scope, etc)
+            public OpDescriptor(@Cast("char*") String opName, @Cast("bool") boolean isLogic) { super((Pointer)null); allocate(opName, isLogic); }
+            private native void allocate(@Cast("char*") String opName, @Cast("bool") boolean isLogic);
+            public OpDescriptor(@Cast("char*") BytePointer opName, @Cast("bool") boolean isLogic) { super((Pointer)null); allocate(opName, isLogic); }
+            private native void allocate(@Cast("char*") BytePointer opName, @Cast("bool") boolean isLogic);
+
+            // default destructor
+
+            // this method returns minimal expected number of T arguments
+            public native int getNumberOfTArgs();
+
+            // this method returns minimal expected number of Integer arguments
+            public native int getNumberOfIArgs();
+
+            // this method returns minimal expected number of inputs
+            public native int getNumberOfInputs();
+
+            // this method returns hash code for this operation
+            public native @Cast("Nd4jIndex") long getHash();
+
+            // this method returns minimal expected number of outputs
+            public native int getNumberOfOutputs();
+
+            // this method returns opName (can be empty)
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getOpName();
+
+            // returns TRUE if this op is divergent. FALSE otherwise
+            public native @Cast("bool") boolean isDivergent();
+
+            // returns TRUE if this op allows in-place execution
+            public native @Cast("bool") boolean allowsInplace();
+
+            // this method returns opNum (applicable for legacy XYZ ops only)
+            public native int getOpNum();
+
+            // this method allows to set specifc opNum
+            public native void setOpNum(int opNum);
+
+            public native void setInputType(@Cast("nd4j::ops::InputType") int type);
+            public native @Cast("nd4j::ops::InputType") int inputType();
+        }
+    
+
+
+// #endif //LIBND4J_OPDESCRIPTOR_H
+
+
+// Parsed from ops/declarable/DeclarableOp.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_DECLARABLE_OPS_H
+// #define LIBND4J_DECLARABLE_OPS_H
+
+// #include <sstream>
+// #include <types/float16.h>
+// #include <pointercast.h>
+// #include <NDArray.h>
+// #include <Context.h>
+// #include "OpDescriptor.h"
+// #include <helpers/helper_hash.h>
+// #include <array/ShapeList.h>
+// #include <array/ResultSet.h>
+//#include <ops/declarable/declarable_ops.h>
+
+// #include <chrono>
+// #include <ctime>
+
+        @Namespace("nd4j::ops") public static native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") String file, int line, int condition, int argNumber, @Cast("char*") String format);
+        @Namespace("nd4j::ops") public static native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") BytePointer file, int line, int condition, int argNumber, @Cast("char*") BytePointer format);
+
+        /**
+         * This class is the basic building block of Graph Operations. Any CustomOp out there is built on top of this "abstract" class.
+         *
+         */
+        @Name("nd4j::ops::DeclarableOp<float>") @NoOffset public static class FloatDeclarableOp extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatDeclarableOp(Pointer p) { super(p); }
+        
+            // for special cases, like BooleanOps
+
+            // regular constructors
+
+            // for LogicalOps
+
+            // default testructor
+
+            // this method returns OpDescriptor, describing this Op instance
+            public native OpDescriptor getOpDescriptor();
+
+            /**
+            *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
+            */
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+
+            /**
+             * Returns opName
+             *
+             * @return
+             */
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getOpName();
+
+            /**
+             * Returns opHash
+             */
+            public native @Cast("Nd4jIndex") long getOpHash();
+
+            /**
+             * This method sets arguments for op
+             */
+//            void setArguments();
+
+            /**
+             * This method returns pointer to results
+             */
+//            void getResults();
+
+            /**
+             * This method executes given Op
+             *
+             * @param block
+             * @return 0 if OK, error code otherwise
+             */
+            public native @Cast("Nd4jStatus") int execute(FloatContext block);
+
+            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
+            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native FloatResultSet execute(@ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
+
+            // There methods provide various validation options
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatContext block);
+
+            // this method checks if all input arrays have equal lengths
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef FloatContext block);
+
+            // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef FloatContext block);
+
+            // this method check if all input arrays have the same orders
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef FloatContext block);
+
+            // this method checks if all input arrays are 2D
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef FloatContext block);
+
+            // this method checks if all input arrays are 3D
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef FloatContext block);
+
+            // this method checks if all input arrays are 4D
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef FloatContext block);
+
+            // this method checks if all input arrays are ND
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef FloatContext block, int rank);
+
+            // this method checks if number of available arguments matches op expectations
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::DeclarableOp<float16>") @NoOffset public static class HalfDeclarableOp extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfDeclarableOp(Pointer p) { super(p); }
+        
+            // for special cases, like BooleanOps
+
+            // regular constructors
+
+            // for LogicalOps
+
+            // default testructor
+
+            // this method returns OpDescriptor, describing this Op instance
+            public native OpDescriptor getOpDescriptor();
+
+            /**
+            *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
+            */
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+
+            /**
+             * Returns opName
+             *
+             * @return
+             */
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getOpName();
+
+            /**
+             * Returns opHash
+             */
+            public native @Cast("Nd4jIndex") long getOpHash();
+
+            /**
+             * This method sets arguments for op
+             */
+//            void setArguments();
+
+            /**
+             * This method returns pointer to results
+             */
+//            void getResults();
+
+            /**
+             * This method executes given Op
+             *
+             * @param block
+             * @return 0 if OK, error code otherwise
+             */
+            public native @Cast("Nd4jStatus") int execute(HalfContext block);
+
+            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
+            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native HalfResultSet execute(@ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
+
+            // There methods provide various validation options
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfContext block);
+
+            // this method checks if all input arrays have equal lengths
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef HalfContext block);
+
+            // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef HalfContext block);
+
+            // this method check if all input arrays have the same orders
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef HalfContext block);
+
+            // this method checks if all input arrays are 2D
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef HalfContext block);
+
+            // this method checks if all input arrays are 3D
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef HalfContext block);
+
+            // this method checks if all input arrays are 4D
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef HalfContext block);
+
+            // this method checks if all input arrays are ND
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef HalfContext block, int rank);
+
+            // this method checks if number of available arguments matches op expectations
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::DeclarableOp<double>") @NoOffset public static class DoubleDeclarableOp extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleDeclarableOp(Pointer p) { super(p); }
+        
+            // for special cases, like BooleanOps
+
+            // regular constructors
+
+            // for LogicalOps
+
+            // default testructor
+
+            // this method returns OpDescriptor, describing this Op instance
+            public native OpDescriptor getOpDescriptor();
+
+            /**
+            *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
+            */
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+
+            /**
+             * Returns opName
+             *
+             * @return
+             */
+            public native @StdString @Cast({"char*", "std::string*"}) BytePointer getOpName();
+
+            /**
+             * Returns opHash
+             */
+            public native @Cast("Nd4jIndex") long getOpHash();
+
+            /**
+             * This method sets arguments for op
+             */
+//            void setArguments();
+
+            /**
+             * This method returns pointer to results
+             */
+//            void getResults();
+
+            /**
+             * This method executes given Op
+             *
+             * @param block
+             * @return 0 if OK, error code otherwise
+             */
+            public native @Cast("Nd4jStatus") int execute(DoubleContext block);
+
+            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native DoubleResultSet execute(@ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
+
+            // There methods provide various validation options
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleContext block);
+
+            // this method checks if all input arrays have equal lengths
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef DoubleContext block);
+
+            // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef DoubleContext block);
+
+            // this method check if all input arrays have the same orders
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef DoubleContext block);
+
+            // this method checks if all input arrays are 2D
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef DoubleContext block);
+
+            // this method checks if all input arrays are 3D
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef DoubleContext block);
+
+            // this method checks if all input arrays are 4D
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef DoubleContext block);
+
+            // this method checks if all input arrays are ND
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef DoubleContext block, int rank);
+
+            // this method checks if number of available arguments matches op expectations
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef DoubleContext block);
+        }
+    
+
+
+// #endif //LIBND4J_DECLARABLE_OPS_H
+
+
+// Parsed from ops/declarable/DeclarableListOp.h
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_DECLARABLE_LIST_OP_H
+// #define LIBND4J_DECLARABLE_LIST_OP_H
+
+// #include <array/ResultSet.h>
+// #include <graph/Context.h>
+// #include <ops/declarable/OpRegistrator.h>
+// #include <ops/declarable/DeclarableOp.h>
+        @Name("nd4j::ops::DeclarableListOp<float>") public static class FloatDeclarableListOp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatDeclarableListOp(Pointer p) { super(p); }
+        
+
+            
+            public native @Cast("Nd4jStatus") int execute(FloatContext block);
+            public native FloatResultSet execute(FloatNDArrayList list, @ByRef FloatNDArrayVector inputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
+            public native FloatResultSet execute(FloatNDArrayList list, @ByRef FloatNDArrayVector inputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native FloatResultSet execute(FloatNDArrayList list, @ByRef FloatNDArrayVector inputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::DeclarableListOp<float16>") public static class HalfDeclarableListOp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfDeclarableListOp(Pointer p) { super(p); }
+        
+
+            
+            public native @Cast("Nd4jStatus") int execute(HalfContext block);
+            public native HalfResultSet execute(HalfNDArrayList list, @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
+            public native HalfResultSet execute(HalfNDArrayList list, @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native HalfResultSet execute(HalfNDArrayList list, @ByRef HalfNDArrayVector inputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::DeclarableListOp<double>") public static class DoubleDeclarableListOp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleDeclarableListOp(Pointer p) { super(p); }
+        
+
+            
+            public native @Cast("Nd4jStatus") int execute(DoubleContext block);
+            public native DoubleResultSet execute(DoubleNDArrayList list, @ByRef DoubleNDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native DoubleResultSet execute(DoubleNDArrayList list, @ByRef DoubleNDArrayVector inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native DoubleResultSet execute(DoubleNDArrayList list, @ByRef DoubleNDArrayVector inputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+        }
+    
+
+
+// #endif
+
+// Parsed from ops/declarable/DeclarableReductionOp.h
+
+//
+// Created by raver119 on 07.10.2017.
+//
+
+// #ifndef LIBND4J_DECLARABLE_REDUCTION_OP_H
+// #define LIBND4J_DECLARABLE_REDUCTION_OP_H
+
+// #include <ops/declarable/DeclarableOp.h>
+        @Name("nd4j::ops::DeclarableReductionOp<float>") public static class FloatDeclarableReductionOp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatDeclarableReductionOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::DeclarableReductionOp<float16>") public static class HalfDeclarableReductionOp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfDeclarableReductionOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::DeclarableReductionOp<double>") public static class DoubleDeclarableReductionOp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleDeclarableReductionOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+        }
+    
+
+
+// #endif //LIBND4J_DECLARABLE_REDUCTION_OP_H
+
+
+// Parsed from ops/declarable/DeclarableCustomOp.h
+
+//
+// Created by raver119 on 07.10.2017.
+//
+
+// #ifndef LIBND4J_DECLARABLECUSTOMOP_H
+// #define LIBND4J_DECLARABLECUSTOMOP_H
+
+// #include <ops/declarable/DeclarableOp.h>
+        @Name("nd4j::ops::DeclarableCustomOp<float>") public static class FloatDeclarableCustomOp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatDeclarableCustomOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::DeclarableCustomOp<float16>") public static class HalfDeclarableCustomOp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfDeclarableCustomOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::DeclarableCustomOp<double>") public static class DoubleDeclarableCustomOp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleDeclarableCustomOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef DoubleContext block);
+        }
+    
+
+
+// #endif //LIBND4J_DECLARABLECUSTOMOP_H
+
+
+// Parsed from ops/declarable/BooleanOp.h
+
+//
+// Created by raver119 on 13.10.2017.
+//
+
+// #ifndef LIBND4J_BOOLEANOP_H
+// #define LIBND4J_BOOLEANOP_H
+
+// #include <Context.h>
+// #include "OpDescriptor.h"
+// #include "DeclarableOp.h"
+        @Name("nd4j::ops::BooleanOp<float>") @NoOffset public static class FloatBooleanOp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatBooleanOp(Pointer p) { super(p); }
+        
+            public native @Cast("bool") boolean evaluate(@ByRef FloatNDArrayVector args);
+            public native @Cast("bool") boolean evaluate(@ByRef FloatContext block);
+
+            public native @Cast("Nd4jStatus") int execute(FloatContext block);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::BooleanOp<float16>") @NoOffset public static class HalfBooleanOp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfBooleanOp(Pointer p) { super(p); }
+        
+            public native @Cast("bool") boolean evaluate(@ByRef HalfNDArrayVector args);
+            public native @Cast("bool") boolean evaluate(@ByRef HalfContext block);
+
+            public native @Cast("Nd4jStatus") int execute(HalfContext block);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::BooleanOp<double>") @NoOffset public static class DoubleBooleanOp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleBooleanOp(Pointer p) { super(p); }
+        
+            public native @Cast("bool") boolean evaluate(@ByRef DoubleNDArrayVector args);
+            public native @Cast("bool") boolean evaluate(@ByRef DoubleContext block);
+
+            public native @Cast("Nd4jStatus") int execute(DoubleContext block);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+        }
+    
+
+
+
+
+// #endif //LIBND4J_BOOLEANOP_H
+
+// Parsed from ops/declarable/LogicOp.h
+
+//
+// Created by raver119 on 15.10.2017.
+//
+
+// #ifndef LIBND4J_LOGICOP_H
+// #define LIBND4J_LOGICOP_H
+
+// #include "DeclarableOp.h"
+
+        /**
+         * Logic ops are unique snowflakes in any Graph. They dramatically change Graph Execution process, by introducing loops, conditions, etc.
+         *
+         * Their code is the part of GraphExecutioner logic. But we still want them to be expressed via Graph
+         * \tparam T
+         */
+        @Name("nd4j::ops::LogicOp<float>") public static class FloatLogicOp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatLogicOp(Pointer p) { super(p); }
+        
+            public FloatLogicOp(@Cast("char*") String name) { super((Pointer)null); allocate(name); }
+            private native void allocate(@Cast("char*") String name);
+            public FloatLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
+            private native void allocate(@Cast("char*") BytePointer name);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::LogicOp<float16>") public static class HalfLogicOp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfLogicOp(Pointer p) { super(p); }
+        
+            public HalfLogicOp(@Cast("char*") String name) { super((Pointer)null); allocate(name); }
+            private native void allocate(@Cast("char*") String name);
+            public HalfLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
+            private native void allocate(@Cast("char*") BytePointer name);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::LogicOp<double>") public static class DoubleLogicOp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleLogicOp(Pointer p) { super(p); }
+        
+            public DoubleLogicOp(@Cast("char*") String name) { super((Pointer)null); allocate(name); }
+            private native void allocate(@Cast("char*") String name);
+            public DoubleLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
+            private native void allocate(@Cast("char*") BytePointer name);
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+        }
+    
+
+
+
+// #endif //LIBND4J_LOGICOP_H
+
+
+// Parsed from ops/declarable/OpRegistrator.h
+
+//
+// Created by raver119 on 07.10.2017.
+//
+
+// #ifndef LIBND4J_OPREGISTRATOR_H
+// #define LIBND4J_OPREGISTRATOR_H
+
+// #include <pointercast.h>
+// #include <vector>
+// #include <map>
+// #include <mutex>
+// #include <ops/declarable/DeclarableOp.h>
+        /**
+        *   This class provides runtime ops lookup, based on opName or opHash.
+        *   To build lookup directory we use *_OP_IMPL macro, which puts static structs at compile time in .cpp files,
+        *   so once binary is executed, static objects are initialized automatically, and we get list of all ops
+        *   available at runtime via this singleton.
+        *
+        */
+        @Namespace("nd4j::ops") @NoOffset public static class OpRegistrator extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public OpRegistrator(Pointer p) { super(p); }
+        
+
+            public static native OpRegistrator getInstance();
+
+            
+            public native @Cast("char*") String getAllCustomOperations();
+
+            /**
+            * This method registers operation
+            *
+            * @param op
+            */
+            public native @Cast("bool") boolean registerOperationFloat(FloatDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationFloat(@Cast("char*") String name, FloatDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationFloat(@Cast("char*") BytePointer name, FloatDeclarableOp op);
+
+            public native @Cast("bool") boolean registerOperationDouble(@Cast("char*") String name, DoubleDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationDouble(@Cast("char*") BytePointer name, DoubleDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationHalf(@Cast("char*") String name, HalfDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationHalf(@Cast("char*") BytePointer name, HalfDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationHalf(HalfDeclarableOp op);
+            public native @Cast("bool") boolean registerOperationDouble(DoubleDeclarableOp op);
+            public native FloatDeclarableOp getOperationFloat(@Cast("char*") String name);
+            public native FloatDeclarableOp getOperationFloat(@Cast("char*") BytePointer name);
+
+
+            /**
+            * This method returns registered Op by name
+            *
+            * @param name
+            * @return
+            */
+
+
+            public native FloatDeclarableOp getOperationFloat(@Cast("Nd4jIndex") long hash);
+            public native HalfDeclarableOp getOperationHalf(@Cast("Nd4jIndex") long hash);
+            public native HalfDeclarableOp getOperationHalf(@Cast("char*") String name);
+            public native HalfDeclarableOp getOperationHalf(@Cast("char*") BytePointer name);
+            public native DoubleDeclarableOp getOperationDouble(@Cast("char*") String name);
+            public native DoubleDeclarableOp getOperationDouble(@Cast("char*") BytePointer name);
+            public native DoubleDeclarableOp getOperationDouble(@Cast("Nd4jIndex") long hash);
+    }
+
+
+        /*
+         *  These structs are used to "register" our ops in OpRegistrator.
+         */
+
+    
+
+
+// #endif //LIBND4J_OPREGISTRATOR_H
+
+
+// Parsed from ops/declarable/CustomOperations.h
+
+//
+// Created by raver119 on 07.10.2017.
+//
+
+// #ifndef LIBND4J_CUSTOMOPERATIONS_H
+// #define LIBND4J_CUSTOMOPERATIONS_H
+
+// #include <memory>
+// #include <op_boilerplate.h>
+// #include <types/float16.h>
+// #include <NDArray.h>
+// #include <NDArrayFactory.h>
+// #include <Context.h>
+// #include <ops/declarable/DeclarableOp.h>
+// #include <ops/declarable/BooleanOp.h>
+// #include <ops/declarable/LogicOp.h>
+// #include <ops/declarable/DeclarableReductionOp.h>
+// #include <ops/declarable/DeclarableCustomOp.h>
+// #include <ops/declarable/DeclarableListOp.h>
+// #include <ops/declarable/OpRegistrator.h>
+// #include <helpers/ArrayUtils.h>
+// #include <helpers/ShapeUtils.h>
+// #include <array/ShapeList.h>         // should become custom
+
+        // TODO: make broadcastables separate class // TODO: new op type needed. that returns VIEW // add DeclarableScalarOp? // ^^^^
+
+        // recurrent ops        
+        // DECLARE_CONFIGURABLE_OP(batchnorm_bp, 5, 1, true, 0, 1);                 // TODO: to be implemented        
+
+        // grad ops
+
+
+        // list operations, basically all around NDArrayList
+
+
+    
+
+
+// #endif //LIBND4J_CUSTOMOPERATIONS_H
 
 
 }

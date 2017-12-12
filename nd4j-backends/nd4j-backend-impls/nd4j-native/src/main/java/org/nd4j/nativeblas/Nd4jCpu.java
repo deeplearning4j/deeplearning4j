@@ -773,6 +773,7 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
+// #include <graph/VariablesSet.h>
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -5789,6 +5790,29 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
     public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
     public native @Cast("Nd4jPointer*") PointerPointer calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+
+    public native int registerGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native int registerGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native int registerGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+
+    public native FloatVariablesSet executeStoredGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native FloatVariablesSet executeStoredGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native FloatVariablesSet executeStoredGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+    public native DoubleVariablesSet executeStoredGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native DoubleVariablesSet executeStoredGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native DoubleVariablesSet executeStoredGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+    public native HalfVariablesSet executeStoredGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native HalfVariablesSet executeStoredGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native HalfVariablesSet executeStoredGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+
+    public native int unregisterGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId);
+
+    public native void deleteIntArray(@Cast("Nd4jPointer") Pointer pointer);
+    public native void deletePointerArray(@Cast("Nd4jPointer") Pointer pointer);
+
+    public native void deleteVariablesSetFloat(@Cast("Nd4jPointer") Pointer pointer);
+    public native void deleteVariablesSetDouble(@Cast("Nd4jPointer") Pointer pointer);
+    public native void deleteVariablesSetHalf(@Cast("Nd4jPointer") Pointer pointer);
 }
 
 
@@ -6013,7 +6037,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 // #include <initializer_list>
 // #include <functional>
-// #include "NativeOps.h"
 // #include <shape.h>
 // #include "NativeOpExcutioner.h"
 // #include <memory/Workspace.h>
@@ -7663,8 +7686,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <string>
 // #include <atomic>
 // #include <map>
-// #include <memory/Workspace.h>
 // #include <NDArray.h>
+// #include <memory/Workspace.h>
     @Name("nd4j::NDArrayList<float>") @NoOffset public static class FloatNDArrayList extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -8298,6 +8321,103 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 // #endif //LIBND4J_VARIABLE_H
+
+
+// Parsed from graph/VariablesSet.h
+
+//
+// Created by raver119 on 15/11/17.
+//
+
+// #ifndef LIBND4J_VARIABLESSET_H
+// #define LIBND4J_VARIABLESSET_H
+
+// #include <iterator>
+// #include <vector>
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <graph/Variable.h>
+        @Name("nd4j::graph::VariablesSet<float>") @NoOffset public static class FloatVariablesSet extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatVariablesSet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public FloatVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public FloatVariablesSet position(long position) {
+                return (FloatVariablesSet)super.position(position);
+            }
+        
+            public FloatVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
+            public FloatVariablesSet() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jStatus") int status();
+
+            public native int size();
+
+            public native void push_back(FloatVariable variable);
+
+            public native FloatVariable at(int index);
+
+        }
+        @Name("nd4j::graph::VariablesSet<float16>") @NoOffset public static class HalfVariablesSet extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfVariablesSet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public HalfVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public HalfVariablesSet position(long position) {
+                return (HalfVariablesSet)super.position(position);
+            }
+        
+            public HalfVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
+            public HalfVariablesSet() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jStatus") int status();
+
+            public native int size();
+
+            public native void push_back(HalfVariable variable);
+
+            public native HalfVariable at(int index);
+
+        }
+        @Name("nd4j::graph::VariablesSet<double>") @NoOffset public static class DoubleVariablesSet extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleVariablesSet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public DoubleVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public DoubleVariablesSet position(long position) {
+                return (DoubleVariablesSet)super.position(position);
+            }
+        
+            public DoubleVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
+            public DoubleVariablesSet() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public native @Cast("Nd4jStatus") int status();
+
+            public native int size();
+
+            public native void push_back(DoubleVariable variable);
+
+            public native DoubleVariable at(int index);
+
+        }
+    
+
+
+
+
+// #endif //LIBND4J_VARIABLESSET_H
 
 
 // Parsed from graph/FlowPath.h

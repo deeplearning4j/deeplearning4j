@@ -53,6 +53,11 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         return executeGraph(sd, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).executionMode(ExecutionMode.SEQUENTIAL).profilingMode(OpExecutioner.ProfilingMode.DISABLED).build());
     }
 
+    @Override
+    public INDArray[] reuseGraph(SameDiff graph, Map<Integer, INDArray> inputs) {
+        throw new UnsupportedOperationException();
+    }
+
     public ByteBuffer convertToFlatBuffers(SameDiff sd, ExecutorConfiguration configuration, Map<Integer, Node> intermediate) {
         log.info("Configuration: {}", configuration);
 

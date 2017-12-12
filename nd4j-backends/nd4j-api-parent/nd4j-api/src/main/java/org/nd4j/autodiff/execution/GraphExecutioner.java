@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * This interface
@@ -42,6 +43,8 @@ public interface GraphExecutioner {
 
     INDArray[] executeGraph(SameDiff graph);
 
+    INDArray[] reuseGraph(SameDiff graph, Map<Integer, INDArray> inputs);
+
     /**
      * This method converts given SameDiff instance to FlatBuffers representation
      *
@@ -76,4 +79,6 @@ public interface GraphExecutioner {
      * @return
      */
     INDArray[] importProto(File file);
+
+
 }

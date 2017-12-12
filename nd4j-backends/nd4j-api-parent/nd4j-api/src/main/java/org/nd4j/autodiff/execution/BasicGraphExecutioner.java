@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * @author raver119@gmail.com
@@ -54,6 +55,11 @@ public class BasicGraphExecutioner implements GraphExecutioner {
     @Override
     public INDArray[] executeGraph(SameDiff sd) {
         return executeGraph(sd, new ExecutorConfiguration());
+    }
+
+    @Override
+    public INDArray[] reuseGraph(SameDiff graph, Map<Integer, INDArray> inputs) {
+        throw new UnsupportedOperationException();
     }
 
     /**
