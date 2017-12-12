@@ -31,7 +31,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * the forward and backward RNN networks. See {@link Mode} javadoc for more details.<br>
  * Parameters are not shared here - there are 2 separate copies of the wrapped RNN layer, each with separate parameters.
  * <br>
- * Usage: {@code .layer(new Bidirecitonal(new LSTM.Builder()....build())}
+ * Usage: {@code .layer(new Bidirectional(new LSTM.Builder()....build())}
  *
  * @author Alex Black
  */
@@ -139,7 +139,7 @@ public class Bidirectional extends Layer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        //Strip "F_" or "R_" from param name
+        //Strip forward/backward prefix from param name
         return fwd.getL1ByParam(paramName.substring(1));
     }
 
