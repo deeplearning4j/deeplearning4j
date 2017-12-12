@@ -1,7 +1,7 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.NoArgsConstructor;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -26,7 +26,7 @@ public abstract class BaseModule extends DynamicCustomOp implements Module {
         this.modules = modules;
     }
 
-    public BaseModule(String opName, SameDiff sameDiff, DifferentialFunction[] args, boolean inPlace, List<Module> modules) {
+    public BaseModule(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, List<Module> modules) {
         super(opName, sameDiff, args, inPlace);
         this.modules = modules;
     }

@@ -3,7 +3,9 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -26,11 +28,16 @@ public class Conv3D extends DynamicCustomOp {
     public Conv3D() {}
 
     @Builder(builderMethodName = "builder")
-    public Conv3D(SameDiff sameDiff, DifferentialFunction[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
+    public Conv3D(SameDiff sameDiff, SDVariable[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
         super(null,sameDiff, inputFunctions, false);
         setSameDiff(sameDiff);
-        if(inputFunctions != null)
-            sameDiff.associateFunctionsAsArgs(inputFunctions,this);
+        if(inputFunctions != null) {
+            val ids = new int[inputFunctions.length];
+            for(int i = 0; i < ids.length; i++) {
+                ids[i] = inputFunctions[i].getVertexId();
+            }
+            sameDiff.addArgsFor(ids, this);
+        }
         if(inputs != null)
             addInputArgument(inputs);
         if(outputs != null)
@@ -66,8 +73,8 @@ public class Conv3D extends DynamicCustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
         List<DifferentialFunction> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
@@ -75,10 +82,10 @@ public class Conv3D extends DynamicCustomOp {
                .conv3DConfig(config)
                 .inputFunctions(args())
                 .outputs(outputArguments())
-                .inputFunctions(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
                 .sameDiff(sameDiff)
                 .build();
-        ret.addAll(Arrays.asList(conv3DDerivative.outputFunctions()));
+        ret.addAll(Arrays.asList(conv3DDerivative.outputVariables()));
         return ret;
     }
 

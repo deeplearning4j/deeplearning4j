@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,15 +31,15 @@ import java.util.List;
 /**SoftSign derivative.
  */
 public class SoftSignDerivative extends BaseTransformOp {
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -82,8 +82,8 @@ public class SoftSignDerivative extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().zero(getResultShape());
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().zero(outputVariables()[0].getShape());
 
         return Collections.singletonList(ret);
     }

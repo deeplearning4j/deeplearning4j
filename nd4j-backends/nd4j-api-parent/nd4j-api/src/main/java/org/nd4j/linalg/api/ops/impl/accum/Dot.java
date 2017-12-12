@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -31,11 +31,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Dot extends BaseAccumulation {
-    public Dot(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+    public Dot(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public Dot(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -69,7 +69,7 @@ public class Dot extends BaseAccumulation {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

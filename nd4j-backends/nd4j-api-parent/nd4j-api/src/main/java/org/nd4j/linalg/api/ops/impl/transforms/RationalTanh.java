@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -32,15 +33,15 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class RationalTanh extends BaseTransformOp {
-    public RationalTanh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public RationalTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public RationalTanh(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public RationalTanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public RationalTanh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public RationalTanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -88,7 +89,7 @@ public class RationalTanh extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

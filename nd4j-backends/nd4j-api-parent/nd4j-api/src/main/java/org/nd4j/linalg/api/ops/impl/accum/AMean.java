@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,12 +29,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author raver119@gmail.com
  */
-public class AMean extends ASum {
-    public AMean(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+public class  AMean extends ASum {
+    public AMean(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public AMean(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+    public AMean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 

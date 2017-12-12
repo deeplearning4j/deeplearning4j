@@ -39,7 +39,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
@@ -175,7 +175,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray x = Nd4j.ones(5);
         INDArray xDup = x.dup();
         INDArray solution = Nd4j.valueArrayOf(5, 1.0);
-        opExecutioner.exec(new MulOp(x, xDup, x));
+        opExecutioner.exec(new OldMulOp(x, xDup, x));
         assertEquals(solution, x);
     }
 

@@ -81,9 +81,10 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param outputIds the output ids for the node
      *                  {based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}}
      * @param node the node to create the edge from
+     * @param toMap
      * @return
      */
-    EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node);
+    EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node, DifferentialFunction toMap);
 
     /**
      *

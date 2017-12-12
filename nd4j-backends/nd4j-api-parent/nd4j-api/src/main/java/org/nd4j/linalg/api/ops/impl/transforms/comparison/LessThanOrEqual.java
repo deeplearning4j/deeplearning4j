@@ -19,11 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,58 +33,16 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class LessThanOrEqual extends BaseTransformOp {
-    public LessThanOrEqual(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public LessThanOrEqual(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
-    public LessThanOrEqual(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public LessThanOrEqual(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
-    public LessThanOrEqual(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public LessThanOrEqual(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public LessThanOrEqual(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
+public class LessThanOrEqual extends BaseDynamicTransformOp {
     public LessThanOrEqual() {}
 
-    public LessThanOrEqual(INDArray x, INDArray z) {
-        super(x, z);
+    public LessThanOrEqual( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public LessThanOrEqual(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public LessThanOrEqual( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
-
-    public LessThanOrEqual(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public LessThanOrEqual(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public int opNum() {
-        return 12;
-    }
-
     @Override
     public String opName() {
         return "lte";
@@ -93,18 +50,18 @@ public class LessThanOrEqual extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        return "LessEqual";
     }
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        return "LessEqual";
     }
 
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(outputVariables()[0]);
     }
 }

@@ -20,18 +20,4 @@ public interface BroadcastOp extends Op {
     void setDimension(int... dimension);
 
 
-    /**
-     * The length of the number of elements
-     * in the broadcast
-     * @return
-     */
-    int broadcastLength();
-
-    /**
-     * The shape of the
-     * element to be broadcast
-     * @return
-     */
-    int[] broadcastShape();
-
 }

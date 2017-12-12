@@ -1,7 +1,8 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -12,6 +13,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Index based reduction algo
@@ -24,15 +26,17 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
 
     public BaseIndexAccumulation(SameDiff sameDiff,
-                            DifferentialFunction i_v,
+                            SDVariable i_v,
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[]{i_v},this);
+            sameDiff.addArgsFor(new SDVariable[]{i_v},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
-            addAsNewVertexId();
-            f().addFunctionEdges(this);
+            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions),i_v.depth() + 1);
+            sameDiff.addOutgoingFor(new int[]{var2.getVertexId()},this);
+            this.xVertexId = i_v.getVertexId();
+            this.zVertexId = var2.getVertexId();
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -40,17 +44,20 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
     public BaseIndexAccumulation(SameDiff sameDiff,
-                            DifferentialFunction i_v,
-                            DifferentialFunction i_v2,
+                            SDVariable i_v,
+                            SDVariable i_v2,
                             int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {i_v,i_v2},this);
+            sameDiff.addArgsFor(new SDVariable[]{i_v,i_v2},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
-            addAsNewVertexId();
-            f().addFunctionEdges(this);
+            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions),i_v.depth() + 1);
+            sameDiff.addOutgoingFor(new int[]{var2.getVertexId()},this);
+            this.xVertexId = i_v.getVertexId();
+            this.zVertexId = var2.getVertexId();
+
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -127,7 +134,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>(1);
-        ret.add(Shape.getReducedShape(arg().getResultShape(),dimensions));
+        ret.add(Shape.getReducedShape(arg().getShape(),dimensions));
         return ret;
     }
 

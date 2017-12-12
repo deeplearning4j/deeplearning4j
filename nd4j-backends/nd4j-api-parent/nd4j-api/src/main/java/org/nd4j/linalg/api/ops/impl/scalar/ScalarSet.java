@@ -19,10 +19,9 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
@@ -46,29 +45,23 @@ public class ScalarSet extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarSet(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
-        super(x, y, z, n, num);
-    }
 
-    public ScalarSet(SameDiff sameDiff, DifferentialFunction i_v, Number scalar) {
+    public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
     }
 
-    public ScalarSet(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+    public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
-    public ScalarSet(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+    public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, scalar, inPlace, extraArgs);
     }
 
-    public ScalarSet(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
+    public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
         super(sameDiff, i_v, scalar, extraArgs);
     }
 
-    public ScalarSet(INDArray x, IComplexNumber num) {
-        super(x, num);
-    }
 
     @Override
     public int opNum() {
@@ -96,15 +89,13 @@ public class ScalarSet extends BaseScalarOp {
         super.init(x, y, z, n);
         if (num != null) {
             this.extraArgs = new Object[] {num};
-        } else {
-            this.extraArgs = new Object[] {complexNumber};
         }
 
     }
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         throw new UnsupportedOperationException();
     }
 

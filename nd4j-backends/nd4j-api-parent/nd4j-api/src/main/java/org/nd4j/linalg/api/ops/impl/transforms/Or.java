@@ -20,7 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -36,25 +36,25 @@ public class Or extends BaseTransformOp {
 
     protected double comparable = 0.0;
 
-    public Or(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+    public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
-    public Or(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+    public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public Or(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double comparable) {
+    public Or(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
         super(sameDiff, i_v, inPlace);
         this.comparable = comparable;
     }
 
-    public Or(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
+    public Or(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.comparable = comparable;
     }
 
-    public Or(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double comparable) {
+    public Or(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, extraArgs);
         this.comparable = comparable;
     }
@@ -114,7 +114,7 @@ public class Or extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException();
     }
 }

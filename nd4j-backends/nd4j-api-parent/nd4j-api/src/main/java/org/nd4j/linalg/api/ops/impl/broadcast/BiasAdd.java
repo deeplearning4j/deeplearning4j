@@ -1,7 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import lombok.val;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -34,19 +34,19 @@ public class BiasAdd extends DynamicCustomOp {
     public List<int[]> calculateOutputShape() {
         val args = args();
         for(int i = 0; i < args.length; i++)
-            if(args[i].getResultShape() == null)
+            if(args[i].getShape() == null)
                 throw new ND4JIllegalStateException("No  shape found for arg " + i + " !");
-        val firstShape = ArrayUtil.prod(args[0].getResultShape());
-        val secondShape = ArrayUtil.prod(args[1].getResultShape());
+        val firstShape = ArrayUtil.prod(args[0].getShape());
+        val secondShape = ArrayUtil.prod(args[1].getShape());
 
         if(firstShape > secondShape)
-            return Arrays.asList(args[0].getResultShape());
+            return Arrays.asList(args[0].getShape());
         else
-            return Arrays.asList(args[1].getResultShape());
+            return Arrays.asList(args[1].getShape());
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

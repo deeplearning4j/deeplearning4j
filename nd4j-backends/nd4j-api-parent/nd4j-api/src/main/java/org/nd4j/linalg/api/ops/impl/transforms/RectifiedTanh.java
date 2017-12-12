@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,15 +41,15 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class RectifiedTanh extends BaseTransformOp {
-    public RectifiedTanh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public RectifiedTanh(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public RectifiedTanh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -106,7 +107,7 @@ public class RectifiedTanh extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

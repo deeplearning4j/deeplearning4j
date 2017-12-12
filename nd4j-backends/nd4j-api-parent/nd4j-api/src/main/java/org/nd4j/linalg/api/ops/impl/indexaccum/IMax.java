@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,11 +34,11 @@ import java.util.List;
  * @author Alex Black
  */
 public class IMax extends BaseIndexAccumulation {
-    public IMax(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
+    public IMax(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public IMax(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions) {
+    public IMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -99,7 +99,7 @@ public class IMax extends BaseIndexAccumulation {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

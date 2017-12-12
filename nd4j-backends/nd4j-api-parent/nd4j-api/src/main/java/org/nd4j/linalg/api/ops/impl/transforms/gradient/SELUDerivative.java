@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,15 +40,15 @@ public class SELUDerivative extends BaseTransformOp {
     private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
     private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public SELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public SELUDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public SELUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -89,8 +89,8 @@ public class SELUDerivative extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().div(arg(),f().seluDerivative(arg()));
 
         return Arrays.asList(ret);
     }

@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
-import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -1046,31 +1045,7 @@ public class Shape {
         return (shape.length == 2 && shape[1] == 1);
     }
 
-    /**
-     * Prepares two arrays for
-     * raw iteration linearly through the data.
-     * It uses the same data for allocation
-     * @param dst the first array
-     */
-    public static RawArrayIterationInformation1 prepareRawArrayIter(INDArray dst) {
-        return RawArrayIterationInformation1.builder().aOffset(dst.offset()).a(dst.data()).aStrides(dst.stride())
-                .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
-    }
 
-
-
-    /**
-     * Creates sorted strides
-     *  whlie retaining the permutation
-     * @param strides the strides
-     * @return the ordered
-     * strides with the permutation/order retained
-     */
-    public static StridePermutation[] createSortedStrides(int[] strides) {
-        StridePermutation[] perm = StridePermutation.create(strides);
-        Arrays.sort(perm);
-        return perm;
-    }
 
     /**
      * If a shape array is ony 1 in length
@@ -1094,6 +1069,9 @@ public class Shape {
 
         return tadLength;
     }
+
+
+
 
 
     /**

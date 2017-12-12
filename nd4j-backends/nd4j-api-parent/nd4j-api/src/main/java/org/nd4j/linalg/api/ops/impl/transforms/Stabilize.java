@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,21 +39,21 @@ public class Stabilize extends BaseTransformOp {
     double cutOff = FastMath.log(realMin);
     double k;
 
-    public Stabilize(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double realMin, double cutOff, double k) {
+    public Stabilize(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double realMin, double cutOff, double k) {
         super(sameDiff, i_v, inPlace);
         this.realMin = realMin;
         this.cutOff = cutOff;
         this.k = k;
     }
 
-    public Stabilize(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double realMin, double cutOff, double k) {
+    public Stabilize(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double realMin, double cutOff, double k) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.realMin = realMin;
         this.cutOff = cutOff;
         this.k = k;
     }
 
-    public Stabilize(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double realMin, double cutOff, double k) {
+    public Stabilize(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double realMin, double cutOff, double k) {
         super(sameDiff, i_v, extraArgs);
         this.realMin = realMin;
         this.cutOff = cutOff;
@@ -103,7 +104,7 @@ public class Stabilize extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

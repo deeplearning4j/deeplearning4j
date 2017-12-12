@@ -15,7 +15,7 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>(1);
-        ret.add(sameDiff.getShapeForVertexId(vertexId));
+        ret.add(sameDiff.getShapeForVertexId(outputVariables()[0].getVertexId()));
         return ret;
     }
 

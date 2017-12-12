@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -18,17 +19,17 @@ public class LegacyDropOutInverted extends BaseTransformOp {
 
     private double p;
 
-    public LegacyDropOutInverted(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double p) {
+    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double p) {
         super(sameDiff, i_v, inPlace);
         this.p = p;
     }
 
-    public LegacyDropOutInverted(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
+    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.p = p;
     }
 
-    public LegacyDropOutInverted(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double p) {
+    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double p) {
         super(sameDiff, i_v, extraArgs);
         this.p = p;
     }
@@ -83,7 +84,7 @@ public class LegacyDropOutInverted extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

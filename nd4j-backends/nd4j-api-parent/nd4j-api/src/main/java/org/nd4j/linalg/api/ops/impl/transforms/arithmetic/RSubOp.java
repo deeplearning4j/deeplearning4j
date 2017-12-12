@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -33,11 +33,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class RSubOp extends BaseTransformOp {
-    public RSubOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+    public RSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
-    public RSubOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
+    public RSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
@@ -96,10 +96,10 @@ public class RSubOp extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction gradWrtX = f().div(i_v.get(0),rarg());
-        DifferentialFunction gradWrtY = f().mul(f().neg(gradWrtX),f().div(larg(),rarg()));
-        List<DifferentialFunction> ret = new ArrayList<>(2);
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable gradWrtX = f().div(i_v.get(0),rarg());
+        SDVariable gradWrtY = f().mul(f().neg(gradWrtX),f().div(larg(),rarg()));
+        List<SDVariable> ret = new ArrayList<>(2);
         ret.add(gradWrtX);
         ret.add(gradWrtY);
         return ret;

@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -56,10 +56,11 @@ public class Rank extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val name = TFGraphMapper.getInstance().getNodeName(nodeDef.getName());
         val input = initWith.getVariable(name);
-        if(!initWith.isPlaceHolder(input.resultVertexId()) && initWith.shapeAlreadyExistsForVertexId(resultVertexId())) {
-            val inputShape = initWith.getShapeForVertexId(input.resultVertexId());
+        val outputVertex = outputVariables()[0].getVertexId();
+        if(!initWith.isPlaceHolder(input.getVertexId()) && initWith.shapeAlreadyExistsForVertexId(outputVertex)) {
+            val inputShape = initWith.getShapeForVertexId(input.getVertexId());
             val resultLength = Nd4j.scalar(inputShape.length);
-            val thisResultId = resultVertexId();
+            val thisResultId = outputVertex;
             initWith.putArrayForVertexId(thisResultId,resultLength);
         }
     }
@@ -67,11 +68,12 @@ public class Rank extends DynamicCustomOp {
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
-        val arr = sameDiff.getArrForVertexId(resultVertexId());
+        val outputVertex = outputVariables()[0].getVertexId();
+        val arr = sameDiff.getArrForVertexId(outputVertex);
         if(arr == null) {
-            val inputShape = sameDiff.getShapeForVertexId(arg().resultVertexId());
+            val inputShape = sameDiff.getShapeForVertexId(arg().getVertexId());
             val resultLength = Nd4j.scalar(inputShape.length);
-            val thisResultId = resultVertexId();
+            val thisResultId = outputVertex;
             sameDiff.putArrayForVertexId(thisResultId,resultLength);
 
         }
@@ -104,15 +106,10 @@ public class Rank extends DynamicCustomOp {
         return ret;
     }
 
-    @Override
-    public int[] getResultShape() {
-        return new int[] {1,1};
-    }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = this;
-
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = outputVariables()[0];
         return Collections.singletonList(ret);
     }
 

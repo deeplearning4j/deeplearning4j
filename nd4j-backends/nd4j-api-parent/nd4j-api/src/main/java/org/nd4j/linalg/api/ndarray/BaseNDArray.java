@@ -1510,7 +1510,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray lti(INDArray other) {
-        Nd4j.getExecutioner().exec(new LessThan(this, other, this, length()));
+        Nd4j.getExecutioner().exec(new OldLessThan(this, other, this, length()));
         return this;
     }
 
@@ -1532,7 +1532,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray neqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new NotEqualTo(this, other, this, length()));
+        Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, this, length()));
         return this;
     }
 
@@ -1543,7 +1543,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray eqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new EqualTo(this, other, this, length()));
+        Nd4j.getExecutioner().exec(new OldEqualTo(this, other, this, length()));
         return this;
     }
 
@@ -1554,7 +1554,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray gti(INDArray other) {
-        Nd4j.getExecutioner().exec(new GreaterThan(this, other, this, length()));
+        Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, this, length()));
         return this;
     }
 
@@ -3158,7 +3158,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         LinAlgExceptions.assertSameShape(other, result);
-        Nd4j.getExecutioner().exec(new DivOp(this, other, result, length()));
+        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result, length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -3202,7 +3202,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
+        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result, length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -3293,7 +3293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new AddOp(new INDArray[]{this, other},new INDArray[]{ result}));
+        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result, length()));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -5166,7 +5166,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmod(INDArray denominator, INDArray result) {
-        FModOp op = new FModOp(this, denominator, result);
+        OldFModOp op = new OldFModOp(this, denominator, result);
         Nd4j.getExecutioner().exec(op);
         return result;
     }
@@ -5185,7 +5185,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmodi(INDArray denominator) {
-        FModOp op = new FModOp(this, denominator, this);
+        OldFModOp op = new OldFModOp(this, denominator, this);
         Nd4j.getExecutioner().exec(op);
         return this;
     }

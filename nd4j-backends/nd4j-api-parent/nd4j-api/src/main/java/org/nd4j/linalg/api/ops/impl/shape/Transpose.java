@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import com.google.common.primitives.Ints;
 import lombok.val;
 import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,8 +46,8 @@ import java.util.Map;
 public class Transpose extends DynamicCustomOp {
     protected int[] permuteDims;
 
-    public Transpose(SameDiff sameDiff, DifferentialFunction i_v) {
-        super(null,sameDiff,new DifferentialFunction[]{i_v});
+    public Transpose(SameDiff sameDiff, SDVariable i_v) {
+        super(null,sameDiff,new SDVariable[]{i_v});
 
     }
 
@@ -76,11 +76,11 @@ public class Transpose extends DynamicCustomOp {
         if(permuteDims == null) {
             val args = args();
             if(args().length > 1) {
-                val permuteArrayOp = sameDiff.getArrForVertexId(args[1].resultVertexId());
+                val permuteArrayOp = sameDiff.getArrForVertexId(args[1].getVertexId());
                 if(permuteArrayOp != null) {
                     this.permuteDims = permuteArrayOp.data().asInt();
-                    if(permuteDims.length < args[0].getResultShape().length) {
-                        this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
+                    if(ArrayUtil.prod(permuteDims) == 0 || permuteDims.length < args[0].getShape().length) {
+                        this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getShape().length));
                     }
                     else {
                         for(int i = 0; i < permuteDims.length; i++) {
@@ -90,10 +90,10 @@ public class Transpose extends DynamicCustomOp {
 
                 }
                 else
-                    this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
+                    this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getShape().length));
             }
             else {
-                this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getResultShape().length));
+                this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,args[0].getShape().length));
             }
 
         }
@@ -105,7 +105,7 @@ public class Transpose extends DynamicCustomOp {
             }
 
 
-        if(permuteDims != null && permuteDims.length < arg().getResultShape().length)
+        if(permuteDims != null && permuteDims.length < arg().getShape().length)
             throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");
     }
 
@@ -124,27 +124,28 @@ public class Transpose extends DynamicCustomOp {
         }
 
         val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value",permuteDimsNode,graph);
+        val outputVertexId = outputVariables()[0].getVertexId();
         if(permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
-            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
-            sameDiff.putShapeForVertexId(resultVertexId(),permutedShape);
+            val permutedShape = ArrayUtil.permute(arg().getShape(),permuteDims);
+            sameDiff.putShapeForVertexId(outputVertexId,permutedShape);
             for(int i = 0; i < permuteDims.length; i++) {
                 addIArgument(permuteDims[i]);
             }
         }
 
 
-        INDArray arr = sameDiff.getArrForVertexId(arg().resultVertexId());
+        INDArray arr = sameDiff.getArrForVertexId(arg().getVertexId());
         if(arr == null) {
-            val  arrVar = sameDiff.getVariableForVertexId(arg().resultVertexId());
-            arr = arrVar.getWeightInitScheme().create(arrVar.getResultShape());
-            sameDiff.putArrayForVertexId(arg().resultVertexId(),arr);
+            val  arrVar = sameDiff.getVariableForVertexId(arg().getVertexId());
+            arr = arrVar.getWeightInitScheme().create(arrVar.getShape());
+            sameDiff.putArrayForVertexId(arg().getVertexId(),arr);
         }
 
         addInputArgument(arr);
 
 
-        if(permuteDims != null && permuteDims.length < arg().getResultShape().length)
+        if(permuteDims != null && permuteDims.length < arg().getShape().length)
             throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");
 
 
@@ -161,32 +162,25 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public List<int[]> calculateOutputShape() {
-        if(permuteDims == null && arg() != null && arg().getResultShape() != null) {
-            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,arg().getResultShape().length));
-            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
+        if(permuteDims == null && arg() != null && arg().getShape() != null) {
+            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,arg().getShape().length));
+            val permutedShape = ArrayUtil.permute(arg().getShape(),permuteDims);
             return Arrays.asList(permutedShape);
         }
         else if(permuteDims != null) {
-            val permutedShape = ArrayUtil.permute(arg().getResultShape(),permuteDims);
+            val permutedShape = ArrayUtil.permute(arg().getShape(),permuteDims);
             return Arrays.asList(permutedShape);
         }
 
         throw new ND4JIllegalStateException("Unable to compute shape!");
     }
 
-    @Override
-    public int[] getResultShape() {
-        val shapeList = calculateOutputShape();
-        if(!shapeList.isEmpty())
-            return shapeList.get(0);
-        return null;
-    }
 
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        return Collections.<DifferentialFunction>singletonList(this);
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        return Collections.singletonList(outputVariables()[0]);
     }
 
 }

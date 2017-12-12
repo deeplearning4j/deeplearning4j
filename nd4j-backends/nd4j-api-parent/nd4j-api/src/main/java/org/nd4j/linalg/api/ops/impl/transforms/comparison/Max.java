@@ -19,11 +19,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,59 +32,18 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Max extends BaseTransformOp {
-    public Max(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public Max(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
-    public Max(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public Max(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
-    public Max(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public Max(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Max(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
+public class Max extends BaseDynamicTransformOp {
     public Max() {}
 
-    public Max(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Max( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public Max(INDArray x) {
-        super(x);
+    public Max( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
 
-    public Max(INDArray ndArray, INDArray dup) {
-        super(ndArray, dup);
-    }
-
-    public Max(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    @Override
-    public int opNum() {
-        return 13;
-    }
-
-    @Override
+  @Override
     public String opName() {
         return "max_transform";
     }
@@ -99,7 +59,7 @@ public class Max extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return null;
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(outputVariables()[0]);
     }
 }

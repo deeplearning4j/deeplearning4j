@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum.distances;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,13 +37,13 @@ import java.util.List;
 public class JaccardDistance extends BaseAccumulation {
     private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
-    public JaccardDistance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
+    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
         super(sameDiff, i_v, dimensions);
         this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
         this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
     }
 
-    public JaccardDistance(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
+    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
         this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
@@ -118,7 +118,7 @@ public class JaccardDistance extends BaseAccumulation {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

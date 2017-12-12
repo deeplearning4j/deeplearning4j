@@ -60,7 +60,7 @@ public class Linear extends BaseModule {
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
 
-        sameDiff.associateFunctionsAsArgs(getFunctionParams(nIn,nOut),this);
+        sameDiff.addArgsFor(new int[]{nIn,nOut},this);
         this.nIn = nIn;
         this.nOut = nOut;
 
@@ -82,7 +82,7 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         execSameDiff();
         return forward.doDiff(f1);
     }
@@ -137,7 +137,7 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public void execSameDiff(DifferentialFunction... input) {
+    public void execSameDiff(SDVariable... input) {
         val args = args();
         if(args == null || args.length == 0) {
             throw new IllegalStateException("No arguments found");
@@ -147,13 +147,16 @@ public class Linear extends BaseModule {
             //bias needs to be added yet
             if(args.length > 1)
                 forward =  f().add(new Mmul(sameDiff, input[0],args()[0],
-                        MMulTranspose.builder().transposeA(false).transposeB(true).build()),args()[1]);
+                        MMulTranspose.builder()
+                                .transposeA(false)
+                                .transposeB(true)
+                                .build()).outputVariables()[0],args()[1]);
             else {
                 forward = new Mmul(sameDiff, input[0],args()[0],
                         MMulTranspose.builder().transposeA(false).transposeB(true).build());
             }
 
-            this.outputFunctions = forward.outputFunctions();
+            this.outputVariables = forward.outputVariables();
         }
 
 

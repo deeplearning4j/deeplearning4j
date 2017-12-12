@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,15 +31,15 @@ import java.util.List;
  * Cube derivative, e.g. 3x^2
  */
 public class CubeDerivative extends BaseTransformOp {
-    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public CubeDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public CubeDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public CubeDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public CubeDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -83,7 +83,7 @@ public class CubeDerivative extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 }

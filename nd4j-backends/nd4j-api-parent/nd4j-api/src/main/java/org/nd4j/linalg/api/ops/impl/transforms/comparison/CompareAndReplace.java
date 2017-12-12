@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,7 +41,7 @@ public class CompareAndReplace extends BaseTransformOp {
     private double eps;
     private int mode;
 
-    public CompareAndReplace(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, double compare, double set, double eps, int mode) {
+    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v1, i_v2);
         this.compare = compare;
         this.set = set;
@@ -49,7 +49,7 @@ public class CompareAndReplace extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public CompareAndReplace(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, double compare, double set, double eps, int mode) {
+    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.compare = compare;
         this.set = set;
@@ -65,7 +65,7 @@ public class CompareAndReplace extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public CompareAndReplace(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs, double compare, double set, double eps, int mode) {
+    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v1, i_v2, extraArgs);
         this.compare = compare;
         this.set = set;
@@ -73,7 +73,7 @@ public class CompareAndReplace extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public CompareAndReplace(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double compare, double set, double eps, int mode) {
+    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v, inPlace);
         this.compare = compare;
         this.set = set;
@@ -81,7 +81,7 @@ public class CompareAndReplace extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public CompareAndReplace(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double set, double eps, int mode) {
+    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.compare = compare;
         this.set = set;
@@ -89,7 +89,7 @@ public class CompareAndReplace extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public CompareAndReplace(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double compare, double set, double eps, int mode) {
+    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v, extraArgs);
         this.compare = compare;
         this.set = set;
@@ -167,7 +167,7 @@ public class CompareAndReplace extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

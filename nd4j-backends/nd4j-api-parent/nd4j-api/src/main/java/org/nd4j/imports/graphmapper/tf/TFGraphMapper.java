@@ -5,6 +5,7 @@ import com.google.protobuf.Message;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
@@ -170,7 +171,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         val indexMap = new HashMap<String,Integer>();
         for(Map.Entry<String,NodeDef> entry : variablesForGraph.entrySet()) {
             val var = sameDiff.var(entry.getKey(),getNDArrayFromTensor(entry.getKey(), entry.getValue(), graph));
-            indexMap.put(entry.getKey(),var.getVertexId()[0]);
+            indexMap.put(entry.getKey(),var.getVertexId());
         }
 
         return indexMap;
@@ -335,23 +336,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             }
             try {
                 val newInstance = differentialFunction.getClass().newInstance();
-                val args = new DifferentialFunction[tfNode.getInputCount()];
+                val args = new SDVariable[tfNode.getInputCount()];
                 val indices = importState.getVertexIdMap().get(getNodeName(tfNode.getName()));
 
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
                     val name = getNodeName(tfNode.getInput(i));
-                    val  initialVertexId = importState.getVertexIdMap().get(name);
-                    int[] vertexIdKey = initialVertexId == null ? diff.getVariable(name).getVertexId() : initialVertexId.getRight();
-                    if(vertexIdKey == null) {
-                        throw new ND4JIllegalStateException("Unable set to set arg for op " + tfNode.getName());
-                    }
-
-                    DifferentialFunction func = diff.getFunctionForVertexId(vertexIdKey);
-                    if(func == null) {
-                        func =  diff.getVariable(name);
-                    }
-
-                    args[i] = func;
+                    args[i] = diff.getVariable(name);
 
                     /**
                      * Note here that we are associating
@@ -361,8 +351,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                      * it should resolve before trying to execute
                      * anything.
                      */
-                    if(diff.isPlaceHolder(func.getVertexId())) {
-                        diff.putPlaceHolderForVertex(indices.getRight(),func.getVertexId());
+                    if(diff.isPlaceHolder( args[i].getVertexId())) {
+                        diff.putPlaceHolderForVertex(indices.getRight()[0], args[i].getVertexId());
                     }
 
                 }
@@ -370,14 +360,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
 
 
-                val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
+                val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode,newInstance);
                 diff.graph().addEdge(opStateEdge);
-                diff.putFunction(indices.getRight(),newInstance);
-                newInstance.setVertexId(indices.getRight());
+                diff.addArgsFor(indices.getRight(),newInstance);
                 //make sure variables are properly mapped
                 if(diff.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getName())) == null)
-                    diff.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'),indices.getRight());
-                diff.associateFunctionsAsArgs(args,newInstance);
+                    diff.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'),indices.getRight()[0]);
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());

@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +43,7 @@ public class LastIndex extends BaseIndexAccumulation {
     protected double eps;
     protected int mode;
 
-    public LastIndex(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, Condition condition, double compare, double eps, int mode) {
+    public LastIndex(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Condition condition, double compare, double eps, int mode) {
         super(sameDiff, i_v, dimensions);
         this.condition = condition;
         this.compare = compare;
@@ -50,7 +51,7 @@ public class LastIndex extends BaseIndexAccumulation {
         this.mode = mode;
     }
 
-    public LastIndex(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, Condition condition, double compare, double eps, int mode) {
+    public LastIndex(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Condition condition, double compare, double eps, int mode) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.condition = condition;
         this.compare = compare;
@@ -103,7 +104,7 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

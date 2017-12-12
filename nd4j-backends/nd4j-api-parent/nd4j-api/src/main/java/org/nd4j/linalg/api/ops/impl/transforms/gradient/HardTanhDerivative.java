@@ -20,7 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,15 +35,15 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class HardTanhDerivative extends BaseTransformOp {
-    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public HardTanhDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public HardTanhDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public HardTanhDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -86,8 +86,8 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().one(getResultShape());
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().one(outputVariables()[0].getShape());
         return Arrays.asList(ret);
     }
 

@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,15 +15,15 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Set extends BaseTransformOp {
-    public Set(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public Set(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Set(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public Set(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Set(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public Set(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -65,10 +66,10 @@ public class Set extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ym1 = f().rsub(rarg(),f().one(getResultShape()));
-        DifferentialFunction ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
-
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        val shape = outputVariables()[0].getShape();
+        SDVariable ym1 = f().rsub(rarg(),f().one(shape));
+        SDVariable ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
 
         return Collections.singletonList(ret);
     }

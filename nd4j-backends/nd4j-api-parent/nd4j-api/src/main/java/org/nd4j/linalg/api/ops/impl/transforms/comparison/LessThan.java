@@ -19,11 +19,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,56 +34,15 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class LessThan extends BaseTransformOp {
-    public LessThan(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public LessThan(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
-    public LessThan(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public LessThan(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
-    public LessThan(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public LessThan(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public LessThan(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
+public class LessThan extends BaseDynamicTransformOp {
     public LessThan() {}
 
-    public LessThan(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public LessThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public LessThan(INDArray x) {
-        super(x);
-    }
-
-    public LessThan(INDArray ndArray, INDArray dup) {
-        super(ndArray, dup);
-    }
-
-    public LessThan(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    @Override
-    public int opNum() {
-        return 5;
+    public LessThan( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
 
     @Override
@@ -103,7 +62,7 @@ public class LessThan extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(outputVariables()[0]);
     }
 }

@@ -710,7 +710,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new LessThanOrEqual(first.dup(), ndArray) : new LessThanOrEqual(first, ndArray));
+        return exec(dup ? new OldLessThanOrEqual(first.dup(), ndArray) : new OldLessThanOrEqual(first, ndArray));
 
     }
 
@@ -722,7 +722,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new GreaterThanOrEqual(first.dup(), ndArray) : new GreaterThanOrEqual(first, ndArray));
+        return exec(dup ? new OldGreaterThanOrEqual(first.dup(), ndArray) : new OldGreaterThanOrEqual(first, ndArray));
 
     }
 
@@ -796,7 +796,7 @@ public class Transforms {
         if (dup) {
             first = first.dup();
         }
-        return exec(new Max(second, first, first, first.length()));
+        return exec(new OldMax(second, first, first, first.length()));
     }
 
     /**
@@ -845,7 +845,7 @@ public class Transforms {
         if (dup) {
             first = first.dup();
         }
-        return exec(new Min(second, first, first, first.length()));
+        return exec(new OldMin(second, first, first, first.length()));
     }
 
     /**

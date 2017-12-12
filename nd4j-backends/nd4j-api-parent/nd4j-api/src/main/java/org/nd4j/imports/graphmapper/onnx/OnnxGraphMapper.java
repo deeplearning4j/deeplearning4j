@@ -6,6 +6,7 @@ import com.google.protobuf.Message;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
@@ -92,7 +93,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         val indexMap = new HashMap<String,Integer>();
         for(val entry : variablesForGraph.entrySet()) {
             val var = sameDiff.var(entry.getKey(),getNDArrayFromTensor(entry.getKey(), entry.getValue(), graph));
-            indexMap.put(entry.getKey(),var.getVertexId()[0]);
+            indexMap.put(entry.getKey(),var.getVertexId());
         }
 
         return indexMap;
@@ -213,30 +214,18 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         val name = !tfNode.getName().isEmpty() ? tfNode.getName() : String.valueOf(idx);
         try {
             val newInstance = differentialFunction.getClass().newInstance();
-            val args = new DifferentialFunction[tfNode.getInputCount()];
+            val args = new SDVariable[tfNode.getInputCount()];
             for(int i = 0; i < tfNode.getInputCount(); i++) {
                 val  initialVertexId = importState.getVertexIdMap().get(name);
-                int[] vertexIdKey = initialVertexId == null ? diff.getVariable(name).getVertexId() : initialVertexId.getRight();
-                if(vertexIdKey == null) {
-                    throw new ND4JIllegalStateException("Unable set to set arg for op " + tfNode.getName());
-                }
-
-                DifferentialFunction func = diff.getFunctionForVertexId(vertexIdKey);
-                if(func == null) {
-                    func =  diff.getVariable(name);
-                }
-
-                args[i] = func;
+                args[i] = diff.getVariable(name);
             }
 
 
 
             val indices = importState.getVertexIdMap().get(name);
-            val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode);
-            newInstance.setVertexId(indices.getRight());
+            val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode, newInstance);
             newInstance.setSameDiff(importState.getSameDiff());
-            importState.getSameDiff().putFunction(indices.getRight(),newInstance);
-
+            importState.getSameDiff().addArgsFor(indices.getRight(),newInstance);
             /**
              * Need to f
              */
@@ -244,7 +233,6 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
                 diff.graph().addEdge(opStateEdge);
             }
 
-            diff.associateFunctionsAsArgs(args,newInstance);
             newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
 
         }

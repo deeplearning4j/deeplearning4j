@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ShapeOp;
@@ -35,7 +35,7 @@ import java.util.List;
 public class Repeat extends ShapeOp {
     private int axis;
 
-    public Repeat(SameDiff sameDiff, DifferentialFunction i_v, int axis) {
+    public Repeat(SameDiff sameDiff, SDVariable i_v, int axis) {
         super(sameDiff, i_v, false);
         this.axis = axis;
     }
@@ -109,9 +109,8 @@ public class Repeat extends ShapeOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = this;
-
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = outputVariables()[0];
         return Collections.singletonList(ret);
     }
 

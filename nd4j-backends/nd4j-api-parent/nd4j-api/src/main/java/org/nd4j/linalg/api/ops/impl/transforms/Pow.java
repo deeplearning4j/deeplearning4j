@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -37,17 +37,17 @@ public class Pow extends BaseTransformOp {
 
     public Pow() {}
 
-    public Pow(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double pow) {
+    public Pow(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
         super(sameDiff, i_v, inPlace);
         this.pow = pow;
     }
 
-    public Pow(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
+    public Pow(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.pow = pow;
     }
 
-    public Pow(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double pow) {
+    public Pow(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, extraArgs);
         this.pow = pow;
     }
@@ -107,8 +107,8 @@ public class Pow extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        DifferentialFunction g = f().mul(f().pow(arg(),scalarValue.doubleValue()),i_v1.get(0));
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        SDVariable g = f().mul(f().pow(arg(),scalarValue.doubleValue()),i_v1.get(0));
 
         return Arrays.asList(g);
     }

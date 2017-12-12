@@ -8,14 +8,10 @@ import java.util.Map;
 
 @Data
 public class ImportState<GRAPH_TYPE,TENSOR_TYPE> {
-    private int nodeCount;
     private SameDiff sameDiff;
     private GRAPH_TYPE graph;
     private Map<String,TENSOR_TYPE> variables;
     private Map<String,Pair<int[],int[]>> vertexIdMap;
 
-    public void incrementNodeCount() {
-        nodeCount++;
-    }
 
 }

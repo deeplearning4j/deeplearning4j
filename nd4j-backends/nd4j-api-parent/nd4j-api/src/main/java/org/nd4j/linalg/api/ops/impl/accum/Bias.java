@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,12 +37,12 @@ public class Bias extends BaseAccumulation {
 
     private double mean;
 
-    public Bias(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, double mean) {
+    public Bias(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double mean) {
         super(sameDiff, i_v, dimensions);
         this.mean = mean;
     }
 
-    public Bias(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, double mean) {
+    public Bias(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double mean) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.mean = mean;
     }
@@ -82,7 +83,7 @@ public class Bias extends BaseAccumulation {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

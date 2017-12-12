@@ -38,5 +38,5 @@ public abstract class BaseGraph<V, E> implements IGraph<V, E> {
         return fromTo.get(input);
     }
 
-    public abstract int getVertexInDegree(int[] vertex);
+    public abstract int getVertexInDegree(int vertex);
 }

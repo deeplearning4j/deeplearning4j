@@ -1,6 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.grid;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -40,7 +40,7 @@ public class FreeGridOp extends BaseGridOp {
     }
 
      @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

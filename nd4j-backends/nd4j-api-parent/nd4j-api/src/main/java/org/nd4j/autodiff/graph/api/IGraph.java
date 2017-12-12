@@ -1,9 +1,6 @@
 package org.nd4j.autodiff.graph.api;
 
-import org.nd4j.autodiff.graph.exception.NoEdgesException;
-
 import java.util.List;
-import java.util.Random;
 
 /** Interface for a IGraph, with objects for each vertex and edge.
  * In the simplest case, edges and vertices may be labelled (i.e., IGraph<String,String> for example), or may be
@@ -61,17 +58,6 @@ public interface IGraph<V, E> {
      */
     int getVertexDegree(int vertex);
 
-    /** Randomly sample a vertex connected to a given vertex. Sampling is done uniformly at random.
-     * Specifically, returns a random X such that either a directed edge (vertex -> X) exists,
-     * or an undirected edge (vertex -- X) exists<br>
-     * Can be used for example to implement a random walk on the graph (specifically: a unweighted random walk)
-     * @param vertex vertex to randomly sample from
-     * @param rng Random number generator to use
-     * @return A vertex connected to the specified vertex,
-     * @throws NoEdgesException thrown if the specified vertex has no edges, or no outgoing edges (in the case
-     * of a directed graph).
-     */
-    Vertex<V> getRandomConnectedVertex(int[] vertex, Random rng) throws NoEdgesException;
 
     /**Get a list of all of the vertices that the specified vertex is connected to<br>
      * Specifically, for undirected graphs return list of all X such that (vertex -- X) exists<br>

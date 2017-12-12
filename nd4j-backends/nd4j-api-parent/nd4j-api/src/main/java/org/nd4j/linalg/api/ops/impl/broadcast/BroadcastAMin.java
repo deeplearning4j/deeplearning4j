@@ -1,6 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,11 +14,11 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class BroadcastAMin extends BaseBroadcastOp {
-    public BroadcastAMin(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int[] dimension) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension) {
         super(sameDiff, i_v1, i_v2, dimension);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, int[] dimension) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, int[] dimension) {
         super(sameDiff, i_v1, i_v2, inPlace, dimension);
     }
 
@@ -26,19 +26,19 @@ public class BroadcastAMin extends BaseBroadcastOp {
         super(sameDiff);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, dimension, extraArgs);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, DifferentialFunction i_v, int[] dimension, boolean inPlace) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, int[] dimension, boolean inPlace) {
         super(sameDiff, i_v, dimension, inPlace);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, DifferentialFunction i_v, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, dimension, extraArgs);
     }
 
@@ -62,7 +62,7 @@ public class BroadcastAMin extends BaseBroadcastOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

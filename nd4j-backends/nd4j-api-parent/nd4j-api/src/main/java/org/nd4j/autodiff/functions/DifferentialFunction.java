@@ -4,14 +4,12 @@ import com.rits.cloning.Cloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -25,16 +23,12 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @Slf4j
-public abstract class DifferentialFunction implements Differential {
+public abstract class DifferentialFunction {
 
     @Getter
     @Setter
     @JsonIgnore
     protected SameDiff sameDiff;
-    @Getter
-    @Setter
-    @JsonIgnore
-    protected int[] vertexId;
 
     @Getter
     @Setter
@@ -65,6 +59,9 @@ public abstract class DifferentialFunction implements Differential {
     @JsonIgnore
     protected  boolean arrayInitialized = false;
 
+    @Getter
+    protected String instanceId;
+
 
     /**
      * Initialize the function from the given
@@ -73,6 +70,7 @@ public abstract class DifferentialFunction implements Differential {
      */
     public DifferentialFunction(SameDiff sameDiff,NodeDef nodeDef, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         this.sameDiff = sameDiff;
+        this.instanceId = UUID.randomUUID().toString();
         initFromTensorFlow(nodeDef, sameDiff,attributesForNode ,graph);
     }
 
@@ -83,6 +81,8 @@ public abstract class DifferentialFunction implements Differential {
      */
     public DifferentialFunction(SameDiff sameDiff,onnx.OnnxProto3.NodeProto node,Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         this.sameDiff = sameDiff;
+        this.instanceId = UUID.randomUUID().toString();
+
         initFromOnnx(node, sameDiff, attributesForNode, graph);
     }
 
@@ -95,6 +95,7 @@ public abstract class DifferentialFunction implements Differential {
     public DifferentialFunction(SameDiff sameDiff,boolean inPlace, Object[] extraArgs) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
+        this.instanceId = UUID.randomUUID().toString();
         this.extraArgs = extraArgs;
 
 
@@ -108,135 +109,42 @@ public abstract class DifferentialFunction implements Differential {
      */
     public DifferentialFunction(SameDiff sameDiff, Object[] extraArgs) {
         this.sameDiff = sameDiff;
+        this.instanceId = UUID.randomUUID().toString();
         this.extraArgs = extraArgs;
 
     }
 
-    public DifferentialFunction(SameDiff sameDiff, DifferentialFunction[] args) {
+    public DifferentialFunction(SameDiff sameDiff, SDVariable[] args) {
         this(sameDiff,false,args);
     }
 
-    public DifferentialFunction(SameDiff sameDiff, boolean inPlace, DifferentialFunction[] args) {
+    public DifferentialFunction(SameDiff sameDiff, boolean inPlace, SDVariable[] args) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
-        if(sameDiff != null)
-            sameDiff.associateFunctionsAsArgs(args,this);
+        this.instanceId = UUID.randomUUID().toString();
+        val nodeIds = new int[args.length];
+        for(int i = 0; i < args.length; i++) {
+            nodeIds[i] = args[i].getVertexId();
+        }
 
-    }
-
-
-    public DifferentialFunction(SameDiff sameDiff, int[] vertexId, boolean inPlace,int[] shape, DifferentialFunction[] args, Number scalarValue, int[] dimensions, Object[] extraArgs) {
-        this.sameDiff = sameDiff;
-        this.vertexId = vertexId;
-        this.inPlace = inPlace;
         if(sameDiff != null) {
-            sameDiff.putShapeForVertexId(vertexId, shape);
-            sameDiff.associateFunctionsAsArgs(args, this);
+            sameDiff.addArgsFor(nodeIds, this);
         }
-        this.scalarValue = scalarValue;
-        this.dimensions = dimensions;
-        this.extraArgs = extraArgs;
-
     }
 
 
-    protected void addAsNewVertexId(int[] vertexId) {
-        this.vertexId = vertexId;
-
-        SDVariable var = sameDiff.var(opName() + "-" + UUID.randomUUID().toString(),getResultShape(),new ZeroInitScheme('f'),vertexId,maxDepthForArgs());
-        if(sameDiff.graph().getVertex(vertexId[0]) == null) {
-            NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff, var.vertexId[0], depth(), var);
-            var.setVertexId(new int[]{ndArrayVertex.vertexID()});
-        }
-
-        sameDiff.addVariable(var);
-        sameDiff.putFunction(var.getVertexId(),this);
-
-    }
-
-    protected void addAsNewVertexId() {
-        int vertexId = sameDiff.graph().getNextVertexId()  > sameDiff.graph().numVertices() ? sameDiff.graph().getNextVertexId() : sameDiff.graph().nextVertexId();
-        addAsNewVertexId(new int[]{vertexId});
-    }
 
 
-    /**
-     * Get the output vertex ids for this function
-     * @return the set of output vertex ids for this function.
-     */
-    @JsonIgnore
-    public int[] getOutputVertexIds() {
-        NDArrayVertex[] outputs = getVertices();
-        int[] ret = new int[outputs.length];
-        for(int i = 0; i < outputs.length; i++) {
-            ret[i] = outputs[i].vertexID();
-        }
-
-        return ret;
-    }
 
     /**
      * Return the output functions for this differential function.
      * @return
      */
-    public DifferentialFunction[] outputFunctions() {
-        return new DifferentialFunction[]{this};
-    }
-
-    /**
-     * Get the vertices of the outputs.
-     * @return
-     */
-    @JsonIgnore
-    public NDArrayVertex[] getVertices() {
-        NDArrayVertex[] ret = new NDArrayVertex[vertexId.length];
-        for(int i = 0; i < ret.length; i++) {
-            ret[i] = (NDArrayVertex) sameDiff.graph().getVertex(vertexId[i]);
-        }
-
-        return ret;
-    }
-
-
-    /**
-     * Get the result shape for this function
-     * @return
-     */
-    @JsonIgnore
-    public int[] getResultShape() {
-        val originalShape =  getResult().getResultShape();
-        if(originalShape == null) {
-            List<int[]> outputShapes =  calculateOutputShape();
-            if(outputShapes.isEmpty())
-                return null;
-            return outputShapes.get(0);
-        }
-
-        return originalShape;
-    }
+    public abstract SDVariable[] outputVariables();
 
 
 
-    public boolean hasArgs() {
-        val args = args();
-        boolean argsHasArgs = true;
-        if(args != null) {
-            for(val arg : args()) {
-                if(arg.args() == null)
-                    return false;
-            }
-        }
 
-        return args != null && args.length >= 1;
-    }
-
-    /**
-     * Get the output functions for this function
-     * @return
-     */
-    public List<DifferentialFunction> outputs() {
-        return Arrays.asList(this);
-    }
 
     @JsonIgnore
     public  boolean isVariable() {
@@ -244,11 +152,38 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    /**
+     * Get the input vertex ids
+     * for this function
+     * @return
+     */
+    public int[] inputVertexIds() {
+        val args = args();
+        int[] ret = new int[args.length];
+        for(int i = 0; i < args.length; i++) {
+            ret[i] = args[i].getVertexId();
+        }
 
-
-    public int depth() {
-        return sameDiff.getGraph().getVertex(vertexId[0]).depth();
+        return ret;
     }
+
+
+    /**
+     * Get the input vertex ids
+     * for this function
+     * @return
+     */
+    public int[] outputVertexIds() {
+        val args = outputVariables();
+        int[] ret = new int[args.length];
+        for(int i = 0; i < args.length; i++) {
+            ret[i] = args[i].getVertexId();
+        }
+
+        return ret;
+    }
+
+
 
 
     /**
@@ -257,7 +192,7 @@ public abstract class DifferentialFunction implements Differential {
      * @param f1
      * @return
      */
-    public abstract List<DifferentialFunction> doDiff(List<DifferentialFunction> f1);
+    public abstract List<SDVariable> doDiff(List<SDVariable> f1);
 
     /**
      * Shortcut for the {@link DifferentialFunctionFactory}
@@ -281,10 +216,10 @@ public abstract class DifferentialFunction implements Differential {
             //update place holder shapes in case the shapes
             // need to be resolved
             //post adding the variables to the graph.
-            if(sameDiff.shapeAlreadyExistsForVertexId(resultVertexId()))
-                sameDiff.updateShapeForVertexId(resultVertexId(),shapeCalc.get(0));
+            if(sameDiff.shapeAlreadyExistsForVertexId(args()[0].getVertexId()))
+                sameDiff.updateShapeForVertexId(args()[0].getVertexId(),shapeCalc.get(0));
             else
-                sameDiff.putShapeForVertexId(resultVertexId(),shapeCalc.get(0));
+                sameDiff.putShapeForVertexId(args()[0].getVertexId(),shapeCalc.get(0));
 
         }
 
@@ -312,7 +247,11 @@ public abstract class DifferentialFunction implements Differential {
      * @return
      */
     public boolean hasPlaceHolderInputs() {
-        return sameDiff.hasPlaceHolderVariables(vertexId);
+        val args = args();
+        for(val arg : args)
+            if(sameDiff.hasPlaceHolderVariables(arg.getVertexId()))
+                return true;
+        return false;
     }
 
     @Override
@@ -324,33 +263,32 @@ public abstract class DifferentialFunction implements Differential {
         return false;
     }
 
-    public  DifferentialFunction[] args() {
-        return sameDiff.getArgsFor(this);
+    public  SDVariable[] args() {
+        return sameDiff.getInputVariablesForFunction(this);
     }
 
-    public  DifferentialFunction arg() {
+    public SDVariable arg() {
         return args()[0];
     }
 
 
-    @Override
-    public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        List<DifferentialFunction> vals = doDiff(i_v1);
-        for(int i = 0; i < args().length; i++) {
-            DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
-            DifferentialFunction arg = sameDiff.setupFunction(args()[i]);
-            SDVariable var = sameDiff.getVariableForVertexId(arg.vertexId);
-            DifferentialFunction grad = var.getGradient();
+    public List<SDVariable> diff(List<SDVariable> i_v1) {
+        List<SDVariable> vals = doDiff(i_v1);
+        val outputVars = outputVariables();
+        for(int i = 0; i < outputVars.length; i++) {
+            SDVariable differentialFunction = sameDiff.setupFunction(vals.get(i));
+            SDVariable var = sameDiff.getVariableForVertexId(differentialFunction.getVertexId());
+            SDVariable grad = var.getGradient();
             if(grad != null) {
-                DifferentialFunction ret = f().addi(differentialFunction, grad);
+                SDVariable ret = f().addi(differentialFunction, grad);
                 sameDiff.updateVariableName(ret.getVertexId(),var.getVarName() + "-grad");
-                sameDiff.setGradientForVertexId(var.vertexId,sameDiff.getVariableForVertexId(ret.vertexId));
-                sameDiff.setForwardVariableForVertexId(ret.vertexId,var);
+                sameDiff.setGradientForVertexId(var.getVertexId(),sameDiff.getVariableForVertexId(ret.getVertexId()));
+                sameDiff.setForwardVariableForVertexId(ret.getVertexId(),var);
             }
             else {
                 SDVariable gradVar = sameDiff.getVariableForVertexId(differentialFunction.getVertexId());
-                sameDiff.setGradientForVertexId(var.vertexId, gradVar);
-                sameDiff.setForwardVariableForVertexId(gradVar.vertexId,var);
+                sameDiff.setGradientForVertexId(var.getVertexId(), gradVar);
+                sameDiff.setForwardVariableForVertexId(gradVar.getVertexId(),var);
             }
         }
 
@@ -374,14 +312,14 @@ public abstract class DifferentialFunction implements Differential {
 
     @JsonIgnore
     private INDArray getX() {
-        INDArray ret =  sameDiff.getArrForVertexId(args()[0].resultVertexId());
+        INDArray ret =  sameDiff.getArrForVertexId(args()[0].getVertexId());
         return ret;
     }
 
     @JsonIgnore
     private INDArray getY() {
         if(args().length > 1) {
-            INDArray ret =  sameDiff.getArrForVertexId(args()[1].resultVertexId());
+            INDArray ret =  sameDiff.getArrForVertexId(args()[1].getVertexId());
             return ret;
         }
         return null;
@@ -391,7 +329,7 @@ public abstract class DifferentialFunction implements Differential {
     private INDArray getZ() {
         if(isInPlace())
             return getX();
-        SDVariable opId = getResult();
+        SDVariable opId = outputVariables()[0];
         INDArray ret = opId.getArr();
         return ret;
     }
@@ -411,15 +349,6 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-
-    /**
-     * Get the result
-     * @return
-     */
-    @JsonIgnore
-    public SDVariable getResult() {
-        return sameDiff.getVariableForVertexId(vertexId);
-    }
 
 
     /**
@@ -448,7 +377,7 @@ public abstract class DifferentialFunction implements Differential {
      * The left argument for this function
      * @return
      */
-    public DifferentialFunction larg() {
+    public SDVariable larg() {
         val args = args();
         if(args == null || args.length == 0)
             throw new ND4JIllegalStateException("No arguments found.");
@@ -462,7 +391,7 @@ public abstract class DifferentialFunction implements Differential {
      * {@link ND4JIllegalStateException}
      * @return
      */
-    public DifferentialFunction rarg() {
+    public SDVariable rarg() {
         val args = args();
         if(args == null || args.length != 2)
             throw new ND4JIllegalStateException("In order to use this function, the number of arguments for this function must be 2.");
@@ -481,16 +410,6 @@ public abstract class DifferentialFunction implements Differential {
 
 
 
-    /**
-     * Return the vertex id
-     * of the result
-     * of this equation.
-     *
-     * @return
-     */
-    public  int[] resultVertexId() {
-        return vertexId;
-    }
 
 
     /**
@@ -504,7 +423,7 @@ public abstract class DifferentialFunction implements Differential {
 
     public int maxDepthForArgs() {
         int depth = -1;
-        for(DifferentialFunction arg : args()) {
+        for(SDVariable arg : args()) {
             if(arg == this)
                 continue;
             depth = Math.max(arg.depth(),depth);
@@ -520,18 +439,25 @@ public abstract class DifferentialFunction implements Differential {
 
         DifferentialFunction that = (DifferentialFunction) o;
 
-        if (vertexId != that.vertexId) return false;
-        //if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
-        return true;
+        if (inPlace != that.inPlace) return false;
+        if (isArrayInit != that.isArrayInit) return false;
+        if (arrayInitialized != that.arrayInitialized) return false;
+        if (scalarValue != null ? !scalarValue.equals(that.scalarValue) : that.scalarValue != null) return false;
+        if (!Arrays.equals(dimensions, that.dimensions)) return false;
+        return instanceId != null ? instanceId.equals(that.instanceId) : that.instanceId == null;
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Arrays.hashCode(vertexId);
+        int result = 31;
+        result = 31 * result + (inPlace ? 1 : 0);
+        result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(dimensions);
+        result = 31 * result + (isArrayInit ? 1 : 0);
+        result = 31 * result + (arrayInitialized ? 1 : 0);
+        result = 31 * result + (instanceId != null ? instanceId.hashCode() : 0);
         return result;
     }
-
 
     /**
      * The opName of this function in onnx

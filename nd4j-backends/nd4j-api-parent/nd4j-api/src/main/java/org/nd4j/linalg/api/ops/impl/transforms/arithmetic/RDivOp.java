@@ -19,10 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,41 +32,18 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class RDivOp extends BaseTransformOp {
-    public RDivOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public RDivOp(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
+public class RDivOp extends BaseDynamicTransformOp {
 
     public RDivOp() {}
 
-    public RDivOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public RDivOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public RDivOp(INDArray x) {
-        super(x);
+    public RDivOp( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
 
-    public RDivOp(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public RDivOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public RDivOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
-    @Override
-    public int opNum() {
-        return 18;
-    }
 
     @Override
     public String opName() {
@@ -85,21 +62,13 @@ public class RDivOp extends BaseTransformOp {
 
 
 
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to divide");
-    }
-
-
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction gradWrtX = f().div(i_v.get(0),larg());
-        DifferentialFunction gradWrtY = f().mul(f().neg(gradWrtX),f().div(rarg(),larg()));
-        List<DifferentialFunction> ret = new ArrayList<>(2);
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable gradWrtX = f().div(i_v.get(0),larg());
+        SDVariable gradWrtY = f().mul(f().neg(gradWrtX),f().div(rarg(),larg()));
+        List<SDVariable> ret = new ArrayList<>(2);
         ret.add(gradWrtX);
         ret.add(gradWrtY);
         return ret;

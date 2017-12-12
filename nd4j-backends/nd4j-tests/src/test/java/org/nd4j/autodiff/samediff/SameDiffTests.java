@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -27,7 +28,6 @@ import org.nd4j.weightinit.impl.ZeroInitScheme;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 
 /**
@@ -62,6 +62,13 @@ public class SameDiffTests {
 
 
     @Test
+    public void testAddArgsAndOutput() {
+        SameDiff sameDiff = SameDiff.create();
+        val varOne = sameDiff.var("one",Nd4j.ones(2));
+
+    }
+
+    @Test
     public void testEvalVariable() {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
@@ -82,11 +89,12 @@ public class SameDiffTests {
         assertArrayEquals(arr.shape(), sigmoid.getShape());
         assertEquals(1, sameDiff.graph()
                 .getVertexInDegree(sigmoid.getVertexId()));
-        int[][] sorted = new int[][]{x.getVertexId(), sigmoid.getVertexId()};
+        int[] []sorted = new int[][]   {{x.getVertexId()}, {sigmoid.getVertexId()}};
         int[][] topoSortResult= sameDiff.graph().topologicalSort();
         assertArrayEquals(sorted, topoSortResult);
         assertEquals(1, sameDiff.graph().getOpOrder().getActions().size());
-        val func = sameDiff.getFunctionForVertexId(sameDiff.graph().getOpOrder().getActions().get(0).getOutputId());
+        val actions = sameDiff.graph().getOpOrder().getActions();
+        val func = sameDiff.getFunction(actions.get(0).getInputsIds(),actions.get(0).getOutputId());
         assertEquals("sigmoid", func.opName());
         Op op = (Op) sameDiff.createOp(sameDiff.graph().getOpOrder().getActions().get(0));
         assertTrue(op instanceof Sigmoid);
@@ -143,7 +151,7 @@ public class SameDiffTests {
                 .addOutputShape(new int[]{2,2})
                 .addOutputShape(new int[]{2,3})
                 .build();
-        assertEquals(2,dynamicCustomOp.outputFunctions().length);
+        assertEquals(2,dynamicCustomOp.outputVariables().length);
 
 
     }
@@ -222,6 +230,19 @@ public class SameDiffTests {
 
 
 
+    @Test
+    public void testFunctionInputsAndArgs() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable var = sameDiff.var("one",Nd4j.scalar(1.0));
+        SDVariable variable2 = sameDiff.var("two",Nd4j.scalar(1.0));
+        val sum = var.add(variable2);
+        assertArrayEquals(new int[]{1,1},sum.getShape());
+        assertTrue(sameDiff.getFunction(new int[]{1,2},new int[]{3}) instanceof AddOp);
+
+
+    }
+
+
 
     @Test
     public void testCrossSameDiffVariableInitWithAlloc() {
@@ -247,7 +268,10 @@ public class SameDiffTests {
         SDVariable firstVar = first.var("one",new int[]{2,2});
         SDVariable secondVar = second.var(firstVar);
         assumeNotNull(firstVar.getArr());
-        assertFalse("Vertex ids found to be the same reference",firstVar.getVertexId() == secondVar.getVertexId());
+        val firstId = firstVar.getVertexId().intValue();
+        val secondId = secondVar.getVertexId().intValue();
+
+        assertTrue("Vertex ids found to be the same reference",firstId == secondId);
         assertTrue(firstVar.getArr() == secondVar.getArr());
         assertEquals(firstVar.getVarName(),secondVar.getVarName());
 
@@ -424,7 +448,6 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         SDVariable sdVariable = sameDiff.var("one",Nd4j.scalar(1.0));
         assumeNotNull(sameDiff.getVariableForVertexId(sdVariable.getVertexId()));
-        assertFalse(sameDiff.getFunctionForVertexId(sdVariable.getVertexId()) != null);
     }
 
 
@@ -441,7 +464,6 @@ public class SameDiffTests {
         SDVariable sdVariable = sameDiff.var("one",Nd4j.scalar(1.0));
         SDVariable add = sdVariable.add(1.0);
         assertEquals(sameDiff.getVariableForVertexId(add.getVertexId()),add);
-        assumeFalse(sameDiff.getFunctionForVertexId(sdVariable.getVertexId()) != null);
     }
 
 
@@ -668,7 +690,7 @@ public class SameDiffTests {
         sameDiff.ifStatement(new SameDiff.DefaultSameDiffConditional(), conditionBody, trueBody, falseBody,firstInputs);
         sameDiff.execBackwards();
         SameDiff grad = sameDiff.getFunction("grad");
-        If ifBlock = (If) grad.getFunctionForVertexId(new int[]{2});
+        If ifBlock = (If) grad.getFunction(new int[]{1},new int[]{2});
         SameDiff assertComparision = SameDiff.create();
         SDVariable initialInput = assertComparision.zero("zero",new int[]{1,1});
         initialInput.addi(1.0);
@@ -680,10 +702,6 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testConv2d() {
-
-    }
 
     @Test
     public void testWhileBackwards() {
@@ -1364,7 +1382,8 @@ public class SameDiffTests {
         //aren't changed with new instances
         OpExecOrder logisticPredictionOrder = logisticPrediction.graph().getOpOrder();
         for(int i = 0; i < 2; i++) {
-            val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+            val currAction = logisticPrediction.graph().getOpOrder().getActions().get(i);
+            val func = logisticPrediction.getFunction(currAction.getInputsIds(),currAction.getOutputId());
             assertEquals(logisticOpNameAssertions.get(i),func.opName());
         }
 
@@ -1381,7 +1400,8 @@ public class SameDiffTests {
 
         logisticPredictionOrder = logisticPrediction.graph().getOpOrder();
         for(int i = 0; i < 2; i++) {
-            val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+            val currAction = logisticPrediction.graph().getOpOrder().getActions().get(i);
+            val func = logisticPrediction.getFunction(currAction.getInputsIds(),currAction.getOutputId());
             assertEquals(logisticOpNameAssertions.get(i),func.opName());
         }
 
@@ -1391,7 +1411,8 @@ public class SameDiffTests {
         System.out.println(opExecOrder);
         assertEquals(3,opExecOrder.getActions().size());
         for(int i = 0; i < 3; i++) {
-            val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+            val currAction = logisticPrediction.graph().getOpOrder().getActions().get(i);
+            val func = logisticPrediction.getFunction(currAction.getInputsIds(),currAction.getOutputId());
             assertEquals(opNameAssertions.get(i),func.opName());
         }
 
@@ -1433,7 +1454,8 @@ public class SameDiffTests {
             List<String> logisticOpNameAssertions = Arrays.asList("mmul", "sigmoid");
             OpExecOrder logisticPredictionOrder = logisticPrediction.graph().getOpOrder();
             for (int i = 0; i < 2; i++) {
-                val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+                val currAction = logisticPrediction.graph().getOpOrder().getActions().get(i);
+                val func = logisticPrediction.getFunction(currAction.getInputsIds(),currAction.getOutputId());
                 assertEquals(logisticOpNameAssertions.get(i), func.opName());
             }
 
@@ -1442,7 +1464,8 @@ public class SameDiffTests {
             OpExecOrder opExecOrder = logisticGraph.graph().getOpOrder();
             assertEquals(3, opExecOrder.getActions().size());
             for (int i = 0; i < 3; i++) {
-                val func = logisticPrediction.getFunctionForVertexId(logisticPrediction.graph().getOpOrder().getActions().get(i).getOutputId());
+                val currAction = logisticPrediction.graph().getOpOrder().getActions().get(i);
+                val func = logisticPrediction.getFunction(currAction.getInputsIds(),currAction.getOutputId());
                 assertEquals(opNameAssertions.get(i), func.opName());
             }
 

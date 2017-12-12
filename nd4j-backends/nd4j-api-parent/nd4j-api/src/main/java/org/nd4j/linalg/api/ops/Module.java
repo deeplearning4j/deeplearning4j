@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -27,7 +28,7 @@ public interface Module extends CustomOp {
     void addModule(Module module);
 
 
-    void execSameDiff(DifferentialFunction... input);
+    void execSameDiff(SDVariable... input);
 
 
 

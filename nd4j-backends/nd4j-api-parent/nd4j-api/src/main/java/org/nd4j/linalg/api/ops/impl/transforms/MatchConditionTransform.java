@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,21 +42,21 @@ public class MatchConditionTransform extends BaseTransformOp {
     private double eps;
     private int mode;
 
-    public MatchConditionTransform(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double compare, double eps, int mode) {
+    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double compare, double eps, int mode) {
         super(sameDiff, i_v, inPlace);
         this.compare = compare;
         this.eps = eps;
         this.mode = mode;
     }
 
-    public MatchConditionTransform(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double eps, int mode) {
+    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double eps, int mode) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.compare = compare;
         this.eps = eps;
         this.mode = mode;
     }
 
-    public MatchConditionTransform(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double compare, double eps, int mode) {
+    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double compare, double eps, int mode) {
         super(sameDiff, i_v, extraArgs);
         this.compare = compare;
         this.eps = eps;
@@ -111,7 +112,7 @@ public class MatchConditionTransform extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

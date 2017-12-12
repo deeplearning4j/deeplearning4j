@@ -65,29 +65,19 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = ifStatement.falseBody;
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.dummyResult = ifStatement.dummyResult;
-        addAsNewVertexId();
-        sameDiff.associateFunctionsAsArgs(ifStatement.inputVars,this);
-        sameDiff.putShapeForVertexId(vertexId,new int[]{1,1});
-        f().addFunctionEdges(this);
+        sameDiff.addArgsFor(ifStatement.inputVars,this);
         this.inputVars = ifStatement.inputVars;
-        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),sameDiff.graph().nextVertexId(),0);
+        sameDiff.putShapeForVertexId(dummyResult.getVertexId(),new int[]{1,1});
+
         int[] inputEdges = new int[inputVars.length];
-        String[] opEdgeIds = new String[inputVars.length * 2];
 
         for(int i = 0; i < inputEdges.length; i++) {
-            inputEdges[i] = inputVars[i].getVertexId()[0];
+            inputEdges[i] = inputVars[i].getVertexId();
         }
 
-        /**
-         * Setup the opstate ids
-         */
-        int opEdgeIdIdx = 0;
-        for(int i = 0; i < inputEdges.length; i++) {
-            opEdgeIds[opEdgeIdIdx++] = String.valueOf(inputEdges[i]);
-        }
+        sameDiff.addOutgoingFor(new SDVariable[] {dummyResult},this);
 
-
-        this.sameDiff.graph().addEdge(inputEdges,vertexId,UUID.randomUUID().toString(),true);
 
 
     }
@@ -108,24 +98,9 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
-        sameDiff.associateFunctionsAsArgs(inputVars,this);
-        int[] vertexId = {parent.graph().nextVertexId()};
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),vertexId,0);
-        this.vertexId = vertexId;
-        int[] inputEdges = new int[inputVars.length];
-        String[] opEdgeIds = new String[inputVars.length * 2];
+        sameDiff.addArgsFor(inputVars,this);
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),parent.graph().nextVertexId(),0);
 
-        for(int i = 0; i < inputEdges.length; i++) {
-            inputEdges[i] = inputVars[i].getVertexId()[0];
-        }
-
-        /**
-         * Setup the opstate ids
-         */
-        int opEdgeIdIdx = 0;
-        for(int i = 0; i < inputEdges.length; i++) {
-            opEdgeIds[opEdgeIdIdx++] = String.valueOf(inputEdges[i]);
-        }
 
 
         //create a samediff sub graph for running just the execution
@@ -148,10 +123,7 @@ public class If extends DifferentialFunction implements CustomOp {
         parent.putSubFunction("predicate-eval-body-" + UUID.randomUUID().toString(),sameDiff);
         //get a reference to the actual loop body
         this.loopBodyExecution = parent.getFunction(trueBodyName);
-        parent.putFunction(vertexId,this);
-
-
-        parent.graph().addEdge(inputEdges,vertexId,UUID.randomUUID().toString(),true);
+        parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
     }
 
 
@@ -169,9 +141,14 @@ public class If extends DifferentialFunction implements CustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
-        ret.add(new IfDerivative(this));
+    public SDVariable[] outputVariables() {
+        return new SDVariable[0];
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
+        ret.addAll(Arrays.asList(new IfDerivative(this).outputVariables()));
         return ret;
     }
 

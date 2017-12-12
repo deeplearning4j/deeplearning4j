@@ -81,6 +81,7 @@ public class TFGraphTestAllHelper {
     }
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
+        log.info("Running model " + modelName + " only output");
         if (execType.equals(ExecuteWith.SAMEDIFF)) {
             checkOnlyOutput(inputs, predictions, modelName, SAMEDIFF_DEFAULT_BASE_DIR, execType);
         } else if (execType.equals(ExecuteWith.LIBND4J)) {
@@ -123,7 +124,7 @@ public class TFGraphTestAllHelper {
             for (String varName : graph.variableMap().keySet()) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
                     INDArray tfValue = intermediateVars(modelName, baseDir, varName);
-                    assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(tfValue.shape()), ArrayUtils.toString(graph.getVariable(varName).getResultShape()));
+                    assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(tfValue.shape()), ArrayUtils.toString(graph.getVariable(varName).getShape()));
                     assertEquals("Value not equal on node " + varName, tfValue, graph.getVariable(varName).getArr());
                     log.info("\n\tShapes equal for " + varName);
                     log.info("\n\tValues equal for " + varName);
@@ -139,12 +140,15 @@ public class TFGraphTestAllHelper {
             if (!inputs.isEmpty()) {
                 graph.execWithPlaceHolder(inputs); //This is expected to be just one result
             } else {
-                graph.execAndEndResult("output"); //there are graphs with no placeholders like g_00
+                graph.execAndEndResult(); //there are graphs with no placeholders like g_00
             }
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
+
+            val string = graph.asFlatPrint();
+            log.info("Graph structure: \n{}", string);
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
             assertEquals(1, results.length); //FIXME: Later

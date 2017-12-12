@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,19 +37,19 @@ public class SetRange extends BaseTransformOp {
 
     private double min, max;
 
-    public SetRange(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double min, double max) {
+    public SetRange(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double min, double max) {
         super(sameDiff, i_v, inPlace);
         this.min = min;
         this.max = max;
     }
 
-    public SetRange(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double min, double max) {
+    public SetRange(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double min, double max) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.min = min;
         this.max = max;
     }
 
-    public SetRange(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double min, double max) {
+    public SetRange(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double min, double max) {
         super(sameDiff, i_v, extraArgs);
         this.min = min;
         this.max = max;
@@ -116,7 +117,7 @@ public class SetRange extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

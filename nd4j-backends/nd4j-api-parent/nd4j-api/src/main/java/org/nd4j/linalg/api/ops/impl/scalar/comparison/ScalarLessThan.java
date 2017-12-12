@@ -19,9 +19,8 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
@@ -44,29 +43,10 @@ public class ScalarLessThan extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarLessThan(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
-        super(x, y, z, n, num);
-    }
-
-    public ScalarLessThan(INDArray x, IComplexNumber num) {
-        super(x, num);
-    }
-
-    public ScalarLessThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar) {
-        super(sameDiff, i_v, scalar);
-    }
-
-    public ScalarLessThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+    public ScalarLessThan(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
-    public ScalarLessThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarLessThan(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
-    }
 
     @Override
     public int opNum() {
@@ -93,7 +73,7 @@ public class ScalarLessThan extends BaseScalarOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(outputVariables()[0]);
     }
 }

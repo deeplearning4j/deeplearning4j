@@ -19,13 +19,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,22 +32,18 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class SubOp extends DynamicCustomOp {
+public class SubOp extends BaseDynamicTransformOp {
 
     public SubOp() {}
 
-    public SubOp( SameDiff sameDiff, DifferentialFunction[] args, boolean inPlace) {
-        super(null, sameDiff, args, inPlace);
+    public SubOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
     public SubOp( INDArray[] inputs, INDArray[] outputs) {
-        super(null, inputs, outputs);
+        super(inputs, outputs);
     }
 
-    @Override
-    public List<int[]> calculateOutputShape() {
-        return Arrays.asList(arg().getResultShape());
-    }
 
     @Override
     public String opName() {
@@ -68,10 +63,10 @@ public class SubOp extends DynamicCustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction gradWrtX = i_v.get(0);
-        DifferentialFunction gradWrtY = f().neg(i_v.get(0));
-        List<DifferentialFunction> ret = new ArrayList<>();
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable gradWrtX = i_v.get(0);
+        SDVariable gradWrtY = f().neg(i_v.get(0));
+        List<SDVariable> ret = new ArrayList<>();
         ret.add(gradWrtX);
         ret.add(gradWrtY);
         return ret;

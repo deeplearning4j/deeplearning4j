@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -27,12 +27,12 @@ public class AtrousConv2D extends Conv2D {
 
     @Builder(builderMethodName = "atrousBuilder")
     public AtrousConv2D(SameDiff sameDiff,
-                        DifferentialFunction[] inputFunctions,
+                        SDVariable[] inputFunctions,
                         INDArray[] inputArrays, INDArray[] outputs,
                         Conv2DConfig conv2DConfig) {
         super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
         this.sameDiff = sameDiff;
-        sameDiff.associateFunctionsAsArgs(inputFunctions, this);
+        sameDiff.addArgsFor(inputFunctions, this);
 
         this.conv2DConfig = conv2DConfig;
         addArgs();

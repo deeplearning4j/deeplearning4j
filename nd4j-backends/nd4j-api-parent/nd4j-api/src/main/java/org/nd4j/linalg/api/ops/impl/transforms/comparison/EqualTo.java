@@ -19,11 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,60 +33,17 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class EqualTo extends BaseTransformOp {
-
-
-
-    public EqualTo(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
-    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
-    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
-
-    public EqualTo(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
+public class EqualTo extends BaseDynamicTransformOp {
     public EqualTo() {}
 
-    public EqualTo(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public EqualTo( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public EqualTo(INDArray x) {
-        super(x);
+    public EqualTo( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
 
-    public EqualTo(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public EqualTo(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    @Override
-    public int opNum() {
-        return 3;
-    }
 
     @Override
     public String opName() {
@@ -96,7 +52,7 @@ public class EqualTo extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        return "Equal";
     }
 
     @Override
@@ -107,8 +63,8 @@ public class EqualTo extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        return Arrays.<DifferentialFunction>asList(f().val(getResult()));
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(outputVariables()[0]);
     }
 
 }

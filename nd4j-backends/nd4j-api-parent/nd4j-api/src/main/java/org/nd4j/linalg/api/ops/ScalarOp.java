@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
-
 /**
  * Applies a scalar
  * along a bigger input array.
@@ -34,10 +32,6 @@ public interface ScalarOp extends BroadcastOp {
      */
     Number scalar();
 
-    /**The complex scalar
-     *@return
-     */
-    IComplexNumber complexScalar();
 
     void setScalar(Number scalar);
 }

@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -33,8 +33,8 @@ import java.util.List;
  */
 public class Broadcast extends DynamicCustomOp {
 
-    public Broadcast(SameDiff sameDiff,DifferentialFunction iX, int[] shape) {
-        super(null,sameDiff,new DifferentialFunction[]{iX});
+    public Broadcast(SameDiff sameDiff,SDVariable iX, int[] shape) {
+        super(null,sameDiff,new SDVariable[]{iX});
     }
 
 
@@ -54,14 +54,9 @@ public class Broadcast extends DynamicCustomOp {
     }
 
 
-    @Override
-    public int[] getResultShape() {
-        return sameDiff.getShapeForVertexId(vertexId);
-    }
-
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException();
     }
 

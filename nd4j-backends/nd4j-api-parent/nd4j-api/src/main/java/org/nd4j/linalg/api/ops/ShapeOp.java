@@ -2,7 +2,7 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -29,24 +29,24 @@ public abstract class ShapeOp extends BaseOp {
 
 
 
-    public ShapeOp(SameDiff sameDiff,DifferentialFunction i_v,boolean inPlace) {
-        this(sameDiff,i_v,i_v.getResultShape(),inPlace,null);
+    public ShapeOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        this(sameDiff,i_v,i_v.getShape(),inPlace,null);
     }
 
     public ShapeOp(SameDiff sameDiff,
-                   DifferentialFunction i_v,
+                   SDVariable i_v,
                    int[] shape,
                    boolean inPlace,
                    Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
 
         if (i_v != null) {
-            f().validateFunctionReference(i_v);
             f().validateDifferentialFunctionsameDiff(i_v);
-            addAsNewVertexId();
+            val vertexId = outputVariables()[0].getVertexId();
             sameDiff.putShapeForVertexId(vertexId,shape);
-            sameDiff.associateFunctionsAsArgs(new DifferentialFunction[] {sameDiff.setupFunction(i_v)},this);
-            f().addFunctionEdges(this);
+            sameDiff.addArgsFor(new SDVariable[] {i_v},this);
+            sameDiff.addOutgoingFor(new int[]{vertexId},this);
+
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -69,6 +69,7 @@ public abstract class ShapeOp extends BaseOp {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
+        val vertexId = outputVariables()[0].getVertexId();
         ret.add(sameDiff.getShapeForVertexId(vertexId));
         return ret;
     }
@@ -77,6 +78,7 @@ public abstract class ShapeOp extends BaseOp {
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         val shapeOutput = calculateOutputShape();
+        val vertexId = outputVariables()[0].getVertexId();
         if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVertexId(vertexId))
             sameDiff.updateShapeForVertexId(vertexId,shapeOutput.get(0));
         else if(!shapeOutput.isEmpty())

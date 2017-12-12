@@ -9,7 +9,6 @@ import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
 import org.nd4j.autodiff.graph.api.Vertex;
-import org.nd4j.autodiff.graph.exception.NoEdgesException;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -36,10 +35,10 @@ import java.util.*;
 @Slf4j
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges = true;
-    private Map<int[],List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
+    private Map<int[],Set<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
     private Map<Integer,Vertex<V>> vertices;
     private boolean frozen = false;
-    private Map<int[],List<Edge<E>>> incomingEdges;
+    private Map<int[],Set<Edge<E>>> incomingEdges;
     private Graph<V,E> graphApply;
     @Getter
     private int nextVertexId;
@@ -63,10 +62,10 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
     public Graph(
             boolean allowMultipleEdges,
-            Map<int[], List<Edge<E>>> edges,
+            Map<int[], Set<Edge<E>>> edges,
             Map<Integer, Vertex<V>> vertices,
             boolean frozen,
-            Map<int[], List<Edge<E>>> incomingEdges) {
+            Map<int[], Set<Edge<E>>> incomingEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
         this.edges = edges;
         this.vertices = vertices;
@@ -209,10 +208,10 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         toFrom.put(edge.getTo(),edge.getFrom());
 
 
-        List<Edge<E>> fromList =  edges.get(edge.getFrom());
+        Set<Edge<E>> fromList =  edges.get(edge.getFrom());
 
         if(fromList == null) {
-            fromList = new ArrayList<>();
+            fromList = new LinkedHashSet<>();
             edges.put(edge.getFrom(),fromList);
         }
 
@@ -225,9 +224,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         lastEdgeAdded = edge;
 
-        List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
+        Set<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
         if(incomingList == null) {
-            incomingList = new ArrayList<>();
+            incomingList = new LinkedHashSet<>();
             incomingEdges.put(edge.getTo(),incomingList);
         }
 
@@ -238,9 +237,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
 
         //Add other way too (to allow easy lookup for undirected edges)
-        List<Edge<E>> toList = edges.get(edge.getTo());
+        Set<Edge<E>> toList = edges.get(edge.getTo());
         if(toList == null) {
-            toList = new ArrayList<>();
+            toList = new LinkedHashSet<>();
             edges.put(edge.getTo(),toList);
         }
 
@@ -266,12 +265,12 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
     @Override
-    public int getVertexInDegree(int[] vertex) {
+    public int getVertexInDegree(int vertex) {
         int ret = 0;
-        if(!incomingEdges.containsKey(vertex))
+        if(!incomingEdges.containsKey(new int[]{vertex}))
             return 0;
-        for(Edge<E> edge : incomingEdges.get(vertex)) {
-            if(Arrays.equals(edge.getTo(),vertex))
+        for(Edge<E> edge : incomingEdges.get(new int[]{vertex})) {
+            if(Arrays.equals(edge.getTo(),new int[]{vertex}))
                 ret++;
         }
 
@@ -280,20 +279,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
 
 
-    @Override
-    public Vertex<V> getRandomConnectedVertex(int[] vertex, Random rng) throws NoEdgesException {
-        if (ArrayUtil.anyLessThan(vertex , 0) || ArrayUtil.anyLargerThan(vertex, vertices.size()))
-            throw new IllegalArgumentException("Invalid vertex index: " + vertex);
-        if (edges.get(vertex) == null || edges.get(vertex).isEmpty())
-            throw new NoEdgesException("Cannot generate random connected vertex: vertex " + vertex
-                    + " has no outgoing/undirected edges");
-        int connectedVertexNum = rng.nextInt(edges.get(vertex).size());
-        Edge<E> edge = edges.get(vertex).get(connectedVertexNum);
-        if (Arrays.equals(edge.getFrom(),vertex))
-            return vertices.get(edge.getTo()); //directed or undirected, vertex -> x
-        else
-            return vertices.get(edge.getFrom()); //Undirected edge, x -> vertex
-    }
+
 
     @Override
     public List<Vertex<V>> getConnectedVertices(int[] vertex) {
@@ -315,9 +301,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             return new int[0];
 
         List<Integer> ret = new ArrayList<>();
-        List<Edge<E>> edgeList = edges.get(vertex);
-        for (int i = 0; i < edgeList.size(); i++) {
-            Edge<E> e = edges.get(vertex).get(i);
+        Set<Edge<E>> edgeList = edges.get(vertex);
+        for (Edge<E> e : edgeList) {
             int[] arr = (Arrays.equals(e.getFrom(),vertex) ? e.getTo() : e.getFrom());
             ret.addAll(Ints.asList(arr));
         }
@@ -325,7 +310,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         return Ints.toArray(ret);
     }
 
-    private void addEdgeHelper(Edge<E> edge, List<Edge<E>> list) {
+    private void addEdgeHelper(Edge<E> edge, Set<Edge<E>> list) {
         if (!allowMultipleEdges) {
             //Check to avoid multiple edges
             boolean duplicate = false;
@@ -347,11 +332,11 @@ public class Graph<V, E> extends BaseGraph<V, E> {
                 }
             }
 
-            if (!duplicate) {
+            if (!duplicate && !list.contains(edge)) {
                 list.add(edge);
             }
 
-        } else {
+        } else if(!list.contains(edge)){
             //allow multiple/duplicate edges
             list.add(edge);
         }

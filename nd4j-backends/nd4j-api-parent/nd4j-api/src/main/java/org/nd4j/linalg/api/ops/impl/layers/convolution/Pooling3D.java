@@ -2,7 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,7 +29,7 @@ public class Pooling3D extends DynamicCustomOp {
     public Pooling3D() {}
 
     @Builder(builderMethodName = "builder")
-    public Pooling3D(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,Pooling3DConfig pooling3DConfig) {
+    public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,Pooling3DConfig pooling3DConfig) {
         super(null,sameDiff, inputs, inPlace);
         this.config = pooling3DConfig;
 
@@ -66,18 +66,18 @@ public class Pooling3D extends DynamicCustomOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
-        List<DifferentialFunction> inputs = new ArrayList<>();
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
+        List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         Pooling3DDerivative pooling3DDerivative = Pooling3DDerivative.derivativeBuilder()
                 .inPlace(inPlace)
                 .sameDiff(sameDiff)
-                .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .inputs(inputs.toArray(new SDVariable[inputs.size()]))
                 .pooling3DConfig(config)
                 .build();
-        ret.addAll(Arrays.asList(pooling3DDerivative.outputFunctions()));
+        ret.addAll(Arrays.asList(pooling3DDerivative.outputVariables()));
 
         return ret;
     }

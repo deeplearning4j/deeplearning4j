@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
@@ -215,10 +216,13 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
     }
 
 
-
+    @Override
+    public SDVariable[] outputVariables() {
+        return new SDVariable[0];
+    }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

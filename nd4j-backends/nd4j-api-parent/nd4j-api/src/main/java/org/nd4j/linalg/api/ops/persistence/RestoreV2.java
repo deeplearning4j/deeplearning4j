@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.ops.persistence;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -8,8 +7,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 public class RestoreV2 extends DynamicCustomOp {
@@ -86,12 +83,5 @@ public class RestoreV2 extends DynamicCustomOp {
     }
 
 
-
-
-    @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = this;
-        return Collections.singletonList(ret);
-    }
 
 }

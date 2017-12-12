@@ -90,7 +90,7 @@ public class GraphExecutionerTest {
 //        sameDiff.execAndEndResult();
 
         log.info("TOTAL: {}; Id: {}", total.getVarName(), total);
-        log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getVarName());
+        log.info("ID: {}",sameDiff.graph().getVertex(1).getValue().getVarName());
 
         INDArray[] resB = executionerB.executeGraph(sameDiff, configVarSpace);
 

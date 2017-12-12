@@ -17,7 +17,6 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Base implementation for importing a graph
@@ -35,11 +34,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
      * @param outputIds the output ids for the node
      *                  {based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}}
      * @param node the node to create the edge from
+     * @param toMap
      * @return
      */
     @Override
-    public EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node) {
-        EdgeId edgeId = new EdgeId(inputIds,outputIds, UUID.randomUUID().toString(),true);
+    public EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node, DifferentialFunction toMap) {
+        EdgeId edgeId = new EdgeId(inputIds,outputIds, toMap,true);
         return edgeId;
     }
 
@@ -134,7 +134,6 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
     public SameDiff importGraph(GRAPH_TYPE tfGraph) {
         SameDiff diff = SameDiff.create();
         ImportState<GRAPH_TYPE,TENSOR_TYPE> importState = new ImportState<>();
-        importState.setNodeCount(0);
         importState.setSameDiff(diff);
         importState.setGraph(tfGraph);
         val variablesForGraph = variablesForGraph(tfGraph);
@@ -151,14 +150,14 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                     if(var.getShape() != null)
                         importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),var.getShape());
                 }
-                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+                indexMap.put(entry.getKey(),var.getVertexId());
                 continue;
             }
 
             val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             if(arr != null) {
                 val var = importState.getSameDiff().var(entry.getKey(),arr);
-                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+                indexMap.put(entry.getKey(),var.getVertexId());
 
                 //ensure the array is made available for later processing
                 diff.associateArrayWithVariable(arr,var);
@@ -177,7 +176,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                         importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),originalShape);
 
                 }
-                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+                indexMap.put(entry.getKey(),var.getVertexId());
             }
             else {
                 val originalShape = getShapeFromTensor(entry.getValue());
@@ -192,7 +191,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                     importState.getSameDiff().setOriginalPlaceHolderShape(var.getVertexId(),originalShape);
                 }
 
-                indexMap.put(entry.getKey(),var.getVertexId()[0]);
+                indexMap.put(entry.getKey(),var.getVertexId());
             }
 
         }

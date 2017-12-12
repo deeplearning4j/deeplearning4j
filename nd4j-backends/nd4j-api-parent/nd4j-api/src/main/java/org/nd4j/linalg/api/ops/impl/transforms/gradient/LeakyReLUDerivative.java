@@ -20,7 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,27 +34,27 @@ import java.util.List;
 public class LeakyReLUDerivative extends BaseTransformOp {
     private double alpha = 0.01;
 
-    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, double alpha) {
+    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double alpha) {
         super(sameDiff, i_v1, i_v2);
         this.alpha = alpha;
     }
 
-    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, double alpha) {
+    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double alpha) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.alpha = alpha;
     }
 
-    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double alpha) {
+    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double alpha) {
         super(sameDiff, i_v, inPlace);
         this.alpha = alpha;
     }
 
-    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
+    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.alpha = alpha;
     }
 
-    public LeakyReLUDerivative(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double alpha) {
+    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, extraArgs);
         this.alpha = alpha;
     }
@@ -130,8 +130,8 @@ public class LeakyReLUDerivative extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().zero(getResultShape());
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().zero(outputVariables()[0].getShape());
 
         return Arrays.asList(ret);
     }

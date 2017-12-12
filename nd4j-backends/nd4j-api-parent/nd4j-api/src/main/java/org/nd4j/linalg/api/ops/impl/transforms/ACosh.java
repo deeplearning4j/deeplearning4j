@@ -19,7 +19,8 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,16 +54,16 @@ public class ACosh extends BaseTransformOp {
         super(indArray, indArray1, length);
     }
 
-    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+    public ACosh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
 
         super(sameDiff, i_v, inPlace);
     }
 
-    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public ACosh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
+    public ACosh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -88,10 +89,11 @@ public class ACosh extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = f().div(f().one(getResultShape()),
-                f().mul(f().sqrt(f().sub(arg(),f().one(getResultShape()))),f()
-                        .sqrt(f().add(arg(),f().one(getResultShape())))));
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        val shape = outputVariables()[0].getShape();
+        SDVariable ret = f().div(f().one(shape),
+                f().mul(f().sqrt(f().sub(arg(),f().one(shape))),f()
+                        .sqrt(f().add(arg(),f().one(shape)))));
 
         return Collections.singletonList(ret);
     }

@@ -28,7 +28,7 @@ public class MergeMax extends DynamicCustomOp {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>(1);
-        ret.add(arg().getResultShape());
+        ret.add(arg().getShape());
         return ret;
     }
 

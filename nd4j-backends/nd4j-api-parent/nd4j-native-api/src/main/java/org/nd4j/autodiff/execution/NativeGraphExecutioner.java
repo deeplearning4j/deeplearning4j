@@ -1,34 +1,28 @@
 package org.nd4j.autodiff.execution;
 
-import com.google.common.primitives.Ints;
-import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
-import org.nd4j.autodiff.opstate.OpExecAction;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.*;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
+import org.nd4j.graph.FlatArray;
+import org.nd4j.graph.FlatResult;
+import org.nd4j.graph.FlatVariable;
+import org.nd4j.graph.OpType;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author raver119@gmail.com
@@ -113,11 +107,11 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             } else {
                 int[] original = intermediate.get(var.id()).getOriginalOutput();
                 //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getVariableForVertex(original));
-                if (sd.variableMap().get(sd.getGraph().getVariableForVertex(original[0]).getVarName()) != null) {
-                    sd.associateArrayWithVariable(val,sd.variableMap().get(sd.getGraph().getVariableForVertex(original[0]).getVarName()));
+                if (sd.variableMap().get(sd.graph().getVariableForVertex(original[0]).getVarName()) != null) {
+                    sd.associateArrayWithVariable(val,sd.variableMap().get(sd.graph().getVariableForVertex(original[0]).getVarName()));
                 } else {
                     SDVariable variable = SDVariable.builder()
-                            .varName(sd.getGraph().getVariableForVertex(original[0]).getVarName())
+                            .varName(sd.graph().getVariableForVertex(original[0]).getVarName())
                             .shape(val.shape())
                             .sameDiff(sd)
                             .build();

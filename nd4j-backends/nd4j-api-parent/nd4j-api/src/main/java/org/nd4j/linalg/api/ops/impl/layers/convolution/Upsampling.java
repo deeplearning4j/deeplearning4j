@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,7 +25,7 @@ public class Upsampling extends DynamicCustomOp {
     protected int scaleFactor;
 
     @Builder(builderMethodName = "sameDiffBuilder")
-    public Upsampling(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace, int scaleFactor) {
+    public Upsampling(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace, int scaleFactor) {
         super(null,sameDiff, inputs, inPlace);
         this.scaleFactor = scaleFactor;
         if(inputArrays != null) {
@@ -60,16 +60,16 @@ public class Upsampling extends DynamicCustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
-        List<DifferentialFunction> inputs = new ArrayList<>();
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
+        List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         UpsamplingDerivative conv2DDerivative = UpsamplingDerivative.derivativeBuilder()
                 .scaleFactor(scaleFactor)
-                .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .inputs(inputs.toArray(new SDVariable[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.outputFunctions()));
+        ret.addAll(Arrays.asList(conv2DDerivative.outputVariables()));
         return ret;
     }
 

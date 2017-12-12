@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -28,7 +28,7 @@ public class DeConv2D extends DynamicCustomOp {
 
 
     @Builder(builderMethodName = "builder")
-    public DeConv2D(SameDiff sameDiff, DifferentialFunction[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace, DeConv2DConfig config) {
+    public DeConv2D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace, DeConv2DConfig config) {
         super(null,sameDiff, inputs, inPlace);
         this.config = config;
         if(inputArrays != null) {
@@ -76,17 +76,17 @@ public class DeConv2D extends DynamicCustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
-        List<DifferentialFunction> inputs = new ArrayList<>();
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
+        List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.addAll(f1);
         DeConv2DDerivative deConv2DDerivative = DeConv2DDerivative.derivativeBuilder()
                 .sameDiff(sameDiff)
                 .config(config)
-                .inputs(inputs.toArray(new DifferentialFunction[inputs.size()]))
+                .inputs(inputs.toArray(new SDVariable[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(deConv2DDerivative.outputFunctions()));
+        ret.addAll(Arrays.asList(deConv2DDerivative.outputVariables()));
         return ret;
     }
 

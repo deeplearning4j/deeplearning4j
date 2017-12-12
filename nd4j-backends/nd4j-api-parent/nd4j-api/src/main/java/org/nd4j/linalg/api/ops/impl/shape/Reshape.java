@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -47,8 +47,8 @@ public class Reshape extends DynamicCustomOp {
 
     private int[] shape;
 
-    public Reshape(SameDiff sameDiff, DifferentialFunction i_v,int[] shape) {
-        super(null,sameDiff, new DifferentialFunction[]{i_v});
+    public Reshape(SameDiff sameDiff, SDVariable i_v,int[] shape) {
+        super(null,sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
     }
 
@@ -120,7 +120,7 @@ public class Reshape extends DynamicCustomOp {
         super.initWithArrays(arrayMap);
         if(numIArguments() == 0) {
             if(args().length > 1) {
-                val arr = sameDiff.getArrForVertexId(args()[1].resultVertexId());
+                val arr = sameDiff.getArrForVertexId(args()[1].getVertexId());
                 if(arr == null) {
                     throw new ND4JIllegalStateException("Unable to infer shape for reshape. No array found for getting shape data from!");
                 }
@@ -174,9 +174,8 @@ public class Reshape extends DynamicCustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = this;
-
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = outputVariables()[0];
         return Collections.singletonList(ret);
     }
 

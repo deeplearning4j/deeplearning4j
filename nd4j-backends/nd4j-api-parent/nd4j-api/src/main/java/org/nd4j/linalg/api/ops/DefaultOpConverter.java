@@ -1,6 +1,6 @@
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.imports.NoOpNameFoundException;
 
 import java.util.List;
@@ -12,7 +12,7 @@ public class DefaultOpConverter extends BaseOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

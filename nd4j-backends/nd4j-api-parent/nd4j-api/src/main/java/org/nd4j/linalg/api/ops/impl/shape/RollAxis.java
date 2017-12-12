@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,12 +41,12 @@ public class RollAxis extends ShapeOp {
         this.axis = axis;
     }
 
-    public RollAxis(SameDiff sameDiff, DifferentialFunction i_v, int axis) {
+    public RollAxis(SameDiff sameDiff, SDVariable i_v, int axis) {
         super(sameDiff, i_v, false);
         this.axis = axis;
     }
 
-    public RollAxis(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, int axis) {
+    public RollAxis(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, int axis) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.axis = axis;
     }
@@ -123,8 +123,8 @@ public class RollAxis extends ShapeOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = this;
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = outputVariables()[0];
 
         return Collections.singletonList(ret);
     }

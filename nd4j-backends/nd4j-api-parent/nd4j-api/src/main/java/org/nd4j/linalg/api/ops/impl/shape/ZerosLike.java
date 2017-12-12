@@ -20,7 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -118,8 +118,8 @@ public class ZerosLike extends DynamicCustomOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        DifferentialFunction ret = this;
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = outputVariables()[0];
         return Collections.singletonList(ret);
     }
 

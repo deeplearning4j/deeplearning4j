@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,12 +41,12 @@ public class Variance extends BaseAccumulation {
     protected double mean, bias;
     protected boolean biasCorrected = true;
 
-    public Variance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions, boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean biasCorrected) {
         super(sameDiff, i_v, dimensions);
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(SameDiff sameDiff, DifferentialFunction i_v, DifferentialFunction i_v2, int[] dimensions, boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean biasCorrected) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.biasCorrected = biasCorrected;
     }
@@ -147,14 +147,13 @@ public class Variance extends BaseAccumulation {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        f().validateDifferentialFunctionsameDiff(i_v1);
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         int inputs = f().getInputLength(i_v1.get(0));
-        DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
-        DifferentialFunction ret = f().mul(g,f().mul(f().mul(f().one(getResultShape()),2),g));
+        SDVariable g =  f().doRepeat(outputVariables()[0],i_v1.get(0),dimensions);
+        SDVariable ret = f().mul(g,f().mul(f().mul(f().one(outputVariables()[0].getShape()),2),g));
         ret = f().mul(ret,arg());
         ret = f().sub(ret,f().mean(arg(),dimensions));
-        ret = f().div(ret,f().one(getResultShape()));
+        ret = f().div(ret,f().one(outputVariables()[0].getShape()));
         ret = f().mul(ret,inputs);
 
         return Collections.singletonList(ret);

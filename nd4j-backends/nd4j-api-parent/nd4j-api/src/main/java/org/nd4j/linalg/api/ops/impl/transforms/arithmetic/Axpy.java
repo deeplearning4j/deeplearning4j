@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,12 +36,12 @@ public class Axpy extends BaseTransformOp {
 
     private double p;
 
-    public Axpy(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, double p) {
+    public Axpy(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double p) {
         super(sameDiff, i_v1, i_v2);
         this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, boolean inPlace, double p) {
+    public Axpy(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double p) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.p = p;
     }
@@ -51,22 +51,22 @@ public class Axpy extends BaseTransformOp {
         this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, Object[] extraArgs, double p) {
+    public Axpy(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double p) {
         super(sameDiff, i_v1, i_v2, extraArgs);
         this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double p) {
+    public Axpy(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double p) {
         super(sameDiff, i_v, inPlace);
         this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
+    public Axpy(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double p) {
+    public Axpy(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double p) {
         super(sameDiff, i_v, extraArgs);
         this.p = p;
     }
@@ -127,7 +127,7 @@ public class Axpy extends BaseTransformOp {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

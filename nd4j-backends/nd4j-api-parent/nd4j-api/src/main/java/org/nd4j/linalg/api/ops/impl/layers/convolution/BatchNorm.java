@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -25,7 +25,7 @@ public class BatchNorm extends DynamicCustomOp {
     private boolean isMiniBatch;
 
     @Builder(builderMethodName = "builder")
-    public BatchNorm(SameDiff sameDiff, DifferentialFunction[] inputFunctions, INDArray[] inputArrays, INDArray[] outputArrays,boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
+    public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputArrays,boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
         super(null,sameDiff, inputFunctions, inPlace);
         this.training = training;
         this.isLockGammaBeta = isLockGammaBeta;
@@ -64,9 +64,9 @@ public class BatchNorm extends DynamicCustomOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
-        List<DifferentialFunction> inputs = new ArrayList<>();
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
+        List<SDVariable> inputs = new ArrayList<>();
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         BatchNormDerivative batchNormDerivative = BatchNormDerivative.derivativeBuilder()
@@ -74,7 +74,7 @@ public class BatchNorm extends DynamicCustomOp {
                 .isMiniBatch(isMiniBatch)
                 .training(training)
                 .build();
-        ret.addAll(Arrays.asList(batchNormDerivative.outputFunctions()));
+        ret.addAll(Arrays.asList(batchNormDerivative.outputVariables()));
         return ret;
     }
 

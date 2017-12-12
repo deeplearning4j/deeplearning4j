@@ -22,12 +22,10 @@ package org.nd4j.linalg.api.ops;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +40,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Getter
     @Setter
     protected Number num;
-    protected IComplexNumber complexNumber;
     public int[] opDimension;
 
 
@@ -51,8 +48,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
         this.num = num;
-        if (x instanceof IComplexNDArray)
-            complexNumber = Nd4j.createComplexNumber(num, 0);
 
         init(x, y, z, n);
     }
@@ -60,49 +55,37 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
         this.num = num;
-        if (x instanceof IComplexNDArray)
-            complexNumber = Nd4j.createComplexNumber(num, 0);
-
-        init(x, y, z, n);
-
-    }
-
-    public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
-        super(x, y, z, n);
-        this.complexNumber = num;
-        init(x, y, z, n);
-
-    }
-
-    public BaseScalarOp(INDArray x, IComplexNumber num) {
-        super(x);
-        this.complexNumber = num;
-        init(x, y, z, n);
+         init(x, y, z, n);
 
     }
 
 
-    public BaseScalarOp(SameDiff sameDiff,DifferentialFunction i_v,Number scalar) {
+
+
+
+    public BaseScalarOp(SameDiff sameDiff,SDVariable i_v,Number scalar) {
         this(sameDiff,i_v,scalar,false,null);
     }
 
-    public BaseScalarOp(SameDiff sameDiff,DifferentialFunction i_v,Number scalar,boolean inPlace) {
+    public BaseScalarOp(SameDiff sameDiff,SDVariable i_v,Number scalar,boolean inPlace) {
         this(sameDiff,i_v,scalar,inPlace,null);
     }
 
     public BaseScalarOp(SameDiff sameDiff,
-                           DifferentialFunction i_v,
+                           SDVariable i_v,
                            Number scalar,
                            boolean inPlace,
                            Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         this.scalarValue = scalar;
         if (i_v != null) {
-            f().validateFunctionReference(i_v);
+            val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",i_v.getShape(),i_v.depth() + 1);
+            sameDiff.addArgsFor(new SDVariable[] {i_v},this);
+            sameDiff.addOutgoingFor(new int[]{var.getVertexId()},this);
+            this.xVertexId = i_v.getVertexId();
+            this.zVertexId = var.getVertexId();
             f().validateDifferentialFunctionsameDiff(i_v);
-            addAsNewVertexId();
-            f().addFunctionEdges(this);
-            sameDiff.putShapeForVertexId(this.vertexId,sameDiff.setupFunction(i_v).getResultShape());
+            sameDiff.putShapeForVertexId(var.getVertexId(),sameDiff.setupFunction(i_v).getShape());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -111,7 +94,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
     public BaseScalarOp(SameDiff sameDiff,
-                           DifferentialFunction i_v,
+                           SDVariable i_v,
                            Number scalar,
                            Object[] extraArgs) {
         this(sameDiff,i_v,scalar,false,extraArgs);
@@ -119,9 +102,14 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
     @Override
+    public SDVariable[] outputVariables() {
+        return new SDVariable[] {sameDiff.getVariableForVertexId(sameDiff.graph().getToFor(new int[]{arg().getVertexId()})[0])};
+    }
+
+    @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>(1);
-        ret.add(arg().getResultShape());
+        ret.add(arg().getShape());
         return ret;
     }
 
@@ -135,25 +123,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         this.num = scalar;
     }
 
-    @Override
-    public int broadcastLength() {
-        return 1;
-    }
-
-    @Override
-    public int[] broadcastShape() {
-        return new int[] {1, 1};
-    }
-
-    @Override
+      @Override
     public Number scalar() {
         return num;
     }
 
-    @Override
-    public IComplexNumber complexScalar() {
-        return complexNumber;
-    }
 
     @Override
     public int[] getDimension() {

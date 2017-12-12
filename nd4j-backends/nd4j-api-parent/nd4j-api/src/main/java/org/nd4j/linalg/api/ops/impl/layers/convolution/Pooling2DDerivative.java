@@ -2,7 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
@@ -16,7 +16,7 @@ import java.util.List;
 @Slf4j
 public class Pooling2DDerivative extends Pooling2D {
     @Builder(builderMethodName = "derivativeBuilder")
-    public Pooling2DDerivative(SameDiff sameDiff, DifferentialFunction[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
+    public Pooling2DDerivative(SameDiff sameDiff, SDVariable[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
         super(sameDiff, inputs, arrayInputs, arrayOutputs, config);
     }
 
@@ -29,7 +29,7 @@ public class Pooling2DDerivative extends Pooling2D {
     }
 
    @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
        throw new UnsupportedOperationException("Unable to take derivative of derivative.");
     }
 

@@ -1,9 +1,7 @@
 package org.nd4j.autodiff.functions;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Ints;
 import lombok.Data;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -23,18 +21,18 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  *
  */
 @Data
-public class DifferentialFunctionFactory implements FunctionFactory  {
+public class DifferentialFunctionFactory   {
 
     protected SameDiff sameDiff;
     private static Map<String,Method> methodNames;
@@ -68,10 +66,10 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     }
 
 
-    @Override
-    public DifferentialFunction invoke(String name, Object[] args) {
+
+    public SDVariable invoke(String name, Object[] args) {
         try {
-            return (DifferentialFunction ) methodNames.get(name).invoke(this,args);
+            return (SDVariable ) methodNames.get(name).invoke(this,args);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -80,98 +78,98 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
 
-    @Override
+
     public Constant val(SDVariable iX) {
-        return sameDiff().setupFunction(new Constant(sameDiff(), iX,
-                iX.getShape(),new int[]{sameDiff().graph().nextVertexId()}));
+        return new Constant(sameDiff(), iX,
+                iX.getShape(),sameDiff().graph().nextVertexId());
     }
 
 
-    @Override
+
     public SDVariable var(String iName, SDVariable iX) {
-        return sameDiff().setupFunction(SDVariable.builder()
+        return SDVariable.builder()
                 .shape(iX.getShape())
                 .varName(iName)
                 .sameDiff(sameDiff())
-                .vertexId(new int[]{sameDiff().graph().nextVertexId()})
-                .build());
+                .vertexId(sameDiff().graph().nextVertexId())
+                .build().outputVariables()[0];
     }
 
-    @Override
+
     public SDVariable zero(int[] shape) {
-        return sameDiff().setupFunction(sameDiff.zero("one-" + UUID.randomUUID().toString(),shape));
+        return sameDiff.zero("one-" + UUID.randomUUID().toString(),shape).outputVariables()[0];
     }
 
-    @Override
+
     public SDVariable one(int[] shape) {
-        return sameDiff().setupFunction(sameDiff.one("one-" + UUID.randomUUID().toString(),shape));
-    }
-
-    @Override
-    public DifferentialFunction tile(DifferentialFunction iX, int[] repeat) {
-        return sameDiff().setupFunction(new Tile(sameDiff(),iX,repeat));
+        return sameDiff.one("one-" + UUID.randomUUID().toString(),shape).outputVariables()[0];
     }
 
 
-
-    @Override
-    public DifferentialFunction sum(DifferentialFunction i_x,
-                                    int... dimensions) {
-        return sameDiff().setupFunction(new Sum(sameDiff(),i_x,dimensions));
+    public SDVariable tile(SDVariable iX, int[] repeat) {
+        return new Tile(sameDiff(),iX,repeat).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction prod(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new Prod(sameDiff(),i_x,dimensions));
+
+
+
+    public SDVariable sum(SDVariable i_x,
+                          int... dimensions) {
+        return new Sum(sameDiff(),i_x,dimensions).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction mean(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new Mean(sameDiff(),i_x,dimensions));
+
+    public SDVariable prod(SDVariable i_x, int... dimensions) {
+        return new Prod(sameDiff(),i_x,dimensions).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction std(DifferentialFunction i_x,
-                                    boolean biasCorrected,
-                                    int... dimensions) {
-        return sameDiff().setupFunction(new StandardDeviation(sameDiff(),i_x,dimensions,biasCorrected));
+
+    public SDVariable mean(SDVariable i_x, int... dimensions) {
+        return new Mean(sameDiff(),i_x,dimensions).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction variance(DifferentialFunction i_x,
-                                         boolean biasCorrected,
-                                         int... dimensions) {
-        return sameDiff().setupFunction(new  Variance(sameDiff(),i_x,dimensions,biasCorrected));
 
+    public SDVariable std(SDVariable i_x,
+                          boolean biasCorrected,
+                          int... dimensions) {
+        return new StandardDeviation(sameDiff(),i_x,dimensions,biasCorrected).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction max(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new Max(sameDiff(),i_x,dimensions));
 
-    }
-
-    @Override
-    public DifferentialFunction min(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new Min(sameDiff(),i_x,dimensions));
+    public SDVariable variance(SDVariable i_x,
+                               boolean biasCorrected,
+                               int... dimensions) {
+        return new  Variance(sameDiff(),i_x,dimensions,biasCorrected).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction norm1(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new  Norm1(sameDiff(),i_x,dimensions));
+
+    public SDVariable max(SDVariable i_x, int... dimensions) {
+        return new Max(sameDiff(),i_x,dimensions).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction norm2(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new  Norm2(sameDiff(),i_x,dimensions));
+
+    public SDVariable min(SDVariable i_x, int... dimensions) {
+        return new Min(sameDiff(),i_x,dimensions).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction normmax(DifferentialFunction i_x, int... dimensions) {
-        return sameDiff().setupFunction(new NormMax(sameDiff(),i_x,dimensions));
+
+    public SDVariable norm1(SDVariable i_x, int... dimensions) {
+        return new  Norm1(sameDiff(),i_x,dimensions).outputVariables()[0];
+
+    }
+
+
+    public SDVariable norm2(SDVariable i_x, int... dimensions) {
+        return new  Norm2(sameDiff(),i_x,dimensions).outputVariables()[0];
+
+    }
+
+
+    public SDVariable normmax(SDVariable i_x, int... dimensions) {
+        return new NormMax(sameDiff(),i_x,dimensions).outputVariables()[0];
 
     }
 
@@ -184,14 +182,14 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      * @param axes
      * @return
      */
-    public DifferentialFunction doNormGrad(DifferentialFunction func,
-                                           DifferentialFunction input,
-                                           String type,
-                                           int... axes) {
+    public SDVariable doNormGrad(SDVariable func,
+                                 SDVariable input,
+                                 String type,
+                                 int... axes) {
 
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
-        DifferentialFunction result;
+        SDVariable result;
         if(Shape.isWholeArray(axes)) {
             result = input;
         }
@@ -209,271 +207,204 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         return result;
     }
 
-    @Override
-    public DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new GradientBackwardsMarker(sameDiff(),iX,iX));
-    }
 
-    @Override
-    public DifferentialFunction expandDims(DifferentialFunction iX,int axis) {
-        return sameDiff().setupFunction(new ExpandDims(sameDiff(),iX,axis));
+    public SDVariable gradientBackwardsMarker(SDVariable iX) {
+        return new GradientBackwardsMarker(sameDiff(),iX,sameDiff.scalar(iX.getVarName() + "-pairgrad" ,1.0)).outputVariables()[0];
     }
 
 
-
-    @Override
-    public DifferentialFunction abs(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Abs(sameDiff(),iX,null));
-    }
-
-
-    @Override
-    public DifferentialFunction neg(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Negative(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction cos(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new  Cos(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction sin(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Sin(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction tan(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Tan(sameDiff(),iX,null));
-
-    }
-
-    @Override
-    public DifferentialFunction permute(DifferentialFunction iX, int... dimensions) {
-        return sameDiff().setupFunction(new Permute(sameDiff(),iX,dimensions));
-    }
-
-
-    @Override
-    public DifferentialFunction transpose(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Transpose(sameDiff(),iX));
-    }
-
-    @Override
-    public DifferentialFunction acos(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new  ACos(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction asin(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new ASin(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction atan(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new ATan(sameDiff(),iX,null));
-
-    }
-
-    @Override
-    public DifferentialFunction cosh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Cosh(sameDiff(),iX,null));
-
-    }
-
-    @Override
-    public DifferentialFunction sinh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Sinh(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction tanh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Tanh(sameDiff(),iX,null));
-    }
-
-
-    @Override
-    public DifferentialFunction tanhDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
-        return sameDiff().setupFunction(new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(),iX,wrt));
-    }
-
-    @Override
-    public DifferentialFunction acosh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new ACosh(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction asinh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new  ASinh(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction atanh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new ATanh(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction exp(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Exp(sameDiff(),iX,null));
-    }
-
-    @Override
-    public DifferentialFunction log(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Log(sameDiff(),iX,null));
+    public SDVariable expandDims(SDVariable iX,int axis) {
+        return new ExpandDims(sameDiff(),iX,axis).outputVariables()[0];
     }
 
 
 
-    @Override
-    public DifferentialFunction or(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new Or(sameDiff(),iX,i_y));
+
+    public SDVariable abs(SDVariable iX) {
+        return new Abs(sameDiff(),iX,null).outputVariables()[0];
     }
 
 
-    @Override
-    public DifferentialFunction eq(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new EqualTo(sameDiff(),iX,i_y));
+
+    public SDVariable neg(SDVariable iX) {
+        return new Negative(sameDiff(),iX,null).outputVariables()[0];
     }
 
 
-    @Override
-    public DifferentialFunction neq(DifferentialFunction iX, double i_y) {
-        return sameDiff().setupFunction(new ScalarNotEquals(sameDiff(),iX,i_y));
-
-    }
-
-    @Override
-    public DifferentialFunction neqi(DifferentialFunction iX, double i_y) {
-        return sameDiff().setupFunction(new ScalarNotEquals(sameDiff(),iX,i_y,true));
-
+    public SDVariable cos(SDVariable iX) {
+        return new  Cos(sameDiff(),iX,null).outputVariables()[0];
     }
 
 
-    @Override
-    public DifferentialFunction neqi(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new NotEqualTo(sameDiff(),iX,i_y,true));
-
-    }
-    @Override
-    public DifferentialFunction neq(DifferentialFunction iX, DifferentialFunction i_y) {
-        return sameDiff().setupFunction(new NotEqualTo(sameDiff(),iX,i_y));
-
+    public SDVariable sin(SDVariable iX) {
+        return new Sin(sameDiff(),iX,null).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction pow(DifferentialFunction iX, double i_y) {
-        return sameDiff().setupFunction(new ScalarMultiplication(  sameDiff(),iX,i_y));
+
+    public SDVariable tan(SDVariable iX) {
+        return new Tan(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction sqrt(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Sqrt(sameDiff(),iX,null));
+
+    public SDVariable permute(SDVariable iX, int... dimensions) {
+        return new Permute(sameDiff(),iX,dimensions).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction square(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Pow(sameDiff(),iX,false,2.0));
+
+
+    public SDVariable transpose(SDVariable iX) {
+        return new Transpose(sameDiff(),iX).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction floor(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Floor(sameDiff(),iX,null));
+
+    public SDVariable acos(SDVariable iX) {
+        return new  ACos(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable asin(SDVariable iX) {
+        return new ASin(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable atan(SDVariable iX) {
+        return new ATan(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction relu(DifferentialFunction iX, double cutoff) {
-        return sameDiff().setupFunction(new RectifedLinear(sameDiff(),iX,false,cutoff));
+
+    public SDVariable cosh(SDVariable iX) {
+        return new Cosh(sameDiff(),iX,null).outputVariables()[0];
+
+    }
+
+
+    public SDVariable sinh(SDVariable iX) {
+        return new Sinh(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable tanh(SDVariable iX) {
+        return new Tanh(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+
+    public SDVariable tanhDerivative(SDVariable iX, SDVariable wrt) {
+        return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(),iX,wrt).outputVariables()[0];
+    }
+
+
+    public SDVariable acosh(SDVariable iX) {
+        return new ACosh(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable asinh(SDVariable iX) {
+        return new  ASinh(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable atanh(SDVariable iX) {
+        return new ATanh(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable exp(SDVariable iX) {
+        return new Exp(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable log(SDVariable iX) {
+        return new Log(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+
+
+    public SDVariable or(SDVariable iX, SDVariable i_y) {
+        return new Or(sameDiff(),iX,i_y).outputVariables()[0];
+    }
+
+
+
+    public SDVariable eq(SDVariable iX, SDVariable i_y) {
+        return new EqualTo(sameDiff(),new SDVariable[]{iX,i_y},false).outputVariables()[0];
+    }
+
+
+
+    public SDVariable neq(SDVariable iX, double i_y) {
+        return new ScalarNotEquals(sameDiff(),iX,i_y).outputVariables()[0];
+
+    }
+
+
+    public SDVariable neqi(SDVariable iX, double i_y) {
+        return new ScalarNotEquals(sameDiff(),iX,i_y,true).outputVariables()[0];
 
     }
 
 
 
-    @Override
-    public DifferentialFunction softmax(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new SoftMax(sameDiff(),iX,new Object[]{}));
+    public SDVariable neqi(SDVariable iX, SDVariable i_y) {
+        return new NotEqualTo(sameDiff(),new SDVariable[]{iX,i_y},true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction hardTanh(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new HardTanh(sameDiff(),iX,null));
+    public SDVariable neq(SDVariable iX, SDVariable i_y) {
+        return new NotEqualTo(sameDiff(),new SDVariable[]{iX,i_y},false).outputVariables()[0];
 
     }
 
 
+    public SDVariable pow(SDVariable iX, double i_y) {
+        return new ScalarMultiplication(  sameDiff(),iX,i_y).outputVariables()[0];
 
-    @Override
-    public DifferentialFunction hardTanhDerivative(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new HardTanhDerivative(sameDiff(),iX,null));
+    }
+
+
+    public SDVariable sqrt(SDVariable iX) {
+        return new Sqrt(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
+    public SDVariable square(SDVariable iX) {
+        return new Pow(sameDiff(),iX,false,2.0).outputVariables()[0];
+    }
+
+
+    public SDVariable floor(SDVariable iX) {
+        return new Floor(sameDiff(),iX,null).outputVariables()[0];
+
+    }
+
+
+    public SDVariable relu(SDVariable iX, double cutoff) {
+        return new RectifedLinear(sameDiff(),iX,false,cutoff).outputVariables()[0];
 
     }
 
 
 
 
-    @Override
-    public DifferentialFunction sigmoid(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Sigmoid(sameDiff(),iX,null));
-
-    }
-
-    @Override
-    public DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
-        return sameDiff().setupFunction(new SigmoidDerivative(sameDiff(),iX,wrt));
-    }
-
-    @Override
-    public DifferentialFunction logSigmoid(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new LogSigmoid(sameDiff(),iX,null));
-
-    }
-
-    @Override
-    public DifferentialFunction logSigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
-        return sameDiff().setupFunction(new LogSigmoidDerivative(sameDiff(),iX,wrt));
-    }
-
-    @Override
-    public DifferentialFunction swish(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Swish(sameDiff(),iX,null));
-
-    }
-
-    @Override
-    public DifferentialFunction swishDerivative(DifferentialFunction iX, DifferentialFunction wrt) {
-        return sameDiff().setupFunction(new SwishDerivative(sameDiff(),iX,wrt));
-    }
-
-
-    @Override
-    public DifferentialFunction sign(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new Sign(sameDiff(),iX,null));
+    public SDVariable softmax(SDVariable iX) {
+        return new SoftMax(sameDiff(),iX,new Object[]{}).outputVariables()[0];
 
     }
 
 
-    @Override
-    public DifferentialFunction broadcast(DifferentialFunction iX, int... shape) {
-        return sameDiff().setupFunction(new Broadcast(sameDiff(),iX,shape));
-    }
-
-    @Override
-    public DifferentialFunction repeat(DifferentialFunction iX, int axis) {
-        return sameDiff().setupFunction(new Repeat(sameDiff(),iX,axis));
+    public SDVariable hardTanh(SDVariable iX) {
+        return new HardTanh(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction softsign(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new SoftSign(sameDiff(),iX,null));
 
-    }
 
-    @Override
-    public DifferentialFunction softsignDerivative(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new SoftSignDerivative(sameDiff(),iX,null));
+
+    public SDVariable hardTanhDerivative(SDVariable iX) {
+        return new HardTanhDerivative(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
@@ -481,483 +412,550 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
 
-    @Override
-    public DifferentialFunction softplus(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new SoftPlus(sameDiff(),iX,null));
+    public SDVariable sigmoid(SDVariable iX) {
+        return new Sigmoid(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
 
-    @Override
-    public DifferentialFunction elu(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new ELU(sameDiff(),iX,null));
+    public SDVariable sigmoidDerivative(SDVariable iX, SDVariable wrt) {
+        return new SigmoidDerivative(sameDiff(),iX,wrt).outputVariables()[0];
+    }
+
+
+    public SDVariable logSigmoid(SDVariable iX) {
+        return new LogSigmoid(sameDiff(),iX,null).outputVariables()[0];
+
+    }
+
+
+    public SDVariable logSigmoidDerivative(SDVariable iX, SDVariable wrt) {
+        return new LogSigmoidDerivative(sameDiff(),iX,wrt).outputVariables()[0];
+    }
+
+
+    public SDVariable swish(SDVariable iX) {
+        return new Swish(sameDiff(),iX,null).outputVariables()[0];
+
+    }
+
+
+    public SDVariable swishDerivative(SDVariable iX, SDVariable wrt) {
+        return new SwishDerivative(sameDiff(),iX,wrt).outputVariables()[0];
+    }
+
+
+
+    public SDVariable sign(SDVariable iX) {
+        return new Sign(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
 
 
-    @Override
-    public DifferentialFunction eluDerivative(DifferentialFunction iX) {
-        return sameDiff().setupFunction(new ELUDerivative(sameDiff(),iX,null));
+    public SDVariable broadcast(SDVariable iX, int... shape) {
+        return new Broadcast(sameDiff(),iX,shape).outputVariables()[0];
+    }
+
+
+    public SDVariable repeat(SDVariable iX, int axis) {
+        return new Repeat(sameDiff(),iX,axis).outputVariables()[0];
+
+    }
+
+
+    public SDVariable softsign(SDVariable iX) {
+        return new SoftSign(sameDiff(),iX,null).outputVariables()[0];
+
+    }
+
+
+    public SDVariable softsignDerivative(SDVariable iX) {
+        return new SoftSignDerivative(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
 
 
 
-    @Override
-    public DifferentialFunction leakyRelu(DifferentialFunction iX, double cutoff) {
-        return sameDiff().setupFunction(new LeakyReLU(sameDiff(),iX,false,cutoff));
+
+
+    public SDVariable softplus(SDVariable iX) {
+        return new SoftPlus(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
 
 
-    @Override
-    public DifferentialFunction leakyReluDerivative(DifferentialFunction iX, DifferentialFunction iY, double cutoff) {
-        return sameDiff().setupFunction(new LeakyReLUDerivative(sameDiff(),iX,iY,cutoff));
+    public SDVariable elu(SDVariable iX) {
+        return new ELU(sameDiff(),iX,null).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction reshape(DifferentialFunction iX, int[] shape) {
-        return sameDiff().setupFunction(new Reshape(sameDiff(),iX,shape));
+
+
+
+    public SDVariable eluDerivative(SDVariable iX) {
+        return new ELUDerivative(sameDiff(),iX,null).outputVariables()[0];
+
     }
 
-    @Override
-    public DifferentialFunction rollAxis(SDVariable iX, int axis) {
-        return sameDiff().setupFunction(new RollAxis(sameDiff(),iX,axis));
+
+
+
+
+    public SDVariable leakyRelu(SDVariable iX, double cutoff) {
+        return new LeakyReLU(sameDiff(),iX,false,cutoff).outputVariables()[0];
+
     }
 
-    @Override
-    public DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        return sameDiff().setupFunction(new CosineSimilarity(sameDiff(),iX,i_y,dimensions));
+
+
+
+    public SDVariable leakyReluDerivative(SDVariable iX, SDVariable iY, double cutoff) {
+        return new LeakyReLUDerivative(sameDiff(),iX,iY,cutoff).outputVariables()[0];
+
     }
 
-    @Override
-    public DifferentialFunction euclideanDistance(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        return sameDiff().setupFunction(new EuclideanDistance(sameDiff(),iX,i_y,dimensions));
+
+    public SDVariable reshape(SDVariable iX, int[] shape) {
+        return new Reshape(sameDiff(),iX,shape).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction manhattanDistance(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        return sameDiff().setupFunction(new ManhattanDistance(sameDiff(),iX,i_y,dimensions));
+
+    public SDVariable rollAxis(SDVariable iX, int axis) {
+        return new RollAxis(sameDiff(),iX,axis).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lossBinaryXENT(DifferentialFunction iX,
-                                               DifferentialFunction i_y,
-                                               int... dimensions) {
+
+    public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
+        return new CosineSimilarity(sameDiff(),iX,i_y,dimensions).outputVariables()[0];
+    }
+
+
+    public SDVariable euclideanDistance(SDVariable iX, SDVariable i_y, int... dimensions) {
+        return new EuclideanDistance(sameDiff(),iX,i_y,dimensions).outputVariables()[0];
+    }
+
+
+    public SDVariable manhattanDistance(SDVariable iX, SDVariable i_y, int... dimensions) {
+        return new ManhattanDistance(sameDiff(),iX,i_y,dimensions).outputVariables()[0];
+    }
+
+
+    public SDVariable lossBinaryXENT(SDVariable iX,
+                                     SDVariable i_y,
+                                     int... dimensions) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public DifferentialFunction lossCosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
+
+    public SDVariable lossCosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public DifferentialFunction lossHinge(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
 
-    }
-
-    @Override
-    public DifferentialFunction lossKLD(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossL1(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossL2(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossMAE(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossMAPE(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossMSE(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossMCXENT(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossMSLE(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossNegativeLogLikelihood(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossPoisson(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public DifferentialFunction lossSquaredHinge(DifferentialFunction iX, DifferentialFunction i_y, int... dimensions) {
+    public SDVariable lossHinge(SDVariable iX, SDVariable i_y, int... dimensions) {
         throw new UnsupportedOperationException();
 
     }
 
 
-    @Override
-    public DifferentialFunction mmul(DifferentialFunction x,
-                                     DifferentialFunction y,
-                                     MMulTranspose mMulTranspose) {
+    public SDVariable lossKLD(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossL1(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossL2(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossMAE(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossMAPE(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossMSE(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossMCXENT(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossMSLE(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossNegativeLogLikelihood(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossPoisson(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    public SDVariable lossSquaredHinge(SDVariable iX, SDVariable i_y, int... dimensions) {
+        throw new UnsupportedOperationException();
+
+    }
+
+
+
+    public SDVariable mmul(SDVariable x,
+                           SDVariable y,
+                           MMulTranspose mMulTranspose) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
-        return sameDiff().setupFunction(new Mmul(sameDiff(),x,y,mMulTranspose));
+        return new Mmul(sameDiff(),x,y,mMulTranspose).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction mmul(DifferentialFunction x,
-                                     DifferentialFunction y) {
+
+    public SDVariable mmul(SDVariable x,
+                           SDVariable y) {
         return mmul(x,y,MMulTranspose.allFalse());
     }
 
-    @Override
-    public DifferentialFunction tensorMmul(DifferentialFunction x,
-                                           DifferentialFunction y,
-                                           int[][] dimensions) {
+
+    public SDVariable tensorMmul(SDVariable x,
+                                 SDVariable y,
+                                 int[][] dimensions) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
-        return sameDiff().setupFunction(new TensorMmul(sameDiff(),x,y,dimensions));
+        return new TensorMmul(sameDiff(),x,y,dimensions).outputVariables()[0];
     }
 
 
-    @Override
-    public DifferentialFunction softmaxDerivative(DifferentialFunction functionInput, DifferentialFunction wrt) {
+
+    public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new SoftMaxDerivative(sameDiff(),functionInput,wrt));
+        return new SoftMaxDerivative(sameDiff(),functionInput,wrt).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction logSoftmax(DifferentialFunction i_v) {
+
+    public SDVariable logSoftmax(SDVariable i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return sameDiff().setupFunction(new LogSoftMax(sameDiff(),i_v,null));
+        return new LogSoftMax(sameDiff(),i_v,null).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction logSoftmaxDerivative(DifferentialFunction arg, DifferentialFunction wrt) {
+
+    public SDVariable logSoftmaxDerivative(SDVariable arg, SDVariable wrt) {
         validateDifferentialFunctionsameDiff(arg);
-        return sameDiff().setupFunction(new SoftMaxDerivative(sameDiff(),arg,wrt));
+        return new SoftMaxDerivative(sameDiff(),arg,wrt).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction selu(DifferentialFunction arg) {
+
+    public SDVariable selu(SDVariable arg) {
         validateDifferentialFunctionsameDiff(arg);
-        return sameDiff().setupFunction(new SELU(sameDiff(),arg,null));
+        return new SELU(sameDiff(),arg,null).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction seluDerivative(DifferentialFunction arg) {
+
+    public SDVariable seluDerivative(SDVariable arg) {
         validateDifferentialFunctionsameDiff(arg);
-        return sameDiff().setupFunction(new SELUDerivative(sameDiff(),arg,null));
+        return new SELUDerivative(sameDiff(),arg,null).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction rsub(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable rsub(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RSubOp(sameDiff(),differentialFunction,i_v));
+        return new RSubOp(sameDiff(),differentialFunction,i_v).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction rdiv(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable rdiv(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RDivOp(sameDiff(),differentialFunction,i_v));
+        return new RDivOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction rdivi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable rdivi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RDivOp(sameDiff(),differentialFunction,i_v));
+        return new RDivOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction rsubi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable rsubi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new RSubOp(sameDiff(),differentialFunction,i_v));
+        return new RSubOp(sameDiff(),differentialFunction,i_v).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction add(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable add(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new AddOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},false));
+        return new AddOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction addi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable addi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new AddOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},true));
+        return new AddOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction sub(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable sub(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new SubOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},false));
+        return new SubOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction subi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable subi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new SubOp(sameDiff(),new DifferentialFunction[]{differentialFunction,i_v},true));
+        return new SubOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction mul(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable mul(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new MulOp(sameDiff(),differentialFunction,i_v));
+        return new MulOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction muli(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable muli(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new MulOp(sameDiff(),differentialFunction,i_v,true));
+        return new MulOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction div(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable div(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new DivOp(sameDiff(),differentialFunction,i_v));
+        return new DivOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction divi(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
+
+    public SDVariable divi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new DivOp(sameDiff(),differentialFunction,i_v,true));
+        return new DivOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction rsub(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable rsub(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarReverseSubtraction(sameDiff(),differentialFunction,i_v));
+        return new ScalarReverseSubtraction(sameDiff(),differentialFunction,i_v).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction rdiv(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable rdiv(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarReverseDivision(sameDiff(),differentialFunction,i_v));
+        return new ScalarReverseDivision(sameDiff(),differentialFunction,i_v).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction rdivi(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable rdivi(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarReverseDivision(sameDiff(),differentialFunction,i_v,true));
+        return new ScalarReverseDivision(sameDiff(),differentialFunction,i_v,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction rsubi(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable rsubi(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarReverseSubtraction(sameDiff(),differentialFunction,i_v,true));
+        return new ScalarReverseSubtraction(sameDiff(),differentialFunction,i_v,true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction add(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable add(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarAdd(sameDiff(),differentialFunction,i_v,false));
+        return new ScalarAdd(sameDiff(),differentialFunction,i_v,false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction addi(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable addi(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarAdd(sameDiff(),differentialFunction,i_v,true));
+        return new ScalarAdd(sameDiff(),differentialFunction,i_v,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction sub(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable sub(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarSubtraction(sameDiff(),differentialFunction,i_v));
+        return new ScalarSubtraction(sameDiff(),differentialFunction,i_v).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction subi(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable subi(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarSubtraction(sameDiff(),differentialFunction,i_v,true));
+        return new ScalarSubtraction(sameDiff(),differentialFunction,i_v,true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction mul(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable mul(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarMultiplication(sameDiff(),differentialFunction,i_v));
+        return new ScalarMultiplication(sameDiff(),differentialFunction,i_v).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction muli(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable muli(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarMultiplication(sameDiff(),differentialFunction,i_v,true));
+        return new ScalarMultiplication(sameDiff(),differentialFunction,i_v,true).outputVariables()[0];
 
     }
 
-    @Override
-    public DifferentialFunction div(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable div(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarDivision(sameDiff(),differentialFunction,i_v));
+        return new ScalarDivision(sameDiff(),differentialFunction,i_v).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction divi(DifferentialFunction differentialFunction, double i_v) {
+
+    public SDVariable divi(SDVariable differentialFunction, double i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new ScalarDivision(sameDiff(),differentialFunction,i_v,true));
+        return new ScalarDivision(sameDiff(),differentialFunction,i_v,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gt(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable gt(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new GreaterThan(sameDiff(),functionInput,functionInput1,false));
+        return new GreaterThan(sameDiff(),new SDVariable[]{functionInput,functionInput1},false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lt(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable lt(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new LessThan(sameDiff(),functionInput,functionInput1,false));
+        return new LessThan(sameDiff(),new SDVariable[]{functionInput,functionInput1},false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gti(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable gti(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new GreaterThan(sameDiff(),functionInput,functionInput1,true));
+        return new GreaterThan(sameDiff(),new SDVariable[]{functionInput,functionInput1},true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lti(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable lti(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new LessThan(sameDiff(),functionInput,functionInput1,true));
+        return new LessThan(sameDiff(),new SDVariable[]{functionInput,functionInput1},true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gte(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable gte(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new GreaterThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+        return new GreaterThanOrEqual(sameDiff(),new SDVariable[]{functionInput,functionInput1},false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lte(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable lte(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new LessThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+        return new LessThanOrEqual(sameDiff(),new SDVariable[]{functionInput,functionInput1},false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gtei(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable gtei(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new GreaterThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+        return new GreaterThanOrEqual(sameDiff(),new SDVariable[]{functionInput,functionInput1},true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction ltOrEqi(DifferentialFunction functionInput, DifferentialFunction functionInput1) {
+
+    public SDVariable ltOrEqi(SDVariable functionInput, SDVariable functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
         validateDifferentialFunctionsameDiff(functionInput1);
-        return sameDiff().setupFunction(new LessThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+        return new LessThanOrEqual(sameDiff(),new SDVariable[]{functionInput,functionInput1},true).outputVariables()[0];
     }
 
 
 
-    @Override
-    public DifferentialFunction gt(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable gt(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarGreaterThan(sameDiff(),functionInput,functionInput1,false));
+        return new ScalarGreaterThan(sameDiff(),functionInput,functionInput1,false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lt(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable lt(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarLessThan(sameDiff(),functionInput,functionInput1,false));
+        return new ScalarLessThan(sameDiff(),functionInput,functionInput1,false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gti(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable gti(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarGreaterThan(sameDiff(),functionInput,functionInput1,true));
+        return new ScalarGreaterThan(sameDiff(),functionInput,functionInput1,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lti(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable lti(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarLessThan(sameDiff(),functionInput,functionInput1,true));
+        return new ScalarLessThan(sameDiff(),functionInput,functionInput1,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gte(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable gte(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarGreaterThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+        return new ScalarGreaterThanOrEqual(sameDiff(),functionInput,functionInput1,false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction lte(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable lte(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarLessThanOrEqual(sameDiff(),functionInput,functionInput1,false));
+        return new ScalarLessThanOrEqual(sameDiff(),functionInput,functionInput1,false).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction gtei(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable gtei(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarGreaterThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+        return new ScalarGreaterThanOrEqual(sameDiff(),functionInput,functionInput1,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction ltei(DifferentialFunction functionInput, double functionInput1) {
+
+    public SDVariable ltei(SDVariable functionInput, double functionInput1) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return sameDiff().setupFunction(new ScalarLessThanOrEqual(sameDiff(),functionInput,functionInput1,true));
+        return new ScalarLessThanOrEqual(sameDiff(),functionInput,functionInput1,true).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction eq(DifferentialFunction iX, double i_y) {
-        return sameDiff().setupFunction(new ScalarEquals(sameDiff(),iX,i_y));
+
+    public SDVariable eq(SDVariable iX, double i_y) {
+        return new ScalarEquals(sameDiff(),iX,i_y).outputVariables()[0];
     }
 
-    @Override
-    public DifferentialFunction eqi(DifferentialFunction iX, double i_y) {
-        return sameDiff().setupFunction(new ScalarEquals(sameDiff(),iX,i_y,true));
+
+    public SDVariable eqi(SDVariable iX, double i_y) {
+        return new ScalarEquals(sameDiff(),iX,i_y,true).outputVariables()[0];
     }
 
 
@@ -966,116 +964,19 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      * @param func
      * @return
      */
-    public int getInputLength(DifferentialFunction func) {
+    public int getInputLength(SDVariable func) {
         validateDifferentialFunctionsameDiff(func);
-        int[] inputShape = func.arg().getResultShape();
+        int[] inputShape = func.arg().getShape();
         return ArrayUtil.prod(inputShape);
     }
 
 
-    /**
-     * Adds function edges to the same diff graph
-     * based on inputs and the current target op.
-     * Note that the op *must* have a vertex id defined.
-     * If not, an {@link ND4JIllegalStateException}
-     * is thrown
-     * @param op the operation to add edges to
-     */
-    public void addFunctionEdges(DifferentialFunction op) {
-        DifferentialFunction[] inputs = op.args();
-        for (DifferentialFunction input : inputs) {
-            validateFunctionReference(input);
-            validateDifferentialFunctionGraph(input);
-        }
 
-        if(op.vertexId == null) {
-            throw new ND4JIllegalStateException("Op must have a vertex id defined!");
-        }
-
-
-        /**
-         * Note here that we need to ensure the vertex is properly added.
-         * The output variable creation can create skipped vertices.
-         */
-        if(sameDiff.graph().getVertex(op.vertexId[0]) == null) {
-            SDVariable var = sameDiff.var(op.opName() + "-" + UUID.randomUUID().toString(),op.getResultShape(),new ZeroInitScheme('f'),op.vertexId,0);
-            NDArrayVertex ndArrayVertex = new NDArrayVertex(sameDiff,op.vertexId[0],0,var);
-            sameDiff.graph().addVertex(ndArrayVertex);
-        }
-
-        String opName = op.opName();
-
-        List<int[]> outputShapes = op.calculateOutputShape();
-        int[] outputVertexIds = new int[outputShapes.size()];
-        List<Integer> inputIdsList = new ArrayList<>();
-        for (int i = 0; i < inputs.length; i++) {
-            DifferentialFunction differentialFunction = inputs[i];
-            if(differentialFunction instanceof SDVariable || differentialFunction.outputs().size() == 1 && differentialFunction.outputs().get(0) == differentialFunction) {
-                inputIdsList.addAll(Ints.asList(differentialFunction.vertexId));
-            }
-            else {
-                List<DifferentialFunction> outputs = differentialFunction.outputs();
-                for (DifferentialFunction output : outputs) {
-                    if(output == differentialFunction)
-                        continue;
-                    for (int vertexId : output.getOutputVertexIds()) {
-                        if (!inputIdsList.contains(vertexId))
-                            inputIdsList.add(vertexId);
-                    }
-                }
-            }
-
-
-        }
-
-
-        /**
-         * Need to do something about in place operations.
-         * Due to how variables are handled, we need to make sure array references are updated properly.
-         *
-         */
-        DifferentialFunction[] outputFunctions = new DifferentialFunction[outputShapes.size()];
-        SDVariable[] resultInfo = new SDVariable[outputShapes.size()];
-        if(outputShapes.size() > 1) {
-            throw new ND4JIllegalStateException("Automatically generating edges assumes *only* 1 output for now. Consider using DynamicCustomOp for multi output");
-        }
-        for (int i = 0; i < outputShapes.size(); i++) {
-            SDVariable variable = sameDiff.var(sameDiff.generateVariableName(opName, false,op.args()),outputShapes.get(i),new ZeroInitScheme('f'),op.getVertexId(),op.depth());
-            outputVertexIds[i] = variable.getVertexId()[0];
-            resultInfo[i] = variable;
-            outputFunctions[i] = variable;
-
-        }
-
-
-        int[] inputIds = Ints.toArray(inputIdsList);
-
-        String[] vertexIds = sameDiff.generateVertexIds(Ints.concat(inputIds, outputVertexIds));
-
-
-        /**
-         * Create 1 opstate with all of the vertex ids
-         * with all inputs and outputs representing the edge.
-         */
-        sameDiff.graph().addEdge(
-                inputIds,
-                outputVertexIds,
-                opName + "(" + vertexIds + ")", true);
-
-
-
-    }
-
-    public void validateDifferentialFunctionsameDiff(
-            List<DifferentialFunction> function) {
-        for(DifferentialFunction differentialFunction : function)
-            validateDifferentialFunctionsameDiff(differentialFunction);
-    }
 
 
 
     public void validateDifferentialFunctionsameDiff(
-            DifferentialFunction function) {
+            SDVariable function) {
 
         Preconditions.checkState(function != null,"Passed in function was null.");
         Preconditions.checkState(function.getSameDiff() == sameDiff);
@@ -1096,33 +997,15 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
 
 
-    public void validateDifferentialFunctionGraph(DifferentialFunction function) {
+    public void validateDifferentialFunctionGraph(SDVariable function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
 
     }
 
 
 
-    public void validateFunctionReference(List<DifferentialFunction> reference) {
-        for(int i = 0; i < reference.size(); i++) {
-            validateFunctionReference(reference.get(i));
-        }
-
-    }
 
 
-    public void validateFunctionReference(DifferentialFunction reference) {
-        if(reference instanceof SDVariable)
-            return;
-
-        if(sameDiff.getFunctionForVertexId(reference.getVertexId()) != null) {
-            DifferentialFunction get = sameDiff.getFunctionForVertexId(reference.getVertexId());
-            Preconditions.checkState(reference.equals(get), "Found invalid reference " + reference + " for vertex id "
-                    + reference.getVertexId());
-        }
-
-
-    }
 
     /**
      *
@@ -1131,16 +1014,16 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      * @param axes
      * @return
      */
-    public DifferentialFunction doGradChoose(DifferentialFunction func,
-                                             DifferentialFunction input,
-                                             int...axes) {
+    public SDVariable doGradChoose(SDVariable func,
+                                   SDVariable input,
+                                   int...axes) {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
 
-        DifferentialFunction repeatedGrad = doRepeat(func,input,axes);
-        DifferentialFunction resultRepeated = doRepeat(func.args()[0],input,axes);
-        DifferentialFunction argMaxLocations = eq(input,resultRepeated);
-        return div(mul(argMaxLocations,repeatedGrad),sum(argMaxLocations,axes));
+        SDVariable repeatedGrad = doRepeat(func,input,axes);
+        SDVariable resultRepeated = doRepeat(func.args()[0],input,axes);
+        SDVariable argMaxLocations = eq(input,resultRepeated);
+        return div(mul(argMaxLocations,repeatedGrad),sum(argMaxLocations,axes).outputVariables()[0]);
 
 
     }
@@ -1153,10 +1036,10 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
      * @param axes
      * @return
      */
-    public  DifferentialFunction doRepeat(DifferentialFunction func,
-                                          DifferentialFunction input,
-                                          int...axes) {
-        int[] inputShape = input.getResultShape();
+    public  SDVariable doRepeat(SDVariable func,
+                                SDVariable input,
+                                int...axes) {
+        int[] inputShape = input.getShape();
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
         return broadcast(func,inputShape);
@@ -1165,7 +1048,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
 
     }
 
-    @Override
+
     public String toString() {
         return "DifferentialFunctionFactory{" +
                 "methodNames=" + methodNames +

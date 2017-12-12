@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -40,17 +41,17 @@ public class MaxOut extends BaseTransformOp {
     private IComplexNumber maxComplex = Nd4j.createComplexNumber(Double.NaN, Double.NaN);
     private Number max = Double.NaN;
 
-    public MaxOut(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, Number max) {
+    public MaxOut(SameDiff sameDiff, SDVariable i_v, boolean inPlace, Number max) {
         super(sameDiff, i_v, inPlace);
         this.max = max;
     }
 
-    public MaxOut(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, Number max) {
+    public MaxOut(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, Number max) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.max = max;
     }
 
-    public MaxOut(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, Number max) {
+    public MaxOut(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, Number max) {
         super(sameDiff, i_v, extraArgs);
         this.max = max;
     }
@@ -96,7 +97,7 @@ public class MaxOut extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 }

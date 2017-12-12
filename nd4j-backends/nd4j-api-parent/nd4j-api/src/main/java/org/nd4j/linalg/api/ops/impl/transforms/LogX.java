@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,17 +36,17 @@ import java.util.List;
 public class LogX extends BaseTransformOp {
     private double base;
 
-    public LogX(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double base) {
+    public LogX(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double base) {
         super(sameDiff, i_v, inPlace);
         this.base = base;
     }
 
-    public LogX(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, boolean inPlace, Object[] extraArgs, double base) {
+    public LogX(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double base) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.base = base;
     }
 
-    public LogX(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, double base) {
+    public LogX(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double base) {
         super(sameDiff, i_v, extraArgs);
         this.base = base;
     }
@@ -87,7 +88,7 @@ public class LogX extends BaseTransformOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
 

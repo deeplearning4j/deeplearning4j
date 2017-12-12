@@ -12,10 +12,9 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
@@ -37,27 +36,20 @@ public class ScalarRemainder extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarRemainder(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
-        super(x, y, z, n, num);
-    }
 
-    public ScalarRemainder(INDArray x, IComplexNumber num) {
-        super(x, num);
-    }
-
-    public ScalarRemainder(SameDiff sameDiff, DifferentialFunction i_v, Number scalar) {
+    public ScalarRemainder(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
     }
 
-    public ScalarRemainder(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace) {
+    public ScalarRemainder(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
-    public ScalarRemainder(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+    public ScalarRemainder(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, scalar, inPlace, extraArgs);
     }
 
-    public ScalarRemainder(SameDiff sameDiff, DifferentialFunction i_v, Number scalar, Object[] extraArgs) {
+    public ScalarRemainder(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
         super(sameDiff, i_v, scalar, extraArgs);
     }
 
@@ -83,7 +75,7 @@ public class ScalarRemainder extends BaseScalarOp {
     }
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         throw new UnsupportedOperationException();
     }
 }

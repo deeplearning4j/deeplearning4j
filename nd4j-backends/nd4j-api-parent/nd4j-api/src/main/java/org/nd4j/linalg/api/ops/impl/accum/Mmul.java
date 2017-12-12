@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,8 +43,8 @@ public class Mmul extends TensorMmul {
      * @param mMulTranspose
      */
     public Mmul(SameDiff sameDiff,
-                DifferentialFunction i_v1,
-                DifferentialFunction i_v2,
+                SDVariable i_v1,
+                SDVariable i_v2,
                 MMulTranspose mMulTranspose) {
         super(sameDiff,
                 i_v1,
@@ -63,8 +63,8 @@ public class Mmul extends TensorMmul {
      * @param i_v2
      */
     public Mmul(SameDiff sameDiff,
-                DifferentialFunction i_v1,
-                DifferentialFunction i_v2) {
+                SDVariable i_v1,
+                SDVariable i_v2) {
         this(sameDiff,i_v1,i_v2,MMulTranspose.allFalse());
     }
 
@@ -114,25 +114,23 @@ public class Mmul extends TensorMmul {
 
 
     @Override
-    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
-        List<DifferentialFunction> ret = new ArrayList<>();
-        DifferentialFunction setup = sameDiff.setupFunction(i_v1.get(0));
-        DifferentialFunction gradWrtX = sameDiff.setupFunction(f().reshape(f().mmul(setup,rarg(),
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        List<SDVariable> ret = new ArrayList<>();
+        SDVariable setup = sameDiff.setupFunction(i_v1.get(0));
+        SDVariable gradWrtX = sameDiff.setupFunction(f().reshape(f().mmul(setup,rarg(),
                 MMulTranspose.builder()
                         .transposeB(!mMulTranspose.isTransposeB())
                         .transposeResult(mMulTranspose.isTransposeA())
-                        .build()),larg().getResultShape()));
+                        .build()),larg().getShape()));
 
-        DifferentialFunction gradWrtY = sameDiff.setupFunction(f().reshape(f().mmul(larg(),setup,
+        SDVariable gradWrtY = sameDiff.setupFunction(f().reshape(f().mmul(larg(),setup,
                 MMulTranspose.builder()
                         .transposeA(!mMulTranspose.isTransposeA())
                         .transposeResult(mMulTranspose.isTransposeB())
-                        .build()),rarg().getResultShape()));
+                        .build()),rarg().getShape()));
 
         ret.add(gradWrtX);
         ret.add(gradWrtY);
-        f().validateFunctionReference(larg());
-        f().validateFunctionReference(rarg());
         return ret;
     }
 
