@@ -19,6 +19,8 @@
 package org.deeplearning4j.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -111,6 +113,35 @@ public class TimeSeriesUtils {
             in = Shape.toOffsetZeroCopy(in, 'f');
         INDArray reshaped = in.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
         return reshaped.permute(0, 2, 1);
+    }
+
+
+    public static INDArray reverseTimeSeries(INDArray in){
+        INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
+        CustomOp op = DynamicCustomOp.builder("reverse")
+                .addIntegerArguments(new int[]{0,1})
+                .addInputs(in)
+                .addOutputs(out)
+                .callInplace(false)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        return out;
+    }
+
+    public static INDArray reverseTimeSeriesMask(INDArray mask){
+        if(mask == null){
+            return null;
+        }
+        //Assume input mask is 2d: [minibatch, tsLength]
+        INDArray out = Nd4j.createUninitialized(mask.shape(), 'f');
+        CustomOp op = DynamicCustomOp.builder("reverse")
+                .addIntegerArguments(new int[]{1})
+                .addInputs(mask)
+                .addOutputs(out)
+                .callInplace(false)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        return out;
     }
 
 }
