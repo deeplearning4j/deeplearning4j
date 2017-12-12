@@ -27,7 +27,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 @Data
 public class Bidirectional extends Layer {
 
-    public enum Mode {SUM, MUL, AVERAGE, CONCAT}
+    public enum Mode {ADD, MUL, AVERAGE, CONCAT}
 
     private Layer fwd;
     private Layer bwd;
