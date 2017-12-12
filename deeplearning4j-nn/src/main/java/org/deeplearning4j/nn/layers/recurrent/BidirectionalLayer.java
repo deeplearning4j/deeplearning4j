@@ -25,6 +25,16 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+/**
+ * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
+ * Note that multiple different modes are supported - these specify how the activations should be combined from
+ * the forward and backward RNN networks. See {@link Bidirectional.Mode} javadoc for more details.<br>
+ * Parameters are not shared here - there are 2 separate copies of the wrapped RNN layer, each with separate parameters.
+ * <br>
+ * Usage: {@code .layer(new Bidirecitonal(new LSTM.Builder()....build())}
+ *
+ * @author Alex Black
+ */
 public class BidirectionalLayer implements RecurrentLayer {
 
     private NeuralNetConfiguration conf;
@@ -34,7 +44,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     private Bidirectional layerConf;
     private INDArray paramsView;
     private INDArray gradientView;
-    protected transient Map<String, INDArray> gradientViews;
+    private transient Map<String, INDArray> gradientViews;
+    private INDArray input;
 
     //Next 2 variables: used *only* for MUL case (needed for backprop)
     private INDArray outFwd;
@@ -224,12 +235,12 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public Layer transpose() {
-        return null;
+        throw new UnsupportedOperationException("Cannot transpose layer");
     }
 
     @Override
     public Layer clone() {
-        return null;
+        throw new UnsupportedOperationException("Clone not supported");
     }
 
     @Override
@@ -266,7 +277,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public double score() {
-        return fwd.score();
+        return fwd.score() + bwd.score();
     }
 
     @Override
@@ -365,12 +376,12 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public INDArray input() {
-        return null;
+        return input;
     }
 
     @Override
     public void validateInput() {
-
+        //no op
     }
 
     @Override
@@ -380,7 +391,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public INDArray getParam(String param) {
-        String sub = param.substring(2);
+        String sub = param.substring(1);
         if(param.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
             return fwd.getParam(sub);
         } else {
@@ -419,7 +430,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        String sub = key.substring(2);
+        String sub = key.substring(1);
         if(key.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
             fwd.setParam(sub, val);
         } else {
@@ -431,11 +442,15 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void clear() {
         fwd.clear();
         bwd.clear();
+        input = null;
+        outFwd = null;
+        outBwd = null;
     }
 
     @Override
     public void applyConstraints(int iteration, int epoch) {
         fwd.applyConstraints(iteration, epoch);
+        bwd.applyConstraints(iteration, epoch);
     }
 
     @Override
@@ -484,6 +499,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public void setInput(INDArray input) {
+        this.input = input;
         fwd.setInput(input);
         bwd.setInput(TimeSeriesUtils.reverseTimeSeries(input));
     }
