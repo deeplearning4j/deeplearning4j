@@ -62,6 +62,9 @@ public abstract class DifferentialFunction {
     @Getter
     protected String instanceId;
 
+    public DifferentialFunction() {
+        this.instanceId = UUID.randomUUID().toString();
+    }
 
     /**
      * Initialize the function from the given
@@ -274,7 +277,7 @@ public abstract class DifferentialFunction {
 
     public List<SDVariable> diff(List<SDVariable> i_v1) {
         List<SDVariable> vals = doDiff(i_v1);
-        val outputVars = outputVariables();
+        val outputVars = args();
         for(int i = 0; i < outputVars.length; i++) {
             SDVariable differentialFunction = sameDiff.setupFunction(vals.get(i));
             SDVariable var = sameDiff.getVariableForVertexId(differentialFunction.getVertexId());

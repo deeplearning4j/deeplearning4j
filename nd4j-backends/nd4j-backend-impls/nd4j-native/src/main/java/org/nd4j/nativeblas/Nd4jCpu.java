@@ -606,6 +606,17 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
     @Index public native FloatNDArray get(@Cast("size_t") long i);
     public native FloatNDArrayVector put(@Cast("size_t") long i, FloatNDArray value);
 
+    public native @ByVal Iterator begin();
+    public native @ByVal Iterator end();
+    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
+        public Iterator(Pointer p) { super(p); }
+        public Iterator() { }
+
+        public native @Name("operator++") @ByRef Iterator increment();
+        public native @Name("operator==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator*") FloatNDArray get();
+    }
+
     public FloatNDArrayVector put(FloatNDArray ... array) {
         if (size() != array.length) { resize(array.length); }
         for (int i = 0; i < array.length; i++) {
@@ -632,6 +643,17 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
     @Index public native HalfNDArray get(@Cast("size_t") long i);
     public native HalfNDArrayVector put(@Cast("size_t") long i, HalfNDArray value);
 
+    public native @ByVal Iterator begin();
+    public native @ByVal Iterator end();
+    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
+        public Iterator(Pointer p) { super(p); }
+        public Iterator() { }
+
+        public native @Name("operator++") @ByRef Iterator increment();
+        public native @Name("operator==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator*") HalfNDArray get();
+    }
+
     public HalfNDArrayVector put(HalfNDArray ... array) {
         if (size() != array.length) { resize(array.length); }
         for (int i = 0; i < array.length; i++) {
@@ -657,6 +679,17 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 
     @Index public native DoubleNDArray get(@Cast("size_t") long i);
     public native DoubleNDArrayVector put(@Cast("size_t") long i, DoubleNDArray value);
+
+    public native @ByVal Iterator begin();
+    public native @ByVal Iterator end();
+    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
+        public Iterator(Pointer p) { super(p); }
+        public Iterator() { }
+
+        public native @Name("operator++") @ByRef Iterator increment();
+        public native @Name("operator==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator*") DoubleNDArray get();
+    }
 
     public DoubleNDArrayVector put(DoubleNDArray ... array) {
         if (size() != array.length) { resize(array.length); }
