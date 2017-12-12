@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -16,6 +17,7 @@ import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Collection;
 import java.util.Map;
@@ -23,10 +25,33 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+/**
+ * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
+ * Note that multiple different modes are supported - these specify how the activations should be combined from
+ * the forward and backward RNN networks. See {@link Mode} javadoc for more details.<br>
+ * Parameters are not shared here - there are 2 separate copies of the wrapped RNN layer, each with separate parameters.
+ * <br>
+ * Usage: {@code .layer(new Bidirecitonal(new LSTM.Builder()....build())}
+ *
+ * @author Alex Black
+ */
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = true)
+@JsonIgnoreProperties({"initializer"})
 public class Bidirectional extends Layer {
 
+    /**
+     * This Mode enumeration defines how the activations for the forward and backward networks should be combined.<br>
+     * ADD: out = forward + backward (elementwise addition)<br>
+     * MUL: out = forward * backward (elementwise multiplication)<br>
+     * AVERAGE: out = 0.5 * (forward + backward)<br>
+     * CONCAT: Concatenate the activations.<br>
+     * Where 'forward' is the activations for the forward RNN, and 'backward' is the activations for the backward RNN.
+     * In all cases except CONCAT, the output activations size is the same size as the standard RNN that is being wrapped
+     * by this layer. In the CONCAT case, the output activations size (dimension 1) is 2x larger than the standard RNN's
+     * activations array.
+     */
     public enum Mode {ADD, MUL, AVERAGE, CONCAT}
 
     private Layer fwd;
@@ -34,10 +59,19 @@ public class Bidirectional extends Layer {
     private Mode mode;
     private BidirectionalParamInitializer initializer;
 
-    public Bidirectional(Layer layer){
+    /**
+     * Create a Bidirectional wrapper, with the default Mode (CONCAT) for the specified layer
+     * @param layer layer to wrap
+     */
+    public Bidirectional(@NonNull Layer layer){
         this( Mode.CONCAT, layer);
     }
 
+    /**
+     * Create a Bidirectional wrapper for the specified layer
+     * @param mode Mode to use to combine activations. See {@link Mode} for details
+     * @param layer layer to wrap
+     */
     public Bidirectional(@NonNull Mode mode, @NonNull Layer layer){
         if(!(layer instanceof BaseRecurrentLayer)){
             throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: config must extend BaseRecurrentLayer. " +
@@ -106,17 +140,17 @@ public class Bidirectional extends Layer {
     @Override
     public double getL1ByParam(String paramName) {
         //Strip "F_" or "R_" from param name
-        return fwd.getL1ByParam(paramName.substring(2));
+        return fwd.getL1ByParam(paramName.substring(1));
     }
 
     @Override
     public double getL2ByParam(String paramName) {
-        return fwd.getL2ByParam(paramName.substring(2));
+        return fwd.getL2ByParam(paramName.substring(1));
     }
 
     @Override
     public boolean isPretrainParam(String paramName) {
-        return fwd.isPretrainParam(paramName.substring(2));
+        return fwd.isPretrainParam(paramName.substring(1));
     }
 
     /**
@@ -127,7 +161,7 @@ public class Bidirectional extends Layer {
      * @return             IUpdater for the parameter
      */
     public IUpdater getUpdaterByParam(String paramName) {
-        String sub = paramName.substring(2);
+        String sub = paramName.substring(1);
         return fwd.getUpdaterByParam(sub);
     }
 
@@ -140,7 +174,7 @@ public class Bidirectional extends Layer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         LayerMemoryReport lmr = fwd.getMemoryReport(inputType);
-        //TODO double everything...
+        lmr.scale(2);   //Double all memory use
         return lmr;
     }
 }

@@ -10,12 +10,16 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -107,6 +111,60 @@ public class BidirectionalTest {
         INDArray p1 = net1.params();
         INDArray p2 = net2.params();
         assertEquals(p1, p2);
+    }
+
+
+    @Test
+    public void testSerialization() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam())
+                .list()
+                .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
+                .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
+                .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                        .nIn(10).nOut(10).build())
+                .build();
+
+        MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+        net1.init();
+
+        INDArray in = Nd4j.rand(new int[]{3, 10, 5});
+        INDArray labels = Nd4j.rand(new int[]{3, 10, 5});
+
+        net1.fit(in, labels);
+
+        byte[] bytes;
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+            ModelSerializer.writeModel(net1, baos, true);
+            bytes = baos.toByteArray();
+        }
+
+
+        MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(new ByteArrayInputStream(bytes), true);
+
+
+        in = Nd4j.rand(new int[]{3, 10, 5});
+        labels = Nd4j.rand(new int[]{3, 10, 5});
+
+        INDArray out1 = net1.output(in);
+        INDArray out2 = net2.output(in);
+
+        assertEquals(out1, out2);
+
+        net1.setInput(in);
+        net2.setInput(in);
+        net1.setLabels(labels);
+        net2.setLabels(labels);
+
+        net1.computeGradientAndScore();
+        net2.computeGradientAndScore();
+
+        assertEquals(net1.score(), net2.score(), 1e-6);
+        assertEquals(net1.gradient().gradient(), net2.gradient().gradient());
     }
 
 }

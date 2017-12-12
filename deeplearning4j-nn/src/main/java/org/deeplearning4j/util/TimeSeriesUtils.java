@@ -115,7 +115,12 @@ public class TimeSeriesUtils {
         return reshaped.permute(0, 2, 1);
     }
 
-
+    /**
+     * Reverse an input time series along the time dimension
+     *
+     * @param in Input activations to reverse, with shape [minibatch, size, timeSeriesLength]
+     * @return Reversed activations
+     */
     public static INDArray reverseTimeSeries(INDArray in){
         if(in == null){
             return null;
@@ -131,6 +136,11 @@ public class TimeSeriesUtils {
         return out;
     }
 
+    /**
+     * Reverse a (per time step) time series mask, with shape [minibatch, timeSeriesLength]
+     * @param mask Mask to reverse along time dimension
+     * @return Mask after reversing
+     */
     public static INDArray reverseTimeSeriesMask(INDArray mask){
         if(mask == null){
             return null;

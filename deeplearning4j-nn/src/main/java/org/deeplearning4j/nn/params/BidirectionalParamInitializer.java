@@ -15,9 +15,14 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+/**
+ * Parameter initializer for bidirectional wrapper layer
+ *
+ * @author Alex Black
+ */
 public class BidirectionalParamInitializer implements ParamInitializer {
-    public static final String FORWARD_PREFIX = "f-";
-    public static final String BACKWARD_PREFIX = "b-";
+    public static final String FORWARD_PREFIX = "f";
+    public static final String BACKWARD_PREFIX = "b";
 
     private final Bidirectional layer;
     private final BaseRecurrentLayer underlying;
@@ -110,14 +115,6 @@ public class BidirectionalParamInitializer implements ParamInitializer {
             out.put(BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
-        return out;
-    }
-
-    private <T> Map<String,T> addPrefix(Map<String,T> in, boolean fwd){
-        Map<String,T> out = new LinkedHashMap<>();
-        for(Map.Entry<String,T> e : in.entrySet()){
-            out.put((fwd ? FORWARD_PREFIX : BACKWARD_PREFIX) + e.getKey(), e.getValue());
-        }
         return out;
     }
 
