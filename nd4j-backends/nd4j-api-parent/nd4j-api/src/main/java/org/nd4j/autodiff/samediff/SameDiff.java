@@ -3449,27 +3449,31 @@ public class SameDiff {
                         DifferentialFunction currFunction = sameDiff.getFunction(action.getInputsIds(),action.getOutputId());
                         Preconditions.checkState(currFunction.getSameDiff() == sameDiff,"Wrong samediff instance found!");
                         //Preconditions.checkNotNull("Gradient for " + currFunction.opName() + " was null ! " + sameDiff.getVariableForVertexId(currFunction.getVertexId()).getGradient());
-                        SDVariable currVar = currFunction.outputVariables()[0];
-                        SDVariable inputGrad = currVar.gradient();
-                        Preconditions.checkState(inputGrad.getSameDiff() == sameDiff);
-                        List<SDVariable> backwardResult = currFunction.diff(Arrays.asList(inputGrad));
-                        //clear out all the variables
-                        List<SDVariable> functionVars = debugMode ? new ArrayList<SDVariable>(2) : null;
+                        val args = currFunction.outputVariables();
+                        for(val arg : args) {
+                            SDVariable currVar = arg;
+                            SDVariable inputGrad = currVar.gradient();
+                            Preconditions.checkState(inputGrad.getSameDiff() == sameDiff);
+                            List<SDVariable> backwardResult = currFunction.diff(Arrays.asList(inputGrad));
+                            //clear out all the variables
+                            List<SDVariable> functionVars = debugMode ? new ArrayList<SDVariable>(2) : null;
 
-                        for(int i = 0; i < currFunction.args().length; i++) {
-                            DifferentialFunction differentialFunction = sameDiff.setupFunction(backwardResult.get(i));
-                            DifferentialFunction x  = sameDiff.setupFunction(currFunction.args()[i]);
-                            if(!seen.contains(x.getInstanceId())) {
-                                seen.add(x.getInstanceId());
+                            for(int i = 0; i < currFunction.args().length; i++) {
+                                DifferentialFunction differentialFunction = sameDiff.setupFunction(backwardResult.get(i));
+                                DifferentialFunction x  = sameDiff.setupFunction(currFunction.args()[i]);
+                                if(!seen.contains(x.getInstanceId())) {
+                                    seen.add(x.getInstanceId());
 
-                                if (isDebugMode()) {
-                                    SDVariable[] add = x.outputVariables();
-                                    for(val sdVar : add)
-                                        if (sdVar.gradient() != null) {
-                                            sameDiff.addVariable(sdVar.gradient());
-                                            functionVars.add(sdVar);
-                                        }
+                                    if (isDebugMode()) {
+                                        SDVariable[] add = x.outputVariables();
+                                        for(val sdVar : add)
+                                            if (sdVar.gradient() != null) {
+                                                sameDiff.addVariable(sdVar.gradient());
+                                                functionVars.add(sdVar);
+                                            }
+                                    }
                                 }
+
                             }
 
                         }
