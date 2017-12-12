@@ -355,32 +355,60 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return ret;
     }
 
+//    @Override
+//    public double calcL2(boolean backpropParamsOnly) {
+//        //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
+//        double l2Sum = 0.0;
+//        if (conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
+//            double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
+//            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) * l2Norm * l2Norm;
+//        }
+//        if (hasBias() && conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
+//            double l2Norm = getParam(DefaultParamInitializer.BIAS_KEY).norm2Number().doubleValue();
+//            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) * l2Norm * l2Norm;
+//        }
+//        return l2Sum;
+//    }
+//
+//    @Override
+//    public double calcL1(boolean backpropParamsOnly) {
+//        double l1Sum = 0.0;
+//        if (conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
+//            l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY)
+//                            * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+//        }
+//        if (hasBias() && conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
+//            l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY)
+//                            * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
+//        }
+//        return l1Sum;
+//    }
+
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
         double l2Sum = 0.0;
-        if (conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
-            double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) * l2Norm * l2Norm;
+        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
+            double l2 = conf.getL2ByParam(entry.getKey());
+            if (l2 > 0) {
+                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
+                l2Sum += 0.5 * l2 * norm2 * norm2;
+            }
         }
-        if (hasBias() && conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
-            double l2Norm = getParam(DefaultParamInitializer.BIAS_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) * l2Norm * l2Norm;
-        }
+
         return l2Sum;
     }
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
         double l1Sum = 0.0;
-        if (conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
-            l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY)
-                            * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
+            double l1 = conf.getL1ByParam(entry.getKey());
+            if (l1 > 0) {
+                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
+                l1Sum += l1 * norm1;
+            }
         }
-        if (hasBias() && conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
-            l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY)
-                            * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
-        }
+
         return l1Sum;
     }
 
