@@ -3,7 +3,6 @@
 
 #include <initializer_list>
 #include <functional>
-#include "NativeOps.h"
 #include <shape.h>
 #include "NativeOpExcutioner.h"
 #include <memory/Workspace.h>

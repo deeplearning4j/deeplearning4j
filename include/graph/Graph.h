@@ -146,6 +146,11 @@ namespace nd4j {
              * @return
              */
             Scope<T>* scopeById(int id);
+
+            /**
+             * This method returns clone of the graph
+             */
+            Graph<T>* clone();
         };
     }
 }

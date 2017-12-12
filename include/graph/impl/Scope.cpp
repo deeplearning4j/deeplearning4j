@@ -47,6 +47,16 @@ namespace nd4j {
             return &_name;
         }
 
+        template <typename T>
+        Scope<T>* Scope<T>::clone() {
+            auto clone = new Scope<T>(_id, _name.c_str());
+
+            for (auto v: _nodes)
+                clone->_nodes.emplace_back(v->clone());
+
+            return clone;
+        }
+
         template class Scope<float>;
         template class Scope<float16>;
         template class Scope<double>;

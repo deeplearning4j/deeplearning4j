@@ -10,8 +10,8 @@
 #include <string>
 #include <atomic>
 #include <map>
-#include <memory/Workspace.h>
 #include <NDArray.h>
+#include <memory/Workspace.h>
 
 namespace nd4j {
     template <typename T>

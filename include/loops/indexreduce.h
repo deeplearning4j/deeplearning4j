@@ -1,5 +1,4 @@
 /*
- * indexreduce.h
  *
  *  Created on: Dec 28, 2015
  *      Author: agibsonccc
@@ -26,7 +25,7 @@
 #define omp_get_max_threads() 1
 #endif
 
-#include <TAD.h>
+#include <helpers/TAD.h>
 
 
 #include "../pairwise_util.h"

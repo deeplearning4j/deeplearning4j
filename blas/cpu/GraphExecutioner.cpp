@@ -181,9 +181,9 @@ template <typename T>
  * @return one of error codes defined in pointercast.h
  */
 template <typename T>
-Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph) {
+Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* variableSpace) {
     graph->buildGraph();
-    auto __variableSpace = graph->getVariableSpace();
+    auto __variableSpace = variableSpace == nullptr ? graph->getVariableSpace() : variableSpace;
 
     bool tempFlow = false;
     if (__variableSpace->flowPath() == nullptr) {
@@ -635,13 +635,20 @@ template <typename T>
 Graph<T>* GraphExecutioner<T>::importFromFlatBuffers(const char *filename) {
     uint8_t* data = readFlatBuffers(filename);
 
-    auto fg = GetFlatGraph(data);
-    auto restoredGraph = new Graph<T>(fg);
+    auto restoredGraph = importFromFlatPointer(reinterpret_cast<Nd4jPointer>(data));
 
     delete[] data;
     
     return restoredGraph;
 }
+
+    template <typename T>
+    Graph<T> *GraphExecutioner<T>::importFromFlatPointer(Nd4jPointer ptr) {
+        auto fg = GetFlatGraph(reinterpret_cast<uint8_t *>(ptr));
+        auto restoredGraph = new Graph<T>(fg);
+
+        return restoredGraph;
+    }
 
 
         template class ND4J_EXPORT GraphExecutioner<float>;

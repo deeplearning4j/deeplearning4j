@@ -5,6 +5,7 @@
 #include <graph/Graph.h>
 #include <helpers/EnumUtils.h>
 #include <graph/FlatUtils.h>
+#include <NativeOps.h>
 
 namespace nd4j {
     namespace graph {
@@ -494,6 +495,9 @@ namespace nd4j {
 
         template <typename T>
         Nd4jStatus Graph<T>::buildGraph() {
+            if (_built.load())
+                return ND4J_STATUS_OK;
+
             int buildCnt = 0;
             int buildLimit = _unmapped.size() * 2;
             while (_unmapped.size() > 0) {
@@ -740,10 +744,13 @@ namespace nd4j {
             this->_variableSpace = new VariableSpace<T>();
             
             // creating RNG for this instance
+#ifndef __CUDABLAS__
+            // we temporary skip this random init
             NativeOps nativeOps;
             uint64_t *buffer = new uint64_t[1000000];
             nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 119, 1000000, (Nd4jPointer) buffer); 
             this->_variableSpace->setRNG(rng);
+#endif
 
             // add 0 layer
             this->expandOnion(0);
@@ -924,6 +931,34 @@ namespace nd4j {
             }
 
             return _mappedScopes.at(id);
+        }
+
+        template <typename T>
+        Graph<T>* Graph<T>::clone() {
+            auto clone = new Graph<T>();
+            delete clone->_variableSpace;
+            delete clone->_configuration;
+            
+            // varspace and configuration are cloneable
+            clone->_variableSpace = this->_variableSpace->clone();
+            clone->_configuration = this->_configuration->clone();
+            
+
+            // transfer nodes
+            for (int e = 0; e < _nodes->size(); e++)
+                clone->_nodes->emplace_back(_nodes->at(e));
+
+            // transfer outputs
+            for (auto v: _output)
+                clone->_output.emplace_back(v);
+
+            // transfer autos
+            for (auto v: _autos)
+                clone->_autos.emplace_back(v);
+
+            clone->_built.store(_built.load());
+
+            return clone;
         }
 
         template class ND4J_EXPORT Graph<float>;

@@ -148,6 +148,9 @@ namespace nd4j {
             int scopeId();
             std::string* scopeName();
 
+            // clone Node
+            Node<T>* clone();
+
             static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
         };
     }

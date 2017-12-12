@@ -30,6 +30,16 @@ namespace nd4j {
                 }
             }
 
+            ExecutorConfiguration* clone() {
+                auto clone = new ExecutorConfiguration();
+                clone->_profilingMode = _profilingMode;
+                clone->_executionMode = _executionMode;
+                clone->_outputMode = _outputMode;
+                clone->_timestats = _timestats;
+
+                return clone;
+            }
+
             ~ExecutorConfiguration() {
                 // no pointers here, just enums. so no-op.
             }

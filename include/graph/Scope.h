@@ -73,6 +73,11 @@ namespace nd4j {
              * @return
              */
             std::string* name();
+
+            /**
+             * This method returns clone of this Scope
+             */
+            Scope<T>* clone();
         };
     }
 }

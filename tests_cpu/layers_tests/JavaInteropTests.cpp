@@ -6,6 +6,7 @@
 #include <NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <graph/GraphHolder.h>
 #include "testlayers.h"
 
 using namespace nd4j;
@@ -322,4 +323,106 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
 
     ASSERT_EQ(nameExp, nameRef);
     ASSERT_EQ(nameRef, name);
+}
+
+TEST_F(JavaInteropTests, Test_GraphReuse_1) {
+    NativeOps nativeOps;
+
+    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim.fb");
+
+    nativeOps.registerGraphFloat(nullptr, 119, (Nd4jPointer) data);
+
+    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph<float>(119));
+
+    nativeOps.unregisterGraph(nullptr, 119);
+
+    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(119));
+
+
+    delete[] data;
+}
+
+TEST_F(JavaInteropTests, Test_GraphReuse_2) {
+    Environment::getInstance()->setDebug(true);
+    Environment::getInstance()->setVerbose(true);
+
+    NDArray<float> exp0('c', {3, 1}, {3, 3, 3});
+    NDArray<float> exp1('c', {3, 1}, {6, 6, 6});
+    NDArray<float> exp2('c', {3, 1}, {9, 9, 9});
+
+    NativeOps nativeOps;
+
+    // we load graph from file, because we're not in java here, and dont have buffer ready
+    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim.fb");
+
+    // we ensure that there's no such a graph stored earlier
+    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(119));
+
+    // register the graph, to call for it later
+    nativeOps.registerGraphFloat(nullptr, 119, (Nd4jPointer) data);
+
+    // and ensure we're ok
+    ASSERT_TRUE(GraphHolder::getInstance()->hasGraph<float>(119));
+
+
+
+    // run stuff
+
+    NDArray<float> input_0('c', {3, 3});
+    input_0.assign(1.0f);
+
+    int idx[] = {1};
+
+    Nd4jPointer inputs_0[] = {(Nd4jPointer) input_0.buffer()};
+    Nd4jPointer shapes_0[] = {(Nd4jPointer) input_0.shapeInfo()};
+
+    // now we're executing stored graph and providing replacement for input variable
+    auto res_0 = nativeOps.executeStoredGraphFloat(nullptr, 119, inputs_0, shapes_0, idx, 1);
+    ASSERT_EQ(ND4J_STATUS_OK, res_0->status());
+    ASSERT_EQ(1, res_0->size());
+
+    auto z0 = res_0->at(0)->getNDArray();
+    ASSERT_TRUE(exp0.isSameShape(z0));
+
+
+    NDArray<float> input_1('c', {3, 3});
+    input_1.assign(2.0f);
+
+    Nd4jPointer inputs_1[] = {(Nd4jPointer) input_1.buffer()};
+    Nd4jPointer shapes_1[] = {(Nd4jPointer) input_1.shapeInfo()};
+
+    // doing it again
+    auto res_1 = nativeOps.executeStoredGraphFloat(nullptr, 119, inputs_1, shapes_1, idx, 1);
+    ASSERT_EQ(ND4J_STATUS_OK, res_1->status());
+    ASSERT_EQ(1, res_1->size());
+
+    auto z1 = res_1->at(0)->getNDArray();
+    ASSERT_TRUE(exp1.isSameShape(z1));
+
+
+    NDArray<float> input_2('c', {3, 3});
+    input_2.assign(3.0f);
+
+    Nd4jPointer inputs_2[] = {(Nd4jPointer) input_2.buffer()};
+    Nd4jPointer shapes_2[] = {(Nd4jPointer) input_2.shapeInfo()};
+
+    // and again
+    auto res_2 = nativeOps.executeStoredGraphFloat(nullptr, 119, inputs_2, shapes_2, idx, 1);
+    ASSERT_EQ(ND4J_STATUS_OK, res_1->status());
+    ASSERT_EQ(1, res_2->size());
+
+    auto z2 = res_2->at(0)->getNDArray();
+    ASSERT_TRUE(exp2.isSameShape(z2));
+
+
+    //////// clean out
+    nativeOps.unregisterGraph(nullptr, 119);
+
+    ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(119));
+
+
+    delete[] data;
+    delete res_0;
+    delete res_1;
+    delete res_2;
 }

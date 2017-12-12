@@ -22,7 +22,6 @@ namespace nd4j {
             if (this->_ndarray != nullptr)
                 result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering());
 
-            // TODO: clone NDArrayList
             if (this->_list != nullptr)
                 result->_list = this->_list->clone();
 

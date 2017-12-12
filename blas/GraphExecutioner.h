@@ -19,49 +19,46 @@
 #define TF_VAR "VariableV2"
 
 namespace nd4j {
-namespace graph {
+    namespace graph {
 
-template <typename T>
-class GraphExecutioner {
-protected:
-
-
-public:
-    //static Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace);
-
-    static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<T> *variableSpace);
-
-    /**
-     * This method executes given Graph
-     * @return
-     */
-    static Nd4jStatus execute(nd4j::graph::Graph<T> *graph);
+    template <typename T>
+    class GraphExecutioner {
+    protected:
 
 
-    /**
-     * This method executes graph stored at given FlatBuffers pointer
-     *
-     * @param pointer Pointer to FlatBuffer
-     * @return pointer to FlatBuffer with result
-     */
-    static Nd4jPointer executeFlatBuffer(Nd4jPointer pointer);
+    public:
+        //static Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace);
+
+        static Nd4jStatus executeFlatNode(Graph<T> *graph, Node<T> *node, VariableSpace<T> *variableSpace);
+
+        /**
+        * This method executes given Graph
+        * @return
+        */
+        static Nd4jStatus execute(Graph<T> *graph, VariableSpace<T>* variableSpace = nullptr);
 
 
-    static Graph<T> *importFromTensorFlow(const char *fileName);
+        /**
+        * This method executes graph stored at given FlatBuffers pointer
+        *
+        * @param pointer Pointer to FlatBuffer
+        * @return pointer to FlatBuffer with result
+        */
+        static Nd4jPointer executeFlatBuffer(Nd4jPointer pointer);
 
 
-    static Graph<T> *importFromFlatBuffers(const char *filename);
-};
+        static Graph<T> *importFromTensorFlow(const char *fileName);
 
 
+        static Graph<T> *importFromFlatBuffers(const char *filename);
 
-long getFileSize(const char * filename);
+        static Graph<T> *importFromFlatPointer(Nd4jPointer ptr);
+    };
 
-uint8_t* readFlatBuffers(const char * filename);
+    long getFileSize(const char * filename);
+    uint8_t* readFlatBuffers(const char * filename);
 
-
-
-}
+    }
 }
 
 

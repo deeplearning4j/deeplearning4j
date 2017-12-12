@@ -24,7 +24,7 @@
 #include <jni.h>
 #endif
 
-#include <TAD.h>
+#include <helpers/TAD.h>
 
 #include "legacy_ops.h"
 

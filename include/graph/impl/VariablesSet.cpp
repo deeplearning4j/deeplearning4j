@@ -26,5 +26,20 @@ namespace nd4j {
         Variable<T> *VariablesSet<T>::at(int index) {
             return _holder.at(index);
         }
+
+        template<typename T>
+        VariablesSet<T>::VariablesSet(Nd4jStatus status) {
+            _status = status;
+        }
+
+        template<typename T>
+        VariablesSet<T>::~VariablesSet() {
+            for (auto v: _holder)
+                delete v;
+        }
+
+        template class ND4J_EXPORT VariablesSet<float>;
+        template class ND4J_EXPORT VariablesSet<float16>;
+        template class ND4J_EXPORT VariablesSet<double>;
     }
 }

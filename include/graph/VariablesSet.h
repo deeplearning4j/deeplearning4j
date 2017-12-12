@@ -7,16 +7,22 @@
 
 #include <iterator>
 #include <vector>
-#include <Variable.h>
+#include <pointercast.h>
+#include <dll.h>
+#include <graph/Variable.h>
+
 
 namespace nd4j {
     namespace graph {
         template <typename T>
         class VariablesSet {
         protected:
-            std::vector<Variable<T>*> _holder;
+            std::vector<nd4j::graph::Variable<T>*> _holder;
             Nd4jStatus _status;
         public:
+            VariablesSet(Nd4jStatus status = ND4J_STATUS_OK);
+            ~VariablesSet();
+
             Nd4jStatus status();
 
             int size();

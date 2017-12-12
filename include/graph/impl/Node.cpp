@@ -579,6 +579,28 @@ namespace nd4j {
             }
         }
 
+        template <typename T>
+        Node<T>* Node<T>::clone() {
+            auto clone = new Node<T>(_opType, _opNum, _id);
+            clone->_scalar = _scalar;
+            clone->_hasExternalInputs = _hasExternalInputs;
+            clone->_hasExternalOutputs = _hasExternalOutputs;
+            clone->_hasInternalInputs = _hasInternalInputs;
+            clone->_hasInternalOutputs = _hasInternalOutputs;
+            clone->_isInplace = _isInplace;
+            clone->_isDeductable = _isDeductable;
+            clone->_active = _active;
+            clone->_scope_id = _scope_id;
+            clone->_scope_name = _scope_name;
+
+            // op time
+            if (!_isDeductable)
+                clone->_customOp = _customOp;
+            
+
+            return clone;
+        }
+
         template class ND4J_EXPORT Node<float>;
         template class ND4J_EXPORT Node<float16>;
         template class ND4J_EXPORT Node<double>;

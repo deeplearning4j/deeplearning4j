@@ -49,6 +49,7 @@ bool verbose = false;
 */
 
 #include <array/ShapeList.h>
+#include <graph/VariablesSet.h>
 
 class ND4J_EXPORT NativeOps {
 
@@ -2979,6 +2980,23 @@ public:
     Nd4jPointer* calculateOutputShapesFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputShapes, int numInputShapes, float* tArgs, int numTArgs, int *iArgs, int numIArgs);
     Nd4jPointer* calculateOutputShapesHalf(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputShapes, int numInputShapes, float16* tArgs, int numTArgs, int *iArgs, int numIArgs);
     Nd4jPointer* calculateOutputShapesDouble(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, int *iArgs, int numIArgs);
+
+    int registerGraphFloat(Nd4jPointer *extraPointers, Nd4jIndex graphId, Nd4jPointer flatBufferPointer);
+    int registerGraphDouble(Nd4jPointer *extraPointers, Nd4jIndex graphId, Nd4jPointer flatBufferPointer);
+    int registerGraphHalf(Nd4jPointer *extraPointers, Nd4jIndex graphId, Nd4jPointer flatBufferPointer);
+
+    nd4j::graph::VariablesSet<float>* executeStoredGraphFloat(Nd4jPointer *extraPointers, Nd4jIndex graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
+    nd4j::graph::VariablesSet<double>* executeStoredGraphDouble(Nd4jPointer *extraPointers, Nd4jIndex graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
+    nd4j::graph::VariablesSet<float16>* executeStoredGraphHalf(Nd4jPointer *extraPointers, Nd4jIndex graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
+
+    int unregisterGraph(Nd4jPointer *extraPointers, Nd4jIndex graphId);
+
+    void deleteIntArray(Nd4jPointer pointer);
+    void deletePointerArray(Nd4jPointer pointer);
+
+    void deleteVariablesSetFloat(Nd4jPointer pointer);
+    void deleteVariablesSetDouble(Nd4jPointer pointer);
+    void deleteVariablesSetHalf(Nd4jPointer pointer);
 };
 
 

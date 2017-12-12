@@ -3,6 +3,7 @@
 //
 
 #include <graph/VariableSpace.h>
+#include <NativeOps.h>
 
 namespace nd4j {
     namespace graph {

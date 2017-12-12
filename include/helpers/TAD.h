@@ -6,7 +6,7 @@
 #define LIBND4J_TAD_H
 
 
-#include <shape.h>
+#include <helpers/shape.h>
 #include <pointercast.h>
 
 
