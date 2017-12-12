@@ -62,4 +62,5 @@ namespace nd4j {
     DataType DataTypeUtils::fromT<double>() {
         return DataType_DOUBLE;
     }
+
 }

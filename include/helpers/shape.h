@@ -476,6 +476,12 @@ __host__ __device__
     __host__ __device__
 #endif
 
+ND4J_EXPORT bool isLikeVector(int *shapeInfo);
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+
     ND4J_EXPORT bool isRowVector(int *shapeInfo);
 
 #ifdef __CUDACC__
@@ -2785,6 +2791,22 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         }
         return 0;
     }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF bool isLikeVector(int *shapeInfo) {
+                
+        int numOfNonUnity = 0;
+        for(int i = 1; i <= shapeInfo[0]; ++i) {
+            if(shapeInfo[i] != 1)
+                ++numOfNonUnity;
+        }
+        
+        return numOfNonUnity == 1 && shapeInfo[0] > 2;
+    }
+
 
 #ifdef __CUDACC__
     __host__ __device__

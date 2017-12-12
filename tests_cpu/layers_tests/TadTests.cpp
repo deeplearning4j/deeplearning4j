@@ -106,5 +106,27 @@ TEST_F(TadTests, TadEdgeCase_1) {
 }
 
 
+// ///////////////////////////////////////////////////////////////////
+// TEST_F(TadTests, TestShapeTad_2) {
+        
+//     NDArray<float> input('c', {2,1,4,1});
+    
+//     NDArrayFactory<float>::linspace(1, input);
+
+//     NDArray<float> expected('c', {4,1});    
+
+//     std::vector<int> copy = {2,3};
+//     Nd4jIndex tadLength = shape::tadLength(input.getShapeInfo(), copy.data(), copy.size());
+//     Nd4jIndex numTads = input.lengthOf() / tadLength;
+//     shape::TAD tad(input.getShapeInfo(), copy.data(), copy.size());
+//     tad.createTadOnlyShapeInfo();    
+    
+//     for(int i=0; i<8; i++)
+//         std::cout<<tad.tadOnlyShapeInfo[i]<<" ";
+
+//     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), tad.tadOnlyShapeInfo));        
+
+// }
+
 
 #endif //LIBND4J_TADTESTS_H

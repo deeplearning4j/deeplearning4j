@@ -777,7 +777,10 @@ namespace shape {
         int *ret2 = shape::sliceOfShapeBuffer(sliceIndex,permuted);
         int tensorLength = shape::prod(tensorShape,tadRank);
 
-        int compLength = shape::isVector(ret2) ? shape::length(ret2)  : shape::prod(tensorShape,tadRank);
+        int compLength = shape::isVector(ret2) ? shape::length(ret2) : shape::prod(tensorShape,tadRank);
+        // const bool isLikeVector = shape::isLikeVector(ret2);
+
+        // if(dimensionLength == tadRank && compLength == shape::length(ret2) && !isLikeVector) {
         if(dimensionLength == tadRank && compLength == shape::length(ret2)) {
             if(dimensionLength == 1 && shape::isVector(ret2) && shape::shapeOf(ret2)[0] == 1) {
                 //go to the bottom and return ret2 after proper freeing of pointers
@@ -809,6 +812,7 @@ namespace shape {
                 for(int i = shape::rank(ret2) - 1; i >= 0; i--) {
                     finalPermuteDims[forward++] = i;
                 }
+                // bool isRowVector2 = shape::isRowVector(ret2) && !isLikeVector;
                 bool isRowVector2 = shape::isRowVector(ret2);
                 if(isRowVector2 == false) {
                     shape::permuteShapeBufferInPlace(ret2, finalPermuteDims, ret2);
