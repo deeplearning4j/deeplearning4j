@@ -19,6 +19,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        LegacyOp<T>* LegacyReduceOp<T>::clone() {
+            return new LegacyReduceOp(this->_opNum);
+        }
+
+        template <typename T>
         Nd4jStatus LegacyReduceOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
         

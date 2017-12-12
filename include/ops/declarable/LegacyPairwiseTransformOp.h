@@ -21,6 +21,7 @@ namespace nd4j {
             LegacyPairwiseTransformOp(int opNum);
 
             ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
+            virtual LegacyOp<T>* clone();
         };
     }
 }

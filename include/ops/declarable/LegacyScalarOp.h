@@ -24,6 +24,7 @@ namespace nd4j {
             LegacyScalarOp(int opNum, T scalar);
 
             ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
+            virtual LegacyOp<T>* clone();
         };
     }
 }

@@ -18,6 +18,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        LegacyOp<T>* LegacyScalarOp<T>::clone() {
+            return new LegacyScalarOp(this->_opNum, this->_scalar);
+        }
+
+        template <typename T>
         LegacyScalarOp<T>::LegacyScalarOp(int opNum, T scalar)  : LegacyOp<T>::LegacyOp(1, opNum){
             _scalar = scalar;
         }

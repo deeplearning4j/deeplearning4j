@@ -18,6 +18,10 @@ namespace nd4j {
             // just a no-op
         }
 
+        template <typename T>
+        LegacyOp<T>* LegacyPairwiseTransformOp<T>::clone() {
+            return new LegacyPairwiseTransformOp(this->_opNum);
+        }
 
         template <typename T>
         Nd4jStatus LegacyPairwiseTransformOp<T>::validateAndExecute(Context<T> &block) {

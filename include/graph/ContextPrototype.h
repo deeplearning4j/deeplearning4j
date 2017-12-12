@@ -57,6 +57,9 @@ namespace nd4j {
              * @return
              */
             unsigned long width();
+
+            // just a clone
+            ContextPrototype<T>* clone();
         };
     }
 }

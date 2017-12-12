@@ -33,17 +33,17 @@ namespace nd4j {
             std::vector<Node<T> *> _handles;
 
             // vector holds ID's of top nodes only
-            std::vector<int32_t > *_nodes;
-            std::map<int32_t, nd4j::graph::Node<T> *> *_mapped;
+            std::vector<int > *_nodes;
+            std::map<int, nd4j::graph::Node<T> *> *_mapped;
 
             std::map<int, std::vector<nd4j::graph::Node<T> *> *> *_onion;
-            std::map<int32_t, nd4j::graph::Node<T> *> _unmapped;
+            std::map<int, nd4j::graph::Node<T> *> _unmapped;
 
             std::mutex _mutexPreprocessing;
             std::atomic<bool> _built;
 
-            std::vector<int32_t> _output;
-            std::vector<int32_t> _autos;
+            std::vector<int> _output;
+            std::vector<int> _autos;
 
 
             std::map<int, Scope<T> *> _mappedScopes;
@@ -56,7 +56,7 @@ namespace nd4j {
 
             void injectNode(nd4j::graph::Node<T> *node);
 
-            void pushToOutputOnce(int32_t id);
+            void pushToOutputOnce(int id);
 
             void printOutNode(Node<T>* node);
         public:
@@ -107,7 +107,7 @@ namespace nd4j {
              * This method returns map of all nodes of the graph
              * @return
              */
-            std::map<int32_t, nd4j::graph::Node<T> *> *getMapped();
+            std::map<int, nd4j::graph::Node<T> *> *getMapped();
 
             /**
              * This method returns outputs of of this graph
@@ -126,7 +126,7 @@ namespace nd4j {
              * This method adds specified node (by ID) to de
              * @param id
              */
-            void addOutput(int32_t id);
+            void addOutput(int id);
 
             /**
              * This method returns all nodes at once (order is NOT guaranteed)

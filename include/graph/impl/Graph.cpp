@@ -193,13 +193,13 @@ namespace nd4j {
         }
 
         template <typename T>
-        void Graph<T>::pushToOutputOnce(int32_t id) {
+        void Graph<T>::pushToOutputOnce(int id) {
             if (std::find(_output.begin(), _output.end(), id) == _output.end())
                 _output.emplace_back(id);
         }
 
         template <typename T>
-        void Graph<T>::addOutput(int32_t id) {
+        void Graph<T>::addOutput(int id) {
             if (_configuration->_outputMode == OutputMode_EXPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)
                 pushToOutputOnce(id);
         }
@@ -223,7 +223,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        std::map<int32_t, Node<T> *> * Graph<T>::getMapped() {
+        std::map<int, Node<T> *> * Graph<T>::getMapped() {
             return _mapped;
         }
 
@@ -239,7 +239,7 @@ namespace nd4j {
 
             nd4j_debug("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
 
-            std::pair<int32_t, Node<T> *> pair(node->id(), node);
+            std::pair<int, Node<T> *> pair(node->id(), node);
             _onion->at(node->getLayer())->push_back(node);
             _mapped->insert(pair);
         }
@@ -258,15 +258,15 @@ namespace nd4j {
 
         template <typename T>
         Graph<T>::~Graph() {
-            for (auto v: *_mapped)
+            for (auto &v: *_mapped)
                 delete v.second;
 
-            for (auto v: _unmapped)
+            for (auto &v: _unmapped)
                 delete v.second;
 
-            for (auto v: *_onion) {
+            for (auto &v: *_onion)
                 delete v.second;
-            }
+
 
             for (auto v: _scopes)
                 delete v;
@@ -446,7 +446,7 @@ namespace nd4j {
                 return;
             }
 
-            std::pair<int32_t, Node<T> *> pair(node->id(), node);
+            std::pair<int, Node<T> *> pair(node->id(), node);
             // if model has only external variables as input - it goes to first layer, no matter what.
             if (node->hasExternalInputs() && !node->hasInternalInputs()) {
                 node->setLayer(0);
@@ -503,7 +503,7 @@ namespace nd4j {
             while (_unmapped.size() > 0) {
 
                 // first pass for unmapped nodes, we try to build tale here
-                typename std::map<int32_t, Node<T> *>::iterator it;
+                typename std::map<int, Node<T> *>::iterator it;
                 for ( it = _unmapped.begin(); it != _unmapped.end(); it++ ) {
                     auto node = it->second;
 
@@ -739,8 +739,8 @@ namespace nd4j {
         template <typename T>
         Graph<T>::Graph(const FlatGraph *flatGraph) {
             this->_onion = new std::map<int, std::vector<Node<T> *> *>();
-            this->_mapped = new std::map<int32_t, Node<T> *> ();
-            this->_nodes = new std::vector<int32_t>();
+            this->_mapped = new std::map<int, Node<T> *> ();
+            this->_nodes = new std::vector<int>();
             this->_variableSpace = new VariableSpace<T>();
             
             // creating RNG for this instance
@@ -955,6 +955,35 @@ namespace nd4j {
             // transfer autos
             for (auto v: _autos)
                 clone->_autos.emplace_back(v);
+
+            // transfer scopes
+            for (auto &v: _mappedScopes) {
+                auto scp = v.second->clone();
+                clone->_mappedScopes[v.first] = scp;
+                clone->_scopes.emplace_back(scp);
+            }
+
+            // transfer mapped nodes
+            for (auto &v: *_onion) {
+                auto vec = clone->_onion->count(v.first) > 0 ? clone->_onion->at(v.first) : new std::vector<Node<T>*>();
+
+
+                // cloning actual nodes
+                auto ovec = (*_onion)[v.first];
+                for (auto x: *(ovec)) {
+                    auto n = x->clone();
+                    vec->emplace_back(n);
+                    _handles.emplace_back(n);
+                    (*clone->_mapped)[n->id()] = n;
+                }
+
+                if (clone->_onion->count(v.first) < 1)
+                    (*clone->_onion)[v.first] = vec;
+            }
+
+            // transfer mapped nodes
+            for (auto &v: _unmapped)
+                clone->_unmapped[v.first] = v.second->clone();
 
             clone->_built.store(_built.load());
 

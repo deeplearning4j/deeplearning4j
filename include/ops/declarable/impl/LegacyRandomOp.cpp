@@ -20,6 +20,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        LegacyOp<T>* LegacyRandomOp<T>::clone() {
+            return new LegacyRandomOp(this->_opNum);
+        }
+
+        template <typename T>
         Nd4jStatus LegacyRandomOp<T>::validateAndExecute(Context<T> &block) {
             REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
 

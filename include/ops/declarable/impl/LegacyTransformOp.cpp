@@ -20,6 +20,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        LegacyOp<T>* LegacyTransformOp<T>::clone() {
+            return new LegacyTransformOp(this->_opNum);
+        }
+
+        template <typename T>
         Nd4jStatus LegacyTransformOp<T>::validateAndExecute(Context<T> &block) {
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);

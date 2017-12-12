@@ -53,6 +53,11 @@ namespace nd4j {
             //
         }
 
+        template <typename T>
+        LegacyOp<T>* LegacyBroadcastOp<T>::clone() {
+            return new LegacyBroadcastOp(this->_opNum);
+        }
+
         /**
         *   If external NDArray wasn't specified - the same shape is returned by all broadcast ops.
         */

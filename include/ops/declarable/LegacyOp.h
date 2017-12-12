@@ -22,6 +22,7 @@ namespace nd4j {
             // this field is mainly for debugging
             // it defines, which legacy op should be invoked on a given data
             int _opNum = -1;
+            int _numInputs = 0;
 
             // All Op classes provide own specific implementation for this method
             virtual Nd4jStatus validateAndExecute(Context<T>& block) = 0;
@@ -31,6 +32,7 @@ namespace nd4j {
 
             // All Op classes provide own specific implementation for this method
             virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) = 0;
+            virtual LegacyOp<T>* clone() = 0;
         };
     }
 }

@@ -10,12 +10,13 @@ namespace nd4j {
 
         template <typename T>
         LegacyOp<T>::LegacyOp(int numInputs) : DeclarableOp<T>::DeclarableOp(numInputs , 1, "LegacyOp", true) {
-            //
+            _numInputs = numInputs;
         }
 
         template <typename T>
         LegacyOp<T>::LegacyOp(int numInputs, int opNum) : DeclarableOp<T>::DeclarableOp(numInputs , 1, "LegacyOp", true) {
             _opNum = opNum;
+            _numInputs = numInputs;
         }
 
 

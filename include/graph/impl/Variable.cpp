@@ -59,7 +59,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        int32_t nd4j::graph::Variable<T>::id() {
+        int nd4j::graph::Variable<T>::id() {
             return _id;
         }
 
@@ -69,7 +69,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        void nd4j::graph::Variable<T>::setId(int32_t id) {
+        void nd4j::graph::Variable<T>::setId(int id) {
             _id = id;
         }
 

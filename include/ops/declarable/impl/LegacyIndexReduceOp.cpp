@@ -21,6 +21,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        LegacyOp<T>* LegacyIndexReduceOp<T>::clone() {
+            return new LegacyIndexReduceOp(this->_opNum);
+        }
+
+        template <typename T>
         ShapeList *LegacyIndexReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 

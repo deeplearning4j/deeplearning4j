@@ -112,6 +112,23 @@ namespace nd4j {
             this->_isInplace = reallyInplace;
         }
 
+        template <typename T>
+        ContextPrototype<T>* ContextPrototype<T>::clone() {
+            auto clone = new ContextPrototype<T>(_nodeId, _isInplace);
+            clone->_opNum = _opNum;
+            
+            for (auto v: _inputs)
+                clone->_inputs.emplace_back(v);
+
+            for (auto v: _tArgs)
+                clone->_tArgs.emplace_back(v);
+
+            for (auto v: _iArgs)
+                clone->_iArgs.emplace_back(v);
+
+            return clone;
+        }
+
 
         template class ND4J_EXPORT ContextPrototype<float>;
         template class ND4J_EXPORT ContextPrototype<float16>;

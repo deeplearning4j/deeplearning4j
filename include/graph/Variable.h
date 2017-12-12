@@ -18,7 +18,7 @@ namespace nd4j {
         template <typename T>
         class Variable {
         protected:
-            int32_t _id = 0;
+            int _id = 0;
             int _index = 0;
             nd4j::NDArray<T> * _ndarray = nullptr;
             std::string _name;
@@ -75,9 +75,9 @@ namespace nd4j {
             void markReadOnly(bool reallyReadOnly);
             void markRemovable(bool reallyRemovable);
 
-            int32_t id();
+            int id();
             int index();
-            void setId(int32_t id);
+            void setId(int id);
             void setId(int id, int idx);
 
             std::string *getName();

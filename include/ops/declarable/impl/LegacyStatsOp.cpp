@@ -55,6 +55,11 @@ namespace nd4j {
             //
         }
 
+        template <typename T>
+        LegacyOp<T>* LegacyStatsOp<T>::clone() {
+            return new LegacyStatsOp(this->_opNum);
+        }
+
         /**
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions

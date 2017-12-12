@@ -1199,3 +1199,73 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
 
     ASSERT_NEAR(-11.0, m, 1e-5);
 }
+
+
+TEST_F(GraphTests, Test_Clone_1) {
+    NDArray<float> exp('c', {3, 1});
+    exp.assign(3.0);
+
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
+    auto variableSpace = graph->getVariableSpace();
+    //graph->buildGraph();
+
+    auto clone = graph->clone();
+
+    Nd4jStatus statusOriginal = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, statusOriginal);
+    ASSERT_TRUE(variableSpace->hasVariable(3));
+
+    Nd4jStatus statusClone = GraphExecutioner<float>::execute(clone);
+
+    ASSERT_EQ(ND4J_STATUS_OK, statusClone);
+
+    auto z0 = variableSpace->getVariable(3)->getNDArray();
+    auto z1 = clone->getVariableSpace()->getVariable(3)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(z0));
+    ASSERT_TRUE(exp.equalsTo(z0));
+
+    ASSERT_TRUE(exp.isSameShape(z1));
+    ASSERT_TRUE(exp.equalsTo(z1));
+
+    delete graph;
+    delete clone;
+}
+
+
+
+
+TEST_F(GraphTests, Test_Clone_2) {
+    NDArray<float> exp('c', {3, 1});
+    exp.assign(3.0);
+
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
+    auto variableSpace = graph->getVariableSpace();
+    graph->buildGraph();
+
+    auto clone = graph->clone();
+
+    Nd4jStatus statusOriginal = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, statusOriginal);
+    ASSERT_TRUE(variableSpace->hasVariable(3));
+
+    Nd4jStatus statusClone = GraphExecutioner<float>::execute(clone);
+
+    ASSERT_EQ(ND4J_STATUS_OK, statusClone);
+
+    auto z0 = variableSpace->getVariable(3)->getNDArray();
+    auto z1 = clone->getVariableSpace()->getVariable(3)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(z0));
+    ASSERT_TRUE(exp.equalsTo(z0));
+
+    ASSERT_TRUE(exp.isSameShape(z1));
+    ASSERT_TRUE(exp.equalsTo(z1));
+
+    delete graph;
+    delete clone;
+}
