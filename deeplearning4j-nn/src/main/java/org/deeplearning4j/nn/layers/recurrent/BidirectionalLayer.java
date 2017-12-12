@@ -117,7 +117,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
         int n = epsilon.size(1)/2;
         switch (layerConf.getMode()){
-            case SUM:
+            case ADD:
                 eFwd = epsilon;
                 eBwd = epsilon;
                 break;
@@ -189,7 +189,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         out2 = TimeSeriesUtils.reverseTimeSeries(out2);
 
         switch (layerConf.getMode()){
-            case SUM:
+            case ADD:
                 return out1.addi(out2);
             case MUL:
                 //TODO may be more efficient ways than this...
