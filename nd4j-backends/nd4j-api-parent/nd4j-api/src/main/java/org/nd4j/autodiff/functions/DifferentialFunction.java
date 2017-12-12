@@ -21,7 +21,6 @@ import java.util.UUID;
 
 
 @Data
-@NoArgsConstructor
 @Slf4j
 public abstract class DifferentialFunction {
 
