@@ -160,6 +160,12 @@ public class SVMLightRecordReader extends LineRecordReader {
      */
     @Override
     public List<Writable> next() {
+        if(numFeatures < 0 && numLabels < 0){
+            throw new IllegalStateException("Cannot get record: setConf(Configuration) has not been called. A setConf " +
+                    "call is rquired to specify the number of features and/or labels in the source dataset");
+        }
+
+
         Writable w = getNextRecord();
         if (w == null)
             throw new NoSuchElementException("No next element found!");
