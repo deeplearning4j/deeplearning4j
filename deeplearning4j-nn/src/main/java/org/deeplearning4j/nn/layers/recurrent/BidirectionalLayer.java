@@ -36,6 +36,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     private Bidirectional layerConf;
     private INDArray paramsView;
     private INDArray gradientView;
+    protected transient Map<String, INDArray> gradientViews;
 
     private INDArray input;
 
@@ -312,7 +313,17 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
+        if (this.paramsView != null && gradients.length() != numParams())
+            throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
+                    + ", got array of length " + gradients.length());
+
         this.gradientView = gradients;
+//        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf, gradients);
+        int n = gradients.length() / 2;
+        INDArray g1 = gradients.get(point(0), interval(0,n));
+        INDArray g2 = gradients.get(point(0), interval(n, 2*n));
+        fwd.setBackpropGradientsViewArray(g1);
+        bwd.setBackpropGradientsViewArray(g2);
     }
 
     @Override
@@ -347,7 +358,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {
-        throw new UnsupportedOperationException("Not supported");
+        this.conf = conf;
     }
 
     @Override
