@@ -9,8 +9,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -38,7 +36,9 @@ public class BidirectionalLayer implements RecurrentLayer {
     private INDArray gradientView;
     protected transient Map<String, INDArray> gradientViews;
 
-    private INDArray input;
+    //Next 2 variables: used *only* for MUL case (needed for backprop)
+    private INDArray outFwd;
+    private INDArray outBwd;
 
     public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull RecurrentLayer fwd, @NonNull RecurrentLayer bwd) {
         this.conf = conf;
@@ -122,10 +122,9 @@ public class BidirectionalLayer implements RecurrentLayer {
                 eBwd = epsilon;
                 break;
             case MUL:
-                throw new UnsupportedOperationException("Not yet implemented");
-//                eFwd = epsilon.dup(epsilon.ordering()).muli(outBwd);
-//                eBwd = epsilon.dup(epsilon.ordering()).muli(outFwd);
-//                break;
+                eFwd = epsilon.dup(epsilon.ordering()).muli(outBwd);
+                eBwd = epsilon.dup(epsilon.ordering()).muli(outFwd);
+                break;
             case AVERAGE:
                 eFwd = epsilon.dup(epsilon.ordering()).muli(0.5);
                 eBwd = eFwd;
@@ -151,7 +150,8 @@ public class BidirectionalLayer implements RecurrentLayer {
             g.gradientForVariable().put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
-        INDArray epsOut = g1.getRight().addi(g2.getRight());
+        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2.getRight());
+        INDArray epsOut = g1.getRight().addi(g2Reversed);
 
         return new Pair<>(g, epsOut);
     }
@@ -192,7 +192,10 @@ public class BidirectionalLayer implements RecurrentLayer {
             case SUM:
                 return out1.addi(out2);
             case MUL:
-                return out1.muli(out2);
+                //TODO may be more efficient ways than this...
+                this.outFwd = out1.detach();
+                this.outBwd = out2.detach();
+                return out1.mul(out2);
             case AVERAGE:
                 return out1.addi(out2).muli(0.5);
             case CONCAT:
@@ -318,7 +321,6 @@ public class BidirectionalLayer implements RecurrentLayer {
                     + ", got array of length " + gradients.length());
 
         this.gradientView = gradients;
-//        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf, gradients);
         int n = gradients.length() / 2;
         INDArray g1 = gradients.get(point(0), interval(0,n));
         INDArray g2 = gradients.get(point(0), interval(n, 2*n));
