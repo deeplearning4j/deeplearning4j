@@ -288,7 +288,7 @@
                 <repository>
                     <id>skymindnexus</id>
                     <name>skymindnexus</name>
-                    <url>http://skymindnexus.southcentralus.cloudapp.azure.com:8081/repository/skil/</url>
+                    <url>https://nexus.skymind.io/repository/skil/</url>
                 </repository>
             </distributionManagement>
         </profile>
@@ -397,7 +397,7 @@
             <activation>
                 <property>
                     <name>local.software.repository</name>
-                    <value>sonatype-nexus</value>
+                    <value>sonatype</value>
                 </property>
             </activation>
             <distributionManagement>
