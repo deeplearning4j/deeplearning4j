@@ -52,11 +52,6 @@ public class CustomIUpdater implements IUpdater {
     }
 
     @Override
-    public boolean hasLrSchedule() {
-        return false;
-    }
-
-    @Override
     public void setLrAndSchedule(double lr, ISchedule iSchedule) {
         this.learningRate = lr;
     }
