@@ -4,10 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -17,6 +15,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -202,6 +201,162 @@ public class WorkspaceTests {
         @Override
         public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
             return new Pair<>(maskArray, currentMaskState);
+        }
+    }
+
+
+
+    @Test
+    public void testRnnTimeStep(){
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            for (int i = 0; i < 3; i++) {
+
+                System.out.println("Starting test: " + ws + " - " + i);
+
+                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH)
+                        .inferenceWorkspaceMode(ws)
+                        .trainingWorkspaceMode(ws)
+                        .list();
+
+                ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH)
+                        .inferenceWorkspaceMode(ws)
+                        .trainingWorkspaceMode(ws)
+                        .graphBuilder()
+                        .addInputs("in");
+
+                switch (i) {
+                    case 0:
+                        b.layer(new SimpleRnn.Builder().nIn(10).nOut(10).build());
+                        b.layer(new SimpleRnn.Builder().nIn(10).nOut(10).build());
+
+                        gb.addLayer("0", new SimpleRnn.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new SimpleRnn.Builder().nIn(10).nOut(10).build(), "0");
+                        break;
+                    case 1:
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+
+                        gb.addLayer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0");
+                        break;
+                    case 2:
+                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+
+                        gb.addLayer("0", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "0");
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                b.layer(new RnnOutputLayer.Builder().nIn(10).nOut(10).build());
+                gb.addLayer("out", new RnnOutputLayer.Builder().nIn(10).nOut(10).build(), "in");
+                gb.setOutputs("out");
+
+                MultiLayerConfiguration conf = b.build();
+                ComputationGraphConfiguration conf2 = gb.build();
+
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                ComputationGraph net2 = new ComputationGraph(conf2);
+                net2.init();
+
+                for( int j=0; j<3; j++ ){
+                    net.rnnTimeStep(Nd4j.rand(new int[]{3, 10, 5}));
+                }
+
+                for( int j=0; j<3; j++ ){
+                    net2.rnnTimeStep(Nd4j.rand(new int[]{3, 10, 5}));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testTbpttFit(){
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            for (int i = 0; i < 3; i++) {
+
+                System.out.println("Starting test: " + ws + " - " + i);
+
+                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH)
+                        .inferenceWorkspaceMode(ws)
+                        .trainingWorkspaceMode(ws)
+                        .list();
+
+                ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH)
+                        .inferenceWorkspaceMode(ws)
+                        .trainingWorkspaceMode(ws)
+                        .graphBuilder()
+                        .addInputs("in");
+
+                switch (i) {
+                    case 0:
+                        b.layer(new SimpleRnn.Builder().nIn(10).nOut(10).build());
+                        b.layer(new SimpleRnn.Builder().nIn(10).nOut(10).build());
+
+                        gb.addLayer("0", new SimpleRnn.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new SimpleRnn.Builder().nIn(10).nOut(10).build(), "0");
+                        break;
+                    case 1:
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+
+                        gb.addLayer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0");
+                        break;
+                    case 2:
+                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+
+                        gb.addLayer("0", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "0");
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                b.layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build());
+                gb.addLayer("out", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                        .nIn(10).nOut(10).build(), "1");
+                gb.setOutputs("out");
+
+                MultiLayerConfiguration conf = b
+                        .backpropType(BackpropType.TruncatedBPTT)
+                        .tBPTTLength(5)
+                        .build();
+
+                ComputationGraphConfiguration conf2 = gb
+                        .backpropType(BackpropType.TruncatedBPTT)
+                        .tBPTTForwardLength(5).tBPTTBackwardLength(5)
+                        .build();
+
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                ComputationGraph net2 = new ComputationGraph(conf2);
+                net2.init();
+
+                for( int j=0; j<3; j++ ){
+                    net.fit(Nd4j.rand(new int[]{3, 10, 20}), Nd4j.rand(new int[]{3, 10, 20}));
+                }
+
+                for( int j=0; j<3; j++ ){
+                    net2.fit(new DataSet(Nd4j.rand(new int[]{3, 10, 20}), Nd4j.rand(new int[]{3, 10, 20})));
+                }
+            }
         }
     }
 }
