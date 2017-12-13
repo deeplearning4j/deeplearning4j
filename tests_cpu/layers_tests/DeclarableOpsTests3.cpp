@@ -18,6 +18,42 @@ public:
 };
 
 
+TEST_F(DeclarableOpsTests3, Test_Tile_1) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray<float> rep_vector('c', {1, 2}, {2, 2});
+    std::vector<int> reps({2, 2});
+
+    auto exp = x.tile(reps);
+
+    nd4j::ops::tile<float> op;
+    auto result = op.execute({&x, &rep_vector}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests3, Test_Tile_2) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    std::vector<int> reps({2, 2});
+
+    auto exp = x.tile(reps);
+
+    nd4j::ops::tile<float> op;
+    auto result = op.execute({&x}, {}, {2, 2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests3, Test_Permute_1) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> permute('c', {1, 3}, {0, 2, 1});
