@@ -1,9 +1,6 @@
 //
 // Created by Yurii Shyrma on 11.12.2017
 //
-// the algorithm is based on materials from:
-// William H. Press, Saul A. Teukolsky, William T. Vetterling, Brian P. Flannery " NUMERICAL RECIPES The Art of Scientific Computing Third Edition"
-
 
 #include<cmath> 
 #include <DataTypeUtils.h>
@@ -14,7 +11,7 @@ namespace ops {
 namespace helpers {
 
 const int maxIter = 10000;				// max number of loop iterations in function for continued fractions 
-const int maxValue = 3000;				// if a and b are both > maxValue, then apply single step of high-order Gauss-Legendre quadrature.
+const int maxValue = 3000;				// if a and b are both > maxValue, then apply Gauss-Legendre quadrature.
 
 
 // 18 values of abscissas and weights for 36-point Gauss-Legendre integration,
@@ -40,7 +37,7 @@ const double weights[18] = {0.0055657196642445571,
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // modified Lentz’s algorithm for continued fractions, 
-// reference: Lentz, W.J. 1976, “Generating Bessel Functions in Mie Scattering Calculations Using Continued Fractions,” Applied Optics, vol. 15, pp. 668–671
+// reference: Lentz, W.J. 1976, “Generating Bessel Functions in Mie Scattering Calculations Using Continued Fractions,” 
 template <typename T> 
 static T continFract(const T a, const T b, const T x) {	
 
@@ -50,12 +47,12 @@ static T continFract(const T a, const T b, const T x) {
     const T apb = a + b;
 
     // first iteration 
-    T c = (T)1.;
-    T d = (T)1. - apb * x / apu; 
-    if(math::nd4j_abs<T>(d) < min)
-			d = min;
-	d = (T)1./d;
-    T f = d;
+    T coeff1 = (T)1.;
+    T coeff2 = (T)1. - apb * x / apu; 
+    if(math::nd4j_abs<T>(coeff2) < min)
+			coeff2 = min;
+	coeff2 = (T)1./coeff2;
+    T result = coeff2;
          
     T val, delta;
     int i2;
@@ -66,39 +63,39 @@ static T continFract(const T a, const T b, const T x) {
 		// even step
 		val = i * (b - i) * x / ((amu + i2) * (a + i2));		
 
-		d = (T)(1.) + val * d;
-		if(math::nd4j_abs<T>(d) < min)
-			d = min;
-		d = (T)1. / d;
+		coeff2 = (T)(1.) + val * coeff2;
+		if(math::nd4j_abs<T>(coeff2) < min)
+			coeff2 = min;
+		coeff2 = (T)1. / coeff2;
 
-		c = (T)(1.) + val / c;
-		if(math::nd4j_abs<T>(c) < min)
-			c = min;		
+		coeff1 = (T)(1.) + val / coeff1;
+		if(math::nd4j_abs<T>(coeff1) < min)
+			coeff1 = min;		
 		
-		f *= c * d;
+		result *= coeff1 * coeff2;
 
 		//***********************************************//
 		// odd step
 		val = -(a + i) * (apb + i) * x / ((a + i2) * (apu + i2));
 		
-		d = (T)(1.) + val * d;
-		if(math::nd4j_abs<T>(d) < min)
-			d = min;
-		d = (T)1. / d;
+		coeff2 = (T)(1.) + val * coeff2;
+		if(math::nd4j_abs<T>(coeff2) < min)
+			coeff2 = min;
+		coeff2 = (T)1. / coeff2;
 
-		c = (T)(1.) + val / c;
-		if(math::nd4j_abs<T>(c) < min)
-			c = min;
+		coeff1 = (T)(1.) + val / coeff1;
+		if(math::nd4j_abs<T>(coeff1) < min)
+			coeff1 = min;
 
-		delta = c * d;
-		f *= delta;
+		delta = coeff1 * coeff2;
+		result *= delta;
 		
 		// condition to stop loop		
 		if(math::nd4j_abs<T>(delta - (T)1.) <= DataTypeUtils::eps<T>()) 		
 			break;
     }
     
-    return f;
+    return result;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -109,8 +106,8 @@ static T gausLegQuad(const T a, const T b, const T x) {
 
 	T upLim, t, result;
 	T sum = (T)0.;
-	T am1 = a - (T)1.; 
-	T bm1 = b - (T)1.;
+	T amu = a - (T)1.; 
+	T bmu = b - (T)1.;
 	T rat = a / (a + b);
 	T lnrat  = math::nd4j_log<T>(rat);
 	T lnratm = math::nd4j_log<T>((T)1. - rat);
@@ -132,11 +129,14 @@ static T gausLegQuad(const T a, const T b, const T x) {
 #pragma omp simd private(t) reduction(add:sum)
 	for (int i = 0; i < 18; ++i) {	
 		t = x + (upLim - x) * (T)abscissas[i];
-		sum += (T)weights[i] * math::nd4j_exp<T>(am1 * (math::nd4j_log<T>(t) - lnrat) + bm1 * (math::nd4j_log<T>((T)1. - t) - lnratm));
+		sum += (T)weights[i] * math::nd4j_exp<T>(amu * (math::nd4j_log<T>(t) - lnrat) + bmu * (math::nd4j_log<T>((T)1. - t) - lnratm));
 	}
-	result = sum * (upLim - x) * math::nd4j_exp<T>(am1 * lnrat - lgamma(a) + bm1 * lnratm - lgamma(b) + lgamma(a + b));
+	result = sum * (upLim - x) * math::nd4j_exp<T>(amu * lnrat - lgamma(a) + bmu * lnratm - lgamma(b) + lgamma(a + b));
 	
-	return result > (T) 0. ? (T)1. - result : -result;
+	if(result > (T)0.)
+		return (T)1. - result;
+
+	return -result;
 }
 
 

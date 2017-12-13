@@ -10,6 +10,20 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
+/**
+   * This op calculates Hurwitz zeta function zeta(x, q) = sum_{n=0}^{inf} (q + n)^{-x}
+   * Implementation is based on Euler-Maclaurin summation formula   
+   * 
+   * Input arrays: 
+   *    x: define power {-x}, must be > 1, type float.
+   *    q: define summand in denominator, must be > 0, type float.
+   *
+   * Output array: 
+   *    0: corresponding values of Hurwitz zeta function
+   * 
+   * Two input and one output arrays must have the same shape
+   */      
+//////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function
 CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
 

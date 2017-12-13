@@ -9,6 +9,29 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
+/**
+   * Implementation of Absolute Difference loss function |predictions - labels|
+   * 
+   * Input arrays: 
+   *    0: predictions - the predicted values, type float.
+   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
+   *       Can be single scalar or has the same rank as labels and must be broadcastable to labels.
+   *    2: labels - ground truth vales, type float.
+   *       Must have the same shape as predictions.    
+   *  
+   *  Input integer arguments:
+   *    0: type of reduction to apply to loss
+   *       0 - "none", unreduced weighted losses with the same shape as predictions
+   *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
+   *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
+   *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
+   *
+   * Output array: 
+   *    0: loss values, type float.
+   *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
+   */      
+//////////////////////////////////////////////////////////////////////////
+
 CUSTOM_OP_IMPL(absoluteDifference, 3, 1, false, 0, 1) {
 
   	NDArray<T>* predictions = INPUT_VARIABLE(0);

@@ -8,7 +8,29 @@
 namespace nd4j {
     namespace ops {
 
-
+//////////////////////////////////////////////////////////////////////////
+/**
+   * Implementation of cosine-distance loss function 1. - (predictions * labels).reduce_sum_along(dimension)
+   * 
+   * Input arrays: 
+   *    0: predictions - the predicted values, type float
+   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
+   *       Can be single scalar or has the same rank as labels and must be broadcastable to labels.
+   *    2: labels - ground truth vales, type float.
+   *       Must have the same shape as predictions.    
+   *  
+   *  Input integer arguments:
+   *    0: type of reduction to apply to loss
+   *       0 - "none", unreduced weighted losses with the same shape as predictions
+   *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
+   *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
+   *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
+   *    1: dimension along which the cosine distance is computed.
+   *
+   * Output array: 
+   *    0: loss values, type float.
+   *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
+   */      
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(cosineDistance, 3, 1, false, 0, 2) {
 

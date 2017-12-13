@@ -13,9 +13,13 @@ namespace ops {
 namespace helpers {
 
 
-	// calculate the Hurwitz zeta function
+	// calculate the Hurwitz zeta function for arrays
     template <typename T>
     NDArray<T> zeta(const NDArray<T>& x, const NDArray<T>& q);
+
+    // calculate the Hurwitz zeta function for scalars
+	template <typename T>
+	T zeta(const T x, const T q);
     
 
 }

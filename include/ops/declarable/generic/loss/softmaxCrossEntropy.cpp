@@ -9,6 +9,31 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
+/**
+   * Implementation of softmax cross-entropy loss function max(logits, 0.) - logits * labels + log(1. + exp(-abs(logits))); 
+   * 
+   * Input arrays: 
+   *    0: logits - logits, type float
+   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
+   *       Can be single scalar or has the same rank as labels, and must be broadcastable to labels.
+   *    2: labels - ground truth vales, expected to be 0. or 1., type float.
+   *       Must have the same shape as logits.    
+   *  
+   *  Input integer arguments:
+   *    0: type of reduction to apply to loss
+   *       0 - "none", unreduced weighted losses with the same shape as logits.
+   *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
+   *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
+   *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
+   *
+   *  Input float arguments:
+   *    0: smoothing value, if it is greater than 0 then apply smoothing to the labels (smooth the labels towards 1/numClasses):  new_labels = labels * (1 - labelsSmoothing) + labelsSmoothing / numClasses
+   *
+   * Output array: 
+   *    0: loss values, type float.
+   *       Can be an array with shape as in logits except last dimension is equal to unity or just single scalar, depending on reduction mode (see input integer argument)
+   */      
+//////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(softmaxCrossEntropy, 3, 1, false, 1, 1) {
 
   	NDArray<T>* logits  = INPUT_VARIABLE(0);

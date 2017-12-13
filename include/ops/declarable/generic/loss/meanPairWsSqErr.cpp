@@ -11,6 +11,21 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
+/**
+   * Implementation of pairwise-errors-squared loss function 
+   * 
+   * Input arrays: 
+   *    0: predictions - the predicted values, type float.
+   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
+   *       Can be single scalar or has the same rank as labels and must be broadcastable to labels.
+   *    2: labels - ground truth vales, type float.
+   *       Must have the same shape as predictions.    
+   *  
+   * Output array: 
+   *    0: loss value, it is just single scalar, type float.
+   */      
+//////////////////////////////////////////////////////////////////////////
+
 CUSTOM_OP_IMPL(meanPairWsSqErr, 3, 1, false, 0, 0) {
 
   	NDArray<T>* predictions = INPUT_VARIABLE(0);

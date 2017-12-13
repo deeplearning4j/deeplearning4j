@@ -1428,5 +1428,75 @@ TEST_F(DeclarableOpsTests3, zeta_test7) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, polygamma_test1) {
+        
+    NDArray<double> n('c', {3,3});    
+    NDArray<double> x('c', {3,3});        
 
+    NDArrayFactory<double>::linspace(1., n);        
+    x.assign(0.5);
+    
+    NDArray<double> expected('c', {3,3}, {4.93480220e+00,-1.68287966e+01, 9.74090910e+01,-7.71474250e+02, 7.69111355e+03,-9.22034579e+04, 1.29044022e+06,-2.06449000e+07, 3.71595452e+08});
+
+    nd4j::ops::polygamma<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, polygamma_test2) {
+        
+    NDArray<double> n('c', {3,3});    
+    NDArray<double> x('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(10., n);        
+    NDArrayFactory<double>::linspace(0.5, x);        
+    
+    NDArray<double> expected('c', {3,3}, {-7.43182451e+09, 3.08334759e+05,-3.25669798e+03, 1.55186197e+02,-1.46220433e+01, 2.00905201e+00,-3.48791235e-01, 7.08016273e-02,-1.60476052e-02});
+
+    nd4j::ops::polygamma<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, polygamma_test3) {
+        
+    NDArray<double> n('c', {3,3});    
+    NDArray<double> x('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(1., n);        
+    NDArrayFactory<double>::linspace(10., x);        
+    
+    NDArray<double> expected('c', {3,3}, {1.05166336e-01,-9.04983497e-03, 1.31009323e-03,-2.44459433e-04, 5.31593880e-05,-1.28049888e-05, 3.31755364e-06,-9.07408791e-07, 2.58758130e-07});
+
+    nd4j::ops::polygamma<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
 

@@ -20,7 +20,7 @@ const double coeff[] = { 12.0,-720.0,30240.0,-1209600.0,47900160.0,-1.8924375803
 //////////////////////////////////////////////////////////////////////////
 // slow implementation
 template <typename T>
-T zetaSlow(const T x, const T q) {
+static T zetaSlow(const T x, const T q) {
 	
 	const T precision = (T)1e-7; 									// function stops the calculation of series when next item is <= precision
 		

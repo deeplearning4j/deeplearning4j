@@ -191,8 +191,6 @@ namespace nd4j {
             return shape::length(_shapeInfo);
         }
 
-        void svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt);
-
         bool permutei(const std::initializer_list<int>& dimensions);
         bool permutei(const std::vector<int>& dimensions);
         bool permutei(const int* dimensions, const int rank);

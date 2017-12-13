@@ -10,7 +10,23 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-// Compute the regularized incomplete beta integral Ix(a,b)
+/**
+   * This op calculates regularized incomplete beta integral Ix(a, b). 
+   * Implementation is based on two algorithms depending on input values of a and b:
+   * - when a and b are both >  maxValue (3000.), then apply Gauss-Legendre quadrature method
+   * - when a and b are both <= maxValue (3000.), then apply modified Lentz’s algorithm for continued fractions
+   * 
+   * Input arrays: 
+   *    a: define power t^{a-1}, must be > 0, type float.
+   *    b: define power (1-t)^{b-1}, must be > 0, type float.
+   *    x: define upper limit of integration, must be within (0 <= x <= 1) range, type float.
+   *
+   * Output array: 
+   *    0: values of  regularized incomplete beta integral that corresponds to variable upper limit x, type float
+   * 
+   * Three input and one output arrays must have the same shape
+   */      
+//////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 
 	NDArray<T>* a = INPUT_VARIABLE(0);
