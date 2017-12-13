@@ -91,10 +91,7 @@ public class Repeat extends ShapeOp {
     }
 
 
-    @Override
-    public INDArray z() {
-        return x().transpose();
-    }
+
 
     @Override
     public String onnxName() {
@@ -103,7 +100,7 @@ public class Repeat extends ShapeOp {
 
     @Override
     public String tensorflowName() {
-        return "tile";
+        return "Tile";
     }
 
 

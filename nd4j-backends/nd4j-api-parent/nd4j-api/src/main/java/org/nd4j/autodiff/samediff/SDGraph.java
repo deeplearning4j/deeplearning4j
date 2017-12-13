@@ -289,11 +289,11 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
         List<int[]> vertices = new ArrayList<>();
         for(Set<Edge<DifferentialFunction>> edge : getEdges().values())  {
             for(Edge<DifferentialFunction> edge1 : edge) {
-                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getTo())) {
+                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getTo()) && edge1.getTo().length < 2) {
                     vertices.add(edge1.getTo());
                 }
 
-                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getFrom())) {
+                if(!ArrayUtil.listOfIntsContains(vertices,edge1.getFrom()) && edge1.getFrom().length < 2) {
                     vertices.add(edge1.getFrom());
                 }
 
@@ -314,7 +314,7 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
             List<OpExecAction> forwardActions = getOpOrder().getActions();
             //size the vertex id relative to where it would be encountered
             //in a reverse order traversal
-            final Map<int[],Integer> normalForwardOrderMap = new HashMap<>();
+            final Map<int[],Integer> normalForwardOrderMap = new IntArrayKeyMap<>();
             for(int i = forwardActions.size() - 1,j = 0; i >= 0; i--,j++) {
                 OpExecAction currAction = forwardActions.get(i);
                 normalForwardOrderMap.put(currAction.getOutputId(),j);
@@ -418,7 +418,7 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
                 Set<int[]> set = entry.getValue();
                 if (set == null)
                     continue;
-                if (!set.isEmpty())
+                if (!set.isEmpty() && set.iterator().next().length < 2)
                     throw new IllegalStateException("Graph has cycles");
             }
 

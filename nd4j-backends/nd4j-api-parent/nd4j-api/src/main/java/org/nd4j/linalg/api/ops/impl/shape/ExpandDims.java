@@ -19,85 +19,65 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ExpandDims function
  *
  * @author Adam Gibson
  */
-public class ExpandDims extends ShapeOp {
-  private int axis;
+public class ExpandDims extends DynamicCustomOp {
+    private int axis;
 
-    public ExpandDims(SameDiff sameDiff, SDVariable i_v, int axis) {
-        super(sameDiff, i_v, false);
+    public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
+        super(null, sameDiff, args);
         this.axis = axis;
     }
 
-    public ExpandDims() {}
-
-    public ExpandDims(INDArray x, INDArray z) {
-        super(x, z);
+    public ExpandDims(SameDiff sameDiff, SDVariable[] args) {
+        super(null, sameDiff, args);
     }
 
-    public ExpandDims(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public ExpandDims(INDArray[] inputs, INDArray[] outputs) {
+        super(null, inputs, outputs);
     }
 
-    public ExpandDims(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public ExpandDims(INDArray x) {
-        super(x);
+    public ExpandDims(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(null, sameDiff, args, inPlace);
     }
 
     @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+         val targetNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(1));
+        val dimArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",targetNode,graph);
 
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        int[] permuteDims = extraArgs == null ? z().shape() : (int[]) extraArgs[0];
-        if(x != z) {
-            if(x.isScalar() && !z.isScalar()) {
-                z.assign(x.getDouble(0));
-            }
-            else
-                z.assign(x.broadcast(permuteDims));
+        if(dimArr != null) {
+             int axis = dimArr.data().asInt()[0];
+             this.axis = axis;
+             addIArgument(this.axis);
+         }
+         else {
+            this.axis = Integer.MAX_VALUE;
+            addIArgument(this.axis);
         }
-        else {
-            if(x.isScalar() && !z.isScalar()) {
-                z.assign(x.getDouble(0));
-            }
-            else
-                this.z = x.broadcast(permuteDims);
-        }
-
-    }
-
-
-    @Override
-    public int opNum() {
-        return 0;
     }
 
     @Override
     public String opName() {
-        return "expanddims";
+        return "expand_dims";
     }
 
     @Override

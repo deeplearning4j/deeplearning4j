@@ -100,6 +100,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     public int depth() {
+        if(depth == 0)
+            return sameDiff.graph().getVertex(vertexId).depth();
         return depth;
     }
 

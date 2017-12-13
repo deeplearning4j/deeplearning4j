@@ -221,7 +221,7 @@ public class SameDiff {
             Preconditions.checkState(thisVertexIdToNew.containsKey(variable.getVertexId()),variable.getVertexId() + " not found in mapped vertices!");
             int newVertexMap = thisVertexIdToNew.get(variable.getVertexId());
 
-
+            deepClone.setDepth(variable.depth());
             deepClone.setVertexId(newVertexMap);
             deepClone.setSameDiff(sameDiff);
             sameDiff.addVariable(deepClone);
@@ -3468,7 +3468,7 @@ public class SameDiff {
                     SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(sameDiff.getVariableForVertexId(opOrder.get(0).getOutputId()[0]));
 
                     //start with scalar backprop
-                    SDVariable initialGrad = sameDiff.one("one-var",new int[]{1,1});
+                    SDVariable initialGrad = sameDiff.var("one-var",Nd4j.scalar(1.0));
                     SDVariable firstBackward = sameDiff.getVariableForVertexId(opOrder.get(0).getOutputId()[0]);
                     sameDiff.forwardVarForGrad.put(firstBackward.getVertexId(),initialGrad);
                     sameDiff.gradients.put(firstBackward.getVertexId(),initialGrad);
@@ -3683,18 +3683,22 @@ public class SameDiff {
         }
 
         for(val function : fromToTable.values()) {
-            val inputVertexIds = incomingArgsReverse.get(function);
-            val outputArgs = ougoingArgsReverse.get(function);
+            val inputVertexIds = incomingArgsReverse.get(function.getInstanceId());
+            int maxDepth = -1;
+            for(int i = 0; i < inputVertexIds.length; i++) {
+                 maxDepth = Math.max(maxDepth,getVariableForVertexId(inputVertexIds[i]).depth());
+            }
+
+            val outputArgs = ougoingArgsReverse.get(function.getInstanceId());
             if(outputArgs == null) {
                 val shapes = function.calculateOutputShape();
                 val outgoingVertexIds = new int[shapes.size()];
                 int outgoingVertexIdx = 0;
                 for(val shape : shapes) {
                     val newVertexId = graph().nextVertexId();
-                    val var = var("",shape,new ZeroInitScheme('f'),newVertexId,0);
+                    val var = var("output-" + UUID.randomUUID().toString(),shape,new ZeroInitScheme('f'),newVertexId,maxDepth + 1);
                     outgoingVertexIds[outgoingVertexIdx++] = newVertexId;
                     addVariable(var);
-                    putShapeForVertexId(newVertexId,shape);
                     if(getArrForVertexId(var.getVertexId()) == null)
                         var.storeAndAllocateNewArray();
                 }
@@ -3702,6 +3706,34 @@ public class SameDiff {
                 addOutgoingFor(outgoingVertexIds,function);
                 function.initWithArrays(arrays);
                 function.initOutputWithArrays(arrays);
+            }
+
+            if(function instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) function;
+                if(customOp.numInputArguments() < 1) {
+                    val args = function.args();
+                    for(int i = 0; i < args.length; i++) {
+                        val arr = getArrForVertexId(args[i].getVertexId());
+                        if(arr == null) {
+                            throw new ND4JIllegalStateException("Op " + function.opName() + " not initialized!");
+                        }
+
+                        customOp.addInputArgument(arr);
+                    }
+                }
+
+
+                if(customOp.numOutputArguments() < 1) {
+                    val args = function.outputVariables();
+                    for(int i = 0; i < args.length; i++) {
+                        val arr = getArrForVertexId(args[i].getVertexId());
+                        if(arr == null) {
+                            throw new ND4JIllegalStateException("Op " + function.opName() + " not initialized!");
+                        }
+
+                        customOp.addOutputArgument(arr);
+                    }
+                }
             }
         }
 
@@ -4020,13 +4052,8 @@ public class SameDiff {
                     currVariable = add;
 
                 }
-                else {
-                    associateArrayWithVariable(op.z(), currVariable);
-                }
 
                 opMap.put(currVariable,differentialFunction);
-                addArgsFor(opExecAction.getInputsIds(),differentialFunction);
-                addOutgoingFor(opExecAction.getOutputId(),differentialFunction);
             }
 
         }
@@ -4054,13 +4081,13 @@ public class SameDiff {
         for(val arg: differentialFunction.args()) {
             val var = getVariableForVertexId(arg.getVertexId());
             realShapes.append(" Input shape for " + var.getVarName() + " is  " + Arrays.
-                    toString(getArrForVertexId(arg.getVertexId()).shape()));
+                    toString(getShapeForVertexId(arg.getVertexId())));
         }
 
         for(val arg: differentialFunction.outputVariables()) {
             val var = getVariableForVertexId(arg.getVertexId());
             realShapes.append(" Output shape for " + var.getVarName() + " is  " + Arrays.
-                    toString(getArrForVertexId(arg.getVertexId()).shape()));
+                    toString(getShapeForVertexId(arg.getVertexId())));
         }
 
 

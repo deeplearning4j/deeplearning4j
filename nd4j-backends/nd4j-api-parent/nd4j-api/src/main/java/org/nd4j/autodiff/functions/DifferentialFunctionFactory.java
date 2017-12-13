@@ -213,9 +213,6 @@ public class DifferentialFunctionFactory   {
     }
 
 
-    public SDVariable expandDims(SDVariable iX,int axis) {
-        return new ExpandDims(sameDiff(),iX,axis).outputVariables()[0];
-    }
 
 
 
@@ -451,6 +448,11 @@ public class DifferentialFunctionFactory   {
 
     }
 
+
+
+    public SDVariable expandDims(SDVariable iX,int axis) {
+        return new ExpandDims(sameDiff(),new SDVariable[]{iX},axis).outputVariables()[0];
+    }
 
 
     public SDVariable broadcast(SDVariable iX, int... shape) {
@@ -1011,19 +1013,17 @@ public class DifferentialFunctionFactory   {
      *
      * @param func
      * @param input
-     * @param axes
      * @return
      */
     public SDVariable doGradChoose(SDVariable func,
-                                   SDVariable input,
-                                   int...axes) {
+                                   SDVariable input) {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
 
-        SDVariable repeatedGrad = doRepeat(func,input,axes);
-        SDVariable resultRepeated = doRepeat(func.args()[0],input,axes);
+        SDVariable repeatedGrad = doRepeat(func,input);
+        SDVariable resultRepeated = doRepeat(func.args()[0],input);
         SDVariable argMaxLocations = eq(input,resultRepeated);
-        return div(mul(argMaxLocations,repeatedGrad),sum(argMaxLocations,axes).outputVariables()[0]);
+        return div(mul(argMaxLocations,repeatedGrad),sum(argMaxLocations).outputVariables()[0]);
 
 
     }
@@ -1033,16 +1033,13 @@ public class DifferentialFunctionFactory   {
      *
      * @param func
      * @param input
-     * @param axes
      * @return
      */
     public  SDVariable doRepeat(SDVariable func,
-                                SDVariable input,
-                                int...axes) {
-        int[] inputShape = input.getShape();
+                                SDVariable input) {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
-        return broadcast(func,inputShape);
+        return tile(func,input.getShape());
 
 
 

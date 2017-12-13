@@ -47,7 +47,7 @@ public class SubOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "sub";
+        return "subtract";
     }
 
 

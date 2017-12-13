@@ -12,6 +12,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -152,6 +153,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             val var = sameDiff.var("output-" + opName() + UUID.randomUUID().toString(),shapes.get(i),maxDepth + 1);
                             newVars[i] = var;
                             vertexIds[i] = var.getVertexId();
+                            val arr = var.storeAndAllocateNewArray();
+                            addOutputArgument(arr);
                         }
 
                         outputVariables = newVars;
@@ -183,7 +186,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             val map = Nd4j.getExecutioner().getCustomOperations();
             val lcName = opName().toLowerCase();
             val desc = map.get(lcName);
-
+            if(desc == null) {
+                System.out.println(map.keySet());
+                System.out.println(DifferentialFunctionClassHolder.getInstance().missingOps());
+            }
             hash = desc.getHash();
         }
 
@@ -297,18 +303,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void addOutputArgument(INDArray... arg) {
         outputArguments.addAll(Arrays.asList(arg));
-
-        val outputFunctions = outputVariables();
-        val arrsSoFar = outputArguments();
-        //validate arrays passed in, keep in mind that
-        //this is a cumulative algorithm so we should always
-        //refresh the current list
-        for(int i = 0; i < arg.length; i++) {
-            if (!Arrays.equals(outputFunctions[i].getShape(), arrsSoFar[i].shape())) {
-                val message = "Illegal array passed in. Expected shape " + Arrays.toString(outputFunctions[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape());
-                throw new ND4JIllegalStateException(message);
-            }
-        }
     }
 
     @Override

@@ -98,7 +98,7 @@ public class Min extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().doGradChoose(outputVariables()[0],i_v1.get(0),dimensions);
+        SDVariable ret = f().doGradChoose(outputVariables()[0],i_v1.get(0));
 
         return Collections.singletonList(ret);
     }

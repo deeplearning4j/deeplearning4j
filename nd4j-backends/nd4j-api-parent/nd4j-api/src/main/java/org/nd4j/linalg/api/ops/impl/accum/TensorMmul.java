@@ -71,7 +71,7 @@ public class TensorMmul extends DynamicCustomOp {
         this.extraArgs = new Object[] {axes,mMulTranspose};
         sameDiff.addArgsFor(new SDVariable[] {i_v1,i_v2},this);
         val vertexId = outputVariables()[0].getVertexId();
-        if(!addedEdges) {
+        if(!addedEdges && sameDiff.getOutputsForFunction(this) == null) {
             sameDiff.addOutgoingFor(new int[]{vertexId},this);
             addedEdges = true;
         }
@@ -247,7 +247,7 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "tensormmul";
+        return "tensordot";
     }
 
 

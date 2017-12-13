@@ -99,7 +99,7 @@ public class Max extends BaseAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         List<SDVariable> ret = new ArrayList<>(1);
-        ret.add(sameDiff.f().doGradChoose(outputVariables()[0],i_v1.get(0),dimensions));
+        ret.add(sameDiff.f().doGradChoose(outputVariables()[0],i_v1.get(0)));
         return ret;
     }
 

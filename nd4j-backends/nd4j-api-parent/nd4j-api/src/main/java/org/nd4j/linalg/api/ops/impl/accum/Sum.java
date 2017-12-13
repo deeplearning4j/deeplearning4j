@@ -82,7 +82,7 @@ public class Sum extends BaseAccumulation {
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable repeat =  f().doRepeat(
                 i_v1.get(0),
-                arg(),dimensions);
+                arg());
         return Collections.singletonList(repeat);
     }
 

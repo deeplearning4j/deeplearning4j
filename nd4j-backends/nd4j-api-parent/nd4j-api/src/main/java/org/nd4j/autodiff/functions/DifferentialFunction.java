@@ -278,17 +278,16 @@ public abstract class DifferentialFunction {
         List<SDVariable> vals = doDiff(i_v1);
         val outputVars = args();
         for(int i = 0; i < outputVars.length; i++) {
-            SDVariable differentialFunction = sameDiff.setupFunction(vals.get(i));
-            SDVariable var = sameDiff.getVariableForVertexId(differentialFunction.getVertexId());
+            SDVariable var = outputVars[i];
             SDVariable grad = var.getGradient();
             if(grad != null) {
-                SDVariable ret = f().addi(differentialFunction, grad);
+                SDVariable ret = f().addi(var, grad);
                 sameDiff.updateVariableName(ret.getVertexId(),var.getVarName() + "-grad");
                 sameDiff.setGradientForVertexId(var.getVertexId(),sameDiff.getVariableForVertexId(ret.getVertexId()));
                 sameDiff.setForwardVariableForVertexId(ret.getVertexId(),var);
             }
             else {
-                SDVariable gradVar = sameDiff.getVariableForVertexId(differentialFunction.getVertexId());
+                SDVariable gradVar = vals.get(i);
                 sameDiff.setGradientForVertexId(var.getVertexId(), gradVar);
                 sameDiff.setForwardVariableForVertexId(gradVar.getVertexId(),var);
             }

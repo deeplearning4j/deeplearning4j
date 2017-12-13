@@ -27,6 +27,15 @@ import java.util.Map;
  */
 public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
+
+    /**
+     * Get the node from the graph
+     * @param graph the graph to get the node from
+     * @param name the name of the node to get from the graph
+     * @return
+     */
+    NODE_TYPE getNodeWithNameFromGraph(GRAPH_TYPE graph,String name);
+
     /**
      * Returns true if the given node is a place holder
      * @param node the node to check

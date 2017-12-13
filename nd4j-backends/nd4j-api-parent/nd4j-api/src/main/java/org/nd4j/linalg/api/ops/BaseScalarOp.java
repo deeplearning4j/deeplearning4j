@@ -85,7 +85,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             this.xVertexId = i_v.getVertexId();
             this.zVertexId = var.getVertexId();
             f().validateDifferentialFunctionsameDiff(i_v);
-            sameDiff.putShapeForVertexId(var.getVertexId(),sameDiff.setupFunction(i_v).getShape());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }

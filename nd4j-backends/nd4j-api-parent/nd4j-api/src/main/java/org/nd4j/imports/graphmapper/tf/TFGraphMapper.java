@@ -65,6 +65,17 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
     }
 
+    @Override
+    public NodeDef getNodeWithNameFromGraph(GraphDef graph, String name) {
+        for(int i = 0; i < graph.getNodeCount(); i++) {
+            val node = graph.getNode(i);
+            if(node.getName().equals(name))
+                return node;
+        }
+
+        return null;
+    }
+
     /**
      * {@inheritDoc}
      */

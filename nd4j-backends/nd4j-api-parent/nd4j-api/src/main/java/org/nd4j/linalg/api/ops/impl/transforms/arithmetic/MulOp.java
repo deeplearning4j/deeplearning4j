@@ -47,7 +47,7 @@ public class MulOp  extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "mul";
+        return "multiply";
     }
 
 

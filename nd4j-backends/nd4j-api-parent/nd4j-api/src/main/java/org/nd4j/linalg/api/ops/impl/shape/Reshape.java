@@ -33,6 +33,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ public class Reshape extends DynamicCustomOp {
     public Reshape(SameDiff sameDiff, SDVariable i_v,int[] shape) {
         super(null,sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
+        addIArgument(shape);
     }
 
 
@@ -143,7 +145,10 @@ public class Reshape extends DynamicCustomOp {
 
     }
 
-
+    @Override
+    public List<int[]> calculateOutputShape() {
+        return Arrays.asList(shape);
+    }
 
     @Override
     public void addInputArgument(INDArray... arg) {

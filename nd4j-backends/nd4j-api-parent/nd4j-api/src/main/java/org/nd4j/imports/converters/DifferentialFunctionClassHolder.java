@@ -5,6 +5,7 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -12,9 +13,7 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 public class DifferentialFunctionClassHolder {
@@ -22,6 +21,7 @@ public class DifferentialFunctionClassHolder {
     private static DifferentialFunctionClassHolder INSTANCE = new DifferentialFunctionClassHolder();
     private Map<String,DifferentialFunction> tensorFlowNames = new HashMap<>();
     private Map<String,DifferentialFunction> onnxNames = new HashMap<>();
+    private List<String> missingOps = new ArrayList<>();
 
     /**
      * Get the
@@ -79,8 +79,20 @@ public class DifferentialFunctionClassHolder {
             }
         }
 
+
+        val map = Nd4j.getExecutioner().getCustomOperations();
+        val set = map.keySet();
+        set.removeAll(nodeConverters.keySet());
+        missingOps.addAll(set);
+        Collections.sort(missingOps);
+        log.warn("Missing " + set.size() + " ops!");
+
     }
 
+
+    public List<String> missingOps() {
+        return missingOps;
+    }
 
     /**
      *

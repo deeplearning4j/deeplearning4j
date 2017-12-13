@@ -75,7 +75,7 @@ public class Mean extends Sum {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().div(f().doRepeat(outputVariables()[0],i_v1.get(0),dimensions),
+        SDVariable ret = f().div(f().doRepeat(outputVariables()[0],i_v1.get(0)),
                 f().mul(f().one(i_v1.get(0).getShape()),
                         f().getInputLength(i_v1.get(0))));
 

@@ -76,7 +76,7 @@ public class StandardDeviation extends Variance {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         int inputs = f().getInputLength(i_v1.get(0));
-        SDVariable g =  f().doRepeat(outputVariables()[0],i_v1.get(0),dimensions);
+        SDVariable g =  f().doRepeat(outputVariables()[0],i_v1.get(0));
         SDVariable ret = f().div(f().sub(f().mul(g,arg()),f().mean(arg(),dimensions)),f().mul(f()
                 .one(g.getShape()),inputs));
 

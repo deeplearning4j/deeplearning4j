@@ -149,7 +149,7 @@ public class Variance extends BaseAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         int inputs = f().getInputLength(i_v1.get(0));
-        SDVariable g =  f().doRepeat(outputVariables()[0],i_v1.get(0),dimensions);
+        SDVariable g =  f().doRepeat(outputVariables()[0],i_v1.get(0));
         SDVariable ret = f().mul(g,f().mul(f().mul(f().one(outputVariables()[0].getShape()),2),g));
         ret = f().mul(ret,arg());
         ret = f().sub(ret,f().mean(arg(),dimensions));
