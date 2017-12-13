@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
@@ -141,6 +142,10 @@ public class KerasConvolution2D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
+        if (preprocessor != null) {
+            return this.getConvolution2DLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+        }
         return this.getConvolution2DLayer().getOutputType(-1, inputType[0]);
     }
 

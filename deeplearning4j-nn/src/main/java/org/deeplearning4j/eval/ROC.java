@@ -606,6 +606,10 @@ public class ROC extends BaseEvaluation<ROC> {
             return auc;
         }
 
+        if (exampleCount == 0) {
+            return Double.NaN;
+        }
+
         this.auc = getRocCurve().calculateAUC();
         return auc;
     }
@@ -620,6 +624,9 @@ public class ROC extends BaseEvaluation<ROC> {
             return auprc;
         }
 
+        if(exampleCount == 0){
+            return Double.NaN;
+        }
 
         auprc = getPrecisionRecallCurve().calculateAUPRC();
         return auprc;

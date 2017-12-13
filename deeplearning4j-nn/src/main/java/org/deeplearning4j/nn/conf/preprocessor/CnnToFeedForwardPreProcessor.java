@@ -48,9 +48,9 @@ import java.util.Arrays;
  */
 @Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
-    private int inputHeight;
-    private int inputWidth;
-    private int numChannels;
+    protected int inputHeight;
+    protected int inputWidth;
+    protected int numChannels;
 
     /**
      * @param inputHeight the columns

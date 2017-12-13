@@ -104,8 +104,6 @@ public class LayerBuilderTest {
         OutputLayer out = new OutputLayer.Builder(loss).build();
 
         checkSerialization(out);
-
-        assertEquals(loss, out.getLossFunction());
     }
 
     @Test
@@ -113,8 +111,6 @@ public class LayerBuilderTest {
         RnnOutputLayer out = new RnnOutputLayer.Builder(loss).build();
 
         checkSerialization(out);
-
-        assertEquals(loss, out.getLossFunction());
     }
 
     @Test

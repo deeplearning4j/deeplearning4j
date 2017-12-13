@@ -6,12 +6,14 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -578,5 +580,38 @@ public class TransferLearningMLNTest {
         assertEquals(expectedParams, modelNow.params());
     }
 
+    @Test
+    public void testObjectOverrides(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4368
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dropOut(0.5)
+                .weightNoise(new DropConnect(0.5))
+                .l2(0.5)
+                .constrainWeights(new UnitNormConstraint())
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        MultiLayerNetwork orig = new MultiLayerNetwork(conf);
+        orig.init();
+
+        FineTuneConfiguration ftc = new FineTuneConfiguration.Builder()
+                .dropOut(0)
+                .weightNoise(null)
+                .constraints(null)
+                .l2(0.0)
+                .build();
+
+        MultiLayerNetwork transfer = new TransferLearning.Builder(orig)
+                .fineTuneConfiguration(ftc)
+                .build();
+
+        DenseLayer l = (DenseLayer) transfer.getLayer(0).conf().getLayer();
+
+        assertNull(l.getIDropout());
+        assertNull(l.getWeightNoise());
+        assertNull(l.getConstraints());
+        assertEquals(0.0, l.getL2(), 0.0);
+    }
 
 }

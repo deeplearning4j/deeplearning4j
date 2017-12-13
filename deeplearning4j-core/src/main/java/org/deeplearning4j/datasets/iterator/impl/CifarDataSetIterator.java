@@ -142,6 +142,11 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     }
 
     @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
     public List<String> getLabels() {
         return loader.getLabels();
     }

@@ -134,6 +134,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         @Override
         @SuppressWarnings("unchecked")
         public Convolution1DLayer build() {
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new Convolution1DLayer(this);

@@ -47,10 +47,8 @@ public class KerasAtrousConvolution1DTest {
     private final double DROPOUT_KERAS = 0.3;
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
-    private final int[] DILATION = new int[]{2, 2};
-    private final int[] INPUT_SHAPE = new int[]{100, 20};
+    private final int[] DILATION = new int[]{2};
     private final int[] STRIDE = new int[]{3, 4};
-    private final PoolingType POOLING_TYPE = PoolingType.MAX;
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
@@ -78,7 +76,11 @@ public class KerasAtrousConvolution1DTest {
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
         }
-        config.put(conf.getLAYER_FIELD_DILATION_RATE(), DILATION[0]);
+        if (kerasVersion == 2) {
+            config.put(conf.getLAYER_FIELD_DILATION_RATE(), DILATION);
+        } else {
+            config.put(conf.getLAYER_FIELD_DILATION_RATE(), DILATION[0]);
+        }
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
@@ -102,7 +104,10 @@ public class KerasAtrousConvolution1DTest {
         assertEquals(N_OUT, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
-        assertEquals(DILATION[0], layer.getDilation()[0]);
+        if (kerasVersion == 1)
+            assertEquals(DILATION[0], layer.getDilation()[0]);
+        else
+            assertEquals(DILATION, layer.getDilation());
     }
 }
 

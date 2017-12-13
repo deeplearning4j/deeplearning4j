@@ -40,7 +40,7 @@ Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/ov
 
 ## Support
 
-We are not supporting Stackoverflow right now. Github issues should focus on bug reports and feature requests. Please join the community on [Gitter](https://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact).
+We are not supporting Stackoverflow right now. Github issues should focus on bug reports and feature requests. Please join the community on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact).
 
 ## Installation
 

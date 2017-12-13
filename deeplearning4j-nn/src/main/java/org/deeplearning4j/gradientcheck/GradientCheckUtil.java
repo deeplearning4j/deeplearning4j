@@ -33,10 +33,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /** A utility for numerically checking gradients. <br>
  * Basic idea: compare calculated gradients with those calculated numerically,
@@ -117,6 +114,14 @@ public class GradientCheckUtil {
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
+                input, labels, inputMask, labelMask, false, -1);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
+                                         boolean subset, int maxPerParam) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -193,8 +198,32 @@ public class GradientCheckUtil {
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         int[] paramEnds = new int[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
+        Map<String,Integer> stepSizeForParam;
+        if(subset){
+            stepSizeForParam = new HashMap<>();
+            stepSizeForParam.put(paramNames.get(0), Math.max(1, paramTable.get(paramNames.get(0)).length() / maxPerParam));
+        } else {
+            stepSizeForParam = null;
+        }
         for (int i = 1; i < paramEnds.length; i++) {
-            paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
+            int n = paramTable.get(paramNames.get(i)).length();
+            paramEnds[i] = paramEnds[i - 1] + n;
+            if(subset){
+                int ss = n / maxPerParam;
+                if(ss == 0){
+                    ss = n;
+                }
+                stepSizeForParam.put(paramNames.get(i), ss);
+            }
+        }
+
+        if(print) {
+            int i=0;
+            for (Layer l : mln.getLayers()) {
+                Set<String> s = l.paramTable().keySet();
+                log.info("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
+                i++;
+            }
         }
 
 
@@ -204,7 +233,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
 
         INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
-        for (int i = 0; i < nParams; i++) {
+        for (int i = 0; i < nParams; ) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
@@ -243,9 +272,11 @@ public class GradientCheckUtil {
             if (relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < minAbsoluteError) {
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                    if(print) {
+                        log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                    }
                 } else {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
@@ -259,6 +290,18 @@ public class GradientCheckUtil {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
                                 + numericalGradient + ", relError= " + relError);
             }
+
+            int step;
+            if(subset){
+                step = stepSizeForParam.get(paramName);
+                if(i + step > paramEnds[currParamNameIdx]+1){
+                    step = paramEnds[currParamNameIdx]+1 - i;
+                }
+            } else {
+                step = 1;
+            }
+
+            i += step;
         }
 
         if (print) {

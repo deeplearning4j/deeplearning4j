@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -137,6 +138,31 @@ public class LayerMemoryReport extends MemoryReport {
         return "LayerMemoryReport(layerName=" + layerName + ",layerType=" + layerType.getSimpleName() + ")";
     }
 
+    /**
+     * Multiply all memory usage by the specified scaling factor
+     *
+     * @param scale Scale factor to multiply all memory usage by
+     */
+    public void scale(int scale){
+        parameterSize *= scale;
+        updaterStateSize *= scale;
+        workingMemoryFixedInference *= scale;
+        workingMemoryVariableInference *= scale;
+        cacheModeMemFixed = scaleEntries(cacheModeMemFixed, scale);
+        cacheModeMemVariablePerEx = scaleEntries(cacheModeMemVariablePerEx, scale);
+    }
+
+    private static Map<CacheMode,Long> scaleEntries(Map<CacheMode, Long> in, int scale){
+        if(in == null)
+            return null;
+
+        Map<CacheMode,Long> out = new HashMap<>();
+        for(Map.Entry<CacheMode,Long> e : in.entrySet()){
+            out.put(e.getKey(), scale * e.getValue());
+        }
+
+        return out;
+    }
 
     public static class Builder {
 

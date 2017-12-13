@@ -418,10 +418,20 @@ public class KerasLayerUtils {
         double dropout = 1.0;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT())) {
             /* For most feedforward layers. */
-            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+            try {
+                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+            } catch (Exception e) {
+                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+                dropout = 1.0 - (double) kerasDropout;
+            }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_W())) {
             /* For LSTMs. */
-            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+            try {
+                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+            } catch (Exception e) {
+                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+                dropout = 1.0 - (double) kerasDropout;
+            }
         }
         return dropout;
     }

@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
@@ -1072,6 +1073,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
             if (layer instanceof FrozenLayer) {
                 copyConfigToLayer(layerName, ((FrozenLayer) layer).getLayer());
+            }
+
+            if (layer instanceof Bidirectional) {
+                Bidirectional b = (Bidirectional)layer;
+                copyConfigToLayer(b.getFwd().getLayerName(), b.getFwd());
+                copyConfigToLayer(b.getBwd().getLayerName(), b.getBwd());
             }
 
             if (layer instanceof ConvolutionLayer) {
