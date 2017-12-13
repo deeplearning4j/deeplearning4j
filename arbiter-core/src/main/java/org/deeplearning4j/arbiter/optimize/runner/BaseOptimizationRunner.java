@@ -155,6 +155,16 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                 } else {
                     ListenableFuture<OptimizationResult> f =
                                     execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    try {
+                        status = f.get().getCandidateInfo();
+                        if ( status.getCandidateStatus() == CandidateStatus.Failed ) {
+                            log.info( "execute - candidate { } failed", f.get().getCandidate().getIndex() );
+                            continue;
+                        }
+                    } catch (Exception e) {
+                        //??
+                        continue;
+                    }
                     f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                     queuedFutures.add(f);
                     totalCandidateCount.getAndIncrement();
