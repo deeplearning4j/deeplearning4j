@@ -111,10 +111,9 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
         if (initializeParameters) {
             INDArray ret = initWeights(nIn, //Fan in
                     nOut, //Fan out
-                    shape, weightInit, dist, DEFAULT_WEIGHT_INIT_ORDER,weightParamView);
+                    shape, weightInit, dist, DEFAULT_WEIGHT_INIT_ORDER, weightParamView);
             return ret;
         } else {
-//            System.out.println(weightParamView.shapeInfoToString());
             return weightParamView;
         }
     }

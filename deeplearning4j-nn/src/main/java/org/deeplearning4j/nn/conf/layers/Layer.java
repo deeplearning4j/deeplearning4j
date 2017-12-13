@@ -75,7 +75,9 @@ import java.util.*;
                 @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
                 @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
                 @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
-                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn")})
+                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn")},
+                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult")
+)
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {

@@ -40,8 +40,12 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        if(this.nIn!=this.nOut) throw  new IllegalStateException("element wise layer must have the same input and output size!!!");
-        org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret = new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
+        if(this.nIn != this.nOut){
+            throw  new IllegalStateException("Element wise layer must have the same input and output size. Got nIn="
+                    + nIn + ", nOut=" + nOut);
+        }
+        org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret
+                = new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
