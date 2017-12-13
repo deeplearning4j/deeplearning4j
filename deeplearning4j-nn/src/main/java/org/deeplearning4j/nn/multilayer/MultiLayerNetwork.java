@@ -72,6 +72,8 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -3161,6 +3163,44 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             l.setIterationCount(currIter);
             l.setEpochCount(currEpoch);
         }
+    }
+
+    /**
+     * Save the MultiLayerNetwork to a file. Restore using {@link #load(File)}.
+     * Note that this saves the updater (i.e., the state array for momentum/Adam/rmsprop etc), which is desirable
+     * if further training will be undertaken.
+     *
+     * @param f File to save the network to
+     * @see ModelSerializer ModelSerializer for more details (and saving/loading via streams)
+     * @see #save(File, boolean)
+     */
+    public void save( File f ) throws IOException {
+        save(f, true);
+    }
+
+    /**
+     * Save the MultiLayerNetwork to a file. Restore using {@link #load(File)}.
+     *
+     * @param f File to save the network to
+     * @param saveUpdater If true: save the updater (i.e., the state array for momentum/Adam/rmsprop etc), which should
+     *                    usually be saved if further training is required
+     * @see ModelSerializer ModelSerializer for more details (and saving/loading via streams)
+     * @see #save(File, boolean)
+     */
+    public void save(File f, boolean saveUpdater) throws IOException{
+        ModelSerializer.writeModel(this, f, saveUpdater);
+    }
+
+    /**
+     * Restore a MultiLayerNetwork to a file, saved using {@link #save(File)} or {@link ModelSerializer}
+     * @param f File to load the network from
+     * @param loadUpdater If true: load the updater if it is available (i.e., the state array for momentum/Adam/rmsprop
+     *                   etc) - use <i>false</i> if no further training is required, or <i>true</i> if further training
+     *                    will be undertaken
+     * @see ModelSerializer ModelSerializer for more details (and saving/loading via streams)
+     */
+    public static MultiLayerNetwork load(File f, boolean loadUpdater) throws IOException {
+        return ModelSerializer.restoreMultiLayerNetwork(f, loadUpdater);
     }
 
     /**
