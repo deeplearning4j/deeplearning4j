@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.TimesOneMinus;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -528,7 +529,7 @@ public class LSTMHelpers {
 
             //Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
             INDArray deltao = deltaoNext;
-            Nd4j.getExecutioner().exec(new MulOp(nablaOut, sigmahOfS, deltao));
+            Nd4j.getExecutioner().exec(new OldMulOp(nablaOut, sigmahOfS, deltao));
             if (sigmoidGates) {
                 INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
                 deltao.muli(sigmaoPrimeOfZo);
@@ -583,7 +584,7 @@ public class LSTMHelpers {
                 deltag.muli(nablaCellState);
             } else {
                 INDArray temp2 = Nd4j.getExecutioner().execAndReturn(
-                                new MulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
+                                new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
                 deltag.assign(gateActivationFn.backprop(fwdPass.gz[time], temp2).getFirst());
                 //TODO activation functions with params; optimize (no assign)
             }
@@ -593,7 +594,7 @@ public class LSTMHelpers {
             INDArray zi = fwdPass.iz[time];
             INDArray deltai = deltaiNext;
             temp = Nd4j.getExecutioner().execAndReturn(
-                            new MulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
+                            new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
             deltai.assign(afn.backprop(zi, temp).getFirst());
             //TODO activation functions with params; also: optimize this (no assign)
             //Shape: [m,n^L]

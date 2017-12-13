@@ -34,6 +34,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray rnnTimeStep(INDArray input) {
+        setInput(input);
         INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(input, last, false, false).getFirst();
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
@@ -44,6 +45,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+        setInput(input);
         INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(input, last, training, false).getFirst();
         if(storeLastForTBPTT){
@@ -163,7 +165,6 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     private Pair<INDArray,INDArray> activateHelper(INDArray in, INDArray prevStepOut, boolean training, boolean forBackprop){
-
         int m = in.size(0);
         int tsLength = in.size(2);
         int nOut = layerConf().getNOut();
