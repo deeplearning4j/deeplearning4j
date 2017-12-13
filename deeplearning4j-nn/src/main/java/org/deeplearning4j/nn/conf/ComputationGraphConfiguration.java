@@ -628,6 +628,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * When doing truncated backpropagation through time (tBPTT): how many steps should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         *
+         * @param tbpttLength length > 0
+         */
         public GraphBuilder tBPTTLength(int tbpttLength){
             tBPTTForwardLength(tbpttLength);
             return tBPTTBackwardLength(tbpttLength);

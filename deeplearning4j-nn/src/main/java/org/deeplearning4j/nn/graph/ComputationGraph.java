@@ -3140,7 +3140,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     rnnClearPreviousState();
 
                     int fwdLen = configuration.getTbpttFwdLength();
-                    int tsLength = next.getFeatures(0).size(2);     //TODO
+                    int tsLength = -1;
+                    int nF = next.getFeatures().length;
+                    for( int i=0 i<nF; i++ ){
+                        if(next.getFeatures(i).rank() == 3){
+                            tsLength = next.getFeatures(i).size(2);
+                        }
+                    }
+                    if(tsLength < 0){
+                        throw new IllegalStateException("Invalid configuration: detected TBPTT backprop type without" +
+                                " time series features");
+                    }
+
                     int nSubsets = tsLength / fwdLen;
                     if( tsLength % fwdLen != 0)
                         nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
