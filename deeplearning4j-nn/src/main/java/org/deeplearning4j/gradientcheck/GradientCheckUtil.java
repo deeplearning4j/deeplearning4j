@@ -221,7 +221,7 @@ public class GradientCheckUtil {
             int i=0;
             for (Layer l : mln.getLayers()) {
                 Set<String> s = l.paramTable().keySet();
-                System.out.println("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
+                log.info("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
                 i++;
             }
         }
@@ -272,9 +272,11 @@ public class GradientCheckUtil {
             if (relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < minAbsoluteError) {
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                    if(print) {
+                        log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                    }
                 } else {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient

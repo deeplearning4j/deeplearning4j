@@ -53,6 +53,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength) {
+        epsilon = epsilon.dup('f');
+
         //First: Do forward pass to get gate activations and Zs
         Pair<INDArray,INDArray> p = activateHelper(input, null, true, true);
 
@@ -61,6 +63,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray wg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
         INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
         INDArray bg = gradientViews.get(SimpleRnnParamInitializer.BIAS_KEY);
+        wg.assign(0);
+        rwg.assign(0);
+        bg.assign(0);
 
         IActivation a = layerConf().getActivationFn();
 
@@ -82,9 +87,19 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             }
 
             if(dldzNext != null){
-                dldaCurrent.addi(dldzNext);
+                dldaCurrent.add(dldzNext);
             }
             INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent.dup()).getFirst();
+
+            //Handle masking
+            INDArray maskCol = null;
+            if( maskArray != null){
+                //Mask array: shape [minibatch, tsLength]
+                //If mask array is present (for example, with bidirectional RNN) -> need to zero out these errors to
+                // avoid using errors from a masked time step to calculate the parameter gradients
+                maskCol = maskArray.getColumn(i);
+                dldzCurrent.muliColumnVector(maskCol);
+            }
 
             //weight gradients:
             Nd4j.gemm(inCurrent, dldzCurrent, wg, true, false, 1.0, 1.0);
@@ -101,6 +116,11 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             Nd4j.gemm(dldzCurrent, w, epsOutCurrent, false, true, 1.0, 0.0);
 
             dldzNext = dldzCurrent;
+
+            if( maskArray != null){
+                //If mask array is present: Also need to zero out errors to avoid sending anything but 0s to layer below for masked steps
+                epsOutCurrent.muliColumnVector(maskCol);
+            }
         }
 
         weightNoiseParams.clear();
@@ -179,10 +199,6 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             }
         }
 
-
         return new Pair<>(out, outZ);
     }
-
-
-
 }
