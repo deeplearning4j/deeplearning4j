@@ -4,10 +4,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -54,23 +56,20 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         //First: Do forward pass to get gate activations and Zs
         Pair<INDArray,INDArray> p = activateHelper(input, null, true, true);
 
-        INDArray w = getParam(SimpleRnnParamInitializer.WEIGHT_KEY);
-        INDArray rw = getParam(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
-        INDArray b = getParam(SimpleRnnParamInitializer.BIAS_KEY);
+        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true);
 
         INDArray wg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
-        INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
-        INDArray bg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
+        INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray bg = gradientViews.get(SimpleRnnParamInitializer.BIAS_KEY);
 
-
-        int nOut = layerConf().getNOut();
-        int tsLength = input.size(1);
-
-        INDArray epsOut = Nd4j.createUninitialized(input.shape(), 'f');
         IActivation a = layerConf().getActivationFn();
 
+        int tsLength = input.size(2);
+
+        INDArray epsOut = Nd4j.createUninitialized(input.shape(), 'f');
+
         INDArray dldzNext = null;
-        for( int i = tsLength; i>= 0; i--){
+        for( int i = tsLength-1; i>= 0; i--){
             INDArray dldaCurrent = epsilon.get(all(), all(), point(i));
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
             INDArray inCurrent = input.get(all(), all(), point(i));
@@ -85,18 +84,20 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             if(dldzNext != null){
                 dldaCurrent.addi(dldzNext);
             }
-            INDArray dldzCurrent = a.backprop(zCurrent, dldaCurrent).getFirst();
+            INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent.dup()).getFirst();
 
             //weight gradients:
             Nd4j.gemm(inCurrent, dldzCurrent, wg, true, false, 1.0, 1.0);
 
             //Recurrent weight gradients:
-            Nd4j.gemm(aLast, dldzCurrent, rwg, true, false, 1.0, 1.0);
+            if(aLast != null) {
+                Nd4j.gemm(aLast, dldzCurrent, rwg, true, false, 1.0, 1.0);
+            }
 
             //Bias gradients
             bg.addi(dldzCurrent.sum(0));
 
-            //Epsilon out to layer below (i.e., dLdIn)
+            //Epsilon out to layer below (i.e., dL/dIn)
             Nd4j.gemm(dldzCurrent, w, epsOutCurrent, false, true, 1.0, 0.0);
 
             dldzNext = dldzCurrent;
@@ -129,50 +130,55 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     private Pair<INDArray,INDArray> activateHelper(INDArray in, INDArray prevStepOut, boolean training, boolean forBackprop){
 
-        int tsLength = in.size(1);
-
-        INDArray w = getParam(SimpleRnnParamInitializer.WEIGHT_KEY);
-        INDArray rw = getParam(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
-        INDArray b = getParam(SimpleRnnParamInitializer.BIAS_KEY);
-
-
+        int m = in.size(0);
+        int tsLength = in.size(2);
         int nOut = layerConf().getNOut();
-        INDArray out = Nd4j.createUninitialized(new int[]{in.size(0), nOut, in.size(2)}, 'f');
-        INDArray out2d = out.reshape('f', out.size(0)*out.size(2), out.size(1));
 
+        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training);
+        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training);
+        INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training);
+
+        INDArray out = Nd4j.createUninitialized(new int[]{m, nOut, tsLength}, 'f');
         INDArray outZ = (forBackprop ? Nd4j.createUninitialized(out.shape()) : null);
 
         if(in.ordering() != 'f' || Shape.strideDescendingCAscendingF(in))
             in = in.dup('f');
 
-        INDArray in2d = in.reshape('f', in.size(0)*in.size(2), in.size(1));
+        //TODO implement 'mmul across time' optimization
 
         //Minor performance optimization: do the "add bias" first:
-        Nd4j.getExecutioner().exec(new BroadcastCopyOp(out2d, b, out2d, 1));
-
-        //Input mmul across time: [minibatch*tsLength, nIn] * [nIn,nOut] = [minibatch*tsLenth, nOut]
-        Nd4j.gemm(in2d, w, out2d, false ,false, 1.0, 1.0 ); //beta=1.0 to keep previous biases...
+        Nd4j.getExecutioner().exec(new BroadcastCopyOp(out, b, out, 1));
 
         IActivation a = layerConf().getActivationFn();
 
         for( int i=0; i<tsLength; i++ ){
+            //out = activationFn(in*w + last*rw + bias)
             INDArray currOut = out.get(all(), all(), point(i)); //F order
-            if(i > 0 || prevStepOut != null){
-                //out = activationFn(in*w + last*rw + bias)
-//                currOut.addi(prevStepOut.mmu)
-                Nd4j.gemm(prevStepOut, rw, currOut, false, false, 1.0, 1.0);
-            }
+            INDArray currIn = in.get(all(), all(), point(i));
+            Nd4j.gemm(currIn, w, currOut, false, false, 1.0, 1.0);  //beta = 1.0 to keep previous contents (bias)
 
-            a.getActivation(currOut, training);
+            if(i > 0 || prevStepOut != null){
+                Nd4j.gemm(prevStepOut, rw, currOut, false, false, 1.0, 1.0);    //beta = 1.0 to keep previous contents
+            }
 
             if(forBackprop){
                 outZ.get(all(), all(), point(i)).assign(currOut);
             }
 
+            a.getActivation(currOut, training);
+
             prevStepOut = currOut;
         }
 
         //Apply mask, if present:
+        if(maskArray != null){
+            //Mask should be shape [minibatch, tsLength]
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(out, maskArray, out, 0, 2));
+            if(forBackprop){
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(outZ, maskArray, outZ, 0, 2));
+            }
+        }
+
 
         return new Pair<>(out, outZ);
     }

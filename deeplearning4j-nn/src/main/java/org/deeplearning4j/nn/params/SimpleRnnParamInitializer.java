@@ -81,15 +81,19 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
             Distribution dist = Distributions.createDistribution(c.getDist());
 
              m = getSubsets(paramsView, nIn, nOut, false);
-             INDArray w = WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, c.getWeightInit(), dist, 'c', m.get(WEIGHT_KEY));
+             INDArray w = WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, c.getWeightInit(), dist, 'f', m.get(WEIGHT_KEY));
              m.put(WEIGHT_KEY, w);
 
-            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new int[]{nOut, nOut}, c.getWeightInit(), dist, 'c', m.get(WEIGHT_KEY));
+            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new int[]{nOut, nOut}, c.getWeightInit(), dist, 'f', m.get(RECURRENT_WEIGHT_KEY));
             m.put(RECURRENT_WEIGHT_KEY, rw);
 
         } else {
              m = getSubsets(paramsView, nIn, nOut, true);
         }
+
+        conf.addVariable(WEIGHT_KEY);
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
 
         return m;
     }
@@ -111,8 +115,8 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         INDArray b = in.get(point(0), interval(pos, pos + nOut));
 
         if(reshape){
-            w = w.reshape('c', nIn, nOut);
-            rw = rw.reshape('c', nOut, nOut);
+            w = w.reshape('f', nIn, nOut);
+            rw = rw.reshape('f', nOut, nOut);
         }
 
         Map<String,INDArray> m = new LinkedHashMap<>();

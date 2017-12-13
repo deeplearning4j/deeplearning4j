@@ -5,13 +5,16 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
 
@@ -90,6 +93,78 @@ public class RnnGradientChecks {
                 }
             }
         }
+
+    }
+
+    @Test
+    public void testSimpleRnn(){
+
+        int nIn = 3;
+        int nOut = 5;
+        int layerSize = 2;
+        int tsLength = 1;
+
+        double[] l1s = new double[]{0.0, 0.4};
+        double[] l2s = new double[]{0.0, 0.6};
+
+        Random r = new Random(12345);
+        for( int mb : new int[]{1, 3}) {
+            for(boolean inputMask : new boolean[]{false, true}){
+                for(int l=0; l<l1s.length; l++ ) {
+
+                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
+                    INDArray labels = Nd4j.create(mb, nOut, tsLength);
+                    for (int i = 0; i < mb; i++) {
+                        for (int j = 0; j < tsLength; j++) {
+                            labels.putScalar(i, r.nextInt(nOut), j, 1.0);
+                        }
+                    }
+                    String maskType = (inputMask ? "inputMask" : "none");
+
+                    INDArray inMask = null;
+                    if (inputMask) {
+                        inMask = Nd4j.ones(mb, tsLength);
+                        for (int i = 0; i < mb; i++) {
+                            int firstMaskedStep = tsLength - 1 - i;
+                            if (firstMaskedStep == 0) {
+                                firstMaskedStep = tsLength;
+                            }
+                            for (int j = firstMaskedStep; j < tsLength; j++) {
+                                inMask.putScalar(i, j, 1.0);
+                            }
+                        }
+                    }
+
+                    String name = "testSimpleRnn() - mb=" + mb + ", maskType=" + maskType + ", l1=" + l1s[l]
+                            + ", l2=" + l2s[l];
+
+                    System.out.println("Starting test: " + name);
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp())
+                            .weightInit(WeightInit.XAVIER)
+                            .activation(Activation.TANH)
+                            .l1(l1s[l])
+                            .l2(l2s[l])
+                            .list()
+                            .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).build())
+                            .layer(new SimpleRnn.Builder().nIn(layerSize).nOut(layerSize).build())
+                            .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                                    .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)
+                                    .build())
+                            .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                    assertTrue(gradOK);
+                }
+            }
+        }
+
 
     }
 
