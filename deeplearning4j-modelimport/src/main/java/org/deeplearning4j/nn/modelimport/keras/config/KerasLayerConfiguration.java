@@ -45,6 +45,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
     private final String LAYER_CLASS_NAME_DENSE = "Dense";
     private final String LAYER_CLASS_NAME_LSTM = "LSTM";
+    private final String LAYER_CLASS_NAME_SIMPLE_RNN = "SimpleRNN";
     private final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
     private final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
@@ -88,6 +89,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_USE_BIAS = ""; // 1: bias, 2: use_bias
     private final String KERAS_PARAM_NAME_W = ""; // 1: W, 2: kernel
     private final String KERAS_PARAM_NAME_B = ""; // 1: b, 2: bias
+    private final String KERAS_PARAM_NAME_RW = ""; // 1: U, 2: recurrent_kernel
+
 
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
     private final String LAYER_FIELD_DIM_ORDERING = ""; // 1: dim_ordering, 2: data_format
@@ -104,6 +107,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init"; // keras 1 only: string
     private final String LAYER_FIELD_UNIT_FORGET_BIAS = "unit_forget_bias"; // keras 1 only: bool
     private final String LAYER_FIELD_RETURN_SEQUENCES = "return_sequences";
+    private final String LAYER_FIELD_UNROLL = "unroll";
 
     /* Embedding layer properties */
     private final String LAYER_FIELD_INPUT_DIM = "input_dim";

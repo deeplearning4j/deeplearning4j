@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -179,6 +180,8 @@ public class KerasLayerUtils {
             layer = new KerasDense(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
             layer = new KerasLstm(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SIMPLE_RNN())) {
+            layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
             layer = new KerasConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DECONVOLUTION_2D())) {

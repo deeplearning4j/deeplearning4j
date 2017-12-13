@@ -18,7 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -33,11 +33,10 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasLSTMTest {
+public class KerasSimpleRnnTest {
 
-    private final String ACTIVATION_KERAS = "linear";
-    private final String ACTIVATION_DL4J = "identity";
-    private final String LAYER_NAME = "lstm_layer";
+    private final String ACTIVATION = "sigmoid";
+    private final String LAYER_NAME = "simple_rnn_layer";
     private final String INIT_KERAS = "glorot_normal";
     private final WeightInit INIT_DL4J = WeightInit.XAVIER;
     private final double L1_REGULARIZATION = 0.01;
@@ -53,31 +52,27 @@ public class KerasLSTMTest {
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testLstmLayer() throws Exception {
-        buildLstmLayer(conf1, keras1);
-        buildLstmLayer(conf2, keras2);
+    public void testSimpleRnnLayer() throws Exception {
+        buildSimpleRnnLayer(conf1, keras1);
+        buildSimpleRnnLayer(conf2, keras2);
     }
 
-    void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        String innerActivation = "hard_sigmoid";
-        double lstmForgetBiasDouble = 1.0;
-        String lstmForgetBiasString = "one";
-        boolean lstmUnroll = true;
+    void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        boolean unroll = true;
 
-        KerasLstm lstm = new KerasLstm(kerasVersion);
+        KerasSimpleRnn simpleRnn = new KerasSimpleRnn(kerasVersion);
 
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation); // keras linear -> dl4j identity
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
 
         } else {
-            Map<String, Object> init = new HashMap<String, Object>();
+            Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INNER_INIT(), init);
             config.put(conf.getLAYER_FIELD_INIT(), init);
@@ -90,20 +85,18 @@ public class KerasLSTMTest {
 
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
-        config.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        config.put(conf.getLAYER_FIELD_UNROLL(), lstmUnroll);
+        config.put(conf.getLAYER_FIELD_UNROLL(), unroll);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        LSTM layer = new KerasLstm(layerConfig).getLSTMLayer();
-        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
+        SimpleRnn layer = new KerasSimpleRnn(layerConfig).getSimpleRnnLayer();
+        assertEquals(ACTIVATION, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
         assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
-        assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
     }
 }

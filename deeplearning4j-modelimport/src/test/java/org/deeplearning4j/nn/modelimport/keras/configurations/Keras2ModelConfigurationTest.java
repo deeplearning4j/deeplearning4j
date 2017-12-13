@@ -49,6 +49,12 @@ public class Keras2ModelConfigurationTest {
     }
 
     @Test
+    public void simpleRnnConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/simple_rnn_tf_keras_2_config.json");
+    }
+
+
+    @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras2/mnist_mlp_tf_keras_2_config.json");
     }
