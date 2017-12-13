@@ -3142,7 +3142,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     int fwdLen = configuration.getTbpttFwdLength();
                     int tsLength = -1;
                     int nF = next.getFeatures().length;
-                    for( int i=0 i<nF; i++ ){
+                    for( int i=0; i<nF; i++ ){
                         if(next.getFeatures(i).rank() == 3){
                             tsLength = next.getFeatures(i).size(2);
                         }

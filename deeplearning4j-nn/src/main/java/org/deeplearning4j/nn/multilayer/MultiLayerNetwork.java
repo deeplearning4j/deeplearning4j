@@ -1510,11 +1510,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 NDArrayIndex.interval(startTimeIdx, endTimeIdx));
 
         if (fMask != null) {
-            out[3] = fMask.get(NDArrayIndex.all(),
+            out[2] = fMask.get(NDArrayIndex.all(),
                     NDArrayIndex.interval(startTimeIdx, endTimeIdx));
         }
         if (lMask != null) {
-            out[4] = lMask.get(NDArrayIndex.all(),
+            out[3] = lMask.get(NDArrayIndex.all(),
                     NDArrayIndex.interval(startTimeIdx, endTimeIdx));
         }
 

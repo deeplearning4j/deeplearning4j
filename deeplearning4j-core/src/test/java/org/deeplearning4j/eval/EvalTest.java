@@ -45,6 +45,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -972,24 +973,35 @@ public class EvalTest {
 
             net2.setParams(net1.params());
 
-            INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
-            INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
+            for(boolean useMask : new boolean[]{false, true}) {
 
-            INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
-            INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
+                INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
+                INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
 
+                INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
+                INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
 
-            List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
-            DataSetIterator iter = new ExistingDataSetIterator(l);
+                INDArray lMask1 = null;
+                INDArray lMask2 = null;
+                if(useMask){
+                    lMask1 = Nd4j.create(3, tsLength);
+                    lMask2 = Nd4j.create(5, tsLength);
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask1, 0.5));
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask2, 0.5));
+                }
 
-            System.out.println("Net 1 eval");
-            IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
-            System.out.println("Net 2 eval");
-            IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                List<DataSet> l = Arrays.asList(new DataSet(in1, out1, null, lMask1), new DataSet(in2, out2, null, lMask2));
+                DataSetIterator iter = new ExistingDataSetIterator(l);
 
-            assertEquals(e1[0], e2[0]);
-            assertEquals(e1[1], e2[1]);
+                System.out.println("Net 1 eval");
+                IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                System.out.println("Net 2 eval");
+                IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+
+                assertEquals(e1[0], e2[0]);
+                assertEquals(e1[1], e2[1]);
 //            assertEquals(e1[2], e2[2]);       //Fails due to: https://github.com/deeplearning4j/deeplearning4j/issues/4404
+            }
         }
     }
 
@@ -1042,24 +1054,35 @@ public class EvalTest {
 
             net2.setParams(net1.params());
 
-            INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
-            INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
+            for (boolean useMask : new boolean[]{false, true}) {
 
-            INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
-            INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
+                INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
+                INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
 
+                INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
+                INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
 
-            List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
-            DataSetIterator iter = new ExistingDataSetIterator(l);
+                INDArray lMask1 = null;
+                INDArray lMask2 = null;
+                if (useMask) {
+                    lMask1 = Nd4j.create(3, tsLength);
+                    lMask2 = Nd4j.create(5, tsLength);
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask1, 0.5));
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask2, 0.5));
+                }
 
-            System.out.println("Eval net 1");
-            IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
-            System.out.println("Eval net 2");
-            IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
+                DataSetIterator iter = new ExistingDataSetIterator(l);
 
-            assertEquals(e1[0], e2[0]);
-            assertEquals(e1[1], e2[1]);
+                System.out.println("Eval net 1");
+                IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                System.out.println("Eval net 2");
+                IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+
+                assertEquals(e1[0], e2[0]);
+                assertEquals(e1[1], e2[1]);
 //            assertEquals(e1[2], e2[2]);   //Fails due to: https://github.com/deeplearning4j/deeplearning4j/issues/4404
+            }
         }
     }
 
