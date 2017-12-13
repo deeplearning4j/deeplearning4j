@@ -59,13 +59,12 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         Pair<INDArray,INDArray> p = activateHelper(input, null, true, true);
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true);
+        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true);
 
         INDArray wg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
         INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
         INDArray bg = gradientViews.get(SimpleRnnParamInitializer.BIAS_KEY);
-        wg.assign(0);
-        rwg.assign(0);
-        bg.assign(0);
+        gradientsFlattened.assign(0);
 
         IActivation a = layerConf().getActivationFn();
 
@@ -74,20 +73,27 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray epsOut = Nd4j.createUninitialized(input.shape(), 'f');
 
         INDArray dldzNext = null;
-        for( int i = tsLength-1; i>= 0; i--){
+        int end;
+        if(tbpttBackLength > 0){
+            end = Math.max(0, tsLength-tbpttBackLength);
+        } else {
+            end = 0;
+        }
+        for( int i = tsLength-1; i>= end; i--){
             INDArray dldaCurrent = epsilon.get(all(), all(), point(i));
+            INDArray aCurrent = p.getFirst().get(all(), all(), point(i));
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
             INDArray inCurrent = input.get(all(), all(), point(i));
             INDArray epsOutCurrent = epsOut.get(all(), all(), point(i));
-            INDArray aLast;
-            if(i > 0){
-                aLast = p.getFirst().get(all(), all(), point(i-1));
-            } else {
-                aLast = null;
+
+            if(inCurrent.isVector() ){
+                //TODO Workaround for: https://github.com/deeplearning4j/nd4j/issues/2374 - remove once fixed
+                inCurrent = inCurrent.dup();
             }
 
             if(dldzNext != null){
-                dldaCurrent.add(dldzNext);
+                //Backprop the component of dL/da (for current time step) from the recurrent connections
+                Nd4j.gemm(dldzNext, rw, dldaCurrent, false, true, 1.0, 1.0);
             }
             INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent.dup()).getFirst();
 
@@ -105,8 +111,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             Nd4j.gemm(inCurrent, dldzCurrent, wg, true, false, 1.0, 1.0);
 
             //Recurrent weight gradients:
-            if(aLast != null) {
-                Nd4j.gemm(aLast, dldzCurrent, rwg, true, false, 1.0, 1.0);
+            if(dldzNext != null) {
+                Nd4j.gemm(aCurrent, dldzNext, rwg, true, false, 1.0, 1.0);
             }
 
             //Bias gradients
