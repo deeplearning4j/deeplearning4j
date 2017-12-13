@@ -25,6 +25,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JException;
@@ -2631,11 +2632,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         rnnClearPreviousState();
 
-        INDArray[] newInputs = new INDArray[inputs.length];
-        INDArray[] newLabels = new INDArray[labels.length];
-        INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
-        INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
-
         workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
@@ -2656,42 +2652,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (endTimeIdx > timeSeriesLength)
                         endTimeIdx = timeSeriesLength;
 
-                    for (int j = 0; j < inputs.length; j++) {
-                        if (inputs[j].rank() != 3)
-                            newInputs[j] = inputs[j];
-                        else {
-                            newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                        }
-                    }
-                    for (int j = 0; j < labels.length; j++) {
-                        if (labels[j].rank() != 3)
-                            newLabels[j] = labels[j];
-                        else {
-                            newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                        }
-                    }
-                    if (featureMasks != null) {
-                        for (int j = 0; j < featureMasks.length; j++) {
-                            if (featureMasks[j] == null)
-                                continue;
-                            newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                        }
-                    }
-                    if (labelMasks != null) {
-                        for (int j = 0; j < labelMasks.length; j++) {
-                            if (labelMasks[j] == null)
-                                continue;
-                            newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                        }
-                    }
+                    List<INDArray[]> list = getSubsetsForTbptt(startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
 
-                    setInputs(newInputs);
-                    setLabels(newLabels);
-                    setLayerMaskArrays(newFeatureMasks, newLabelMasks);
+                    setInputs(list.get(0));
+                    setLabels(list.get(1));
+                    setLayerMaskArrays(list.get(2), list.get(3));
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -2717,6 +2682,49 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (featureMasks != null || labelMasks != null) {
             clearLayerMaskArrays();
         }
+    }
+
+    private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, int endTimeIdx, INDArray[] inputs, INDArray[] labels,
+                                                INDArray[] featureMasks, INDArray[] labelMasks){
+        INDArray[] newInputs = new INDArray[inputs.length];
+        INDArray[] newLabels = new INDArray[inputs.length];
+        INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
+        INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
+
+        for (int j = 0; j < inputs.length; j++) {
+            if (inputs[j].rank() != 3)
+                newInputs[j] = inputs[j];
+            else {
+                newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+            }
+        }
+        for (int j = 0; j < labels.length; j++) {
+            if (labels[j].rank() != 3)
+                newLabels[j] = labels[j];
+            else {
+                newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+            }
+        }
+        if (featureMasks != null) {
+            for (int j = 0; j < featureMasks.length; j++) {
+                if (featureMasks[j] == null)
+                    continue;
+                newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
+                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+            }
+        }
+        if (labelMasks != null) {
+            for (int j = 0; j < labelMasks.length; j++) {
+                if (labelMasks[j] == null)
+                    continue;
+                newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
+                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+            }
+        }
+
+        return Arrays.asList(newInputs, newLabels, newFeatureMasks, newLabelMasks);
     }
 
     /**
@@ -3062,58 +3070,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return The input IEvaluation instance, after performing evaluation on the test data
      */
     public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
-        if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
-            throw new IllegalStateException("Cannot evaluate network with no output layer");
-        }
-
-        if (getNumOutputArrays() != 1) {
-            throw new IllegalStateException("Cannot evaluate a model with > 1 output arrays from a DataSetIterator");
-        }
-
-        if (iterator.resetSupported() && !iterator.hasNext())
-            iterator.reset();
-
-        DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
-
-        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
-        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
-
-        MemoryWorkspace workspace =
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
-
-        while (iter.hasNext()) {
-            DataSet next = iter.next();
-
-            if (next.getFeatures() == null || next.getLabels() == null)
-                break;
-
-            try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
-                //Assuming single output here
-                INDArray features = next.getFeatures();
-                INDArray featuresMask = next.getFeaturesMaskArray();
-                INDArray labels = next.getLabels();
-                INDArray labelMask = next.getLabelsMaskArray();
-
-
-                setLayerMaskArrays(featuresMask == null ? null : new INDArray[]{featuresMask},
-                        labelMask == null ? null : new INDArray[]{labelMask});
-                INDArray[] out = silentOutput(false, features);
-
-                for (T evaluation : evaluations)
-                    evaluation.eval(labels, out[0], labelMask);
-            }
-
-            clearLayerMaskArrays();
-        }
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) iter).shutdown();
-
-        configuration.setTrainingWorkspaceMode(cMode);
-
-        return evaluations;
+        return doEvaluation(new MultiDataSetIteratorAdapter(iterator), evaluations);
     }
 
     /**
@@ -3147,6 +3104,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal, workspaceExternal);
 
+        MemoryWorkspace workspaceT =
+                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationTBPTT, workspaceTBPTT);
+
+        boolean useRnnSegments = (configuration.getBackpropType() == BackpropType.TruncatedBPTT);
+
         while (iter.hasNext()) {
             MultiDataSet next = iter.next();
 
@@ -3155,19 +3119,51 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
 
-                //Assuming single output here
-                INDArray[] features = next.getFeatures();
-                INDArray[] featuresMasks = next.getFeaturesMaskArrays();
-                INDArray labels = next.getLabels(0);
-                INDArray[] labelMasks = next.getLabelsMaskArrays();
-                INDArray labelMask = next.getLabelsMaskArray(0);
+                if(!useRnnSegments){
+                    //Standard/non-RNN case
 
-                setLayerMaskArrays(featuresMasks, labelMasks);
-                INDArray[] out = silentOutput(false, features);
+                    //Assuming single output here
+                    INDArray[] features = next.getFeatures();
+                    INDArray[] featuresMasks = next.getFeaturesMaskArrays();
+                    INDArray labels = next.getLabels(0);
+                    INDArray[] labelMasks = next.getLabelsMaskArrays();
+                    INDArray labelMask = next.getLabelsMaskArray(0);
 
-                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                    for (T evaluation : evaluations)
-                        evaluation.eval(labels, out[0], labelMask);
+                    setLayerMaskArrays(featuresMasks, labelMasks);
+                    INDArray[] out = silentOutput(false, features);
+
+                    try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                        for (T evaluation : evaluations)
+                            evaluation.eval(labels, out[0], labelMask);
+                    }
+                } else {
+                    rnnClearPreviousState();
+
+                    int fwdLen = configuration.getTbpttFwdLength();
+                    int tsLength = next.getFeatures(0).size(2);     //TODO
+                    int nSubsets = tsLength / fwdLen;
+                    if( tsLength % fwdLen != 0)
+                        nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
+                    for( int i=0; i<nSubsets; i++ ){
+                        int startTimeIdx = i * fwdLen;
+                        int endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
+
+                        List<INDArray[]> subset = getSubsetsForTbptt(startTimeIdx, endTimeIdx, next.getFeatures(),
+                                next.getLabels(), next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+                            setLayerMaskArrays(subset.get(2), subset.get(3));
+
+                            INDArray[] outSub = rnnTimeStep(subset.get(0));
+
+                            INDArray maskSub = subset.get(3) == null ? null : subset.get(3)[0];
+
+
+                            try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                                for (T evaluation : evaluations)
+                                    evaluation.eval(subset.get(1)[0], outSub[0], maskSub);
+                            }
+                        }
+                    }
                 }
             }
 

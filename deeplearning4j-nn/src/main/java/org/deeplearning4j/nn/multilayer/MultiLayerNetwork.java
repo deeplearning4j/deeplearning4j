@@ -2931,13 +2931,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         // evaluation in segments...
         //Only do this if TBPTT is enabled - if not, it means we can train without TBPTT and hence should be able
         // to test without splitting also
-        Boolean useRnnSegments = null;
+        boolean useRnnSegments = (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT);
 
         while (iter.hasNext()) {
             DataSet next = iter.next();
 
             if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
+
+            MemoryWorkspace workspaceT =
+                    layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                            : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                            workspaceConfigurationTBPTT, workspaceTBPTT);
 
             try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
 
@@ -2946,14 +2951,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 INDArray fMask = next.getFeaturesMaskArray();
                 INDArray lMask = next.getLabelsMaskArray();
 
-                if(useRnnSegments == null){
-                    if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT){
-                        Layer ol = getOutputLayer();
-                        useRnnSegments = (ol instanceof RnnOutputLayer || ol instanceof RnnLossLayer);
-                    } else {
-                        useRnnSegments = false;
-                    }
-                }
 
 
                 if(!useRnnSegments){
@@ -2971,22 +2968,28 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                 } else {
                     rnnClearPreviousState();
+
+
                     //Get subset of features and labels:
                     int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
                     int tsLength = features.size(2);
                     int nSubsets = tsLength / fwdLen;
-                    if( tsLength % fwdLen != 0)
+                    if (tsLength % fwdLen != 0)
                         nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
-                    for( int i=0; i<nSubsets; i++ ){
+                    for (int i = 0; i < nSubsets; i++) {
                         int startTimeIdx = i * fwdLen;
                         int endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
-
                         INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, features, labels, fMask, lMask);
-                        setLayerMaskArrays(subsets[2], subsets[3]);
 
-                        INDArray outSub = rnnTimeStep(subsets[0]);
-                        for (T evaluation : evaluations)
-                            evaluation.eval(subsets[1], outSub, subsets[3]);
+                        try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+                            setLayerMaskArrays(subsets[2], subsets[3]);
+
+                            INDArray outSub = rnnTimeStep(subsets[0]);
+                            try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                                for (T evaluation : evaluations)
+                                    evaluation.eval(subsets[1], outSub, subsets[3]);
+                            }
+                        }
                     }
                 }
             }

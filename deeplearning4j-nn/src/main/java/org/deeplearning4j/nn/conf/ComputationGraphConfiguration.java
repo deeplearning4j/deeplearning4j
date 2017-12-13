@@ -628,6 +628,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        public GraphBuilder tBPTTLength(int tbpttLength){
+            tBPTTForwardLength(tbpttLength);
+            return tBPTTBackwardLength(tbpttLength);
+        }
+
         /**
          * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
          *

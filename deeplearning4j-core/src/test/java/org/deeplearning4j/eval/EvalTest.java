@@ -29,14 +29,12 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -912,6 +910,7 @@ public class EvalTest {
         //Test for "tbptt-like" functionality
 
         for(WorkspaceMode ws : WorkspaceMode.values()) {
+            System.out.println("Starting test for workspace mode: " + ws);
 
             int nIn = 4;
             int layerSize = 5;
@@ -960,7 +959,79 @@ public class EvalTest {
             List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
             DataSetIterator iter = new ExistingDataSetIterator(l);
 
+            System.out.println("Net 1 eval");
             IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+            System.out.println("Net 2 eval");
+            IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+
+            assertEquals(e1[0], e2[0]);
+            assertEquals(e1[1], e2[1]);
+            assertEquals(e1[2], e2[2]);
+        }
+    }
+
+    @Test
+    public void testEvalSplittingCompGraph(){
+        //Test for "tbptt-like" functionality
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            System.out.println("Starting test for workspace mode: " + ws);
+
+            int nIn = 4;
+            int layerSize = 5;
+            int nOut = 6;
+            int tbpttLength = 10;
+            int tsLength = 5 * tbpttLength + tbpttLength / 2;
+
+            ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new LSTM.Builder().nIn(nIn).nOut(layerSize).build(), "in")
+                    .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX)
+                            .build(), "0")
+                    .setOutputs("1")
+                    .build();
+
+            ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new LSTM.Builder().nIn(nIn).nOut(layerSize).build(), "in")
+                    .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX)
+                            .build(), "0")
+                    .setOutputs("1")
+                    .tBPTTLength(10)
+                    .backpropType(BackpropType.TruncatedBPTT)
+                    .build();
+
+            ComputationGraph net1 = new ComputationGraph(conf1);
+            net1.init();
+
+            ComputationGraph net2 = new ComputationGraph(conf2);
+            net2.init();
+
+            net2.setParams(net1.params());
+
+            INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
+            INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
+
+            INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
+            INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
+
+
+            List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
+            DataSetIterator iter = new ExistingDataSetIterator(l);
+
+            System.out.println("Eval net 1");
+            IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+            System.out.println("Eval net 2");
             IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
 
             assertEquals(e1[0], e2[0]);
