@@ -55,7 +55,7 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
     val builder = buildModelConfig(optimizer, rngSeed)
     buildOutput(lossFunction)
 
-    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
+    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()
     inputType foreach (i => listBuilder.setInputType(i))
 
     for ((layer, layerIndex) <- layers.zipWithIndex) {
