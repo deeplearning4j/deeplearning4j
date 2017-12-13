@@ -223,8 +223,6 @@ public class KerasLstm extends KerasLayer {
         return preProcessor;
     }
 
-
-
     /**
      * Set weights for layer.
      *
