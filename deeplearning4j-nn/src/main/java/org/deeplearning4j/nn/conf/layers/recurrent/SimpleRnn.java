@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -14,10 +16,23 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
+/**
+ * Simple RNN - aka "vanilla" RNN is the simplest type of recurrent neural network layer.
+ * It implements out_t = activationFn( in_t * inWeight + out_(t-1) * recurrentWeights + bias).
+ *
+ * Note that other architectures (LSTM, etc) are usually more effective, especially for longer time series
+ *
+ * @author Alex Black
+ */
+@Data
 public class SimpleRnn extends BaseRecurrentLayer {
 
     protected SimpleRnn(Builder builder){
         super(builder);
+    }
+
+    private SimpleRnn(){
+
     }
 
     @Override
