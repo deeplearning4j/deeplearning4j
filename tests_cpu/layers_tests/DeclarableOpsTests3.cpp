@@ -1228,7 +1228,7 @@ TEST_F(DeclarableOpsTests3, betainc_test9) {
     NDArray<double> *output = results->at(0);    
 
     ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output, 1e-6));
+    ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
 }
@@ -1258,4 +1258,175 @@ TEST_F(DeclarableOpsTests3, betainc_test10) {
 
     delete results;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test1) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(1., q);    
+    x.assign(2.);
+    
+    NDArray<double> expected('c', {3,3}, {1.64493407,0.64493407,0.39493407,0.28382296,0.22132296,0.18132296,0.15354518,0.13313701,0.11751201});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test2) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(10., q);    
+    x.assign(2.);
+    
+    NDArray<double> expected('c', {3,3}, {0.10516634,0.09516634,0.08690187,0.07995743,0.07404027,0.06893823,0.06449378,0.06058753,0.05712733});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test3) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(100., q);    
+    x.assign(2.);
+    
+    NDArray<double> expected('c', {3,3}, {0.01005017,0.00995017,0.00985214,0.00975602,0.00966176,0.0095693 ,0.0094786 ,0.0093896 ,0.00930226});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test4) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(100., q);    
+    x.assign(2.);
+    
+    NDArray<double> expected('c', {3,3}, {0.01005017,0.00995017,0.00985214,0.00975602,0.00966176,0.0095693 ,0.0094786 ,0.0093896 ,0.00930226});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test5) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(1., q);    
+    x.assign(1.1);
+    
+    NDArray<double> expected('c', {3,3}, {10.58444846,9.58444846,9.11793197, 8.81927915,8.60164151,8.43137352, 8.29204706,8.17445116,8.07291961});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test6) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(1., q);    
+    x.assign(1.01);
+    
+    NDArray<double> expected('c', {3,3}, {100.57794334,99.57794334,99.08139709, 98.75170576,98.50514758,98.30834069, 98.1446337 ,98.00452955,97.88210202});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test7) {
+        
+    NDArray<double> x('c', {3,3});    
+    NDArray<double> q('c', {3,3});        
+
+    NDArrayFactory<double>::linspace(1., q);    
+    x.assign(10.);
+    
+    NDArray<double> expected('c', {3,3}, {1.00099458e+00,9.94575128e-04,1.80126278e-05,1.07754001e-06,1.23865693e-07,2.14656932e-08,4.92752156e-09,1.38738839e-09,4.56065812e-10});
+
+    nd4j::ops::zeta<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);            
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+
 

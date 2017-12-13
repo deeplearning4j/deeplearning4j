@@ -21,4 +21,4 @@ namespace helpers {
 }
 
 
-#endif //LIBND4J_COL2IM_H
+#endif //LIBND4J_MATRIXSETDIAG_H

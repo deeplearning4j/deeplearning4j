@@ -35,6 +35,8 @@ const double weights[18] = {0.0055657196642445571,
 0.085346685739338721,0.085983275670394821};
 
 
+
+
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // modified Lentz’s algorithm for continued fractions, 
@@ -42,6 +44,7 @@ const double weights[18] = {0.0055657196642445571,
 template <typename T> 
 static T continFract(const T a, const T b, const T x) {	
 
+	const T min = DataTypeUtils::min<T>() / DataTypeUtils::eps<T>();
     const T amu = a - (T)1.;
     const T apu = a + (T)1.;
     const T apb = a + b;
@@ -49,8 +52,8 @@ static T continFract(const T a, const T b, const T x) {
     // first iteration 
     T c = (T)1.;
     T d = (T)1. - apb * x / apu; 
-    if(math::nd4j_abs<T>(d) < DataTypeUtils::DataTypeUtils::min<T>())
-			d = DataTypeUtils::min<T>();
+    if(math::nd4j_abs<T>(d) < min)
+			d = min;
 	d = (T)1./d;
     T f = d;
          
@@ -64,13 +67,13 @@ static T continFract(const T a, const T b, const T x) {
 		val = i * (b - i) * x / ((amu + i2) * (a + i2));		
 
 		d = (T)(1.) + val * d;
-		if(math::nd4j_abs<T>(d) < DataTypeUtils::min<T>())
-			d = DataTypeUtils::min<T>();
+		if(math::nd4j_abs<T>(d) < min)
+			d = min;
 		d = (T)1. / d;
 
 		c = (T)(1.) + val / c;
-		if(math::nd4j_abs<T>(c) < DataTypeUtils::min<T>())
-			c = DataTypeUtils::min<T>();		
+		if(math::nd4j_abs<T>(c) < min)
+			c = min;		
 		
 		f *= c * d;
 
@@ -79,13 +82,13 @@ static T continFract(const T a, const T b, const T x) {
 		val = -(a + i) * (apb + i) * x / ((a + i2) * (apu + i2));
 		
 		d = (T)(1.) + val * d;
-		if(math::nd4j_abs<T>(d) < DataTypeUtils::min<T>())
-			d = DataTypeUtils::min<T>();
+		if(math::nd4j_abs<T>(d) < min)
+			d = min;
 		d = (T)1. / d;
 
 		c = (T)(1.) + val / c;
-		if(math::nd4j_abs<T>(c) < DataTypeUtils::min<T>())
-			c = DataTypeUtils::min<T>();
+		if(math::nd4j_abs<T>(c) < min)
+			c = min;
 
 		delta = c * d;
 		f *= delta;
