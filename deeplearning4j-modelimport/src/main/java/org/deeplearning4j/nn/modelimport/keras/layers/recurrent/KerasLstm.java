@@ -1,3 +1,20 @@
+/*-
+ *
+ *  * Copyright 2017 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import lombok.Data;
@@ -34,7 +51,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 /**
  * Imports a Keras LSTM layer as a DL4J LSTM layer.
  *
- * @author dave@skymind.io
+ * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
 @Data
@@ -44,13 +61,9 @@ public class KerasLstm extends KerasLayer {
     private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
     private final String LSTM_FORGET_BIAS_INIT_ONE = "one";
 
-    /* Keras layer parameter names. */
-    private final String KERAS_PARAM_NAME_KERNEL = "kernel";
-    private final String KERAS_PARAM_NAME_BIAS = "bias";
-    private final String KERAS_PARAM_NAME_RECURRENT_KERNEL = "recurrent_kernel";
-
     private final int NUM_TRAINABLE_PARAMS_KERAS_2 = 3;
     private final int NUM_TRAINABLE_PARAMS = 12;
+
     private final String KERAS_PARAM_NAME_W_C = "W_c";
     private final String KERAS_PARAM_NAME_W_F = "W_f";
     private final String KERAS_PARAM_NAME_W_I = "W_i";
@@ -65,7 +78,7 @@ public class KerasLstm extends KerasLayer {
     private final String KERAS_PARAM_NAME_B_O = "b_o";
     private final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
 
-    protected boolean unroll = false; // whether to unroll LSTM
+    protected boolean unroll = false;
 
     /**
      * Pass-through constructor from KerasLayer
@@ -123,8 +136,8 @@ public class KerasLstm extends KerasLayer {
                                 "Specifying different initialization for recurrent weights not supported.");
             else
                 log.warn("Specifying different initialization for recurrent weights not supported.");
-        getRecurrentDropout(layerConfig);
-        this.unroll = getUnrollRecurrentLayer(layerConfig);
+        KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
+        this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
@@ -244,23 +257,23 @@ public class KerasLstm extends KerasLayer {
 
         if (kerasMajorVersion == 2) {
             INDArray W;
-            if (weights.containsKey(KERAS_PARAM_NAME_KERNEL))
-                W = weights.get(KERAS_PARAM_NAME_KERNEL);
+            if (weights.containsKey(conf.getKERAS_PARAM_NAME_W()))
+                W = weights.get(conf.getKERAS_PARAM_NAME_W());
             else
                 throw new InvalidKerasConfigurationException(
-                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_RECURRENT_KERNEL);
+                        "Keras LSTM layer does not contain parameter " + conf.getKERAS_PARAM_NAME_W());
             INDArray U;
-            if (weights.containsKey(KERAS_PARAM_NAME_RECURRENT_KERNEL))
-                U = weights.get(KERAS_PARAM_NAME_RECURRENT_KERNEL);
+            if (weights.containsKey(conf.getKERAS_PARAM_NAME_RW()))
+                U = weights.get(conf.getKERAS_PARAM_NAME_RW());
             else
                 throw new InvalidKerasConfigurationException(
-                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_RECURRENT_KERNEL);
+                        "Keras LSTM layer does not contain parameter " + conf.getKERAS_PARAM_NAME_RW());
             INDArray b;
-            if (weights.containsKey(KERAS_PARAM_NAME_BIAS))
-                b = weights.get(KERAS_PARAM_NAME_BIAS);
+            if (weights.containsKey(conf.getKERAS_PARAM_NAME_B()))
+                b = weights.get(conf.getKERAS_PARAM_NAME_B());
             else
                 throw new InvalidKerasConfigurationException(
-                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_BIAS);
+                        "Keras LSTM layer does not contain parameter " + conf.getKERAS_PARAM_NAME_B());
 
             int sliceInterval = b.length() / 4;
             W_i = W.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
@@ -404,36 +417,6 @@ public class KerasLstm extends KerasLayer {
         return this.unroll;
     }
 
-    public boolean getUnrollRecurrentLayer(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (!innerConfig.containsKey(LAYER_FIELD_UNROLL))
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer config missing " + LAYER_FIELD_UNROLL + " field");
-        return (boolean) innerConfig.get(LAYER_FIELD_UNROLL);
-    }
-
-    /**
-     * Get LSTM recurrent weight dropout from Keras layer configuration. Currently unsupported.
-     *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @return                  epsilon
-     * @throws InvalidKerasConfigurationException
-     */
-    public double getRecurrentDropout(Map<String, Object> layerConfig)
-                    throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        /* NOTE: Keras "dropout" parameter determines dropout probability,
-         * while DL4J "dropout" parameter determines retention probability.
-         */
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        double dropout = 1.0;
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U()))
-            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
-        if (dropout < 1.0)
-            throw new UnsupportedKerasConfigurationException(
-                            "Dropout > 0 on LSTM recurrent connections not supported.");
-        return dropout;
-    }
 
     /**
      * Get LSTM gate activation function from Keras layer configuration.
