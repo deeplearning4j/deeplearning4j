@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -175,11 +176,8 @@ public class KerasSimpleRnn extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras SimpleRnn layer accepts only one input (received " + inputType.length + ")");
-        InputPreProcessor preprocessor = null;
-        if (inputType[0] instanceof InputType.InputTypeFeedForward) {
-            preprocessor = new FeedForwardToRnnPreProcessor();
-        }
-        return preprocessor;
+
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
     }
 
     /**
