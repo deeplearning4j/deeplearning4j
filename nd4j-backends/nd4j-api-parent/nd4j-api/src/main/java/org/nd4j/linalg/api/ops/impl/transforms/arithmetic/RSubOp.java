@@ -64,13 +64,8 @@ public class RSubOp extends BaseTransformOp {
     }
 
     @Override
-    public int opNum() {
-        return 8;
-    }
-
-    @Override
     public String opName() {
-        return "rsub";
+        return "reversesubtract";
     }
 
     @Override

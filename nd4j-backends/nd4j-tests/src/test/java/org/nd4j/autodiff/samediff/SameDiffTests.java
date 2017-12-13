@@ -565,10 +565,10 @@ public class SameDiffTests {
         SDVariable toAdd = sameDiff.var("arr1",Nd4j.ones(2,2));
         SDVariable add = sameDiff.var("arr2",Nd4j.valueArrayOf(2,2,2.0));
         SDVariable result = toAdd.addi(add);
-        sameDiff.execAndEndResult();
+        INDArray result2 = sameDiff.execAndEndResult();
         INDArray arr = result.getArr();
         INDArray assertion = Nd4j.ones(2,2).addi(Nd4j.valueArrayOf(2,2,2.0));
-        assertEquals(arr,assertion);
+        assertEquals(assertion,result2);
     }
 
 
@@ -612,7 +612,7 @@ public class SameDiffTests {
 
 
         //1 input plus 2 outputs
-        assertEquals(4,functionDef.variables().size());
+        assertEquals(3,functionDef.variables().size());
 
 
 
@@ -1061,9 +1061,11 @@ public class SameDiffTests {
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
         List<DifferentialFunction> ops = sameDiff.exec().getRight();
-        Op firstOp = (Op) ops.get(0);
-        Op secondOp = (Op) ops.get(1);
-        assertTrue(firstOp.z() == secondOp.x());
+        DifferentialFunction firstOp = ops.get(0);
+        DifferentialFunction secondOp =  ops.get(1);
+        val firstResult = sameDiff.getVariableForVertexId(firstOp.outputVariables()[0].getVertexId()).getArr();
+        val secondResult = sameDiff.getVariableForVertexId(secondOp.outputVariables()[0].getVertexId()).getArr();
+        assertTrue(firstResult == secondResult);
 
     }
 
@@ -1410,7 +1412,8 @@ public class SameDiffTests {
         OpExecOrder opExecOrder = logisticGraph.graph().getOpOrder();
         System.out.println(opExecOrder);
         assertEquals(3,opExecOrder.getActions().size());
-        for(int i = 0; i < 3; i++) {
+        val actions = logisticPrediction.graph().getOpOrder().getActions();
+        for(int i = 0; i < actions.size(); i++) {
             val currAction = logisticPrediction.graph().getOpOrder().getActions().get(i);
             val func = logisticPrediction.getFunction(currAction.getInputsIds(),currAction.getOutputId());
             assertEquals(opNameAssertions.get(i),func.opName());

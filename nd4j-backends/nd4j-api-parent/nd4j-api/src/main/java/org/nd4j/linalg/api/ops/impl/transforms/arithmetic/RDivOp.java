@@ -47,7 +47,7 @@ public class RDivOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "rdiv";
+        return "reversedivide";
     }
 
     @Override

@@ -129,7 +129,7 @@ public abstract class DifferentialFunction {
             nodeIds[i] = args[i].getVertexId();
         }
 
-        if(sameDiff != null) {
+        if(sameDiff != null && !sameDiff.hasArgs(nodeIds)) {
             sameDiff.addArgsFor(nodeIds, this);
         }
     }

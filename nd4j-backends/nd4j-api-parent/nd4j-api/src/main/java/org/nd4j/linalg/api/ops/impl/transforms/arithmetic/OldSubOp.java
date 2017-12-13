@@ -33,45 +33,45 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldAddOp extends BaseTransformOp {
-    public OldAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
+public class OldSubOp extends BaseTransformOp {
+    public OldSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
-    public OldAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
+    public OldSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public OldAddOp() {}
+    public OldSubOp() {}
 
-    public OldAddOp(INDArray x, INDArray y, INDArray z, long n) {
+    public OldSubOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public OldAddOp(INDArray x) {
+    public OldSubOp(INDArray x) {
         super(x);
     }
 
-    public OldAddOp(INDArray x, INDArray z) {
+    public OldSubOp(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public OldAddOp(INDArray x, INDArray z, long n) {
+    public OldSubOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public OldAddOp(INDArray x, INDArray y, INDArray z) {
+    public OldSubOp(INDArray x, INDArray y, INDArray z) {
         super(x, y, z, x.lengthLong());
     }
 
     @Override
     public int opNum() {
-        return 0;
+        return 1;
     }
 
     @Override
     public String opName() {
-        return "old_add";
+        return "old_sub";
     }
 
     @Override

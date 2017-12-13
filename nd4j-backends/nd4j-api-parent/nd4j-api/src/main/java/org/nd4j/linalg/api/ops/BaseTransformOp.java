@@ -115,8 +115,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         if (i_v != null) {
             f().validateDifferentialFunctionsameDiff(i_v);
             val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",shape,i_v.depth() + 1);
-            sameDiff.addArgsFor(new SDVariable[] {i_v},this);
-            sameDiff.addOutgoingFor(new int[]{var.getVertexId()},this);
+            if(!sameDiff.hasArgs(this)) {
+                sameDiff.addArgsFor(new SDVariable[]{i_v}, this);
+                sameDiff.addOutgoingFor(new int[]{var.getVertexId()}, this);
+            }
+
             this.xVertexId = i_v.getVertexId();
             this.zVertexId = var.getVertexId();
         } else {

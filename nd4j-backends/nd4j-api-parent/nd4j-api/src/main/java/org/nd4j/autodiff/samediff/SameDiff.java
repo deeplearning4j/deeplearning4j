@@ -760,6 +760,34 @@ public class SameDiff {
     }
 
 
+
+    /**
+     * Returns true if this function already
+     * has defined arguments
+     * @param function the function to check
+     * @return true if the function has args false otherwise
+     */
+    public boolean hasArgs(int[] function) {
+        return incomingArgs.containsKey(function);
+    }
+
+
+    /**
+     * Returns true if this function already
+     * has defined arguments
+     * @param function the function to check
+     * @return true if the function has args false otherwise
+     */
+    public boolean hasArgs(DifferentialFunction function) {
+        val vertexIdArgs = incomingArgsReverse.get(function.getInstanceId());
+        if(vertexIdArgs != null) {
+            val args = incomingArgs.get(vertexIdArgs);
+            if(args != null)
+                return true;
+        }
+        return false;
+    }
+
     /**
      * Adds incoming args to the graph
      * @param vertexIds
@@ -776,7 +804,7 @@ public class SameDiff {
 
 
         if(incomingArgsReverse.containsKey(function.getInstanceId())) {
-           throw new ND4JIllegalStateException("Attempting to add duplicate function for function id " + function.getInstanceId());
+            throw new ND4JIllegalStateException("Attempting to add duplicate function for function id " + function.getInstanceId());
         }
 
 
@@ -889,8 +917,7 @@ public class SameDiff {
             throw new IllegalStateException("No ops found to execute.");
         INDArray[] ret = new INDArray[opExecAction.size()];
         for(int i = 0; i < ret.length; i++) {
-            Op op = (Op) opExecAction.get(i);
-            ret[i] = op.z();
+            ret[i] = getArrForVertexId(opExecAction.get(i).outputVariables()[0].getVertexId());
         }
         return ret;
     }
@@ -3139,8 +3166,8 @@ public class SameDiff {
 
             Op op = (Op) differentialFunction;
             differentialFunction.fillInArrays();
-            val argZero = getArrForVertexId(differentialFunction.outputVariables()[0].getVertexId());
-            op.setN(argZero.length());
+            val argZero = ArrayUtil.prod(getShapeForVertexId(differentialFunction.outputVariables()[0].getVertexId()));
+            op.setN(argZero);
 
         }
         else if(differentialFunction instanceof DynamicCustomOp) {
@@ -3173,8 +3200,8 @@ public class SameDiff {
      */
     public INDArray execAndEndResult() {
         List<DifferentialFunction> exec = exec().getRight();
-        Op op = (Op) exec.get(exec.size() - 1);
-        return op.z();
+        val output =  exec.get(exec.size() - 1).outputVariables()[0];
+        return output.getArr();
     }
 
 
@@ -3686,7 +3713,7 @@ public class SameDiff {
             val inputVertexIds = incomingArgsReverse.get(function.getInstanceId());
             int maxDepth = -1;
             for(int i = 0; i < inputVertexIds.length; i++) {
-                 maxDepth = Math.max(maxDepth,getVariableForVertexId(inputVertexIds[i]).depth());
+                maxDepth = Math.max(maxDepth,getVariableForVertexId(inputVertexIds[i]).depth());
             }
 
             val outputArgs = ougoingArgsReverse.get(function.getInstanceId());
@@ -3997,6 +4024,7 @@ public class SameDiff {
             else if(differentialFunction instanceof CustomOp) {
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
                 Nd4j.getExecutioner().exec(customOp);
+                ops.add(customOp);
             }
 
             else if(differentialFunction instanceof Op) {

@@ -5,6 +5,7 @@ import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
@@ -293,8 +294,25 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
                     vertices.add(edge1.getTo());
                 }
 
+                else {
+                    for(int i = 0; i < edge1.getTo().length; i++) {
+                        val singleEntry = new int[] {edge1.getTo()[i]};
+                        if(!ArrayUtil.listOfIntsContains(vertices,singleEntry)) {
+                            vertices.add(singleEntry);
+                        }
+                    }
+                }
+
                 if(!ArrayUtil.listOfIntsContains(vertices,edge1.getFrom()) && edge1.getFrom().length < 2) {
                     vertices.add(edge1.getFrom());
+                }
+                else {
+                    for(int i = 0; i < edge1.getFrom().length; i++) {
+                         val singleEntry = new int[] {edge1.getFrom()[i]};
+                         if(!ArrayUtil.listOfIntsContains(vertices,singleEntry)) {
+                             vertices.add(singleEntry);
+                         }
+                    }
                 }
 
             }
