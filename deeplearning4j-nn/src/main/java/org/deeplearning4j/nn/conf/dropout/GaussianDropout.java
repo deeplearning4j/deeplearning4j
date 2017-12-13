@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.dropout;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -68,7 +69,7 @@ public class GaussianDropout implements IDropout {
             return inputActivations.muli(noise);
         } else {
             INDArray result = Nd4j.createUninitialized(inputActivations.shape(), inputActivations.ordering());
-            return Nd4j.getExecutioner().execAndReturn(new MulOp(inputActivations, noise, result));
+            return Nd4j.getExecutioner().execAndReturn(new OldMulOp(inputActivations, noise, result));
         }
     }
 

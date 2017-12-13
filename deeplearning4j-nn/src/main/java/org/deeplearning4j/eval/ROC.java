@@ -8,6 +8,7 @@ import org.deeplearning4j.eval.serde.ROCSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -286,9 +287,9 @@ public class ROC extends BaseEvaluation<ROC> {
                     ifp = isFalsePositive;
                 } else {
                     isTruePositive = Nd4j.getExecutioner()
-                                    .execAndReturn(new MulOp(predictedClass1, positiveActualClassColumn, itp));
+                                    .execAndReturn(new OldMulOp(predictedClass1, positiveActualClassColumn, itp));
                     isFalsePositive = Nd4j.getExecutioner()
-                                    .execAndReturn(new MulOp(predictedClass1, negativeActualClassColumn, ifp));
+                                    .execAndReturn(new OldMulOp(predictedClass1, negativeActualClassColumn, ifp));
                 }
 
                 //Counts for this batch:
