@@ -58,9 +58,9 @@ public class KerasSimpleRnnTest {
     }
 
     void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        boolean lstmUnroll = true;
+        boolean unroll = true;
 
-        KerasLstm lstm = new KerasLstm(kerasVersion);
+        KerasSimpleRnn simpleRnn = new KerasSimpleRnn(kerasVersion);
 
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
@@ -86,7 +86,7 @@ public class KerasSimpleRnnTest {
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        config.put(lstm.getLAYER_FIELD_UNROLL(), lstmUnroll);
+        config.put(conf.getLAYER_FIELD_UNROLL(), unroll);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 

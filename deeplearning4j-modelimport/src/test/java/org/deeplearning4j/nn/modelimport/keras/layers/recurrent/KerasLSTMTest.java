@@ -92,7 +92,7 @@ public class KerasLSTMTest {
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        config.put(lstm.getLAYER_FIELD_UNROLL(), lstmUnroll);
+        config.put(conf.getLAYER_FIELD_UNROLL(), lstmUnroll);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 

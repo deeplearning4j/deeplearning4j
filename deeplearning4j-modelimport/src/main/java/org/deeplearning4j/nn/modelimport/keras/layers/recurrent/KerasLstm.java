@@ -57,7 +57,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 @Data
 public class KerasLstm extends KerasLayer {
 
-    private final String LAYER_FIELD_UNROLL = "unroll";
     private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
     private final String LSTM_FORGET_BIAS_INIT_ONE = "one";
 
