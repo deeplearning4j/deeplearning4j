@@ -1226,8 +1226,7 @@ public class SameDiffTests {
 
         List<DifferentialFunction> ops = sameDiff.getFunction("expGradient").execBackwards().getRight();
 
-        Op op = (Op) ops.get(ops.size() - 1);
-        INDArray executions = op.z();
+        INDArray executions = ops.get(ops.size() - 1).outputVariables()[0].getArr();
         INDArray assertion = Nd4j.create(new double[][]{
                 {2.7183  , 7.3891},
                 {20.0855  ,54.5981}

@@ -287,6 +287,8 @@ public class SameDiff {
      * @return the input ids for a given function
      */
     public int[] getInputsForFunction(DifferentialFunction function) {
+        if(!incomingArgsReverse.containsKey(function.getInstanceId()))
+            throw new ND4JIllegalStateException("Illegal function instance id found " + function.getInstanceId());
         return incomingArgsReverse.get(function.getInstanceId());
     }
 
@@ -657,8 +659,8 @@ public class SameDiff {
 
         incomingArgs = new IntArrayKeyMap<>();
         outgoingArgs = new IntArrayKeyMap<>();
-        incomingArgsReverse = new IdentityHashMap<>();
-        ougoingArgsReverse = new IdentityHashMap<>();
+        incomingArgsReverse = new HashMap<>();
+        ougoingArgsReverse = new HashMap<>();
         this.functionInstancesById = new HashMap<>();
         fromToTable = HashBasedTable.create();
 

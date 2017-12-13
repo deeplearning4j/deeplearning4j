@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class IntArrayKeyMap<V> implements Map<int[],V> {
 
-    private Map<IntArray,V> map = new TreeMap<>();
+    private Map<IntArray,V> map = new LinkedHashMap<>();
 
     @Override
     public int size() {
@@ -80,7 +80,7 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
     @Override
     public Set<Entry<int[], V>> entrySet() {
         Set<Map.Entry<IntArray,V>> intArrays = map.entrySet();
-        Set<Entry<int[], V>> ret = new HashSet<>();
+        Set<Entry<int[], V>> ret = new LinkedHashSet<>();
         for(Map.Entry<IntArray,V> intArray : intArrays)
             ret.add(new Map.Entry<int[],V>() {
                 @Override
@@ -119,7 +119,7 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
 
             IntArray intArray = (IntArray) o;
 
-            return Arrays.equals(backingArray, intArray.backingArray);
+            return Arrays.equals(intArray.backingArray,backingArray);
         }
 
         @Override
@@ -132,6 +132,9 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
             if(this.backingArray.length == 0 || intArray.backingArray.length == 0) {
                 return 1;
             }
+
+            else if(Arrays.equals(backingArray,intArray.backingArray))
+                return 1;
 
             return Ints.compare(Ints.max(backingArray),Ints.max(intArray.backingArray));
         }

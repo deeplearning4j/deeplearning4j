@@ -437,8 +437,12 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(frozen) {
             return nextVertexId;
         }
-        else if(nextVertexId > vertices.size())
-            throw new ND4JIllegalStateException("Unable to increment vertex id.  No vertices added.");
+        else if(nextVertexId > vertices.size()) {
+            if(Math.abs(nextVertexId - vertices.size()) > 1)
+                throw new ND4JIllegalStateException("Unable to increment vertex id.  No vertices added.");
+            else //salvagable, just don't increment
+                return nextVertexId;
+        }
         return ++nextVertexId; // Make vertexIds start at 1 to uncover array indexing issues.
     }
 }

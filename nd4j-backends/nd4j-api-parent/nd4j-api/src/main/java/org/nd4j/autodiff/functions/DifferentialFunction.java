@@ -59,10 +59,10 @@ public abstract class DifferentialFunction {
     protected  boolean arrayInitialized = false;
 
     @Getter
-    protected String instanceId;
+    private String instanceId;
 
     public DifferentialFunction() {
-        this.instanceId = UUID.randomUUID().toString();
+        setInstanceId();
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class DifferentialFunction {
      */
     public DifferentialFunction(SameDiff sameDiff,NodeDef nodeDef, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         this.sameDiff = sameDiff;
-        this.instanceId = UUID.randomUUID().toString();
+        setInstanceId();
         initFromTensorFlow(nodeDef, sameDiff,attributesForNode ,graph);
     }
 
@@ -83,8 +83,7 @@ public abstract class DifferentialFunction {
      */
     public DifferentialFunction(SameDiff sameDiff,onnx.OnnxProto3.NodeProto node,Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         this.sameDiff = sameDiff;
-        this.instanceId = UUID.randomUUID().toString();
-
+        setInstanceId();
         initFromOnnx(node, sameDiff, attributesForNode, graph);
     }
 
@@ -97,7 +96,7 @@ public abstract class DifferentialFunction {
     public DifferentialFunction(SameDiff sameDiff,boolean inPlace, Object[] extraArgs) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
-        this.instanceId = UUID.randomUUID().toString();
+        setInstanceId();
         this.extraArgs = extraArgs;
 
 
@@ -111,7 +110,7 @@ public abstract class DifferentialFunction {
      */
     public DifferentialFunction(SameDiff sameDiff, Object[] extraArgs) {
         this.sameDiff = sameDiff;
-        this.instanceId = UUID.randomUUID().toString();
+        setInstanceId();
         this.extraArgs = extraArgs;
 
     }
@@ -123,15 +122,19 @@ public abstract class DifferentialFunction {
     public DifferentialFunction(SameDiff sameDiff, boolean inPlace, SDVariable[] args) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
-        this.instanceId = UUID.randomUUID().toString();
-        val nodeIds = new int[args.length];
-        for(int i = 0; i < args.length; i++) {
-            nodeIds[i] = args[i].getVertexId();
+        setInstanceId();
+        if(sameDiff != null && args != null) {
+            val nodeIds = new int[args.length];
+            for(int i = 0; i < args.length; i++) {
+                nodeIds[i] = args[i].getVertexId();
+            }
+
+            val hasArgs = sameDiff.hasArgs(nodeIds);
+            if(sameDiff != null && !hasArgs) {
+                sameDiff.addArgsFor(nodeIds, this);
+            }
         }
 
-        if(sameDiff != null && !sameDiff.hasArgs(nodeIds)) {
-            sameDiff.addArgsFor(nodeIds, this);
-        }
     }
 
 
@@ -269,6 +272,9 @@ public abstract class DifferentialFunction {
         return sameDiff.getInputVariablesForFunction(this);
     }
 
+
+
+
     public SDVariable arg() {
         return args()[0];
     }
@@ -296,6 +302,11 @@ public abstract class DifferentialFunction {
         return vals;
     }
 
+
+    private void setInstanceId() {
+        if(instanceId == null)
+            this.instanceId = UUID.randomUUID().toString();
+    }
 
     public String opName() {
         throw new UnsupportedOperationException();
