@@ -90,7 +90,7 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     val builder = buildModelConfig(optimizer, seed)
     buildOutput(lossFunction)
 
-    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
+    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()
     for ((layer, layerIndex) <- layers.zipWithIndex) {
       log.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
       log.info(" size: " + layer.describe())
