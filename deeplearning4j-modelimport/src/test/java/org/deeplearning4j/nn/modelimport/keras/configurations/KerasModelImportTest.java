@@ -36,28 +36,24 @@ public class KerasModelImportTest {
     @Test
     public void testH5WithoutTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("tfscope/model.h5");
-//        System.out.println(model.params());
         assert (model != null);
     }
 
     @Test
     public void testH5WithTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("tfscope/model.h5.with.tensorflow.scope");
-//        System.out.println(model.params());
         assert (model != null);
     }
 
     @Test
     public void testWeightAndJsonWithoutTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("tfscope/model.json", "tfscope/model.weight");
-//        System.out.println(model.params());
         assert (model != null);
     }
 
     @Test
     public void testWeightAndJsonWithTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("tfscope/model.json.with.tensorflow.scope", "tfscope/model.weight.with.tensorflow.scope");
-//        System.out.println(model.params());
         assert (model != null);
     }
 
