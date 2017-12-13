@@ -22,22 +22,31 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -60,6 +69,16 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * Created by agibsonccc on 12/22/14.
  */
 public class EvalTest {
+
+    @Before
+    public void before(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @After
+    public void after(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+    }
 
 
     @Test
@@ -886,4 +905,69 @@ public class EvalTest {
         assertTrue(stats, stats.contains(s1));
         assertTrue(stats, stats.contains(s2));
     }
+
+
+    @Test
+    public void testEvalSplitting(){
+        //Test for "tbptt-like" functionality
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+
+            int nIn = 4;
+            int layerSize = 5;
+            int nOut = 6;
+            int tbpttLength = 10;
+            int tsLength = 5 * tbpttLength + tbpttLength / 2;
+
+            MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .list()
+                    .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                    .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX)
+                            .build())
+                    .build();
+
+            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .list()
+                    .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                    .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX).build())
+                    .tBPTTLength(10)
+                    .backpropType(BackpropType.TruncatedBPTT)
+                    .build();
+
+            MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+            net1.init();
+
+            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+            net2.init();
+
+            net2.setParams(net1.params());
+
+            INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
+            INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
+
+            INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
+            INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
+
+
+            List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
+            DataSetIterator iter = new ExistingDataSetIterator(l);
+
+            IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+            IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+
+            assertEquals(e1[0], e2[0]);
+            assertEquals(e1[1], e2[1]);
+            assertEquals(e1[2], e2[2]);
+        }
+    }
+
+
 }

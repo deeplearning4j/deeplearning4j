@@ -2981,7 +2981,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         int startTimeIdx = i * fwdLen;
                         int endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
 
-                        INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, input, labels, fMask, lMask);
+                        INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, features, labels, fMask, lMask);
                         setLayerMaskArrays(subsets[2], subsets[3]);
 
                         INDArray outSub = rnnTimeStep(subsets[0]);
