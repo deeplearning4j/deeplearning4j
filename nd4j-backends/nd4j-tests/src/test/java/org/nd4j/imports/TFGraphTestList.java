@@ -41,7 +41,7 @@ public class TFGraphTestList {
             "math_mul_order",
             "mlp_00",
             "mnist_00",
-            "node_multiple_out",
+            //"node_multiple_out", -> Need to map multiple out values to graph node output values
             "transform_0",
             "transpose"
     };

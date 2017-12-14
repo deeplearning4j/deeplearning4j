@@ -22,6 +22,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,9 +34,14 @@ import static org.junit.Assert.assertEquals;
 public class TFGraphTestAllHelper {
 
     public enum ExecuteWith {
-        SAMEDIFF,
-        LIBND4J,
-        JUST_PRINT
+        SAMEDIFF(SAMEDIFF_DEFAULT_BASE_DIR),
+        LIBND4J(LIBND4J_DEFAULT_BASE_DIR),
+        JUST_PRINT(COMMON_BASE_DIR);
+        private ExecuteWith(String baseDir) {
+            this.BASE_DIR = baseDir;
+        }
+        private final String BASE_DIR;
+        public String getDefaultBaseDir() {return BASE_DIR;}
     }
 
     //TODO: Later, we can add this as a param so we can test different graphs in samediff and not samediff
@@ -51,14 +57,11 @@ public class TFGraphTestAllHelper {
             .build();
 
     protected static List<Object[]> fetchTestParams(ExecuteWith executeWith) throws IOException {
-        if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
-            return fetchTestParams(SAMEDIFF_DEFAULT_BASE_DIR);
-        }
-        return fetchTestParams(LIBND4J_DEFAULT_BASE_DIR);
+        return fetchTestParams(executeWith.getDefaultBaseDir(),executeWith);
     }
 
-    protected static List<Object[]> fetchTestParams(String baseDir) throws IOException {
-        String[] modelNames = modelDirNames(baseDir);
+    protected static List<Object[]> fetchTestParams(String baseDir, ExecuteWith executeWith) throws IOException {
+        String[] modelNames = modelDirNames(baseDir,executeWith);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
             Object[] currentParams = new Object[3];
@@ -70,23 +73,9 @@ public class TFGraphTestAllHelper {
         return modelParams;
     }
 
-    protected static List<Object[]> fetchTestParams(String baseDir, String modelName) throws IOException {
-        List<Object[]> modelParams = new ArrayList<>();
-        Object[] currentParams = new Object[3];
-        currentParams[0] = inputVars(modelName, baseDir); //input variable map - could be null
-        currentParams[1] = outputVars(modelName, baseDir); //saved off predictions
-        currentParams[2] = modelName;
-        modelParams.add(currentParams);
-        return modelParams;
-    }
-
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, ExecuteWith execType) throws IOException {
         log.info("Running model " + modelName + " only output");
-        if (execType.equals(ExecuteWith.SAMEDIFF)) {
-            checkOnlyOutput(inputs, predictions, modelName, SAMEDIFF_DEFAULT_BASE_DIR, execType);
-        } else if (execType.equals(ExecuteWith.LIBND4J)) {
-            checkOnlyOutput(inputs, predictions, modelName, LIBND4J_DEFAULT_BASE_DIR, execType);
-        }
+        checkOnlyOutput(inputs, predictions, modelName, execType.getDefaultBaseDir(), execType);
     }
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, String baseDir, ExecuteWith execType) throws IOException {
@@ -159,12 +148,13 @@ public class TFGraphTestAllHelper {
         return graph;
     }
 
-    private static String[] modelDirNames(String base_dir) throws IOException {
+    private static String[] modelDirNames(String base_dir,ExecuteWith executeWith) throws IOException {
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(base_dir).getClassLoader());
         Resource[] resources = resolver.getResources("classpath*:" + base_dir + "/**/frozen_model.pb");
         String[] exampleNames = new String[resources.length];
         for (int i = 0; i < resources.length; i++) {
-            exampleNames[i] = resources[i].getURL().toString().split(base_dir + "/")[1].split("/")[0];
+            String nestedName = resources[i].getURL().toString().split(base_dir + "/")[1];
+            exampleNames[i] = nestedName.replaceAll(Pattern.quote(executeWith.getDefaultBaseDir()),"").replaceAll("/frozen_model.pb","");
         }
         return exampleNames;
     }
