@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class CheckpointListener extends BaseTrainingListener {
 
     private enum KeepMode {ALL, LAST, LAST_AND_EVERY};
+    private static final String[] MODEL_TYPES = new String[]{"MultiLayerNetwork", "ComputationGraph", "Model"};
 
     private File rootDir;
     private KeepMode keepMode;
@@ -133,6 +134,11 @@ public class CheckpointListener extends BaseTrainingListener {
     }
 
     private void saveCheckpointHelper(Model model) throws Exception {
+        if(!checkpointRecordFile.exists()){
+            checkpointRecordFile.createNewFile();
+            write(Checkpoint.getFileHeader() + "\n", checkpointRecordFile);
+        }
+
         Checkpoint c = new Checkpoint(++lastCheckpointNum, System.currentTimeMillis(), getIter(model), getEpoch(model),
                 getModelType(model), null);
         setFileName(c);
@@ -164,7 +170,7 @@ public class CheckpointListener extends BaseTrainingListener {
         } else {
             //Keep mode: last N and every M
             for(Checkpoint cp : availableCheckpoints()){
-                if(cp.getCheckpointNum() > 0 && cp.getCheckpointNum() % keepEvery == 0){
+                if(cp.getCheckpointNum() > 0 && (cp.getCheckpointNum()+1) % keepEvery == 0){
                     //One of the "every M to keep" models
                     continue;
                 } else if(cp.getCheckpointNum() > lastCheckpointNum - keepLast ){        //Example: latest is 5, keep last 2 -> keep checkpoints 4 and 5
@@ -179,8 +185,12 @@ public class CheckpointListener extends BaseTrainingListener {
     }
 
     private static void setFileName(Checkpoint c){
-        String filename = "checkpoint_" + c.getCheckpointNum() + "_" + c.getModelType() + ".zip";
+        String filename = getFileName(c.getCheckpointNum(), c.getModelType());
         c.setFilename(filename);
+    }
+
+    private static String getFileName(int checkpointNum, String modelType){
+        return "checkpoint_" + checkpointNum + "_" + modelType + ".zip";
     }
 
     public String write(String str, File f){
@@ -216,7 +226,13 @@ public class CheckpointListener extends BaseTrainingListener {
     }
 
     protected static String getModelType(Model model){
-        return model.getClass().getSimpleName();
+        if(model.getClass() == MultiLayerNetwork.class){
+            return "MultiLayerNetwork";
+        } else if(model.getClass() == ComputationGraph.class){
+            return "ComputationGraph";
+        } else {
+            return "Model";
+        }
     }
 
 
@@ -254,8 +270,17 @@ public class CheckpointListener extends BaseTrainingListener {
     }
 
     public File getFileForCheckpoint(int checkpointNum){
-
-        throw new UnsupportedOperationException("Not yet implemented");
+        if(checkpointNum < 0){
+            throw new IllegalArgumentException("Invalid checkpoint number: " + checkpointNum);
+        }
+        File f = null;
+        for(String s : MODEL_TYPES){
+            f = new File(rootDir, getFileName(checkpointNum, s));
+            if(f.exists()){
+                return f;
+            }
+        }
+        throw new IllegalStateException("Model file for checkpoint " + checkpointNum + " does not exist");
     }
 
     public MultiLayerNetwork loadCheckpointMLN(Checkpoint checkpoint){
