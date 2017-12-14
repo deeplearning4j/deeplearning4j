@@ -158,7 +158,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                     try {
                         status = f.get().getCandidateInfo();
                         if ( status.getCandidateStatus() == CandidateStatus.Failed ) {
-                            log.info( "Execution of candidate { } failed", f.get().getCandidate().getIndex() );
+                            log.info( "Execution of candidate {} failed", f.get().getCandidate().getIndex() );
                             continue;
                         }
                     } catch (Exception e) {
