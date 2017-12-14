@@ -1,63 +1,19 @@
 //
-// @author raver119@gmail.com
+//  @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_VARIABLESPACE_H
-#define LIBND4J_VARIABLESPACE_H
-
-#include <helpers/logger.h>
-#include <helpers/helper_random.h>
-#include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <mutex>
-#include <NDArray.h>
-#include <array/NDArrayList.h>
-#include <graph/Variable.h>
-#include <memory/Workspace.h>
-#include <graph/Stash.h>
-#include <graph/FlowPath.h>
-
+#include <graph/VariableSpace.h>
 
 namespace nd4j {
     namespace graph {
-
         template <typename T>
-        class VariableSpace {
+        class VariableProxy: public VariableSpace<T> {
         protected:
-
-            nd4j::memory::Workspace _workspace;
-            nd4j::random::RandomBuffer* _rng = nullptr;
-
-            // stash is NOT cloned
-            nd4j::graph::Stash<T> _stash;
-
-            std::map<std::pair<int, int>, Variable<T> *> _paired;
-            std::map<std::string, Variable<T> *> _symbolic;
-            std::map<int, Variable<T> *> _variables;
-            std::vector<Variable<T> *> _external;
-            std::vector<Variable<T> *> _internal;
-
-            std::vector<nd4j::NDArrayList<T> *> _lists;
-
-            std::vector<nd4j::graph::Variable<T> *> _placeholders;
-
-            void silentPutVariable(std::pair<int,int>& pair, Variable<T> *variable);
-
-            int _auto_counter = -1;
-
-            std::mutex _varmap;
-
-            std::map<int, nd4j::graph::Variable<T> *> _temporary;
-
-            std::vector<nd4j::graph::Variable<T> *> *_handles;
-
-            FlowPath* _flow = nullptr;
-
+            VariableSpace<T>* _backed;
+            VariableSpace<T> _current;
         public:
-            VariableSpace();
-            ~VariableSpace();
+            VariableProxy(VariableSpace<T>* reference);
+            ~VariableProxy() = default;
 
             virtual int numberOfPlaceholders();
             virtual std::vector<Variable<T>*>* getPlaceholders();
@@ -85,9 +41,9 @@ namespace nd4j {
             virtual void putVariable(int id, int idx, NDArray<T> *array);
             virtual void putVariable(int id, int idx, Variable<T> *array);
 
-            virtual void trackList(nd4j::NDArrayList<T>* list);
-
             virtual void putOutputVariable(Variable<T> *variable);
+
+            virtual void trackList(nd4j::NDArrayList<T>* list);
 
             // memory-related statistics
             virtual Nd4jIndex externalMemory();
@@ -101,14 +57,8 @@ namespace nd4j {
             virtual nd4j::graph::VariableSpace<T>* clone();
 
             virtual nd4j::graph::Stash<T>* getStash();
-
-            virtual std::vector<nd4j::graph::Variable<T> *> * getExternalVariables();
-
             virtual void setFlowPath(FlowPath* timers);
             virtual FlowPath* flowPath();
         };
     }
 }
-
-
-#endif //LIBND4J_VARIABLESPACE_H
