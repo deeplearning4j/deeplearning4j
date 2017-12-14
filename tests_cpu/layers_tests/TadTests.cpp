@@ -93,6 +93,18 @@ TEST_F(TadTests, TestShapeTad_1) {
     
 }
 
+TEST_F(TadTests, TadNoAxis_1) {
+    NDArray<float> array('c', {2, 3});
+
+    shape::TAD tad(array.shapeInfo(), nullptr, 0);
+    tad.createTadOnlyShapeInfo();
+    tad.createOffsets();
+
+    ASSERT_TRUE(tad.wholeThing);
+
+    ASSERT_TRUE(shape::equalsStrict(tad.tadOnlyShapeInfo, array.shapeInfo()));
+}
+
 TEST_F(TadTests, TadEdgeCase_1) {
     NDArray<float> array('c', {5, 4, 1});
     NDArray<float> exp('c', {5, 4});

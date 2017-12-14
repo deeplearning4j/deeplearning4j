@@ -331,7 +331,7 @@ namespace shape {
         this->dimensionLength = dimensionLength;
         this->dimension = dimension;
         this->rank = shape::rank(shapeInfo);
-        this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
+        this->numTads = dimensionLength == 0 ? 1 : this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
 
         int ews = shape::elementWiseStride(shapeInfo);
 
@@ -720,7 +720,7 @@ namespace shape {
 
 
     INLINEDEF int* TAD::shapeInfoOnlyShapeAndStride() {
-        if(wholeThing && dimensionLength == 1 && dimension[0] == MAX_DIMENSION) 
+        if(wholeThing && (dimensionLength == 1 && dimension[0] == MAX_DIMENSION) )
             return shape::createScalarShapeInfo();
 
         //ensure tad shapes get setup right for vectors
@@ -728,7 +728,7 @@ namespace shape {
             return shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo);
 
         // case when tad coincides with whole array
-        if( this->numTads == 1 && shape::rank(originalShapeInfo) == originalDimensionLength) {
+        if( this->numTads == 1 && ((shape::rank(originalShapeInfo) == originalDimensionLength) || originalDimensionLength == 0)) {
             // we might have special case here: skipped dimensions might be just full of ones
             int *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
             if (shape::isDimPermuted(dimension, dimensionLength))    // check whether we need permutation

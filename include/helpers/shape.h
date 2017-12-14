@@ -4156,7 +4156,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         shapeInformation2->stride = stride;
         shapeInformation2->shape = shape;
         shapeInformation2->elementWiseStride = 1;
-        shapeInformation2->order = 97;
+        shapeInformation2->order = 99;
         int *ret = shape::toShapeBuffer(shapeInformation2);
         delete shapeInformation2;
         delete[] shape;
