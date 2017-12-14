@@ -25,7 +25,8 @@ T polyGamma(const int n, const T x) {
 	// TODO case for n = 0 (digamma)
 
 	int sign = (n + 1) % 2  ?  -1 : 1;
-	T factorial = (T)std::tgamma(n + 1);
+	// T factorial = (T)std::tgamma(n + 1);
+	T factorial = math::nd4j_exp<T>((T)std::lgamma((double)(n + 1)));
 
 	return sign * factorial * zeta<T>((T)(n + 1), x);	
 }

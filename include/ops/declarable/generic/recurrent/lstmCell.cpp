@@ -68,7 +68,26 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     T clippingProjValue   = T_ARG(1);                       // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
     const T forgetBias    = T_ARG(2);
 
-    const int numUnits  = ct_1->sizeAt(1);
+    const int batchSize   = (INPUT_VARIABLE(0))->sizeAt(0);
+    const int inSize      = (INPUT_VARIABLE(0))->sizeAt(1);
+    const int numProj     = (INPUT_VARIABLE(1))->sizeAt(1);
+    const int numUnits    = (INPUT_VARIABLE(2))->sizeAt(1);    
+
+    // input validation
+    // check shapes of previous cell output and previous cell state
+    for(int i = 1; i <=2; ++i)
+        REQUIRE_TRUE((INPUT_VARIABLE(i))->sizeAt(0) == batchSize, 0, "CUSTOM_OP lstmCell: the shape[0] of previous cell output and previous cell state must be equal to batch size !");
+    // check shape of input-to-hidden  weights            
+    REQUIRE_TRUE((INPUT_VARIABLE(3))->isSameShape({inSize, 4*numUnits}),0,"CUSTOM_OP lstmCell: the shape of input-to-hidden weights is wrong !");
+    // check shape of hidden-to-hidden  weights
+    REQUIRE_TRUE((INPUT_VARIABLE(4))->isSameShape({numProj, 4*numUnits}),0,"CUSTOM_OP lstmCell: the shape of hidden-to-hidden weights is wrong !");
+    // check shape of diagonal weights
+    REQUIRE_TRUE((INPUT_VARIABLE(5))->isSameShape({1, 3*numUnits}), 0, "CUSTOM_OP lstmCell: the shape of diagonal weights is wrong !");
+    // check shape of projection weights
+    REQUIRE_TRUE((INPUT_VARIABLE(6))->isSameShape({numUnits, numProj}), 0, "CUSTOM_OP lstmCell: the shape of projection weights is wrong !");
+    // check shape of biases
+    REQUIRE_TRUE((INPUT_VARIABLE(7))->isSameShape({1, 4*numUnits}), 0, "CUSTOM_OP lstmCell: the shape of biases is wrong !");
+    REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "CUSTOM_OP lstmCell: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
     
     NDArray<T> z = mmul(*xt, *Wx) + mmul(*ht_1, *Wh) + *b;       // [batchSize x 4*numUnits] + [batchSize x 4*numUnits] + [1 x 4*numUnits] = [batchSize x 4*numUnits]    
     
@@ -104,7 +123,6 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     }
     else
         ht->assign(&htNoPeepHole);     
-
     
 
     return ND4J_STATUS_OK;
@@ -112,41 +130,7 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
 
 
 
-DECLARE_SHAPE_FN(lstmCell) {
-
-    const int batchSize   = (INPUT_VARIABLE(0))->sizeAt(0);
-    const int inSize      = (INPUT_VARIABLE(0))->sizeAt(1);
-    const int numProj     = (INPUT_VARIABLE(1))->sizeAt(1);
-    const int numUnits    = (INPUT_VARIABLE(2))->sizeAt(1);
-    const bool projection = (bool)INT_ARG(1);
-
-    // check shapes of previous cell output and previous cell state
-    for(int i = 1; i <=2; ++i)
-        if((INPUT_VARIABLE(i))->sizeAt(0) != batchSize)
-            throw "CUSTOM_OP lstmCell: the shape[0] of previous cell output or previous cell state must be equal to batch size !";
-    
-    // check shape of input-to-hidden  weights
-    if(!INPUT_VARIABLE(3)->isSameShape({inSize, 4*numUnits}))
-        throw "CUSTOM_OP lstmCell: the shape of input-to-hidden weights is wrong !";
-
-    // check shape of hidden-to-hidden  weights
-    if(!INPUT_VARIABLE(4)->isSameShape({numProj, 4*numUnits}))
-        throw "CUSTOM_OP lstmCell: the shape of hidden-to-hidden weights is wrong !";
-
-    // check shape of diagonal weights
-    if(!INPUT_VARIABLE(5)->isSameShape({1, 3*numUnits}))
-        throw "CUSTOM_OP lstmCell: the shape of diagonal weights is wrong !";
-
-    // check shape of projection weights
-    if(!INPUT_VARIABLE(6)->isSameShape({numUnits, numProj}))
-        throw "CUSTOM_OP lstmCell: the shape of projection weights is wrong !";
-
-    // check shape of biases
-    if(!INPUT_VARIABLE(7)->isSameShape({1, 4*numUnits}))
-        throw "CUSTOM_OP lstmCell: the shape of biases is wrong !";
-
-    if(!projection && numUnits != numProj)
-        throw "CUSTOM_OP lstmCell: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !";
+DECLARE_SHAPE_FN(lstmCell) {    
 
     // evaluate output shapeInfos
     int *outShapeInfo1(nullptr), *outShapeInfo2(nullptr);
@@ -154,9 +138,9 @@ DECLARE_SHAPE_FN(lstmCell) {
     ALLOCATE(outShapeInfo2, block.getWorkspace(), 8, int);
             
     outShapeInfo1[0] = outShapeInfo2[0] = 2;
-    outShapeInfo1[1] = outShapeInfo2[1] = batchSize;
-    outShapeInfo1[2] = numProj;
-    outShapeInfo2[2] = numUnits;
+    outShapeInfo1[1] = outShapeInfo2[1] = (INPUT_VARIABLE(0))->sizeAt(0);
+    outShapeInfo1[2] = (INPUT_VARIABLE(1))->sizeAt(1);
+    outShapeInfo2[2] = (INPUT_VARIABLE(2))->sizeAt(1);    
     
     shape::updateStrides(outShapeInfo1, (INPUT_VARIABLE(1))->ordering());
     shape::updateStrides(outShapeInfo2, (INPUT_VARIABLE(2))->ordering());

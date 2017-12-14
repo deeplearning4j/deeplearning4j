@@ -499,7 +499,7 @@ TEST_F(DeclarableOpsTests2, TestTensorDot15) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_1) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_1) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -511,7 +511,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_1) {
     weights.assign(0.5);
     expected.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -527,7 +527,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_1) {
 
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_2) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -539,7 +539,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_2) {
     weights.assign(0.5);
     expected.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -554,7 +554,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_2) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_3) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_3) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -566,7 +566,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_3) {
     weights.assign(0.5);
     expected.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -581,7 +581,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_3) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_4) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_4) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -593,7 +593,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_4) {
     weights.assign(0.5);
     expected.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -608,7 +608,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_4) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_5) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_5) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -620,7 +620,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_5) {
     weights.assign(0.5);
     expected.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -635,7 +635,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_5) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_6) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_6) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -647,7 +647,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_6) {
     weights.assign(0.);
     expected.assign(0.);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -662,7 +662,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_6) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_7) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_7) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -672,7 +672,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_7) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -687,7 +687,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_7) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_8) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_8) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -697,7 +697,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_8) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -712,7 +712,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_8) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_9) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_9) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -722,7 +722,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_9) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -737,7 +737,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_9) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_10) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -747,7 +747,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_10) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -762,7 +762,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_10) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_11) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_11) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -772,7 +772,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_11) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -787,7 +787,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_11) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_12) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_12) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -797,7 +797,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_12) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -812,7 +812,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_12) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_13) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_13) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -822,7 +822,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_13) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -837,7 +837,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_13) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_14) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_14) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -849,7 +849,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_14) {
     weights(1) = 0.;
     weights(2) = 0.;
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -864,7 +864,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_14) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_15) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_15) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -874,7 +874,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_15) {
     NDArrayFactory<float>::linspace(3, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -889,7 +889,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_15) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_16) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -903,7 +903,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_16) {
     predictions(2) = 0.;
     predictions(3) = 0.;
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -918,7 +918,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_16) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_17) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -936,7 +936,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_17) {
     labels(2) = 0.;
     labels(3) = 0.;
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -951,7 +951,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_17) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_18) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -969,7 +969,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_18) {
     labels(2) = 0.;
     labels(3) = 0.;
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -985,7 +985,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_18) {
 
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_19) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_19) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -995,7 +995,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_19) {
     NDArrayFactory<float>::linspace(3, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1010,7 +1010,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_19) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_20) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_20) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -1020,7 +1020,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_20) {
     NDArrayFactory<float>::linspace(3, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1035,7 +1035,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_20) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_21) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_21) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -1045,7 +1045,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_21) {
     NDArrayFactory<float>::linspace(3, predictions);
     weights.assign(0.5);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1060,7 +1060,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_21) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_22) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_22) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -1070,7 +1070,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_22) {
     NDArrayFactory<float>::linspace(3, predictions);
     weights.assign(0.);
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1085,7 +1085,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_22) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, absoluteDifference_test_23) {
+TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
     
     NDArray<float> labels('c', {2,3,4,5});
     NDArray<float> predictions('c', {2,3,4,5});
@@ -1107,7 +1107,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_23) {
     weights(40+2) = 0.;
     weights(40+3) = 0.;
 
-    nd4j::ops::absoluteDifference<float> op;
+    nd4j::ops::absolute_difference_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1122,7 +1122,7 @@ TEST_F(DeclarableOpsTests2, absoluteDifference_test_23) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test1) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test1) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1133,7 +1133,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test1) {
     NDArrayFactory<float>::linspace(2, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1148,7 +1148,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test1) {
 }
  
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test2) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test2) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1159,7 +1159,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test2) {
     weights.assign(0.5);    
     predictions.assign(0.5);    
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1175,7 +1175,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test2) {
  
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test3) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test3) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1186,7 +1186,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test3) {
     weights.assign(0.5);    
     predictions.assign(0.5);    
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1200,7 +1200,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test3) {
 }
  
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test4) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test4) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1211,7 +1211,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test4) {
     weights.assign(0.5);    
     predictions.assign(0.5);    
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {0,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1226,7 +1226,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test4) {
 
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test5) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test5) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1236,7 +1236,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test5) {
     weights.assign(0.5);
     predictions.assign(0.5);
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1251,7 +1251,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test6) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test6) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1261,7 +1261,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test6) {
     weights.assign(0.5);
     predictions.assign(0.5);
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1276,7 +1276,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test7) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test7) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1286,7 +1286,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test7) {
     weights.assign(0.5);
     predictions.assign(0.5);
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {1,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1301,7 +1301,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test8) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1311,7 +1311,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test8) {
     weights.assign(0.5);
     predictions.assign(0.5);
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1326,7 +1326,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test9) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test9) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1336,7 +1336,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test9) {
     weights.assign(0.5);
     predictions.assign(0.5);
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1351,7 +1351,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, cosineDistance_test10) {
+TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     
     NDArray<float> labels('c', {2,3,4});
     NDArray<float> predictions('c', {2,3,4});
@@ -1363,7 +1363,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test10) {
     weights(0) = 0.;
     weights(1) = 0.;
 
-    nd4j::ops::cosineDistance<float> op;
+    nd4j::ops::cosine_distance_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1378,7 +1378,7 @@ TEST_F(DeclarableOpsTests2, cosineDistance_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test1) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test1) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1388,7 +1388,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test1) {
     NDArrayFactory<float>::linspace(1, logits);
     weights.assign(0.5);    
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1403,7 +1403,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test2) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test2) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1413,7 +1413,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test2) {
     NDArrayFactory<float>::linspace(1, logits);
     weights.assign(0.5);    
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1428,7 +1428,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test2) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test3) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test3) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1438,7 +1438,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test3) {
     NDArrayFactory<float>::linspace(1, logits);
     weights.assign(0.5);    
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1453,7 +1453,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test3) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test4) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test4) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1463,7 +1463,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test4) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1477,7 +1477,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test4) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test5) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test5) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1487,7 +1487,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test5) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1501,7 +1501,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test6) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test6) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1511,7 +1511,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test6) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1525,7 +1525,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test7) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test7) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1535,7 +1535,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test7) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1549,7 +1549,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test8) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test8) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1559,7 +1559,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test8) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1573,7 +1573,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test9) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test9) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1583,7 +1583,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test9) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1597,7 +1597,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test10) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test10) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1607,7 +1607,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test10) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1621,7 +1621,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test11) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test11) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1631,7 +1631,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test11) {
     weights.assign(0.5);
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1645,7 +1645,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test12) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1659,7 +1659,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test12) {
     weights(3) = 0.;
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1673,7 +1673,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test12) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, hingeLoss_test13) {
+TEST_F(DeclarableOpsTests2, hinge_loss_test13) {
     
     NDArray<float> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<float> logits('c', {2,3,4});
@@ -1683,7 +1683,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test13) {
     weights.assign(0.);    
     
 
-    nd4j::ops::hingeLoss<float> op;
+    nd4j::ops::hinge_loss<float> op;
     nd4j::ResultSet<float>* results = op.execute({&logits, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1697,7 +1697,7 @@ TEST_F(DeclarableOpsTests2, hingeLoss_test13) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test1) {
+TEST_F(DeclarableOpsTests2, huber_loss_test1) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1708,7 +1708,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test1) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1722,7 +1722,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test2) {
+TEST_F(DeclarableOpsTests2, huber_loss_test2) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1733,7 +1733,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test2) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1747,7 +1747,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test2) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test3) {
+TEST_F(DeclarableOpsTests2, huber_loss_test3) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1758,7 +1758,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test3) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1772,7 +1772,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test3) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test4) {
+TEST_F(DeclarableOpsTests2, huber_loss_test4) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1782,7 +1782,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test4) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1796,7 +1796,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test4) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test5) {
+TEST_F(DeclarableOpsTests2, huber_loss_test5) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1806,7 +1806,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test5) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1820,7 +1820,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test6) {
+TEST_F(DeclarableOpsTests2, huber_loss_test6) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1830,7 +1830,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test6) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1844,7 +1844,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test7) {
+TEST_F(DeclarableOpsTests2, huber_loss_test7) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1854,7 +1854,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test7) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1868,7 +1868,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test8) {
+TEST_F(DeclarableOpsTests2, huber_loss_test8) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1882,7 +1882,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test8) {
     weights(2) = 0.;
     weights(3) = 0.;
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1896,7 +1896,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test9) {
+TEST_F(DeclarableOpsTests2, huber_loss_test9) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1906,7 +1906,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test9) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1920,7 +1920,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test10) {
+TEST_F(DeclarableOpsTests2, huber_loss_test10) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1930,7 +1930,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test10) {
     NDArrayFactory<double>::linspace(1, predictions);
     weights.assign(0.5);    
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1944,7 +1944,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, huberLoss_test11) {
+TEST_F(DeclarableOpsTests2, huber_loss_test11) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1958,7 +1958,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test11) {
     weights(2) = 0.;
     weights(3) = 0.;
 
-    nd4j::ops::huberLoss<double> op;
+    nd4j::ops::huber_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {0.1}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1972,7 +1972,7 @@ TEST_F(DeclarableOpsTests2, huberLoss_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test1) {
+TEST_F(DeclarableOpsTests2, log_loss_test1) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -1983,7 +1983,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test1) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -1997,7 +1997,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test2) {
+TEST_F(DeclarableOpsTests2, log_loss_test2) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2008,7 +2008,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test2) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2022,7 +2022,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test2) {
 }
   
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test3) {
+TEST_F(DeclarableOpsTests2, log_loss_test3) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2033,7 +2033,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test3) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2047,7 +2047,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test3) {
 }
   
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test4) {
+TEST_F(DeclarableOpsTests2, log_loss_test4) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2057,7 +2057,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test4) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2071,7 +2071,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test4) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test5) {
+TEST_F(DeclarableOpsTests2, log_loss_test5) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2081,7 +2081,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test5) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2095,7 +2095,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test6) {
+TEST_F(DeclarableOpsTests2, log_loss_test6) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2105,7 +2105,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test6) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2119,7 +2119,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test7) {
+TEST_F(DeclarableOpsTests2, log_loss_test7) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2129,7 +2129,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test7) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2143,7 +2143,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test8) {
+TEST_F(DeclarableOpsTests2, log_loss_test8) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2153,7 +2153,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test8) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2167,7 +2167,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test9) {
+TEST_F(DeclarableOpsTests2, log_loss_test9) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2177,7 +2177,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test9) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2191,7 +2191,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test10) {
+TEST_F(DeclarableOpsTests2, log_loss_test10) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2205,7 +2205,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test10) {
     weights(2) = 0.;
     weights(3) = 0.;
 
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2219,7 +2219,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test11) {
+TEST_F(DeclarableOpsTests2, log_loss_test11) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2229,7 +2229,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test11) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2243,7 +2243,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test12) {
+TEST_F(DeclarableOpsTests2, log_loss_test12) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2253,7 +2253,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test12) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2267,7 +2267,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test12) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, logLoss_test13) {
+TEST_F(DeclarableOpsTests2, log_loss_test13) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2281,7 +2281,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test13) {
     weights(2) = 0.;
     weights(3) = 0.;
  
-    nd4j::ops::logLoss<double> op;
+    nd4j::ops::log_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2295,7 +2295,7 @@ TEST_F(DeclarableOpsTests2, logLoss_test13) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test1) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2305,7 +2305,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test1) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2319,7 +2319,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test2) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2329,7 +2329,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test2) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2343,7 +2343,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test2) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test3) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2353,7 +2353,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test3) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2368,7 +2368,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test3) {
 
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test4) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2378,7 +2378,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test4) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2392,7 +2392,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test4) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test5) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2402,7 +2402,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test5) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2416,7 +2416,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test6) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2426,7 +2426,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test6) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2440,7 +2440,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test7) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2450,7 +2450,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test7) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2464,7 +2464,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test8) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2474,7 +2474,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test8) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2488,7 +2488,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test9) {
+TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2502,7 +2502,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test9) {
     weights(2) = 0.;
     weights(3) = 0.;
  
-    nd4j::ops::meanPairWsSqErr<double> op;
+    nd4j::ops::mean_pairwssqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2516,7 +2516,7 @@ TEST_F(DeclarableOpsTests2, meanPairWsSqErr_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test1) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2527,7 +2527,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test1) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2541,7 +2541,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test1) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test2) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test2) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2552,7 +2552,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test2) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2566,7 +2566,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test2) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test3) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test3) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2577,7 +2577,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test3) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2591,7 +2591,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test3) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test4) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2606,7 +2606,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test4) {
     weights(2) = 0.;
     weights(3) = 0.;
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2620,7 +2620,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test4) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test5) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2630,7 +2630,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test5) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2644,7 +2644,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test6) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2654,7 +2654,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test6) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2668,7 +2668,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test7) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2678,7 +2678,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test7) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2692,7 +2692,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test8) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2706,7 +2706,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test8) {
     weights(2) = 0.;
     weights(3) = 0.;
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2720,7 +2720,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test9) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2730,7 +2730,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test9) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2744,7 +2744,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test10) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2754,7 +2754,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test10) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2768,7 +2768,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test11) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2778,7 +2778,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test11) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2792,7 +2792,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test12) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2805,7 +2805,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test12) {
     weights(1) = 0.;
     weights(2) = 0.;    
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2819,7 +2819,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test12) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test13) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2829,7 +2829,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test13) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2843,7 +2843,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test13) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test14) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2853,7 +2853,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test14) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2867,7 +2867,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test14) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test15) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2877,7 +2877,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test15) {
     NDArrayFactory<double>::linspace(1, labels);
     weights.assign(0.5);        
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2891,7 +2891,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test15) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, meanSqErr_test16) {
+TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     
     NDArray<double> labels('c', {2,3,4});
     NDArray<double> predictions('c', {2,3,4});
@@ -2904,7 +2904,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test16) {
     weights(1) = 0.;
     weights(2) = 0.;
 
-    nd4j::ops::meanSqErr<double> op;
+    nd4j::ops::mean_sqerr_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2918,7 +2918,7 @@ TEST_F(DeclarableOpsTests2, meanSqErr_test16) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test1) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test1) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -2928,7 +2928,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test1) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2942,7 +2942,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test2) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test2) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -2952,7 +2952,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test2) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2966,7 +2966,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test2) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test3) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test3) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -2976,7 +2976,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test3) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -2990,7 +2990,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test3) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test4) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test4) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3000,7 +3000,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test4) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3014,7 +3014,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test4) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test5) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3023,7 +3023,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test5) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3037,7 +3037,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test6) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3046,7 +3046,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test6) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3060,7 +3060,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test6) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test7) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3069,7 +3069,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test7) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3083,7 +3083,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test7) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test8) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3092,7 +3092,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test8) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3107,7 +3107,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test8) {
 
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test9) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3119,7 +3119,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test9) {
     weights(1) = 0.;
     weights(2) = 0.;
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3133,7 +3133,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test10) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3142,7 +3142,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test10) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3156,7 +3156,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test11) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3165,7 +3165,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test11) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3179,7 +3179,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test12) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3188,7 +3188,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test12) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3202,7 +3202,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test12) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test13) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3214,7 +3214,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test13) {
     weights(1) = 0.;
     weights(2) = 0.;
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3228,7 +3228,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test13) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test14) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3237,7 +3237,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test14) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3251,7 +3251,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test14) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test15) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3260,7 +3260,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test15) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3274,7 +3274,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test15) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test16) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3283,7 +3283,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test16) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3297,7 +3297,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test16) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test17) {
+TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3309,7 +3309,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test17) {
     weights(1) = 0.;
     weights(2) = 0.;
 
-    nd4j::ops::sigmCrossEntropy<double> op;
+    nd4j::ops::sigm_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3323,7 +3323,7 @@ TEST_F(DeclarableOpsTests2, sigmCrossEntropy_test17) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test1) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3333,7 +3333,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test1) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3347,7 +3347,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test2) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3357,7 +3357,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test2) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3371,7 +3371,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test2) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test3) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3381,7 +3381,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test3) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3395,7 +3395,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test3) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test4) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3405,7 +3405,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test4) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3419,7 +3419,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test4) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test5) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3429,7 +3429,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test5) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3443,7 +3443,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test5) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test6) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3452,7 +3452,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test6) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3466,7 +3466,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test6) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test7) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3475,7 +3475,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test7) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3489,7 +3489,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test7) {
 }
  
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test8) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3498,7 +3498,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test8) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3512,7 +3512,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test8) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test9) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3521,7 +3521,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test9) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3535,7 +3535,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test9) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test10) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3544,7 +3544,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test10) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3558,7 +3558,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test11) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     
     NDArray<double> labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     NDArray<double> logits('c', {2,3,4});
@@ -3567,7 +3567,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test11) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3581,7 +3581,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test12) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     
     NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
     NDArray<double> logits('c', {2,4});
@@ -3590,7 +3590,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test12) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3604,7 +3604,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test12) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test13) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
     
     NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
     NDArray<double> logits('c', {2,4});
@@ -3614,7 +3614,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test13) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3630,7 +3630,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test13) {
     
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test14) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
     
     NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
     NDArray<double> logits('c', {2,4});
@@ -3640,7 +3640,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test14) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
@@ -3654,7 +3654,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test14) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test15) {
+TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test15) {
     
     NDArray<double> labels('c', {2,4},{0,1,1,0,1,0,1,0});
     NDArray<double> logits('c', {2,4});
@@ -3664,7 +3664,7 @@ TEST_F(DeclarableOpsTests2, softmaxCrossEntropy_test15) {
     NDArrayFactory<double>::linspace(0.1, logits, 0.1);
     weights.assign(0.5);    
 
-    nd4j::ops::softmaxCrossEntropy<double> op;
+    nd4j::ops::softmax_cross_entropy_loss<double> op;
     nd4j::ResultSet<double>* results = op.execute({&logits, &weights, &labels}, {5.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());

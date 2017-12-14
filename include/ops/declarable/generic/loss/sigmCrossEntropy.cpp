@@ -9,32 +9,7 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-/**
-   * Implementation of sigmoid cross-entropy loss function max(logits, 0.) - logits * labels + log(1. + exp(-abs(logits))); 
-   * 
-   * Input arrays: 
-   *    0: logits - logits, type float
-   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
-   *       Can be single scalar or has the same rank as labels, and must be broadcastable to labels.
-   *    2: labels - ground truth vales, expected to be 0. or 1., type float.
-   *       Must have the same shape as logits.    
-   *  
-   *  Input integer arguments:
-   *    0: type of reduction to apply to loss
-   *       0 - "none", unreduced weighted losses with the same shape as logits.
-   *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-   *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
-   *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
-   *
-   *  Input float arguments:
-   *    0: smoothing value, if it is greater than 0 then apply smoothing to the labels (smooth the labels towards 1/2): new_labels = labels * (1 - labelsSmoothing)+ 0.5 * labelsSmoothing
-   *
-   * Output array: 
-   *    0: loss values, type float.
-   *       Can be an array with the same shape as logits or just single scalar, depending on reduction mode (see input integer argument)
-   */      
-//////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
+CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 
   	NDArray<T>* logits  = INPUT_VARIABLE(0);
     NDArray<T>* weights = INPUT_VARIABLE(1);
@@ -43,6 +18,15 @@ CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     T labelsSmoothing = T_ARG(0);
+
+    // input validation    
+    REQUIRE_TRUE(labels->isSameShape(logits), 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: labels and logits arrays have different shapes!");
+    // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
+    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: weights array must have the same rank as labels array!");
+    // check whether broadcast operation is possible for weights array
+    if(!weights->isScalar())
+    	for (int i = 0; i < weights->rankOf(); ++i)
+        	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: shapes of weights array is not broadcastable to labels shape!");
     
 	// perform weights broadcasting/tile to labels if needed	
 	NDArray<T>* weightsBroad = weights;	
@@ -63,8 +47,8 @@ CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
 	}
 	
 	NDArray<T> weightedLosses(newLabels->getShapeInfo(), block.getWorkspace());
-	auto sigmCrossEntropyWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };	
-	logits->applyPairwiseLambda(newLabels, sigmCrossEntropyWithLogits, &weightedLosses);
+	auto sigm_cross_entropy_lossWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };	
+	logits->applyPairwiseLambda(newLabels, sigm_cross_entropy_lossWithLogits, &weightedLosses);
 
     // multiply weightedLosses on weights
  	if(weights->isScalar())
@@ -72,6 +56,7 @@ CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
  	else
  		weightedLosses *= (*weights); 	
  	// regard 4 possible reduction modes below
+    REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !");
 	switch (reductionMode) {
 		case 0:												// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(&weightedLosses);
@@ -112,8 +97,6 @@ CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
 				(*output)(0) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
 			break;
 		}
-		default:
-			throw "CUSTOM_OP loss function sigmCrossEntropy: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !";			
 	}
 
 
@@ -128,23 +111,12 @@ CUSTOM_OP_IMPL(sigmCrossEntropy, 3, 1, false, 1, 1) {
 }
 
 
-DECLARE_SHAPE_FN(sigmCrossEntropy) {
+DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
 
 	// labels and logits must have the same shapes 
 	NDArray<T>* logits  = INPUT_VARIABLE(0);
     NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2);
-
-    if(!labels->isSameShape(logits))
-    	throw "CUSTOM_OP loss function sigmCrossEntropy: labels and logits arrays have different shapes!";
-    // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
-    if(!weights->isScalar() && weights->rankOf() != labels->rankOf())
-    	throw "CUSTOM_OP loss function sigmCrossEntropy: weights array must have the same rank as labels array!";
-    // check whether broadcast operation is possible for weights array
-    if(!weights->isScalar())
-    	for (int i = 0; i < weights->rankOf(); ++i)
-        	if (weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1)
-            	throw "CUSTOM_OP loss function sigmCrossEntropy: shapes of weights array is not broadcastable to labels shape!";
+    NDArray<T>* labels  = INPUT_VARIABLE(2); 
 
     int* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar

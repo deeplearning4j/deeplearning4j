@@ -32,10 +32,7 @@ namespace nd4j {
             int pH = INT_ARG(6);
 
 
-            if (pT != 0 || pW != 0 || pH != 0) {
-                nd4j_printf("Padding isn't supported on CPU backend O_o","");
-                return ND4J_STATUS_BAD_PARAMS;
-            }
+            REQUIRE_TRUE(!(pT != 0 || pW != 0 || pH != 0), 0, "Padding isn't supported on CPU backend O_o");
             
             std::unique_ptr<ResultSet<T>> batchIn(NDArrayFactory<T>::allExamples(input));
             std::unique_ptr<ResultSet<T>> batchOut(NDArrayFactory<T>::allExamples(output));

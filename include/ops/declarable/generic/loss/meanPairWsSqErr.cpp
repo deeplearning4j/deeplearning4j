@@ -11,28 +11,22 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-/**
-   * Implementation of pairwise-errors-squared loss function 
-   * 
-   * Input arrays: 
-   *    0: predictions - the predicted values, type float.
-   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
-   *       Can be single scalar or has the same rank as labels and must be broadcastable to labels.
-   *    2: labels - ground truth vales, type float.
-   *       Must have the same shape as predictions.    
-   *  
-   * Output array: 
-   *    0: loss value, it is just single scalar, type float.
-   */      
-//////////////////////////////////////////////////////////////////////////
-
-CUSTOM_OP_IMPL(meanPairWsSqErr, 3, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 
   	NDArray<T>* predictions = INPUT_VARIABLE(0);
     NDArray<T>* weights     = INPUT_VARIABLE(1);
     NDArray<T>* labels      = INPUT_VARIABLE(2);
     NDArray<T>* output      = OUTPUT_VARIABLE(0);
-    
+
+	// input validation    
+    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "CUSTOM_OP loss function mean_pairwssqerr_loss: labels and predictions arrays have different shapes!");
+    // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
+    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "CUSTOM_OP loss function mean_pairwssqerr_loss: weights array must have the same rank as labels array!");
+    // check whether broadcast operation is possible for weights array
+    if(!weights->isScalar())
+    	for (int i = 0; i < weights->rankOf(); ++i)
+        	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "CUSTOM_OP loss function mean_pairwssqerr_loss: shapes of weights array is not broadcastable to labels shape!");
+
 	// perform weights broadcasting/tile to labels if needed	
 	NDArray<T>* weightsBroad = weights;	
 	if(!weights->isScalar() && !weights->isSameShape(predictions)) {
@@ -90,23 +84,12 @@ CUSTOM_OP_IMPL(meanPairWsSqErr, 3, 1, false, 0, 0) {
 }
 
 
-DECLARE_SHAPE_FN(meanPairWsSqErr) {
+DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
 
 	// labels and predictions must have the same shapes 
 	NDArray<T>* predictions = INPUT_VARIABLE(0);
     NDArray<T>* weights     = INPUT_VARIABLE(1);
     NDArray<T>* labels      = INPUT_VARIABLE(2);
-
-    if(!labels->isSameShape(predictions))
-    	throw "CUSTOM_OP loss function meanPairWsSqErr: labels and predictions arrays have different shapes!";
-    // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
-    if(!weights->isScalar() && weights->rankOf() != labels->rankOf())
-    	throw "CUSTOM_OP loss function meanPairWsSqErr: weights array must have the same rank as labels array!";
-    // check whether broadcast operation is possible for weights array
-    if(!weights->isScalar())
-    	for (int i = 0; i < weights->rankOf(); ++i)
-        	if (weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1)
-            	throw "CUSTOM_OP loss function meanPairWsSqErr: shapes of weights array is not broadcastable to labels shape!";
 
     int* outShapeInfo = nullptr;
     // output is scalar
@@ -122,9 +105,6 @@ DECLARE_SHAPE_FN(meanPairWsSqErr) {
 }
 
 // INT_ARG(0) - reduction mode
-
-
-
 
 
 

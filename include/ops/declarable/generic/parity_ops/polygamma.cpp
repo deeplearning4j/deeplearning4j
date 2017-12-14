@@ -14,19 +14,16 @@ namespace nd4j {
 
             NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
-            if(!n->isSameShape(x))
-                throw "CONFIGURABLE_OP polygamma: two input arrays must have the same shapes !";
+            REQUIRE_TRUE(n->isSameShape(x), 0, "CONFIGURABLE_OP polygamma: two input arrays must have the same shapes !");
 
             int arrLen = n->lengthOf();
 
             for(int i = 0; i < arrLen; ++i ) {
 
                 // TODO case for n == 0 (digamma) should be of OK
-                if((*n)(i) <= (T)0.)
-                    throw "CONFIGURABLE_OP polygamma: all elements of n array must be > 0 !";
+                REQUIRE_TRUE((*n)(i) > (T)0., 0, "CONFIGURABLE_OP polygamma: all elements of n array must be > 0 !");
 
-                if((*x)(i) <= (T)0.)
-                    throw "CONFIGURABLE_OP polygamma: all elements of x array must be > 0 !";
+                REQUIRE_TRUE((*x)(i) > (T)0., 0, "CONFIGURABLE_OP polygamma: all elements of x array must be > 0 !");
             }
 
             *output = helpers::polyGamma<T>(*n, *x);

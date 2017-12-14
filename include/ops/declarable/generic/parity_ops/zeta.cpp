@@ -14,18 +14,15 @@ namespace nd4j {
 
             NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
-            if(!x->isSameShape(q))
-                throw "CONFIGURABLE_OP zeta: two input arrays must have the same shapes !";
+            REQUIRE_TRUE(x->isSameShape(q), 0, "CONFIGURABLE_OP zeta: two input arrays must have the same shapes !");
 
             int arrLen = x->lengthOf();
 
             for(int i = 0; i < arrLen; ++i ) {
 
-                if((*x)(i) <= (T)1.)
-                    throw "CONFIGURABLE_OP zeta: all elements of x array must be > 1 !";
+                REQUIRE_TRUE((*x)(i) > (T)1., 0, "CONFIGURABLE_OP zeta: all elements of x array must be > 1 !");
 
-                if((*q)(i) <= (T)0.)
-                    throw "CONFIGURABLE_OP zeta: all elements of q array must be > 0 !";
+                REQUIRE_TRUE((*q)(i) > (T)0., 0, "CONFIGURABLE_OP zeta: all elements of q array must be > 0 !");
             }
 
             *output = helpers::zeta<T>(*x, *q);

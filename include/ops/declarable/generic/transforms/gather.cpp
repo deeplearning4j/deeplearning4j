@@ -20,8 +20,16 @@ CUSTOM_OP_IMPL(gather, 2, 1, false, 0, 1) {
 	NDArray<T>* indices = INPUT_VARIABLE(1);
 	NDArray<T>* output  = OUTPUT_VARIABLE(0);
 
-	int axis = block.getIArguments()->at(0);
-    
+	int axis = block.getIArguments()->at(0);    
+    int inputRank = input->rankOf();
+    if(axis < 0)
+        axis += inputRank;
+
+    // input validation
+    REQUIRE_TRUE(axis < inputRank, 0, "GATHER custom operation: input axis is out of input array inputRank !");
+    for(int i = 0; i < indices->lengthOf(); ++i)
+        REQUIRE_TRUE((int)indices->getIndexedScalar(i) < input->shapeOf()[axis], 0, "GATHER custom operation: some of input indexes is larger than corresponding shape of input array !");
+
     
     // first case: indices consist of only one scalar
    	if(indices->isScalar()) {
@@ -69,15 +77,6 @@ DECLARE_SHAPE_FN(gather) {
 
 	int axis = block.getIArguments()->at(0);
 	int inputRank = input->rankOf();
-
-	if(axis < 0)
-		axis += inputRank;
-	if(axis >= inputRank)
-		throw "GATHER custom operation: input axis is out of input array inputRank !";
-
-	for(int i = 0; i < indices->lengthOf(); ++i)
-		if((int)indices->getIndexedScalar(i) >= input->shapeOf()[axis])
-			throw "GATHER custom operation: some of input indexes is larger than corresponding shape of input array !";
     
     int indicesRank = indices->rankOf();
     if(indices->isVector())

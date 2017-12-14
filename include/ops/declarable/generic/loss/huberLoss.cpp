@@ -9,34 +9,7 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-/**
-   * Implementation of Huber loss function:
-   *	0.5 * (labels-predictions)^2                  				if |labels-predictions| <= delta
-   *	0.5 * delta^2 + delta * (|labels-predictions| - delta)  	if |labels-predictions| >  delta
-   * 
-   * Input arrays: 
-   *    0: predictions - the predicted values, type float
-   *    1: weights - is used for weighting (multiplying) of loss values, type float. 
-   *       Can be single scalar or has the same rank as labels, and must be broadcastable to labels.
-   *    2: labels - ground truth vales, type float.
-   *       Must have the same shape as predictions.    
-   *  
-   *  Input integer arguments:
-   *    0: type of reduction to apply to loss
-   *       0 - "none", unreduced weighted losses with the same shape as predictions
-   *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-   *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
-   *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
-   *
-   *  Input float arguments:
-   *    0: point where the huber loss function changes from a quadratic to linear.
-   *
-   * Output array: 
-   *    0: loss values, type float.
-   *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
-   */      
-//////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(huberLoss, 3, 1, false, 1, 1) {
+CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 
   	NDArray<T>* predictions = INPUT_VARIABLE(0);
     NDArray<T>* weights     = INPUT_VARIABLE(1);
@@ -45,6 +18,15 @@ CUSTOM_OP_IMPL(huberLoss, 3, 1, false, 1, 1) {
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     T delta = T_ARG(0);
+
+    // input validation
+    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "CUSTOM_OP loss function huber_loss: labels and predictions arrays have different shapes!");
+    // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
+    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "CUSTOM_OP loss function huber_loss: weights array must have the same rank as labels array!");
+    // check whether broadcast operation is possible for weights array
+    if(!weights->isScalar())
+    	for (int i = 0; i < weights->rankOf(); ++i)
+        	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "CUSTOM_OP loss function huber_loss: shapes of weights array is not broadcastable to labels shape!");
     
 	// perform weights broadcasting/tile to labels if needed	
 	NDArray<T>* weightsBroad = weights;	
@@ -69,6 +51,7 @@ CUSTOM_OP_IMPL(huberLoss, 3, 1, false, 1, 1) {
  	else
  		weightedLosses *= (*weights); 	
  	// regard 4 possible reduction modes below
+    REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "CUSTOM_OP loss function huber_loss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !");
 	switch (reductionMode) {
 		case 0:												// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(&weightedLosses);
@@ -109,10 +92,8 @@ CUSTOM_OP_IMPL(huberLoss, 3, 1, false, 1, 1) {
 				(*output)(0) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
 			break;
 		}
-		default:
-			throw "CUSTOM_OP loss function huberLoss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !";			
+		
 	}
-
 
     STORE_RESULT(*output);
 
@@ -123,23 +104,12 @@ CUSTOM_OP_IMPL(huberLoss, 3, 1, false, 1, 1) {
 }
 
 
-DECLARE_SHAPE_FN(huberLoss) {
+DECLARE_SHAPE_FN(huber_loss) {
 
 	// labels and predictions must have the same shapes 
 	NDArray<T>* predictions  = INPUT_VARIABLE(0);
     NDArray<T>* weights = INPUT_VARIABLE(1);
     NDArray<T>* labels  = INPUT_VARIABLE(2);
-
-    if(!labels->isSameShape(predictions))
-    	throw "CUSTOM_OP loss function huberLoss: labels and predictions arrays have different shapes!";
-    // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
-    if(!weights->isScalar() && weights->rankOf() != labels->rankOf())
-    	throw "CUSTOM_OP loss function huberLoss: weights array must have the same rank as labels array!";
-    // check whether broadcast operation is possible for weights array
-    if(!weights->isScalar())
-    	for (int i = 0; i < weights->rankOf(); ++i)
-        	if (weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1)
-            	throw "CUSTOM_OP loss function huberLoss: shapes of weights array is not broadcastable to labels shape!";
 
     int* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar

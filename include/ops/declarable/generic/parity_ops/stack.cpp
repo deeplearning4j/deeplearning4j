@@ -14,7 +14,13 @@ namespace nd4j {
 
     		int dim = INT_ARG(0);
     		if(dim < 0)
-    			dim += input->rankOf();                	
+    			dim += input->rankOf();             
+
+			// input validation
+			// check whether shapes of all input array are the same				
+			for (int i = 0; i < (int) block.width() - 1; ++i)
+				REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
+   			REQUIRE_TRUE(dim < input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input input arrays shapes !");
 
 			std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {dim});	
 			ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(output, dimsToExclude);		// list.size() == block.width()
@@ -41,24 +47,17 @@ namespace nd4j {
 		DECLARE_SYN(Pack, stack);
 
 		DECLARE_SHAPE_FN(stack) {
-			// check whether shapes of all input array are the same	
-			const int inArrNum = (int) block.width();
-			for (int i = 0; i < inArrNum - 1; ++i)
-				if (!shape::equalsSoft(inputShape->at(i), inputShape->at(i+1)))
-					throw "CUSTOM_OP stack: the shapes of input arrays are different !";
 	
 			// check whether input dimension is within rank range
 			int* inShapeInfo = inputShape->at(0);
 			int rank = inShapeInfo[0];
 			int dim = INT_ARG(0);
-			if(dim < 0 ) dim += rank;
-			if(dim >= rank)
-				throw "CUSTOM_OP stack: the input dimension is greater/equal than rank of input input arrays shapes !";
+			if(dim < 0 ) dim += rank;			
 
 			//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
 			std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
-			// insert inArrNum at dim position of input shape to get output shape	
-			outShape.insert(outShape.begin() + dim, inArrNum);
+			// insert (int) block.width() at dim position of input shape to get output shape	
+			outShape.insert(outShape.begin() + dim, (int) block.width());
 			// if input arrays are vectors remove unity from shape
 			NDArray<T>* input = INPUT_VARIABLE(0);
 

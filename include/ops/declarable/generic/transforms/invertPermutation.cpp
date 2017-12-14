@@ -13,19 +13,19 @@ CONFIGURABLE_OP_IMPL(invert_permutation, 1, 1, false, 0, 0) {
     NDArray<T>* input = INPUT_VARIABLE(0);
     NDArray<T>* output = this->getZ(block);
 
-    if(!input->isVector())
-        throw "CONFIGURABLE_OP invertPermute: input array must be vector !";
+    REQUIRE_TRUE(input->isVector(), 0 , "CONFIGURABLE_OP invertPermute: input array must be vector !");
     
     std::set<T> uniqueElems;
     const int lenght = input->lengthOf();
 
 // #pragma omp parallel for if(lenght > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
     for(int i = 0; i < lenght; ++i) {
+        
         T elem  = (*input)(i);
-        if(!uniqueElems.insert(elem).second)
-            throw "CONFIGURABLE_OP invertPermute: input array contains duplicates !";
-        if(elem < (T)0. || elem > lenght - (T)1.)
-            throw "CONFIGURABLE_OP invertPermute: element of input array is out of range (0, lenght-1) !";
+        REQUIRE_TRUE(uniqueElems.insert(elem).second, 0, "CONFIGURABLE_OP invertPermute: input array contains duplicates !");
+            
+        REQUIRE_TRUE(!(elem < (T)0. || elem > lenght - (T)1.), 0, "CONFIGURABLE_OP invertPermute: element of input array is out of range (0, lenght-1) !");
+
         (*output)((int)elem) = i;
     }
     

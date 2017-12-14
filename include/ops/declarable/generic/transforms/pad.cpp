@@ -22,9 +22,22 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
     NDArray<T>* output   = OUTPUT_VARIABLE(0);
     std::vector<int>* argI = block.getIArguments();
 
+    int rank =  input->rankOf();    	
+
+	// input validation
+	REQUIRE_TRUE(!(paddings->rankOf() != 2 || paddings->shapeOf()[0] != rank || paddings->shapeOf()[1] != 2), 0, "CUSTOM_OP pad: wrong shape of input paddings !");
+	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
+	// REFLECT case
+	if(argI->at(0) == 1)				
+		for(int dim=0; dim < rank; ++dim)
+			REQUIRE_TRUE(paddings->getScalar(dim,0) <= (input->shapeOf()[dim]-1) && paddings->getScalar(dim,1) <= (input->shapeOf()[dim]-1), 0, "CUSTOM_OP pad: wrong shape of input paddings for REFLECT mode !");
+	// SYMMETRIC case
+	if(argI->at(0) == 2)				
+		for(int dim=0; dim < rank; ++dim)
+			REQUIRE_TRUE(paddings->getScalar(dim,0) <= input->shapeOf()[dim] && paddings->getScalar(dim,1) <= input->shapeOf()[dim], 0, "CUSTOM_OP pad: wrong shape of input paddings for SYMMETRIC mode !");
 	// CONSTANT->0, REFLECT->1, SYMMETRIC->2
-    if(argI->at(0) < 0 || argI->at(0) > 2)
-    	throw "CUSTOM_OP pad: unknown padding mode, there are only three possible legal values -> 0,1,2 !";
+    REQUIRE_TRUE(!(argI->at(0) < 0 || argI->at(0) > 2), 0, "CUSTOM_OP pad: unknown padding mode, there are only three possible legal values -> 0,1,2 !");
+
 
 	std::vector<int> dimensions(input->rankOf());	
     std::iota(dimensions.begin(), dimensions.end(), 0);   			// fill with 0, 1, ... rank-1
@@ -41,25 +54,8 @@ DECLARE_SHAPE_FN(pad) {
 	// check shape of paddings 
 	NDArray<T>* input    = INPUT_VARIABLE(0);
     NDArray<T>* paddings = INPUT_VARIABLE(1);
-    int rank =  input->rankOf();    
-
-	if (paddings->rankOf() != 2 || paddings->shapeOf()[0] != rank || paddings->shapeOf()[1] != 2)
-		throw "CUSTOM_OP pad: wrong shape of input paddings !";
-
-	std::vector<int>* argI = block.getIArguments();
-
-	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
-	// REFLECT case
-	if(argI->at(0) == 1)				
-		for(int dim=0; dim < rank; ++dim)
-			if(!(paddings->getScalar(dim,0) <= (input->shapeOf()[dim]-1) && paddings->getScalar(dim,1) <= (input->shapeOf()[dim]-1)))
-				throw "CUSTOM_OP pad: wrong shape of input paddings for REFLECT mode !";
-	// SYMMETRIC case
-	if(argI->at(0) == 2)				
-	for(int dim=0; dim < rank; ++dim)
-		if(!(paddings->getScalar(dim,0) <= input->shapeOf()[dim] && paddings->getScalar(dim,1) <= input->shapeOf()[dim]))
-			throw "CUSTOM_OP pad: wrong shape of input paddings for SYMMETRIC mode !";
-	
+    int rank =  input->rankOf();    	
+		
 	int* outShapeInfo = nullptr;
     ALLOCATE(outShapeInfo, block.getWorkspace(), rank*2+4, int);
     outShapeInfo[0] = rank;

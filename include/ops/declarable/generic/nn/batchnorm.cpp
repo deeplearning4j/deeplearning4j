@@ -16,6 +16,10 @@ CUSTOM_OP_IMPL(batchnorm, 5, 1, false, 1, 2) {
     
     NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
+    // check whether all input shapes are mutually broadcastable 
+    // if yes, evaluate output shapeInfo which is common broadcast shape for all input arrays
+    REQUIRE_TRUE(output->getShapeInfo() != nullptr, 0, "CUSTOM_OP batchnorm: the shapes of input arrays are not mutually broadcastable !");
+
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
     const T    epsilon     = T_ARG(0);
@@ -176,10 +180,9 @@ CUSTOM_OP_IMPL(batchnorm, 5, 1, false, 1, 2) {
 DECLARE_SHAPE_FN(batchnorm) {
     
     int* outShapeInfo = nullptr;
-    // check whether all input shapes are mutually broadcastable 
-    // if yes, evaluate output shapeInfo which is common broadcast shape for all input arrays
-    if(!ShapeUtils<T>::evalCommonBroadcastShapeInfo({INPUT_VARIABLE(0),INPUT_VARIABLE(1),INPUT_VARIABLE(2),INPUT_VARIABLE(3),INPUT_VARIABLE(4)}, outShapeInfo, block.getWorkspace()))
-        throw "CUSTOM_OP batchnorm: the shapes of input arrays are not mutually broadcastable !";
+    
+    // evaluate output shapeInfo which is common broadcast shape for all input arrays
+    ShapeUtils<T>::evalCommonBroadcastShapeInfo({INPUT_VARIABLE(0),INPUT_VARIABLE(1),INPUT_VARIABLE(2),INPUT_VARIABLE(3),INPUT_VARIABLE(4)}, outShapeInfo, block.getWorkspace());
  
     return new ShapeList(outShapeInfo);    
 
