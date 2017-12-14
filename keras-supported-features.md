@@ -40,8 +40,8 @@ Mapping keras to DL4J layers is done in the [layers](https://github.com/deeplear
 * <i class="fa fa-square-o"></i> Conv3D
 * <i class="fa fa-check-square-o"></i> [AtrousConvolution1D](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/convolutional/KerasAtrousConvolution1D.java)
 * <i class="fa fa-check-square-o"></i> [AtrousConvolution2D](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/convolutional/KerasAtrousConvolution1D.java)
-* <i class="fa fa-square-o"></i> SeparableConv2D
-* <i class="fa fa-square-o"></i> Conv2DTranspose
+* <i class="fa fa-check-square-o"></i> [SeparableConv2D](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/convolutional/KerasSeparableConvolution2D.java)
+* <i class="fa fa-check-square-o"></i> [Conv2DTranspose](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/convolutional/KerasDeconvolution2D.java)
 * <i class="fa fa-square-o"></i> Cropping1D
 * <i class="fa fa-square-o"></i> Cropping2D
 * <i class="fa fa-square-o"></i> Cropping3D
@@ -70,7 +70,7 @@ DL4J currently does not support Locally-connected layers.
 * <i class="fa fa-square-o"></i> LocallyConnected2D
 
 ### [Recurrent Layers](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/recurrent)
-* <i class="fa fa-square-o"></i> SimpleRNN
+* <i class="fa fa-check-square-o"></i> [SimpleRNN](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/recurrent/KerasSimpleRnn.java)
 * <i class="fa fa-square-o"></i> GRU
 * <i class="fa fa-check-square-o"></i> [LSTM](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/recurrent/KerasLstm.java)
 
@@ -80,16 +80,18 @@ DL4J currently does not support Locally-connected layers.
 ### [Merge Layers](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasMerge.java)
 * <i class="fa fa-check-square-o"></i> Add / add
 * <i class="fa fa-check-square-o"></i> Multiply / multiply
-* <i class="fa fa-square-o"></i> Subtract / subtract
-* <i class="fa fa-square-o"></i> Average / average
-* <i class="fa fa-square-o"></i> Maximum / maximum
-* <i class="fa fa-square-o"></i> Concatenate / concatenate
+* <i class="fa fa-check-square-o"></i> Subtract / subtract
+* <i class="fa fa-check-square-o"></i> Average / average
+* <i class="fa fa-check-square-o"></i> Maximum / maximum
+* <i class="fa fa-check-square-o"></i> Concatenate / concatenate
 * <i class="fa fa-square-o"></i> Dot / dot
+* <i class="fa fa-square-o"></i> Cos / cos
+
 
 ### [Advanced Activation Layers](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/advanced/activations)
 * <i class="fa fa-check-square-o"></i> [LeakyReLU](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/advanced/activations/KerasLeakyReLU.java)
 * <i class="fa fa-square-o"></i> PReLU
-* <i class="fa fa-square-o"></i> ELU
+* <i class="fa fa-check-square-o"></i> ELU
 * <i class="fa fa-square-o"></i> ThresholdedReLU
 
 ### [Normalization Layers](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/normalization)
@@ -98,14 +100,14 @@ DL4J currently does not support Locally-connected layers.
 ### Noise Layers
 Currently, DL4J does not support noise layers.
 
-* <i class="fa fa-square-o"></i> GaussianNoise
-* <i class="fa fa-square-o"></i> GaussianDropout
-* <i class="fa fa-square-o"></i> AlphaDropout
+* <i class="fa fa-check-square-o"></i> [GaussianNoise](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/noise/KerasGaussianNoise.java)
+* <i class="fa fa-check-square-o"></i> [GaussianDropout](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/noise/KerasGaussianDropout.java)
+* <i class="fa fa-check-square-o"></i> [AlphaDropout](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/noise/KerasAlphaDropout.java)
 
 ### Layer Wrappers
 DL4j does not have the concept of layer wrappers, but there is an implementation of bi-directional LSTMs available [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/GravesBidirectionalLSTM.java).
 * <i class="fa fa-square-o"></i> TimeDistributed
-* <i class="fa fa-square-o"></i> Bidirectional
+* <i class="fa fa-check-square-o"></i> [Bidirectional](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/wrappers/KerasBidirectional.java)
 
 ## <a name="losses">[Losses](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasLossUtils.java)</a>
 
