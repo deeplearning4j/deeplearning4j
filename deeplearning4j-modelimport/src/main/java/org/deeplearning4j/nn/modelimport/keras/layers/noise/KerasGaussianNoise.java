@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.noise;
 
-import org.deeplearning4j.nn.conf.dropout.GaussianDropout;
+import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -47,14 +47,15 @@ public class KerasGaussianNoise extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (!innerConfig.containsKey("stddev")) {
-            throw new InvalidKerasConfigurationException("Keras configuration does not contain 'stddev' parameter" +
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_GAUSSIAN_VARIANCE())) {
+            throw new InvalidKerasConfigurationException("Keras configuration does not contain "
+                    + conf.getLAYER_FIELD_GAUSSIAN_VARIANCE() + " parameter" +
                     "needed for GaussianNoise");
         }
-        double stddev = (double) innerConfig.get("stddev");
+        double stddev = (double) innerConfig.get(conf.getLAYER_FIELD_GAUSSIAN_VARIANCE());
 
         this.layer = new DropoutLayer.Builder().name(this.layerName)
-                .dropOut(new GaussianDropout(stddev)).build();
+                .dropOut(new GaussianNoise(stddev)).build();
     }
 
     /**

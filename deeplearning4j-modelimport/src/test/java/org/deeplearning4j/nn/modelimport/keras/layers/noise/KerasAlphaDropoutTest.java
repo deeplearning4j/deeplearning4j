@@ -56,7 +56,7 @@ public class KerasAlphaDropoutTest {
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DROPOUT());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put("rate", RATE_KERAS);
+        config.put(conf.getLAYER_FIELD_RATE(), RATE_KERAS);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 

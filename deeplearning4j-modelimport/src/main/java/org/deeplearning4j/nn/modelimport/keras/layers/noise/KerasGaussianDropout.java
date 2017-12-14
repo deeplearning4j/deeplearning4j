@@ -48,11 +48,12 @@ public class KerasGaussianDropout extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (!innerConfig.containsKey("rate")) {
-            throw new InvalidKerasConfigurationException("Keras configuration does not contain 'rate' parameter" +
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_RATE())) {
+            throw new InvalidKerasConfigurationException("Keras configuration does not contain " +
+                    "parameter" + conf.getLAYER_FIELD_RATE() +
                     "needed for GaussianDropout");
         }
-        double rate = (double) innerConfig.get("rate"); // Keras stores drop rates
+        double rate = (double) innerConfig.get(conf.getLAYER_FIELD_RATE()); // Keras stores drop rates
         double retainRate = 1 - rate;
 
         this.layer = new DropoutLayer.Builder().name(this.layerName)
