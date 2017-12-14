@@ -130,6 +130,7 @@ public class Bidirectional extends Layer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         fwd.setNIn(inputType, override);
+        bwd.setNIn(inputType, override);
     }
 
     @Override
