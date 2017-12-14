@@ -43,6 +43,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
+    private final String LAYER_CLASS_NAME_ALPHA_DROPOUT = "AlphaDropout";
+    private final String LAYER_CLASS_NAME_GAUSSIAN_DROPOUT = "GaussianDropout";
+    private final String LAYER_CLASS_NAME_GAUSSIAN_NOISE = "GaussianNoise";
     private final String LAYER_CLASS_NAME_DENSE = "Dense";
     private final String LAYER_CLASS_NAME_LSTM = "LSTM";
     private final String LAYER_CLASS_NAME_SIMPLE_RNN = "SimpleRNN";
