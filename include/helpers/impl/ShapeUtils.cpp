@@ -99,11 +99,26 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
 // evaluate resulting shape after reduce operation
 template<typename T>
 int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int *shapeInfo, const bool keepDims, nd4j::memory::Workspace* workspace) {
-        
+    int* newShapeInfo = nullptr;
+    if (dimensions.size() == 0) {
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), int);
+
+        newShapeInfo[0] = 2;
+        newShapeInfo[1] = 1;
+        newShapeInfo[2] = 1;
+        newShapeInfo[3] = 1;
+        newShapeInfo[4] = 1;
+        newShapeInfo[5] = 0;
+        newShapeInfo[6] = 1;
+        newShapeInfo[7] = 99;
+
+        return newShapeInfo;
+    }
+
     int rank = shape::rank(const_cast<int*>(shapeInfo));
     shape::checkDimensions(rank, dimensions);
        
-	int* newShapeInfo = nullptr;
+
     int dimSize = dimensions.size();
 
     if(keepDims) {

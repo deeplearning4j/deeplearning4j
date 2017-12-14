@@ -129,13 +129,14 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     NDArray<double> x('c', {100, 100});
     NDArrayFactory<double>::linspace(1, x);
 
+    std::vector<int> empty;
     std::vector<int> dims({1});
     nd4j::ops::norm<double> op;
 
-    auto result0 = op.execute({&x}, {0}, {1});
+    auto result0 = op.execute({&x}, {0}, {});
 
     auto z0 = result0->at(0);
-    auto exp0 = x.template reduceAlongDims<simdOps::NormFrobenius<double>>(dims, false);
+    auto exp0 = x.template reduceAlongDims<simdOps::NormFrobenius<double>>(empty, false);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
@@ -152,6 +153,44 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
 
     auto result4 = op.execute({&x}, {4}, {1});
     
+    auto z4 = result4->at(0);
+    auto exp4= x.template reduceAlongDims<simdOps::NormMax<double>>(dims, false);
+    ASSERT_TRUE(exp4.isSameShape(z4));
+    ASSERT_TRUE(exp4.equalsTo(z4));
+
+    delete result4;
+}
+
+
+TEST_F(DeclarableOpsTests3, Test_Norm_2) {
+    NDArray<double> x('c', {100, 100});
+    NDArrayFactory<double>::linspace(1, x);
+    NDArray<double> axis('c', {1, 1}, {1});
+
+    std::vector<int> empty;
+    std::vector<int> dims({1});
+    nd4j::ops::norm<double> op;
+
+    auto result0 = op.execute({&x}, {0}, {});
+
+    auto z0 = result0->at(0);
+    auto exp0 = x.template reduceAlongDims<simdOps::NormFrobenius<double>>(empty, false);
+    ASSERT_TRUE(exp0.isSameShape(z0));
+    ASSERT_TRUE(exp0.equalsTo(z0));
+
+    delete result0;
+
+    auto result1 = op.execute({&x, &axis}, {1}, {});
+
+    auto z1 = result1->at(0);
+    auto exp1 = x.template reduceAlongDims<simdOps::Norm2<double>>(dims, false);
+    ASSERT_TRUE(exp1.isSameShape(z1));
+    ASSERT_TRUE(exp1.equalsTo(z1));
+
+    delete result1;
+
+    auto result4 = op.execute({&x, &axis}, {4}, {});
+
     auto z4 = result4->at(0);
     auto exp4= x.template reduceAlongDims<simdOps::NormMax<double>>(dims, false);
     ASSERT_TRUE(exp4.isSameShape(z4));

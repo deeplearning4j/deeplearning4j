@@ -31,7 +31,7 @@ namespace nd4j {
                 std::sort(dims.begin(), dims.end());
 
             // special case - output is scalar
-            if (dims.size() == 1 && dims.at(0) == MAX_INT) {
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
                 int* newShape;
                 ALLOCATE(newShape, block.getWorkspace(), 8, int);
 

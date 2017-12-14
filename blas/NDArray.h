@@ -266,7 +266,7 @@ namespace nd4j {
 
         // method reduces array by excluding its shapes along axes present in dimensions vector
         template<typename OpName>
-        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false) const;
+        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false, T *extras = nullptr) const;
 
         // method reduces array by excluding its shapes along axes present in dimensions vector
         template<typename OpName>

@@ -3095,6 +3095,71 @@ TEST_F(DeclarableOpsTests1, ArgMax2) {
 }
 
 
+TEST_F(DeclarableOpsTests1, ArgMax3) {
+    NDArray<float> x('c', {3, 5});
+    NDArray<float> dim('c', {1, 1}, {0});
+    NDArrayFactory<float>::linspace(1, x);
+    NDArray<float> exp('c', {1, 5});
+    exp.assign(2.0f);
+
+    nd4j::ops::argmax<float> op;
+
+    auto result = op.execute({&x, &dim}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, ArgMax4) {
+    NDArray<float> x('c', {3, 5});
+    NDArray<float> dim('c', {1, 1}, {1});
+    NDArrayFactory<float>::linspace(1, x);
+    NDArray<float> exp('c', {3, 1});
+    exp.assign(4.0f);
+
+    nd4j::ops::argmax<float> op;
+
+    auto result = op.execute({&x, &dim}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests1, ArgMax5) {
+    NDArray<float> x('c', {3, 5});
+    NDArray<float> dim('c', {1, 2}, {0, 1});
+    NDArrayFactory<float>::linspace(1, x);
+    NDArray<float> exp('c', {1, 1}, {14});
+
+
+    nd4j::ops::argmax<float> op;
+
+    auto result = op.execute({&x, &dim}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
 TEST_F(DeclarableOpsTests1, ArgMin1) {
     NDArray<float> x('c', {3, 5});
     NDArrayFactory<float>::linspace(1, x);

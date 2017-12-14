@@ -788,7 +788,7 @@ template <typename T>
 // method reduces array by excluding its shapes along axes present in dimensions vector
     template<typename T>
     template<typename OpName>
-    void NDArray<T>::reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims) const {
+    void NDArray<T>::reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims, T *extras) const {
 
         std::vector<int> copy(dimensions);
 
@@ -800,13 +800,13 @@ template <typename T>
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size())
-            target->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            target->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, target->_buffer,
+            functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, extras, target->_buffer,
                                                                         target->_shapeInfo, copy.data(), copy.size(),
                                                                         tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
