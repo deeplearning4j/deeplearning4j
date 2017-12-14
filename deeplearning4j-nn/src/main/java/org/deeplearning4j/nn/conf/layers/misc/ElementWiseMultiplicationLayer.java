@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.conf.layers;
+package org.deeplearning4j.nn.conf.layers.misc;
 
 import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
 import lombok.*;
@@ -17,6 +17,13 @@ import java.util.Map;
 
 
 /**
+ * Elementwise multiplication layer with weights: implements out = activationFn(input .* w + b) where:<br>
+ * - w is a learnable weight vector of length nOut<br>
+ * - ".*" is element-wise multiplication<br>
+ * - b is a bias vector<br>
+ * <br>
+ * Note that the input and output sizes of the element-wise layer are the same for this layer
+ * <p>
  * created by jingshu
  */
 @Data
@@ -24,11 +31,10 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.layers.FeedForwardLayer {
 
-//  ATTENTION!!! we have to add an empty constructor for custom layers otherwise we will have errors when loading the model
-    public ElementWiseMultiplicationLayer(){
-    }
+    //  We have to add an empty constructor for custom layers otherwise we will have errors when loading the model
+    protected ElementWiseMultiplicationLayer() { }
 
-    protected ElementWiseMultiplicationLayer(Builder builder){
+    protected ElementWiseMultiplicationLayer(Builder builder) {
         super(builder);
     }
 
@@ -39,9 +45,10 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        if(this.nIn != this.nOut){
-            throw  new IllegalStateException("Element wise layer must have the same input and output size. Got nIn="
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex,
+                             INDArray layerParamsView, boolean initializeParams) {
+        if (this.nIn != this.nOut) {
+            throw new IllegalStateException("Element wise layer must have the same input and output size. Got nIn="
                     + nIn + ", nOut=" + nOut);
         }
         org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret
@@ -76,7 +83,7 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if  (getIDropout() != null) {
+        if (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...

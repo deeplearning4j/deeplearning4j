@@ -17,9 +17,16 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Arrays;
 
 /**
+ * Elementwise multiplication layer with weights: implements out = activationFn(input .* w + b) where:<br>
+ * - w is a learnable weight vector of length nOut<br>
+ * - ".*" is element-wise multiplication<br>
+ * - b is a bias vector<br>
+ * <br>
+ * Note that the input and output sizes of the element-wise layer are the same for this layer
+ * <p>
  * created by jingshu
  */
-public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ElementWiseMultiplicationLayer> {
+public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer> {
 
     public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf){
         super(conf);
@@ -58,41 +65,6 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
         return new Pair<>(ret, epsilonNext);
     }
 
-    /**
-     * @return The current iteration count (number of parameter updates) for the layer/network
-     */
-    @Override
-    public int getIterationCount() {
-        return 0;
-    }
-
-    /**
-     * @return The current epoch count (number of training epochs passed) for the layer/network
-     */
-    @Override
-    public int getEpochCount() {
-        return 0;
-    }
-
-    /**
-     * Set the current iteration count (number of parameter updates) for the layer/network
-     *
-     * @param iterationCount
-     */
-    @Override
-    public void setIterationCount(int iterationCount) {
-
-    }
-
-    /**
-     * Set the current epoch count (number of epochs passed ) for the layer/network
-     *
-     * @param epochCount
-     */
-    @Override
-    public void setEpochCount(int epochCount) {
-
-    }
 
     /**
      * Returns true if the layer can be trained in an unsupervised/pretrain manner (VAE, RBMs etc)
