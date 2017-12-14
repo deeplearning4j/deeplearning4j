@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -42,6 +43,7 @@ import java.io.Serializable;
                 @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
                 @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
                 @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
+                @JsonSubTypes.Type(value = ReverseTimeSeriesVertex.class, name = "ReverseTimeSeriesVertex"),
                 @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
                 @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
                 @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),

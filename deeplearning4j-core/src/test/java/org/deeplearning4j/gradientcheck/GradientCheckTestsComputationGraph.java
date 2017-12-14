@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -510,6 +511,68 @@ public class GradientCheckTestsComputationGraph {
         assertTrue(msg, gradOK);
     }
 
+    @Test
+    public void testLSTMWithReverseTimeSeriesVertex() {
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf =
+                new NeuralNetConfiguration.Builder().seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).graphBuilder()
+                        .addInputs("input").setOutputs("out")
+                        .addLayer("lstm_a",
+                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                        .activation(Activation.TANH).build(),
+                                "input")
+                        .addVertex("input_rev", new ReverseTimeSeriesVertex("input"), "input")
+                        .addLayer("lstm_b",
+                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                        .activation(Activation.TANH).build(),
+                                "input_rev")
+                        .addVertex("lstm_b_rev", new ReverseTimeSeriesVertex("input"), "lstm_b")
+                        .addLayer("out", new RnnOutputLayer.Builder().nIn(4 + 4).nOut(3)
+                                        .activation(Activation.SOFTMAX)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
+                                "lstm_a", "lstm_b_rev")
+                        .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Random r = new Random(12345);
+        INDArray input  = Nd4j.rand(new int[] {3, 3, 5});
+        INDArray labels = Nd4j.zeros(3, 3, 5);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 5; j++) {
+                labels.putScalar(new int[] {i, r.nextInt(3), j}, 1.0);
+            }
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testLSTMWithReverseTimeSeriesVertex()");
+            for (int j = 0; j < graph.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
+                new INDArray[] {labels});
+
+        String msg = "testLSTMWithDuplicateToTimeSeries()";
+        assertTrue(msg, gradOK);
+
+        //Second: test with input mask arrays.
+        INDArray inMask = Nd4j.zeros(3, 5);
+        inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0}));
+        inMask.putRow(1, Nd4j.create(new double[] {1, 1, 0, 1, 0}));
+        inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1}));
+        graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
+        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+
+        assertTrue(msg, gradOK);
+    }
 
     @Test
     public void testMultipleInputsLayer() {
