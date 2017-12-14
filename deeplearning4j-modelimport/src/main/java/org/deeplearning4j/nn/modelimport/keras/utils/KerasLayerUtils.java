@@ -28,6 +28,9 @@ import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.Keras
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
+import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasAlphaDropout;
+import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianDropout;
+import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianNoise;
 import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
@@ -176,6 +179,12 @@ public class KerasLayerUtils {
             layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DROPOUT())) {
             layer = new KerasDropout(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ALPHA_DROPOUT())) {
+            layer = new KerasAlphaDropout(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GAUSSIAN_DROPOUT())) {
+            layer = new KerasGaussianDropout(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GAUSSIAN_NOISE())) {
+            layer = new KerasGaussianNoise(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DENSE()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE())) {
             layer = new KerasDense(layerConfig, enforceTrainingConfig);

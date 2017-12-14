@@ -15,36 +15,48 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.nn.modelimport.keras.layers.core;
+package org.deeplearning4j.nn.modelimport.keras.layers.noise;
 
-import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.dropout.AlphaDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
+
 /**
- * Imports a Dropout layer from Keras.
+ * Keras wrapper for DL4J dropout layer with AlphaDropout.
  *
- * @author dave@skymind.io
+ * @author Max Pumperla
  */
-@Slf4j
-public class KerasDropout extends KerasLayer {
+public class KerasAlphaDropout extends KerasLayer {
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasAlphaDropout(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
+     * @param layerConfig   dictionary containing Keras layer configuration.
+     *
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasDropout(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasAlphaDropout(Map<String, Object> layerConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
+
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -54,10 +66,19 @@ public class KerasDropout extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasDropout(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasAlphaDropout(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.layer = new DropoutLayer.Builder().name(this.layerName).dropOut(this.dropout).build();
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey("rate")) {
+            throw new InvalidKerasConfigurationException("Keras configuration does not contain 'rate' parameter" +
+                    "needed for AlphaDropout");
+        }
+        double rate = (double) innerConfig.get("rate"); // Keras stores drop rates
+        double retainRate = 1 - rate;
+
+        this.layer = new DropoutLayer.Builder().name(this.layerName)
+                .dropOut(new AlphaDropout(retainRate)).build();
     }
 
     /**
@@ -71,16 +92,17 @@ public class KerasDropout extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras Dropout layer accepts only one input (received " + inputType.length + ")");
-        return this.getDropoutLayer().getOutputType(-1, inputType[0]);
+                    "Keras Alpha Dropout layer accepts only one input (received " + inputType.length + ")");
+        return this.getAlphaDropoutLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
-     * Get DL4J DropoutLayer.
+     * Get DL4J DropoutLayer with Alpha dropout.
      *
      * @return  DropoutLayer
      */
-    public DropoutLayer getDropoutLayer() {
+    public DropoutLayer getAlphaDropoutLayer() {
         return (DropoutLayer) this.layer;
     }
+
 }
