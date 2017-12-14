@@ -86,7 +86,7 @@ public class KerasSimpleRnn extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         Boolean returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
         if (!returnSequences) {
-            log.warn("Keras setting 'return_sequences = False' is not properly supported," +
+            throw new UnsupportedKerasConfigurationException("Keras setting 'return_sequences = False' is not properly supported," +
                     "DL4J's SimpleRnn layer returns sequences by default");
         }
         if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)

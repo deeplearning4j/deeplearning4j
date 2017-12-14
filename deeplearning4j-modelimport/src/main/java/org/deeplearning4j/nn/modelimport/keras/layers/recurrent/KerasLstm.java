@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -126,7 +127,7 @@ public class KerasLstm extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         Boolean returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
         if (!returnSequences) {
-            log.warn("Keras setting 'return_sequences = False' is not properly supported," +
+            throw new UnsupportedKerasConfigurationException("Keras setting 'return_sequences = False' is not properly supported," +
                     "DL4J's LSTM layer returns sequences by default");
         }
         if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)
@@ -218,14 +219,9 @@ public class KerasLstm extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
-        InputPreProcessor preprocessor = null;
-        if (inputType[0] instanceof InputType.InputTypeFeedForward) {
-            preprocessor = new FeedForwardToRnnPreProcessor();
-        }
-        return preprocessor;
+        InputPreProcessor preProcessor = InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+        return preProcessor;
     }
-
-
 
     /**
      * Set weights for layer.

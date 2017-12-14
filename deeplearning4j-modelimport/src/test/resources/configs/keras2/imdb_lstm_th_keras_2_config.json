@@ -74,7 +74,7 @@
     "go_backwards": false, 
     "implementation": 0, 
     "kernel_regularizer": null, 
-    "return_sequences": false, 
+    "return_sequences": true,
     "recurrent_constraint": null
    }
   }, 
