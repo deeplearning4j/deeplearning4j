@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
@@ -75,7 +76,9 @@ import java.util.*;
                 @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
                 @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
                 @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
-                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn")})
+                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
+                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult")}
+)
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
