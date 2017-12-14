@@ -907,29 +907,6 @@ public class EvalTest {
     }
 
     @Test
-    public void testRegressionEvalTimeSeriesSplit(){
-
-        INDArray out1 = Nd4j.rand(new int[]{3, 5, 20});
-        INDArray outSub1 = out1.get(all(), all(), interval(0,10));
-        INDArray outSub2 = out1.get(all(), all(), interval(10, 20));
-
-        INDArray label1 = Nd4j.rand(new int[]{3, 5, 20});
-        INDArray labelSub1 = label1.get(all(), all(), interval(0,10));
-        INDArray labelSub2 = label1.get(all(), all(), interval(10, 20));
-
-        RegressionEvaluation e1 = new RegressionEvaluation();
-        RegressionEvaluation e2 = new RegressionEvaluation();
-
-        e1.eval(label1, out1);
-
-        e2.eval(labelSub1, outSub1);
-        e2.eval(labelSub2, outSub2);
-
-        assertEquals(e1, e2);
-    }
-
-
-    @Test
     public void testEvalSplitting(){
         //Test for "tbptt-like" functionality
 
@@ -1000,7 +977,7 @@ public class EvalTest {
 
                 assertEquals(e1[0], e2[0]);
                 assertEquals(e1[1], e2[1]);
-//            assertEquals(e1[2], e2[2]);       //Fails due to: https://github.com/deeplearning4j/deeplearning4j/issues/4404
+                assertEquals(e1[2], e2[2]);
             }
         }
     }
@@ -1081,7 +1058,7 @@ public class EvalTest {
 
                 assertEquals(e1[0], e2[0]);
                 assertEquals(e1[1], e2[1]);
-//            assertEquals(e1[2], e2[2]);   //Fails due to: https://github.com/deeplearning4j/deeplearning4j/issues/4404
+                assertEquals(e1[2], e2[2]);
             }
         }
     }
