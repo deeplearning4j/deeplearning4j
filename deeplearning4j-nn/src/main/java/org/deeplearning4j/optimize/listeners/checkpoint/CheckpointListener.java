@@ -68,8 +68,8 @@ public class CheckpointListener extends BaseTrainingListener {
 
     @Override
     public void onEpochEnd(Model model) {
-        int currEpoch = getEpoch(model);
-        if(saveEveryNEpochs != null && currEpoch > 0 && currEpoch % saveEveryNEpochs == 0){
+        int epochsDone = getEpoch(model) + 1;
+        if(saveEveryNEpochs != null && epochsDone > 0 && epochsDone % saveEveryNEpochs == 0){
             //Save:
             saveCheckpoint(model);
         }
@@ -133,7 +133,7 @@ public class CheckpointListener extends BaseTrainingListener {
     }
 
     private void saveCheckpointHelper(Model model) throws Exception {
-        Checkpoint c = new Checkpoint(lastCheckpointNum++, System.currentTimeMillis(), getIter(model), getEpoch(model),
+        Checkpoint c = new Checkpoint(++lastCheckpointNum, System.currentTimeMillis(), getIter(model), getEpoch(model),
                 getModelType(model), null);
         setFileName(c);
 
@@ -367,6 +367,9 @@ public class CheckpointListener extends BaseTrainingListener {
             return this;
         }
 
+        public CheckpointListener build(){
+            return new CheckpointListener(this);
+        }
 
     }
 
