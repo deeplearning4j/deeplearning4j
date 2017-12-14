@@ -90,7 +90,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                 return callHelper();
             } catch (Exception e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
-                log.warn( "call - fail - stackTrace: {}", stackTrace );
+                log.warn( "Execution failed for task {}", candidate.getIndex(), e );
 
                 CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
                                 null, null, candidate.getFlatParameters(), stackTrace);
