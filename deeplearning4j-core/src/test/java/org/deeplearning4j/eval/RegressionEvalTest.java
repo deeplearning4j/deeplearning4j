@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * @author Alex Black
@@ -203,5 +205,27 @@ public class RegressionEvalTest {
             assertEquals(mae[i], re.meanAbsoluteError(i), 1e-6);
             assertEquals(rmse[i], re.rootMeanSquaredError(i), 1e-6);
         }
+    }
+
+    @Test
+    public void testRegressionEvalTimeSeriesSplit(){
+
+        INDArray out1 = Nd4j.rand(new int[]{3, 5, 20});
+        INDArray outSub1 = out1.get(all(), all(), interval(0,10));
+        INDArray outSub2 = out1.get(all(), all(), interval(10, 20));
+
+        INDArray label1 = Nd4j.rand(new int[]{3, 5, 20});
+        INDArray labelSub1 = label1.get(all(), all(), interval(0,10));
+        INDArray labelSub2 = label1.get(all(), all(), interval(10, 20));
+
+        RegressionEvaluation e1 = new RegressionEvaluation();
+        RegressionEvaluation e2 = new RegressionEvaluation();
+
+        e1.eval(label1, out1);
+
+        e2.eval(labelSub1, outSub1);
+        e2.eval(labelSub2, outSub2);
+
+        assertEquals(e1, e2);
     }
 }

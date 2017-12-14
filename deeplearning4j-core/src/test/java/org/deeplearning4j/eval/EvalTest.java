@@ -53,6 +53,8 @@ import org.nd4j.linalg.util.FeatureUtil;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * Created by agibsonccc on 12/22/14.
@@ -254,7 +256,7 @@ public class EvalTest {
             for (int j = 0; j < tsLength; j++) {
                 INDArray rand = Nd4j.rand(1, nOut);
                 rand.divi(rand.sumNumber());
-                predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j)},
+                predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), all(), NDArrayIndex.point(j)},
                                 rand);
                 int idx = r.nextInt(nOut);
                 labels.putScalar(new int[] {i, idx, j}, 1.0);
@@ -264,11 +266,11 @@ public class EvalTest {
         //Create a longer labels/predicted with mask for first and last time step
         //Expect masked evaluation to be identical to original evaluation
         INDArray labels2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
-        labels2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, tsLength + 1)}, labels);
+        labels2.put(new INDArrayIndex[] {all(), all(),
+                        interval(1, tsLength + 1)}, labels);
         INDArray predicted2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
-        predicted2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, tsLength + 1)}, predicted);
+        predicted2.put(new INDArrayIndex[] {all(), all(),
+                        interval(1, tsLength + 1)}, predicted);
 
         INDArray labelsMask = Nd4j.ones(miniBatch, tsLength + 2);
         for (int i = 0; i < miniBatch; i++) {
@@ -323,7 +325,7 @@ public class EvalTest {
             INDArray rand = Nd4j.rand(1, numClasses);
             rand.put(0, winner, rand.sumNumber());
             rand.divi(rand.sumNumber());
-            predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all()}, rand);
+            predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), all()}, rand);
             //Generating random label
             int label = r.nextInt(numClasses);
             labels.putScalar(new int[] {i, label}, 1.0);
@@ -359,16 +361,16 @@ public class EvalTest {
 
         //Now: split into 3 separate evaluation objects -> expect identical values after merging
         Evaluation eval1 = new Evaluation();
-        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+        eval1.eval(actual.get(interval(0, 5), all()),
+                        predicted.get(interval(0, 5), all()));
 
         Evaluation eval2 = new Evaluation();
-        eval2.eval(actual.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
+        eval2.eval(actual.get(interval(5, 10), all()),
+                        predicted.get(interval(5, 10), all()));
 
         Evaluation eval3 = new Evaluation();
-        eval3.eval(actual.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()));
+        eval3.eval(actual.get(interval(10, nRows), all()),
+                        predicted.get(interval(10, nRows), all()));
 
         eval1.merge(eval2);
         eval1.merge(eval3);
@@ -378,8 +380,8 @@ public class EvalTest {
 
         //Next: check evaluation merging with empty, and empty merging with non-empty
         eval1 = new Evaluation();
-        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+        eval1.eval(actual.get(interval(0, 5), all()),
+                        predicted.get(interval(0, 5), all()));
 
         Evaluation evalInitiallyEmpty = new Evaluation();
         evalInitiallyEmpty.merge(eval1);

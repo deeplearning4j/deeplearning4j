@@ -66,7 +66,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private INDArray sumSquaredPredicted;
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
-    private INDArray sumSquaredLabelDeviations;
+    private INDArray sumLabels;
 
     public RegressionEvaluation() {
         this(null, DEFAULT_PRECISION);
@@ -135,7 +135,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumOfProducts = Nd4j.zeros(n);
         sumSquaredLabels = Nd4j.zeros(n);
         sumSquaredPredicted = Nd4j.zeros(n);
-        sumSquaredLabelDeviations = Nd4j.zeros(n);
+        sumLabels = Nd4j.zeros(n);
 
         initialized = true;
     }
@@ -217,8 +217,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                         .divi(newExampleCountPerColumn);
         exampleCountPerColumn = newExampleCountPerColumn;
 
-        final INDArray n = labels.dup().subRowVector(currentMean);
-        sumSquaredLabelDeviations.addi(n.muli(n).sum(0));
+        sumLabels.addi(labels.sum(0));
     }
 
     @Override
@@ -384,8 +383,14 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @see <a href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Wikipedia</a>
      */
     public double rSquared(int column) {
-        final double sstot = sumSquaredLabelDeviations.getDouble(column);
-        final double ssres = sumSquaredErrorsPerColumn.getDouble(column);
+        //ss_tot = sum_i (label_i - mean(labels))^2
+        //       = (sum_i label_i^2) + mean(labels) * (n * mean(labels) - 2 * sum_i label_i)
+        double sumLabelSquared = sumSquaredLabels.getDouble(column);
+        double meanLabel = currentMean.getDouble(column);
+        double sumLabel = sumLabels.getDouble(column);
+        double n = exampleCountPerColumn.getDouble(column);
+        double sstot = sumLabelSquared + meanLabel * (n * meanLabel - 2 * sumLabel);
+        double ssres = sumSquaredErrorsPerColumn.getDouble(column);
         return (sstot - ssres) / sstot;
     }
 
