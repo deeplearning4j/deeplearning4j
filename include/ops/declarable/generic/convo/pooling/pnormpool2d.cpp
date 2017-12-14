@@ -7,8 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-        // pnormpool2d corresponds to poolingMode=2
         CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
 
             REQUIRE_OK(this->validateInputLengthMatch(block));

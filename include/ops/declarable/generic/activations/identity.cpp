@@ -6,7 +6,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
         OP_IMPL(identity, 1, 1, true) {
             NDArray<T> *first = INPUT_VARIABLE(0);
             auto z = this->getZ(block);

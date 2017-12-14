@@ -6,12 +6,12 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
         OP_IMPL(softmax, 1, 1, true) {
             // YaY
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            FIXME: 
             input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
 
             STORE_RESULT(*z);

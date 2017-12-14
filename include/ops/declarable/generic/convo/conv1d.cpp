@@ -7,12 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        /**
-         * 
-         * Kernel
-         * Stride
-         * Padding
-         */
         CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 3) {
             auto input = INPUT_VARIABLE(0);
             auto weights = INPUT_VARIABLE(1);

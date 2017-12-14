@@ -8,7 +8,6 @@
 
 namespace nd4j {
     namespace ops {
-
         CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);

@@ -23,6 +23,7 @@ namespace nd4j {
             if (axis < 0)
                 axis = output->rankOf() + axis;
 
+            auto vec = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
             auto tads = NDArrayFactory<T>::allTensorsAlongDimension(output, {axis});
             for (int e = 0; e < tads->size(); e++) {
                 auto tad = tads->at(e);

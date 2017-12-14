@@ -6,6 +6,17 @@
 
 namespace nd4j {
     namespace ops {
+        CONFIGURABLE_OP_IMPL(selu, 1, 1, true, 0, 0) {
+            NDArray<T> *first = INPUT_VARIABLE(0);
+            auto z = this->getZ(block);
+
+            first->template applyTransform<simdOps::SELU<T>>(z, nullptr);
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+
         CONFIGURABLE_OP_IMPL(selu_bp, 2, 1, true, 0, 0) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* epsilon = INPUT_VARIABLE(1);

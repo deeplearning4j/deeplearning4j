@@ -7,8 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        
-//////////////////////////////////////////////////////////////////////////		
         CUSTOM_OP_IMPL(add, 2, 1, true, 0, 0) {
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);

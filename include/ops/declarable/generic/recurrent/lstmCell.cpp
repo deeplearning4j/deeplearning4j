@@ -17,7 +17,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static NDArray<T> sigmoid(const NDArray<T>& arr) {    
+static NDArray<T> _sigmoid(const NDArray<T>& arr) {    
     
     return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Sigmoid<T>>();    
 }
@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     }
 
     // current sell state = ft*ct_1 + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-    *ct = sigmoid<T>(zft + forgetBias) * (*ct_1) + sigmoid<T>(zit) * activation<T>(zct);
+    *ct = _sigmoid<T>(zft + forgetBias) * (*ct_1) + _sigmoid<T>(zit) * activation<T>(zct);
     
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue != (T)0.)
@@ -93,7 +93,7 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
         zot += (*ct) * (*Wc)({{},{2*numUnits, 3*numUnits}});            // add peephole connections to output gate zot + ct*Wc
 
     // current cell output = ot*activation(ct)   
-    NDArray<T> htNoPeepHole = sigmoid<T>(zot) * activation<T>(*ct);      // = [batchSize x numUnits]
+    NDArray<T> htNoPeepHole = _sigmoid<T>(zot) * activation<T>(*ct);      // = [batchSize x numUnits]
 
     // apply projection
     if(projection) {

@@ -27,7 +27,6 @@ namespace nd4j {
                 if (same) {
                     auto z = OUTPUT_VARIABLE(0);
 
-#pragma omp parallel for
                     for (int e = 0; e < cond->lengthOf(); e++) {
                         T v = cond->getIndexedScalar(e);
                         T r = v == (T) 0.0f ? y->getIndexedScalar(e) : x->getIndexedScalar(e);

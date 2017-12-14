@@ -20,7 +20,7 @@ static NDArray<T> activation(const NDArray<T>& arr) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static NDArray<T> sigmoid(const NDArray<T>& arr) {    
+static NDArray<T> _sigmoid(const NDArray<T>& arr) {    
     
     return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Sigmoid<T>>();    
 }
@@ -43,10 +43,10 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
     NDArray<T> z = mmul(*xt, *w);                 //  [batchSize x 3*inSize]    
 
     // forget gate = sigmoid(xt*Wf + bf)
-    NDArray<T> ft = sigmoid<T>(z({{},{inSize,   2*inSize}}) + (*b)({{},{0, inSize}}));
+    NDArray<T> ft = _sigmoid<T>(z({{},{inSize,   2*inSize}}) + (*b)({{},{0, inSize}}));
     
     // reset gate = sigmoid(xt*Wr + br)
-    NDArray<T> rt = sigmoid<T>(z({{},{2*inSize, 3*inSize}}) + (*b)({{},{inSize, 2*inSize}}));
+    NDArray<T> rt = _sigmoid<T>(z({{},{2*inSize, 3*inSize}}) + (*b)({{},{inSize, 2*inSize}}));
 
     // current sell state = ft(*)ct_1 + (1 - ft)(*)(*)(xt*Wc)
     *ct = ft*(*ct_1) + ((T)1. - ft)*z({{},{0, inSize}});

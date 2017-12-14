@@ -7,17 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-        /**
-         * tensorMmul/tensorDot operation
-         * takes 2 ndarrays, and 2 sets of axes
-         *
-         * Integer argumens map:
-         * IArgs[0] - number of axes along for first array
-         * IArgs[1]... axes values for first array
-         * IArgs[] - number of axes along for second array
-         * IArgs[1]... axes values for second array
-         */
         CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
             NDArray<T>* a = INPUT_VARIABLE(0);
             NDArray<T>* b = INPUT_VARIABLE(1);

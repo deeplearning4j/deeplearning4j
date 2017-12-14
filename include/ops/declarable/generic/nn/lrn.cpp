@@ -6,7 +6,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(lrn, 1, 3, true, 4, 0) {
             // LocalResponseNormalization
 

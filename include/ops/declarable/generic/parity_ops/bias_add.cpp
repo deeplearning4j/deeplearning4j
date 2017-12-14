@@ -6,7 +6,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
         OP_IMPL(biasadd, 2, 1, true) {
             //REQUIRE_OK(this->validateInput2D(block));
 

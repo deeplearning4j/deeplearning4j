@@ -7,8 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-
-        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);

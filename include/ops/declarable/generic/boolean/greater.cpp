@@ -13,11 +13,11 @@ namespace nd4j {
 
             REQUIRE_TRUE(x->isSameShape(y), 0, "Both inputs should have equal shape");
 
-#pragma omp parallel for simd
-            for (int e = 0; e < z->lengthOf(); e++) {
-                T v = x->getIndexedScalar(e) > y->getIndexedScalar(e) ? (T) 1.0f : (T) 0.0f;
-                z->putIndexedScalar(e, v);
-            }
+            auto lambda = LAMBDA_TT(_x, _y) {
+                return _x > _y ? (T) 1.0f : (T) 0.0f;
+            };
+
+            x->applyPairwiseLambda(y, lambda, z);
 
             STORE_RESULT(z);
 

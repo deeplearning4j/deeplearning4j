@@ -6,6 +6,16 @@
 
 namespace nd4j {
     namespace ops {
+        CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, 1, 0) {
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
+
+            input->template applyTransform<simdOps::LeakyRELU<T>>(output, block.getTArguments()->data());
+            STORE_RESULT(output);
+            
+            return ND4J_STATUS_OK;
+        }
+        
         CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, 0, 0) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* epsilon = INPUT_VARIABLE(1);

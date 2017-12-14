@@ -6,6 +6,16 @@
 
 namespace nd4j {
     namespace ops {
+        CONFIGURABLE_OP_IMPL(hardsigmoid, 1, 1, true, 0, 0) {
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
+
+            input->template applyTransform<simdOps::HardSigmoid<T>>(output, nullptr);
+            STORE_RESULT(output);
+            
+            return ND4J_STATUS_OK;
+        }
+
         CONFIGURABLE_OP_IMPL(hardsigmoid_bp, 2, 1, true, 0, 0) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* epsilon = INPUT_VARIABLE(1);

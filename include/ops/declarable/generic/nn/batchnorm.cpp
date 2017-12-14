@@ -6,9 +6,6 @@
 
 namespace nd4j {
 namespace ops {
-
-
-//////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(batchnorm, 5, 1, false, 1, 2) {
 
     NDArray<T>* input    = INPUT_VARIABLE(0);

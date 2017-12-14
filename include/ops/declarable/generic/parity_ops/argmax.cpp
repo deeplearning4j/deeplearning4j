@@ -10,6 +10,7 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
+            // FIXME: optional vector
             input->template applyIndexReduce<simdOps::IndexMax<T>>(output, *block.getIArguments());
 
             STORE_RESULT(output);

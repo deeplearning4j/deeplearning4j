@@ -7,13 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-        /**
-         * Upsampling implementation, based on pytorch
-         *
-         * IArgs map:
-         * IArgs[0] - scale factor
-         */
         CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 1) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* output = this->getZ(block);

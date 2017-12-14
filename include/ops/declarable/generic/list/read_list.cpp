@@ -6,16 +6,31 @@
 
 namespace nd4j {
     namespace ops {
-        LIST_OP_IMPL(read_list, 1, 1, 0, 1) {
+        LIST_OP_IMPL(read_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);
+            NDArray<T> * result = nullptr;
 
-            REQUIRE_TRUE(list->height() > 0, 0, "Number of elements in list should be positive prior to Read call");
+            REQUIRE_TRUE(list->height() > 0, 0, "ReadList: number of elements in list should be positive prior to Read call");
 
-            auto index = INT_ARG(0);
+            if (block.getIArguments()->size() > 0) {
+                auto index = INT_ARG(0);
 
-            REQUIRE_TRUE(list->isWritten(index), 0, "Requested index [%i] wasn't written yet", index);
+                REQUIRE_TRUE(list->isWritten(index), 0, "ReadList: requested index [%i] wasn't written yet", index);
 
-            auto result = list->read(index);
+                result = list->read(index);
+            } else if (block.width() > 0) {
+                auto vec = INPUT_VARIABLE(0);
+
+                REQUIRE_TRUE(vec->isScalar(), 0, "ReadList: index operand should be a scalar");
+                
+                auto index = (int) vec->getScalar(0);
+
+                REQUIRE_TRUE(list->isWritten(index), 0, "ReadList: requested index [%i] wasn't written yet", index);
+
+                result = list->read(index);
+            } else {
+                REQUIRE_TRUE(false, 0, "ReadList: index value should be set either via IntArgs or via second operand");
+            }
 
             OVERWRITE_RESULT(result);
 

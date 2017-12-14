@@ -15,7 +15,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
             // basically im2col + gemm
             NDArray<T>* input = INPUT_VARIABLE(0);
@@ -42,6 +41,10 @@ namespace nd4j {
             REQUIRE_TRUE(weights->sizeAt(2) == kY, 0, "Conv2D: weights dim 2 should be equal to %i, but got %i instead. Not a NCHW?", kY, weights->sizeAt(2));
             REQUIRE_TRUE(weights->sizeAt(3) == kX, 0, "Conv2D: weights dim 3 should be equal to %i, but got %i instead. Not a NCHW?", kX, weights->sizeAt(3));
             REQUIRE_TRUE(weights->sizeAt(1) == input->sizeAt(1), 0, "Conv2D: weights dim 1 should be equal to number of input channels. But got %i vs %i. Not a NCHW?", weights->sizeAt(1), input->sizeAt(1))
+
+            if (bias != nullptr) {
+                REQUIRE_TRUE(weights->sizeAt(0) == bias->lengthOf(), 0, "Conv2D: bias length should be equal to outChannels, but got %i instead", bias->lengthOf());
+            }
 
             int oY = 0;
             int oX = 0;

@@ -26,8 +26,8 @@ namespace nd4j {
                 block.trackList(list);
             }
 
-            REQUIRE_TRUE(indices->isVector(), 0, "Indices for Scatter should be a vector")
-            REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
+            REQUIRE_TRUE(indices->isVector(), 0, "ScatterList: Indices for Scatter should be a vector")
+            REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
 
             std::vector<int> axis = ShapeUtils<T>::convertAxisToTadTarget(array->rankOf(), {0});
             auto tads = NDArrayFactory<T>::allTensorsAlongDimension(array, axis);

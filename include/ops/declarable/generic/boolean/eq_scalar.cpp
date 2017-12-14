@@ -6,7 +6,6 @@
 
 namespace nd4j {
     namespace ops {
-
         BOOLEAN_OP_IMPL(eq_scalar, 2, true) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);

@@ -15,7 +15,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static NDArray<T> sigmoid(const NDArray<T>& arr) {    
+static NDArray<T> _sigmoid(const NDArray<T>& arr) {    
     
     return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Sigmoid<T>>();    
 }
@@ -44,7 +44,7 @@ CUSTOM_OP_IMPL(gruCell, 5, 1, false, 0, 0) {
     const int numUnits  = ht_1->sizeAt(1);
     
     // activ = sigmoid(xt*Wx + ht_1*Wh + b)
-    NDArray<T> activ = sigmoid<T>(mmul(*xt, (*Wx)({{},{0,2*numUnits}})) + mmul(*ht_1, (*Wh)({{},{0,2*numUnits}})) + (*b)({{},{0,2*numUnits}}));       // [batchSize x 2*numUnits] + [batchSize x 2*numUnits] + [1 x 2*numUnits] = [batchSize x 2*numUnits]    
+    NDArray<T> activ = _sigmoid<T>(mmul(*xt, (*Wx)({{},{0,2*numUnits}})) + mmul(*ht_1, (*Wh)({{},{0,2*numUnits}})) + (*b)({{},{0,2*numUnits}}));       // [batchSize x 2*numUnits] + [batchSize x 2*numUnits] + [1 x 2*numUnits] = [batchSize x 2*numUnits]    
     
     // reset gate
     NDArray<T> rt = activ({{}, {0, numUnits}});                     // [batchSize x numUnits]

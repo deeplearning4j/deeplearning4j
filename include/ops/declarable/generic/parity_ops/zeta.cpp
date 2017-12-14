@@ -7,53 +7,32 @@
 
 namespace nd4j {
     namespace ops {
+        CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
 
+            NDArray<T>* x = INPUT_VARIABLE(0);
+            NDArray<T>* q = INPUT_VARIABLE(1);
 
-//////////////////////////////////////////////////////////////////////////
-/**
-   * This op calculates Hurwitz zeta function zeta(x, q) = sum_{n=0}^{inf} (q + n)^{-x}
-   * Implementation is based on Euler-Maclaurin summation formula   
-   * 
-   * Input arrays: 
-   *    x: define power {-x}, must be > 1, type float.
-   *    q: define summand in denominator, must be > 0, type float.
-   *
-   * Output array: 
-   *    0: corresponding values of Hurwitz zeta function
-   * 
-   * Two input and one output arrays must have the same shape
-   */      
-//////////////////////////////////////////////////////////////////////////
-// calculate the Hurwitz zeta function
-CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
+            NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
-	NDArray<T>* x = INPUT_VARIABLE(0);
-    NDArray<T>* q = INPUT_VARIABLE(1);
+            if(!x->isSameShape(q))
+                throw "CONFIGURABLE_OP zeta: two input arrays must have the same shapes !";
 
-	NDArray<T>* output   = OUTPUT_VARIABLE(0);
+            int arrLen = x->lengthOf();
 
-    if(!x->isSameShape(q))
-        throw "CONFIGURABLE_OP zeta: two input arrays must have the same shapes !";
+            for(int i = 0; i < arrLen; ++i ) {
 
-    int arrLen = x->lengthOf();
+                if((*x)(i) <= (T)1.)
+                    throw "CONFIGURABLE_OP zeta: all elements of x array must be > 1 !";
 
-    for(int i = 0; i < arrLen; ++i ) {
-        
-        if((*x)(i) <= (T)1.)
-            throw "CONFIGURABLE_OP zeta: all elements of x array must be > 1 !";
-        
-        if((*q)(i) <= (T)0.)
-            throw "CONFIGURABLE_OP zeta: all elements of q array must be > 0 !";
+                if((*q)(i) <= (T)0.)
+                    throw "CONFIGURABLE_OP zeta: all elements of q array must be > 0 !";
+            }
+
+            *output = helpers::zeta<T>(*x, *q);
+
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SYN(Zeta, zeta);
     }
-
-    *output = helpers::zeta<T>(*x, *q);
-
-    return ND4J_STATUS_OK;
-}
-DECLARE_SYN(Zeta, zeta);
-
-
-
-}
 }
 

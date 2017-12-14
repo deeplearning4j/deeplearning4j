@@ -21,7 +21,6 @@ namespace nd4j {
                 // if cond matches x/y shape - we have per-element mask
                 if (condition->isSameShape(x)) {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
-#pragma omp parallel for
                     for (int e = 0; e < condition->lengthOf(); e++) {
                         T v = condition->getIndexedScalar(e);
                         T r = v == (T) 0.0f ? y->getIndexedScalar(e) : x->getIndexedScalar(e);

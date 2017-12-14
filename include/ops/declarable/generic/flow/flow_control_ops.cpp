@@ -8,7 +8,9 @@
 
 namespace nd4j {
     namespace ops {
-        /*
+        /**
+         * This operation is, basically IF statement
+         * 
          * arg_0 is our "signal"
          * arg_1 is condition that will determine transition
          */

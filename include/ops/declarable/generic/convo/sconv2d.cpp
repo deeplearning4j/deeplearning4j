@@ -7,9 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        /**
-         * Depthwise convolution2d
-         */
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
             auto input = INPUT_VARIABLE(0);

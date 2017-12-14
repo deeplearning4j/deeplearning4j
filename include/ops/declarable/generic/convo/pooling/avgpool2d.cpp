@@ -7,8 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-        // avgpool2d corresponds to poolingMode=1
         CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 9) {
 
             NDArray<T> *x = INPUT_VARIABLE(0);

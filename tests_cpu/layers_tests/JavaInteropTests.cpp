@@ -343,8 +343,8 @@ TEST_F(JavaInteropTests, Test_GraphReuse_1) {
 }
 
 TEST_F(JavaInteropTests, Test_GraphReuse_2) {
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
+    //Environment::getInstance()->setDebug(true);
+    //Environment::getInstance()->setVerbose(true);
 
     NDArray<float> exp0('c', {3, 1}, {3, 3, 3});
     NDArray<float> exp1('c', {3, 1}, {6, 6, 6});

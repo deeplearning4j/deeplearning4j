@@ -8,7 +8,6 @@
 
 namespace nd4j {
     namespace ops {
-        //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
 
@@ -24,7 +23,7 @@ namespace nd4j {
             NDArray<T>* output = OUTPUT_VARIABLE(0);                
 
             bool biasUsed = INT_ARG(0) != 0 && bias != nullptr;
-            // TODO change width/height order  height/width
+            // TODO: change width/height order  height/width
             int dT = INT_ARG(1);
             int dW = INT_ARG(2);
             int dH = INT_ARG(3);
@@ -41,7 +40,7 @@ namespace nd4j {
             std::unique_ptr<ResultSet<T>> batchIn(NDArrayFactory<T>::allExamples(input));
             std::unique_ptr<ResultSet<T>> batchOut(NDArrayFactory<T>::allExamples(output));
 
-            // TODO: eventually we want OMP being used here
+            // FIXME: helpers should be used here
             for (int e = 0; e < batchIn->size(); e++) {
                 auto tadIn = batchIn->at(e);
                 auto tadOut = batchOut->at(e);

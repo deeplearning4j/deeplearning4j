@@ -7,10 +7,6 @@
 
 namespace nd4j {
     namespace ops {
-        /**
-         * This operation is possible only on integer datatypes
-         * @tparam T
-         */
         OP_IMPL(toggle_bits, -1, -1, true) {
 
             for (int i = 0; i < block.width(); i++) {
@@ -20,7 +16,7 @@ namespace nd4j {
              //   auto lambda = LAMBDA_T(_x) {
              //       return BitwiseUtils::flip_bits<T>(_x);
              //   };
-
+                
              //   x->applyLambda(lambda, z);
                 return ND4J_STATUS_OK;
             }

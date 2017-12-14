@@ -24,7 +24,7 @@ NDArray<T>* timestep(const NDArray<T>* const arr, const int t1, const int t2) {
 }
 
 template <typename T>
-NDArray<T> sigmoid(const NDArray<T>& arr) {
+NDArray<T> _sigmoid(const NDArray<T>& arr) {
     NDArray<T> result(arr.getShapeInfo(), arr.getWorkspace());
     (const_cast<NDArray<T>&>(arr)).template applyTransform<simdOps::Sigmoid<T>>(&result);
 
@@ -177,8 +177,8 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
         ft =  wi({ {}, {K,  2*K}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
         rt =  wi({ {}, {2*K,3*K}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
 
-        ft = sigmoid(ft + bF);
-        rt = sigmoid(rt + bR);
+        ft = _sigmoid(ft + bF);
+        rt = _sigmoid(rt + bR);
         ct = ft * (ct - zt) + zt;                
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct.template applyTransform<simdOps::Tanh<T>>(&gct);        
@@ -488,8 +488,8 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
-        ft = sigmoid(ft + bF);
-        rt = sigmoid(rt + bR);        
+        ft = _sigmoid(ft + bF);
+        rt = _sigmoid(rt + bR);        
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct.template applyTransform<simdOps::Tanh<T>>(&gct);        
 

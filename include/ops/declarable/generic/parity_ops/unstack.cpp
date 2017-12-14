@@ -6,10 +6,6 @@
 
 namespace nd4j {
     namespace ops {
-        /**
-         * This op does the same as tear, just uses different input format:
-         * @tparam T
-         */
         CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
 
