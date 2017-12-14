@@ -27,20 +27,23 @@ import org.datavec.api.records.reader.impl.regex.RegexLineRecordReader;
 import org.datavec.api.records.reader.impl.regex.RegexSequenceRecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessRecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessSequenceRecordReader;
+import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResourceTest;
 import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 import org.junit.Test;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Record readers need to be serializable for spark.
@@ -90,6 +93,33 @@ public class TestSerialization {
                 .doubleMathFunction("d", MathFunction.ABS)
                 .build();
         return tp;
+    }
+
+    @Test
+    public void testCsvRRSerializationResults() throws Exception {
+        int skipLines = 3;
+        RecordReader r1 = new CSVRecordReader(skipLines, '\t');
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream os = new ObjectOutputStream(baos);
+        os.writeObject(r1);
+        byte[] bytes = baos.toByteArray();
+        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+        RecordReader r2 = (RecordReader) ois.readObject();
+
+        File f = new ClassPathResource("iris_tab_delim.txt").getFile();
+
+        r1.initialize(new FileSplit(f));
+        r2.initialize(new FileSplit(f));
+
+        int count = 0;
+        while(r1.hasNext()){
+            List<Writable> n1 = r1.next();
+            List<Writable> n2 = r2.next();
+            assertEquals(n1, n2);
+            count++;
+        }
+
+        assertEquals(150-skipLines, count);
     }
 
 }
