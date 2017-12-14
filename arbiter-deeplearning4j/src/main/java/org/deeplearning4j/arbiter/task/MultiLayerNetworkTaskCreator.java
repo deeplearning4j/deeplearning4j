@@ -101,8 +101,8 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
         private OptimizationResult callHelper() throws Exception {
             startTime = System.currentTimeMillis();
-            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
-                            System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
+                    startTime, startTime, null, candidate.getFlatParameters(), null);
 
             //Create network
             MultiLayerNetwork net = new MultiLayerNetwork(
