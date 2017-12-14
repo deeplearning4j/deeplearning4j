@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.listeners.checkpoint;
 
 import com.google.common.io.Files;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -13,11 +14,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class CheckpointListener extends BaseTrainingListener {
 
     private enum KeepMode {ALL, LAST, LAST_AND_EVERY};
@@ -26,15 +26,41 @@ public class CheckpointListener extends BaseTrainingListener {
     private KeepMode keepMode;
     private int keepLast;
     private int keepEvery;
+    private boolean logSaving;
+
+    private Integer saveEveryNEpochs;
+    private Integer saveEveryNIterations;
+    private boolean saveEveryNIterSinceLast;
+    private Long saveEveryAmount;
+    private TimeUnit saveEveryUnit;
+    private Long saveEveryMs;
+    private boolean saveEverySinceLast;
 
     private int lastCheckpointNum = -1;
     private File checkpointRecordFile;
+
+    private Checkpoint lastCheckpoint;
+    private long startTime = -1;
+    private int startIter = -1;
+    private Long lastSaveEveryMsNoSinceLast;
 
     private CheckpointListener(Builder builder){
         this.rootDir = builder.rootDir;
         this.keepMode = builder.keepMode;
         this.keepLast = builder.keepLast;
         this.keepEvery = builder.keepEvery;
+        this.logSaving = builder.logSaving;
+
+        this.saveEveryNEpochs = builder.saveEveryNEpochs;
+        this.saveEveryNIterations = builder.saveEveryNIterations;
+        this.saveEveryNIterSinceLast = builder.saveEveryNIterSinceLast;
+        this.saveEveryAmount = builder.saveEveryAmount;
+        this.saveEveryUnit = builder.saveEveryUnit;
+        this.saveEverySinceLast = builder.saveEverySinceLast;
+
+        if(saveEveryAmount != null){
+            saveEveryMs = TimeUnit.MILLISECONDS.convert(saveEveryAmount, saveEveryUnit);
+        }
 
         //TODO see if existing checkpoints are present
         this.checkpointRecordFile = new File(rootDir, "checkpointInfo.txt");
@@ -42,12 +68,60 @@ public class CheckpointListener extends BaseTrainingListener {
 
     @Override
     public void onEpochEnd(Model model) {
-
+        int currEpoch = getEpoch(model);
+        if(saveEveryNEpochs != null && currEpoch > 0 && currEpoch % saveEveryNEpochs == 0){
+            //Save:
+            saveCheckpoint(model);
+        }
+        //General saving conditions: don't need to check here - will check in iterationDone
     }
 
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {
-        //Check
+        if (startTime < 0) {
+            startTime = System.currentTimeMillis();
+            startIter = iteration;
+            return;
+        }
+
+        //Check iterations saving condition:
+        if(saveEveryNIterations != null){
+            if(saveEveryNIterSinceLast){
+                //Consider last saved model when deciding whether to save
+                long lastSaveIter = (lastCheckpoint != null ? lastCheckpoint.getIteration() : startIter);
+                if(iteration - lastSaveIter >= saveEveryNIterations){
+                    saveCheckpoint(model);
+                    return;
+                }
+            } else {
+                //Same every N iterations, regardless of saving time
+                if(iteration > 0 && iteration % saveEveryNIterations == 0){
+                    saveCheckpoint(model);
+                    return;
+                }
+            }
+        }
+
+        //Check time saving condition:
+        long time = System.currentTimeMillis();
+        if(saveEveryUnit != null){
+            if(saveEverySinceLast){
+                //Consider last saved when when deciding whether to save
+                long lastSaveTime = (lastCheckpoint != null ? lastCheckpoint.getTimestamp() : startTime);
+                if((time - lastSaveTime) >= saveEveryMs){
+                    saveCheckpoint(model);
+                    return;
+                }
+            } else {
+                //Save periodically, regardless of when last model was saved
+                long lastSave = (lastSaveEveryMsNoSinceLast != null ? lastSaveEveryMsNoSinceLast : startTime);
+                if((time - lastSave) > saveEveryMs){
+                    saveCheckpoint(model);
+                    lastSaveEveryMsNoSinceLast = time;
+                    return;
+                }
+            }
+        }
     }
 
     private void saveCheckpoint(Model model) {
@@ -67,6 +141,41 @@ public class CheckpointListener extends BaseTrainingListener {
 
         String s = c.toFileString();
         write(s + "\n", checkpointRecordFile);
+
+        if(logSaving){
+            log.info("Model checkpoint saved: epoch {}, iteration {}, path: {}", c.getEpoch(), c.getIteration(),
+                    new File(rootDir, c.getFilename()).getPath() );
+        }
+        this.lastCheckpoint = c;
+
+
+        //Finally: determine if we should delete some old models...
+        if(keepMode == null || keepMode == KeepMode.ALL){
+            return;
+        } else if(keepMode == KeepMode.LAST){
+            List<Checkpoint> checkpoints = availableCheckpoints();
+            Iterator<Checkpoint> iter = checkpoints.iterator();
+            while(checkpoints.size() > keepLast){
+                Checkpoint toRemove = iter.next();
+                File f = getFileForCheckpoint(toRemove);
+                f.delete();
+                iter.remove();
+            }
+        } else {
+            //Keep mode: last N and every M
+            for(Checkpoint cp : availableCheckpoints()){
+                if(cp.getCheckpointNum() > 0 && cp.getCheckpointNum() % keepEvery == 0){
+                    //One of the "every M to keep" models
+                    continue;
+                } else if(cp.getCheckpointNum() > lastCheckpointNum - keepLast ){        //Example: latest is 5, keep last 2 -> keep checkpoints 4 and 5
+                    //One of last N to keep
+                    continue;
+                }
+                //Otherwise: delete file
+                File f = getFileForCheckpoint(cp);
+                f.delete();
+            }
+        }
     }
 
     private static void setFileName(Checkpoint c){
@@ -124,10 +233,20 @@ public class CheckpointListener extends BaseTrainingListener {
 
         List<Checkpoint> out = new ArrayList<>(lines.size()-1); //Assume first line is header
         for( int i=1; i<lines.size(); i++ ){
-            out.add(Checkpoint.fromFileString(lines.get(i)));
+            Checkpoint c = Checkpoint.fromFileString(lines.get(i));
+            if(new File(rootDir, c.getFilename()).exists()){
+                out.add(c);
+            }
         }
-
         return out;
+    }
+
+    public Checkpoint lastCheckpoint(){
+        List<Checkpoint> all = availableCheckpoints();
+        if(all.size() == 0){
+            return null;
+        }
+        return all.get(all.size()-1);
     }
 
     public File getFileForCheckpoint(Checkpoint checkpoint){
@@ -163,7 +282,14 @@ public class CheckpointListener extends BaseTrainingListener {
         private KeepMode keepMode;
         private int keepLast;
         private int keepEvery;
-        private boolean logSaving;
+        private boolean logSaving = true;
+
+        private Integer saveEveryNEpochs;
+        private Integer saveEveryNIterations;
+        private boolean saveEveryNIterSinceLast;
+        private Long saveEveryAmount;
+        private TimeUnit saveEveryUnit;
+        private boolean saveEverySinceLast;
 
 
         public Builder(@NonNull String rootDir){
@@ -174,18 +300,62 @@ public class CheckpointListener extends BaseTrainingListener {
             this.rootDir = rootDir;
         }
 
+        public Builder saveEveryEpoch(){
+            return saveEveryNEpochs(1);
+        }
+
+        public Builder saveEveryNEpochs(int n){
+            this.saveEveryNEpochs = n;
+            return this;
+        }
+
+        public Builder saveEveryNIterations(int n){
+            return saveEveryNIterations(n, false);
+        }
+
+        public Builder saveEveryNIterations(int n, boolean sinceLast){
+            this.saveEveryNIterations = n;
+            this.saveEveryNIterSinceLast = sinceLast;
+            return this;
+        }
+
+        public Builder saveEvery(long amount, TimeUnit timeUnit){
+            return saveEvery(amount, timeUnit, false);
+        }
+
+        public Builder saveEvery(long amount, TimeUnit timeUnit, boolean sinceLast){
+            this.saveEveryAmount = amount;
+            this.saveEveryUnit = timeUnit;
+            this.saveEverySinceLast = sinceLast;
+            return this;
+        }
+
+
+
         public Builder keepAll(){
             this.keepMode = KeepMode.ALL;
             return this;
         }
 
         public Builder keepLast(int n){
+            if(n <= 0){
+                throw new IllegalArgumentException("Number of model files to keep should be > 0 (got: " + n + ")");
+            }
             this.keepMode = KeepMode.LAST;
             this.keepLast = n;
             return this;
         }
 
         public Builder keepLastAndEvery(int nLast, int everyN){
+            if(nLast <= 0){
+                throw new IllegalArgumentException("Most recent number of model files to keep should be > 0 (got: "
+                        + nLast + ")");
+            }
+            if(everyN <= 0){
+                throw new IllegalArgumentException("Every n model files to keep should be > 0 (got: "
+                        + everyN + ")");
+            }
+
             this.keepMode = KeepMode.LAST_AND_EVERY;
             this.keepLast = nLast;
             this.keepEvery = everyN;
