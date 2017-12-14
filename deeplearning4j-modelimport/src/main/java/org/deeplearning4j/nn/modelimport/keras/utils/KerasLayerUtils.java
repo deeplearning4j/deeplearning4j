@@ -357,6 +357,14 @@ public class KerasLayerUtils {
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         KerasLayer.DimOrder dimOrder = KerasLayer.DimOrder.NONE;
+        if (layerConfig.containsKey(conf.getLAYER_FIELD_BACKEND())) {
+            String backend = (String) layerConfig.get(conf.getLAYER_FIELD_BACKEND());
+            if (backend.equals("tensorflow") || backend.equals("cntk")) {
+                dimOrder = KerasLayer.DimOrder.TENSORFLOW;
+            } else if (backend.equals("theano")) {
+                dimOrder = KerasLayer.DimOrder.THEANO;
+            }
+        }
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DIM_ORDERING())) {
             String dimOrderStr = (String) innerConfig.get(conf.getLAYER_FIELD_DIM_ORDERING());
             if (dimOrderStr.equals(conf.getDIM_ORDERING_TENSORFLOW())) {

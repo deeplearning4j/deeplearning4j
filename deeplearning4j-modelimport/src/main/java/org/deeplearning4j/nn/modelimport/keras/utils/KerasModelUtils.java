@@ -85,6 +85,7 @@ public class KerasModelUtils {
     }
 
     /**
+     * Determine Keras major version
      *
      * @param modelConfig parsed model configuration for keras model
      * @param config basic model configuration (KerasModelConfiguration)
@@ -111,6 +112,27 @@ public class KerasModelUtils {
             }
         }
         return kerasMajorVersion;
+    }
+
+    /**
+     * Determine Keras backend
+     *
+     * @param modelConfig parsed model configuration for keras model
+     * @param config basic model configuration (KerasModelConfiguration)
+     * @return Keras backend string
+     * @throws InvalidKerasConfigurationException
+     */
+    public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config)
+            throws InvalidKerasConfigurationException {
+        String kerasBackend = null;
+        if (!modelConfig.containsKey(config.getFieldBackend())) {
+            log.warn("Could not read keras backend used (no "
+                    + config.getFieldBackend() + " field found) \n"
+            );
+        } else {
+            kerasBackend = (String) modelConfig.get(config.getFieldBackend());
+            }
+        return kerasBackend;
     }
 
     public static String findParameterName(String parameter, String[] fragmentList) {

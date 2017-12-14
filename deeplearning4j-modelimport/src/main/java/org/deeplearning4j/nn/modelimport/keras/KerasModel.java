@@ -70,6 +70,7 @@ public class KerasModel {
     boolean useTruncatedBPTT = false; // whether to use truncated BPTT
     int truncatedBPTT = 0; // truncated BPTT value
     int kerasMajorVersion;
+    String kerasBackend;
 
     public KerasModel() {
     }
@@ -113,6 +114,7 @@ public class KerasModel {
 
         Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
         this.kerasMajorVersion = KerasModelUtils.determineKerasMajorVersion(modelConfig, config);
+        this.kerasBackend = KerasModelUtils.determineKerasBackend(modelConfig, config);
         this.enforceTrainingConfig = enforceTrainingConfig;
 
         /* Determine model configuration type. */
@@ -180,8 +182,12 @@ public class KerasModel {
         DimOrder dimOrder = DimOrder.NONE;
         for (Object layerConfig : layerConfigs) {
             Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
-            // Append major keras version to each layer config.
+            // Append major keras version and backend to each layer config.
             layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
+            if (this.kerasBackend != null) {
+                layerConfigMap.put(config.getFieldBackend(), this.kerasBackend);
+            }
+
             KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(layerConfigMap, this.enforceTrainingConfig,
                     kerasLayerConf, customLayers);
