@@ -73,7 +73,6 @@ public class TestCheckpointListener {
             if(!f2.getPath().endsWith(".zip")){
                 continue;
             }
-            count++;
 
             int prefixLength = "checkpoint_".length();
             int num = Integer.parseInt(f2.getName().substring(prefixLength, prefixLength+1));

@@ -17,6 +17,52 @@ import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ *
+ * CheckpointListener: The goal of this listener is to periodically save a copy of the model, as it trains.<br>
+ * Model saving may be done:
+ * 1. Every N epochs<br>
+ * 2. Every N iterations<br>
+ * 3. Every T time units<br>
+ * <br>
+ * <b>Example 1</b>: Saving a checkpoint every 2 epochs, keep all model files
+ * <pre>
+ * {@code new CheckpointListener.Builder("/save/directory")
+ *       .keepAll() //Don't delete any models
+ *       .saveEveryNEpochs(2)
+ *       .build()
+ * }
+ * </pre>
+ * <br>
+ * <b>Example 2</b>: Saving a checkpoint every 1000 iterations, but keeping only the last 3 models (all older model
+ * files will be automatically deleted)
+ * <pre>
+ * {@code CheckpointListener l = new CheckpointListener.Builder(new File("/save/directory"))
+ *          .keepLast(3)
+ *          .saveEveryNIterations(100)
+ *          .build();
+ * }
+ * </pre>
+ * <br>
+ * <b>Example 3</b>: Saving a checkpoint every 15 minutes, keeping the most recent 3 and otherwise every 4th checkpoint
+ * file:
+ * <pre>
+ * {@code CheckpointListener l = new CheckpointListener.Builder(new File("/save/directory"))
+ *          .keepLastAndEvery(3, 4)
+ *          .saveEvery(15, TimeUnit.MINUTES)
+ *          .build();
+ * }
+ * </pre>
+ * <br>
+ * Note that you can mix these: for example, to save every epoch and every 15 minutes (independent of last save time):<br>
+ * {@code .saveEveryEpoch().saveEvery(15, TimeUnit.MINUTES)}<br>
+ * To save every epoch, and every 15 minutes, <i>since the last model save</i> use:<br>
+ * {@code .saveEveryEpoch().saveEvery(15, TimeUnit.MINUTES, true)}<br>
+ * Note that is this last example, the <i>sinceLast</i> parameter is true. This means the 15-minute counter will be
+ * reset any time a model is saved.<br>
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class CheckpointListener extends BaseTrainingListener {
 
@@ -193,7 +239,7 @@ public class CheckpointListener extends BaseTrainingListener {
         return "checkpoint_" + checkpointNum + "_" + modelType + ".zip";
     }
 
-    public String write(String str, File f){
+    private static String write(String str, File f){
         try {
             if(!f.exists()){
                 f.createNewFile();
@@ -235,7 +281,12 @@ public class CheckpointListener extends BaseTrainingListener {
         }
     }
 
-
+    /**
+     * List all available checkpoints. A checkpoint is 'available' if the file can be loaded. Any checkpoint files that
+     * have been automatically deleted (given the configuration) will not be returned here.
+     *
+     * @return List of checkpoint files that can be loaded
+     */
     public List<Checkpoint> availableCheckpoints(){
         if(!checkpointRecordFile.exists()){
             return Collections.emptyList();
@@ -257,6 +308,10 @@ public class CheckpointListener extends BaseTrainingListener {
         return out;
     }
 
+    /**
+     * Return the most recent checkpoint, if one exists - otherwise returns null
+     * @return Checkpoint
+     */
     public Checkpoint lastCheckpoint(){
         List<Checkpoint> all = availableCheckpoints();
         if(all.size() == 0){
@@ -265,10 +320,22 @@ public class CheckpointListener extends BaseTrainingListener {
         return all.get(all.size()-1);
     }
 
+    /**
+     * Get the model file for the given checkpoint. Checkpoint model file must exist
+     *
+     * @param checkpoint Checkpoint to get the model file for
+     * @return Model file for the checkpoint
+     */
     public File getFileForCheckpoint(Checkpoint checkpoint){
         return getFileForCheckpoint(checkpoint.getCheckpointNum());
     }
 
+    /**
+     * Get the model file for the given checkpoint number. Checkpoint model file must exist
+     *
+     * @param checkpointNum Checkpoint number to get the model file for
+     * @return Model file for the checkpoint
+     */
     public File getFileForCheckpoint(int checkpointNum){
         if(checkpointNum < 0){
             throw new IllegalArgumentException("Invalid checkpoint number: " + checkpointNum);
@@ -283,22 +350,54 @@ public class CheckpointListener extends BaseTrainingListener {
         throw new IllegalStateException("Model file for checkpoint " + checkpointNum + " does not exist");
     }
 
+    /**
+     * Load a MultiLayerNetwork for the given checkpoint
+     *
+     * @param checkpoint Checkpoint model to load
+     * @return The loaded model
+     */
     public MultiLayerNetwork loadCheckpointMLN(Checkpoint checkpoint){
         return loadCheckpointMLN(checkpoint.getCheckpointNum());
     }
 
-    public MultiLayerNetwork loadCheckpointMLN(int checkpointNum){
-
-        throw new UnsupportedOperationException("Not yet implemented");
+    /**
+     * Load a MultiLayerNetwork for the given checkpoint number
+     *
+     * @param checkpointNum Checkpoint model to load
+     * @return The loaded model
+     */
+    public MultiLayerNetwork loadCheckpointMLN(int checkpointNum) {
+        File f = getFileForCheckpoint(checkpointNum);
+        try {
+            return ModelSerializer.restoreMultiLayerNetwork(f, true);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
+    /**
+     * Load a ComputationGraph for the given checkpoint
+     *
+     * @param checkpoint Checkpoint model to load
+     * @return The loaded model
+     */
     public ComputationGraph loadCheckpointCG(Checkpoint checkpoint){
         return loadCheckpointCG(checkpoint.getCheckpointNum());
     }
 
+    /**
+     * Load a ComputationGraph for the given checkpoint
+     *
+     * @param checkpointNum Checkpoint model number to load
+     * @return The loaded model
+     */
     public ComputationGraph loadCheckpointCG(int checkpointNum){
-
-        throw new UnsupportedOperationException("Not yet implemented");
+        File f = getFileForCheckpoint(checkpointNum);
+        try {
+            return ModelSerializer.restoreComputationGraph(f, true);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     public static class Builder {
@@ -316,38 +415,69 @@ public class CheckpointListener extends BaseTrainingListener {
         private TimeUnit saveEveryUnit;
         private boolean saveEverySinceLast;
 
-
+        /**
+         * @param rootDir Root directory to save models to
+         */
         public Builder(@NonNull String rootDir){
             this(new File(rootDir));
         }
 
+        /**
+         * @param rootDir Root directory to save models to
+         */
         public Builder(@NonNull File rootDir){
             this.rootDir = rootDir;
         }
 
+        /**
+         * Save a model at the end of every epoch
+         */
         public Builder saveEveryEpoch(){
             return saveEveryNEpochs(1);
         }
 
+        /**
+         * Save a model at the end of every N epochs
+         */
         public Builder saveEveryNEpochs(int n){
             this.saveEveryNEpochs = n;
             return this;
         }
 
+        /**
+         * Save a model every N iterations
+         */
         public Builder saveEveryNIterations(int n){
             return saveEveryNIterations(n, false);
         }
 
+        /**
+         * Save a model every N iterations (if sinceLast == false), or if N iterations have passed since
+         * the last model vas saved (if sinceLast == true)
+         */
         public Builder saveEveryNIterations(int n, boolean sinceLast){
             this.saveEveryNIterations = n;
             this.saveEveryNIterSinceLast = sinceLast;
             return this;
         }
 
+        /**
+         * Save a model periodically
+         *
+         * @param amount   Quantity of the specified time unit
+         * @param timeUnit Time unit
+         */
         public Builder saveEvery(long amount, TimeUnit timeUnit){
             return saveEvery(amount, timeUnit, false);
         }
 
+        /**
+         * Save a model periodically (if sinceLast == false), or if the specified amount of time has elapsed since
+         * the last model was saved (if sinceLast == true)
+         *
+         * @param amount   Quantity of the specified time unit
+         * @param timeUnit Time unit
+         */
         public Builder saveEvery(long amount, TimeUnit timeUnit, boolean sinceLast){
             this.saveEveryAmount = amount;
             this.saveEveryUnit = timeUnit;
@@ -355,13 +485,18 @@ public class CheckpointListener extends BaseTrainingListener {
             return this;
         }
 
-
-
+        /**
+         * Keep all model checkpoints - i.e., don't delete any. Note that this is the default.
+         */
         public Builder keepAll(){
             this.keepMode = KeepMode.ALL;
             return this;
         }
 
+        /**
+         * Keep only the last N most recent model checkpoint files. Older checkpoints will automatically be deleted.
+         * @param n Number of most recent checkpoints to keep
+         */
         public Builder keepLast(int n){
             if(n <= 0){
                 throw new IllegalArgumentException("Number of model files to keep should be > 0 (got: " + n + ")");
@@ -371,6 +506,14 @@ public class CheckpointListener extends BaseTrainingListener {
             return this;
         }
 
+        /**
+         * Keep the last N most recent model checkpoint files, <i>and</i> every M checkpoint files.<br>
+         * For example: suppose you save every 100 iterations, for 2050 iteration, and use keepLastAndEvery(3,5).
+         * This means after 2050 iterations you would have saved 20 checkpoints - some of which will be deleted.
+         * Those remaining in this example: iterations 500, 1000, 1500, 1800, 1900, 2000.
+         * @param nLast  Most recent checkpoints to keep
+         * @param everyN Every N checkpoints to keep (regardless of age)
+         */
         public Builder keepLastAndEvery(int nLast, int everyN){
             if(nLast <= 0){
                 throw new IllegalArgumentException("Most recent number of model files to keep should be > 0 (got: "
@@ -387,15 +530,23 @@ public class CheckpointListener extends BaseTrainingListener {
             return this;
         }
 
+        /**
+         * If true (the default) log every time a model is saved
+         *
+         * @param logSaving Whether checkpoints should be saved or not
+         */
         public Builder logSaving(boolean logSaving){
             this.logSaving = logSaving;
             return this;
         }
 
         public CheckpointListener build(){
+            if(saveEveryNEpochs == null && saveEveryAmount == null && saveEveryNIterations == null){
+                throw new IllegalStateException("Cannot construct listener: no models will be saved (must use at least" +
+                        " one of: save every N epochs, every N iterations, or every T time periods)");
+            }
+
             return new CheckpointListener(this);
         }
-
     }
-
 }
