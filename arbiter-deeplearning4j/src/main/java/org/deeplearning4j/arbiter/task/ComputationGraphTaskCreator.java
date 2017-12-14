@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
@@ -49,6 +50,7 @@ import java.util.concurrent.Callable;
  */
 @AllArgsConstructor
 @NoArgsConstructor
+@Slf4j
 public class ComputationGraphTaskCreator implements TaskCreator {
 
     private ModelEvaluator modelEvaluator;
@@ -88,6 +90,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 return callHelper();
             } catch (Exception e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
+                log.warn( "Execution failed for task {}", candidate.getIndex(), e );
 
                 CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
                                 null, null, candidate.getFlatParameters(), stackTrace);
