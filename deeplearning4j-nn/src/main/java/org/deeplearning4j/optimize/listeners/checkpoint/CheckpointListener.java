@@ -536,9 +536,9 @@ public class CheckpointListener extends BaseTrainingListener {
         }
 
         /**
-         * If true (the default) log every time a model is saved
+         * If true (the default) log a message every time a model is saved
          *
-         * @param logSaving Whether checkpoints should be saved or not
+         * @param logSaving Whether checkpoint saves should be logged or not    
          */
         public Builder logSaving(boolean logSaving){
             this.logSaving = logSaving;
