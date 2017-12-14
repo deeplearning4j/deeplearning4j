@@ -5,6 +5,11 @@ import lombok.Data;
 
 import java.util.Arrays;
 
+/**
+ * A model checkpoint, used with {@link CheckpointListener}
+ *
+ * @author Alex Black
+ */
 @AllArgsConstructor
 @Data
 public class Checkpoint {

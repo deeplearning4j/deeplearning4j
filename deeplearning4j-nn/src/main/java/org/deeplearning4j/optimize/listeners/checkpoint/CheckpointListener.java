@@ -19,15 +19,20 @@ import java.util.concurrent.TimeUnit;
 
 /**
  *
- * CheckpointListener: The goal of this listener is to periodically save a copy of the model, as it trains.<br>
- * Model saving may be done:
+ * CheckpointListener: The goal of this listener is to periodically save a copy of the model during training..<br>
+ * Model saving may be done:<br>
  * 1. Every N epochs<br>
  * 2. Every N iterations<br>
- * 3. Every T time units<br>
+ * 3. Every T time units (every 15 minutes, for example)<br>
+ * Or some combination of the 3.<br>
+ * <br>
+ * Models can be restored using {@link #loadCheckpointMLN(Checkpoint)} and {@link #loadCheckpointCG(Checkpoint)}.
+ * Model files can be obtained using {@link #getFileForCheckpoint(Checkpoint)}<br>
+ * Checkpoints can be obtained using {@link #lastCheckpoint()} and {@link #availableCheckpoints()}
  * <br>
  * <b>Example 1</b>: Saving a checkpoint every 2 epochs, keep all model files
  * <pre>
- * {@code new CheckpointListener.Builder("/save/directory")
+ * {@code CheckpointListener l = new CheckpointListener.Builder("/save/directory")
  *       .keepAll() //Don't delete any models
  *       .saveEveryNEpochs(2)
  *       .build()
@@ -39,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  * <pre>
  * {@code CheckpointListener l = new CheckpointListener.Builder(new File("/save/directory"))
  *          .keepLast(3)
- *          .saveEveryNIterations(100)
+ *          .saveEveryNIterations(1000)
  *          .build();
  * }
  * </pre>
