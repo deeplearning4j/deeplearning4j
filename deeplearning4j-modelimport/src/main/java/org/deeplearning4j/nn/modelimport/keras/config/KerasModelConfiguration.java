@@ -33,6 +33,8 @@ public class KerasModelConfiguration {
     private final String fieldClassNameSequential = "Sequential";
     private final String fieldClassNameModel = "Model";
     private final String fieldKerasVersion = "keras_version";
+    private final String fieldBackend = "backend";
+
 
     /* Model configuration field. */
     private final String modelFieldConfig = "config";

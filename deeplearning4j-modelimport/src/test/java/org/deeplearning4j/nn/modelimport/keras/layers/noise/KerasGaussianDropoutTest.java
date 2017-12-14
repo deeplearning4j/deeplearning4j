@@ -45,18 +45,18 @@ public class KerasGaussianDropoutTest {
 
 
     @Test
-    public void testAlphaDropoutLayer() throws Exception {
-        buildAlphaDropoutLayer(conf1, keras1);
-        buildAlphaDropoutLayer(conf2, keras2);
+    public void testGaussianDropoutLayer() throws Exception {
+        buildGaussianDropoutLayer(conf1, keras1);
+        buildGaussianDropoutLayer(conf2, keras2);
     }
 
 
-    public void buildAlphaDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildGaussianDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DROPOUT());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put("rate", RATE_KERAS);
+        config.put(conf.getLAYER_FIELD_RATE(), RATE_KERAS);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 

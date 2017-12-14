@@ -80,6 +80,7 @@ public class KerasSequentialModel extends KerasModel {
 
         Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
         this.kerasMajorVersion = KerasModelUtils.determineKerasMajorVersion(modelConfig, config);
+        this.kerasBackend = KerasModelUtils.determineKerasBackend(modelConfig, config);
         this.enforceTrainingConfig = enforceTrainingConfig;
 
         /* Determine model configuration type. */

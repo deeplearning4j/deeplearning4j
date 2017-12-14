@@ -17,7 +17,6 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.noise;
 
-import org.deeplearning4j.nn.conf.dropout.GaussianDropout;
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
@@ -45,18 +44,18 @@ public class KerasGaussianNoiseTest {
 
 
     @Test
-    public void testAlphaDropoutLayer() throws Exception {
-        buildAlphaDropoutLayer(conf1, keras1);
-        buildAlphaDropoutLayer(conf2, keras2);
+    public void testGaussianNoiseLayer() throws Exception {
+        buildGaussianNoiseLayer(conf1, keras1);
+        buildGaussianNoiseLayer(conf2, keras2);
     }
 
 
-    public void buildAlphaDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildGaussianNoiseLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DROPOUT());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put("stddev", STDDEV);
+        config.put(conf.getLAYER_FIELD_GAUSSIAN_VARIANCE(), STDDEV);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
