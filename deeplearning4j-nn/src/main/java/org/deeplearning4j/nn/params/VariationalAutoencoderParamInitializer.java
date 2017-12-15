@@ -142,7 +142,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     public List<String> weightKeys(Layer layer) {
         List<String> out = new ArrayList<>();
         for(String s : paramKeys(layer)){
-            if(isWeightParam(s)){
+            if(isWeightParam(layer, s)){
                 out.add(s);
             }
         }
@@ -153,7 +153,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     public List<String> biasKeys(Layer layer) {
         List<String> out = new ArrayList<>();
         for(String s : paramKeys(layer)){
-            if(isBiasParam(s)){
+            if(isBiasParam(layer, s)){
                 out.add(s);
             }
         }
@@ -161,12 +161,12 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     }
 
     @Override
-    public boolean isWeightParam(String key) {
+    public boolean isWeightParam(Layer layer, String key) {
         return key.endsWith(WEIGHT_KEY_SUFFIX);
     }
 
     @Override
-    public boolean isBiasParam(String key) {
+    public boolean isBiasParam(Layer layer, String key) {
         return key.endsWith(BIAS_KEY_SUFFIX);
     }
 

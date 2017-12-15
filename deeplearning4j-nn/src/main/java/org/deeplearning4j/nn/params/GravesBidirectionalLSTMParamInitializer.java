@@ -96,13 +96,13 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     }
 
     @Override
-    public boolean isWeightParam(String key) {
+    public boolean isWeightParam(Layer layer, String key) {
         return RECURRENT_WEIGHT_KEY_FORWARDS.equals(key) || INPUT_WEIGHT_KEY_FORWARDS.equals(key)
                 || RECURRENT_WEIGHT_KEY_BACKWARDS.equals(key) || INPUT_WEIGHT_KEY_BACKWARDS.equals(key);
     }
 
     @Override
-    public boolean isBiasParam(String key) {
+    public boolean isBiasParam(Layer layer, String key) {
         return BIAS_KEY_FORWARDS.equals(key) || BIAS_KEY_BACKWARDS.equals(key);
     }
 

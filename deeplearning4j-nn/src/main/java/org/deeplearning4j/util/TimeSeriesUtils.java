@@ -23,8 +23,11 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -165,4 +168,39 @@ public class TimeSeriesUtils {
         return out;
     }
 
+    /**
+     * Extract out the last time steps (2d array from 3d array input) accounting for the mask layer, if present.
+     *
+     * @param pullFrom Input time series array (rank 3) to pull the last time steps from
+     * @param mask     Mask array (rank 2). May be null
+     * @return         2d array of the last time steps
+     */
+    public static Pair<INDArray,int[]> pullLastTimeSteps(INDArray pullFrom, INDArray mask){
+        //Then: work out, from the mask array, which time step of activations we want, extract activations
+        //Also: record where they came from (so we can do errors later)
+        int[] fwdPassTimeSteps;
+        INDArray out;
+        if (mask == null) {
+            //No mask array -> extract same (last) column for all
+            int lastTS = pullFrom.size(2) - 1;
+            out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
+            fwdPassTimeSteps = null; //Null -> last time step for all examples
+        } else {
+            int[] outShape = new int[] {pullFrom.size(0), pullFrom.size(1)};
+            out = Nd4j.create(outShape);
+
+            //Want the index of the last non-zero entry in the mask array
+            INDArray lastStepArr = BooleanIndexing.lastIndex(mask, Conditions.epsNotEquals(0.0), 1);
+            fwdPassTimeSteps = lastStepArr.data().asInt();
+
+            //Now, get and assign the corresponding subsets of 3d activations:
+            for (int i = 0; i < fwdPassTimeSteps.length; i++) {
+                //TODO can optimize using reshape + pullRows
+                out.putRow(i, pullFrom.get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                        NDArrayIndex.point(fwdPassTimeSteps[i])));
+            }
+        }
+
+        return new Pair<>(out, fwdPassTimeSteps);
+    }
 }
