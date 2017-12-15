@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -46,7 +47,7 @@ public class KerasLSTMTest {
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int N_OUT = 13;
 
-
+    private Boolean[] returnSequences = new Boolean[]{true, false};
     private Integer keras1 = 1;
     private Integer keras2 = 2;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
@@ -54,11 +55,13 @@ public class KerasLSTMTest {
 
     @Test
     public void testLstmLayer() throws Exception {
-        buildLstmLayer(conf1, keras1);
-        buildLstmLayer(conf2, keras2);
+        for (Boolean rs : returnSequences) {
+            buildLstmLayer(conf1, keras1, rs);
+            buildLstmLayer(conf2, keras2, rs);
+        }
     }
 
-    void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean rs) throws Exception {
         String innerActivation = "hard_sigmoid";
         double lstmForgetBiasDouble = 1.0;
         String lstmForgetBiasString = "one";
@@ -86,7 +89,7 @@ public class KerasLSTMTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
-        config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), true);
+        config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), rs);
 
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
@@ -96,7 +99,9 @@ public class KerasLSTMTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        LSTM layer = new KerasLstm(layerConfig).getLSTMLayer();
+        LSTM layer = rs ? (LSTM) new KerasLstm(layerConfig).getLSTMLayer() :
+                (LSTM) ((LastTimeStep) new KerasLstm(layerConfig).getLSTMLayer()).getUnderlying();
+
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
@@ -105,5 +110,7 @@ public class KerasLSTMTest {
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
+
+
     }
 }

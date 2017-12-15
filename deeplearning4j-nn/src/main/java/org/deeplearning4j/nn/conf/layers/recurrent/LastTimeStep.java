@@ -27,6 +27,10 @@ public class LastTimeStep extends BaseWrapperLayer {
         super(underlying);
     }
 
+    public Layer getUnderlying() {
+        return underlying;
+    }
+
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,

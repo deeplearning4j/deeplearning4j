@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -79,6 +81,7 @@ public class KerasLstm extends KerasLayer {
     private final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
 
     protected boolean unroll = false;
+    protected boolean returnSequences;
 
     /**
      * Pass-through constructor from KerasLayer
@@ -125,11 +128,8 @@ public class KerasLstm extends KerasLayer {
         Distribution recurrentDistribution = recurrentInit.getSecond();
 
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        Boolean returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
-        if (!returnSequences) {
-            throw new UnsupportedKerasConfigurationException("Keras setting 'return_sequences = False' is not properly supported," +
-                    "DL4J's LSTM layer returns sequences by default");
-        }
+        this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
+
         if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -165,17 +165,19 @@ public class KerasLstm extends KerasLayer {
             builder.constrainInputWeights(weightConstraint);
         if (recurrentConstraint != null)
             builder.constrainRecurrent(recurrentConstraint);
-        this.layer = builder.build();
+        if (this.returnSequences)
+            this.layer = builder.build();
+        else
+            this.layer = new LastTimeStep(builder.build());
     }
 
     /**
-     * Get DL4J LSTM layer.
+     * Get DL4J Layer. If returnSequences is true, this can be casted to an "LSTM" layer, otherwise it can be casted
+     * to a "LastTimeStep" layer.
      *
      * @return  LSTM Layer
      */
-    public LSTM getLSTMLayer() {
-        return (LSTM) this.layer;
-    }
+    public Layer getLSTMLayer() { return layer; }
 
     /**
      * Get layer output type.
@@ -219,8 +221,7 @@ public class KerasLstm extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
-        InputPreProcessor preProcessor = InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
-        return preProcessor;
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
     }
 
     /**
