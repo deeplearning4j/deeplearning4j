@@ -168,7 +168,13 @@ public class TimeSeriesUtils {
         return out;
     }
 
-
+    /**
+     * Extract out the last time steps (2d array from 3d array input) accounting for the mask layer, if present.
+     *
+     * @param pullFrom Input time series array (rank 3) to pull the last time steps from
+     * @param mask     Mask array (rank 2). May be null
+     * @return         2d array of the last time steps
+     */
     public static Pair<INDArray,int[]> pullLastTimeSteps(INDArray pullFrom, INDArray mask){
         //Then: work out, from the mask array, which time step of activations we want, extract activations
         //Also: record where they came from (so we can do errors later)

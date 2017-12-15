@@ -15,8 +15,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * Base wrapper layer
+ * Base wrapper layer: the idea is to pass through all methods to the underlying layer, and selectively override
+ * them as required. This is to save implementing every single passthrough method for all 'wrapper' layer subtypes
  *
+ * @author Alex Black
  */
 @Data
 public abstract class BaseWrapperLayer extends Layer {
@@ -36,7 +38,7 @@ public abstract class BaseWrapperLayer extends Layer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        return null;
+        return underlying.getOutputType(layerIndex, inputType);
     }
 
     @Override
