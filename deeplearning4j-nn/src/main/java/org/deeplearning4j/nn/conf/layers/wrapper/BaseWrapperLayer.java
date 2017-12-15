@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.wrapper;
 
+import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -7,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.params.WrapperLayerParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -16,6 +18,7 @@ import java.util.Collection;
  * Base wrapper layer
  *
  */
+@Data
 public abstract class BaseWrapperLayer extends Layer {
 
     protected Layer underlying;
@@ -26,12 +29,12 @@ public abstract class BaseWrapperLayer extends Layer {
 
     @Override
     public ParamInitializer initializer() {
-        
+        return WrapperLayerParamInitializer.getInstance();
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-
+        return null;
     }
 
     @Override

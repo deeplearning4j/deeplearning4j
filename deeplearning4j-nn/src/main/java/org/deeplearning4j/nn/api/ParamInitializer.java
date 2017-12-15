@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
@@ -61,17 +62,21 @@ public interface ParamInitializer {
 
     /**
      * Is the specified parameter a weight?
+     *
+     * @param layer Layer
      * @param key Key to check
      * @return True if parameter is a weight
      */
-    boolean isWeightParam(String key);
+    boolean isWeightParam(Layer layer, String key);
 
     /**
      * Is the specified parameter a bias?
+     *
+     * @param layer Layer
      * @param key Key to check
      * @return True if parameter is a bias
      */
-    boolean isBiasParam(String key);
+    boolean isBiasParam(Layer layer, String key);
 
     /**
      * Initialize the parameters

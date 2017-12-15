@@ -18,7 +18,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class LastTimeStepLayer extends BaseWrapperLayer {
 
-    private Layer underlying;
     private int[] lastTimeStepIdxs;
     private int[] origOutputShape;
 
@@ -82,7 +81,8 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        return getLastStep(underlying.activate(input, training));
+        INDArray a = underlying.activate(input, training);
+        return getLastStep(a);
     }
 
     @Override
