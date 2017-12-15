@@ -40,7 +40,7 @@ public class TestKryoSerialization extends BaseSparkTest {
     }
 
     @Test
-    public void testRecordReaders() throws Exception {
+    public void testCsvRecordReader() throws Exception {
         SerializerInstance si = sc.env().serializer().newInstance();
         assertTrue(si instanceof KryoSerializerInstance);
 
@@ -55,14 +55,6 @@ public class TestKryoSerialization extends BaseSparkTest {
             assertEquals(r1.next(), r2.next());
         }
         assertFalse(r2.hasNext());
-
-
-    }
-
-    @Test
-    public void testSeqRRs(){
-
-
     }
 
 
