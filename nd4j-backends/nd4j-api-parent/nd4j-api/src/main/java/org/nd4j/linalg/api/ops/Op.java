@@ -64,6 +64,7 @@ public interface Op {
         IF,
         RETURN,
         RANDOM,
+        SUMMARYSTATS,
     }
 
     /**

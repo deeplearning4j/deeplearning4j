@@ -158,6 +158,9 @@ public class Pooling2D extends DynamicCustomOp {
 
 
     public String getPoolingPrefix() {
+        if (config == null)
+            return "somepooling";
+
         switch(config.getType()) {
             case AVG:return "avg";
             case MAX: return "max";
