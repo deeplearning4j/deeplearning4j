@@ -1,11 +1,10 @@
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
-import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -16,58 +15,26 @@ import java.util.Collection;
  * and returns it as a row vector. That is, for 3d (time series) input, we take the last time step and
  *
  */
-public class LastTimeStep extends Layer {
-
-    private Layer underlying;
+public class LastTimeStep extends BaseWrapperLayer {
 
     public LastTimeStep(Layer underlying){
-        this.underlying = underlying;
+        super(underlying);
     }
 
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        return null;
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return null;
+        return new LastTimeStepLayer(underlying.instantiate(conf, iterationListeners, layerIndex, layerParamsView, initializeParams));
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        return null;
-    }
-
-    @Override
-    public void setNIn(InputType inputType, boolean override) {
-
-    }
-
-    @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return null;
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public boolean isPretrainParam(String paramName) {
-        return false;
-    }
-
-    @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
-        return null;
+        if(inputType.getType() != InputType.Type.RNN){
+            throw new IllegalArgumentException("Require RNN input type - got " + inputType);
+        }
+        InputType outType = underlying.getOutputType(layerIndex, inputType);
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)outType;
+        return InputType.feedForward(r.getSize());
     }
 }
