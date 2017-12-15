@@ -1160,4 +1160,40 @@ public class TestComputationGraphNetwork {
             assertNull(l.input());
         }
     }
+
+
+    @Test
+    public void testDisconnectedVertex(){
+
+        for(boolean allowDisconnected : new boolean[]{false, true}) {
+            try {
+                ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
+                        .graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new DenseLayer.Builder().activation(Activation.SIGMOID).nOut(8).build(), "in")
+                        .addLayer("1", new DenseLayer.Builder().activation(Activation.SIGMOID).nOut(8).build(), "in") //Disconnected
+                        .addLayer("O", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(10).build(), "0")
+                        .setOutputs("O")
+                        .setInputTypes(InputType.feedForward(8));
+
+                if(allowDisconnected){
+                    b.allowDisconnected(true).build();  //No exception
+                } else {
+                    b.build();  //Expect exception here
+                    fail("Expected exception for disconnected vertex");
+                }
+
+
+            } catch (Exception e) {
+                //e.printStackTrace();
+                if(allowDisconnected){
+                    fail("No exception expected");
+                } else {
+                    String msg = e.getMessage().toLowerCase();
+                    assertTrue(msg.contains("disconnected"));
+                }
+            }
+        }
+
+    }
 }

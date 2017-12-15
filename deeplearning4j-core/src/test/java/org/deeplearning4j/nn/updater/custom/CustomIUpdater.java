@@ -5,6 +5,7 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
 
 /**
  * Created by Alex on 09/05/2017.
@@ -43,5 +44,15 @@ public class CustomIUpdater implements IUpdater {
     @Override
     public double getLearningRate(int iteration, int epoch) {
         return learningRate;
+    }
+
+    @Override
+    public boolean hasLearningRate() {
+        return true;
+    }
+
+    @Override
+    public void setLrAndSchedule(double lr, ISchedule iSchedule) {
+        this.learningRate = lr;
     }
 }
