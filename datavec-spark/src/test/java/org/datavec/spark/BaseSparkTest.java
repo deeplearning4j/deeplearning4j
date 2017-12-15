@@ -54,17 +54,24 @@ public abstract class BaseSparkTest implements Serializable {
         sc = null;
     }
 
-    public static synchronized JavaSparkContext getContext() {
+    public synchronized JavaSparkContext getContext() {
         if (sc != null)
             return sc;
 
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").set("spark.driver.host", "localhost")
                         .set("spark.driverEnv.SPARK_LOCAL_IP", "127.0.0.1")
                         .set("spark.executorEnv.SPARK_LOCAL_IP", "127.0.0.1").setAppName("sparktest");
+        if (useKryo()) {
+            sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+        }
 
 
         sc = new JavaSparkContext(sparkConf);
 
         return sc;
+    }
+
+    public boolean useKryo(){
+        return false;
     }
 }
