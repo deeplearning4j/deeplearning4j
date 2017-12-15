@@ -215,7 +215,11 @@ public class RnnGradientChecks {
                         }
                     }
 
-                    String name = "testSimpleRnn() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType;
+                    String name = "testLastTimeStepLayer() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType
+                            + ", rnnType=" + (simple ? "SimpleRnn" : "LSTM");
+                    if(PRINT_RESULTS){
+                        System.out.println("Starting test: " + name);
+                    }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .activation(Activation.TANH)
@@ -236,7 +240,7 @@ public class RnnGradientChecks {
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
-                    assertTrue(gradOK);
+                    assertTrue(name, gradOK);
                 }
             }
         }

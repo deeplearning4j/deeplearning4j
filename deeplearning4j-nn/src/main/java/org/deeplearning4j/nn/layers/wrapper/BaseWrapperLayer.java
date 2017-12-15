@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.wrapper;
 
+import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -17,10 +18,11 @@ import java.util.Map;
 /**
  * Abstract wrapper layer. The idea: this class passes through all methods to the underlying layer.
  * Then, subclasses of BaseWrapperLayer can selectively override specific methods, rather than having
- * to implement every single one of them each time
+ * to implement every single one of the passthrough methods in each subclass.
  *
  * @author Alex Black
  */
+@Data
 public abstract class BaseWrapperLayer implements Layer {
 
     protected Layer underlying;

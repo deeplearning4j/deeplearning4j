@@ -12,10 +12,16 @@ import java.util.Collection;
 
 /**
  * LastTimeStep is a "wrapper" layer: it wraps any RNN layer, and extracts out the last time step during forward pass,
- * and returns it as a row vector. That is, for 3d (time series) input, we take the last time step and
+ * and returns it as a row vector (per example). That is, for 3d (time series) input (with shape [minibatch, layerSize,
+ * timeSeriesLength]), we take the last time step and return it as a 2d array with shape [minibatch, layerSize].<br>
+ * Note that the last time step operation takes into account any mask arrays, if present: thus, variable length time
+ * series (in the same minibatch) are handled as expected here.
  *
+ * @author Alex Black
  */
 public class LastTimeStep extends BaseWrapperLayer {
+
+    private LastTimeStep(){ }
 
     public LastTimeStep(Layer underlying){
         super(underlying);
@@ -25,11 +31,9 @@ public class LastTimeStep extends BaseWrapperLayer {
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        Layer temp = conf.getLayer();
-        conf.setLayer(((LastTimeStep)conf.getLayer()).getUnderlying());
-        LastTimeStepLayer l = new LastTimeStepLayer(underlying.instantiate(conf, iterationListeners, layerIndex, layerParamsView, initializeParams));
-        conf.setLayer(temp);
-        return l;
+        NeuralNetConfiguration conf2 = conf.clone();
+        conf2.setLayer(((LastTimeStep)conf2.getLayer()).getUnderlying());
+        return new LastTimeStepLayer(underlying.instantiate(conf2, iterationListeners, layerIndex, layerParamsView, initializeParams));
     }
 
     @Override
