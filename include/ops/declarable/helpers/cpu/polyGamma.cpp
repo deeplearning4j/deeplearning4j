@@ -2,7 +2,6 @@
 // Created by Yurii Shyrma on 12.12.2017
 //
 
-#include<cmath>
 #include<ops/declarable/helpers/polyGamma.h>
 #include<ops/declarable/helpers/zeta.h>
 
@@ -12,9 +11,29 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
+// calculate factorial
+template <typename T>
+static T getFactorial(const int n) {
+	if (n < 0)
+		throw "factorial is not defined for negative number !";
+
+	if(n==0 || n==1)
+		return (T)1.;
+
+	T result = (T)1.;
+
+#pragma omp declare reduction (dot : double,float,float16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
+#pragma omp parallel for reduction(dot : result) schedule(static)
+	for(int i = 2; i <= n; ++i)
+		result *= i;
+	
+	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
 template <typename T>
-T polyGamma(const int n, const T x) {
+static T polyGamma(const int n, const T x) {
 	
 	// if (n < 0) 
 	// 	throw("polyGamma function: n must be >= 0 !");
@@ -25,10 +44,9 @@ T polyGamma(const int n, const T x) {
 	// TODO case for n = 0 (digamma)
 
 	int sign = (n + 1) % 2  ?  -1 : 1;
-	// T factorial = (T)std::tgamma(n + 1);
-	T factorial = math::nd4j_exp<T>((T)std::lgamma((double)(n + 1)));
+	// T factorial = (T)std::tgamma(n + 1);		
 
-	return sign * factorial * zeta<T>((T)(n + 1), x);	
+	return sign * getFactorial<T>(n) * zeta<T>((T)(n + 1), x);	
 }
 
 
